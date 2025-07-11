@@ -9,6 +9,7 @@ import { AuthPage } from "@/components/auth/AuthPage";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { ObjectivesPage } from "@/components/objectives/ObjectivesPage";
+import { ProjectsPage } from "@/components/projects/ProjectsPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -31,7 +32,7 @@ const App = () => (
             }>
               <Route path="dashboard" element={<DashboardHome />} />
               <Route path="objectives" element={<ObjectivesPage />} />
-              <Route path="projects" element={<div className="p-8 text-center text-gray-500">Projetos - Em desenvolvimento</div>} />
+              <Route path="projects" element={<ProjectsPage />} />
               <Route path="indicators" element={<div className="p-8 text-center text-gray-500">Indicadores - Em desenvolvimento</div>} />
               <Route path="reports" element={<div className="p-8 text-center text-gray-500">Relatórios - Em desenvolvimento</div>} />
               <Route path="team" element={<div className="p-8 text-center text-gray-500">Equipe - Em desenvolvimento</div>} />
