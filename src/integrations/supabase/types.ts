@@ -402,6 +402,161 @@ export type Database = {
           },
         ]
       }
+      performance_reviews: {
+        Row: {
+          collaboration_rating: number | null
+          comments: string | null
+          created_at: string | null
+          goals_achievement: number | null
+          goals_next_period: string | null
+          id: string
+          improvement_areas: string | null
+          overall_rating: number | null
+          review_period_end: string
+          review_period_start: string
+          reviewer_id: string
+          status: string | null
+          strengths: string | null
+          technical_skills: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          collaboration_rating?: number | null
+          comments?: string | null
+          created_at?: string | null
+          goals_achievement?: number | null
+          goals_next_period?: string | null
+          id?: string
+          improvement_areas?: string | null
+          overall_rating?: number | null
+          review_period_end: string
+          review_period_start: string
+          reviewer_id: string
+          status?: string | null
+          strengths?: string | null
+          technical_skills?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          collaboration_rating?: number | null
+          comments?: string | null
+          created_at?: string | null
+          goals_achievement?: number | null
+          goals_next_period?: string | null
+          id?: string
+          improvement_areas?: string | null
+          overall_rating?: number | null
+          review_period_end?: string
+          review_period_start?: string
+          reviewer_id?: string
+          status?: string | null
+          strengths?: string | null
+          technical_skills?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          department: string | null
+          email: string | null
+          first_name: string | null
+          hire_date: string | null
+          id: string
+          last_name: string | null
+          phone: string | null
+          position: string | null
+          role: string | null
+          skills: string[] | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          department?: string | null
+          email?: string | null
+          first_name?: string | null
+          hire_date?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          position?: string | null
+          role?: string | null
+          skills?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          department?: string | null
+          email?: string | null
+          first_name?: string | null
+          hire_date?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          position?: string | null
+          role?: string | null
+          skills?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      project_members: {
+        Row: {
+          allocation_percentage: number | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          project_id: string | null
+          role: string | null
+          start_date: string | null
+          user_id: string
+        }
+        Insert: {
+          allocation_percentage?: number | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          project_id?: string | null
+          role?: string | null
+          start_date?: string | null
+          user_id: string
+        }
+        Update: {
+          allocation_percentage?: number | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          project_id?: string | null
+          role?: string | null
+          start_date?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_tasks: {
         Row: {
           actual_hours: number | null
