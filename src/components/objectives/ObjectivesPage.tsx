@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,6 +55,9 @@ export const ObjectivesPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateObjectiveOpen, setIsCreateObjectiveOpen] = useState(false);
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedObjective, setSelectedObjective] = useState<StrategicObjective | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Form states
@@ -72,6 +75,14 @@ export const ObjectivesPage: React.FC = () => {
     mission: '',
     period_start: '',
     period_end: ''
+  });
+
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    weight: 1,
+    target_date: '',
+    status: 'not_started'
   });
 
   useEffect(() => {
@@ -202,6 +213,73 @@ export const ObjectivesPage: React.FC = () => {
       toast({
         title: "Erro",
         description: "Erro ao criar objetivo estratégico. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openDetailModal = (objective: StrategicObjective) => {
+    setSelectedObjective(objective);
+    setEditForm({
+      title: objective.title,
+      description: objective.description || '',
+      weight: objective.weight,
+      target_date: objective.target_date || '',
+      status: objective.status
+    });
+    setIsEditing(false);
+    setIsDetailModalOpen(true);
+  };
+
+  const closeDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setSelectedObjective(null);
+    setIsEditing(false);
+  };
+
+  const updateObjective = async () => {
+    if (!selectedObjective || !editForm.title) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha o título do objetivo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('strategic_objectives')
+        .update({
+          title: editForm.title,
+          description: editForm.description,
+          weight: editForm.weight,
+          target_date: editForm.target_date || null,
+          status: editForm.status
+        })
+        .eq('id', selectedObjective.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update the objectives list
+      setObjectives(prev => prev.map(obj => 
+        obj.id === selectedObjective.id ? data : obj
+      ));
+      
+      setSelectedObjective(data);
+      setIsEditing(false);
+      
+      toast({
+        title: "Sucesso",
+        description: "Objetivo atualizado com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error updating objective:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar objetivo. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -519,7 +597,11 @@ export const ObjectivesPage: React.FC = () => {
               : objective.progress;
 
             return (
-              <Card key={objective.id} className="hover:shadow-lg transition-shadow">
+              <Card 
+                key={objective.id} 
+                className="hover:shadow-lg transition-shadow cursor-pointer"
+                onClick={() => openDetailModal(objective)}
+              >
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -574,6 +656,227 @@ export const ObjectivesPage: React.FC = () => {
             );
           })}
         </div>
+      )}
+
+      {/* Detail/Edit Modal */}
+      {selectedObjective && (
+        <Dialog open={isDetailModalOpen} onOpenChange={closeDetailModal}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5" />
+                    {isEditing ? 'Editar Objetivo' : 'Detalhes do Objetivo'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {isEditing ? 'Edite as informações do objetivo estratégico' : 'Visualize e gerencie seu objetivo estratégico'}
+                  </DialogDescription>
+                </div>
+                <div className="flex gap-2">
+                  {!isEditing ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </Button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditing(false)}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Cancelar
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={updateObjective}
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Salvar
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Informações Básicas</h3>
+                
+                <div>
+                  <Label htmlFor="detail-title">Título</Label>
+                  {isEditing ? (
+                    <Input
+                      id="detail-title"
+                      value={editForm.title}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Título do objetivo"
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">{selectedObjective.title}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="detail-description">Descrição</Label>
+                  {isEditing ? (
+                    <Textarea
+                      id="detail-description"
+                      value={editForm.description}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Descrição do objetivo"
+                      rows={4}
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md min-h-[80px]">
+                      {selectedObjective.description || 'Nenhuma descrição fornecida'}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="detail-weight">Peso</Label>
+                    {isEditing ? (
+                      <Input
+                        id="detail-weight"
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={editForm.weight}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">{selectedObjective.weight}/10</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="detail-status">Status</Label>
+                    {isEditing ? (
+                      <Select 
+                        value={editForm.status} 
+                        onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="not_started">Não Iniciado</SelectItem>
+                          <SelectItem value="in_progress">Em Progresso</SelectItem>
+                          <SelectItem value="completed">Concluído</SelectItem>
+                          <SelectItem value="at_risk">Em Risco</SelectItem>
+                          <SelectItem value="delayed">Atrasado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="bg-gray-50 p-3 rounded-md">
+                        <Badge variant="secondary" className={`${getStatusColor(selectedObjective.status)} text-white`}>
+                          {getStatusText(selectedObjective.status)}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="detail-target-date">Data Meta</Label>
+                    {isEditing ? (
+                      <Input
+                        id="detail-target-date"
+                        type="date"
+                        value={editForm.target_date}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, target_date: e.target.value }))}
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
+                        {selectedObjective.target_date 
+                          ? new Date(selectedObjective.target_date).toLocaleDateString('pt-BR')
+                          : 'Não definida'
+                        }
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Results Section */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Resultados-Chave</h3>
+                  <Badge variant="outline">
+                    {getObjectiveKeyResults(selectedObjective.id).length} KRs
+                  </Badge>
+                </div>
+
+                {getObjectiveKeyResults(selectedObjective.id).length > 0 ? (
+                  <div className="space-y-3">
+                    {getObjectiveKeyResults(selectedObjective.id).map((kr) => {
+                      const progress = kr.target_value > 0 ? (kr.current_value / kr.target_value) * 100 : 0;
+                      return (
+                        <Card key={kr.id} className="p-4">
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-start">
+                              <h4 className="font-medium text-sm">{kr.title}</h4>
+                              <Badge 
+                                variant={kr.status === 'completed' ? 'default' : 'secondary'}
+                                className={kr.status === 'completed' ? 'bg-green-500 text-white' : ''}
+                              >
+                                {getStatusText(kr.status)}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between text-sm text-gray-600">
+                              <span>{kr.current_value} / {kr.target_value} {kr.unit}</span>
+                              <span>{Math.round(progress)}%</span>
+                            </div>
+                            <Progress value={progress} className="h-2" />
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">Nenhum resultado-chave definido</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Metadata */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="text-sm font-semibold mb-3">Informações Adicionais</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Plano:</span>
+                    <span className="ml-2 font-medium">
+                      {plans.find(p => p.id === selectedObjective.plan_id)?.name || 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Criado em:</span>
+                    <span className="ml-2 font-medium">
+                      {new Date(selectedObjective.created_at).toLocaleDateString('pt-BR')}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Progresso Geral:</span>
+                    <span className="ml-2 font-medium">
+                      {selectedObjective.progress || 0}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
