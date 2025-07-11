@@ -28,7 +28,6 @@ const navigation = [
 
 const adminNavigation = [
   { name: 'Configurações', href: '/settings', icon: Settings },
-  { name: 'Copiloto IA', href: '/ai-copilot', icon: Brain },
 ];
 
 export const Sidebar: React.FC = () => {

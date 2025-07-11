@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Bell, Search, User, Settings, LogOut } from 'lucide-react';
+import { Bell, Search, User, Settings, LogOut, Brain } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -29,6 +30,13 @@ export const DashboardHeader: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-3">
+          <NavLink to="/ai-copilot">
+            <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+              <Brain className="h-4 w-4" />
+              <span className="hidden sm:block text-sm font-medium">Copilot HUB</span>
+            </Button>
+          </NavLink>
+          
           <Button variant="ghost" size="sm" className="relative">
             <Bell className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
