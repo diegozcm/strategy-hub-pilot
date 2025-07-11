@@ -50,7 +50,7 @@ export const ObjectivesPage: React.FC = () => {
   const [objectives, setObjectives] = useState<StrategicObjective[]>([]);
   const [plans, setPlans] = useState<StrategicPlan[]>([]);
   const [keyResults, setKeyResults] = useState<KeyResult[]>([]);
-  const [selectedPlan, setSelectedPlan] = useState<string>('');
+  const [selectedPlan, setSelectedPlan] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateObjectiveOpen, setIsCreateObjectiveOpen] = useState(false);
@@ -91,8 +91,8 @@ export const ObjectivesPage: React.FC = () => {
       if (plansError) throw plansError;
       setPlans(plansData || []);
 
-      if (plansData && plansData.length > 0 && !selectedPlan) {
-        setSelectedPlan(plansData[0].id);
+      if (plansData && plansData.length > 0 && selectedPlan === 'all') {
+        // Keep 'all' as default to show all plans
       }
 
       // Load objectives
@@ -231,7 +231,7 @@ export const ObjectivesPage: React.FC = () => {
     const matchesSearch = objective.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          objective.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || objective.status === statusFilter;
-    const matchesPlan = !selectedPlan || objective.plan_id === selectedPlan;
+    const matchesPlan = selectedPlan === 'all' || objective.plan_id === selectedPlan;
     
     return matchesSearch && matchesStatus && matchesPlan;
   });
@@ -458,7 +458,7 @@ export const ObjectivesPage: React.FC = () => {
               <SelectValue placeholder="Todos os planos" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os planos</SelectItem>
+              <SelectItem value="all">Todos os planos</SelectItem>
               {plans.map((plan) => (
                 <SelectItem key={plan.id} value={plan.id}>
                   {plan.name}
