@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { AICopilotWidget } from './AICopilotWidget';
 
@@ -155,6 +156,24 @@ export const DashboardHome: React.FC = () => {
     return <AlertCircle className="h-4 w-4 text-red-500" />;
   };
 
+  const getMonthsOfYear = () => {
+    const months = [];
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(currentYear, i);
+      const monthKey = date.toISOString().slice(0, 7); // YYYY-MM format
+      const monthName = date.toLocaleDateString('pt-BR', { month: 'short' });
+      months.push({ key: monthKey, name: monthName });
+    }
+    return months;
+  };
+
+  const getMonthlyPerformance = (objective: ObjectiveWithMetrics, monthKey: string) => {
+    const target = objective.monthly_targets?.[monthKey] || 0;
+    const actual = objective.monthly_actual?.[monthKey] || 0;
+    const percentage = target > 0 ? Math.round((actual / target) * 100) : 0;
+    return { target, actual, percentage };
+  };
+
   return <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -193,69 +212,105 @@ export const DashboardHome: React.FC = () => {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Objetivos Estratégicos</CardTitle>
-              <CardDescription>Progresso dos principais objetivos</CardDescription>
+              <CardTitle>Performance Mensal dos Objetivos</CardTitle>
+              <CardDescription>Previsto vs Realizado por mês ({currentYear})</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               {loading ? (
                 <div className="text-center py-4">Carregando objetivos...</div>
               ) : objectives.length === 0 ? (
                 <div className="text-center py-4 text-gray-500">Nenhum objetivo encontrado</div>
               ) : (
-                objectives.map((objective) => {
-                  const monthlyAchievement = getMonthlyAchievement(objective);
-                  const yearlyAchievement = getYearlyAchievement(objective);
-                  
-                  return (
-                    <div key={objective.id} className="space-y-3 p-4 border border-gray-200 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{objective.title}</h4>
-                          <p className="text-sm text-gray-600">
-                            {objective.owner_name} • {objective.target_date ? `Vence em ${new Date(objective.target_date).toLocaleDateString()}` : 'Sem prazo definido'}
-                          </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {getStatusIcon(yearlyAchievement)}
-                        </div>
-                      </div>
-                      
-                      {/* Monthly Progress */}
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-gray-700">Meta do Mês</span>
-                          <div className="flex items-center space-x-2">
-                            <span className={`text-sm font-medium ${getStatusColor(monthlyAchievement)}`}>
-                              {monthlyAchievement}%
+                <div className="space-y-6">
+                  {objectives.map((objective) => {
+                    const months = getMonthsOfYear();
+                    const yearlyAchievement = getYearlyAchievement(objective);
+                    
+                    return (
+                      <div key={objective.id} className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="font-medium text-gray-900">{objective.title}</h4>
+                            <p className="text-sm text-gray-600">{objective.owner_name}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(yearlyAchievement)}
+                            <span className={`text-sm font-medium ${getStatusColor(yearlyAchievement)}`}>
+                              {yearlyAchievement}% no ano
                             </span>
                           </div>
                         </div>
-                        <Progress value={Math.min(monthlyAchievement, 100)} className="h-2" />
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>Realizado: {objective.monthly_actual?.[currentMonth] || 0}</span>
-                          <span>Meta: {objective.monthly_targets?.[currentMonth] || 0}</span>
+                        
+                        <div className="border rounded-lg overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-24">Mês</TableHead>
+                                <TableHead className="text-center">Previsto</TableHead>
+                                <TableHead className="text-center">Realizado</TableHead>
+                                <TableHead className="text-center">% Atingimento</TableHead>
+                                <TableHead className="text-center">Status</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {months.map((month) => {
+                                const performance = getMonthlyPerformance(objective, month.key);
+                                const isCurrentMonth = month.key === currentMonth;
+                                
+                                return (
+                                  <TableRow key={month.key} className={isCurrentMonth ? "bg-blue-50" : ""}>
+                                    <TableCell className="font-medium">
+                                      {month.name}
+                                      {isCurrentMonth && <span className="ml-1 text-xs text-blue-600">(atual)</span>}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      {performance.target || '-'}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      {performance.actual || '-'}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      <span className={getStatusColor(performance.percentage)}>
+                                        {performance.target > 0 ? `${performance.percentage}%` : '-'}
+                                      </span>
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                      {performance.target > 0 ? (
+                                        <div className="flex justify-center">
+                                          {getStatusIcon(performance.percentage)}
+                                        </div>
+                                      ) : (
+                                        <span className="text-gray-400">-</span>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
                         </div>
-                      </div>
-                      
-                      {/* Yearly Progress */}
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium text-gray-700">Meta do Ano</span>
-                          <div className="flex items-center space-x-2">
-                            <span className={`text-sm font-medium ${getStatusColor(yearlyAchievement)}`}>
+                        
+                        {/* Yearly Summary */}
+                        <div className="bg-gray-50 p-3 rounded-lg">
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="font-medium">Meta Anual:</span>
+                            <span>{objective.yearly_target}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="font-medium">Realizado Anual:</span>
+                            <span>{objective.yearly_actual}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-sm">
+                            <span className="font-medium">% Atingimento Anual:</span>
+                            <span className={getStatusColor(yearlyAchievement)}>
                               {yearlyAchievement}%
                             </span>
                           </div>
                         </div>
-                        <Progress value={Math.min(yearlyAchievement, 100)} className="h-2" />
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>Realizado: {objective.yearly_actual}</span>
-                          <span>Meta: {objective.yearly_target}</span>
-                        </div>
                       </div>
-                    </div>
-                  );
-                })
+                    );
+                  })}
+                </div>
               )}
             </CardContent>
           </Card>
