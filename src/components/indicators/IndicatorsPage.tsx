@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, User, Target } from 'lucide-react';
+import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, User, Target, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -325,6 +325,15 @@ export const IndicatorsPage: React.FC = () => {
     return matchesSearch && matchesCategory && matchesStatus && matchesPriority;
   });
 
+  // Calculate summary statistics
+  const totalIndicators = indicators.length;
+  const onTargetIndicators = indicators.filter(ind => calculateProgress(ind) >= 90).length;
+  const atRiskIndicators = indicators.filter(ind => {
+    const progress = calculateProgress(ind);
+    return progress >= 70 && progress < 90;
+  }).length;
+  const criticalIndicators = indicators.filter(ind => calculateProgress(ind) < 70).length;
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -359,8 +368,8 @@ export const IndicatorsPage: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Indicadores</h1>
-          <p className="text-gray-600 mt-2">Acompanhe KPIs e métricas estratégicas</p>
+          <h1 className="text-3xl font-bold">Indicadores & KPIs</h1>
+          <p className="text-muted-foreground mt-2">Acompanhe KPIs e métricas estratégicas em tempo real</p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline">
@@ -511,20 +520,97 @@ export const IndicatorsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div className="flex-1 min-w-[200px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Buscar indicadores..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total de Indicadores</p>
+                <div className="flex items-center space-x-2">
+                  <p className="text-2xl font-bold">{totalIndicators}</p>
+                </div>
+              </div>
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 text-blue-600" />
+              </div>
             </div>
-          </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">No Alvo</p>
+                <div className="flex items-center space-x-2">
+                  <p className="text-2xl font-bold text-green-600">{onTargetIndicators}</p>
+                  <span className="text-sm text-muted-foreground">
+                    ({totalIndicators > 0 ? Math.round((onTargetIndicators / totalIndicators) * 100) : 0}%)
+                  </span>
+                </div>
+              </div>
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Em Atenção</p>
+                <div className="flex items-center space-x-2">
+                  <p className="text-2xl font-bold text-yellow-600">{atRiskIndicators}</p>
+                  <span className="text-sm text-muted-foreground">
+                    ({totalIndicators > 0 ? Math.round((atRiskIndicators / totalIndicators) * 100) : 0}%)
+                  </span>
+                </div>
+              </div>
+              <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                <Activity className="w-4 h-4 text-yellow-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Críticos</p>
+                <div className="flex items-center space-x-2">
+                  <p className="text-2xl font-bold text-red-600">{criticalIndicators}</p>
+                  <span className="text-sm text-muted-foreground">
+                    ({totalIndicators > 0 ? Math.round((criticalIndicators / totalIndicators) * 100) : 0}%)
+                  </span>
+                </div>
+              </div>
+              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4 text-red-600" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex-1 min-w-[200px]">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Input
+                  placeholder="Buscar indicadores..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Categoria" />
@@ -560,8 +646,23 @@ export const IndicatorsPage: React.FC = () => {
               <SelectItem value="low">Baixa</SelectItem>
             </SelectContent>
           </Select>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearchTerm('');
+                setCategoryFilter('all');
+                setStatusFilter('all');
+                setPriorityFilter('all');
+              }}
+            >
+              Limpar Filtros
+            </Button>
+          </div>
         </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Indicators Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -599,35 +700,41 @@ export const IndicatorsPage: React.FC = () => {
 
                 {/* Values */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="text-center p-3 bg-blue-50 rounded-lg">
-                    <p className="text-2xl font-bold text-blue-600">
+                  <div className="text-center p-3 bg-primary/5 rounded-lg border">
+                    <p className="text-2xl font-bold text-primary">
                       {indicator.current_value.toLocaleString('pt-BR')}
                     </p>
-                    <p className="text-xs text-gray-600">Atual {indicator.unit}</p>
+                    <p className="text-xs text-muted-foreground">Atual {indicator.unit}</p>
                   </div>
-                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
                     <p className="text-2xl font-bold text-green-600">
                       {indicator.target_value.toLocaleString('pt-BR')}
                     </p>
-                    <p className="text-xs text-gray-600">Meta {indicator.unit}</p>
+                    <p className="text-xs text-muted-foreground">Meta {indicator.unit}</p>
                   </div>
                 </div>
 
                 {/* Additional Info */}
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Categoria:</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Categoria:</span>
                     <Badge variant="outline">{getCategoryText(indicator.category)}</Badge>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Frequência:</span>
-                    <span>{getFrequencyText(indicator.measurement_frequency)}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Frequência:</span>
+                    <span className="font-medium">{getFrequencyText(indicator.measurement_frequency)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Status:</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Status:</span>
                     <Badge variant={indicator.status === 'active' ? 'default' : 'secondary'}>
                       {indicator.status === 'active' ? 'Ativo' : indicator.status === 'paused' ? 'Pausado' : 'Completo'}
                     </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Última atualização:</span>
+                    <span className="text-xs font-medium">
+                      {new Date(indicator.last_updated).toLocaleDateString('pt-BR')}
+                    </span>
                   </div>
                 </div>
               </CardContent>
@@ -664,16 +771,24 @@ export const IndicatorsPage: React.FC = () => {
         })}
       </div>
 
-      {filteredIndicators.length === 0 && (
-        <div className="text-center py-12">
-          <BarChart3 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-600 mb-2">Nenhum indicador encontrado</h3>
-          <p className="text-gray-500 mb-4">Crie seu primeiro indicador para começar o acompanhamento.</p>
-          <Button onClick={() => setIsAddModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Indicador
-          </Button>
-        </div>
+      {filteredIndicators.length === 0 && !loading && (
+        <Card className="text-center py-12">
+          <CardContent>
+            <BarChart3 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">
+              {indicators.length === 0 ? 'Nenhum indicador cadastrado' : 'Nenhum indicador encontrado'}
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              {indicators.length === 0 
+                ? 'Crie seu primeiro indicador para começar o acompanhamento de KPIs.' 
+                : 'Tente ajustar os filtros para encontrar os indicadores desejados.'}
+            </p>
+            <Button onClick={() => setIsAddModalOpen(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Indicador
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* Update Value Modal */}
@@ -749,55 +864,184 @@ export const IndicatorsPage: React.FC = () => {
           </DialogHeader>
           {selectedIndicator && (
             <div className="space-y-6">
-              {/* Chart */}
-              <div className="bg-white p-6 rounded-lg border">
-                <h3 className="text-lg font-semibold mb-4">Histórico de Valores</h3>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={getIndicatorHistory(selectedIndicator.id)}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="period_date" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="value" 
-                        stroke="#2563eb" 
-                        strokeWidth={2}
-                        name="Valor Real"
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey={() => selectedIndicator.target_value} 
-                        stroke="#10b981" 
-                        strokeWidth={2}
-                        strokeDasharray="5 5"
-                        name="Meta"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+              {/* Indicator Overview */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <div className="text-3xl font-bold text-primary mb-2">
+                      {selectedIndicator.current_value.toLocaleString('pt-BR')}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Valor Atual</div>
+                    <div className="text-xs text-muted-foreground mt-1">{selectedIndicator.unit}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <div className="text-3xl font-bold text-green-600 mb-2">
+                      {selectedIndicator.target_value.toLocaleString('pt-BR')}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Meta</div>
+                    <div className="text-xs text-muted-foreground mt-1">{selectedIndicator.unit}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <div className={`text-3xl font-bold mb-2 ${getProgressColor(calculateProgress(selectedIndicator))}`}>
+                      {calculateProgress(selectedIndicator)}%
+                    </div>
+                    <div className="text-sm text-muted-foreground">Progresso</div>
+                    <div className="text-xs text-muted-foreground mt-1">do objetivo</div>
+                  </CardContent>
+                </Card>
               </div>
 
-              {/* Recent Updates */}
-              <div className="bg-white p-6 rounded-lg border">
-                <h3 className="text-lg font-semibold mb-4">Últimas Atualizações</h3>
-                <div className="space-y-3">
-                  {getIndicatorHistory(selectedIndicator.id).slice(0, 5).map((update) => (
-                    <div key={update.id} className="border-l-4 border-blue-200 pl-4 py-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">{update.value.toLocaleString('pt-BR')} {selectedIndicator.unit}</p>
-                          <p className="text-sm text-gray-600">{update.comments}</p>
+              {/* Chart */}
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Histórico de Valores</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={getIndicatorHistory(selectedIndicator.id)}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="period_date" 
+                          tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' })}
+                        />
+                        <YAxis />
+                        <Tooltip 
+                          labelFormatter={(value) => new Date(value).toLocaleDateString('pt-BR')}
+                          formatter={(value, name) => [
+                            `${Number(value).toLocaleString('pt-BR')} ${selectedIndicator.unit}`, 
+                            name
+                          ]}
+                        />
+                        <Legend />
+                        <Line 
+                          type="monotone" 
+                          dataKey="value" 
+                          stroke="hsl(var(--primary))" 
+                          strokeWidth={2}
+                          name="Valor Real"
+                          dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey={() => selectedIndicator.target_value} 
+                          stroke="#10b981" 
+                          strokeWidth={2}
+                          strokeDasharray="5 5"
+                          name="Meta"
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Recent Updates and Statistics */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Últimas Atualizações</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {getIndicatorHistory(selectedIndicator.id).slice(0, 5).map((update) => (
+                        <div key={update.id} className="border-l-4 border-primary/20 pl-4 py-2 bg-muted/30 rounded-r">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <p className="font-medium">{update.value.toLocaleString('pt-BR')} {selectedIndicator.unit}</p>
+                              {update.comments && (
+                                <p className="text-sm text-muted-foreground mt-1">{update.comments}</p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(update.period_date).toLocaleDateString('pt-BR')}
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-500">{new Date(update.period_date).toLocaleDateString('pt-BR')}</p>
-                        </div>
-                      </div>
+                      ))}
+                      {getIndicatorHistory(selectedIndicator.id).length === 0 && (
+                        <p className="text-center text-muted-foreground py-4">
+                          Nenhuma atualização registrada ainda.
+                        </p>
+                      )}
                     </div>
-                  ))}
-                </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Estatísticas</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {(() => {
+                        const history = getIndicatorHistory(selectedIndicator.id);
+                        const values = history.map(h => h.value);
+                        const bestValue = values.length > 0 ? Math.max(...values) : 0;
+                        const worstValue = values.length > 0 ? Math.min(...values) : 0;
+                        const averageValue = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+                        const trend = values.length >= 2 ? 
+                          (values[values.length - 1] > values[values.length - 2] ? 'up' : 
+                           values[values.length - 1] < values[values.length - 2] ? 'down' : 'stable') : 'stable';
+                        
+                        return (
+                          <>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">Melhor Resultado:</span>
+                              <span className="font-semibold text-green-600">
+                                {bestValue.toLocaleString('pt-BR')} {selectedIndicator.unit}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">Pior Resultado:</span>
+                              <span className="font-semibold text-red-600">
+                                {worstValue.toLocaleString('pt-BR')} {selectedIndicator.unit}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">Média:</span>
+                              <span className="font-semibold">
+                                {averageValue.toLocaleString('pt-BR')} {selectedIndicator.unit}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">Tendência:</span>
+                              <Badge variant={trend === 'up' ? 'default' : trend === 'down' ? 'destructive' : 'secondary'}>
+                                {trend === 'up' ? (
+                                  <>
+                                    <TrendingUp className="w-3 h-3 mr-1" />
+                                    Crescente
+                                  </>
+                                ) : trend === 'down' ? (
+                                  <>
+                                    <TrendingDown className="w-3 h-3 mr-1" />
+                                    Decrescente
+                                  </>
+                                ) : (
+                                  <>
+                                    <Target className="w-3 h-3 mr-1" />
+                                    Estável
+                                  </>
+                                )}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">Total de Registros:</span>
+                              <span className="font-semibold">{history.length}</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           )}
