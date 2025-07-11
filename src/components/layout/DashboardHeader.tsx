@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Bell, Search, User, Settings, LogOut, Brain } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -56,13 +56,17 @@ export const DashboardHeader: React.FC = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                Meu Perfil
+              <DropdownMenuItem asChild>
+                <Link to="/profile" className="flex items-center w-full">
+                  <User className="mr-2 h-4 w-4" />
+                  Meu Perfil
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                Configurações
+              <DropdownMenuItem asChild>
+                <Link to="/settings" className="flex items-center w-full">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Configurações
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut} className="text-red-600">

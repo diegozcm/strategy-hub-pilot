@@ -15,6 +15,7 @@ import { ReportsPage } from "@/components/reports/ReportsPage";
 import { AICopilotPage } from "@/components/ai/AICopilotPage";
 import TeamPage from "@/components/team/TeamPage";
 import { SettingsPage } from "@/components/settings/SettingsPage";
+import { ProfilePage } from "@/components/profile/ProfilePage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="reports" element={<ReportsPage />} />
               <Route path="ai-copilot" element={<AICopilotPage />} />
               <Route path="team" element={<TeamPage />} />
+              <Route path="profile" element={<ProfilePage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
