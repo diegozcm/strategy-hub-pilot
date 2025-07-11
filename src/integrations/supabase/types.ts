@@ -14,6 +14,106 @@ export type Database = {
   }
   public: {
     Tables: {
+      indicator_values: {
+        Row: {
+          comments: string | null
+          created_at: string | null
+          id: string
+          indicator_id: string | null
+          period_date: string
+          recorded_by: string
+          value: number
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          indicator_id?: string | null
+          period_date: string
+          recorded_by: string
+          value: number
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          indicator_id?: string | null
+          period_date?: string
+          recorded_by?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indicator_values_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "indicators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      indicators: {
+        Row: {
+          category: string
+          created_at: string | null
+          current_value: number | null
+          description: string | null
+          id: string
+          last_updated: string | null
+          measurement_frequency: string
+          name: string
+          owner_id: string
+          priority: string | null
+          status: string | null
+          strategic_objective_id: string | null
+          target_value: number
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          current_value?: number | null
+          description?: string | null
+          id?: string
+          last_updated?: string | null
+          measurement_frequency: string
+          name: string
+          owner_id: string
+          priority?: string | null
+          status?: string | null
+          strategic_objective_id?: string | null
+          target_value: number
+          unit: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          current_value?: number | null
+          description?: string | null
+          id?: string
+          last_updated?: string | null
+          measurement_frequency?: string
+          name?: string
+          owner_id?: string
+          priority?: string | null
+          status?: string | null
+          strategic_objective_id?: string | null
+          target_value?: number
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indicators_strategic_objective_id_fkey"
+            columns: ["strategic_objective_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       key_results: {
         Row: {
           created_at: string
