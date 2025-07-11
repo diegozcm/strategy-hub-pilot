@@ -3,6 +3,7 @@ import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
+import { AICopilotWidget } from './AICopilotWidget';
 
 interface ObjectiveWithMetrics {
   id: string;
@@ -260,34 +261,9 @@ export const DashboardHome: React.FC = () => {
           </Card>
         </div>
 
-        {/* Quick Actions */}
+        {/* AI Copilot */}
         <div className="space-y-6">
-          
-
-          {/* AI Insights */}
-          <Card className="border-blue-200 bg-blue-50">
-            <CardHeader>
-              <CardTitle className="text-blue-900">💡 Insights de IA</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="bg-white p-3 rounded-lg border border-blue-200">
-                <p className="text-sm text-blue-900 font-medium">
-                  3 projetos estão atrasados
-                </p>
-                <p className="text-xs text-blue-700 mt-1">
-                  Considere redistribuir recursos ou ajustar prazos
-                </p>
-              </div>
-              <div className="bg-white p-3 rounded-lg border border-blue-200">
-                <p className="text-sm text-blue-900 font-medium">
-                  Equipe de marketing superou meta
-                </p>
-                <p className="text-xs text-blue-700 mt-1">
-                  Oportunidade de aumentar investimentos
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <AICopilotWidget />
         </div>
       </div>
     </div>;
