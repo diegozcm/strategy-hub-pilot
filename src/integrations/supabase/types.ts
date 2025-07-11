@@ -14,7 +14,148 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      key_results: {
+        Row: {
+          created_at: string
+          current_value: number | null
+          description: string | null
+          due_date: string | null
+          id: string
+          objective_id: string
+          owner_id: string
+          status: string
+          target_value: number
+          title: string
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          objective_id: string
+          owner_id: string
+          status?: string
+          target_value: number
+          title: string
+          unit?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          objective_id?: string
+          owner_id?: string
+          status?: string
+          target_value?: number
+          title?: string
+          unit?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "key_results_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategic_objectives: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          owner_id: string
+          plan_id: string
+          progress: number | null
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          owner_id: string
+          plan_id: string
+          progress?: number | null
+          status?: string
+          target_date?: string | null
+          title: string
+          updated_at?: string
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          owner_id?: string
+          plan_id?: string
+          progress?: number | null
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_objectives_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategic_plans: {
+        Row: {
+          created_at: string
+          id: string
+          mission: string | null
+          name: string
+          organization_id: string
+          period_end: string
+          period_start: string
+          status: string
+          updated_at: string
+          vision: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mission?: string | null
+          name: string
+          organization_id: string
+          period_end: string
+          period_start: string
+          status?: string
+          updated_at?: string
+          vision?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mission?: string | null
+          name?: string
+          organization_id?: string
+          period_end?: string
+          period_start?: string
+          status?: string
+          updated_at?: string
+          vision?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

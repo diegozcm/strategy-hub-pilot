@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
+import { ObjectivesPage } from "@/components/objectives/ObjectivesPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -29,7 +30,7 @@ const App = () => (
               </ProtectedRoute>
             }>
               <Route path="dashboard" element={<DashboardHome />} />
-              <Route path="objectives" element={<div className="p-8 text-center text-gray-500">Objetivos - Em desenvolvimento</div>} />
+              <Route path="objectives" element={<ObjectivesPage />} />
               <Route path="projects" element={<div className="p-8 text-center text-gray-500">Projetos - Em desenvolvimento</div>} />
               <Route path="indicators" element={<div className="p-8 text-center text-gray-500">Indicadores - Em desenvolvimento</div>} />
               <Route path="reports" element={<div className="p-8 text-center text-gray-500">Relatórios - Em desenvolvimento</div>} />
