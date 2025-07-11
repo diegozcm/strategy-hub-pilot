@@ -356,6 +356,8 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          monthly_actual: Json | null
+          monthly_targets: Json | null
           objective_id: string
           owner_id: string
           status: string
@@ -363,6 +365,8 @@ export type Database = {
           title: string
           unit: string
           updated_at: string
+          yearly_actual: number | null
+          yearly_target: number | null
         }
         Insert: {
           created_at?: string
@@ -370,6 +374,8 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          monthly_actual?: Json | null
+          monthly_targets?: Json | null
           objective_id: string
           owner_id: string
           status?: string
@@ -377,6 +383,8 @@ export type Database = {
           title: string
           unit?: string
           updated_at?: string
+          yearly_actual?: number | null
+          yearly_target?: number | null
         }
         Update: {
           created_at?: string
@@ -384,6 +392,8 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          monthly_actual?: Json | null
+          monthly_targets?: Json | null
           objective_id?: string
           owner_id?: string
           status?: string
@@ -391,6 +401,8 @@ export type Database = {
           title?: string
           unit?: string
           updated_at?: string
+          yearly_actual?: number | null
+          yearly_target?: number | null
         }
         Relationships: [
           {
@@ -615,6 +627,8 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          monthly_actual: Json | null
+          monthly_targets: Json | null
           owner_id: string
           plan_id: string
           progress: number | null
@@ -623,11 +637,15 @@ export type Database = {
           title: string
           updated_at: string
           weight: number | null
+          yearly_actual: number | null
+          yearly_target: number | null
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
+          monthly_actual?: Json | null
+          monthly_targets?: Json | null
           owner_id: string
           plan_id: string
           progress?: number | null
@@ -636,11 +654,15 @@ export type Database = {
           title: string
           updated_at?: string
           weight?: number | null
+          yearly_actual?: number | null
+          yearly_target?: number | null
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
+          monthly_actual?: Json | null
+          monthly_targets?: Json | null
           owner_id?: string
           plan_id?: string
           progress?: number | null
@@ -649,6 +671,8 @@ export type Database = {
           title?: string
           updated_at?: string
           weight?: number | null
+          yearly_actual?: number | null
+          yearly_target?: number | null
         }
         Relationships: [
           {
@@ -784,6 +808,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_achievement_percentage: {
+        Args: { actual: number; target: number }
+        Returns: number
+      }
+      get_monthly_objective_achievement: {
+        Args: { objective_id: string; target_month: string }
+        Returns: {
+          objective_title: string
+          monthly_target: number
+          monthly_actual: number
+          monthly_percentage: number
+          yearly_target: number
+          yearly_actual: number
+          yearly_percentage: number
+        }[]
+      }
       has_role: {
         Args: {
           _user_id: string
