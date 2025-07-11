@@ -11,7 +11,8 @@ import {
   ChevronRight,
   Zap,
   TrendingUp,
-  Activity
+  Activity,
+  Brain
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Projetos', href: '/projects', icon: Briefcase },
   { name: 'Indicadores', href: '/indicators', icon: TrendingUp },
   { name: 'Relatórios', href: '/reports', icon: Activity },
+  { name: 'Copiloto IA', href: '/ai-copilot', icon: Brain },
   { name: 'Equipe', href: '/team', icon: Users },
 ];
 

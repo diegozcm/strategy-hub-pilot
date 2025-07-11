@@ -14,6 +14,241 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_analytics: {
+        Row: {
+          created_at: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_chat_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          message_type: string | null
+          metadata: Json | null
+          role: string
+          session_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          message_type?: string | null
+          metadata?: Json | null
+          role: string
+          session_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          message_type?: string | null
+          metadata?: Json | null
+          role?: string
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_chat_messages_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_chat_sessions: {
+        Row: {
+          created_at: string | null
+          id: string
+          session_title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          session_title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          session_title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_insights: {
+        Row: {
+          actionable: boolean | null
+          category: string
+          confidence_score: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          insight_type: string
+          metadata: Json | null
+          related_entity_id: string | null
+          related_entity_type: string | null
+          severity: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          actionable?: boolean | null
+          category: string
+          confidence_score?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          insight_type: string
+          metadata?: Json | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          severity?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          actionable?: boolean | null
+          category?: string
+          confidence_score?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          insight_type?: string
+          metadata?: Json | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          severity?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_recommendations: {
+        Row: {
+          action_type: string
+          assigned_to: string | null
+          created_at: string | null
+          deadline: string | null
+          description: string | null
+          effort_required: string | null
+          estimated_impact: string | null
+          feedback: string | null
+          id: string
+          insight_id: string | null
+          priority: string | null
+          status: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          action_type: string
+          assigned_to?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          description?: string | null
+          effort_required?: string | null
+          estimated_impact?: string | null
+          feedback?: string | null
+          id?: string
+          insight_id?: string | null
+          priority?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          action_type?: string
+          assigned_to?: string | null
+          created_at?: string | null
+          deadline?: string | null
+          description?: string | null
+          effort_required?: string | null
+          estimated_impact?: string | null
+          feedback?: string | null
+          id?: string
+          insight_id?: string | null
+          priority?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_recommendations_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: false
+            referencedRelation: "ai_insights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_user_preferences: {
+        Row: {
+          auto_dismiss_low_priority: boolean | null
+          created_at: string | null
+          id: string
+          insight_categories: string[] | null
+          min_confidence_score: number | null
+          notification_frequency: string | null
+          preferences: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_dismiss_low_priority?: boolean | null
+          created_at?: string | null
+          id?: string
+          insight_categories?: string[] | null
+          min_confidence_score?: number | null
+          notification_frequency?: string | null
+          preferences?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_dismiss_low_priority?: boolean | null
+          created_at?: string | null
+          id?: string
+          insight_categories?: string[] | null
+          min_confidence_score?: number | null
+          notification_frequency?: string | null
+          preferences?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       indicator_values: {
         Row: {
           comments: string | null

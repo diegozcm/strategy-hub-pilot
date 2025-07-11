@@ -12,6 +12,7 @@ import { ObjectivesPage } from "@/components/objectives/ObjectivesPage";
 import { ProjectsPage } from "@/components/projects/ProjectsPage";
 import { IndicatorsPage } from "@/components/indicators/IndicatorsPage";
 import { ReportsPage } from "@/components/reports/ReportsPage";
+import { AICopilotPage } from "@/components/ai/AICopilotPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="indicators" element={<IndicatorsPage />} />
               <Route path="reports" element={<ReportsPage />} />
+              <Route path="ai-copilot" element={<AICopilotPage />} />
               <Route path="team" element={<div className="p-8 text-center text-gray-500">Equipe - Em desenvolvimento</div>} />
               <Route path="settings" element={<div className="p-8 text-center text-gray-500">Configurações - Em desenvolvimento</div>} />
             </Route>
