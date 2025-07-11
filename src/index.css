@@ -36,9 +36,6 @@ All colors MUST be HSL.
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
 
-    --header-primary: 201 100% 61%;
-    --header-gradient: linear-gradient(135deg, hsl(201 100% 61%), hsl(201 90% 55%));
-
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
