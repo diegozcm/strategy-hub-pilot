@@ -16,31 +16,6 @@ interface ObjectiveWithMetrics {
   target_date: string;
 }
 
-const stats = [{
-  title: 'Objetivos Ativos',
-  value: '12',
-  change: '+2',
-  changeType: 'positive',
-  icon: Target,
-  color: 'text-blue-600',
-  bgColor: 'bg-blue-50'
-}, {
-  title: 'Projetos em Andamento',
-  value: '8',
-  change: '+1',
-  changeType: 'positive',
-  icon: Briefcase,
-  color: 'text-green-600',
-  bgColor: 'bg-green-50'
-}, {
-  title: 'KRs no Prazo',
-  value: '85%',
-  change: '-5%',
-  changeType: 'negative',
-  icon: TrendingUp,
-  color: 'text-orange-600',
-  bgColor: 'bg-orange-50'
-}];
 
 const getDynamicStats = (overallScore: number, objectivesCount: number) => [
   {
