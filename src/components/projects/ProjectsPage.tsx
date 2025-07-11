@@ -55,7 +55,7 @@ export const ProjectsPage: React.FC = () => {
   const [plans, setPlans] = useState<StrategicPlan[]>([]);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>('all');
-  const [selectedProject, setSelectedProject] = useState<string>('');
+  const [selectedProject, setSelectedProject] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
@@ -302,10 +302,10 @@ export const ProjectsPage: React.FC = () => {
   };
 
   const tasksByStatus = {
-    todo: tasks.filter(t => t.status === 'todo' && (selectedProject ? t.project_id === selectedProject : true)),
-    in_progress: tasks.filter(t => t.status === 'in_progress' && (selectedProject ? t.project_id === selectedProject : true)),
-    review: tasks.filter(t => t.status === 'review' && (selectedProject ? t.project_id === selectedProject : true)),
-    done: tasks.filter(t => t.status === 'done' && (selectedProject ? t.project_id === selectedProject : true))
+    todo: tasks.filter(t => t.status === 'todo' && (selectedProject === 'all' ? true : t.project_id === selectedProject)),
+    in_progress: tasks.filter(t => t.status === 'in_progress' && (selectedProject === 'all' ? true : t.project_id === selectedProject)),
+    review: tasks.filter(t => t.status === 'review' && (selectedProject === 'all' ? true : t.project_id === selectedProject)),
+    done: tasks.filter(t => t.status === 'done' && (selectedProject === 'all' ? true : t.project_id === selectedProject))
   };
 
   if (loading) {
@@ -720,7 +720,7 @@ export const ProjectsPage: React.FC = () => {
                 <SelectValue placeholder="Filtrar por projeto" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os projetos</SelectItem>
+                <SelectItem value="all">Todos os projetos</SelectItem>
                 {projects.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.name}
