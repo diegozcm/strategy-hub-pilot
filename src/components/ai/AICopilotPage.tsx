@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Brain, MessageSquare, Lightbulb, TrendingUp, AlertTriangle, CheckCircle, Settings, Zap, Target, Users, BarChart3, Clock, ArrowRight, X, Send, Sparkles } from 'lucide-react';
+import { Bot, Brain, MessageSquare, Lightbulb, TrendingUp, AlertTriangle, CheckCircle, Settings, Zap, Target, Users, BarChart3, Clock, ArrowRight, X, Send, Sparkles, History, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,6 +29,8 @@ interface AIInsight {
   metadata?: any;
   created_at: string;
   updated_at: string;
+  confirmed_at?: string;
+  confirmed_by?: string;
 }
 
 interface AIRecommendation {
@@ -78,6 +80,8 @@ export const AICopilotPage: React.FC = () => {
   const [messageInput, setMessageInput] = useState('');
   const [selectedInsight, setSelectedInsight] = useState<AIInsight | null>(null);
   const [isInsightModalOpen, setIsInsightModalOpen] = useState(false);
+  const [generatingInsights, setGeneratingInsights] = useState(false);
+  const [confirmedInsights, setConfirmedInsights] = useState<AIInsight[]>([]);
 
   useEffect(() => {
     loadAIData();
@@ -87,15 +91,17 @@ export const AICopilotPage: React.FC = () => {
     try {
       setLoading(true);
       
-      const [insightsRes, recommendationsRes, chatSessionsRes] = await Promise.all([
-        supabase.from('ai_insights').select('*').order('created_at', { ascending: false }),
+      const [insightsRes, recommendationsRes, chatSessionsRes, confirmedInsightsRes] = await Promise.all([
+        supabase.from('ai_insights').select('*').eq('status', 'active').order('created_at', { ascending: false }),
         supabase.from('ai_recommendations').select('*').order('created_at', { ascending: false }),
-        supabase.from('ai_chat_sessions').select('*').order('updated_at', { ascending: false }).limit(10)
+        supabase.from('ai_chat_sessions').select('*').order('updated_at', { ascending: false }).limit(10),
+        supabase.from('ai_insights').select('*').neq('status', 'active').order('confirmed_at', { ascending: false }).limit(50)
       ]);
 
       if (insightsRes.data) setInsights(insightsRes.data);
       if (recommendationsRes.data) setRecommendations(recommendationsRes.data);
       if (chatSessionsRes.data) setChatSessions(chatSessionsRes.data);
+      if (confirmedInsightsRes.data) setConfirmedInsights(confirmedInsightsRes.data);
 
     } catch (error) {
       console.error('Error loading AI data:', error);
@@ -223,86 +229,102 @@ export const AICopilotPage: React.FC = () => {
     await loadChatMessages(session.id);
   };
 
-  const generateSampleInsights = async () => {
+  const generateRealInsights = async () => {
     if (!user) return;
 
-    const sampleInsights = [
-      {
-        insight_type: 'risk',
-        category: 'projects',
-        title: 'Projeto com Alta Probabilidade de Atraso',
-        description: 'O projeto "Sistema de CRM" está 15% atrasado e com tendência de aumento do atraso baseado no padrão atual de execução.',
-        severity: 'high',
-        confidence_score: 0.87,
-        related_entity_type: 'project',
-        actionable: true
-      },
-      {
-        insight_type: 'opportunity',
-        category: 'indicators',
-        title: 'Indicador Superando Expectativas',
-        description: 'O indicador "Taxa de Conversão" está 20% acima da meta e pode permitir ajuste de metas mais ambiciosas.',
-        severity: 'low',
-        confidence_score: 0.92,
-        related_entity_type: 'indicator',
-        actionable: true
-      },
-      {
-        insight_type: 'pattern',
-        category: 'people',
-        title: 'Padrão de Sobrecarga Detectado',
-        description: 'Análise indica que 3 colaboradores estão consistentemente acima da capacidade ideal de trabalho.',
-        severity: 'medium',
-        confidence_score: 0.78,
-        actionable: true
-      }
-    ];
-
     try {
-      for (const insight of sampleInsights) {
-        await supabase.from('ai_insights').insert([{
-          ...insight,
-          user_id: user.id
-        }]);
-      }
+      setGeneratingInsights(true);
       
+      const response = await supabase.functions.invoke('generate-insights', {
+        body: { user_id: user.id }
+      });
+
+      if (response.error) throw response.error;
+
       await loadAIData();
       toast({
         title: "Sucesso",
-        description: "Insights de exemplo gerados com sucesso!",
+        description: `${response.data.insights_generated} insights gerados baseados nos seus dados!`,
       });
     } catch (error) {
       console.error('Error generating insights:', error);
       toast({
         title: "Erro",
-        description: "Erro ao gerar insights de exemplo.",
+        description: "Erro ao gerar insights reais.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingInsights(false);
+    }
+  };
+
+  const confirmInsight = async (insightId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('ai_insights')
+        .update({ 
+          status: 'acknowledged',
+          confirmed_at: new Date().toISOString(),
+          confirmed_by: user.id
+        })
+        .eq('id', insightId);
+
+      if (error) throw error;
+
+      // Move insight from active to confirmed
+      const insight = insights.find(i => i.id === insightId);
+      if (insight) {
+        setInsights(prev => prev.filter(i => i.id !== insightId));
+        setConfirmedInsights(prev => [{ ...insight, status: 'acknowledged' }, ...prev]);
+      }
+
+      toast({
+        title: "Insight Confirmado",
+        description: "O insight foi confirmado e movido para o histórico.",
+      });
+    } catch (error) {
+      console.error('Error confirming insight:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao confirmar insight.",
         variant: "destructive",
       });
     }
   };
 
-  const updateInsightStatus = async (insightId: string, newStatus: string) => {
+  const dismissInsight = async (insightId: string) => {
+    if (!user) return;
+
     try {
       const { error } = await supabase
         .from('ai_insights')
-        .update({ status: newStatus })
+        .update({ 
+          status: 'dismissed',
+          confirmed_at: new Date().toISOString(),
+          confirmed_by: user.id
+        })
         .eq('id', insightId);
 
       if (error) throw error;
 
-      setInsights(prev => prev.map(insight =>
-        insight.id === insightId ? { ...insight, status: newStatus } : insight
-      ));
+      // Move insight from active to confirmed
+      const insight = insights.find(i => i.id === insightId);
+      if (insight) {
+        setInsights(prev => prev.filter(i => i.id !== insightId));
+        setConfirmedInsights(prev => [{ ...insight, status: 'dismissed' }, ...prev]);
+      }
 
       toast({
-        title: "Sucesso",
-        description: "Status do insight atualizado!",
+        title: "Insight Descartado",
+        description: "O insight foi descartado e movido para o histórico.",
       });
     } catch (error) {
-      console.error('Error updating insight:', error);
+      console.error('Error dismissing insight:', error);
       toast({
         title: "Erro",
-        description: "Erro ao atualizar insight.",
+        description: "Erro ao descartar insight.",
         variant: "destructive",
       });
     }
@@ -394,9 +416,17 @@ export const AICopilotPage: React.FC = () => {
           <p className="text-muted-foreground mt-2">Assistente inteligente para execução estratégica</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" onClick={generateSampleInsights}>
-            <Sparkles className="w-4 h-4 mr-2" />
-            Gerar Insights Demo
+          <Button 
+            variant="outline" 
+            onClick={generateRealInsights}
+            disabled={generatingInsights}
+          >
+            {generatingInsights ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Brain className="w-4 h-4 mr-2" />
+            )}
+            Analisar Dados
           </Button>
           <Button>
             <Settings className="w-4 h-4 mr-2" />
@@ -470,8 +500,9 @@ export const AICopilotPage: React.FC = () => {
 
       {/* Main Content */}
       <Tabs defaultValue="insights" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="insights">Insights</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="insights">Insights Ativos</TabsTrigger>
+          <TabsTrigger value="history">Histórico</TabsTrigger>
           <TabsTrigger value="chat">Chat Assistente</TabsTrigger>
           <TabsTrigger value="recommendations">Recomendações</TabsTrigger>
         </TabsList>
@@ -537,7 +568,7 @@ export const AICopilotPage: React.FC = () => {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              updateInsightStatus(insight.id, 'acknowledged');
+                              confirmInsight(insight.id);
                             }}
                           >
                             <CheckCircle className="w-3 h-3 mr-1" />
@@ -548,7 +579,7 @@ export const AICopilotPage: React.FC = () => {
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              updateInsightStatus(insight.id, 'dismissed');
+                              dismissInsight(insight.id);
                             }}
                           >
                             <X className="w-3 h-3 mr-1" />
@@ -571,10 +602,82 @@ export const AICopilotPage: React.FC = () => {
                 <p className="text-muted-foreground mb-4">
                   A IA está analisando seus dados para gerar insights inteligentes.
                 </p>
-                <Button onClick={generateSampleInsights}>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Gerar Insights Demo
+                <Button onClick={generateRealInsights} disabled={generatingInsights}>
+                  {generatingInsights ? (
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Brain className="w-4 h-4 mr-2" />
+                  )}
+                  Analisar Dados
                 </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {confirmedInsights.map((insight) => {
+              const SeverityIcon = getSeverityIcon(insight.severity);
+              const TypeIcon = getInsightTypeIcon(insight.insight_type);
+              const CategoryIcon = getCategoryIcon(insight.category);
+
+              return (
+                <Card key={insight.id} className="hover:shadow-lg transition-shadow cursor-pointer opacity-75" 
+                      onClick={() => { setSelectedInsight(insight); setIsInsightModalOpen(true); }}>
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-2">
+                        <TypeIcon className="w-5 h-5 text-primary" />
+                        <Badge variant="outline" className="text-xs">
+                          {insight.insight_type}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={insight.status === 'acknowledged' ? 'default' : 'secondary'}>
+                          {insight.status === 'acknowledged' ? 'Confirmado' : 'Descartado'}
+                        </Badge>
+                        <Badge variant={getSeverityColor(insight.severity)}>
+                          <SeverityIcon className="w-3 h-3 mr-1" />
+                          {insight.severity}
+                        </Badge>
+                      </div>
+                    </div>
+                    <CardTitle className="text-lg leading-tight">{insight.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">{insight.description}</p>
+                    
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Categoria:</span>
+                        <div className="flex items-center gap-1">
+                          <CategoryIcon className="w-3 h-3" />
+                          <span className="text-sm font-medium">{insight.category}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Processado em:</span>
+                        <span className="text-sm font-medium">
+                          {insight.confirmed_at ? new Date(insight.confirmed_at).toLocaleDateString('pt-BR') : 'N/A'}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {confirmedInsights.length === 0 && (
+            <Card className="text-center py-12">
+              <CardContent>
+                <History className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Nenhum insight no histórico</h3>
+                <p className="text-muted-foreground">
+                  Insights confirmados ou descartados aparecerão aqui.
+                </p>
               </CardContent>
             </Card>
           )}
@@ -839,15 +942,15 @@ export const AICopilotPage: React.FC = () => {
 
               <div className="flex gap-2">
                 <Button 
-                  onClick={() => updateInsightStatus(selectedInsight.id, 'acknowledged')}
+                  onClick={() => confirmInsight(selectedInsight.id)}
                   disabled={selectedInsight.status !== 'active'}
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  Marcar como Lido
+                  Confirmar
                 </Button>
                 <Button 
                   variant="outline"
-                  onClick={() => updateInsightStatus(selectedInsight.id, 'dismissed')}
+                  onClick={() => dismissInsight(selectedInsight.id)}
                   disabled={selectedInsight.status !== 'active'}
                 >
                   <X className="w-4 h-4 mr-2" />

@@ -105,6 +105,8 @@ export type Database = {
           actionable: boolean | null
           category: string
           confidence_score: number | null
+          confirmed_at: string | null
+          confirmed_by: string | null
           created_at: string | null
           description: string | null
           id: string
@@ -122,6 +124,8 @@ export type Database = {
           actionable?: boolean | null
           category: string
           confidence_score?: number | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -139,6 +143,8 @@ export type Database = {
           actionable?: boolean | null
           category?: string
           confidence_score?: number | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -808,6 +814,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      analyze_user_data: {
+        Args: { target_user_id: string }
+        Returns: Json
+      }
       calculate_achievement_percentage: {
         Args: { actual: number; target: number }
         Returns: number
