@@ -11,6 +11,7 @@ import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { ObjectivesPage } from "@/components/objectives/ObjectivesPage";
 import { ProjectsPage } from "@/components/projects/ProjectsPage";
 import { IndicatorsPage } from "@/components/indicators/IndicatorsPage";
+import { ReportsPage } from "@/components/reports/ReportsPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -35,7 +36,7 @@ const App = () => (
               <Route path="objectives" element={<ObjectivesPage />} />
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="indicators" element={<IndicatorsPage />} />
-              <Route path="reports" element={<div className="p-8 text-center text-gray-500">Relatórios - Em desenvolvimento</div>} />
+              <Route path="reports" element={<ReportsPage />} />
               <Route path="team" element={<div className="p-8 text-center text-gray-500">Equipe - Em desenvolvimento</div>} />
               <Route path="settings" element={<div className="p-8 text-center text-gray-500">Configurações - Em desenvolvimento</div>} />
             </Route>
