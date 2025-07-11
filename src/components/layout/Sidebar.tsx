@@ -39,7 +39,7 @@ export const Sidebar: React.FC = () => {
       collapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="px-4 lg:px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           {!collapsed && (
             <div className="flex items-center space-x-2">
