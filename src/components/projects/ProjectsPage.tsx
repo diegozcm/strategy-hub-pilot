@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause } from 'lucide-react';
+import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause, Edit3, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,6 +61,9 @@ export const ProjectsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+  const [isProjectDetailOpen, setIsProjectDetailOpen] = useState(false);
+  const [selectedProjectForDetail, setSelectedProjectForDetail] = useState<StrategicProject | null>(null);
+  const [editingProject, setEditingProject] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Form states
@@ -81,6 +84,17 @@ export const ProjectsPage: React.FC = () => {
     due_date: '',
     priority: 'medium',
     estimated_hours: ''
+  });
+
+  const [editProjectForm, setEditProjectForm] = useState({
+    name: '',
+    description: '',
+    plan_id: '',
+    start_date: '',
+    end_date: '',
+    budget: '',
+    priority: 'medium',
+    status: 'planning'
   });
 
   useEffect(() => {
@@ -236,6 +250,68 @@ export const ProjectsPage: React.FC = () => {
       toast({
         title: "Erro",
         description: "Erro ao atualizar tarefa.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openProjectDetail = (project: StrategicProject) => {
+    setSelectedProjectForDetail(project);
+    setEditProjectForm({
+      name: project.name,
+      description: project.description || '',
+      plan_id: project.plan_id || '',
+      start_date: project.start_date || '',
+      end_date: project.end_date || '',
+      budget: project.budget?.toString() || '',
+      priority: project.priority || 'medium',
+      status: project.status
+    });
+    setEditingProject(false);
+    setIsProjectDetailOpen(true);
+  };
+
+  const updateProject = async () => {
+    if (!selectedProjectForDetail) return;
+
+    try {
+      const { error } = await supabase
+        .from('strategic_projects')
+        .update({
+          name: editProjectForm.name,
+          description: editProjectForm.description,
+          plan_id: editProjectForm.plan_id,
+          start_date: editProjectForm.start_date || null,
+          end_date: editProjectForm.end_date || null,
+          budget: editProjectForm.budget ? parseFloat(editProjectForm.budget) : null,
+          priority: editProjectForm.priority,
+          status: editProjectForm.status
+        })
+        .eq('id', selectedProjectForDetail.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setProjects(prev => prev.map(project => 
+        project.id === selectedProjectForDetail.id 
+          ? { 
+              ...project, 
+              ...editProjectForm,
+              budget: editProjectForm.budget ? parseFloat(editProjectForm.budget) : project.budget
+            }
+          : project
+      ));
+
+      setEditingProject(false);
+      toast({
+        title: "Sucesso",
+        description: "Projeto atualizado com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error updating project:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar projeto. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -559,6 +635,264 @@ export const ProjectsPage: React.FC = () => {
               </div>
             </DialogContent>
           </Dialog>
+
+          {/* Project Detail/Edit Modal */}
+          <Dialog open={isProjectDetailOpen} onOpenChange={setIsProjectDetailOpen}>
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <DialogTitle>
+                      {editingProject ? 'Editando Projeto' : 'Detalhes do Projeto'}
+                    </DialogTitle>
+                    <DialogDescription>
+                      {editingProject ? 'Modifique as informações do projeto' : 'Visualize e edite as informações do projeto'}
+                    </DialogDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditingProject(!editingProject)}
+                  >
+                    <Edit3 className="w-4 h-4 mr-2" />
+                    {editingProject ? 'Cancelar' : 'Editar'}
+                  </Button>
+                </div>
+              </DialogHeader>
+
+              {selectedProjectForDetail && (
+                <div className="space-y-6">
+                  {/* Basic Information */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="edit-project-name">Nome do Projeto</Label>
+                      {editingProject ? (
+                        <Input
+                          id="edit-project-name"
+                          value={editProjectForm.name}
+                          onChange={(e) => setEditProjectForm(prev => ({ ...prev, name: e.target.value }))}
+                        />
+                      ) : (
+                        <p className="mt-1 text-sm text-gray-900">{selectedProjectForDetail.name}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-project-description">Descrição</Label>
+                      {editingProject ? (
+                        <Textarea
+                          id="edit-project-description"
+                          value={editProjectForm.description}
+                          onChange={(e) => setEditProjectForm(prev => ({ ...prev, description: e.target.value }))}
+                          rows={3}
+                        />
+                      ) : (
+                        <p className="mt-1 text-sm text-gray-900">{selectedProjectForDetail.description || 'Sem descrição'}</p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="edit-project-plan">Plano Estratégico</Label>
+                        {editingProject ? (
+                          <Select 
+                            value={editProjectForm.plan_id} 
+                            onValueChange={(value) => setEditProjectForm(prev => ({ ...prev, plan_id: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um plano" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {plans.map((plan) => (
+                                <SelectItem key={plan.id} value={plan.id}>
+                                  {plan.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <p className="mt-1 text-sm text-gray-900">
+                            {plans.find(p => p.id === selectedProjectForDetail.plan_id)?.name || 'Sem plano'}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="edit-project-status">Status</Label>
+                        {editingProject ? (
+                          <Select 
+                            value={editProjectForm.status} 
+                            onValueChange={(value) => setEditProjectForm(prev => ({ ...prev, status: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="planning">Planejamento</SelectItem>
+                              <SelectItem value="active">Ativo</SelectItem>
+                              <SelectItem value="on_hold">Em Pausa</SelectItem>
+                              <SelectItem value="completed">Concluído</SelectItem>
+                              <SelectItem value="cancelled">Cancelado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="mt-1">
+                            <Badge className={`${getStatusColor(selectedProjectForDetail.status)} text-white`}>
+                              {getStatusText(selectedProjectForDetail.status)}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="edit-project-priority">Prioridade</Label>
+                        {editingProject ? (
+                          <Select 
+                            value={editProjectForm.priority} 
+                            onValueChange={(value) => setEditProjectForm(prev => ({ ...prev, priority: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Baixa</SelectItem>
+                              <SelectItem value="medium">Média</SelectItem>
+                              <SelectItem value="high">Alta</SelectItem>
+                              <SelectItem value="critical">Crítica</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="mt-1">
+                            <Badge className={`${getPriorityColor(selectedProjectForDetail.priority || 'medium')} text-white`}>
+                              {getPriorityText(selectedProjectForDetail.priority || 'medium')}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="edit-project-budget">Orçamento (R$)</Label>
+                        {editingProject ? (
+                          <Input
+                            id="edit-project-budget"
+                            type="number"
+                            step="0.01"
+                            value={editProjectForm.budget}
+                            onChange={(e) => setEditProjectForm(prev => ({ ...prev, budget: e.target.value }))}
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm text-gray-900">
+                            {selectedProjectForDetail.budget 
+                              ? `R$ ${selectedProjectForDetail.budget.toLocaleString('pt-BR')}`
+                              : 'Não definido'
+                            }
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="edit-project-start-date">Data de Início</Label>
+                        {editingProject ? (
+                          <Input
+                            id="edit-project-start-date"
+                            type="date"
+                            value={editProjectForm.start_date}
+                            onChange={(e) => setEditProjectForm(prev => ({ ...prev, start_date: e.target.value }))}
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm text-gray-900">
+                            {selectedProjectForDetail.start_date 
+                              ? new Date(selectedProjectForDetail.start_date).toLocaleDateString('pt-BR')
+                              : 'Não definida'
+                            }
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="edit-project-end-date">Data de Término</Label>
+                        {editingProject ? (
+                          <Input
+                            id="edit-project-end-date"
+                            type="date"
+                            value={editProjectForm.end_date}
+                            onChange={(e) => setEditProjectForm(prev => ({ ...prev, end_date: e.target.value }))}
+                          />
+                        ) : (
+                          <p className="mt-1 text-sm text-gray-900">
+                            {selectedProjectForDetail.end_date 
+                              ? new Date(selectedProjectForDetail.end_date).toLocaleDateString('pt-BR')
+                              : 'Não definida'
+                            }
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Project Tasks Summary */}
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Tarefas do Projeto</h3>
+                    <div className="space-y-4">
+                      {getProjectTasks(selectedProjectForDetail.id).length === 0 ? (
+                        <p className="text-sm text-gray-500">Nenhuma tarefa encontrada para este projeto.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-3">
+                          {getProjectTasks(selectedProjectForDetail.id).map((task) => (
+                            <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  {getTaskStatusIcon(task.status)}
+                                  <span className="text-sm font-medium">{task.title}</span>
+                                  <Badge variant="outline" className={`${getPriorityColor(task.priority)} text-white border-0 text-xs`}>
+                                    {getPriorityText(task.priority)}
+                                  </Badge>
+                                </div>
+                                {task.description && (
+                                  <p className="text-xs text-gray-600 mt-1 ml-6">{task.description}</p>
+                                )}
+                              </div>
+                              <div className="flex items-center space-x-4 text-xs text-gray-500">
+                                {task.estimated_hours && (
+                                  <div className="flex items-center">
+                                    <Clock className="w-3 h-3 mr-1" />
+                                    {task.estimated_hours}h
+                                  </div>
+                                )}
+                                {task.due_date && (
+                                  <div className="flex items-center">
+                                    <Calendar className="w-3 h-3 mr-1" />
+                                    {new Date(task.due_date).toLocaleDateString('pt-BR')}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  {editingProject && (
+                    <div className="flex justify-end space-x-2 border-t pt-6">
+                      <Button variant="outline" onClick={() => setEditingProject(false)}>
+                        Cancelar
+                      </Button>
+                      <Button onClick={updateProject}>
+                        <Save className="w-4 h-4 mr-2" />
+                        Salvar Alterações
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -647,7 +981,7 @@ export const ProjectsPage: React.FC = () => {
                 const taskProgress = projectTasks.length > 0 ? (completedTasks / projectTasks.length) * 100 : 0;
 
                 return (
-                  <Card key={project.id} className="hover:shadow-lg transition-shadow">
+                  <Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => openProjectDetail(project)}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
