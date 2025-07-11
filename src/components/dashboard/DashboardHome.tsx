@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
-import { AICopilotWidget } from './AICopilotWidget';
 
 interface ObjectiveWithMetrics {
   id: string;
@@ -207,9 +206,9 @@ export const DashboardHome: React.FC = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Objectives Progress */}
-        <div className="lg:col-span-2">
+        <div>
           <Card>
             <CardHeader>
               <CardTitle>Performance Mensal dos Objetivos</CardTitle>
@@ -245,36 +244,61 @@ export const DashboardHome: React.FC = () => {
                           <Table>
                             <TableHeader>
                               <TableRow>
-                                <TableHead className="w-24">Mês</TableHead>
-                                <TableHead className="text-center">Previsto</TableHead>
-                                <TableHead className="text-center">Realizado</TableHead>
-                                <TableHead className="text-center">% Atingimento</TableHead>
-                                <TableHead className="text-center">Status</TableHead>
+                                <TableHead className="w-32">Indicador</TableHead>
+                                {months.map((month) => (
+                                  <TableHead key={month.key} className="text-center min-w-20">
+                                    {month.name}
+                                    {month.key === currentMonth && <span className="block text-xs text-blue-600">(atual)</span>}
+                                  </TableHead>
+                                ))}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {months.map((month) => {
-                                const performance = getMonthlyPerformance(objective, month.key);
-                                const isCurrentMonth = month.key === currentMonth;
-                                
-                                return (
-                                  <TableRow key={month.key} className={isCurrentMonth ? "bg-blue-50" : ""}>
-                                    <TableCell className="font-medium">
-                                      {month.name}
-                                      {isCurrentMonth && <span className="ml-1 text-xs text-blue-600">(atual)</span>}
-                                    </TableCell>
-                                    <TableCell className="text-center">
+                              <TableRow>
+                                <TableCell className="font-medium bg-gray-50">Previsto</TableCell>
+                                {months.map((month) => {
+                                  const performance = getMonthlyPerformance(objective, month.key);
+                                  const isCurrentMonth = month.key === currentMonth;
+                                  return (
+                                    <TableCell key={month.key} className={`text-center ${isCurrentMonth ? "bg-blue-50" : ""}`}>
                                       {performance.target || '-'}
                                     </TableCell>
-                                    <TableCell className="text-center">
+                                  );
+                                })}
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="font-medium bg-gray-50">Realizado</TableCell>
+                                {months.map((month) => {
+                                  const performance = getMonthlyPerformance(objective, month.key);
+                                  const isCurrentMonth = month.key === currentMonth;
+                                  return (
+                                    <TableCell key={month.key} className={`text-center ${isCurrentMonth ? "bg-blue-50" : ""}`}>
                                       {performance.actual || '-'}
                                     </TableCell>
-                                    <TableCell className="text-center">
+                                  );
+                                })}
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="font-medium bg-gray-50">% Atingimento</TableCell>
+                                {months.map((month) => {
+                                  const performance = getMonthlyPerformance(objective, month.key);
+                                  const isCurrentMonth = month.key === currentMonth;
+                                  return (
+                                    <TableCell key={month.key} className={`text-center ${isCurrentMonth ? "bg-blue-50" : ""}`}>
                                       <span className={getStatusColor(performance.percentage)}>
                                         {performance.target > 0 ? `${performance.percentage}%` : '-'}
                                       </span>
                                     </TableCell>
-                                    <TableCell className="text-center">
+                                  );
+                                })}
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="font-medium bg-gray-50">Status</TableCell>
+                                {months.map((month) => {
+                                  const performance = getMonthlyPerformance(objective, month.key);
+                                  const isCurrentMonth = month.key === currentMonth;
+                                  return (
+                                    <TableCell key={month.key} className={`text-center ${isCurrentMonth ? "bg-blue-50" : ""}`}>
                                       {performance.target > 0 ? (
                                         <div className="flex justify-center">
                                           {getStatusIcon(performance.percentage)}
@@ -283,9 +307,9 @@ export const DashboardHome: React.FC = () => {
                                         <span className="text-gray-400">-</span>
                                       )}
                                     </TableCell>
-                                  </TableRow>
-                                );
-                              })}
+                                  );
+                                })}
+                              </TableRow>
                             </TableBody>
                           </Table>
                         </div>
@@ -314,11 +338,6 @@ export const DashboardHome: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </div>
-
-        {/* AI Copilot */}
-        <div className="space-y-6">
-          <AICopilotWidget />
         </div>
       </div>
     </div>;

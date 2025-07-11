@@ -271,7 +271,7 @@ export const AICopilotWidget: React.FC = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="grid grid-cols-2 gap-3 text-center">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Insights</p>
               <p className="text-lg font-bold text-blue-600">{insights.filter(i => i.status === 'active').length}</p>
@@ -279,12 +279,6 @@ export const AICopilotWidget: React.FC = () => {
             <div>
               <p className="text-sm font-medium text-muted-foreground">Críticos</p>
               <p className="text-lg font-bold text-red-600">{insights.filter(i => i.severity === 'high').length}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Confiança</p>
-              <p className="text-lg font-bold text-purple-600">
-                {insights.length > 0 ? Math.round((insights.reduce((acc, i) => acc + i.confidence_score, 0) / insights.length) * 100) : 0}%
-              </p>
             </div>
           </div>
         </CardContent>

@@ -23,12 +23,12 @@ const navigation = [
   { name: 'Projetos', href: '/projects', icon: Briefcase },
   { name: 'Indicadores', href: '/indicators', icon: TrendingUp },
   { name: 'Relatórios', href: '/reports', icon: Activity },
-  { name: 'Copiloto IA', href: '/ai-copilot', icon: Brain },
   { name: 'Equipe', href: '/team', icon: Users },
 ];
 
 const adminNavigation = [
   { name: 'Configurações', href: '/settings', icon: Settings },
+  { name: 'Copiloto IA', href: '/ai-copilot', icon: Brain },
 ];
 
 export const Sidebar: React.FC = () => {
