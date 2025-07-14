@@ -108,24 +108,6 @@ export const IndicatorsPage: React.FC = () => {
     loadData();
   }, []);
 
-  // Highlight key result if navigated from objectives
-  useEffect(() => {
-    const highlightId = localStorage.getItem('highlightKeyResult');
-    if (highlightId) {
-      setTimeout(() => {
-        const element = document.getElementById(`kr-${highlightId}`);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          element.style.boxShadow = '0 0 0 3px hsl(var(--primary))';
-          setTimeout(() => {
-            element.style.boxShadow = '';
-          }, 3000);
-        }
-      }, 500);
-      localStorage.removeItem('highlightKeyResult');
-    }
-  }, [keyResults]);
-
   const loadData = async () => {
     try {
       setLoading(true);
@@ -354,9 +336,6 @@ export const IndicatorsPage: React.FC = () => {
       // Update local state
       setKeyResults(prev => prev.filter(kr => kr.id !== selectedKeyResult.id));
       setKeyResultValues(prev => prev.filter(krv => krv.key_result_id !== selectedKeyResult.id));
-      
-      // Reload data to ensure consistency across the app
-      setTimeout(loadData, 500);
       
       setIsDeleteConfirmOpen(false);
       setSelectedKeyResult(null);
@@ -830,7 +809,7 @@ export const IndicatorsPage: React.FC = () => {
           const history = getKeyResultHistory(keyResult.id);
           
           return (
-            <Card key={keyResult.id} id={`kr-${keyResult.id}`} className="hover:shadow-lg transition-shadow">
+            <Card key={keyResult.id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
