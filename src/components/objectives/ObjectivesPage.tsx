@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X } from 'lucide-react';
+import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { AddKRModal } from '@/components/strategic-map/AddKRModal';
+import { KRMiniCard } from '@/components/strategic-map/KRMiniCard';
 
 interface StrategicPlan {
   id: string;
@@ -59,6 +62,8 @@ export const ObjectivesPage: React.FC = () => {
   const [selectedObjective, setSelectedObjective] = useState<StrategicObjective | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isAddKROpen, setIsAddKROpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   // Form states
   const [objectiveForm, setObjectiveForm] = useState({
@@ -280,6 +285,71 @@ export const ObjectivesPage: React.FC = () => {
       toast({
         title: "Erro",
         description: "Erro ao atualizar objetivo. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteObjective = async () => {
+    if (!selectedObjective) return;
+
+    try {
+      const { error } = await supabase
+        .from('strategic_objectives')
+        .delete()
+        .eq('id', selectedObjective.id);
+
+      if (error) throw error;
+
+      // Remove from objectives list
+      setObjectives(prev => prev.filter(obj => obj.id !== selectedObjective.id));
+      
+      // Close modals
+      setIsDeleteConfirmOpen(false);
+      closeDetailModal();
+      
+      toast({
+        title: "Sucesso",
+        description: "Objetivo excluído com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error deleting objective:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir objetivo. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const createKeyResult = async (krData: any) => {
+    if (!selectedObjective || !user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('key_results')
+        .insert([{
+          ...krData,
+          objective_id: selectedObjective.id,
+          owner_id: user.id
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add to key results list
+      setKeyResults(prev => [data, ...prev]);
+      
+      toast({
+        title: "Sucesso",
+        description: "Resultado-chave criado com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error creating key result:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar resultado-chave. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -675,14 +745,32 @@ export const ObjectivesPage: React.FC = () => {
                 </div>
                 <div className="flex gap-2">
                   {!isEditing ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Editar
-                    </Button>
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsAddKROpen(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Adicionar KR
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditing(true)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Editar
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setIsDeleteConfirmOpen(true)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Excluir
+                      </Button>
+                    </>
                   ) : (
                     <div className="flex gap-2">
                       <Button
@@ -878,6 +966,41 @@ export const ObjectivesPage: React.FC = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Add Key Result Modal */}
+      {selectedObjective && (
+        <AddKRModal
+          objectiveId={selectedObjective.id}
+          open={isAddKROpen}
+          onClose={() => setIsAddKROpen(false)}
+          onSave={async (krData) => {
+            await createKeyResult(krData);
+            setIsAddKROpen(false);
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o objetivo "{selectedObjective?.title}"?
+              Esta ação não pode ser desfeita e todos os resultados-chave associados também serão removidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={deleteObjective}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir Objetivo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
