@@ -731,7 +731,7 @@ export const ObjectivesPage: React.FC = () => {
       {/* Detail/Edit Modal */}
       {selectedObjective && (
         <Dialog open={isDetailModalOpen} onOpenChange={closeDetailModal}>
-          <DialogContent className="sm:max-w-2xl">
+          <DialogContent className="w-[95vw] max-w-2xl sm:w-full">
             <DialogHeader>
               <div className="flex items-center justify-between">
                 <div>
