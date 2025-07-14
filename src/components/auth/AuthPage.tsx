@@ -22,7 +22,7 @@ export const AuthPage: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      navigate('/app');
+      navigate('/dashboard');
     }
   }, [user, navigate]);
 
