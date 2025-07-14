@@ -22,9 +22,9 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
   { name: 'Mapa Estratégico', href: '/strategic-map', icon: Map },
   { name: 'Objetivos', href: '/objectives', icon: Target },
-  { name: 'Relatórios', href: '/reports', icon: Activity },
-  { name: 'Projetos', href: '/projects', icon: Briefcase },
   { name: 'Resultados Chave', href: '/indicators', icon: TrendingUp },
+  { name: 'Projetos', href: '/projects', icon: Briefcase },
+  { name: 'Relatórios', href: '/reports', icon: Activity },
   { name: 'Equipe', href: '/team', icon: Users },
 ];
 
