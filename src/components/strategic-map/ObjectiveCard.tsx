@@ -1,14 +1,20 @@
-import { MoreVertical, Target, Calendar, User } from 'lucide-react';
+import { useState } from 'react';
+import { MoreVertical, Target, Calendar, User, Plus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { StrategicObjective } from '@/types/strategic-map';
+import { StrategicObjective, KeyResult } from '@/types/strategic-map';
+import { KRMiniCard } from './KRMiniCard';
+import { AddKRModal } from './AddKRModal';
 
 interface ObjectiveCardProps {
   objective: StrategicObjective;
   compact?: boolean;
+  keyResults?: KeyResult[];
+  onAddKR?: (krData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<any>;
 }
 
 const getStatusBadge = (status: string) => {
@@ -22,8 +28,16 @@ const getStatusBadge = (status: string) => {
   return statusMap[status as keyof typeof statusMap] || { label: status, variant: 'secondary' as const };
 };
 
-export const ObjectiveCard = ({ objective, compact = false }: ObjectiveCardProps) => {
+export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onAddKR }: ObjectiveCardProps) => {
+  const [showKRForm, setShowKRForm] = useState(false);
   const statusInfo = getStatusBadge(objective.status);
+  
+  const handleAddKR = async (krData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => {
+    if (onAddKR) {
+      await onAddKR(krData);
+      setShowKRForm(false);
+    }
+  };
 
   if (compact) {
     return (
@@ -53,58 +67,114 @@ export const ObjectiveCard = ({ objective, compact = false }: ObjectiveCardProps
   }
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-primary" />
-            <h3 className="font-semibold text-sm">{objective.title}</h3>
+    <>
+      <Card className="hover:shadow-md transition-shadow">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-primary" />
+              <h3 className="font-semibold text-sm">{objective.title}</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              {onAddKR && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setShowKRForm(true)}
+                  className="h-6 text-xs px-2"
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  KR
+                </Button>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                    <MoreVertical className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>Editar</DropdownMenuItem>
+                  <DropdownMenuItem>Ver Detalhes</DropdownMenuItem>
+                  <DropdownMenuItem className="text-destructive">Excluir</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                <MoreVertical className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>Editar</DropdownMenuItem>
-              <DropdownMenuItem>Ver Detalhes</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">Excluir</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
 
-        {objective.description && (
-          <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
-            {objective.description}
-          </p>
-        )}
+          {objective.description && (
+            <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+              {objective.description}
+            </p>
+          )}
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <Badge variant={statusInfo.variant}>
-              {statusInfo.label}
-            </Badge>
-            <span className="font-medium">{objective.progress}%</span>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <Badge variant={statusInfo.variant}>
+                {statusInfo.label}
+              </Badge>
+              <span className="font-medium">{objective.progress}%</span>
+            </div>
+            <Progress value={objective.progress} className="h-2" />
           </div>
-          <Progress value={objective.progress} className="h-2" />
-        </div>
 
-        <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
-          {objective.responsible && (
-            <div className="flex items-center gap-1">
-              <User className="h-3 w-3" />
-              <span>{objective.responsible}</span>
+          <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+            {objective.responsible && (
+              <div className="flex items-center gap-1">
+                <User className="h-3 w-3" />
+                <span>{objective.responsible}</span>
+              </div>
+            )}
+            {objective.deadline && (
+              <div className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                <span>{new Date(objective.deadline).toLocaleDateString('pt-BR')}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Key Results Section */}
+          {!compact && onAddKR && (
+            <div className="border-t pt-3 mt-3">
+              <div className="flex justify-between items-center mb-3">
+                <Label className="text-sm font-medium">Resultados Chave</Label>
+                <Badge variant="secondary">{keyResults.length}</Badge>
+              </div>
+              
+              {keyResults.length === 0 ? (
+                <div className="text-center py-4 text-muted-foreground">
+                  <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Nenhum resultado chave cadastrado</p>
+                  <Button 
+                    variant="link" 
+                    size="sm"
+                    onClick={() => setShowKRForm(true)}
+                    className="mt-1"
+                  >
+                    Adicionar o primeiro KR
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {keyResults.map((kr) => (
+                    <KRMiniCard key={kr.id} keyResult={kr} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
-          {objective.deadline && (
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              <span>{new Date(objective.deadline).toLocaleDateString('pt-BR')}</span>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      {/* Modal para Adicionar Key Result */}
+      {showKRForm && onAddKR && (
+        <AddKRModal
+          objectiveId={objective.id}
+          open={showKRForm}
+          onClose={() => setShowKRForm(false)}
+          onSave={handleAddKR}
+        />
+      )}
+    </>
   );
 };

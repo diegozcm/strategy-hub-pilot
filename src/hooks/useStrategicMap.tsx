@@ -335,6 +335,112 @@ export const useStrategicMap = () => {
     }
   };
 
+  // Update pillar
+  const updatePillar = async (id: string, updates: Partial<StrategicPillar>) => {
+    try {
+      const { data, error } = await supabase
+        .from('strategic_pillars')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar pilar estratégico",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      setPillars(prev => prev.map(pillar => 
+        pillar.id === id ? data : pillar
+      ));
+      
+      toast({
+        title: "Sucesso",
+        description: "Pilar estratégico atualizado com sucesso",
+      });
+      return data;
+    } catch (error) {
+      console.error('Error updating pillar:', error);
+      return null;
+    }
+  };
+
+  // Delete pillar
+  const deletePillar = async (id: string) => {
+    // Check if pillar has objectives
+    const pillarObjectives = objectives.filter(obj => obj.pillar_id === id);
+    if (pillarObjectives.length > 0) {
+      toast({
+        title: "Erro",
+        description: "Não é possível excluir pilar com objetivos vinculados",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('strategic_pillars')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao excluir pilar estratégico",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      setPillars(prev => prev.filter(pillar => pillar.id !== id));
+      toast({
+        title: "Sucesso",
+        description: "Pilar estratégico excluído com sucesso",
+      });
+      return true;
+    } catch (error) {
+      console.error('Error deleting pillar:', error);
+      return false;
+    }
+  };
+
+  // Create key result
+  const createKeyResult = async (krData: Omit<KeyResult, 'id' | 'created_at' | 'updated_at'>) => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('key_results')
+        .insert([{ ...krData, owner_id: user.id }])
+        .select()
+        .single();
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao criar resultado chave",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      setKeyResults(prev => [...prev, data]);
+      toast({
+        title: "Sucesso",
+        description: "Resultado chave criado com sucesso",
+      });
+      return data;
+    } catch (error) {
+      console.error('Error creating key result:', error);
+      return null;
+    }
+  };
+
   return {
     loading,
     company,
@@ -345,7 +451,10 @@ export const useStrategicMap = () => {
     createCompany,
     updateCompany,
     createPillar,
+    updatePillar,
+    deletePillar,
     createObjective,
+    createKeyResult,
     calculateObjectiveProgress,
     calculatePillarProgress,
     refreshData: loadCompany

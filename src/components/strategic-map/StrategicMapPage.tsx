@@ -1,16 +1,20 @@
 import { useState } from 'react';
-import { Plus, Building2, Target, Users, TrendingUp, Lightbulb, Heart } from 'lucide-react';
+import { Plus, Building2, Target, Users, TrendingUp, Lightbulb, Heart, Edit, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { CompanySetupModal } from './CompanySetupModal';
 import { PillarFormModal } from './PillarFormModal';
 import { ObjectiveCard } from './ObjectiveCard';
 import { ObjectiveFormModal } from './ObjectiveFormModal';
+import { PillarEditModal } from './PillarEditModal';
+import { DeletePillarModal } from './DeletePillarModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { StrategicPillar } from '@/types/strategic-map';
 
 const defaultPillars = [
   { name: 'Econômico & Financeiro', color: '#22C55E', icon: TrendingUp },
@@ -30,7 +34,10 @@ export const StrategicMapPage = () => {
     createCompany,
     updateCompany,
     createPillar,
+    updatePillar,
+    deletePillar,
     createObjective,
+    createKeyResult,
     calculatePillarProgress
   } = useStrategicMap();
 
@@ -38,6 +45,8 @@ export const StrategicMapPage = () => {
   const [showPillarForm, setShowPillarForm] = useState(false);
   const [showObjectiveForm, setShowObjectiveForm] = useState(false);
   const [selectedPillarId, setSelectedPillarId] = useState<string>('');
+  const [editingPillar, setEditingPillar] = useState<StrategicPillar | null>(null);
+  const [deletingPillar, setDeletingPillar] = useState<StrategicPillar | null>(null);
 
   if (loading) {
     return (
@@ -192,13 +201,37 @@ export const StrategicMapPage = () => {
                     style={{ backgroundColor: pillar.color }}
                   />
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">{pillar.name}</CardTitle>
-                    {pillar.description && (
-                      <p className="text-sm text-muted-foreground">
-                        {pillar.description}
-                      </p>
-                    )}
-                    <div className="space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg">{pillar.name}</CardTitle>
+                        {pillar.description && (
+                          <p className="text-sm text-muted-foreground">
+                            {pillar.description}
+                          </p>
+                        )}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditingPillar(pillar)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => setDeletingPillar(pillar)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="space-y-2 mt-3">
                       <div className="flex items-center justify-between text-sm">
                         <span>Progresso</span>
                         <span className="font-medium">{progress}%</span>
@@ -216,13 +249,18 @@ export const StrategicMapPage = () => {
                     
                     {pillarObjectives.length > 0 ? (
                       <div className="space-y-2">
-                        {pillarObjectives.slice(0, 3).map((objective) => (
-                          <ObjectiveCard
-                            key={objective.id}
-                            objective={objective}
-                            compact
-                          />
-                        ))}
+                        {pillarObjectives.slice(0, 3).map((objective) => {
+                          const objectiveKRs = keyResults.filter(kr => kr.objective_id === objective.id);
+                          return (
+                            <ObjectiveCard
+                              key={objective.id}
+                              objective={objective}
+                              compact
+                              keyResults={objectiveKRs}
+                              onAddKR={createKeyResult}
+                            />
+                          );
+                        })}
                         {pillarObjectives.length > 3 && (
                           <p className="text-xs text-muted-foreground text-center">
                             +{pillarObjectives.length - 3} objetivos adicionais
@@ -281,6 +319,25 @@ export const StrategicMapPage = () => {
         planId={company?.id || ''}
         onSave={createObjective}
       />
+
+      {editingPillar && (
+        <PillarEditModal
+          pillar={editingPillar}
+          open={!!editingPillar}
+          onClose={() => setEditingPillar(null)}
+          onSave={updatePillar}
+        />
+      )}
+
+      {deletingPillar && (
+        <DeletePillarModal
+          pillar={deletingPillar}
+          open={!!deletingPillar}
+          onClose={() => setDeletingPillar(null)}
+          onConfirm={deletePillar}
+          objectivesCount={objectives.filter(obj => obj.pillar_id === deletingPillar.id).length}
+        />
+      )}
     </div>
   );
 };
