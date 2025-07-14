@@ -291,12 +291,12 @@ export type Database = {
         }
         Relationships: []
       }
-      indicator_values: {
+      key_result_values: {
         Row: {
           comments: string | null
           created_at: string | null
           id: string
-          indicator_id: string | null
+          key_result_id: string | null
           period_date: string
           recorded_by: string
           value: number
@@ -305,7 +305,7 @@ export type Database = {
           comments?: string | null
           created_at?: string | null
           id?: string
-          indicator_id?: string | null
+          key_result_id?: string | null
           period_date: string
           recorded_by: string
           value: number
@@ -314,85 +314,24 @@ export type Database = {
           comments?: string | null
           created_at?: string | null
           id?: string
-          indicator_id?: string | null
+          key_result_id?: string | null
           period_date?: string
           recorded_by?: string
           value?: number
         }
         Relationships: [
           {
-            foreignKeyName: "indicator_values_indicator_id_fkey"
-            columns: ["indicator_id"]
+            foreignKeyName: "key_result_values_key_result_id_fkey"
+            columns: ["key_result_id"]
             isOneToOne: false
-            referencedRelation: "indicators"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      indicators: {
-        Row: {
-          category: string
-          created_at: string | null
-          current_value: number | null
-          description: string | null
-          id: string
-          last_updated: string | null
-          measurement_frequency: string
-          name: string
-          owner_id: string
-          priority: string | null
-          status: string | null
-          strategic_objective_id: string | null
-          target_value: number
-          unit: string
-          updated_at: string | null
-        }
-        Insert: {
-          category: string
-          created_at?: string | null
-          current_value?: number | null
-          description?: string | null
-          id?: string
-          last_updated?: string | null
-          measurement_frequency: string
-          name: string
-          owner_id: string
-          priority?: string | null
-          status?: string | null
-          strategic_objective_id?: string | null
-          target_value: number
-          unit: string
-          updated_at?: string | null
-        }
-        Update: {
-          category?: string
-          created_at?: string | null
-          current_value?: number | null
-          description?: string | null
-          id?: string
-          last_updated?: string | null
-          measurement_frequency?: string
-          name?: string
-          owner_id?: string
-          priority?: string | null
-          status?: string | null
-          strategic_objective_id?: string | null
-          target_value?: number
-          unit?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "indicators_strategic_objective_id_fkey"
-            columns: ["strategic_objective_id"]
-            isOneToOne: false
-            referencedRelation: "strategic_objectives"
+            referencedRelation: "key_results"
             referencedColumns: ["id"]
           },
         ]
       }
       key_results: {
         Row: {
+          category: string | null
           created_at: string
           current_value: number | null
           deadline: string | null
@@ -400,11 +339,13 @@ export type Database = {
           due_date: string | null
           frequency: string | null
           id: string
+          last_updated: string | null
           metric_type: string | null
           monthly_actual: Json | null
           monthly_targets: Json | null
           objective_id: string
           owner_id: string
+          priority: string | null
           responsible: string | null
           status: string
           target_value: number
@@ -415,6 +356,7 @@ export type Database = {
           yearly_target: number | null
         }
         Insert: {
+          category?: string | null
           created_at?: string
           current_value?: number | null
           deadline?: string | null
@@ -422,11 +364,13 @@ export type Database = {
           due_date?: string | null
           frequency?: string | null
           id?: string
+          last_updated?: string | null
           metric_type?: string | null
           monthly_actual?: Json | null
           monthly_targets?: Json | null
           objective_id: string
           owner_id: string
+          priority?: string | null
           responsible?: string | null
           status?: string
           target_value: number
@@ -437,6 +381,7 @@ export type Database = {
           yearly_target?: number | null
         }
         Update: {
+          category?: string | null
           created_at?: string
           current_value?: number | null
           deadline?: string | null
@@ -444,11 +389,13 @@ export type Database = {
           due_date?: string | null
           frequency?: string | null
           id?: string
+          last_updated?: string | null
           metric_type?: string | null
           monthly_actual?: Json | null
           monthly_targets?: Json | null
           objective_id?: string
           owner_id?: string
+          priority?: string | null
           responsible?: string | null
           status?: string
           target_value?: number

@@ -12,11 +12,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 interface DashboardData {
-  indicators: any[];
+  keyResults: any[];
   projects: any[];
   objectives: any[];
-  indicatorValues: any[];
-  keyResults: any[];
+  keyResultValues: any[];
   projectTasks: any[];
 }
 
@@ -31,11 +30,10 @@ export const ReportsPage: React.FC = () => {
   const { toast } = useToast();
   
   const [data, setData] = useState<DashboardData>({
-    indicators: [],
+    keyResults: [],
     projects: [],
     objectives: [],
-    indicatorValues: [],
-    keyResults: [],
+    keyResultValues: [],
     projectTasks: []
   });
   const [loading, setLoading] = useState(true);
@@ -51,27 +49,24 @@ export const ReportsPage: React.FC = () => {
       setLoading(true);
       
       const [
-        indicatorsRes,
+        keyResultsRes,
         projectsRes,
         objectivesRes,
-        indicatorValuesRes,
-        keyResultsRes,
+        keyResultValuesRes,
         projectTasksRes
       ] = await Promise.all([
-        supabase.from('indicators').select('*'),
+        supabase.from('key_results').select('*').not('category', 'is', null),
         supabase.from('strategic_projects').select('*'),
         supabase.from('strategic_objectives').select('*'),
-        supabase.from('indicator_values').select('*').order('period_date', { ascending: false }),
-        supabase.from('key_results').select('*'),
+        supabase.from('key_result_values').select('*').order('period_date', { ascending: false }),
         supabase.from('project_tasks').select('*')
       ]);
 
       setData({
-        indicators: indicatorsRes.data || [],
+        keyResults: keyResultsRes.data || [],
         projects: projectsRes.data || [],
         objectives: objectivesRes.data || [],
-        indicatorValues: indicatorValuesRes.data || [],
-        keyResults: keyResultsRes.data || [],
+        keyResultValues: keyResultValuesRes.data || [],
         projectTasks: projectTasksRes.data || []
       });
     } catch (error) {
@@ -88,14 +83,14 @@ export const ReportsPage: React.FC = () => {
 
   // Calculate KPIs
   const calculateKPIs = () => {
-    const totalIndicators = data.indicators.length;
-    const onTargetIndicators = data.indicators.filter(ind => {
-      const progress = ind.target_value > 0 ? (ind.current_value / ind.target_value) * 100 : 0;
+    const totalKeyResults = data.keyResults.length;
+    const onTargetKeyResults = data.keyResults.filter(kr => {
+      const progress = kr.target_value > 0 ? (kr.current_value / kr.target_value) * 100 : 0;
       return progress >= 90;
     }).length;
     
     const totalProjects = data.projects.length;
-    const activeProjects = data.projects.filter(p => p.status === 'active' || p.status === 'planning').length;
+    const activeProjects = data.projects.filter(p => p.status === 'in_progress' || p.status === 'planning').length;
     const completedProjects = data.projects.filter(p => p.status === 'completed').length;
     
     const totalObjectives = data.objectives.length;
@@ -105,9 +100,9 @@ export const ReportsPage: React.FC = () => {
     const completedTasks = data.projectTasks.filter(t => t.status === 'done').length;
 
     return {
-      totalIndicators,
-      onTargetIndicators,
-      indicatorsSuccessRate: totalIndicators > 0 ? (onTargetIndicators / totalIndicators) * 100 : 0,
+      totalKeyResults,
+      onTargetKeyResults,
+      keyResultsSuccessRate: totalKeyResults > 0 ? (onTargetKeyResults / totalKeyResults) * 100 : 0,
       totalProjects,
       activeProjects,
       completedProjects,
@@ -122,9 +117,9 @@ export const ReportsPage: React.FC = () => {
   };
 
   // Chart data generators
-  const getIndicatorsByCategory = (): ChartData[] => {
-    const categories = data.indicators.reduce((acc, indicator) => {
-      const category = indicator.category || 'outros';
+  const getKeyResultsByCategory = (): ChartData[] => {
+    const categories = data.keyResults.reduce((acc, keyResult) => {
+      const category = keyResult.category || 'outros';
       acc[category] = (acc[category] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
@@ -154,10 +149,9 @@ export const ReportsPage: React.FC = () => {
 
     const statusNames = {
       planning: 'Planejamento',
-      active: 'Em Andamento',
+      in_progress: 'Em Andamento',
       completed: 'Concluído',
-      paused: 'Pausado',
-      cancelled: 'Cancelado'
+      suspended: 'Suspenso'
     };
 
     return Object.entries(statuses).map(([key, value]) => ({
@@ -167,7 +161,7 @@ export const ReportsPage: React.FC = () => {
     }));
   };
 
-  const getIndicatorTrends = () => {
+  const getKeyResultTrends = () => {
     const last6Months = Array.from({ length: 6 }, (_, i) => {
       const date = new Date();
       date.setMonth(date.getMonth() - i);
@@ -178,7 +172,7 @@ export const ReportsPage: React.FC = () => {
     }).reverse();
 
     return last6Months.map(month => {
-      const monthValues = data.indicatorValues.filter(v => 
+      const monthValues = data.keyResultValues.filter(v => 
         v.period_date.startsWith(month.date)
       );
       
@@ -209,18 +203,17 @@ export const ReportsPage: React.FC = () => {
   const getColorForStatus = (status: string) => {
     const colors = {
       planning: '#f59e0b',
-      active: '#3b82f6',
+      in_progress: '#3b82f6',
       completed: '#10b981',
-      paused: '#6b7280',
-      cancelled: '#ef4444'
+      suspended: '#6b7280'
     };
     return colors[status as keyof typeof colors] || '#6b7280';
   };
 
   const kpis = calculateKPIs();
-  const indicatorsByCategory = getIndicatorsByCategory();
+  const keyResultsByCategory = getKeyResultsByCategory();
   const projectsByStatus = getProjectsByStatus();
-  const indicatorTrends = getIndicatorTrends();
+  const keyResultTrends = getKeyResultTrends();
 
   if (loading) {
     return (
@@ -280,13 +273,13 @@ export const ReportsPage: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Taxa de Sucesso - Indicadores</p>
+                <p className="text-sm font-medium text-muted-foreground">Taxa de Sucesso - KRs</p>
                 <div className="flex items-center space-x-2">
-                  <p className="text-2xl font-bold text-green-600">{Math.round(kpis.indicatorsSuccessRate)}%</p>
+                  <p className="text-2xl font-bold text-green-600">{Math.round(kpis.keyResultsSuccessRate)}%</p>
                   <TrendingUp className="w-4 h-4 text-green-600" />
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {kpis.onTargetIndicators} de {kpis.totalIndicators} no alvo
+                  {kpis.onTargetKeyResults} de {kpis.totalKeyResults} no alvo
                 </p>
               </div>
               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -361,25 +354,25 @@ export const ReportsPage: React.FC = () => {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="indicators">Indicadores</TabsTrigger>
+          <TabsTrigger value="key-results">Resultados-Chave</TabsTrigger>
           <TabsTrigger value="projects">Projetos</TabsTrigger>
           <TabsTrigger value="objectives">Objetivos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Indicators by Category */}
+            {/* Key Results by Category */}
             <Card>
               <CardHeader>
-                <CardTitle>Indicadores por Categoria</CardTitle>
-                <CardDescription>Distribuição dos indicadores cadastrados</CardDescription>
+                <CardTitle>Resultados-Chave por Categoria</CardTitle>
+                <CardDescription>Distribuição dos KRs cadastrados</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <RechartsPieChart>
                       <Pie
-                        data={indicatorsByCategory}
+                        data={keyResultsByCategory}
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
@@ -387,7 +380,7 @@ export const ReportsPage: React.FC = () => {
                         outerRadius={80}
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                       >
-                        {indicatorsByCategory.map((entry, index) => (
+                        {keyResultsByCategory.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -424,16 +417,16 @@ export const ReportsPage: React.FC = () => {
             </Card>
           </div>
 
-          {/* Indicator Trends */}
+          {/* Key Result Trends */}
           <Card>
             <CardHeader>
-              <CardTitle>Evolução dos Indicadores</CardTitle>
-              <CardDescription>Tendência dos valores dos indicadores nos últimos 6 meses</CardDescription>
+              <CardTitle>Evolução dos Resultados-Chave</CardTitle>
+              <CardDescription>Tendência dos valores dos KRs nos últimos 6 meses</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={indicatorTrends}>
+                  <AreaChart data={keyResultTrends}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
@@ -453,15 +446,15 @@ export const ReportsPage: React.FC = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="indicators" className="space-y-6">
+        <TabsContent value="key-results" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {data.indicators.map((indicator) => {
-              const progress = indicator.target_value > 0 ? (indicator.current_value / indicator.target_value) * 100 : 0;
+            {data.keyResults.map((keyResult) => {
+              const progress = keyResult.target_value > 0 ? (keyResult.current_value / keyResult.target_value) * 100 : 0;
               return (
-                <Card key={indicator.id}>
+                <Card key={keyResult.id}>
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-lg">{indicator.name}</CardTitle>
-                    <CardDescription>{indicator.description}</CardDescription>
+                    <CardTitle className="text-lg">{keyResult.title}</CardTitle>
+                    <CardDescription>{keyResult.description}</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
@@ -473,19 +466,19 @@ export const ReportsPage: React.FC = () => {
                       <div className="grid grid-cols-2 gap-4 text-center">
                         <div>
                           <p className="text-2xl font-bold text-primary">
-                            {indicator.current_value?.toLocaleString('pt-BR') || 0}
+                            {keyResult.current_value?.toLocaleString('pt-BR') || 0}
                           </p>
                           <p className="text-xs text-muted-foreground">Atual</p>
                         </div>
                         <div>
                           <p className="text-2xl font-bold text-green-600">
-                            {indicator.target_value?.toLocaleString('pt-BR') || 0}
+                            {keyResult.target_value?.toLocaleString('pt-BR') || 0}
                           </p>
                           <p className="text-xs text-muted-foreground">Meta</p>
                         </div>
                       </div>
                       <div className="flex justify-between items-center">
-                        <Badge variant="outline">{indicator.category}</Badge>
+                        <Badge variant="outline">{keyResult.category}</Badge>
                         <Badge variant={progress >= 90 ? 'default' : progress >= 70 ? 'secondary' : 'destructive'}>
                           {progress >= 90 ? 'No Alvo' : progress >= 70 ? 'Atenção' : 'Crítico'}
                         </Badge>
@@ -518,12 +511,12 @@ export const ReportsPage: React.FC = () => {
                         <span className="text-muted-foreground">Status:</span>
                         <Badge variant={
                           project.status === 'completed' ? 'default' : 
-                          project.status === 'active' ? 'secondary' : 
+                          project.status === 'in_progress' ? 'secondary' : 
                           'outline'
                         }>
                           {project.status === 'completed' ? 'Concluído' :
-                           project.status === 'active' ? 'Ativo' :
-                           project.status === 'paused' ? 'Pausado' :
+                           project.status === 'in_progress' ? 'Em Progresso' :
+                           project.status === 'suspended' ? 'Suspenso' :
                            'Planejamento'}
                         </Badge>
                       </div>

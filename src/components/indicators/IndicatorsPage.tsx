@@ -15,25 +15,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
-interface Indicator {
+interface KeyResult {
   id: string;
-  name: string;
+  title: string;
   description: string;
   category: string;
   unit: string;
   target_value: number;
   current_value: number;
-  measurement_frequency: string;
+  frequency: string;
   owner_id: string;
   status: string;
   priority: string;
   last_updated: string;
   created_at: string;
+  objective_id: string;
 }
 
-interface IndicatorValue {
+interface KeyResultValue {
   id: string;
-  indicator_id: string;
+  key_result_id: string;
   value: number;
   period_date: string;
   comments: string;
@@ -51,8 +52,8 @@ export const IndicatorsPage: React.FC = () => {
   const { toast } = useToast();
   
   // State management
-  const [indicators, setIndicators] = useState<Indicator[]>([]);
-  const [indicatorValues, setIndicatorValues] = useState<IndicatorValue[]>([]);
+  const [keyResults, setKeyResults] = useState<KeyResult[]>([]);
+  const [keyResultValues, setKeyResultValues] = useState<KeyResultValue[]>([]);
   const [objectives, setObjectives] = useState<StrategicObjective[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -64,18 +65,18 @@ export const IndicatorsPage: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [selectedIndicator, setSelectedIndicator] = useState<Indicator | null>(null);
+  const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
   
   // Form states
   const [formData, setFormData] = useState({
-    name: '',
+    title: '',
     description: '',
     category: '',
     unit: '',
     target_value: '',
-    measurement_frequency: '',
+    frequency: '',
     priority: 'medium',
-    strategic_objective_id: ''
+    objective_id: ''
   });
   
   const [updateData, setUpdateData] = useState({
@@ -94,23 +95,24 @@ export const IndicatorsPage: React.FC = () => {
     try {
       setLoading(true);
       
-      // Load indicators
-      const { data: indicatorsData, error: indicatorsError } = await supabase
-        .from('indicators')
+      // Load key results with categories
+      const { data: keyResultsData, error: keyResultsError } = await supabase
+        .from('key_results')
         .select('*')
+        .not('category', 'is', null)
         .order('created_at', { ascending: false });
 
-      if (indicatorsError) throw indicatorsError;
-      setIndicators(indicatorsData || []);
+      if (keyResultsError) throw keyResultsError;
+      setKeyResults(keyResultsData || []);
 
-      // Load indicator values
+      // Load key result values
       const { data: valuesData, error: valuesError } = await supabase
-        .from('indicator_values')
+        .from('key_result_values')
         .select('*')
         .order('period_date', { ascending: false });
 
       if (valuesError) throw valuesError;
-      setIndicatorValues(valuesData || []);
+      setKeyResultValues(valuesData || []);
 
       // Load strategic objectives
       const { data: objectivesData, error: objectivesError } = await supabase
@@ -133,7 +135,7 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
-  const handleCreateIndicator = async (e: React.FormEvent) => {
+  const handleCreateKeyResult = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
 
@@ -141,39 +143,41 @@ export const IndicatorsPage: React.FC = () => {
       setIsSubmitting(true);
       
       const { data, error } = await supabase
-        .from('indicators')
+        .from('key_results')
         .insert([{
           ...formData,
           target_value: parseFloat(formData.target_value),
-          owner_id: user.id
+          owner_id: user.id,
+          current_value: 0,
+          last_updated: new Date().toISOString()
         }])
         .select()
         .single();
 
       if (error) throw error;
 
-      setIndicators(prev => [data, ...prev]);
+      setKeyResults(prev => [data, ...prev]);
       setFormData({
-        name: '',
+        title: '',
         description: '',
         category: '',
         unit: '',
         target_value: '',
-        measurement_frequency: '',
+        frequency: '',
         priority: 'medium',
-        strategic_objective_id: ''
+        objective_id: ''
       });
       setIsAddModalOpen(false);
       
       toast({
         title: "Sucesso",
-        description: "Indicador criado com sucesso!",
+        description: "Resultado-chave criado com sucesso!",
       });
     } catch (error) {
-      console.error('Error creating indicator:', error);
+      console.error('Error creating key result:', error);
       toast({
         title: "Erro",
-        description: "Erro ao criar indicador. Tente novamente.",
+        description: "Erro ao criar resultado-chave. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -183,16 +187,16 @@ export const IndicatorsPage: React.FC = () => {
 
   const handleUpdateValue = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !selectedIndicator) return;
+    if (!user || !selectedKeyResult) return;
 
     try {
       setIsSubmitting(true);
       
       // Insert new value record
       const { data: valueData, error: valueError } = await supabase
-        .from('indicator_values')
+        .from('key_result_values')
         .insert([{
-          indicator_id: selectedIndicator.id,
+          key_result_id: selectedKeyResult.id,
           value: parseFloat(updateData.value),
           period_date: updateData.period_date,
           comments: updateData.comments,
@@ -203,24 +207,24 @@ export const IndicatorsPage: React.FC = () => {
 
       if (valueError) throw valueError;
 
-      // Update current value in indicator
+      // Update current value in key result
       const { error: updateError } = await supabase
-        .from('indicators')
+        .from('key_results')
         .update({ 
           current_value: parseFloat(updateData.value),
           last_updated: new Date().toISOString()
         })
-        .eq('id', selectedIndicator.id);
+        .eq('id', selectedKeyResult.id);
 
       if (updateError) throw updateError;
 
       // Update local state
-      setIndicators(prev => prev.map(ind => 
-        ind.id === selectedIndicator.id 
-          ? { ...ind, current_value: parseFloat(updateData.value) }
-          : ind
+      setKeyResults(prev => prev.map(kr => 
+        kr.id === selectedKeyResult.id 
+          ? { ...kr, current_value: parseFloat(updateData.value) }
+          : kr
       ));
-      setIndicatorValues(prev => [valueData, ...prev]);
+      setKeyResultValues(prev => [valueData, ...prev]);
       
       setUpdateData({
         value: '',
@@ -228,7 +232,7 @@ export const IndicatorsPage: React.FC = () => {
         comments: ''
       });
       setIsUpdateModalOpen(false);
-      setSelectedIndicator(null);
+      setSelectedKeyResult(null);
       
       toast({
         title: "Sucesso",
@@ -246,9 +250,9 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
-  const calculateProgress = (indicator: Indicator) => {
-    if (indicator.target_value === 0) return 0;
-    return Math.min(Math.round((indicator.current_value / indicator.target_value) * 100), 100);
+  const calculateProgress = (keyResult: KeyResult) => {
+    if (keyResult.target_value === 0) return 0;
+    return Math.min(Math.round((keyResult.current_value / keyResult.target_value) * 100), 100);
   };
 
   const getProgressColor = (progress: number) => {
@@ -308,39 +312,49 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
-  const getIndicatorHistory = (indicatorId: string) => {
-    return indicatorValues
-      .filter(value => value.indicator_id === indicatorId)
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'not_started': return 'Não Iniciado';
+      case 'in_progress': return 'Em Progresso';
+      case 'completed': return 'Completo';
+      case 'suspended': return 'Suspenso';
+      default: return status;
+    }
+  };
+
+  const getKeyResultHistory = (keyResultId: string) => {
+    return keyResultValues
+      .filter(value => value.key_result_id === keyResultId)
       .slice(0, 10)
       .reverse();
   };
 
-  const filteredIndicators = indicators.filter(indicator => {
-    const matchesSearch = indicator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         indicator.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || indicator.category === categoryFilter;
-    const matchesStatus = statusFilter === 'all' || indicator.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || indicator.priority === priorityFilter;
+  const filteredKeyResults = keyResults.filter(keyResult => {
+    const matchesSearch = keyResult.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         keyResult.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = categoryFilter === 'all' || keyResult.category === categoryFilter;
+    const matchesStatus = statusFilter === 'all' || keyResult.status === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || keyResult.priority === priorityFilter;
     
     return matchesSearch && matchesCategory && matchesStatus && matchesPriority;
   });
 
   // Calculate summary statistics
-  const totalIndicators = indicators.length;
-  const onTargetIndicators = indicators.filter(ind => calculateProgress(ind) >= 90).length;
-  const atRiskIndicators = indicators.filter(ind => {
-    const progress = calculateProgress(ind);
+  const totalKeyResults = keyResults.length;
+  const onTargetKeyResults = keyResults.filter(kr => calculateProgress(kr) >= 90).length;
+  const atRiskKeyResults = keyResults.filter(kr => {
+    const progress = calculateProgress(kr);
     return progress >= 70 && progress < 90;
   }).length;
-  const criticalIndicators = indicators.filter(ind => calculateProgress(ind) < 70).length;
+  const criticalKeyResults = keyResults.filter(kr => calculateProgress(kr) < 70).length;
 
   if (loading) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Indicadores</h1>
-            <p className="text-gray-600 mt-2">Acompanhe KPIs e métricas estratégicas</p>
+            <h1 className="text-3xl font-bold">Resultados-Chave</h1>
+            <p className="text-muted-foreground mt-2">Acompanhe KRs e métricas estratégicas</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -368,8 +382,8 @@ export const IndicatorsPage: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Indicadores & KPIs</h1>
-          <p className="text-muted-foreground mt-2">Acompanhe KPIs e métricas estratégicas em tempo real</p>
+          <h1 className="text-3xl font-bold">Resultados-Chave</h1>
+          <p className="text-muted-foreground mt-2">Acompanhe KRs e métricas estratégicas em tempo real</p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline">
@@ -380,25 +394,25 @@ export const IndicatorsPage: React.FC = () => {
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
-                Novo Indicador
+                Novo Resultado-Chave
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Novo Indicador</DialogTitle>
+                <DialogTitle>Novo Resultado-Chave</DialogTitle>
                 <DialogDescription>
-                  Cadastre um novo indicador estratégico para acompanhamento
+                  Cadastre um novo resultado-chave estratégico para acompanhamento
                 </DialogDescription>
               </DialogHeader>
-              <form onSubmit={handleCreateIndicator} className="space-y-4">
+              <form onSubmit={handleCreateKeyResult} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">Nome do Indicador *</Label>
+                    <Label htmlFor="title">Nome do Resultado-Chave *</Label>
                     <Input
-                      id="name"
+                      id="title"
                       placeholder="Ex: Taxa de Conversão"
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      value={formData.title}
+                      onChange={(e) => setFormData({...formData, title: e.target.value})}
                       required
                     />
                   </div>
@@ -423,7 +437,7 @@ export const IndicatorsPage: React.FC = () => {
                   <Label htmlFor="description">Descrição</Label>
                   <Textarea
                     id="description"
-                    placeholder="Descreva o que este indicador mede..."
+                    placeholder="Descreva o que este resultado-chave mede..."
                     value={formData.description}
                     onChange={(e) => setFormData({...formData, description: e.target.value})}
                     rows={3}
@@ -452,7 +466,7 @@ export const IndicatorsPage: React.FC = () => {
                       <SelectContent>
                         <SelectItem value="%">% (Percentual)</SelectItem>
                         <SelectItem value="R$">R$ (Real)</SelectItem>
-                        <SelectItem value="unidades">Unidades</SelectItem>
+                        <SelectItem value="number">Número</SelectItem>
                         <SelectItem value="dias">Dias</SelectItem>
                         <SelectItem value="score">Score</SelectItem>
                       </SelectContent>
@@ -460,7 +474,7 @@ export const IndicatorsPage: React.FC = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="frequency">Frequência *</Label>
-                    <Select value={formData.measurement_frequency} onValueChange={(value) => setFormData({...formData, measurement_frequency: value})}>
+                    <Select value={formData.frequency} onValueChange={(value) => setFormData({...formData, frequency: value})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Frequência" />
                       </SelectTrigger>
@@ -477,8 +491,8 @@ export const IndicatorsPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="objective">Objetivo Estratégico</Label>
-                    <Select value={formData.strategic_objective_id} onValueChange={(value) => setFormData({...formData, strategic_objective_id: value})}>
+                    <Label htmlFor="objective">Objetivo Estratégico *</Label>
+                    <Select value={formData.objective_id} onValueChange={(value) => setFormData({...formData, objective_id: value})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um objetivo" />
                       </SelectTrigger>
@@ -511,7 +525,7 @@ export const IndicatorsPage: React.FC = () => {
                     Cancelar
                   </Button>
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? 'Salvando...' : 'Salvar Indicador'}
+                    {isSubmitting ? 'Salvando...' : 'Salvar Resultado-Chave'}
                   </Button>
                 </DialogFooter>
               </form>
@@ -526,9 +540,9 @@ export const IndicatorsPage: React.FC = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total de Indicadores</p>
+                <p className="text-sm font-medium text-muted-foreground">Total de Resultados-Chave</p>
                 <div className="flex items-center space-x-2">
-                  <p className="text-2xl font-bold">{totalIndicators}</p>
+                  <p className="text-2xl font-bold">{totalKeyResults}</p>
                 </div>
               </div>
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -544,9 +558,9 @@ export const IndicatorsPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">No Alvo</p>
                 <div className="flex items-center space-x-2">
-                  <p className="text-2xl font-bold text-green-600">{onTargetIndicators}</p>
+                  <p className="text-2xl font-bold text-green-600">{onTargetKeyResults}</p>
                   <span className="text-sm text-muted-foreground">
-                    ({totalIndicators > 0 ? Math.round((onTargetIndicators / totalIndicators) * 100) : 0}%)
+                    ({totalKeyResults > 0 ? Math.round((onTargetKeyResults / totalKeyResults) * 100) : 0}%)
                   </span>
                 </div>
               </div>
@@ -563,9 +577,9 @@ export const IndicatorsPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Em Atenção</p>
                 <div className="flex items-center space-x-2">
-                  <p className="text-2xl font-bold text-yellow-600">{atRiskIndicators}</p>
+                  <p className="text-2xl font-bold text-yellow-600">{atRiskKeyResults}</p>
                   <span className="text-sm text-muted-foreground">
-                    ({totalIndicators > 0 ? Math.round((atRiskIndicators / totalIndicators) * 100) : 0}%)
+                    ({totalKeyResults > 0 ? Math.round((atRiskKeyResults / totalKeyResults) * 100) : 0}%)
                   </span>
                 </div>
               </div>
@@ -582,9 +596,9 @@ export const IndicatorsPage: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Críticos</p>
                 <div className="flex items-center space-x-2">
-                  <p className="text-2xl font-bold text-red-600">{criticalIndicators}</p>
+                  <p className="text-2xl font-bold text-red-600">{criticalKeyResults}</p>
                   <span className="text-sm text-muted-foreground">
-                    ({totalIndicators > 0 ? Math.round((criticalIndicators / totalIndicators) * 100) : 0}%)
+                    ({totalKeyResults > 0 ? Math.round((criticalKeyResults / totalKeyResults) * 100) : 0}%)
                   </span>
                 </div>
               </div>
@@ -604,7 +618,7 @@ export const IndicatorsPage: React.FC = () => {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Buscar indicadores..."
+                  placeholder="Buscar resultados-chave..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -630,9 +644,10 @@ export const IndicatorsPage: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="active">Ativo</SelectItem>
-              <SelectItem value="paused">Pausado</SelectItem>
+              <SelectItem value="not_started">Não Iniciado</SelectItem>
+              <SelectItem value="in_progress">Em Progresso</SelectItem>
               <SelectItem value="completed">Completo</SelectItem>
+              <SelectItem value="suspended">Suspenso</SelectItem>
             </SelectContent>
           </Select>
           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
@@ -664,25 +679,25 @@ export const IndicatorsPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Indicators Grid */}
+      {/* Key Results Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredIndicators.map((indicator) => {
-          const progress = calculateProgress(indicator);
-          const history = getIndicatorHistory(indicator.id);
+        {filteredKeyResults.map((keyResult) => {
+          const progress = calculateProgress(keyResult);
+          const history = getKeyResultHistory(keyResult.id);
           
           return (
-            <Card key={indicator.id} className="hover:shadow-lg transition-shadow">
+            <Card key={keyResult.id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{getCategoryIcon(indicator.category)}</span>
-                      <CardTitle className="text-lg leading-tight">{indicator.name}</CardTitle>
+                      <span className="text-lg">{getCategoryIcon(keyResult.category)}</span>
+                      <CardTitle className="text-lg leading-tight">{keyResult.title}</CardTitle>
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{indicator.description}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{keyResult.description}</p>
                   </div>
-                  <Badge variant={getPriorityColor(indicator.priority)}>
-                    {getPriorityText(indicator.priority)}
+                  <Badge variant={getPriorityColor(keyResult.priority)}>
+                    {getPriorityText(keyResult.priority)}
                   </Badge>
                 </div>
               </CardHeader>
@@ -690,7 +705,7 @@ export const IndicatorsPage: React.FC = () => {
                 {/* Progress */}
                 <div className="mb-4">
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-gray-600">Progresso</span>
+                    <span className="text-muted-foreground">Progresso</span>
                     <span className={`font-semibold ${getProgressColor(progress)}`}>
                       {progress}% do objetivo
                     </span>
@@ -702,15 +717,15 @@ export const IndicatorsPage: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="text-center p-3 bg-primary/5 rounded-lg border">
                     <p className="text-2xl font-bold text-primary">
-                      {indicator.current_value.toLocaleString('pt-BR')}
+                      {keyResult.current_value.toLocaleString('pt-BR')}
                     </p>
-                    <p className="text-xs text-muted-foreground">Atual {indicator.unit}</p>
+                    <p className="text-xs text-muted-foreground">Atual {keyResult.unit}</p>
                   </div>
                   <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
                     <p className="text-2xl font-bold text-green-600">
-                      {indicator.target_value.toLocaleString('pt-BR')}
+                      {keyResult.target_value.toLocaleString('pt-BR')}
                     </p>
-                    <p className="text-xs text-muted-foreground">Meta {indicator.unit}</p>
+                    <p className="text-xs text-muted-foreground">Meta {keyResult.unit}</p>
                   </div>
                 </div>
 
@@ -718,22 +733,22 @@ export const IndicatorsPage: React.FC = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Categoria:</span>
-                    <Badge variant="outline">{getCategoryText(indicator.category)}</Badge>
+                    <Badge variant="outline">{getCategoryText(keyResult.category)}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Frequência:</span>
-                    <span className="font-medium">{getFrequencyText(indicator.measurement_frequency)}</span>
+                    <span className="font-medium">{getFrequencyText(keyResult.frequency)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Status:</span>
-                    <Badge variant={indicator.status === 'active' ? 'default' : 'secondary'}>
-                      {indicator.status === 'active' ? 'Ativo' : indicator.status === 'paused' ? 'Pausado' : 'Completo'}
+                    <Badge variant={keyResult.status === 'in_progress' ? 'default' : 'secondary'}>
+                      {getStatusText(keyResult.status)}
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Última atualização:</span>
                     <span className="text-xs font-medium">
-                      {new Date(indicator.last_updated).toLocaleDateString('pt-BR')}
+                      {new Date(keyResult.last_updated).toLocaleDateString('pt-BR')}
                     </span>
                   </div>
                 </div>
@@ -744,7 +759,7 @@ export const IndicatorsPage: React.FC = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setSelectedIndicator(indicator);
+                      setSelectedKeyResult(keyResult);
                       setIsUpdateModalOpen(true);
                     }}
                     className="flex-1"
@@ -756,7 +771,7 @@ export const IndicatorsPage: React.FC = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setSelectedIndicator(indicator);
+                      setSelectedKeyResult(keyResult);
                       setIsDetailsModalOpen(true);
                     }}
                     className="flex-1"
@@ -771,21 +786,21 @@ export const IndicatorsPage: React.FC = () => {
         })}
       </div>
 
-      {filteredIndicators.length === 0 && !loading && (
+      {filteredKeyResults.length === 0 && !loading && (
         <Card className="text-center py-12">
           <CardContent>
             <BarChart3 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">
-              {indicators.length === 0 ? 'Nenhum indicador cadastrado' : 'Nenhum indicador encontrado'}
+              {keyResults.length === 0 ? 'Nenhum resultado-chave cadastrado' : 'Nenhum resultado-chave encontrado'}
             </h3>
             <p className="text-muted-foreground mb-4">
-              {indicators.length === 0 
-                ? 'Crie seu primeiro indicador para começar o acompanhamento de KPIs.' 
-                : 'Tente ajustar os filtros para encontrar os indicadores desejados.'}
+              {keyResults.length === 0 
+                ? 'Crie seu primeiro resultado-chave para começar o acompanhamento de KRs.' 
+                : 'Tente ajustar os filtros para encontrar os resultados-chave desejados.'}
             </p>
             <Button onClick={() => setIsAddModalOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
-              Novo Indicador
+              Novo Resultado-Chave
             </Button>
           </CardContent>
         </Card>
@@ -797,7 +812,7 @@ export const IndicatorsPage: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Atualizar Valor</DialogTitle>
             <DialogDescription>
-              Registre o novo valor para: {selectedIndicator?.name}
+              Registre o novo valor para: {selectedKeyResult?.title}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdateValue} className="space-y-4">
@@ -812,9 +827,9 @@ export const IndicatorsPage: React.FC = () => {
                 onChange={(e) => setUpdateData({...updateData, value: e.target.value})}
                 required
               />
-              {selectedIndicator && (
-                <p className="text-sm text-gray-600">
-                  Valor atual: {selectedIndicator.current_value.toLocaleString('pt-BR')} {selectedIndicator.unit}
+              {selectedKeyResult && (
+                <p className="text-sm text-muted-foreground">
+                  Valor atual: {selectedKeyResult.current_value.toLocaleString('pt-BR')} {selectedKeyResult.unit}
                 </p>
               )}
             </div>
@@ -857,37 +872,37 @@ export const IndicatorsPage: React.FC = () => {
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Detalhes do Indicador</DialogTitle>
+            <DialogTitle>Detalhes do Resultado-Chave</DialogTitle>
             <DialogDescription>
-              {selectedIndicator?.name} - Histórico e estatísticas
+              {selectedKeyResult?.title} - Histórico e estatísticas
             </DialogDescription>
           </DialogHeader>
-          {selectedIndicator && (
+          {selectedKeyResult && (
             <div className="space-y-6">
-              {/* Indicator Overview */}
+              {/* Key Result Overview */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 <Card>
                   <CardContent className="p-6 text-center">
                     <div className="text-3xl font-bold text-primary mb-2">
-                      {selectedIndicator.current_value.toLocaleString('pt-BR')}
+                      {selectedKeyResult.current_value.toLocaleString('pt-BR')}
                     </div>
                     <div className="text-sm text-muted-foreground">Valor Atual</div>
-                    <div className="text-xs text-muted-foreground mt-1">{selectedIndicator.unit}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{selectedKeyResult.unit}</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-6 text-center">
                     <div className="text-3xl font-bold text-green-600 mb-2">
-                      {selectedIndicator.target_value.toLocaleString('pt-BR')}
+                      {selectedKeyResult.target_value.toLocaleString('pt-BR')}
                     </div>
                     <div className="text-sm text-muted-foreground">Meta</div>
-                    <div className="text-xs text-muted-foreground mt-1">{selectedIndicator.unit}</div>
+                    <div className="text-xs text-muted-foreground mt-1">{selectedKeyResult.unit}</div>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-6 text-center">
-                    <div className={`text-3xl font-bold mb-2 ${getProgressColor(calculateProgress(selectedIndicator))}`}>
-                      {calculateProgress(selectedIndicator)}%
+                    <div className={`text-3xl font-bold mb-2 ${getProgressColor(calculateProgress(selectedKeyResult))}`}>
+                      {calculateProgress(selectedKeyResult)}%
                     </div>
                     <div className="text-sm text-muted-foreground">Progresso</div>
                     <div className="text-xs text-muted-foreground mt-1">do objetivo</div>
@@ -903,7 +918,7 @@ export const IndicatorsPage: React.FC = () => {
                 <CardContent>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={getIndicatorHistory(selectedIndicator.id)}>
+                      <LineChart data={getKeyResultHistory(selectedKeyResult.id)}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis 
                           dataKey="period_date" 
@@ -913,7 +928,7 @@ export const IndicatorsPage: React.FC = () => {
                         <Tooltip 
                           labelFormatter={(value) => new Date(value).toLocaleDateString('pt-BR')}
                           formatter={(value, name) => [
-                            `${Number(value).toLocaleString('pt-BR')} ${selectedIndicator.unit}`, 
+                            `${Number(value).toLocaleString('pt-BR')} ${selectedKeyResult.unit}`, 
                             name
                           ]}
                         />
@@ -928,7 +943,7 @@ export const IndicatorsPage: React.FC = () => {
                         />
                         <Line 
                           type="monotone" 
-                          dataKey={() => selectedIndicator.target_value} 
+                          dataKey={() => selectedKeyResult.target_value} 
                           stroke="#10b981" 
                           strokeWidth={2}
                           strokeDasharray="5 5"
@@ -949,11 +964,11 @@ export const IndicatorsPage: React.FC = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
-                      {getIndicatorHistory(selectedIndicator.id).slice(0, 5).map((update) => (
+                      {getKeyResultHistory(selectedKeyResult.id).slice(0, 5).map((update) => (
                         <div key={update.id} className="border-l-4 border-primary/20 pl-4 py-2 bg-muted/30 rounded-r">
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
-                              <p className="font-medium">{update.value.toLocaleString('pt-BR')} {selectedIndicator.unit}</p>
+                              <p className="font-medium">{update.value.toLocaleString('pt-BR')} {selectedKeyResult.unit}</p>
                               {update.comments && (
                                 <p className="text-sm text-muted-foreground mt-1">{update.comments}</p>
                               )}
@@ -966,7 +981,7 @@ export const IndicatorsPage: React.FC = () => {
                           </div>
                         </div>
                       ))}
-                      {getIndicatorHistory(selectedIndicator.id).length === 0 && (
+                      {getKeyResultHistory(selectedKeyResult.id).length === 0 && (
                         <p className="text-center text-muted-foreground py-4">
                           Nenhuma atualização registrada ainda.
                         </p>
@@ -982,7 +997,7 @@ export const IndicatorsPage: React.FC = () => {
                   <CardContent>
                     <div className="space-y-4">
                       {(() => {
-                        const history = getIndicatorHistory(selectedIndicator.id);
+                        const history = getKeyResultHistory(selectedKeyResult.id);
                         const values = history.map(h => h.value);
                         const bestValue = values.length > 0 ? Math.max(...values) : 0;
                         const worstValue = values.length > 0 ? Math.min(...values) : 0;
@@ -996,19 +1011,19 @@ export const IndicatorsPage: React.FC = () => {
                             <div className="flex justify-between items-center">
                               <span className="text-muted-foreground">Melhor Resultado:</span>
                               <span className="font-semibold text-green-600">
-                                {bestValue.toLocaleString('pt-BR')} {selectedIndicator.unit}
+                                {bestValue.toLocaleString('pt-BR')} {selectedKeyResult.unit}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span className="text-muted-foreground">Pior Resultado:</span>
                               <span className="font-semibold text-red-600">
-                                {worstValue.toLocaleString('pt-BR')} {selectedIndicator.unit}
+                                {worstValue.toLocaleString('pt-BR')} {selectedKeyResult.unit}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span className="text-muted-foreground">Média:</span>
                               <span className="font-semibold">
-                                {averageValue.toLocaleString('pt-BR')} {selectedIndicator.unit}
+                                {averageValue.toLocaleString('pt-BR')} {selectedKeyResult.unit}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
