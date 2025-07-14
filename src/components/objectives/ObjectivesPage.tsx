@@ -13,8 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { AddKRModal } from '@/components/strategic-map/AddKRModal';
-import { KRMiniCard } from '@/components/strategic-map/KRMiniCard';
+import { AddResultadoChaveModal } from '@/components/strategic-map/AddResultadoChaveModal';
+import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
 
 interface StrategicPlan {
   id: string;
@@ -62,7 +62,7 @@ export const ObjectivesPage: React.FC = () => {
   const [selectedObjective, setSelectedObjective] = useState<StrategicObjective | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [isAddKROpen, setIsAddKROpen] = useState(false);
+  const [isAddResultadoChaveOpen, setIsAddResultadoChaveOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   // Form states
@@ -322,14 +322,14 @@ export const ObjectivesPage: React.FC = () => {
     }
   };
 
-  const createKeyResult = async (krData: any) => {
+  const createResultadoChave = async (resultadoChaveData: any) => {
     if (!selectedObjective || !user) return;
 
     try {
       const { data, error } = await supabase
         .from('key_results')
         .insert([{
-          ...krData,
+          ...resultadoChaveData,
           objective_id: selectedObjective.id,
           owner_id: user.id
         }])
@@ -423,7 +423,7 @@ export const ObjectivesPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Objetivos Estratégicos</h1>
-          <p className="text-gray-600 mt-2">Gerencie seus objetivos e resultados-chave (OKRs)</p>
+          <p className="text-gray-600 mt-2">Gerencie seus objetivos e resultados-chave</p>
         </div>
         <div className="flex space-x-3">
           <Dialog open={isCreatePlanOpen} onOpenChange={setIsCreatePlanOpen}>
@@ -700,7 +700,7 @@ export const ObjectivesPage: React.FC = () => {
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center text-gray-600">
                         <TrendingUp className="w-4 h-4 mr-1" />
-                        Key Results
+                        Resultados-Chave
                       </div>
                       <span className="font-medium">
                         {completedKRs}/{objectiveKRs.length} concluídos
@@ -749,10 +749,10 @@ export const ObjectivesPage: React.FC = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setIsAddKROpen(true)}
+                        onClick={() => setIsAddResultadoChaveOpen(true)}
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Adicionar KR
+                        Adicionar Resultado-Chave
                       </Button>
                       <Button
                         variant="outline"
@@ -900,7 +900,7 @@ export const ObjectivesPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Resultados-Chave</h3>
                   <Badge variant="outline">
-                    {getObjectiveKeyResults(selectedObjective.id).length} KRs
+                    {getObjectiveKeyResults(selectedObjective.id).length} Resultados-Chave
                   </Badge>
                 </div>
 
@@ -967,15 +967,15 @@ export const ObjectivesPage: React.FC = () => {
         </Dialog>
       )}
 
-      {/* Add Key Result Modal */}
+      {/* Add Resultado-Chave Modal */}
       {selectedObjective && (
-        <AddKRModal
+        <AddResultadoChaveModal
           objectiveId={selectedObjective.id}
-          open={isAddKROpen}
-          onClose={() => setIsAddKROpen(false)}
-          onSave={async (krData) => {
-            await createKeyResult(krData);
-            setIsAddKROpen(false);
+          open={isAddResultadoChaveOpen}
+          onClose={() => setIsAddResultadoChaveOpen(false)}
+          onSave={async (resultadoChaveData) => {
+            await createResultadoChave(resultadoChaveData);
+            setIsAddResultadoChaveOpen(false);
           }}
         />
       )}

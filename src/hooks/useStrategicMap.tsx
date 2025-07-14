@@ -478,21 +478,21 @@ export const useStrategicMap = () => {
     }
   };
 
-  // Create key result
-  const createKeyResult = async (krData: Omit<KeyResult, 'id' | 'created_at' | 'updated_at'>) => {
+  // Create resultado-chave
+  const createKeyResult = async (resultadoChaveData: Omit<KeyResult, 'id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
 
     try {
       const { data, error } = await supabase
         .from('key_results')
-        .insert([{ ...krData, owner_id: user.id }])
+        .insert([{ ...resultadoChaveData, owner_id: user.id }])
         .select()
         .single();
 
       if (error) {
         toast({
           title: "Erro",
-          description: "Erro ao criar resultado chave",
+          description: "Erro ao criar resultado-chave",
           variant: "destructive",
         });
         return null;
@@ -501,7 +501,7 @@ export const useStrategicMap = () => {
       setKeyResults(prev => [...prev, data]);
       toast({
         title: "Sucesso",
-        description: "Resultado chave criado com sucesso",
+        description: "Resultado-chave criado com sucesso",
       });
       return data;
     } catch (error) {

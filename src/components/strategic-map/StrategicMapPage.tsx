@@ -260,7 +260,7 @@ export const StrategicMapPage = () => {
                                 objective={objective}
                                 compact
                                 keyResults={objectiveKRs}
-                                onAddKR={createKeyResult}
+                                onAddResultadoChave={createKeyResult}
                               />
                             );
                           })}
