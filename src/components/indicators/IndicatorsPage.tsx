@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, User, Target, AlertTriangle, CheckCircle, Activity } from 'lucide-react';
+import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, User, Target, AlertTriangle, CheckCircle, Activity, Trash2, Save, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -65,6 +66,8 @@ export const IndicatorsPage: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
   
   // Form states
@@ -79,10 +82,23 @@ export const IndicatorsPage: React.FC = () => {
     objective_id: ''
   });
   
+  
   const [updateData, setUpdateData] = useState({
     value: '',
     period_date: new Date().toISOString().split('T')[0],
     comments: ''
+  });
+
+  const [editData, setEditData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    unit: '',
+    target_value: '',
+    frequency: '',
+    priority: 'medium',
+    objective_id: '',
+    status: 'not_started'
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -248,6 +264,110 @@ export const IndicatorsPage: React.FC = () => {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEditKeyResult = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !selectedKeyResult) return;
+
+    try {
+      setIsSubmitting(true);
+      
+      const { data, error } = await supabase
+        .from('key_results')
+        .update({
+          title: editData.title,
+          description: editData.description,
+          category: editData.category,
+          unit: editData.unit,
+          target_value: parseFloat(editData.target_value),
+          frequency: editData.frequency,
+          priority: editData.priority,
+          objective_id: editData.objective_id || null,
+          status: editData.status,
+          last_updated: new Date().toISOString()
+        })
+        .eq('id', selectedKeyResult.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update local state
+      setKeyResults(prev => prev.map(kr => 
+        kr.id === selectedKeyResult.id ? data : kr
+      ));
+      
+      setIsEditModalOpen(false);
+      setSelectedKeyResult(null);
+      
+      toast({
+        title: "Sucesso",
+        description: "Resultado-chave atualizado com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error updating key result:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar resultado-chave. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteKeyResult = async () => {
+    if (!selectedKeyResult) return;
+
+    try {
+      setIsSubmitting(true);
+      
+      // Delete key result (this will cascade delete key_result_values)
+      const { error } = await supabase
+        .from('key_results')
+        .delete()
+        .eq('id', selectedKeyResult.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setKeyResults(prev => prev.filter(kr => kr.id !== selectedKeyResult.id));
+      setKeyResultValues(prev => prev.filter(krv => krv.key_result_id !== selectedKeyResult.id));
+      
+      setIsDeleteConfirmOpen(false);
+      setSelectedKeyResult(null);
+      
+      toast({
+        title: "Sucesso",
+        description: "Resultado-chave excluído com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error deleting key result:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir resultado-chave. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openEditModal = (keyResult: KeyResult) => {
+    setSelectedKeyResult(keyResult);
+    setEditData({
+      title: keyResult.title,
+      description: keyResult.description || '',
+      category: keyResult.category,
+      unit: keyResult.unit,
+      target_value: keyResult.target_value.toString(),
+      frequency: keyResult.frequency,
+      priority: keyResult.priority,
+      objective_id: keyResult.objective_id || '',
+      status: keyResult.status
+    });
+    setIsEditModalOpen(true);
   };
 
   const calculateProgress = (keyResult: KeyResult) => {
@@ -770,6 +890,15 @@ export const IndicatorsPage: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => openEditModal(keyResult)}
+                    className="flex-1"
+                  >
+                    <Edit className="w-4 h-4 mr-1" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
                       setSelectedKeyResult(keyResult);
                       setIsDetailsModalOpen(true);
@@ -778,6 +907,16 @@ export const IndicatorsPage: React.FC = () => {
                   >
                     <BarChart3 className="w-4 h-4 mr-1" />
                     Detalhes
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedKeyResult(keyResult);
+                      setIsDeleteConfirmOpen(true);
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </CardFooter>
@@ -1062,6 +1201,181 @@ export const IndicatorsPage: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Resultado-Chave</DialogTitle>
+            <DialogDescription>
+              Edite as informações do resultado-chave: {selectedKeyResult?.title}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditKeyResult} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_title">Nome do Resultado-Chave *</Label>
+                <Input
+                  id="edit_title"
+                  placeholder="Ex: Taxa de Conversão"
+                  value={editData.title}
+                  onChange={(e) => setEditData({...editData, title: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_category">Categoria *</Label>
+                <Select value={editData.category} onValueChange={(value) => setEditData({...editData, category: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="financial">💰 Financeiro</SelectItem>
+                    <SelectItem value="operational">⚙️ Operacional</SelectItem>
+                    <SelectItem value="customer">👥 Cliente</SelectItem>
+                    <SelectItem value="people">👨‍💼 Pessoas</SelectItem>
+                    <SelectItem value="quality">⭐ Qualidade</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit_description">Descrição</Label>
+              <Textarea
+                id="edit_description"
+                placeholder="Descreva o que este resultado-chave mede..."
+                value={editData.description}
+                onChange={(e) => setEditData({...editData, description: e.target.value})}
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_target_value">Meta *</Label>
+                <Input
+                  id="edit_target_value"
+                  type="number"
+                  step="0.01"
+                  placeholder="100"
+                  value={editData.target_value}
+                  onChange={(e) => setEditData({...editData, target_value: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_unit">Unidade *</Label>
+                <Select value={editData.unit} onValueChange={(value) => setEditData({...editData, unit: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Unidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="%">% (Percentual)</SelectItem>
+                    <SelectItem value="R$">R$ (Real)</SelectItem>
+                    <SelectItem value="number">Número</SelectItem>
+                    <SelectItem value="dias">Dias</SelectItem>
+                    <SelectItem value="score">Score</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_frequency">Frequência *</Label>
+                <Select value={editData.frequency} onValueChange={(value) => setEditData({...editData, frequency: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Frequência" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Diário</SelectItem>
+                    <SelectItem value="weekly">Semanal</SelectItem>
+                    <SelectItem value="monthly">Mensal</SelectItem>
+                    <SelectItem value="quarterly">Trimestral</SelectItem>
+                    <SelectItem value="yearly">Anual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_objective">Objetivo Estratégico</Label>
+                <Select value={editData.objective_id} onValueChange={(value) => setEditData({...editData, objective_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um objetivo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum objetivo</SelectItem>
+                    {objectives.map((objective) => (
+                      <SelectItem key={objective.id} value={objective.id}>
+                        {objective.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_priority">Prioridade</Label>
+                <Select value={editData.priority} onValueChange={(value) => setEditData({...editData, priority: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Prioridade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">Alta</SelectItem>
+                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="low">Baixa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_status">Status</Label>
+                <Select value={editData.status} onValueChange={(value) => setEditData({...editData, status: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not_started">Não Iniciado</SelectItem>
+                    <SelectItem value="in_progress">Em Progresso</SelectItem>
+                    <SelectItem value="completed">Completo</SelectItem>
+                    <SelectItem value="suspended">Suspenso</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o resultado-chave "{selectedKeyResult?.title}"?
+              Esta ação não pode ser desfeita e todos os históricos de valores também serão removidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteKeyResult}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Excluindo...' : 'Excluir Resultado-Chave'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
