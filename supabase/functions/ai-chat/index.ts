@@ -28,14 +28,14 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get context data for the AI
-    const [indicatorsRes, projectsRes, objectivesRes] = await Promise.all([
-      supabase.from('indicators').select('*').limit(5),
+    const [keyResultsRes, projectsRes, objectivesRes] = await Promise.all([
+      supabase.from('key_results').select('*').limit(5),
       supabase.from('strategic_projects').select('*').limit(5),
       supabase.from('strategic_objectives').select('*').limit(5)
     ]);
 
     const contextData = {
-      indicators: indicatorsRes.data || [],
+      keyResults: keyResultsRes.data || [],
       projects: projectsRes.data || [],
       objectives: objectivesRes.data || []
     };
@@ -44,9 +44,9 @@ serve(async (req) => {
     let contextPrompt = `Você é um assistente de IA especializado em estratégia organizacional e análise de dados. 
     Você tem acesso aos seguintes dados atuais da organização:
 
-    INDICADORES (${contextData.indicators.length} total):
-    ${contextData.indicators.map(ind => 
-      `- ${ind.name}: ${ind.current_value}/${ind.target_value} ${ind.unit} (${Math.round((ind.current_value/ind.target_value)*100)}% da meta)`
+    RESULTADOS-CHAVE (${contextData.keyResults.length} total):
+    ${contextData.keyResults.map(kr => 
+      `- ${kr.title}: ${kr.current_value}/${kr.target_value} ${kr.unit} (${Math.round((kr.current_value/kr.target_value)*100)}% da meta) - Status: ${kr.status}`
     ).join('\n')}
 
     PROJETOS (${contextData.projects.length} total):
@@ -74,7 +74,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           { 
             role: 'system', 

@@ -28,11 +28,11 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get team data for analysis
-    const [profilesRes, projectMembersRes, projectsRes, indicatorsRes, tasksRes] = await Promise.all([
+    const [profilesRes, projectMembersRes, projectsRes, keyResultsRes, tasksRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('status', 'active'),
       supabase.from('project_members').select('*'),
       supabase.from('strategic_projects').select('*'),
-      supabase.from('indicators').select('*'),
+      supabase.from('key_results').select('*'),
       supabase.from('project_tasks').select('*')
     ]);
 
@@ -40,7 +40,7 @@ serve(async (req) => {
       profiles: profilesRes.data || [],
       projectMembers: projectMembersRes.data || [],
       projects: projectsRes.data || [],
-      indicators: indicatorsRes.data || [],
+      keyResults: keyResultsRes.data || [],
       tasks: tasksRes.data || []
     };
 
@@ -114,7 +114,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
           { 
             role: 'system', 
