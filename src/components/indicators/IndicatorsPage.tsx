@@ -324,30 +324,46 @@ export const IndicatorsPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
+      console.log('Starting deletion of key result:', selectedKeyResult.id);
       
       // First, delete related project_kr_relations
+      console.log('Deleting project-kr relations...');
       const { error: relationsError } = await supabase
         .from('project_kr_relations')
         .delete()
         .eq('kr_id', selectedKeyResult.id);
 
-      if (relationsError) throw relationsError;
+      if (relationsError) {
+        console.error('Error deleting relations:', relationsError);
+        throw relationsError;
+      }
+      console.log('Project-kr relations deleted successfully');
 
       // Delete key result values
+      console.log('Deleting key result values...');
       const { error: valuesError } = await supabase
         .from('key_result_values')
         .delete()
         .eq('key_result_id', selectedKeyResult.id);
 
-      if (valuesError) throw valuesError;
+      if (valuesError) {
+        console.error('Error deleting values:', valuesError);
+        throw valuesError;
+      }
+      console.log('Key result values deleted successfully');
 
       // Finally, delete the key result
+      console.log('Deleting key result...');
       const { error: keyResultError } = await supabase
         .from('key_results')
         .delete()
         .eq('id', selectedKeyResult.id);
 
-      if (keyResultError) throw keyResultError;
+      if (keyResultError) {
+        console.error('Error deleting key result:', keyResultError);
+        throw keyResultError;
+      }
+      console.log('Key result deleted successfully');
 
       // Update local state
       setKeyResults(prev => prev.filter(kr => kr.id !== selectedKeyResult.id));
@@ -364,7 +380,7 @@ export const IndicatorsPage: React.FC = () => {
       console.error('Error deleting key result:', error);
       toast({
         title: "Erro",
-        description: "Erro ao excluir resultado-chave. Tente novamente.",
+        description: `Erro ao excluir resultado-chave: ${error.message || 'Tente novamente.'}`,
         variant: "destructive",
       });
     } finally {
