@@ -80,7 +80,7 @@ export const IndicatorsPage: React.FC = () => {
     target_value: '',
     frequency: '',
     priority: 'medium',
-    objective_id: ''
+    objective_id: 'none'
   });
   
   
@@ -164,6 +164,7 @@ export const IndicatorsPage: React.FC = () => {
         .insert([{
           ...formData,
           target_value: parseFloat(formData.target_value),
+          objective_id: formData.objective_id === 'none' ? null : formData.objective_id || null,
           owner_id: user.id,
           current_value: 0,
           last_updated: new Date().toISOString()
@@ -182,7 +183,7 @@ export const IndicatorsPage: React.FC = () => {
         target_value: '',
         frequency: '',
         priority: 'medium',
-        objective_id: ''
+        objective_id: 'none'
       });
       setIsAddModalOpen(false);
       
@@ -284,7 +285,7 @@ export const IndicatorsPage: React.FC = () => {
           target_value: parseFloat(editData.target_value),
           frequency: editData.frequency,
           priority: editData.priority,
-          objective_id: editData.objective_id || null,
+          objective_id: editData.objective_id === 'none' ? null : editData.objective_id || null,
           status: editData.status,
           last_updated: new Date().toISOString()
         })
@@ -365,7 +366,7 @@ export const IndicatorsPage: React.FC = () => {
       target_value: keyResult.target_value.toString(),
       frequency: keyResult.frequency,
       priority: keyResult.priority,
-      objective_id: keyResult.objective_id || '',
+      objective_id: keyResult.objective_id || 'none',
       status: keyResult.status
     });
     setIsEditModalOpen(true);
@@ -612,18 +613,19 @@ export const IndicatorsPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="objective">Objetivo Estratégico *</Label>
+                    <Label htmlFor="objective">Objetivo Estratégico</Label>
                     <Select value={formData.objective_id} onValueChange={(value) => setFormData({...formData, objective_id: value})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um objetivo" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {objectives.map((objective) => (
-                          <SelectItem key={objective.id} value={objective.id}>
-                            {objective.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
+                       <SelectContent>
+                         <SelectItem value="none">Nenhum objetivo</SelectItem>
+                         {objectives.map((objective) => (
+                           <SelectItem key={objective.id} value={objective.id}>
+                             {objective.title}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
@@ -1301,7 +1303,7 @@ export const IndicatorsPage: React.FC = () => {
                     <SelectValue placeholder="Selecione um objetivo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum objetivo</SelectItem>
+                    <SelectItem value="none">Nenhum objetivo</SelectItem>
                     {objectives.map((objective) => (
                       <SelectItem key={objective.id} value={objective.id}>
                         {objective.title}
