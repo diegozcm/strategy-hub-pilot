@@ -33,7 +33,20 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            
+            {/* Redirects for direct page access */}
             <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
+            <Route path="/strategic-map" element={<Navigate to="/app/strategic-map" replace />} />
+            <Route path="/objectives" element={<Navigate to="/app/objectives" replace />} />
+            <Route path="/projects" element={<Navigate to="/app/projects" replace />} />
+            <Route path="/indicators" element={<Navigate to="/app/indicators" replace />} />
+            <Route path="/reports" element={<Navigate to="/app/reports" replace />} />
+            <Route path="/ai-copilot" element={<Navigate to="/app/ai-copilot" replace />} />
+            <Route path="/team" element={<Navigate to="/app/team" replace />} />
+            <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
+            <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
+            
+            {/* Protected app routes */}
             <Route path="/app" element={
               <ProtectedRoute>
                 <AppLayout />
