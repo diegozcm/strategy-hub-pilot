@@ -18,6 +18,7 @@ import { SettingsPage } from "@/components/settings/SettingsPage";
 import { ProfilePage } from "@/components/profile/ProfilePage";
 import { StrategicMapPage } from "@/components/strategic-map/StrategicMapPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,13 +31,14 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/" element={
+            <Route path="/app" element={
               <ProtectedRoute>
                 <AppLayout />
               </ProtectedRoute>
             }>
+              <Route index element={<DashboardHome />} />
               <Route path="dashboard" element={<DashboardHome />} />
               <Route path="strategic-map" element={<StrategicMapPage />} />
               <Route path="objectives" element={<ObjectivesPage />} />
