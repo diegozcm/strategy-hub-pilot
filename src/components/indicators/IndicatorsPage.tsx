@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, User, Target, AlertTriangle, CheckCircle, Activity, Trash2, Save, X } from 'lucide-react';
+import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, User, Target, AlertTriangle, CheckCircle, Activity, Trash2, Save, X, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -816,9 +817,52 @@ export const IndicatorsPage: React.FC = () => {
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">{keyResult.description}</p>
                   </div>
-                  <Badge variant={getPriorityColor(keyResult.priority)}>
-                    {getPriorityText(keyResult.priority)}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={getPriorityColor(keyResult.priority)}>
+                      {getPriorityText(keyResult.priority)}
+                    </Badge>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedKeyResult(keyResult);
+                            setIsUpdateModalOpen(true);
+                          }}
+                        >
+                          <Edit className="w-4 h-4 mr-2" />
+                          Atualizar Valor
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openEditModal(keyResult)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Editar Resultado-Chave
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedKeyResult(keyResult);
+                            setIsDetailsModalOpen(true);
+                          }}
+                        >
+                          <BarChart3 className="w-4 h-4 mr-2" />
+                          Ver Detalhes
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setSelectedKeyResult(keyResult);
+                            setIsDeleteConfirmOpen(true);
+                          }}
+                          className="text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -873,53 +917,6 @@ export const IndicatorsPage: React.FC = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="pt-3">
-                <div className="flex w-full gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedKeyResult(keyResult);
-                      setIsUpdateModalOpen(true);
-                    }}
-                    className="flex-1"
-                  >
-                    <Edit className="w-4 h-4 mr-1" />
-                    Atualizar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEditModal(keyResult)}
-                    className="flex-1"
-                  >
-                    <Edit className="w-4 h-4 mr-1" />
-                    Editar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedKeyResult(keyResult);
-                      setIsDetailsModalOpen(true);
-                    }}
-                    className="flex-1"
-                  >
-                    <BarChart3 className="w-4 h-4 mr-1" />
-                    Detalhes
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedKeyResult(keyResult);
-                      setIsDeleteConfirmOpen(true);
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardFooter>
             </Card>
           );
         })}
