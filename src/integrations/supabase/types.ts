@@ -255,6 +255,39 @@ export type Database = {
         }
         Relationships: []
       }
+      companies: {
+        Row: {
+          created_at: string
+          id: string
+          mission: string | null
+          name: string
+          owner_id: string
+          updated_at: string
+          values: string[] | null
+          vision: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mission?: string | null
+          name: string
+          owner_id: string
+          updated_at?: string
+          values?: string[] | null
+          vision?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mission?: string | null
+          name?: string
+          owner_id?: string
+          updated_at?: string
+          values?: string[] | null
+          vision?: string | null
+        }
+        Relationships: []
+      }
       indicator_values: {
         Row: {
           comments: string | null
@@ -359,13 +392,17 @@ export type Database = {
         Row: {
           created_at: string
           current_value: number | null
+          deadline: string | null
           description: string | null
           due_date: string | null
+          frequency: string | null
           id: string
+          metric_type: string | null
           monthly_actual: Json | null
           monthly_targets: Json | null
           objective_id: string
           owner_id: string
+          responsible: string | null
           status: string
           target_value: number
           title: string
@@ -377,13 +414,17 @@ export type Database = {
         Insert: {
           created_at?: string
           current_value?: number | null
+          deadline?: string | null
           description?: string | null
           due_date?: string | null
+          frequency?: string | null
           id?: string
+          metric_type?: string | null
           monthly_actual?: Json | null
           monthly_targets?: Json | null
           objective_id: string
           owner_id: string
+          responsible?: string | null
           status?: string
           target_value: number
           title: string
@@ -395,13 +436,17 @@ export type Database = {
         Update: {
           created_at?: string
           current_value?: number | null
+          deadline?: string | null
           description?: string | null
           due_date?: string | null
+          frequency?: string | null
           id?: string
+          metric_type?: string | null
           monthly_actual?: Json | null
           monthly_targets?: Json | null
           objective_id?: string
           owner_id?: string
+          responsible?: string | null
           status?: string
           target_value?: number
           title?: string
@@ -534,6 +579,42 @@ export type Database = {
         }
         Relationships: []
       }
+      project_kr_relations: {
+        Row: {
+          created_at: string
+          id: string
+          kr_id: string
+          project_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kr_id: string
+          project_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kr_id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_kr_relations_kr_id_fkey"
+            columns: ["kr_id"]
+            isOneToOne: false
+            referencedRelation: "key_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_kr_relations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_members: {
         Row: {
           allocation_percentage: number | null
@@ -568,6 +649,42 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_objective_relations: {
+        Row: {
+          created_at: string
+          id: string
+          objective_id: string
+          project_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          objective_id: string
+          project_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          objective_id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_objective_relations_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_objectives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_objective_relations_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "strategic_projects"
@@ -631,13 +748,16 @@ export type Database = {
       strategic_objectives: {
         Row: {
           created_at: string
+          deadline: string | null
           description: string | null
           id: string
           monthly_actual: Json | null
           monthly_targets: Json | null
           owner_id: string
+          pillar_id: string | null
           plan_id: string
           progress: number | null
+          responsible: string | null
           status: string
           target_date: string | null
           title: string
@@ -648,13 +768,16 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deadline?: string | null
           description?: string | null
           id?: string
           monthly_actual?: Json | null
           monthly_targets?: Json | null
           owner_id: string
+          pillar_id?: string | null
           plan_id: string
           progress?: number | null
+          responsible?: string | null
           status?: string
           target_date?: string | null
           title: string
@@ -665,13 +788,16 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deadline?: string | null
           description?: string | null
           id?: string
           monthly_actual?: Json | null
           monthly_targets?: Json | null
           owner_id?: string
+          pillar_id?: string | null
           plan_id?: string
           progress?: number | null
+          responsible?: string | null
           status?: string
           target_date?: string | null
           title?: string
@@ -682,10 +808,58 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "strategic_objectives_pillar_id_fkey"
+            columns: ["pillar_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_pillars"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "strategic_objectives_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "strategic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      strategic_pillars: {
+        Row: {
+          color: string | null
+          company_id: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          order_index: number | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          company_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          order_index?: number | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          order_index?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "strategic_pillars_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -741,6 +915,7 @@ export type Database = {
           plan_id: string | null
           priority: string | null
           progress: number | null
+          responsible: string | null
           start_date: string | null
           status: string
           updated_at: string
@@ -756,6 +931,7 @@ export type Database = {
           plan_id?: string | null
           priority?: string | null
           progress?: number | null
+          responsible?: string | null
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -771,6 +947,7 @@ export type Database = {
           plan_id?: string | null
           priority?: string | null
           progress?: number | null
+          responsible?: string | null
           start_date?: string | null
           status?: string
           updated_at?: string

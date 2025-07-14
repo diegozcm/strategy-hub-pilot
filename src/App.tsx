@@ -16,6 +16,7 @@ import { AICopilotPage } from "@/components/ai/AICopilotPage";
 import TeamPage from "@/components/team/TeamPage";
 import { SettingsPage } from "@/components/settings/SettingsPage";
 import { ProfilePage } from "@/components/profile/ProfilePage";
+import { StrategicMapPage } from "@/components/strategic-map/StrategicMapPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 
@@ -37,6 +38,7 @@ const App = () => (
               </ProtectedRoute>
             }>
               <Route path="dashboard" element={<DashboardHome />} />
+              <Route path="strategic-map" element={<StrategicMapPage />} />
               <Route path="objectives" element={<ObjectivesPage />} />
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="indicators" element={<IndicatorsPage />} />

@@ -12,13 +12,15 @@ import {
   Zap,
   TrendingUp,
   Activity,
-  Brain
+  Brain,
+  Map
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
+  { name: 'Mapa Estratégico', href: '/strategic-map', icon: Map },
   { name: 'Objetivos', href: '/objectives', icon: Target },
   { name: 'Projetos', href: '/projects', icon: Briefcase },
   { name: 'Indicadores', href: '/indicators', icon: TrendingUp },
