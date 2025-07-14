@@ -189,108 +189,151 @@ export const StrategicMapPage = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-4">
-            {pillars.map((pillar) => {
-              const progress = calculatePillarProgress(pillar.id);
-              const pillarObjectives = objectives.filter(obj => obj.pillar_id === pillar.id);
+          <div className="space-y-4">
+            {/* Pilares Existentes */}
+            <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              {pillars.map((pillar) => {
+                const progress = calculatePillarProgress(pillar.id);
+                const pillarObjectives = objectives.filter(obj => obj.pillar_id === pillar.id);
 
-              return (
-                <Card key={pillar.id} className="relative overflow-hidden">
-                  <div
-                    className="absolute top-0 left-0 w-full h-1"
-                    style={{ backgroundColor: pillar.color }}
-                  />
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{pillar.name}</CardTitle>
-                        {pillar.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {pillar.description}
-                          </p>
-                        )}
+                return (
+                  <Card key={pillar.id} className="relative overflow-hidden">
+                    <div
+                      className="absolute top-0 left-0 w-full h-1"
+                      style={{ backgroundColor: pillar.color }}
+                    />
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{pillar.name}</CardTitle>
+                          {pillar.description && (
+                            <p className="text-sm text-muted-foreground">
+                              {pillar.description}
+                            </p>
+                          )}
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setEditingPillar(pillar)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => setDeletingPillar(pillar)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => setEditingPillar(pillar)}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-destructive"
-                            onClick={() => setDeletingPillar(pillar)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <div className="space-y-2 mt-3">
+                      <div className="space-y-2 mt-3">
+                        <div className="flex items-center justify-between text-sm">
+                          <span>Progresso</span>
+                          <span className="font-medium">{progress}%</span>
+                        </div>
+                        <Progress value={progress} className="h-2" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
                       <div className="flex items-center justify-between text-sm">
-                        <span>Progresso</span>
-                        <span className="font-medium">{progress}%</span>
+                        <span>Objetivos</span>
+                        <Badge variant="secondary">
+                          {pillarObjectives.length}
+                        </Badge>
                       </div>
-                      <Progress value={progress} className="h-2" />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span>Objetivos</span>
-                      <Badge variant="secondary">
-                        {pillarObjectives.length}
-                      </Badge>
-                    </div>
-                    
-                    {pillarObjectives.length > 0 ? (
-                      <div className="space-y-2">
-                        {pillarObjectives.slice(0, 3).map((objective) => {
-                          const objectiveKRs = keyResults.filter(kr => kr.objective_id === objective.id);
-                          return (
-                            <ObjectiveCard
-                              key={objective.id}
-                              objective={objective}
-                              compact
-                              keyResults={objectiveKRs}
-                              onAddKR={createKeyResult}
-                            />
-                          );
-                        })}
-                        {pillarObjectives.length > 3 && (
-                          <p className="text-xs text-muted-foreground text-center">
-                            +{pillarObjectives.length - 3} objetivos adicionais
+                      
+                      {pillarObjectives.length > 0 ? (
+                        <div className="space-y-2">
+                          {pillarObjectives.slice(0, 3).map((objective) => {
+                            const objectiveKRs = keyResults.filter(kr => kr.objective_id === objective.id);
+                            return (
+                              <ObjectiveCard
+                                key={objective.id}
+                                objective={objective}
+                                compact
+                                keyResults={objectiveKRs}
+                                onAddKR={createKeyResult}
+                              />
+                            );
+                          })}
+                          {pillarObjectives.length > 3 && (
+                            <p className="text-xs text-muted-foreground text-center">
+                              +{pillarObjectives.length - 3} objetivos adicionais
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <Target className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                          <p className="text-sm text-muted-foreground">
+                            Nenhum objetivo definido
                           </p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center py-4">
-                        <Target className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                        <p className="text-sm text-muted-foreground">
-                          Nenhum objetivo definido
-                        </p>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="mt-2"
-                          onClick={() => {
-                            setSelectedPillarId(pillar.id);
-                            setShowObjectiveForm(true);
-                          }}
-                        >
-                          <Plus className="mr-2 h-3 w-3" />
-                          Adicionar Objetivo
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="mt-2"
+                            onClick={() => {
+                              setSelectedPillarId(pillar.id);
+                              setShowObjectiveForm(true);
+                            }}
+                          >
+                            <Plus className="mr-2 h-3 w-3" />
+                            Adicionar Objetivo
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Sugestões de Pilares Restantes */}
+            {(() => {
+              const existingPillarNames = pillars.map(p => p.name);
+              const remainingSuggestions = defaultPillars.filter(
+                suggestion => !existingPillarNames.includes(suggestion.name)
               );
-            })}
+              
+              if (remainingSuggestions.length > 0) {
+                return (
+                  <Card className="bg-muted/30">
+                    <CardContent className="pt-6">
+                      <div className="text-center">
+                        <h3 className="text-sm font-medium mb-3">Adicionar mais pilares estratégicos:</h3>
+                        <div className="flex flex-wrap gap-2 justify-center">
+                          {remainingSuggestions.map((pillar, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="cursor-pointer hover:bg-secondary"
+                              onClick={() => {
+                                createPillar({ 
+                                  name: pillar.name, 
+                                  color: pillar.color,
+                                  description: `Pilar focado em ${pillar.name.toLowerCase()}`
+                                });
+                              }}
+                            >
+                              <pillar.icon className="mr-1 h-3 w-3" />
+                              {pillar.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              }
+              return null;
+            })()}
           </div>
         )}
       </div>
