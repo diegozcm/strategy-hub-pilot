@@ -304,6 +304,37 @@ export const useStrategicMap = () => {
     }
   };
 
+  // Update company
+  const updateCompany = async (companyId: string, updates: Partial<Company>) => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .update(updates)
+        .eq('id', companyId)
+        .select()
+        .single();
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar empresa",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      setCompany(data);
+      toast({
+        title: "Sucesso",
+        description: "Empresa atualizada com sucesso",
+      });
+      return data;
+    } catch (error) {
+      console.error('Error updating company:', error);
+      return null;
+    }
+  };
+
   return {
     loading,
     company,
@@ -312,6 +343,7 @@ export const useStrategicMap = () => {
     keyResults,
     projects,
     createCompany,
+    updateCompany,
     createPillar,
     createObjective,
     calculateObjectiveProgress,

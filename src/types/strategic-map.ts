@@ -4,6 +4,7 @@ export interface Company {
   mission?: string;
   vision?: string;
   values?: string[];
+  logo_url?: string;
   owner_id: string;
   created_at: string;
   updated_at: string;

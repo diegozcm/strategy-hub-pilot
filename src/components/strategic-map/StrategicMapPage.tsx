@@ -28,6 +28,7 @@ export const StrategicMapPage = () => {
     objectives,
     keyResults,
     createCompany,
+    updateCompany,
     createPillar,
     createObjective,
     calculatePillarProgress
@@ -77,9 +78,17 @@ export const StrategicMapPage = () => {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              {company.logo_url ? (
+                <img 
+                  src={company.logo_url} 
+                  alt="Logo da empresa" 
+                  className="h-8 w-8 object-contain rounded"
+                />
+              ) : (
                 <Building2 className="h-6 w-6" />
+              )}
+              <CardTitle className="text-2xl">
                 {company.name}
               </CardTitle>
             </div>
@@ -252,7 +261,10 @@ export const StrategicMapPage = () => {
       <CompanySetupModal
         open={showCompanySetup}
         onClose={() => setShowCompanySetup(false)}
-        onSave={createCompany}
+        onSave={company 
+          ? (dataOrId: any, data?: any) => updateCompany(dataOrId, data)
+          : (data: any) => createCompany(data)
+        }
         initialData={company}
       />
 

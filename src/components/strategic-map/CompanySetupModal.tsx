@@ -5,25 +5,31 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Upload } from 'lucide-react';
 import { Company } from '@/types/strategic-map';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/hooks/use-toast';
 
 interface CompanySetupModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (data: Omit<Company, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<Company | null>;
+  onSave: (dataOrId: any, data?: any) => Promise<Company | null>;
   initialData?: Company | null;
 }
 
 export const CompanySetupModal = ({ open, onClose, onSave, initialData }: CompanySetupModalProps) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     mission: '',
     vision: '',
-    values: [] as string[]
+    values: [] as string[],
+    logo_url: ''
   });
   const [newValue, setNewValue] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -31,7 +37,8 @@ export const CompanySetupModal = ({ open, onClose, onSave, initialData }: Compan
         name: initialData.name || '',
         mission: initialData.mission || '',
         vision: initialData.vision || '',
-        values: initialData.values || []
+        values: initialData.values || [],
+        logo_url: initialData.logo_url || ''
       });
     }
   }, [initialData]);
@@ -53,6 +60,45 @@ export const CompanySetupModal = ({ open, onClose, onSave, initialData }: Compan
     }));
   };
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `company-logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({ ...prev, logo_url: publicUrl }));
+      toast({
+        title: "Sucesso",
+        description: "Logo carregado com sucesso",
+      });
+    } catch (error) {
+      console.error('Error uploading logo:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar logo",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -62,7 +108,11 @@ export const CompanySetupModal = ({ open, onClose, onSave, initialData }: Compan
 
     setLoading(true);
     try {
-      await onSave(formData);
+      if (initialData) {
+        await onSave(initialData.id, formData);
+      } else {
+        await onSave(formData);
+      }
       onClose();
     } catch (error) {
       console.error('Error saving company:', error);
@@ -76,7 +126,8 @@ export const CompanySetupModal = ({ open, onClose, onSave, initialData }: Compan
       name: '',
       mission: '',
       vision: '',
-      values: []
+      values: [],
+      logo_url: ''
     });
     setNewValue('');
     onClose();
@@ -101,6 +152,38 @@ export const CompanySetupModal = ({ open, onClose, onSave, initialData }: Compan
               placeholder="Digite o nome da sua empresa"
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="logo">Logomarca</Label>
+            <div className="flex items-center gap-4">
+              {formData.logo_url && (
+                <img 
+                  src={formData.logo_url} 
+                  alt="Logo da empresa" 
+                  className="h-12 w-12 object-contain rounded border"
+                />
+              )}
+              <div>
+                <Input
+                  id="logo"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  disabled={uploading}
+                  className="hidden"
+                />
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById('logo')?.click()}
+                  disabled={uploading}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {uploading ? 'Carregando...' : 'Selecionar Logo'}
+                </Button>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
