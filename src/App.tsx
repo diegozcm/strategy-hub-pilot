@@ -33,6 +33,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
             <Route path="/app" element={
               <ProtectedRoute>
                 <AppLayout />
