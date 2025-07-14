@@ -325,13 +325,29 @@ export const IndicatorsPage: React.FC = () => {
     try {
       setIsSubmitting(true);
       
-      // Delete key result (this will cascade delete key_result_values)
-      const { error } = await supabase
+      // First, delete related project_kr_relations
+      const { error: relationsError } = await supabase
+        .from('project_kr_relations')
+        .delete()
+        .eq('kr_id', selectedKeyResult.id);
+
+      if (relationsError) throw relationsError;
+
+      // Delete key result values
+      const { error: valuesError } = await supabase
+        .from('key_result_values')
+        .delete()
+        .eq('key_result_id', selectedKeyResult.id);
+
+      if (valuesError) throw valuesError;
+
+      // Finally, delete the key result
+      const { error: keyResultError } = await supabase
         .from('key_results')
         .delete()
         .eq('id', selectedKeyResult.id);
 
-      if (error) throw error;
+      if (keyResultError) throw keyResultError;
 
       // Update local state
       setKeyResults(prev => prev.filter(kr => kr.id !== selectedKeyResult.id));
