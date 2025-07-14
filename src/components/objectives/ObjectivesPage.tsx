@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X, Trash2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { AddResultadoChaveModal } from '@/components/strategic-map/AddResultadoChaveModal';
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
@@ -50,6 +51,7 @@ interface KeyResult {
 export const ObjectivesPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [objectives, setObjectives] = useState<StrategicObjective[]>([]);
   const [plans, setPlans] = useState<StrategicPlan[]>([]);
   const [keyResults, setKeyResults] = useState<KeyResult[]>([]);
@@ -120,10 +122,11 @@ export const ObjectivesPage: React.FC = () => {
       if (objectivesError) throw objectivesError;
       setObjectives(objectivesData || []);
 
-      // Load key results
+      // Load key results - only get those with objective associations and with categories
       const { data: keyResultsData, error: keyResultsError } = await supabase
         .from('key_results')
         .select('*')
+        .not('objective_id', 'is', null)
         .order('created_at', { ascending: false });
 
       if (keyResultsError) throw keyResultsError;
@@ -386,6 +389,12 @@ export const ObjectivesPage: React.FC = () => {
 
   const getObjectiveKeyResults = (objectiveId: string) => {
     return keyResults.filter(kr => kr.objective_id === objectiveId);
+  };
+
+  const navigateToKeyResult = (keyResultId: string) => {
+    // Navigate to indicators page and store the key result ID for highlighting
+    localStorage.setItem('highlightKeyResult', keyResultId);
+    navigate('/indicators');
   };
 
   if (loading) {
@@ -909,24 +918,38 @@ export const ObjectivesPage: React.FC = () => {
                     {getObjectiveKeyResults(selectedObjective.id).map((kr) => {
                       const progress = kr.target_value > 0 ? (kr.current_value / kr.target_value) * 100 : 0;
                       return (
-                        <Card key={kr.id} className="p-4">
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-start">
-                              <h4 className="font-medium text-sm">{kr.title}</h4>
-                              <Badge 
-                                variant={kr.status === 'completed' ? 'default' : 'secondary'}
-                                className={kr.status === 'completed' ? 'bg-green-500 text-white' : ''}
-                              >
-                                {getStatusText(kr.status)}
-                              </Badge>
-                            </div>
-                            <div className="flex justify-between text-sm text-gray-600">
-                              <span>{kr.current_value} / {kr.target_value} {kr.unit}</span>
-                              <span>{Math.round(progress)}%</span>
-                            </div>
-                            <Progress value={progress} className="h-2" />
-                          </div>
-                        </Card>
+                         <Card key={kr.id} className="p-4">
+                           <div className="space-y-2">
+                             <div className="flex justify-between items-start">
+                               <h4 className="font-medium text-sm">{kr.title}</h4>
+                               <div className="flex items-center gap-2">
+                                 <Badge 
+                                   variant={kr.status === 'completed' ? 'default' : 'secondary'}
+                                   className={kr.status === 'completed' ? 'bg-green-500 text-white' : ''}
+                                 >
+                                   {getStatusText(kr.status)}
+                                 </Badge>
+                                 <Button
+                                   variant="outline"
+                                   size="sm"
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     navigateToKeyResult(kr.id);
+                                   }}
+                                   className="h-6 px-2"
+                                 >
+                                   <ExternalLink className="h-3 w-3 mr-1" />
+                                   Ver
+                                 </Button>
+                               </div>
+                             </div>
+                             <div className="flex justify-between text-sm text-gray-600">
+                               <span>{kr.current_value} / {kr.target_value} {kr.unit}</span>
+                               <span>{Math.round(progress)}%</span>
+                             </div>
+                             <Progress value={progress} className="h-2" />
+                           </div>
+                         </Card>
                       );
                     })}
                   </div>
