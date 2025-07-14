@@ -9,6 +9,7 @@ import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { CompanySetupModal } from './CompanySetupModal';
 import { PillarFormModal } from './PillarFormModal';
 import { ObjectiveCard } from './ObjectiveCard';
+import { ObjectiveFormModal } from './ObjectiveFormModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 const defaultPillars = [
@@ -28,11 +29,14 @@ export const StrategicMapPage = () => {
     keyResults,
     createCompany,
     createPillar,
+    createObjective,
     calculatePillarProgress
   } = useStrategicMap();
 
   const [showCompanySetup, setShowCompanySetup] = useState(false);
   const [showPillarForm, setShowPillarForm] = useState(false);
+  const [showObjectiveForm, setShowObjectiveForm] = useState(false);
+  const [selectedPillarId, setSelectedPillarId] = useState<string>('');
 
   if (loading) {
     return (
@@ -222,7 +226,15 @@ export const StrategicMapPage = () => {
                         <p className="text-sm text-muted-foreground">
                           Nenhum objetivo definido
                         </p>
-                        <Button variant="outline" size="sm" className="mt-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-2"
+                          onClick={() => {
+                            setSelectedPillarId(pillar.id);
+                            setShowObjectiveForm(true);
+                          }}
+                        >
                           <Plus className="mr-2 h-3 w-3" />
                           Adicionar Objetivo
                         </Button>
@@ -248,6 +260,14 @@ export const StrategicMapPage = () => {
         open={showPillarForm}
         onClose={() => setShowPillarForm(false)}
         onSave={createPillar}
+      />
+
+      <ObjectiveFormModal
+        open={showObjectiveForm}
+        onClose={() => setShowObjectiveForm(false)}
+        pillarId={selectedPillarId}
+        planId={company?.id || ''}
+        onSave={createObjective}
       />
     </div>
   );

@@ -127,7 +127,7 @@ export const useStrategicMap = () => {
     }
   };
 
-  // Create company
+  // Create company with default pillars
   const createCompany = async (companyData: Omit<Company, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
 
@@ -148,6 +148,10 @@ export const useStrategicMap = () => {
       }
 
       setCompany(data);
+      
+      // Create default strategic pillars
+      await createDefaultPillars(data.id);
+      
       toast({
         title: "Sucesso",
         description: "Empresa criada com sucesso",
@@ -156,6 +160,39 @@ export const useStrategicMap = () => {
     } catch (error) {
       console.error('Error creating company:', error);
       return null;
+    }
+  };
+
+  // Create default strategic pillars
+  const createDefaultPillars = async (companyId: string) => {
+    const defaultPillars = [
+      { name: 'Econômico & Financeiro', color: '#22C55E', description: 'Pilar focado em resultados financeiros e econômicos' },
+      { name: 'Mercado e Imagem', color: '#3B82F6', description: 'Pilar focado em mercado e imagem corporativa' },
+      { name: 'Tecnologia e Processos', color: '#F59E0B', description: 'Pilar focado em tecnologia e processos internos' },
+      { name: 'Inovação & Crescimento', color: '#8B5CF6', description: 'Pilar focado em inovação e crescimento sustentável' },
+      { name: 'Pessoas & Cultura', color: '#EF4444', description: 'Pilar focado em pessoas e cultura organizacional' },
+    ];
+
+    try {
+      const pillarsToInsert = defaultPillars.map((pillar, index) => ({
+        ...pillar,
+        company_id: companyId,
+        order_index: index
+      }));
+
+      const { data, error } = await supabase
+        .from('strategic_pillars')
+        .insert(pillarsToInsert)
+        .select();
+
+      if (error) {
+        console.error('Error creating default pillars:', error);
+        return;
+      }
+
+      setPillars(data || []);
+    } catch (error) {
+      console.error('Error creating default pillars:', error);
     }
   };
 
@@ -235,6 +272,38 @@ export const useStrategicMap = () => {
     }
   }, [user]);
 
+  // Create objective
+  const createObjective = async (objectiveData: Omit<StrategicObjective, 'id' | 'created_at' | 'updated_at'>) => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('strategic_objectives')
+        .insert([{ ...objectiveData, owner_id: user.id }])
+        .select()
+        .single();
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao criar objetivo estratégico",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      setObjectives(prev => [...prev, data]);
+      toast({
+        title: "Sucesso",
+        description: "Objetivo estratégico criado com sucesso",
+      });
+      return data;
+    } catch (error) {
+      console.error('Error creating objective:', error);
+      return null;
+    }
+  };
+
   return {
     loading,
     company,
@@ -244,6 +313,7 @@ export const useStrategicMap = () => {
     projects,
     createCompany,
     createPillar,
+    createObjective,
     calculateObjectiveProgress,
     calculatePillarProgress,
     refreshData: loadCompany
