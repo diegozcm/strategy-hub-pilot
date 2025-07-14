@@ -76,6 +76,9 @@ export const ObjectiveFormModal = ({
         target_date: data.target_date ? new Date(data.target_date).toISOString().split('T')[0] : null,
       };
 
+      console.log('Creating objective with data:', objectiveData);
+      console.log('Plan ID being used:', planId);
+      
       await onSave(objectiveData);
       form.reset();
       onClose();

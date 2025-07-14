@@ -28,6 +28,7 @@ export const StrategicMapPage = () => {
   const {
     loading,
     company,
+    strategicPlan,
     pillars,
     objectives,
     keyResults,
@@ -359,7 +360,7 @@ export const StrategicMapPage = () => {
         open={showObjectiveForm}
         onClose={() => setShowObjectiveForm(false)}
         pillarId={selectedPillarId}
-        planId={company?.id || ''}
+        planId={strategicPlan?.id || ''}
         onSave={createObjective}
       />
 

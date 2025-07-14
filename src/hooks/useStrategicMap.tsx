@@ -8,6 +8,7 @@ export const useStrategicMap = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState<Company | null>(null);
+  const [strategicPlan, setStrategicPlan] = useState<any | null>(null);
   const [pillars, setPillars] = useState<StrategicPillar[]>([]);
   const [objectives, setObjectives] = useState<StrategicObjective[]>([]);
   const [keyResults, setKeyResults] = useState<KeyResult[]>([]);
@@ -31,10 +32,75 @@ export const useStrategicMap = () => {
 
       if (data) {
         setCompany(data);
+        await loadStrategicPlan(data.id);
         await loadPillars(data.id);
       }
     } catch (error) {
       console.error('Error loading company:', error);
+    }
+  };
+
+  // Load strategic plan
+  const loadStrategicPlan = async (companyId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .select('*')
+        .eq('organization_id', companyId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading strategic plan:', error);
+        return;
+      }
+
+      if (data) {
+        setStrategicPlan(data);
+      } else {
+        // Create a default strategic plan if none exists
+        await createDefaultStrategicPlan(companyId);
+      }
+    } catch (error) {
+      console.error('Error loading strategic plan:', error);
+    }
+  };
+
+  // Create default strategic plan
+  const createDefaultStrategicPlan = async (companyId: string) => {
+    if (!user) return null;
+
+    try {
+      const currentYear = new Date().getFullYear();
+      const nextYear = currentYear + 1;
+      
+      const planData = {
+        name: `Plano Estratégico ${currentYear}-${nextYear}`,
+        organization_id: companyId,
+        period_start: `${currentYear}-01-01`,
+        period_end: `${nextYear}-12-31`,
+        status: 'active',
+        mission: company?.mission || '',
+        vision: company?.vision || ''
+      };
+
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .insert([planData])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating default strategic plan:', error);
+        return null;
+      }
+
+      setStrategicPlan(data);
+      return data;
+    } catch (error) {
+      console.error('Error creating default strategic plan:', error);
+      return null;
     }
   };
 
@@ -148,6 +214,9 @@ export const useStrategicMap = () => {
       }
 
       setCompany(data);
+      
+      // Create default strategic plan
+      await createDefaultStrategicPlan(data.id);
       
       // Create default strategic pillars
       await createDefaultPillars(data.id);
@@ -444,6 +513,7 @@ export const useStrategicMap = () => {
   return {
     loading,
     company,
+    strategicPlan,
     pillars,
     objectives,
     keyResults,
