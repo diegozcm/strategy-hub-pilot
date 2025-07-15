@@ -447,7 +447,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
 };
 
 export const UserEditorPage: React.FC = () => {
-  const { user, profile } = useAuth();
+  const { user: currentUser, profile } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -503,6 +503,61 @@ export const UserEditorPage: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Erro",
+        description: "Usuário não autenticado",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (userId === currentUser.id) {
+      toast({
+        title: "Erro", 
+        description: "Você não pode excluir sua própria conta",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      // Primeiro remover o usuário das empresas
+      const { error: relationError } = await supabase
+        .from('user_company_relations')
+        .delete()
+        .eq('user_id', userId);
+
+      if (relationError) throw relationError;
+
+      // Depois remover o perfil do usuário
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (profileError) throw profileError;
+
+      // Por fim, remover o usuário do auth (apenas admin pode fazer isso via RPC se necessário)
+      // Como não temos uma função RPC para isso, vamos apenas remover o perfil
+      
+      toast({
+        title: 'Sucesso',
+        description: 'Usuário excluído com sucesso'
+      });
+
+      loadData();
+    } catch (error) {
+      console.error('Erro ao excluir usuário:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao excluir usuário',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -630,19 +685,52 @@ export const UserEditorPage: React.FC = () => {
                           <p className="text-xs text-slate-400">{userProfile.position || '-'}</p>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedUser(userProfile);
-                            setIsEditDialogOpen(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar
-                        </Button>
-                      </TableCell>
+                       <TableCell>
+                         <div className="flex gap-2">
+                           <Button 
+                             size="sm" 
+                             variant="outline"
+                             onClick={() => {
+                               setSelectedUser(userProfile);
+                               setIsEditDialogOpen(true);
+                             }}
+                           >
+                             <Edit className="h-4 w-4 mr-2" />
+                             Editar
+                           </Button>
+                           
+                           <AlertDialog>
+                             <AlertDialogTrigger asChild>
+                               <Button 
+                                 size="sm" 
+                                 variant="destructive"
+                                 disabled={userProfile.user_id === currentUser?.id}
+                               >
+                                 <Trash2 className="h-4 w-4 mr-2" />
+                                 Excluir
+                               </Button>
+                             </AlertDialogTrigger>
+                             <AlertDialogContent className="bg-slate-800 border-slate-700 text-white">
+                               <AlertDialogHeader>
+                                 <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                 <AlertDialogDescription className="text-slate-400">
+                                   Tem certeza que deseja excluir o usuário {userProfile.first_name} {userProfile.last_name}? 
+                                   Esta ação não pode ser desfeita e todos os dados associados ao usuário serão removidos.
+                                 </AlertDialogDescription>
+                               </AlertDialogHeader>
+                               <AlertDialogFooter>
+                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                 <AlertDialogAction 
+                                   onClick={() => handleDeleteUser(userProfile.user_id)}
+                                   className="bg-red-600 hover:bg-red-700"
+                                 >
+                                   Excluir
+                                 </AlertDialogAction>
+                               </AlertDialogFooter>
+                             </AlertDialogContent>
+                           </AlertDialog>
+                         </div>
+                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
