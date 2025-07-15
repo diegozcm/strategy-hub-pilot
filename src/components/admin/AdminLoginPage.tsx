@@ -19,9 +19,13 @@ export const AdminLoginPage: React.FC = () => {
 
   useEffect(() => {
     if (user && profile) {
+      console.log('🔍 Admin Login - Checking permissions:', { user: user.email, role: profile.role, isSystemAdmin });
+      
       if (isSystemAdmin || profile.role === 'admin') {
+        console.log('✅ Admin access granted, redirecting to /admin');
         navigate('/admin');
       } else {
+        console.log('❌ Admin access denied, user role:', profile.role);
         setError('Acesso negado. Esta área é restrita a administradores.');
       }
     }
