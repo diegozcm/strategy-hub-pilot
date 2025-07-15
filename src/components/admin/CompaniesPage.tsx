@@ -502,13 +502,30 @@ export const CompaniesPage: React.FC = () => {
   };
 
   const handleDeleteCompany = async (companyId: string) => {
+    console.log('DEBUG: Tentando excluir empresa', { 
+      companyId, 
+      currentUserId: user?.id,
+      userRole: profile?.role 
+    });
+    
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('companies')
         .delete()
-        .eq('id', companyId);
+        .eq('id', companyId)
+        .select();
+
+      console.log('DEBUG: Resultado da exclusão', { data, error });
 
       if (error) throw error;
+
+      // Verificar se a exclusão realmente aconteceu
+      const { data: checkData } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('id', companyId);
+      
+      console.log('DEBUG: Verificação pós-exclusão', { checkData });
 
       setCompanies(companies.filter(c => c.id !== companyId));
       setDeletingCompany(null);
@@ -517,6 +534,9 @@ export const CompaniesPage: React.FC = () => {
         title: "Sucesso",
         description: "Empresa excluída com sucesso.",
       });
+
+      // Recarregar dados para garantir sincronização
+      await loadData();
     } catch (error) {
       console.error('Erro ao excluir empresa:', error);
       toast({
