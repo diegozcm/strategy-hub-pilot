@@ -30,6 +30,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Company, CompanyUser } from '@/types/admin';
+import { ManageUsersModal } from './companies/ManageUsersModal';
 
 interface CompanyCardProps {
   company: Company;
@@ -607,7 +608,15 @@ export const CompaniesPage: React.FC = () => {
           onCompanyUpdated={loadData}
         />
 
-        {/* TODO: Implementar modais de criação, gestão de usuários e exclusão */}
+        {/* Modal de gestão de usuários */}
+        {managingUsers && (
+          <ManageUsersModal
+            company={managingUsers}
+            isOpen={!!managingUsers}
+            onOpenChange={(open) => !open && setManagingUsers(null)}
+            onUpdated={loadData}
+          />
+        )}
       </CardContent>
     </Card>
   );
