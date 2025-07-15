@@ -474,6 +474,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           avatar_url: string | null
           bio: string | null
           created_at: string | null
@@ -492,6 +494,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
@@ -510,6 +514,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
@@ -941,6 +947,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      activate_user: {
+        Args: { _user_id: string; _admin_id: string }
+        Returns: boolean
+      }
       analyze_user_data: {
         Args: { target_user_id: string }
         Returns: Json
@@ -948,6 +958,10 @@ export type Database = {
       calculate_achievement_percentage: {
         Args: { actual: number; target: number }
         Returns: number
+      }
+      deactivate_user: {
+        Args: { _user_id: string; _admin_id: string }
+        Returns: boolean
       }
       get_monthly_objective_achievement: {
         Args: { objective_id: string; target_month: string }
@@ -970,6 +984,14 @@ export type Database = {
       }
       is_admin: {
         Args: { _user_id: string }
+        Returns: boolean
+      }
+      update_user_role: {
+        Args: {
+          _user_id: string
+          _new_role: Database["public"]["Enums"]["app_role"]
+          _admin_id: string
+        }
         Returns: boolean
       }
     }
