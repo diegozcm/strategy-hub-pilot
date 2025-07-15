@@ -263,6 +263,7 @@ export type Database = {
           mission: string | null
           name: string
           owner_id: string
+          status: string | null
           updated_at: string
           values: string[] | null
           vision: string | null
@@ -274,6 +275,7 @@ export type Database = {
           mission?: string | null
           name: string
           owner_id: string
+          status?: string | null
           updated_at?: string
           values?: string[] | null
           vision?: string | null
@@ -285,6 +287,7 @@ export type Database = {
           mission?: string | null
           name?: string
           owner_id?: string
+          status?: string | null
           updated_at?: string
           values?: string[] | null
           vision?: string | null
@@ -478,6 +481,7 @@ export type Database = {
           approved_by: string | null
           avatar_url: string | null
           bio: string | null
+          company_id: string | null
           created_at: string | null
           department: string | null
           email: string | null
@@ -498,6 +502,7 @@ export type Database = {
           approved_by?: string | null
           avatar_url?: string | null
           bio?: string | null
+          company_id?: string | null
           created_at?: string | null
           department?: string | null
           email?: string | null
@@ -518,6 +523,7 @@ export type Database = {
           approved_by?: string | null
           avatar_url?: string | null
           bio?: string | null
+          company_id?: string | null
           created_at?: string | null
           department?: string | null
           email?: string | null
@@ -533,7 +539,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_kr_relations: {
         Row: {

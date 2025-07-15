@@ -111,24 +111,37 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           setTimeout(async () => {
             const userProfile = await fetchProfile(session.user.id);
             console.log('📋 Profile fetched:', userProfile);
-            setProfile(userProfile);
             
             if (userProfile) {
+              // Verificar se o usuário tem empresa associada e se ela está ativa
+              if (userProfile.company_id) {
+                const companyData = await fetchCompany(userProfile.company_id);
+                console.log('🏢 Company data:', companyData);
+                
+                if (companyData) {
+                  if (companyData.status === 'inactive') {
+                    console.log('❌ Company is inactive, redirecting to error page');
+                    navigate('/company-inactive');
+                    return;
+                  }
+                  setCompany(companyData);
+                } else {
+                  console.log('❌ Company not found');
+                }
+              }
+              
+              setProfile(userProfile);
+              
+              // Para admins, carregar empresa selecionada
               if (userProfile.role === 'admin') {
-                console.log('🔧 Admin detected, loading company...');
+                console.log('🔧 Admin detected, loading selected company...');
                 const savedCompanyId = localStorage.getItem('selectedCompanyId');
-                if (savedCompanyId) {
-                  const companyData = await fetchCompany(savedCompanyId);
-                  if (companyData) {
-                    setCompany(companyData);
+                if (savedCompanyId && savedCompanyId !== userProfile.company_id) {
+                  const adminCompanyData = await fetchCompany(savedCompanyId);
+                  if (adminCompanyData && adminCompanyData.status === 'active') {
+                    setCompany(adminCompanyData);
                     setSelectedCompanyId(savedCompanyId);
                   }
-                }
-              } else if (userProfile.company_id) {
-                console.log('🏢 Loading user company:', userProfile.company_id);
-                const companyData = await fetchCompany(userProfile.company_id);
-                if (companyData) {
-                  setCompany(companyData);
                 }
               }
             }

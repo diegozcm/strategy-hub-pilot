@@ -8,6 +8,7 @@ import { MultiTenantAuthProvider } from "@/hooks/useMultiTenant";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { AdminLoginPage } from "@/components/admin/AdminLoginPage";
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { CompanyInactivePage } from "@/pages/CompanyInactivePage";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
@@ -38,6 +39,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/company-inactive" element={<CompanyInactivePage />} />
             <Route path="/admin-login" element={<AdminLoginPage />} />
             
             {/* Redirects for direct page access */}
