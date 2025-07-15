@@ -46,8 +46,8 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
   const totalUsers = users.length;
 
   return (
-    <Card className="h-full hover:shadow-lg transition-shadow">
-      <CardHeader className="pb-3">
+    <Card className="w-full h-full flex flex-col hover:shadow-lg transition-shadow">
+      <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -67,7 +67,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="flex-1 space-y-4 p-4">
         {/* Company Info */}
         <div className="space-y-3">
           {company.mission && (
