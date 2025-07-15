@@ -6,6 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { MultiTenantAuthProvider } from "@/hooks/useMultiTenant";
 import { AuthPage } from "@/components/auth/AuthPage";
+import { AdminLoginPage } from "@/components/admin/AdminLoginPage";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { ObjectivesPage } from "@/components/objectives/ObjectivesPage";
@@ -35,6 +38,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/admin-login" element={<AdminLoginPage />} />
             
             {/* Redirects for direct page access */}
             <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
@@ -47,8 +51,6 @@ const App = () => (
             <Route path="/team" element={<Navigate to="/app/team" replace />} />
             <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
             <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
-            <Route path="/admin/companies" element={<Navigate to="/app/admin/companies" replace />} />
-            <Route path="/admin/users" element={<Navigate to="/app/admin/users" replace />} />
             
             {/* Protected app routes */}
             <Route path="/app" element={
@@ -67,9 +69,18 @@ const App = () => (
               <Route path="team" element={<TeamPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="settings" element={<SettingsPage />} />
-              <Route path="admin" element={<Navigate to="/app/admin/companies" replace />} />
-              <Route path="admin/companies" element={<CompaniesPage />} />
-              <Route path="admin/users" element={<PendingUsersPage />} />
+            </Route>
+
+            {/* Admin routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminLayout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminDashboard />} />
+              <Route path="companies" element={<CompaniesPage />} />
+              <Route path="users" element={<PendingUsersPage />} />
+              <Route path="settings" element={<div className="text-white">Configurações do Sistema</div>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

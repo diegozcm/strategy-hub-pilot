@@ -109,6 +109,12 @@ const LandingPage = () => {
                 <Play className="mr-2 h-5 w-5" />
                 Ver Demonstração
               </Button>
+              <Link to="/admin-login">
+                <Button variant="ghost" size="sm" className="text-sm text-gray-500 hover:text-gray-700">
+                  <Shield className="mr-2 h-4 w-4" />
+                  Admin
+                </Button>
+              </Link>
             </div>
 
             {/* Trust Badges */}

@@ -26,19 +26,21 @@ interface Company {
 }
 
 export const PendingUsersPage: React.FC = () => {
-  const { isSystemAdmin } = useAuth();
+  const { profile } = useAuth();
   const { toast } = useToast();
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingUser, setProcessingUser] = useState<string | null>(null);
 
+  const isAdmin = profile?.role === 'admin';
+
   useEffect(() => {
-    if (isSystemAdmin) {
+    if (isAdmin) {
       fetchPendingUsers();
       fetchCompanies();
     }
-  }, [isSystemAdmin]);
+  }, [isAdmin]);
 
   const fetchPendingUsers = async () => {
     try {
@@ -148,12 +150,12 @@ export const PendingUsersPage: React.FC = () => {
     }
   };
 
-  if (!isSystemAdmin) {
+  if (!isAdmin) {
     return (
       <div className="p-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Acesso Negado</h2>
-          <p className="text-gray-600">Você não tem permissão para acessar esta página.</p>
+          <h2 className="text-2xl font-bold text-white mb-4">Acesso Negado</h2>
+          <p className="text-slate-300">Você não tem permissão para acessar esta página.</p>
         </div>
       </div>
     );

@@ -176,59 +176,15 @@ export const AuthPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Acesso Admin */}
-        <Card className="mt-6 border-amber-200 bg-amber-50">
-          <CardContent className="p-4">
-            <div className="flex items-center mb-3">
-              <Shield className="h-5 w-5 text-amber-600 mr-2" />
-              <h3 className="text-sm font-semibold text-amber-800">Acesso Administrativo</h3>
-            </div>
-            <p className="text-xs text-amber-700 mb-3">
-              Para demonstração, use as credenciais abaixo para acessar o sistema como administrador:
-            </p>
-            <div className="space-y-2">
-              <Button
-                onClick={() => {
-                  setEmail('admin@example.com');
-                  setPassword('admin123');
-                  setIsLogin(true);
-                }}
-                variant="outline"
-                size="sm"
-                className="w-full text-xs border-amber-300 hover:bg-amber-100"
-              >
-                🔑 Admin Sistema (admin@example.com)
-              </Button>
-              <Button
-                onClick={() => {
-                  setEmail('manager@example.com');
-                  setPassword('manager123');
-                  setIsLogin(true);
-                }}
-                variant="outline"
-                size="sm"
-                className="w-full text-xs border-amber-300 hover:bg-amber-100"
-              >
-                👤 Manager (manager@example.com)
-              </Button>
-              <Button
-                onClick={() => {
-                  setEmail('member@example.com');
-                  setPassword('member123');
-                  setIsLogin(true);
-                }}
-                variant="outline"
-                size="sm"
-                className="w-full text-xs border-amber-300 hover:bg-amber-100"
-              >
-                👥 Colaborador (member@example.com)
-              </Button>
-            </div>
-            <p className="text-xs text-amber-600 mt-3">
-              * Usuários de demonstração pré-configurados
-            </p>
-          </CardContent>
-        </Card>
+        {/* Admin Access Link */}
+        <div className="mt-6 text-center">
+          <button
+            onClick={() => navigate('/admin-login')}
+            className="text-xs text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            Acesso Administrativo →
+          </button>
+        </div>
 
         {/* Features */}
         <div className="mt-8 text-center text-sm text-gray-600">

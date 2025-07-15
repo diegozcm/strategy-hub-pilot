@@ -22,15 +22,17 @@ interface Company {
 }
 
 export const CompaniesPage: React.FC = () => {
-  const { isSystemAdmin } = useAuth();
+  const { profile } = useAuth();
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const isAdmin = profile?.role === 'admin';
+
   useEffect(() => {
-    if (isSystemAdmin) {
+    if (isAdmin) {
       fetchCompanies();
     }
-  }, [isSystemAdmin]);
+  }, [isAdmin]);
 
   const fetchCompanies = async () => {
     try {
@@ -44,12 +46,12 @@ export const CompaniesPage: React.FC = () => {
     }
   };
 
-  if (!isSystemAdmin) {
+  if (!isAdmin) {
     return (
       <div className="p-6">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Acesso Negado</h2>
-          <p className="text-gray-600">Você não tem permissão para acessar esta página.</p>
+          <h2 className="text-2xl font-bold text-white mb-4">Acesso Negado</h2>
+          <p className="text-slate-300">Você não tem permissão para acessar esta página.</p>
         </div>
       </div>
     );
@@ -64,13 +66,13 @@ export const CompaniesPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gerenciar Empresas</h1>
-          <p className="text-gray-600 mt-2">Gerencie todas as empresas do sistema</p>
+          <h1 className="text-3xl font-bold text-white">Gerenciar Empresas</h1>
+          <p className="text-slate-300 mt-2">Gerencie todas as empresas do sistema</p>
         </div>
-        <Button className="flex items-center gap-2">
+        <Button className="flex items-center gap-2 bg-red-600 hover:bg-red-700">
           <Plus className="h-4 w-4" />
           Nova Empresa
         </Button>
