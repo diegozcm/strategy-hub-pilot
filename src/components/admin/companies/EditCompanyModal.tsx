@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Save, X } from 'lucide-react';
 import { Company } from '@/types/admin';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 interface EditCompanyModalProps {
   company: Company;
@@ -22,6 +24,8 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
 }) => {
   const [editedCompany, setEditedCompany] = useState<Company>({ ...company });
   const [newValue, setNewValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleAddValue = () => {
     if (newValue.trim()) {
@@ -38,6 +42,52 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
       ...editedCompany,
       values: editedCompany.values?.filter((_, i) => i !== index)
     });
+  };
+
+  const handleSave = async () => {
+    if (!editedCompany.name.trim()) {
+      toast({
+        title: "Erro",
+        description: "O nome da empresa é obrigatório",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({
+          name: editedCompany.name.trim(),
+          mission: editedCompany.mission || null,
+          vision: editedCompany.vision || null,
+          values: editedCompany.values || null,
+          status: editedCompany.status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editedCompany.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Empresa atualizada com sucesso"
+      });
+
+      onSave(editedCompany);
+    } catch (error) {
+      console.error('Erro ao atualizar empresa:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar empresa. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -133,9 +183,9 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
           <Button variant="outline" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button onClick={() => onSave(editedCompany)}>
+          <Button onClick={handleSave} disabled={isLoading}>
             <Save className="w-4 h-4 mr-2" />
-            Salvar
+            {isLoading ? 'Salvando...' : 'Salvar'}
           </Button>
         </div>
       </DialogContent>
