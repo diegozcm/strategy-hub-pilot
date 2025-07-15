@@ -120,7 +120,7 @@ export const CompaniesPage: React.FC = () => {
 
       if (error) throw error;
 
-      setCompanies([data, ...companies]);
+      setCompanies([{...data, status: data.status as 'active' | 'inactive'}, ...companies]);
       setShowCreateForm(false);
 
       toast({
@@ -474,6 +474,107 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
       ...editedCompany,
       values: editedCompany.values?.filter((_, i) => i !== index)
     });
+  };
+
+  return (
+    <Dialog open={true} onOpenChange={onCancel}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Editar Empresa</DialogTitle>
+          <DialogDescription>
+            Edite as informações da empresa.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="name">Nome da Empresa</Label>
+            <Input
+              id="name"
+              value={editedCompany.name}
+              onChange={(e) => setEditedCompany({ ...editedCompany, name: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select
+              value={editedCompany.status}
+              onValueChange={(value: 'active' | 'inactive') => 
+                setEditedCompany({ ...editedCompany, status: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Ativa</SelectItem>
+                <SelectItem value="inactive">Inativa</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="mission">Missão</Label>
+            <Textarea
+              id="mission"
+              value={editedCompany.mission || ''}
+              onChange={(e) => setEditedCompany({ ...editedCompany, mission: e.target.value })}
+              placeholder="Descrição da missão da empresa"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="vision">Visão</Label>
+            <Textarea
+              id="vision"
+              value={editedCompany.vision || ''}
+              onChange={(e) => setEditedCompany({ ...editedCompany, vision: e.target.value })}
+              placeholder="Descrição da visão da empresa"
+            />
+          </div>
+
+          <div>
+            <Label>Valores</Label>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  value={newValue}
+                  onChange={(e) => setNewValue(e.target.value)}
+                  placeholder="Adicionar novo valor"
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddValue()}
+                />
+                <Button onClick={handleAddValue} size="sm">
+                  Adicionar
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {editedCompany.values?.map((value, index) => (
+                  <Badge key={index} variant="secondary" className="gap-1">
+                    {value}
+                    <X
+                      className="w-3 h-3 cursor-pointer"
+                      onClick={() => handleRemoveValue(index)}
+                    />
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button onClick={() => onSave(editedCompany)}>
+            <Save className="w-4 h-4 mr-1" />
+            Salvar
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 };
 
 interface CreateCompanyModalProps {
