@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useMultiTenant';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -42,7 +42,7 @@ interface Profile {
 }
 
 export const SettingsPage: React.FC = () => {
-  const { user, signInWithGoogle, resetPassword } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -166,13 +166,11 @@ export const SettingsPage: React.FC = () => {
     if (!resetEmail) return;
 
     try {
-      const { error } = await resetPassword(resetEmail);
-      
-      if (error) throw error;
-
+      // Note: Password reset functionality would need to be implemented separately
       toast({
-        title: 'Sucesso',
-        description: 'Email de reset enviado',
+        title: 'Funcionalidade não disponível',
+        description: 'Reset de senha não implementado no novo sistema',
+        variant: 'destructive',
       });
       
       setResetEmail('');
@@ -187,13 +185,11 @@ export const SettingsPage: React.FC = () => {
 
   const handleGoogleConnect = async () => {
     try {
-      const { error } = await signInWithGoogle();
-      
-      if (error) throw error;
-
+      // Note: Google OAuth functionality would need to be implemented separately
       toast({
-        title: 'Sucesso',
-        description: 'Conta Google conectada',
+        title: 'Funcionalidade não disponível',
+        description: 'OAuth Google não implementado no novo sistema',
+        variant: 'destructive',
       });
     } catch (error) {
       toast({

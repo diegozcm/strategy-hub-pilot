@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { X, Plus, Upload } from 'lucide-react';
 import { Company } from '@/types/strategic-map';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useMultiTenant';
 import { toast } from '@/hooks/use-toast';
 
 interface CompanySetupModalProps {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useMultiTenant';
 import { Company, StrategicPillar, StrategicObjective, KeyResult, StrategicProject } from '@/types/strategic-map';
 import { toast } from '@/hooks/use-toast';
 
