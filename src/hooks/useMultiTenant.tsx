@@ -184,39 +184,12 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    // Verificar se é uma conta de demonstração que precisa ser criada
-    if (email === 'admin@example.com' && password === 'admin123') {
-      // Criar usuário admin automaticamente
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      
-      if (signUpError && !signUpError.message.includes('User already registered')) {
-        return { error: signUpError };
-      }
-    }
-    
-    if (email === 'manager@example.com' && password === 'manager123') {
-      // Criar usuário manager automaticamente
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      
-      if (signUpError && !signUpError.message.includes('User already registered')) {
-        return { error: signUpError };
-      }
-    }
-
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (!error) {
-      // Perfis serão criados automaticamente pelo trigger handle_new_user
-      
       navigate('/app');
     }
 
