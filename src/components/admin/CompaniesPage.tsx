@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { toast } from '@/hooks/use-toast';
-import { Search, Building2, Users, Edit, Save, X, UserCheck, UserMinus, Power, PowerOff, Plus } from 'lucide-react';
+import { Search, Building2, Users, Edit, Save, X, UserCheck, UserMinus, Power, PowerOff, Plus, UserPlus, Link2, Unlink } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -38,13 +38,21 @@ interface CompanyUser {
 }
 
 export const CompaniesPage: React.FC = () => {
-  const { canAdmin } = useAuth();
+  const { canAdmin, user } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companyUsers, setCompanyUsers] = useState<{ [key: string]: CompanyUser[] }>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [managingUsers, setManagingUsers] = useState<Company | null>(null);
+  const [availableUsers, setAvailableUsers] = useState<CompanyUser[]>([]);
+
+  useEffect(() => {
+    if (managingUsers) {
+      fetchAvailableUsers();
+    }
+  }, [managingUsers]);
 
   useEffect(() => {
     if (canAdmin) {
@@ -132,6 +140,83 @@ export const CompaniesPage: React.FC = () => {
       toast({
         title: "Erro",
         description: "Erro ao criar empresa.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchAvailableUsers = async () => {
+    try {
+      const { data: users, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email, role, status, company_id')
+        .order('first_name');
+
+      if (error) throw error;
+
+      setAvailableUsers((users || []).map(user => ({
+        ...user,
+        status: user.status as 'active' | 'inactive'
+      })));
+    } catch (error) {
+      console.error('Erro ao buscar usuários disponíveis:', error);
+    }
+  };
+
+  const handleAssignUser = async (userId: string, companyId: string) => {
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase.rpc('assign_user_to_company', {
+        _user_id: userId,
+        _company_id: companyId,
+        _admin_id: user.id
+      });
+
+      if (error) throw error;
+
+      // Atualizar listas locais
+      await fetchCompanies();
+      await fetchAvailableUsers();
+
+      toast({
+        title: "Sucesso",
+        description: "Usuário vinculado à empresa com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao vincular usuário:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao vincular usuário à empresa.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUnassignUser = async (userId: string) => {
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase.rpc('unassign_user_from_company', {
+        _user_id: userId,
+        _admin_id: user.id
+      });
+
+      if (error) throw error;
+
+      // Atualizar listas locais
+      await fetchCompanies();
+      await fetchAvailableUsers();
+
+      toast({
+        title: "Sucesso",
+        description: "Usuário desvinculado da empresa com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao desvincular usuário:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao desvincular usuário da empresa.",
         variant: "destructive",
       });
     }
@@ -280,11 +365,27 @@ export const CompaniesPage: React.FC = () => {
               company={company}
               users={companyUsers[company.id] || []}
               onEdit={setEditingCompany}
-              onToggleStatus={handleToggleCompanyStatus}
+          onToggleStatus={handleToggleCompanyStatus}
+          onManageUsers={setManagingUsers}
             />
           ))
         )}
       </div>
+
+      {/* Modal de Gerenciamento de Usuários */}
+      {managingUsers && (
+        <ManageUsersModal
+          company={managingUsers}
+          availableUsers={availableUsers}
+          companyUsers={companyUsers[managingUsers.id] || []}
+          onAssignUser={handleAssignUser}
+          onUnassignUser={handleUnassignUser}
+          onClose={() => {
+            setManagingUsers(null);
+            fetchAvailableUsers();
+          }}
+        />
+      )}
 
       {/* Modal de Criação */}
       {showCreateForm && (
@@ -311,13 +412,15 @@ interface CompanyCardProps {
   users: CompanyUser[];
   onEdit: (company: Company) => void;
   onToggleStatus: (companyId: string, currentStatus: string) => void;
+  onManageUsers: (company: Company) => void;
 }
 
 const CompanyCard: React.FC<CompanyCardProps> = ({ 
   company, 
   users, 
   onEdit, 
-  onToggleStatus 
+  onToggleStatus,
+  onManageUsers
 }) => {
   const activeUsers = users.filter(u => u.status === 'active').length;
   const totalUsers = users.length;
@@ -374,7 +477,9 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
         <Tabs defaultValue="info" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="info">Informações</TabsTrigger>
-            <TabsTrigger value="users">Usuários ({totalUsers})</TabsTrigger>
+            <TabsTrigger value="users" onClick={() => onManageUsers(company)}>
+              Usuários ({totalUsers})
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="info" className="space-y-4">
@@ -694,6 +799,157 @@ const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
           >
             <Save className="w-4 h-4 mr-1" />
             Criar Empresa
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+interface ManageUsersModalProps {
+  company: Company;
+  availableUsers: CompanyUser[];
+  companyUsers: CompanyUser[];
+  onAssignUser: (userId: string, companyId: string) => void;
+  onUnassignUser: (userId: string) => void;
+  onClose: () => void;
+}
+
+const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
+  company,
+  availableUsers,
+  companyUsers,
+  onAssignUser,
+  onUnassignUser,
+  onClose
+}) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const unassignedUsers = availableUsers.filter(user => 
+    !user.company_id || user.company_id !== company.id
+  );
+  
+  const filteredUnassigned = unassignedUsers.filter(user =>
+    `${user.first_name} ${user.last_name} ${user.email}`.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+        <DialogHeader>
+          <DialogTitle>Gerenciar Usuários - {company.name}</DialogTitle>
+          <DialogDescription>
+            Vincule ou desvincule usuários desta empresa.
+          </DialogDescription>
+        </DialogHeader>
+
+        <Tabs defaultValue="assigned" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="assigned">Usuários da Empresa ({companyUsers.length})</TabsTrigger>
+            <TabsTrigger value="available">Usuários Disponíveis ({filteredUnassigned.length})</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="assigned" className="space-y-4 max-h-96 overflow-y-auto">
+            {companyUsers.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>Nenhum usuário vinculado a esta empresa.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {companyUsers.map((user) => (
+                  <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <UserCheck className="w-5 h-5 text-green-500" />
+                      <div>
+                        <p className="font-medium">
+                          {user.first_name} {user.last_name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                        {user.role}
+                      </Badge>
+                      <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
+                        {user.status}
+                      </Badge>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onUnassignUser(user.id)}
+                      >
+                        <Unlink className="w-4 h-4 mr-1" />
+                        Desvincular
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="available" className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Pesquisar usuários..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <div className="space-y-2 max-h-80 overflow-y-auto">
+              {filteredUnassigned.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <UserPlus className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>
+                    {searchTerm ? 'Nenhum usuário encontrado.' : 'Todos os usuários já estão vinculados a empresas.'}
+                  </p>
+                </div>
+              ) : (
+                filteredUnassigned.map((user) => (
+                  <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <UserMinus className="w-5 h-5 text-gray-400" />
+                      <div>
+                        <p className="font-medium">
+                          {user.first_name} {user.last_name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        {user.company_id && (
+                          <p className="text-xs text-blue-600">Vinculado a outra empresa</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                        {user.role}
+                      </Badge>
+                      <Badge variant={user.status === 'active' ? 'default' : 'destructive'}>
+                        {user.status}
+                      </Badge>
+                      <Button
+                        size="sm"
+                        onClick={() => onAssignUser(user.id, company.id)}
+                        disabled={user.status === 'inactive'}
+                      >
+                        <Link2 className="w-4 h-4 mr-1" />
+                        Vincular
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        <div className="flex justify-end pt-4">
+          <Button variant="outline" onClick={onClose}>
+            Fechar
           </Button>
         </div>
       </DialogContent>

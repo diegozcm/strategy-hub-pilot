@@ -969,6 +969,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: Json
       }
+      assign_user_to_company: {
+        Args: { _user_id: string; _company_id: string; _admin_id: string }
+        Returns: boolean
+      }
       calculate_achievement_percentage: {
         Args: { actual: number; target: number }
         Returns: number
@@ -998,6 +1002,10 @@ export type Database = {
       }
       is_admin: {
         Args: { _user_id: string }
+        Returns: boolean
+      }
+      unassign_user_from_company: {
+        Args: { _user_id: string; _admin_id: string }
         Returns: boolean
       }
       update_user_role: {
