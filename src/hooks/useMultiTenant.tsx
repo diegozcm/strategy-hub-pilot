@@ -48,7 +48,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching profile:', error);
@@ -69,7 +69,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         .from('companies')
         .select('*')
         .eq('id', companyId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching company:', error);
@@ -100,38 +100,39 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     
     // Auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('🔐 Auth state change:', event, !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           console.log('👤 User found, fetching profile for:', session.user.email);
-          const userProfile = await fetchProfile(session.user.id);
-          console.log('📋 Profile fetched:', userProfile);
-          setProfile(userProfile);
-          
-          if (userProfile) {
-            if (userProfile.role === 'admin') {
-              console.log('🔧 Admin detected, loading company...');
-              // For admin, load selected company or default
-              const savedCompanyId = localStorage.getItem('selectedCompanyId');
-              if (savedCompanyId) {
-                const companyData = await fetchCompany(savedCompanyId);
+          // Use setTimeout to defer async operations and prevent blocking
+          setTimeout(async () => {
+            const userProfile = await fetchProfile(session.user.id);
+            console.log('📋 Profile fetched:', userProfile);
+            setProfile(userProfile);
+            
+            if (userProfile) {
+              if (userProfile.role === 'admin') {
+                console.log('🔧 Admin detected, loading company...');
+                const savedCompanyId = localStorage.getItem('selectedCompanyId');
+                if (savedCompanyId) {
+                  const companyData = await fetchCompany(savedCompanyId);
+                  if (companyData) {
+                    setCompany(companyData);
+                    setSelectedCompanyId(savedCompanyId);
+                  }
+                }
+              } else if (userProfile.company_id) {
+                console.log('🏢 Loading user company:', userProfile.company_id);
+                const companyData = await fetchCompany(userProfile.company_id);
                 if (companyData) {
                   setCompany(companyData);
-                  setSelectedCompanyId(savedCompanyId);
                 }
               }
-            } else if (userProfile.company_id) {
-              console.log('🏢 Loading user company:', userProfile.company_id);
-              // For regular users, load their company
-              const companyData = await fetchCompany(userProfile.company_id);
-              if (companyData) {
-                setCompany(companyData);
-              }
             }
-          }
+          }, 0);
         } else {
           console.log('❌ No user session, clearing state');
           setProfile(null);
@@ -149,35 +150,11 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     console.log('🔍 Checking existing session...');
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('🔍 Existing session check result:', !!session);
-      if (session?.user) {
-        console.log('👤 Existing user found:', session.user.email);
-        fetchProfile(session.user.id).then(userProfile => {
-          console.log('📋 Existing profile fetched:', userProfile);
-          setProfile(userProfile);
-          
-          if (userProfile?.role === 'admin') {
-            const savedCompanyId = localStorage.getItem('selectedCompanyId');
-            if (savedCompanyId) {
-              fetchCompany(savedCompanyId).then(companyData => {
-                if (companyData) {
-                  setCompany(companyData);
-                  setSelectedCompanyId(savedCompanyId);
-                }
-              });
-            }
-          } else if (userProfile?.company_id) {
-            fetchCompany(userProfile.company_id).then(companyData => {
-              if (companyData) {
-                setCompany(companyData);
-              }
-            });
-          }
-        });
-      } else {
+      if (!session) {
         console.log('❌ No existing session found');
+        console.log('✅ Initial loading complete, setting loading to false');
+        setLoading(false);
       }
-      console.log('✅ Initial loading complete, setting loading to false');
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
