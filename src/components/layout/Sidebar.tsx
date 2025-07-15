@@ -24,22 +24,22 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { PermissionGate } from '@/components/PermissionGate';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
-  { name: 'Mapa Estratégico', href: '/strategic-map', icon: Map },
-  { name: 'Objetivos', href: '/objectives', icon: Target },
-  { name: 'Resultados Chave', href: '/indicators', icon: TrendingUp },
-  { name: 'Projetos', href: '/projects', icon: Briefcase },
-  { name: 'Relatórios', href: '/reports', icon: Activity },
-  { name: 'Equipe', href: '/team', icon: Users },
+  { name: 'Dashboard', href: '/app/dashboard', icon: BarChart3 },
+  { name: 'Mapa Estratégico', href: '/app/strategic-map', icon: Map },
+  { name: 'Objetivos', href: '/app/objectives', icon: Target },
+  { name: 'Resultados Chave', href: '/app/indicators', icon: TrendingUp },
+  { name: 'Projetos', href: '/app/projects', icon: Briefcase },
+  { name: 'Relatórios', href: '/app/reports', icon: Activity },
+  { name: 'Equipe', href: '/app/team', icon: Users },
 ];
 
 const adminNavigation = [
-  { name: 'Configurações', href: '/settings', icon: Settings },
+  { name: 'Configurações', href: '/app/settings', icon: Settings },
 ];
 
 const systemAdminNavigation = [
-  { name: 'Empresas', href: '/admin/companies', icon: Building2 },
-  { name: 'Usuários Pendentes', href: '/admin/users', icon: UserCheck },
+  { name: 'Empresas', href: '/app/admin/companies', icon: Building2 },
+  { name: 'Usuários Pendentes', href: '/app/admin/users', icon: UserCheck },
 ];
 
 export const Sidebar: React.FC = () => {

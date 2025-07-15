@@ -33,7 +33,7 @@ export const DashboardHeader: React.FC = () => {
         <div className="flex items-center space-x-3">
           <CompanySelector />
           
-          <NavLink to="/ai-copilot">
+          <NavLink to="/app/ai-copilot">
             <Button variant="ghost" size="sm" className="flex items-center space-x-2">
               <Brain className="h-4 w-4" />
               <span className="hidden sm:block text-sm font-medium">Copilot HUB</span>
@@ -60,13 +60,13 @@ export const DashboardHeader: React.FC = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem asChild>
-                <Link to="/profile" className="flex items-center w-full">
+                <Link to="/app/profile" className="flex items-center w-full">
                   <User className="mr-2 h-4 w-4" />
                   Meu Perfil
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/settings" className="flex items-center w-full">
+                <Link to="/app/settings" className="flex items-center w-full">
                   <Settings className="mr-2 h-4 w-4" />
                   Configurações
                 </Link>

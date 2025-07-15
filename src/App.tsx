@@ -56,7 +56,7 @@ const App = () => (
                 <AppLayout />
               </ProtectedRoute>
             }>
-              <Route index element={<DashboardHome />} />
+              <Route index element={<Navigate to="/app/dashboard" replace />} />
               <Route path="dashboard" element={<DashboardHome />} />
               <Route path="strategic-map" element={<StrategicMapPage />} />
               <Route path="objectives" element={<ObjectivesPage />} />
