@@ -10,8 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useMultiTenant';
 import { Input } from '@/components/ui/input';
+import { CompanySelector } from '@/components/CompanySelector';
 
 export const DashboardHeader: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -30,6 +31,8 @@ export const DashboardHeader: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-3">
+          <CompanySelector />
+          
           <NavLink to="/ai-copilot">
             <Button variant="ghost" size="sm" className="flex items-center space-x-2">
               <Brain className="h-4 w-4" />
