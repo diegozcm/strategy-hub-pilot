@@ -17,6 +17,8 @@ import TeamPage from "@/components/team/TeamPage";
 import { SettingsPage } from "@/components/settings/SettingsPage";
 import { ProfilePage } from "@/components/profile/ProfilePage";
 import { StrategicMapPage } from "@/components/strategic-map/StrategicMapPage";
+import { CompaniesPage } from "@/components/admin/CompaniesPage";
+import { PendingUsersPage } from "@/components/admin/PendingUsersPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
@@ -45,6 +47,8 @@ const App = () => (
             <Route path="/team" element={<Navigate to="/app/team" replace />} />
             <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
             <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
+            <Route path="/admin/companies" element={<Navigate to="/app/admin/companies" replace />} />
+            <Route path="/admin/users" element={<Navigate to="/app/admin/users" replace />} />
             
             {/* Protected app routes */}
             <Route path="/app" element={
@@ -63,6 +67,8 @@ const App = () => (
               <Route path="team" element={<TeamPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="admin/companies" element={<CompaniesPage />} />
+              <Route path="admin/users" element={<PendingUsersPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

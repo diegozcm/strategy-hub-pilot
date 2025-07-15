@@ -13,10 +13,15 @@ import {
   TrendingUp,
   Activity,
   Brain,
-  Map
+  Map,
+  Building2,
+  UserCheck,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useMultiTenant';
+import { PermissionGate } from '@/components/PermissionGate';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
@@ -30,6 +35,11 @@ const navigation = [
 
 const adminNavigation = [
   { name: 'Configurações', href: '/settings', icon: Settings },
+];
+
+const systemAdminNavigation = [
+  { name: 'Empresas', href: '/admin/companies', icon: Building2 },
+  { name: 'Usuários Pendentes', href: '/admin/users', icon: UserCheck },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -105,6 +115,37 @@ export const Sidebar: React.FC = () => {
               {!collapsed && <span>{item.name}</span>}
             </NavLink>
           ))}
+          
+          <PermissionGate requiredRole="system_admin">
+            {!collapsed && (
+              <div className="mt-4 mb-2">
+                <div className="flex items-center px-3 py-1">
+                  <Shield className="h-4 w-4 mr-2 text-gray-400" />
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Admin Sistema
+                  </span>
+                </div>
+              </div>
+            )}
+            {systemAdminNavigation.map((item) => (
+              <NavLink
+                key={item.name}
+                to={item.href}
+                className={({ isActive }) =>
+                  cn(
+                    "flex items-center px-3 py-2 rounded-lg transition-colors",
+                    isActive
+                      ? "bg-red-50 text-red-700 font-medium"
+                      : "text-gray-700 hover:bg-red-50",
+                    collapsed && "justify-center"
+                  )
+                }
+              >
+                <item.icon className={cn("h-5 w-5", !collapsed && "mr-3")} />
+                {!collapsed && <span>{item.name}</span>}
+              </NavLink>
+            ))}
+          </PermissionGate>
         </div>
       </nav>
     </div>
