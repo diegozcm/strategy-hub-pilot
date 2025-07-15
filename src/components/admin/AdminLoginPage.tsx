@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useNavigate } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { supabase } from '@/integrations/supabase/client';
 
 export const AdminLoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -37,7 +38,11 @@ export const AdminLoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
+      // Use supabase auth directly to avoid the hardcoded redirect to /app
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
@@ -46,6 +51,7 @@ export const AdminLoginPage: React.FC = () => {
           setError(error.message);
         }
       }
+      // Don't redirect here - let the useEffect handle it after profile is loaded
     } catch (err) {
       setError('Erro ao tentar fazer login. Tente novamente.');
     } finally {
