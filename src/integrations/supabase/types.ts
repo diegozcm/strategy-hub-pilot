@@ -836,11 +836,11 @@ export type Database = {
       }
       strategic_plans: {
         Row: {
+          company_id: string
           created_at: string
           id: string
           mission: string | null
           name: string
-          organization_id: string
           period_end: string
           period_start: string
           status: string
@@ -848,11 +848,11 @@ export type Database = {
           vision: string | null
         }
         Insert: {
+          company_id: string
           created_at?: string
           id?: string
           mission?: string | null
           name: string
-          organization_id: string
           period_end: string
           period_start: string
           status?: string
@@ -860,22 +860,31 @@ export type Database = {
           vision?: string | null
         }
         Update: {
+          company_id?: string
           created_at?: string
           id?: string
           mission?: string | null
           name?: string
-          organization_id?: string
           period_end?: string
           period_start?: string
           status?: string
           updated_at?: string
           vision?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "strategic_plans_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       strategic_projects: {
         Row: {
           budget: number | null
+          company_id: string | null
           created_at: string
           description: string | null
           end_date: string | null
@@ -892,6 +901,7 @@ export type Database = {
         }
         Insert: {
           budget?: number | null
+          company_id?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
@@ -908,6 +918,7 @@ export type Database = {
         }
         Update: {
           budget?: number | null
+          company_id?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
@@ -923,6 +934,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "strategic_projects_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "strategic_projects_plan_id_fkey"
             columns: ["plan_id"]
@@ -1036,6 +1054,10 @@ export type Database = {
           yearly_actual: number
           yearly_percentage: number
         }[]
+      }
+      get_user_company_id: {
+        Args: { _user_id: string }
+        Returns: string
       }
       has_role: {
         Args: {

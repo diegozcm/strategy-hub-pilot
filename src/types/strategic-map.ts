@@ -81,6 +81,7 @@ export interface StrategicProject {
   progress: number;
   priority?: string;
   plan_id?: string;
+  company_id?: string;
   owner_id: string;
   objectives?: StrategicObjective[];
   keyResults?: KeyResult[];

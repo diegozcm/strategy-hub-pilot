@@ -98,10 +98,25 @@ export const ObjectivesPage: React.FC = () => {
     try {
       setLoading(true);
       
+      // Buscar empresa do usuário
+      const { data: company } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('owner_id', user.id)
+        .single();
+
+      if (!company) {
+        setPlans([]);
+        setObjectives([]);
+        setLoading(false);
+        return;
+      }
+      
       // Load strategic plans
       const { data: plansData, error: plansError } = await supabase
         .from('strategic_plans')
         .select('*')
+        .eq('company_id', company.id)
         .order('created_at', { ascending: false });
 
       if (plansError) throw plansError;
@@ -152,11 +167,27 @@ export const ObjectivesPage: React.FC = () => {
     }
 
     try {
+      // Buscar empresa do usuário
+      const { data: company } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('owner_id', user.id)
+        .single();
+
+      if (!company) {
+        toast({
+          title: "Erro",
+          description: "Você precisa ter uma empresa configurada para criar planos estratégicos",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data, error } = await supabase
         .from('strategic_plans')
         .insert([{
           ...planForm,
-          organization_id: user.id, // Using user id as organization for simplicity
+          company_id: company.id,
           status: 'active'
         }])
         .select()

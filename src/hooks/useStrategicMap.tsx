@@ -34,6 +34,7 @@ export const useStrategicMap = () => {
         setCompany(data);
         await loadStrategicPlan(data.id);
         await loadPillars(data.id);
+        await loadProjects(data.id);
       }
     } catch (error) {
       console.error('Error loading company:', error);
@@ -46,7 +47,7 @@ export const useStrategicMap = () => {
       const { data, error } = await supabase
         .from('strategic_plans')
         .select('*')
-        .eq('organization_id', companyId)
+        .eq('company_id', companyId)
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
@@ -77,7 +78,7 @@ export const useStrategicMap = () => {
       
       const planData = {
         name: `Plano Estratégico ${currentYear}-${nextYear}`,
-        organization_id: companyId,
+        company_id: companyId,
         period_start: `${currentYear}-01-01`,
         period_end: `${nextYear}-12-31`,
         status: 'active',
@@ -173,14 +174,14 @@ export const useStrategicMap = () => {
   };
 
   // Load projects
-  const loadProjects = async () => {
-    if (!user) return;
+  const loadProjects = async (companyId?: string) => {
+    if (!user || !companyId) return;
 
     try {
       const { data, error } = await supabase
         .from('strategic_projects')
         .select('*')
-        .eq('owner_id', user.id);
+        .eq('company_id', companyId);
 
       if (error) {
         console.error('Error loading projects:', error);
@@ -329,10 +330,7 @@ export const useStrategicMap = () => {
   useEffect(() => {
     const initialize = async () => {
       setLoading(true);
-      await Promise.all([
-        loadCompany(),
-        loadProjects()
-      ]);
+      await loadCompany();
       setLoading(false);
     };
 
