@@ -203,7 +203,10 @@ const EditCompanyDialog: React.FC<EditCompanyDialogProps> = ({
   };
 
   const handleSaveCompany = async () => {
-    if (!editedCompany || !currentUser) return;
+    if (!editedCompany || !currentUser) {
+      console.log('DEBUG: Missing data', { editedCompany: !!editedCompany, currentUser: !!currentUser });
+      return;
+    }
 
     if (!editedCompany.name.trim()) {
       toast({
@@ -214,9 +217,16 @@ const EditCompanyDialog: React.FC<EditCompanyDialogProps> = ({
       return;
     }
 
+    console.log('DEBUG: Tentando atualizar empresa', {
+      companyId: editedCompany.id,
+      newName: editedCompany.name.trim(),
+      currentUserId: currentUser.id,
+      userRole: currentUser.role
+    });
+
     setIsLoading(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('companies')
         .update({
           name: editedCompany.name.trim(),
@@ -226,7 +236,10 @@ const EditCompanyDialog: React.FC<EditCompanyDialogProps> = ({
           status: editedCompany.status,
           updated_at: new Date().toISOString()
         })
-        .eq('id', editedCompany.id);
+        .eq('id', editedCompany.id)
+        .select();
+
+      console.log('DEBUG: Resultado da atualização', { data, error });
 
       if (error) throw error;
 
