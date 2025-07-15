@@ -185,7 +185,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
 
   const signIn = async (email: string, password: string) => {
     // Verificar se é uma conta de demonstração que precisa ser criada
-    if (email === 'admin@sistema.com' && password === 'admin123') {
+    if (email === 'admin@example.com' && password === 'admin123') {
       // Criar usuário admin automaticamente
       const { error: signUpError } = await supabase.auth.signUp({
         email,
@@ -197,8 +197,8 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       }
     }
     
-    if (email === 'gestor@empresa.com' && password === 'gestor123') {
-      // Criar usuário gestor automaticamente
+    if (email === 'manager@example.com' && password === 'manager123') {
+      // Criar usuário manager automaticamente
       const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
