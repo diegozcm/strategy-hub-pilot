@@ -189,7 +189,7 @@ export const AuthPage: React.FC = () => {
             <div className="space-y-2">
               <Button
                 onClick={() => {
-                  setEmail('admin@sistema.com');
+                  setEmail('admin@example.com');
                   setPassword('admin123');
                   setIsLogin(true);
                 }}
@@ -197,23 +197,35 @@ export const AuthPage: React.FC = () => {
                 size="sm"
                 className="w-full text-xs border-amber-300 hover:bg-amber-100"
               >
-                🔑 Admin Sistema (admin@sistema.com)
+                🔑 Admin Sistema (admin@example.com)
               </Button>
               <Button
                 onClick={() => {
-                  setEmail('gestor@empresa.com');
-                  setPassword('gestor123');
+                  setEmail('manager@example.com');
+                  setPassword('manager123');
                   setIsLogin(true);
                 }}
                 variant="outline"
                 size="sm"
                 className="w-full text-xs border-amber-300 hover:bg-amber-100"
               >
-                👤 Gestor Empresa (gestor@empresa.com)
+                👤 Manager (manager@example.com)
+              </Button>
+              <Button
+                onClick={() => {
+                  setEmail('member@example.com');
+                  setPassword('member123');
+                  setIsLogin(true);
+                }}
+                variant="outline"
+                size="sm"
+                className="w-full text-xs border-amber-300 hover:bg-amber-100"
+              >
+                👥 Colaborador (member@example.com)
               </Button>
             </div>
             <p className="text-xs text-amber-600 mt-3">
-              * Estas contas serão criadas automaticamente no primeiro login
+              * Usuários de demonstração pré-configurados
             </p>
           </CardContent>
         </Card>
