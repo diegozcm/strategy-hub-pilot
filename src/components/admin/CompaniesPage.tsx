@@ -11,6 +11,7 @@ import { CompanyGrid } from './companies/CompanyGrid';
 import { CreateCompanyModal } from './companies/CreateCompanyModal';
 import { EditCompanyModal } from './companies/EditCompanyModal';
 import { ManageUsersModal } from './companies/ManageUsersModal';
+import { DeleteCompanyModal } from './companies/DeleteCompanyModal';
 import { Company, CompanyUser } from '@/types/admin';
 
 export const CompaniesPage: React.FC = () => {
@@ -22,6 +23,7 @@ export const CompaniesPage: React.FC = () => {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [managingUsers, setManagingUsers] = useState<Company | null>(null);
+  const [deletingCompany, setDeletingCompany] = useState<Company | null>(null);
   const [availableUsers, setAvailableUsers] = useState<CompanyUser[]>([]);
 
   useEffect(() => {
@@ -311,6 +313,32 @@ export const CompaniesPage: React.FC = () => {
     }
   };
 
+  const handleDeleteCompany = async (companyId: string) => {
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', companyId);
+
+      if (error) throw error;
+
+      setCompanies(companies.filter(c => c.id !== companyId));
+      setDeletingCompany(null);
+
+      toast({
+        title: "Sucesso",
+        description: "Empresa excluída com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao excluir empresa:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir empresa.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredCompanies = companies.filter(company =>
     company.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -397,6 +425,7 @@ export const CompaniesPage: React.FC = () => {
             onEdit={setEditingCompany}
             onToggleStatus={handleToggleCompanyStatus}
             onManageUsers={setManagingUsers}
+            onDelete={setDeletingCompany}
           />
         )}
       </div>
@@ -430,6 +459,13 @@ export const CompaniesPage: React.FC = () => {
           onCancel={() => setEditingCompany(null)}
         />
       )}
+
+      <DeleteCompanyModal
+        company={deletingCompany}
+        open={!!deletingCompany}
+        onClose={() => setDeletingCompany(null)}
+        onConfirm={handleDeleteCompany}
+      />
     </div>
   );
 };

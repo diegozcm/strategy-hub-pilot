@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Building2, Users, Edit, Power, PowerOff, UserPlus, Eye } from 'lucide-react';
+import { Building2, Users, Edit, Power, PowerOff, UserPlus, Trash2 } from 'lucide-react';
 import { Company, CompanyUser } from '@/types/admin';
 
 interface CompanyCardProps {
@@ -11,6 +11,7 @@ interface CompanyCardProps {
   onEdit: (company: Company) => void;
   onToggleStatus: (companyId: string, currentStatus: string) => void;
   onManageUsers: (company: Company) => void;
+  onDelete: (company: Company) => void;
 }
 
 export const CompanyCard: React.FC<CompanyCardProps> = ({ 
@@ -18,7 +19,8 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
   users, 
   onEdit, 
   onToggleStatus,
-  onManageUsers
+  onManageUsers,
+  onDelete
 }) => {
   const activeUsers = users.filter(u => u.status === 'active').length;
   const totalUsers = users.length;
@@ -140,6 +142,17 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
                 </>
               )}
             </Button>
+            {totalUsers === 0 && (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => onDelete(company)}
+                className="flex-1 lg:w-full"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Excluir
+              </Button>
+            )}
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ interface CompanyGridProps {
   onEdit: (company: Company) => void;
   onToggleStatus: (companyId: string, currentStatus: string) => void;
   onManageUsers: (company: Company) => void;
+  onDelete: (company: Company) => void;
 }
 
 export const CompanyGrid: React.FC<CompanyGridProps> = ({
@@ -16,7 +17,8 @@ export const CompanyGrid: React.FC<CompanyGridProps> = ({
   companyUsers,
   onEdit,
   onToggleStatus,
-  onManageUsers
+  onManageUsers,
+  onDelete
 }) => {
   return (
     <div className="space-y-6">
@@ -28,6 +30,7 @@ export const CompanyGrid: React.FC<CompanyGridProps> = ({
           onEdit={onEdit}
           onToggleStatus={onToggleStatus}
           onManageUsers={onManageUsers}
+          onDelete={onDelete}
         />
       ))}
     </div>
