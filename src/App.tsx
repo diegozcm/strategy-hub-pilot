@@ -23,6 +23,7 @@ import { ProfilePage } from "@/components/profile/ProfilePage";
 import { StrategicMapPage } from "@/components/strategic-map/StrategicMapPage";
 import { CompaniesPage } from "@/components/admin/CompaniesPage";
 import { UserEditorPage } from "@/components/admin/UserEditorPage";
+import { SystemSettingsPage } from "@/components/admin/SystemSettingsPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
@@ -77,7 +78,7 @@ const App = () => (
                 <Route index element={<AdminDashboard />} />
                 <Route path="companies" element={<CompaniesPage />} />
                 <Route path="user-management" element={<UserEditorPage />} />
-                <Route path="settings" element={<div className="p-6 text-foreground">Configurações do Sistema</div>} />
+                <Route path="settings" element={<SystemSettingsPage />} />
               </Route>
             </Route>
 
@@ -90,7 +91,7 @@ const App = () => (
               <Route index element={<AdminDashboard />} />
               <Route path="companies" element={<CompaniesPage />} />
               <Route path="user-management" element={<UserEditorPage />} />
-              <Route path="settings" element={<div className="text-white">Configurações do Sistema</div>} />
+              <Route path="settings" element={<SystemSettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
