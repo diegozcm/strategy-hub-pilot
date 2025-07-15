@@ -31,6 +31,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Company, CompanyUser } from '@/types/admin';
 import { ManageUsersModal } from './companies/ManageUsersModal';
+import { CreateCompanyModal } from './companies/CreateCompanyModal';
 
 interface CompanyCardProps {
   company: Company;
@@ -570,9 +571,6 @@ export const CompaniesPage: React.FC = () => {
               <Plus className="w-4 h-4 mr-2" />
               Nova Empresa
             </Button>
-            <Button onClick={loadData} variant="outline">
-              Atualizar
-            </Button>
           </div>
 
           {loading ? (
@@ -619,6 +617,13 @@ export const CompaniesPage: React.FC = () => {
           open={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
           onCompanyUpdated={loadData}
+        />
+
+        {/* Modal de criação de empresa */}
+        <CreateCompanyModal
+          open={showCreateForm}
+          onOpenChange={setShowCreateForm}
+          onCompanyCreated={loadData}
         />
 
         {/* Modal de gestão de usuários */}
