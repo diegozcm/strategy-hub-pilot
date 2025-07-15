@@ -74,20 +74,47 @@ export const CompaniesPage: React.FC = () => {
         status: company.status as 'active' | 'inactive'
       })));
 
-      // Buscar usuários para cada empresa
+      // Buscar usuários para cada empresa usando a nova tabela de relacionamentos
       const usersPromises = (companiesData || []).map(async (company) => {
-        const { data: users, error } = await supabase
-          .from('profiles')
-          .select('id, first_name, last_name, email, role, status, company_id')
-          .eq('company_id', company.id)
-          .order('first_name');
+        const { data: relations, error } = await supabase
+          .from('user_company_relations')
+          .select('user_id, role')
+          .eq('company_id', company.id);
 
         if (error) {
           console.error(`Erro ao buscar usuários da empresa ${company.name}:`, error);
           return { companyId: company.id, users: [] };
         }
 
-        return { companyId: company.id, users: users || [] };
+        if (!relations || relations.length === 0) {
+          return { companyId: company.id, users: [] };
+        }
+
+        // Buscar dados dos perfis dos usuários
+        const userIds = relations.map(r => r.user_id);
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, id, first_name, last_name, email, status')
+          .in('user_id', userIds);
+
+        if (profilesError) {
+          console.error(`Erro ao buscar perfis da empresa ${company.name}:`, profilesError);
+          return { companyId: company.id, users: [] };
+        }
+
+        const users = relations.map(relation => {
+          const profile = profiles?.find(p => p.user_id === relation.user_id);
+          return {
+            id: profile?.id || '',
+            first_name: profile?.first_name,
+            last_name: profile?.last_name,
+            email: profile?.email,
+            role: relation.role as 'admin' | 'manager' | 'member',
+            status: profile?.status as 'active' | 'inactive'
+          };
+        }).filter(user => user.id); // Remove users sem perfil válido
+
+        return { companyId: company.id, users };
       });
 
       const usersResults = await Promise.all(usersPromises);
@@ -165,10 +192,11 @@ export const CompaniesPage: React.FC = () => {
     if (!user?.id) return;
 
     try {
-      const { error } = await supabase.rpc('assign_user_to_company', {
+      const { error } = await supabase.rpc('assign_user_to_company_v2', {
         _user_id: userId,
         _company_id: companyId,
-        _admin_id: user.id
+        _admin_id: user.id,
+        _role: 'member'
       });
 
       if (error) throw error;
@@ -191,12 +219,26 @@ export const CompaniesPage: React.FC = () => {
     }
   };
 
-  const handleUnassignUser = async (userId: string) => {
+  const handleUnassignUser = async (userId: string, companyId?: string) => {
     if (!user?.id) return;
 
+    if (!companyId && managingUsers) {
+      companyId = managingUsers.id;
+    }
+
+    if (!companyId) {
+      toast({
+        title: "Erro",
+        description: "ID da empresa não encontrado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      const { error } = await supabase.rpc('unassign_user_from_company', {
+      const { error } = await supabase.rpc('unassign_user_from_company_v2', {
         _user_id: userId,
+        _company_id: companyId,
         _admin_id: user.id
       });
 
@@ -382,7 +424,7 @@ export const CompaniesPage: React.FC = () => {
           availableUsers={availableUsers}
           companyUsers={companyUsers[managingUsers.id] || []}
           onAssignUser={handleAssignUser}
-          onUnassignUser={handleUnassignUser}
+          onUnassignUser={(userId, companyId) => handleUnassignUser(userId, companyId)}
           onClose={() => {
             setManagingUsers(null);
             fetchAvailableUsers();

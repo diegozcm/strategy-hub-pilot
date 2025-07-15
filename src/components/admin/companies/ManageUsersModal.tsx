@@ -34,7 +34,7 @@ interface ManageUsersModalProps {
   availableUsers: CompanyUser[];
   companyUsers: CompanyUser[];
   onAssignUser: (userId: string, companyId: string) => void;
-  onUnassignUser: (userId: string) => void;
+  onUnassignUser: (userId: string, companyId: string) => void;
   onClose: () => void;
 }
 
@@ -48,8 +48,11 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Agora um usuário pode estar em várias empresas, então mostramos todos os usuários disponíveis
+  // exceto aqueles que já estão vinculados especificamente a esta empresa
+  const assignedUserIds = companyUsers.map(user => user.id);
   const unassignedUsers = availableUsers.filter(user => 
-    !user.company_id || user.company_id !== company.id
+    !assignedUserIds.includes(user.id)
   );
   
   const filteredUnassigned = unassignedUsers.filter(user =>
@@ -130,7 +133,7 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => onUnassignUser(user.id)}
+                          onClick={() => onUnassignUser(user.id, company.id)}
                         >
                           <Unlink className="w-4 h-4 mr-1" />
                           Desvincular

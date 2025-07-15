@@ -932,6 +932,41 @@ export type Database = {
           },
         ]
       }
+      user_company_relations: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          role: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          role?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          role?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_company_relations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -973,6 +1008,15 @@ export type Database = {
         Args: { _user_id: string; _company_id: string; _admin_id: string }
         Returns: boolean
       }
+      assign_user_to_company_v2: {
+        Args: {
+          _user_id: string
+          _company_id: string
+          _admin_id: string
+          _role?: string
+        }
+        Returns: boolean
+      }
       calculate_achievement_percentage: {
         Args: { actual: number; target: number }
         Returns: number
@@ -1006,6 +1050,10 @@ export type Database = {
       }
       unassign_user_from_company: {
         Args: { _user_id: string; _admin_id: string }
+        Returns: boolean
+      }
+      unassign_user_from_company_v2: {
+        Args: { _user_id: string; _company_id: string; _admin_id: string }
         Returns: boolean
       }
       update_user_role: {
