@@ -22,13 +22,11 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   // Calculate permissions based on role
   const getPermissions = (role: UserRole): Permission => {
     switch (role) {
-      case 'system_admin':
-        return { read: true, write: true, delete: true, admin: true };
-      case 'company_admin':
+      case 'admin':
         return { read: true, write: true, delete: true, admin: true };
       case 'manager':
         return { read: true, write: true, delete: true };
-      case 'collaborator':
+      case 'member':
         return { read: true, write: false, delete: false };
       default:
         return { read: false, write: false, delete: false };
@@ -40,8 +38,8 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   const canEdit = permissions.write;
   const canDelete = permissions.delete;
   const canAdmin = permissions.admin || false;
-  const isSystemAdmin = profile?.role === 'system_admin';
-  const isCompanyAdmin = profile?.role === 'company_admin';
+  const isSystemAdmin = profile?.role === 'admin';
+  const isCompanyAdmin = profile?.role === 'admin';
 
   // Fetch user profile
   const fetchProfile = async (userId: string) => {
@@ -114,9 +112,9 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           setProfile(userProfile);
           
           if (userProfile) {
-            if (userProfile.role === 'system_admin') {
-              console.log('🔧 System admin detected, loading company...');
-              // For system admin, load selected company or default
+            if (userProfile.role === 'admin') {
+              console.log('🔧 Admin detected, loading company...');
+              // For admin, load selected company or default
               const savedCompanyId = localStorage.getItem('selectedCompanyId');
               if (savedCompanyId) {
                 const companyData = await fetchCompany(savedCompanyId);
@@ -157,7 +155,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           console.log('📋 Existing profile fetched:', userProfile);
           setProfile(userProfile);
           
-          if (userProfile?.role === 'system_admin') {
+          if (userProfile?.role === 'admin') {
             const savedCompanyId = localStorage.getItem('selectedCompanyId');
             if (savedCompanyId) {
               fetchCompany(savedCompanyId).then(companyData => {
@@ -217,42 +215,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     });
 
     if (!error) {
-      // Se é login de admin, configurar perfil adequado
-      if (email === 'admin@sistema.com') {
-        setTimeout(async () => {
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
-            await supabase.from('profiles').upsert({
-              user_id: userData.user.id,
-              company_id: '00000000-0000-0000-0000-000000000001',
-              role: 'system_admin',
-              status: 'active',
-              first_name: 'Admin',
-              last_name: 'Sistema',
-              email: email,
-              approved_at: new Date().toISOString(),
-            } as any);
-          }
-        }, 1000);
-      }
-      
-      if (email === 'gestor@empresa.com') {
-        setTimeout(async () => {
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
-            await supabase.from('profiles').upsert({
-              user_id: userData.user.id,
-              company_id: '00000000-0000-0000-0000-000000000001',
-              role: 'company_admin',
-              status: 'active',
-              first_name: 'Gestor',
-              last_name: 'Empresa',
-              email: email,
-              approved_at: new Date().toISOString(),
-            } as any);
-          }
-        }, 1000);
-      }
+      // Perfis serão criados automaticamente pelo trigger handle_new_user
       
       navigate('/app');
     }

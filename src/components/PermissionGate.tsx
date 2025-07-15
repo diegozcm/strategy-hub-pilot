@@ -27,7 +27,7 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
 
   // Check specific role requirement
   if (requiredRole) {
-    const roleHierarchy: UserRole[] = ['collaborator', 'manager', 'company_admin', 'system_admin'];
+    const roleHierarchy: UserRole[] = ['member', 'manager', 'admin'];
     const userRoleIndex = roleHierarchy.indexOf(profile.role);
     const requiredRoleIndex = roleHierarchy.indexOf(requiredRole);
     

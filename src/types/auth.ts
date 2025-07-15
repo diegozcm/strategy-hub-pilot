@@ -1,4 +1,4 @@
-export type UserRole = 'system_admin' | 'company_admin' | 'manager' | 'collaborator';
+export type UserRole = 'admin' | 'manager' | 'member';
 
 export type UserStatus = 'pending' | 'active' | 'inactive';
 
