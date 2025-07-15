@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { toast } from '@/hooks/use-toast';
-import { Search, Building2, Users, Edit, Save, X, UserCheck, UserMinus, Power, PowerOff } from 'lucide-react';
+import { Search, Building2, Users, Edit, Save, X, UserCheck, UserMinus, Power, PowerOff, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -103,6 +103,37 @@ export const CompaniesPage: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateCompany = async (companyData: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .insert([{
+          ...companyData,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setCompanies([data, ...companies]);
+      setShowCreateForm(false);
+
+      toast({
+        title: "Sucesso",
+        description: "Empresa criada com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao criar empresa:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar empresa.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -206,6 +237,10 @@ export const CompaniesPage: React.FC = () => {
             Gerencie todas as empresas do sistema e seus usuários
           </p>
         </div>
+        <Button onClick={() => setShowCreateForm(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Empresa
+        </Button>
       </div>
 
       {/* Filtros */}
@@ -250,6 +285,14 @@ export const CompaniesPage: React.FC = () => {
           ))
         )}
       </div>
+
+      {/* Modal de Criação */}
+      {showCreateForm && (
+        <CreateCompanyModal
+          onSave={handleCreateCompany}
+          onCancel={() => setShowCreateForm(false)}
+        />
+      )}
 
       {/* Modal de Edição */}
       {editingCompany && (
@@ -431,52 +474,72 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
       ...editedCompany,
       values: editedCompany.values?.filter((_, i) => i !== index)
     });
+};
+
+interface CreateCompanyModalProps {
+  onSave: (company: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => void;
+  onCancel: () => void;
+}
+
+const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
+  onSave,
+  onCancel
+}) => {
+  const { user } = useAuth();
+  const [newCompany, setNewCompany] = useState<Omit<Company, 'id' | 'created_at' | 'updated_at'>>({
+    name: '',
+    owner_id: user?.id || '',
+    mission: '',
+    vision: '',
+    values: [],
+    status: 'active'
+  });
+  const [newValue, setNewValue] = useState('');
+
+  const handleAddValue = () => {
+    if (newValue.trim()) {
+      setNewCompany({
+        ...newCompany,
+        values: [...(newCompany.values || []), newValue.trim()]
+      });
+      setNewValue('');
+    }
+  };
+
+  const handleRemoveValue = (index: number) => {
+    setNewCompany({
+      ...newCompany,
+      values: newCompany.values?.filter((_, i) => i !== index)
+    });
   };
 
   return (
     <Dialog open={true} onOpenChange={onCancel}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Empresa</DialogTitle>
+          <DialogTitle>Nova Empresa</DialogTitle>
           <DialogDescription>
-            Edite as informações da empresa.
+            Crie uma nova empresa no sistema.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="name">Nome da Empresa</Label>
+            <Label htmlFor="name">Nome da Empresa *</Label>
             <Input
               id="name"
-              value={editedCompany.name}
-              onChange={(e) => setEditedCompany({ ...editedCompany, name: e.target.value })}
+              value={newCompany.name}
+              onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
+              placeholder="Digite o nome da empresa"
             />
-          </div>
-
-          <div>
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={editedCompany.status}
-              onValueChange={(value: 'active' | 'inactive') => 
-                setEditedCompany({ ...editedCompany, status: value })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Ativa</SelectItem>
-                <SelectItem value="inactive">Inativa</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           <div>
             <Label htmlFor="mission">Missão</Label>
             <Textarea
               id="mission"
-              value={editedCompany.mission || ''}
-              onChange={(e) => setEditedCompany({ ...editedCompany, mission: e.target.value })}
+              value={newCompany.mission || ''}
+              onChange={(e) => setNewCompany({ ...newCompany, mission: e.target.value })}
               placeholder="Descrição da missão da empresa"
             />
           </div>
@@ -485,8 +548,8 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
             <Label htmlFor="vision">Visão</Label>
             <Textarea
               id="vision"
-              value={editedCompany.vision || ''}
-              onChange={(e) => setEditedCompany({ ...editedCompany, vision: e.target.value })}
+              value={newCompany.vision || ''}
+              onChange={(e) => setNewCompany({ ...newCompany, vision: e.target.value })}
               placeholder="Descrição da visão da empresa"
             />
           </div>
@@ -506,7 +569,7 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {editedCompany.values?.map((value, index) => (
+                {newCompany.values?.map((value, index) => (
                   <Badge key={index} variant="secondary" className="gap-1">
                     {value}
                     <X
@@ -524,9 +587,12 @@ const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
           <Button variant="outline" onClick={onCancel}>
             Cancelar
           </Button>
-          <Button onClick={() => onSave(editedCompany)}>
+          <Button 
+            onClick={() => onSave(newCompany)}
+            disabled={!newCompany.name.trim()}
+          >
             <Save className="w-4 h-4 mr-1" />
-            Salvar
+            Criar Empresa
           </Button>
         </div>
       </DialogContent>
