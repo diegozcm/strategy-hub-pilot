@@ -47,10 +47,16 @@ export const AdminLayout: React.FC = () => {
       description: 'Gerenciar empresas'
     },
     {
-      name: 'Usuários',
-      path: '/admin/users',
+      name: 'Usuários Pendentes',
+      path: '/admin/pending-users',
       icon: Users,
       description: 'Usuários pendentes'
+    },
+    {
+      name: 'Gerenciar Usuários',
+      path: '/admin/user-management',
+      icon: Users,
+      description: 'Editar usuários'
     },
     {
       name: 'Configurações',

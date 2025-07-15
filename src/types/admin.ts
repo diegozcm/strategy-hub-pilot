@@ -19,6 +19,8 @@ export interface CompanyUser {
   email?: string;
   role: 'admin' | 'manager' | 'member';
   status: 'active' | 'inactive';
+  company_id?: string;
+  company_name?: string;
 }
 
 export interface UserProfile {
@@ -29,6 +31,8 @@ export interface UserProfile {
   email?: string;
   role: 'admin' | 'manager' | 'member';
   status: 'active' | 'inactive';
+  department?: string;
+  position?: string;
   created_at: string;
   updated_at: string;
 }
