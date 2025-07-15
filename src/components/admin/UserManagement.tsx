@@ -34,8 +34,6 @@ interface UserProfile {
   department?: string;
   position?: string;
   created_at: string;
-  approved_by?: string;
-  approved_at?: string;
 }
 
 export const UserManagement: React.FC = () => {

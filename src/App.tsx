@@ -22,7 +22,6 @@ import { SettingsPage } from "@/components/settings/SettingsPage";
 import { ProfilePage } from "@/components/profile/ProfilePage";
 import { StrategicMapPage } from "@/components/strategic-map/StrategicMapPage";
 import { CompaniesPage } from "@/components/admin/CompaniesPage";
-import { PendingUsersPage } from "@/components/admin/PendingUsersPage";
 import { UserEditorPage } from "@/components/admin/UserEditorPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
@@ -77,7 +76,6 @@ const App = () => (
               <Route path="admin" element={<AdminLayout />}>
                 <Route index element={<AdminDashboard />} />
                 <Route path="companies" element={<CompaniesPage />} />
-                <Route path="pending-users" element={<PendingUsersPage />} />
                 <Route path="user-management" element={<UserEditorPage />} />
                 <Route path="settings" element={<div className="p-6 text-foreground">Configurações do Sistema</div>} />
               </Route>
@@ -91,7 +89,6 @@ const App = () => (
             }>
               <Route index element={<AdminDashboard />} />
               <Route path="companies" element={<CompaniesPage />} />
-              <Route path="pending-users" element={<PendingUsersPage />} />
               <Route path="user-management" element={<UserEditorPage />} />
               <Route path="settings" element={<div className="text-white">Configurações do Sistema</div>} />
             </Route>

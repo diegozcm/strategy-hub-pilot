@@ -477,8 +477,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          approved_at: string | null
-          approved_by: string | null
           avatar_url: string | null
           bio: string | null
           company_id: string | null
@@ -498,8 +496,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          approved_at?: string | null
-          approved_by?: string | null
           avatar_url?: string | null
           bio?: string | null
           company_id?: string | null
@@ -519,8 +515,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          approved_at?: string | null
-          approved_by?: string | null
           avatar_url?: string | null
           bio?: string | null
           company_id?: string | null
