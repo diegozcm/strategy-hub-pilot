@@ -48,10 +48,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          company:companies(*)
-        `)
+        .select('*')
         .eq('user_id', userId)
         .single();
 
@@ -128,10 +125,13 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
                   setSelectedCompanyId(savedCompanyId);
                 }
               }
-            } else if (userProfile.company) {
-              console.log('🏢 Setting user company:', userProfile.company);
-              // For regular users, use their company
-              setCompany(userProfile.company);
+            } else if (userProfile.company_id) {
+              console.log('🏢 Loading user company:', userProfile.company_id);
+              // For regular users, load their company
+              const companyData = await fetchCompany(userProfile.company_id);
+              if (companyData) {
+                setCompany(companyData);
+              }
             }
           }
         } else {
@@ -167,8 +167,12 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
                 }
               });
             }
-          } else if (userProfile?.company) {
-            setCompany(userProfile.company);
+          } else if (userProfile?.company_id) {
+            fetchCompany(userProfile.company_id).then(companyData => {
+              if (companyData) {
+                setCompany(companyData);
+              }
+            });
           }
         });
       } else {
