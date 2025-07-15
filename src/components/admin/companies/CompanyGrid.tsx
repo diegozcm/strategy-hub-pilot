@@ -41,7 +41,7 @@ export const CompanyGrid: React.FC<CompanyGridProps> = ({
   onManageUsers
 }) => {
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="space-y-6">
       {companies.map((company) => (
         <CompanyCard
           key={company.id}
