@@ -166,12 +166,74 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    // Verificar se é uma conta de demonstração que precisa ser criada
+    if (email === 'admin@sistema.com' && password === 'admin123') {
+      // Criar usuário admin automaticamente
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      if (signUpError && !signUpError.message.includes('User already registered')) {
+        return { error: signUpError };
+      }
+    }
+    
+    if (email === 'gestor@empresa.com' && password === 'gestor123') {
+      // Criar usuário gestor automaticamente
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      if (signUpError && !signUpError.message.includes('User already registered')) {
+        return { error: signUpError };
+      }
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (!error) {
+      // Se é login de admin, configurar perfil adequado
+      if (email === 'admin@sistema.com') {
+        setTimeout(async () => {
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData.user) {
+            await supabase.from('profiles').upsert({
+              user_id: userData.user.id,
+              company_id: '00000000-0000-0000-0000-000000000001',
+              role: 'system_admin',
+              status: 'active',
+              first_name: 'Admin',
+              last_name: 'Sistema',
+              email: email,
+              approved_at: new Date().toISOString(),
+            } as any);
+          }
+        }, 1000);
+      }
+      
+      if (email === 'gestor@empresa.com') {
+        setTimeout(async () => {
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData.user) {
+            await supabase.from('profiles').upsert({
+              user_id: userData.user.id,
+              company_id: '00000000-0000-0000-0000-000000000001',
+              role: 'company_admin',
+              status: 'active',
+              first_name: 'Gestor',
+              last_name: 'Empresa',
+              email: email,
+              approved_at: new Date().toISOString(),
+            } as any);
+          }
+        }, 1000);
+      }
+      
       navigate('/app');
     }
 

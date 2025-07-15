@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Zap, Eye, EyeOff, Mail, Lock, Target, BarChart3 } from 'lucide-react';
+import { Zap, Eye, EyeOff, Mail, Lock, Target, BarChart3, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -173,6 +173,48 @@ export const AuthPage: React.FC = () => {
                 }
               </button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Acesso Admin */}
+        <Card className="mt-6 border-amber-200 bg-amber-50">
+          <CardContent className="p-4">
+            <div className="flex items-center mb-3">
+              <Shield className="h-5 w-5 text-amber-600 mr-2" />
+              <h3 className="text-sm font-semibold text-amber-800">Acesso Administrativo</h3>
+            </div>
+            <p className="text-xs text-amber-700 mb-3">
+              Para demonstração, use as credenciais abaixo para acessar o sistema como administrador:
+            </p>
+            <div className="space-y-2">
+              <Button
+                onClick={() => {
+                  setEmail('admin@sistema.com');
+                  setPassword('admin123');
+                  setIsLogin(true);
+                }}
+                variant="outline"
+                size="sm"
+                className="w-full text-xs border-amber-300 hover:bg-amber-100"
+              >
+                🔑 Admin Sistema (admin@sistema.com)
+              </Button>
+              <Button
+                onClick={() => {
+                  setEmail('gestor@empresa.com');
+                  setPassword('gestor123');
+                  setIsLogin(true);
+                }}
+                variant="outline"
+                size="sm"
+                className="w-full text-xs border-amber-300 hover:bg-amber-100"
+              >
+                👤 Gestor Empresa (gestor@empresa.com)
+              </Button>
+            </div>
+            <p className="text-xs text-amber-600 mt-3">
+              * Estas contas serão criadas automaticamente no primeiro login
+            </p>
           </CardContent>
         </Card>
 
