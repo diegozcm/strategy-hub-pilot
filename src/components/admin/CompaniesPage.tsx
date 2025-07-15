@@ -635,6 +635,30 @@ export const CompaniesPage: React.FC = () => {
             onUpdated={loadData}
           />
         )}
+
+        {/* Modal de confirmação de exclusão */}
+        <AlertDialog open={!!deletingCompany} onOpenChange={(open) => !open && setDeletingCompany(null)}>
+          <AlertDialogContent className="bg-slate-800 border-slate-700 text-white">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+              <AlertDialogDescription className="text-slate-400">
+                Tem certeza que deseja excluir a empresa "{deletingCompany?.name}"? 
+                Esta ação não pode ser desfeita e todos os dados associados à empresa serão removidos.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setDeletingCompany(null)}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={() => deletingCompany && handleDeleteCompany(deletingCompany.id)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );
