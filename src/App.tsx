@@ -69,6 +69,14 @@ const App = () => (
               <Route path="team" element={<TeamPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="settings" element={<SettingsPage />} />
+              
+              {/* Admin routes dentro do app */}
+              <Route path="admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="companies" element={<CompaniesPage />} />
+                <Route path="users" element={<PendingUsersPage />} />
+                <Route path="settings" element={<div className="p-6 text-foreground">Configurações do Sistema</div>} />
+              </Route>
             </Route>
 
             {/* Admin routes */}
