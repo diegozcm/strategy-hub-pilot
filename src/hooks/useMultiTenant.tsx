@@ -101,18 +101,24 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   useEffect(() => {
+    console.log('📊 MultiTenantAuthProvider: Initializing...');
+    
     // Auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('🔐 Auth state change:', event, !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('👤 User found, fetching profile for:', session.user.email);
           const userProfile = await fetchProfile(session.user.id);
+          console.log('📋 Profile fetched:', userProfile);
           setProfile(userProfile);
           
           if (userProfile) {
             if (userProfile.role === 'system_admin') {
+              console.log('🔧 System admin detected, loading company...');
               // For system admin, load selected company or default
               const savedCompanyId = localStorage.getItem('selectedCompanyId');
               if (savedCompanyId) {
@@ -123,25 +129,32 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
                 }
               }
             } else if (userProfile.company) {
+              console.log('🏢 Setting user company:', userProfile.company);
               // For regular users, use their company
               setCompany(userProfile.company);
             }
           }
         } else {
+          console.log('❌ No user session, clearing state');
           setProfile(null);
           setCompany(null);
           setSelectedCompanyId(null);
           localStorage.removeItem('selectedCompanyId');
         }
         
+        console.log('✅ Setting loading to false');
         setLoading(false);
       }
     );
 
     // Check existing session
+    console.log('🔍 Checking existing session...');
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('🔍 Existing session check result:', !!session);
       if (session?.user) {
+        console.log('👤 Existing user found:', session.user.email);
         fetchProfile(session.user.id).then(userProfile => {
+          console.log('📋 Existing profile fetched:', userProfile);
           setProfile(userProfile);
           
           if (userProfile?.role === 'system_admin') {
@@ -158,7 +171,10 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
             setCompany(userProfile.company);
           }
         });
+      } else {
+        console.log('❌ No existing session found');
       }
+      console.log('✅ Initial loading complete, setting loading to false');
       setLoading(false);
     });
 
