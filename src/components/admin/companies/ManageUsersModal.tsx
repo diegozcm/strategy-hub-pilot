@@ -5,29 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Users, UserPlus, UserCheck, UserMinus, Link2, Unlink } from 'lucide-react';
-
-interface Company {
-  id: string;
-  name: string;
-  owner_id: string;
-  mission?: string;
-  vision?: string;
-  values?: string[];
-  logo_url?: string;
-  status: 'active' | 'inactive';
-  created_at: string;
-  updated_at: string;
-}
-
-interface CompanyUser {
-  id: string;
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-  role: 'admin' | 'manager' | 'member';
-  status: 'active' | 'inactive';
-  company_id?: string;
-}
+import { Company, CompanyUser } from '@/types/admin';
 
 interface ManageUsersModalProps {
   company: Company;
@@ -48,11 +26,10 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Agora um usuário pode estar em várias empresas, então mostramos todos os usuários disponíveis
-  // exceto aqueles que já estão vinculados especificamente a esta empresa
-  const assignedUserIds = companyUsers.map(user => user.id);
+  // Filtrar usuários que já estão vinculados a esta empresa específica
+  const assignedUserIds = companyUsers.map(user => user.user_id);
   const unassignedUsers = availableUsers.filter(user => 
-    !assignedUserIds.includes(user.id)
+    !assignedUserIds.includes(user.user_id)
   );
   
   const filteredUnassigned = unassignedUsers.filter(user =>
@@ -113,7 +90,7 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
               ) : (
                 <div className="space-y-2">
                   {filteredCompanyUsers.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                    <div key={user.user_id} className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
                       <div className="flex items-center gap-3">
                         <UserCheck className="w-5 h-5 text-green-600" />
                         <div>
@@ -133,7 +110,7 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => onUnassignUser(user.id, company.id)}
+                          onClick={() => onUnassignUser(user.user_id, company.id)}
                         >
                           <Unlink className="w-4 h-4 mr-1" />
                           Desvincular
@@ -159,7 +136,7 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
               ) : (
                 <div className="space-y-2">
                   {filteredUnassigned.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div key={user.user_id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex items-center gap-3">
                         <UserMinus className="w-5 h-5 text-muted-foreground" />
                         <div>
@@ -167,9 +144,6 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
                             {user.first_name} {user.last_name}
                           </p>
                           <p className="text-sm text-muted-foreground">{user.email}</p>
-                          {user.company_id && (
-                            <p className="text-xs text-blue-600">Vinculado a outra empresa</p>
-                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -181,7 +155,7 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
                         </Badge>
                         <Button
                           size="sm"
-                          onClick={() => onAssignUser(user.id, company.id)}
+                          onClick={() => onAssignUser(user.user_id, company.id)}
                           disabled={user.status === 'inactive'}
                         >
                           <Link2 className="w-4 h-4 mr-1" />

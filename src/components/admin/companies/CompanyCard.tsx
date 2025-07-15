@@ -3,29 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Building2, Users, Edit, Power, PowerOff, UserPlus, Eye } from 'lucide-react';
-
-interface Company {
-  id: string;
-  name: string;
-  owner_id: string;
-  mission?: string;
-  vision?: string;
-  values?: string[];
-  logo_url?: string;
-  status: 'active' | 'inactive';
-  created_at: string;
-  updated_at: string;
-}
-
-interface CompanyUser {
-  id: string;
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-  role: 'admin' | 'manager' | 'member';
-  status: 'active' | 'inactive';
-  company_id?: string;
-}
+import { Company, CompanyUser } from '@/types/admin';
 
 interface CompanyCardProps {
   company: Company;
@@ -104,7 +82,7 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
                   <h4 className="font-medium text-sm text-muted-foreground mb-2">Usuários Recentes</h4>
                   <div className="space-y-1">
                     {users.slice(0, 3).map((user) => (
-                      <div key={user.id} className="flex items-center justify-between text-xs">
+                      <div key={user.user_id} className="flex items-center justify-between text-xs">
                         <span className="truncate">
                           {user.first_name} {user.last_name}
                         </span>

@@ -11,29 +11,7 @@ import { CompanyGrid } from './companies/CompanyGrid';
 import { CreateCompanyModal } from './companies/CreateCompanyModal';
 import { EditCompanyModal } from './companies/EditCompanyModal';
 import { ManageUsersModal } from './companies/ManageUsersModal';
-
-interface Company {
-  id: string;
-  name: string;
-  owner_id: string;
-  mission?: string;
-  vision?: string;
-  values?: string[];
-  logo_url?: string;
-  status: 'active' | 'inactive';
-  created_at: string;
-  updated_at: string;
-}
-
-interface CompanyUser {
-  id: string;
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-  role: 'admin' | 'manager' | 'member';
-  status: 'active' | 'inactive';
-  company_id?: string;
-}
+import { Company, CompanyUser } from '@/types/admin';
 
 export const CompaniesPage: React.FC = () => {
   const { canAdmin, user } = useAuth();
@@ -105,6 +83,7 @@ export const CompaniesPage: React.FC = () => {
         const users = relations.map(relation => {
           const profile = profiles?.find(p => p.user_id === relation.user_id);
           return {
+            user_id: relation.user_id,
             id: profile?.id || '',
             first_name: profile?.first_name,
             last_name: profile?.last_name,
@@ -174,13 +153,18 @@ export const CompaniesPage: React.FC = () => {
     try {
       const { data: users, error } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, email, role, status, company_id')
+        .select('id, user_id, first_name, last_name, email, role, status')
         .order('first_name');
 
       if (error) throw error;
 
       setAvailableUsers((users || []).map(user => ({
-        ...user,
+        user_id: user.user_id,
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        role: user.role as 'admin' | 'manager' | 'member',
         status: user.status as 'active' | 'inactive'
       })));
     } catch (error) {

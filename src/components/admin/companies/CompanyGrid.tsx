@@ -1,29 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { CompanyCard } from './CompanyCard';
-
-interface Company {
-  id: string;
-  name: string;
-  owner_id: string;
-  mission?: string;
-  vision?: string;
-  values?: string[];
-  logo_url?: string;
-  status: 'active' | 'inactive';
-  created_at: string;
-  updated_at: string;
-}
-
-interface CompanyUser {
-  id: string;
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-  role: 'admin' | 'manager' | 'member';
-  status: 'active' | 'inactive';
-  company_id?: string;
-}
+import { Company, CompanyUser } from '@/types/admin';
 
 interface CompanyGridProps {
   companies: Company[];

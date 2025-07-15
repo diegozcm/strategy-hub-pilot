@@ -7,19 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Save, X } from 'lucide-react';
-
-interface Company {
-  id: string;
-  name: string;
-  owner_id: string;
-  mission?: string;
-  vision?: string;
-  values?: string[];
-  logo_url?: string;
-  status: 'active' | 'inactive';
-  created_at: string;
-  updated_at: string;
-}
+import { Company } from '@/types/admin';
 
 interface CreateCompanyModalProps {
   onSave: (company: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => void;
