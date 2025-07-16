@@ -16,6 +16,16 @@ interface ObjectiveWithMetrics {
   yearly_actual: number;
   owner_name: string;
   target_date: string;
+  keyResults?: KeyResultWithMetrics[];
+}
+
+interface KeyResultWithMetrics {
+  id: string;
+  title: string;
+  monthly_targets: Record<string, number>;
+  monthly_actual: Record<string, number>;
+  yearly_target: number;
+  yearly_actual: number;
 }
 
 interface DashboardStats {
@@ -143,11 +153,23 @@ export const DashboardHome: React.FC = () => {
         .select('id, status')
         .eq('company_id', company.id);
 
-      // Buscar KRs dos objetivos
+      // Buscar KRs dos objetivos com dados mensais
       const objectiveIds = objectivesData?.map(obj => obj.id) || [];
       const { data: keyResultsData } = await supabase
         .from('key_results')
-        .select('id, status, due_date, current_value, target_value')
+        .select(`
+          id, 
+          objective_id,
+          title,
+          status, 
+          due_date, 
+          current_value, 
+          target_value,
+          yearly_target,
+          yearly_actual,
+          monthly_targets,
+          monthly_actual
+        `)
         .in('objective_id', objectiveIds);
 
       // Buscar membros da equipe
@@ -169,19 +191,55 @@ export const DashboardHome: React.FC = () => {
         .select('user_id, first_name, last_name')
         .in('user_id', ownerIds);
 
-      // Processar objetivos com métricas
+      // Agrupar Key Results por objetivo e agregar métricas
+      const keyResultsByObjective = keyResultsData?.reduce((acc, kr) => {
+        if (!acc[kr.objective_id]) {
+          acc[kr.objective_id] = [];
+        }
+        acc[kr.objective_id].push({
+          id: kr.id,
+          title: kr.title,
+          monthly_targets: (kr.monthly_targets as Record<string, number>) || {},
+          monthly_actual: (kr.monthly_actual as Record<string, number>) || {},
+          yearly_target: kr.yearly_target || kr.target_value || 0,
+          yearly_actual: kr.yearly_actual || kr.current_value || 0
+        });
+        return acc;
+      }, {} as Record<string, KeyResultWithMetrics[]>) || {};
+
+      // Processar objetivos com métricas agregadas dos Key Results
       const objectivesWithMetrics: ObjectiveWithMetrics[] = objectivesData?.map(obj => {
         const profile = profilesData?.find(p => p.user_id === obj.owner_id);
+        const objectiveKeyResults = keyResultsByObjective[obj.id] || [];
+        
+        // Agregar metas e realizações mensais dos Key Results
+        const aggregatedMonthlyTargets: Record<string, number> = {};
+        const aggregatedMonthlyActual: Record<string, number> = {};
+        
+        objectiveKeyResults.forEach(kr => {
+          Object.entries(kr.monthly_targets).forEach(([month, value]) => {
+            aggregatedMonthlyTargets[month] = (aggregatedMonthlyTargets[month] || 0) + value;
+          });
+          Object.entries(kr.monthly_actual).forEach(([month, value]) => {
+            aggregatedMonthlyActual[month] = (aggregatedMonthlyActual[month] || 0) + value;
+          });
+        });
+
+        // Agregar metas e realizações anuais
+        const aggregatedYearlyTarget = objectiveKeyResults.reduce((sum, kr) => sum + kr.yearly_target, 0);
+        const aggregatedYearlyActual = objectiveKeyResults.reduce((sum, kr) => sum + kr.yearly_actual, 0);
+
         return {
           id: obj.id,
           title: obj.title,
           description: obj.description || '',
-          monthly_targets: (obj.monthly_targets as Record<string, number>) || {},
-          monthly_actual: (obj.monthly_actual as Record<string, number>) || {},
-          yearly_target: obj.yearly_target || 0,
-          yearly_actual: obj.yearly_actual || 0,
+          monthly_targets: Object.keys(aggregatedMonthlyTargets).length > 0 ? aggregatedMonthlyTargets : (obj.monthly_targets as Record<string, number>) || {},
+          monthly_actual: Object.keys(aggregatedMonthlyActual).length > 0 ? aggregatedMonthlyActual : (obj.monthly_actual as Record<string, number>) || {},
+          yearly_target: aggregatedYearlyTarget > 0 ? aggregatedYearlyTarget : obj.yearly_target || 0,
+          yearly_actual: aggregatedYearlyActual > 0 ? aggregatedYearlyActual : obj.yearly_actual || 0,
           target_date: obj.target_date || '',
-          owner_name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'Não atribuído'
+          owner_name: profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : 'Não atribuído',
+          keyResults: objectiveKeyResults
         };
       }) || [];
 

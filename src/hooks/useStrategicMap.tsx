@@ -526,6 +526,39 @@ export const useStrategicMap = () => {
     }
   };
 
+  // Update resultado-chave
+  const updateKeyResult = async (keyResultId: string, updates: Partial<KeyResult>) => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('key_results')
+        .update(updates)
+        .eq('id', keyResultId)
+        .select()
+        .single();
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar resultado-chave",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      setKeyResults(prev => prev.map(kr => kr.id === keyResultId ? data : kr));
+      toast({
+        title: "Sucesso",
+        description: "Resultado-chave atualizado com sucesso",
+      });
+      return data;
+    } catch (error) {
+      console.error('Error updating key result:', error);
+      return null;
+    }
+  };
+
   return {
     loading,
     company,
@@ -541,6 +574,7 @@ export const useStrategicMap = () => {
     deletePillar,
     createObjective,
     createKeyResult,
+    updateKeyResult,
     calculateObjectiveProgress,
     calculatePillarProgress,
     refreshData: loadCompany
