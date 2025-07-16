@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award } from 'lucide-react';
+import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useMultiTenant';
 
 interface ObjectiveWithMetrics {
   id: string;
@@ -17,61 +18,108 @@ interface ObjectiveWithMetrics {
   target_date: string;
 }
 
+interface DashboardStats {
+  activeObjectives: number;
+  activeProjects: number;
+  onTimeKRs: number;
+  onTimeKRsPercentage: number;
+  overallScore: number;
+  teamMembers: number;
+}
 
-const getDynamicStats = (overallScore: number, objectivesCount: number) => [
+
+const getDynamicStats = (stats: DashboardStats) => [
   {
     title: 'Objetivos Ativos',
-    value: objectivesCount.toString(),
-    change: '+2',
-    changeType: 'positive' as const,
+    value: stats.activeObjectives.toString(),
+    change: stats.activeObjectives > 0 ? '+' + stats.activeObjectives : '0',
+    changeType: stats.activeObjectives > 0 ? 'positive' as const : 'neutral' as const,
     icon: Target,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50'
   },
   {
     title: 'Projetos em Andamento',
-    value: '8',
-    change: '+1',
-    changeType: 'positive' as const,
+    value: stats.activeProjects.toString(),
+    change: stats.activeProjects > 0 ? '+' + stats.activeProjects : '0',
+    changeType: stats.activeProjects > 0 ? 'positive' as const : 'neutral' as const,
     icon: Briefcase,
     color: 'text-green-600',
     bgColor: 'bg-green-50'
   },
   {
     title: 'KRs no Prazo',
-    value: '85%',
-    change: '-5%',
-    changeType: 'negative' as const,
+    value: `${stats.onTimeKRsPercentage}%`,
+    change: stats.onTimeKRs > 0 ? `${stats.onTimeKRs} de ${stats.onTimeKRs}` : '0',
+    changeType: stats.onTimeKRsPercentage >= 80 ? 'positive' as const : stats.onTimeKRsPercentage >= 60 ? 'neutral' as const : 'negative' as const,
     icon: TrendingUp,
     color: 'text-orange-600',
     bgColor: 'bg-orange-50'
   },
   {
-    title: 'Nota Geral de Atingimento',
-    value: (overallScore / 10).toFixed(1),
-    change: overallScore >= 80 ? '+0.3' : '-0.2',
-    changeType: overallScore >= 80 ? 'positive' as const : 'negative' as const,
-    icon: Award,
+    title: 'Membros da Equipe',
+    value: stats.teamMembers.toString(),
+    change: stats.teamMembers > 0 ? `${stats.teamMembers} ativos` : '0',
+    changeType: 'positive' as const,
+    icon: Users,
     color: 'text-purple-600',
     bgColor: 'bg-purple-50'
   }
 ];
 
 export const DashboardHome: React.FC = () => {
+  const { company } = useAuth();
   const [objectives, setObjectives] = useState<ObjectiveWithMetrics[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    activeObjectives: 0,
+    activeProjects: 0,
+    onTimeKRs: 0,
+    onTimeKRsPercentage: 0,
+    overallScore: 0,
+    teamMembers: 0
+  });
   const [loading, setLoading] = useState(true);
-  const [overallScore, setOverallScore] = useState(0);
 
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
-    fetchObjectives();
-  }, []);
+    if (company?.id) {
+      fetchDashboardData();
+    } else {
+      setLoading(false);
+    }
+  }, [company?.id]);
 
-  const fetchObjectives = async () => {
+  const fetchDashboardData = async () => {
+    if (!company?.id) return;
+    
+    setLoading(true);
     try {
-      const { data: objectivesData, error } = await supabase
+      // Buscar planos estratégicos da empresa
+      const { data: plansData } = await supabase
+        .from('strategic_plans')
+        .select('id')
+        .eq('company_id', company.id);
+
+      const planIds = plansData?.map(plan => plan.id) || [];
+
+      if (planIds.length === 0) {
+        setObjectives([]);
+        setDashboardStats({
+          activeObjectives: 0,
+          activeProjects: 0,
+          onTimeKRs: 0,
+          onTimeKRsPercentage: 0,
+          overallScore: 0,
+          teamMembers: 0
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Buscar objetivos estratégicos dos planos da empresa
+      const { data: objectivesData, error: objectivesError } = await supabase
         .from('strategic_objectives')
         .select(`
           id,
@@ -82,18 +130,46 @@ export const DashboardHome: React.FC = () => {
           yearly_target,
           yearly_actual,
           target_date,
-          owner_id
-        `);
+          owner_id,
+          status
+        `)
+        .in('plan_id', planIds);
 
-      if (error) throw error;
+      if (objectivesError) throw objectivesError;
 
-      // Get owner names separately
+      // Buscar projetos da empresa
+      const { data: projectsData } = await supabase
+        .from('strategic_projects')
+        .select('id, status')
+        .eq('company_id', company.id);
+
+      // Buscar KRs dos objetivos
+      const objectiveIds = objectivesData?.map(obj => obj.id) || [];
+      const { data: keyResultsData } = await supabase
+        .from('key_results')
+        .select('id, status, due_date, current_value, target_value')
+        .in('objective_id', objectiveIds);
+
+      // Buscar membros da equipe
+      const { data: teamRelations } = await supabase
+        .from('user_company_relations')
+        .select('user_id')
+        .eq('company_id', company.id);
+
+      const teamUserIds = teamRelations?.map(relation => relation.user_id) || [];
+      const { data: teamProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, status')
+        .in('user_id', teamUserIds);
+
+      // Buscar perfis dos proprietários dos objetivos
       const ownerIds = objectivesData?.map(obj => obj.owner_id) || [];
       const { data: profilesData } = await supabase
         .from('profiles')
         .select('user_id, first_name, last_name')
         .in('user_id', ownerIds);
 
+      // Processar objetivos com métricas
       const objectivesWithMetrics: ObjectiveWithMetrics[] = objectivesData?.map(obj => {
         const profile = profilesData?.find(p => p.user_id === obj.owner_id);
         return {
@@ -109,28 +185,49 @@ export const DashboardHome: React.FC = () => {
         };
       }) || [];
 
+      // Calcular estatísticas do dashboard
+      const activeObjectives = objectivesData?.filter(obj => obj.status !== 'completed').length || 0;
+      const activeProjects = projectsData?.filter(proj => proj.status === 'in_progress' || proj.status === 'planning').length || 0;
+      
+      // Calcular KRs no prazo
+      const now = new Date();
+      const onTimeKRs = keyResultsData?.filter(kr => {
+        if (kr.status === 'completed') return true;
+        if (!kr.due_date) return false;
+        const dueDate = new Date(kr.due_date);
+        const progress = kr.target_value > 0 ? (kr.current_value / kr.target_value) * 100 : 0;
+        const daysToDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        return daysToDue >= 0 && progress >= 80; // No prazo se tem mais de 0 dias e está 80%+ completo
+      }).length || 0;
+
+      const totalKRs = keyResultsData?.length || 1;
+      const onTimeKRsPercentage = Math.round((onTimeKRs / totalKRs) * 100);
+
+      // Calcular score geral
+      const scores = objectivesWithMetrics.map(obj => {
+        const yearlyPercentage = obj.yearly_target > 0 ? (obj.yearly_actual / obj.yearly_target) * 100 : 0;
+        return Math.min(yearlyPercentage, 100); // Cap at 100%
+      });
+      const overallScore = scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0;
+
+      // Contar membros ativos da equipe
+      const teamMembers = teamProfiles?.filter(profile => profile.status === 'active').length || 0;
+
       setObjectives(objectivesWithMetrics);
-      calculateOverallScore(objectivesWithMetrics);
+      setDashboardStats({
+        activeObjectives,
+        activeProjects,
+        onTimeKRs,
+        onTimeKRsPercentage,
+        overallScore,
+        teamMembers
+      });
+
     } catch (error) {
-      console.error('Erro ao buscar objetivos:', error);
+      console.error('Erro ao buscar dados do dashboard:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const calculateOverallScore = (objectives: ObjectiveWithMetrics[]) => {
-    if (objectives.length === 0) {
-      setOverallScore(0);
-      return;
-    }
-
-    const scores = objectives.map(obj => {
-      const yearlyPercentage = obj.yearly_target > 0 ? (obj.yearly_actual / obj.yearly_target) * 100 : 0;
-      return Math.min(yearlyPercentage, 100); // Cap at 100%
-    });
-
-    const averageScore = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-    setOverallScore(Math.round(averageScore * 10) / 10); // Round to 1 decimal place and convert to 0-10 scale
   };
 
   const getMonthlyAchievement = (obj: ObjectiveWithMetrics) => {
@@ -173,26 +270,57 @@ export const DashboardHome: React.FC = () => {
     return { target, actual, percentage };
   };
 
-  return <div className="space-y-6">
+  if (!company) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Nenhuma empresa selecionada
+            </h3>
+            <p className="text-gray-600">
+              Selecione uma empresa no menu superior para visualizar o dashboard.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Visão geral do seu planejamento estratégico</p>
+          <p className="text-gray-600 mt-1">
+            Visão geral do planejamento estratégico - {company.name}
+          </p>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {getDynamicStats(overallScore, objectives.length).map(stat => <Card key={stat.title} className="hover:shadow-lg transition-shadow">
+        {getDynamicStats(dashboardStats).map(stat => (
+          <Card key={stat.title} className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">{stat.title}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
                   <div className="flex items-center mt-2">
-                    {stat.changeType === 'positive' ? <ArrowUp className="h-3 w-3 text-green-500 mr-1" /> : <ArrowDown className="h-3 w-3 text-red-500 mr-1" />}
-                    <span className={`text-xs font-medium ${stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
+                    {stat.changeType === 'positive' ? (
+                      <ArrowUp className="h-3 w-3 text-green-500 mr-1" />
+                    ) : stat.changeType === 'negative' ? (
+                      <ArrowDown className="h-3 w-3 text-red-500 mr-1" />
+                    ) : (
+                      <div className="w-3 h-3 mr-1" />
+                    )}
+                    <span className={`text-xs font-medium ${
+                      stat.changeType === 'positive' ? 'text-green-600' : 
+                      stat.changeType === 'negative' ? 'text-red-600' : 'text-gray-600'
+                    }`}>
                       {stat.change}
                     </span>
                   </div>
@@ -202,7 +330,8 @@ export const DashboardHome: React.FC = () => {
                 </div>
               </div>
             </CardContent>
-          </Card>)}
+          </Card>
+        ))}
       </div>
 
       {/* Main Content Grid */}
@@ -218,7 +347,15 @@ export const DashboardHome: React.FC = () => {
               {loading ? (
                 <div className="text-center py-4">Carregando objetivos...</div>
               ) : objectives.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">Nenhum objetivo encontrado</div>
+                <div className="text-center py-8">
+                  <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Nenhum objetivo encontrado
+                  </h3>
+                  <p className="text-gray-600">
+                    Crie objetivos estratégicos para acompanhar a performance da empresa.
+                  </p>
+                </div>
               ) : (
                 <div className="space-y-6">
                   {objectives.map((objective) => {
@@ -340,5 +477,6 @@ export const DashboardHome: React.FC = () => {
           </Card>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 };
