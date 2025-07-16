@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
+import { useAuth } from '@/hooks/useMultiTenant';
 import { CompanySetupModal } from './CompanySetupModal';
 import { PillarFormModal } from './PillarFormModal';
 import { ObjectiveCard } from './ObjectiveCard';
@@ -14,6 +15,7 @@ import { ObjectiveFormModal } from './ObjectiveFormModal';
 import { PillarEditModal } from './PillarEditModal';
 import { DeletePillarModal } from './DeletePillarModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { PermissionGate } from '@/components/PermissionGate';
 import { StrategicPillar } from '@/types/strategic-map';
 
 const defaultPillars = [
@@ -25,6 +27,7 @@ const defaultPillars = [
 ];
 
 export const StrategicMapPage = () => {
+  const { profile } = useAuth();
   const {
     loading,
     company,
@@ -67,10 +70,16 @@ export const StrategicMapPage = () => {
           <p className="text-muted-foreground mb-8">
             Para começar a usar o Mapa Estratégico, primeiro configure as informações básicas da sua empresa.
           </p>
-          <Button onClick={() => setShowCompanySetup(true)} size="lg">
-            <Building2 className="mr-2 h-5 w-5" />
-            Configurar Empresa
-          </Button>
+          <PermissionGate requiresAdmin fallback={
+            <p className="text-sm text-muted-foreground">
+              Apenas administradores podem criar empresas. Entre em contato com um administrador do sistema.
+            </p>
+          }>
+            <Button onClick={() => setShowCompanySetup(true)} size="lg">
+              <Building2 className="mr-2 h-5 w-5" />
+              Configurar Empresa
+            </Button>
+          </PermissionGate>
         </div>
 
         <CompanySetupModal
@@ -102,13 +111,18 @@ export const StrategicMapPage = () => {
                 {company.name}
               </CardTitle>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowCompanySetup(true)}
+            <PermissionGate 
+              requiredRole="manager"
+              fallback={null}
             >
-              Editar
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCompanySetup(true)}
+              >
+                Editar
+              </Button>
+            </PermissionGate>
           </div>
         </CardHeader>
         <CardContent>
@@ -340,15 +354,16 @@ export const StrategicMapPage = () => {
       </div>
 
       {/* Modals */}
-      <CompanySetupModal
-        open={showCompanySetup}
-        onClose={() => setShowCompanySetup(false)}
-        onSave={company 
-          ? (dataOrId: any, data?: any) => updateCompany(dataOrId, data)
-          : (data: any) => createCompany(data)
-        }
-        initialData={company}
-      />
+        <CompanySetupModal
+          open={showCompanySetup}
+          onClose={() => setShowCompanySetup(false)}
+          onSave={company 
+            ? (dataOrId: any, data?: any) => updateCompany(dataOrId, data)
+            : (data: any) => createCompany(data)
+          }
+          initialData={company}
+          userRole={profile?.role || 'member'}
+        />
 
       <PillarFormModal
         open={showPillarForm}

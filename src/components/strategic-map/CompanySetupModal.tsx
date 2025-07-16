@@ -10,15 +10,17 @@ import { Company } from '@/types/strategic-map';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { toast } from '@/hooks/use-toast';
+import { UserRole } from '@/types/auth';
 
 interface CompanySetupModalProps {
   open: boolean;
   onClose: () => void;
   onSave: (dataOrId: any, data?: any) => Promise<Company | null>;
   initialData?: Company | null;
+  userRole?: UserRole;
 }
 
-export const CompanySetupModal = ({ open, onClose, onSave, initialData }: CompanySetupModalProps) => {
+export const CompanySetupModal = ({ open, onClose, onSave, initialData, userRole = 'member' }: CompanySetupModalProps) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
@@ -109,13 +111,23 @@ export const CompanySetupModal = ({ open, onClose, onSave, initialData }: Compan
     setLoading(true);
     try {
       if (initialData) {
-        await onSave(initialData.id, formData);
+        // Se é manager editando, não incluir o nome da empresa na atualização
+        const dataToSave = userRole === 'manager' && initialData 
+          ? { mission: formData.mission, vision: formData.vision, values: formData.values, logo_url: formData.logo_url }
+          : formData;
+        
+        await onSave(initialData.id, dataToSave);
       } else {
         await onSave(formData);
       }
       onClose();
     } catch (error) {
       console.error('Error saving company:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar empresa. Verifique suas permissões.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -151,7 +163,13 @@ export const CompanySetupModal = ({ open, onClose, onSave, initialData }: Compan
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Digite o nome da sua empresa"
               required
+              disabled={userRole === 'manager' && !!initialData}
             />
+            {userRole === 'manager' && initialData && (
+              <p className="text-xs text-muted-foreground">
+                Apenas administradores podem alterar o nome da empresa
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
