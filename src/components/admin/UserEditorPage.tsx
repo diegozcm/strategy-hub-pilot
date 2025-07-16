@@ -507,56 +507,41 @@ export const UserEditorPage: React.FC = () => {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!currentUser) {
+    if (!currentUser?.id) {
       toast({
         title: "Erro",
-        description: "Usuário não autenticado",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (userId === currentUser.id) {
-      toast({
-        title: "Erro", 
-        description: "Você não pode excluir sua própria conta",
-        variant: "destructive"
+        description: "Usuário não autenticado.",
+        variant: "destructive",
       });
       return;
     }
 
     try {
-      // Primeiro remover o usuário das empresas
-      const { error: relationError } = await supabase
-        .from('user_company_relations')
-        .delete()
-        .eq('user_id', userId);
+      // Usar função segura para exclusão de usuário (preserva dados da empresa)
+      const { data, error } = await supabase
+        .rpc('safe_delete_user', {
+          _user_id: userId,
+          _admin_id: currentUser.id
+        });
 
-      if (relationError) throw relationError;
+      if (error) throw error;
 
-      // Depois remover o perfil do usuário
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('user_id', userId);
-
-      if (profileError) throw profileError;
-
-      // Por fim, remover o usuário do auth (apenas admin pode fazer isso via RPC se necessário)
-      // Como não temos uma função RPC para isso, vamos apenas remover o perfil
+      // Atualizar a lista local
+      setUsers(users.filter(u => u.user_id !== userId));
       
       toast({
-        title: 'Sucesso',
-        description: 'Usuário excluído com sucesso'
+        title: "Sucesso",
+        description: "Usuário excluído com sucesso. Os dados da empresa foram preservados.",
       });
 
-      loadData();
+      // Recarregar dados
+      await loadData();
     } catch (error) {
       console.error('Erro ao excluir usuário:', error);
       toast({
-        title: 'Erro',
-        description: 'Erro ao excluir usuário',
-        variant: 'destructive'
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Erro ao excluir usuário.",
+        variant: "destructive",
       });
     }
   };
@@ -713,10 +698,12 @@ export const UserEditorPage: React.FC = () => {
                              <AlertDialogContent className="bg-slate-800 border-slate-700 text-white">
                                <AlertDialogHeader>
                                  <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-                                 <AlertDialogDescription className="text-slate-400">
-                                   Tem certeza que deseja excluir o usuário {userProfile.first_name} {userProfile.last_name}? 
-                                   Esta ação não pode ser desfeita e todos os dados associados ao usuário serão removidos.
-                                 </AlertDialogDescription>
+                                  <AlertDialogDescription className="text-slate-400">
+                                    Tem certeza que deseja excluir o usuário {userProfile.first_name} {userProfile.last_name}? 
+                                    <br /><br />
+                                    <strong>Importante:</strong> Os dados criados por este usuário (projetos, objetivos, etc.) 
+                                    permanecerão na empresa e não serão perdidos.
+                                  </AlertDialogDescription>
                                </AlertDialogHeader>
                                <AlertDialogFooter>
                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>

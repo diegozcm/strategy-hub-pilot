@@ -1069,6 +1069,10 @@ export type Database = {
         Args: { actual: number; target: number }
         Returns: number
       }
+      can_delete_company: {
+        Args: { _company_id: string }
+        Returns: boolean
+      }
       deactivate_user: {
         Args: { _user_id: string; _admin_id: string }
         Returns: boolean
@@ -1098,6 +1102,10 @@ export type Database = {
       }
       is_admin: {
         Args: { _user_id: string }
+        Returns: boolean
+      }
+      safe_delete_user: {
+        Args: { _user_id: string; _admin_id: string }
         Returns: boolean
       }
       unassign_user_from_company: {

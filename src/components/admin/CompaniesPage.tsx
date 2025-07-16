@@ -502,37 +502,36 @@ export const CompaniesPage: React.FC = () => {
   };
 
   const handleDeleteCompany = async (companyId: string) => {
-    console.log('DEBUG: Tentando excluir empresa', { 
-      companyId, 
-      currentUserId: user?.id,
-      userRole: profile?.role 
-    });
-    
     try {
-      const { data, error } = await supabase
+      // Primeiro verificar se a empresa pode ser excluída
+      const { data: canDelete, error: checkError } = await supabase
+        .rpc('can_delete_company', { _company_id: companyId });
+
+      if (checkError) throw checkError;
+
+      if (!canDelete) {
+        toast({
+          title: "Erro",
+          description: "Não é possível excluir esta empresa pois ainda possui usuários ativos associados.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Proceder com a exclusão (CASCADE removerá todos os dados relacionados)
+      const { error } = await supabase
         .from('companies')
         .delete()
-        .eq('id', companyId)
-        .select();
-
-      console.log('DEBUG: Resultado da exclusão', { data, error });
+        .eq('id', companyId);
 
       if (error) throw error;
-
-      // Verificar se a exclusão realmente aconteceu
-      const { data: checkData } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('id', companyId);
-      
-      console.log('DEBUG: Verificação pós-exclusão', { checkData });
 
       setCompanies(companies.filter(c => c.id !== companyId));
       setDeletingCompany(null);
 
       toast({
         title: "Sucesso",
-        description: "Empresa excluída com sucesso.",
+        description: "Empresa e todos os seus dados foram excluídos com sucesso.",
       });
 
       // Recarregar dados para garantir sincronização
@@ -541,7 +540,7 @@ export const CompaniesPage: React.FC = () => {
       console.error('Erro ao excluir empresa:', error);
       toast({
         title: "Erro",
-        description: "Erro ao excluir empresa.",
+        description: error instanceof Error ? error.message : "Erro ao excluir empresa.",
         variant: "destructive",
       });
     }
