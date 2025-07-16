@@ -227,12 +227,15 @@ export const ObjectivesPage: React.FC = () => {
     }
 
     try {
+      const objectiveData = {
+        ...objectiveForm,
+        owner_id: user.id,
+        target_date: objectiveForm.target_date ? objectiveForm.target_date : null
+      };
+
       const { data, error } = await supabase
         .from('strategic_objectives')
-        .insert([{
-          ...objectiveForm,
-          owner_id: user.id
-        }])
+        .insert([objectiveData])
         .select()
         .single();
 
