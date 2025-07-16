@@ -114,20 +114,38 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
             
             if (userProfile) {
               // Verificar se o usuário tem empresa associada e se ela está ativa
+              let companyData = null;
+              
+              // Primeiro verificar se há company_id no perfil (método antigo)
               if (userProfile.company_id) {
-                const companyData = await fetchCompany(userProfile.company_id);
-                console.log('🏢 Company data:', companyData);
+                companyData = await fetchCompany(userProfile.company_id);
+                console.log('🏢 Company data from profile:', companyData);
+              } 
+              // Se não há company_id no perfil, verificar na tabela user_company_relations
+              else {
+                console.log('🔍 No company_id in profile, checking user_company_relations...');
+                const { data: relations, error } = await supabase
+                  .from('user_company_relations')
+                  .select('company_id, companies(*)')
+                  .eq('user_id', session.user.id)
+                  .limit(1)
+                  .maybeSingle();
                 
-                if (companyData) {
-                  if (companyData.status === 'inactive') {
-                    console.log('❌ Company is inactive, redirecting to error page');
-                    navigate('/company-inactive');
-                    return;
-                  }
-                  setCompany(companyData);
-                } else {
-                  console.log('❌ Company not found');
+                if (!error && relations) {
+                  companyData = relations.companies;
+                  console.log('🏢 Company data from relations:', companyData);
                 }
+              }
+              
+              if (companyData) {
+                if (companyData.status === 'inactive') {
+                  console.log('❌ Company is inactive, redirecting to error page');
+                  navigate('/company-inactive');
+                  return;
+                }
+                setCompany(companyData);
+              } else {
+                console.log('❌ No company found for user');
               }
               
               setProfile(userProfile);
