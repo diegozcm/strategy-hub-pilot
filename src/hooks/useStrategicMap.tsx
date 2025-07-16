@@ -5,7 +5,7 @@ import { Company, StrategicPillar, StrategicObjective, KeyResult, StrategicProje
 import { toast } from '@/hooks/use-toast';
 
 export const useStrategicMap = () => {
-  const { user } = useAuth();
+  const { user, company: authCompany } = useAuth();
   const [loading, setLoading] = useState(true);
   const [company, setCompany] = useState<Company | null>(null);
   const [strategicPlan, setStrategicPlan] = useState<any | null>(null);
@@ -14,15 +14,18 @@ export const useStrategicMap = () => {
   const [keyResults, setKeyResults] = useState<KeyResult[]>([]);
   const [projects, setProjects] = useState<StrategicProject[]>([]);
 
-  // Load company data
+  // Load company data from database based on authCompany
   const loadCompany = async () => {
-    if (!user) return;
+    if (!user || !authCompany) {
+      setCompany(null);
+      return;
+    }
 
     try {
       const { data, error } = await supabase
         .from('companies')
         .select('*')
-        .eq('owner_id', user.id)
+        .eq('id', authCompany.id)
         .single();
 
       if (error && error.code !== 'PGRST116') {
@@ -35,6 +38,8 @@ export const useStrategicMap = () => {
         await loadStrategicPlan(data.id);
         await loadPillars(data.id);
         await loadProjects(data.id);
+      } else {
+        setCompany(null);
       }
     } catch (error) {
       console.error('Error loading company:', error);
@@ -338,6 +343,19 @@ export const useStrategicMap = () => {
       initialize();
     }
   }, [user]);
+
+  // React to company changes from auth context
+  useEffect(() => {
+    const reloadCompany = async () => {
+      if (user && authCompany) {
+        setLoading(true);
+        await loadCompany();
+        setLoading(false);
+      }
+    };
+
+    reloadCompany();
+  }, [authCompany?.id]);
 
   // Create objective
   const createObjective = async (objectiveData: Omit<StrategicObjective, 'id' | 'created_at' | 'updated_at'>) => {
