@@ -49,7 +49,7 @@ interface ProjectTask {
 }
 
 export const ProjectsPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
   const [projects, setProjects] = useState<StrategicProject[]>([]);
   const [plans, setPlans] = useState<StrategicPlan[]>([]);
@@ -101,20 +101,21 @@ export const ProjectsPage: React.FC = () => {
     loadData();
   }, []);
 
+  // React to company changes
+  useEffect(() => {
+    if (user && authCompany) {
+      loadData();
+    }
+  }, [authCompany?.id]);
+
   const loadData = async () => {
     try {
       setLoading(true);
       
-      // Buscar empresa do usuário
-      const { data: company } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('owner_id', user.id)
-        .single();
-
-      if (!company) {
+      if (!user || !authCompany) {
         setPlans([]);
         setProjects([]);
+        setTasks([]);
         setLoading(false);
         return;
       }
@@ -123,29 +124,36 @@ export const ProjectsPage: React.FC = () => {
       const { data: plansData, error: plansError } = await supabase
         .from('strategic_plans')
         .select('id, name, status')
-        .eq('company_id', company.id)
+        .eq('company_id', authCompany.id)
         .order('created_at', { ascending: false });
 
       if (plansError) throw plansError;
       setPlans(plansData || []);
 
-      // Load projects
+      // Load projects - filter by company_id
       const { data: projectsData, error: projectsError } = await supabase
         .from('strategic_projects')
         .select('*')
+        .eq('company_id', authCompany.id)
         .order('created_at', { ascending: false });
 
       if (projectsError) throw projectsError;
       setProjects(projectsData || []);
 
-      // Load tasks
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('project_tasks')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Load tasks - filter by projects from this company
+      if (projectsData && projectsData.length > 0) {
+        const projectIds = projectsData.map(project => project.id);
+        const { data: tasksData, error: tasksError } = await supabase
+          .from('project_tasks')
+          .select('*')
+          .in('project_id', projectIds)
+          .order('created_at', { ascending: false });
 
-      if (tasksError) throw tasksError;
-      setTasks(tasksData || []);
+        if (tasksError) throw tasksError;
+        setTasks(tasksData || []);
+      } else {
+        setTasks([]);
+      }
 
     } catch (error) {
       console.error('Error loading data:', error);
@@ -160,10 +168,12 @@ export const ProjectsPage: React.FC = () => {
   };
 
   const createProject = async () => {
-    if (!user || !projectForm.name || !projectForm.plan_id) {
+    if (!user || !authCompany || !projectForm.name || !projectForm.plan_id) {
       toast({
         title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios.",
+        description: !authCompany 
+          ? "Nenhuma empresa selecionada. Selecione uma empresa no menu superior."
+          : "Por favor, preencha todos os campos obrigatórios.",
         variant: "destructive",
       });
       return;
@@ -175,6 +185,7 @@ export const ProjectsPage: React.FC = () => {
         .insert([{
           ...projectForm,
           budget: projectForm.budget ? parseFloat(projectForm.budget) : null,
+          company_id: authCompany.id,
           owner_id: user.id,
           status: 'planning'
         }])

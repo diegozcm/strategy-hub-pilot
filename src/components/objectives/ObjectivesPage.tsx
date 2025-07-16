@@ -48,7 +48,7 @@ interface KeyResult {
 }
 
 export const ObjectivesPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
   const [objectives, setObjectives] = useState<StrategicObjective[]>([]);
   const [plans, setPlans] = useState<StrategicPlan[]>([]);
@@ -94,20 +94,21 @@ export const ObjectivesPage: React.FC = () => {
     loadData();
   }, []);
 
+  // React to company changes
+  useEffect(() => {
+    if (user && authCompany) {
+      loadData();
+    }
+  }, [authCompany?.id]);
+
   const loadData = async () => {
     try {
       setLoading(true);
       
-      // Buscar empresa do usuário
-      const { data: company } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('owner_id', user.id)
-        .single();
-
-      if (!company) {
+      if (!user || !authCompany) {
         setPlans([]);
         setObjectives([]);
+        setKeyResults([]);
         setLoading(false);
         return;
       }
@@ -116,33 +117,48 @@ export const ObjectivesPage: React.FC = () => {
       const { data: plansData, error: plansError } = await supabase
         .from('strategic_plans')
         .select('*')
-        .eq('company_id', company.id)
+        .eq('company_id', authCompany.id)
         .order('created_at', { ascending: false });
 
       if (plansError) throw plansError;
       setPlans(plansData || []);
 
-      if (plansData && plansData.length > 0 && selectedPlan === 'all') {
-        // Keep 'all' as default to show all plans
-      }
-
-      // Load objectives
-      const { data: objectivesData, error: objectivesError } = await supabase
+      // Load objectives - filter by plans from the same company
+      let objectivesQuery = supabase
         .from('strategic_objectives')
-        .select('*')
+        .select('*');
+      
+      if (plansData && plansData.length > 0) {
+        const planIds = plansData.map(plan => plan.id);
+        objectivesQuery = objectivesQuery.in('plan_id', planIds);
+      } else {
+        // If no plans, set empty objectives
+        setObjectives([]);
+        setKeyResults([]);
+        setLoading(false);
+        return;
+      }
+      
+      const { data: objectivesData, error: objectivesError } = await objectivesQuery
         .order('created_at', { ascending: false });
 
       if (objectivesError) throw objectivesError;
       setObjectives(objectivesData || []);
 
-      // Load key results
-      const { data: keyResultsData, error: keyResultsError } = await supabase
-        .from('key_results')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Load key results - filter by objectives from this company
+      if (objectivesData && objectivesData.length > 0) {
+        const objectiveIds = objectivesData.map(obj => obj.id);
+        const { data: keyResultsData, error: keyResultsError } = await supabase
+          .from('key_results')
+          .select('*')
+          .in('objective_id', objectiveIds)
+          .order('created_at', { ascending: false });
 
-      if (keyResultsError) throw keyResultsError;
-      setKeyResults(keyResultsData || []);
+        if (keyResultsError) throw keyResultsError;
+        setKeyResults(keyResultsData || []);
+      } else {
+        setKeyResults([]);
+      }
 
     } catch (error) {
       console.error('Error loading data:', error);
@@ -157,37 +173,23 @@ export const ObjectivesPage: React.FC = () => {
   };
 
   const createPlan = async () => {
-    if (!user || !planForm.name || !planForm.period_start || !planForm.period_end) {
+    if (!user || !authCompany || !planForm.name || !planForm.period_start || !planForm.period_end) {
       toast({
         title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios.",
+        description: !authCompany 
+          ? "Nenhuma empresa selecionada. Selecione uma empresa no menu superior."
+          : "Por favor, preencha todos os campos obrigatórios.",
         variant: "destructive",
       });
       return;
     }
 
     try {
-      // Buscar empresa do usuário
-      const { data: company } = await supabase
-        .from('companies')
-        .select('id')
-        .eq('owner_id', user.id)
-        .single();
-
-      if (!company) {
-        toast({
-          title: "Erro",
-          description: "Você precisa ter uma empresa configurada para criar planos estratégicos",
-          variant: "destructive",
-        });
-        return;
-      }
-
       const { data, error } = await supabase
         .from('strategic_plans')
         .insert([{
           ...planForm,
-          company_id: company.id,
+          company_id: authCompany.id,
           status: 'active'
         }])
         .select()

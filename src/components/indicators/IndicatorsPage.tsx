@@ -50,7 +50,7 @@ interface StrategicObjective {
 }
 
 export const IndicatorsPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
   
   // State management
@@ -108,37 +108,87 @@ export const IndicatorsPage: React.FC = () => {
     loadData();
   }, []);
 
+  // React to company changes
+  useEffect(() => {
+    if (user && authCompany) {
+      loadData();
+    }
+  }, [authCompany?.id]);
+
   const loadData = async () => {
     try {
       setLoading(true);
       
-      // Load key results with categories
+      if (!user || !authCompany) {
+        setKeyResults([]);
+        setKeyResultValues([]);
+        setObjectives([]);
+        setLoading(false);
+        return;
+      }
+
+      // First get strategic plans for this company
+      const { data: plansData, error: plansError } = await supabase
+        .from('strategic_plans')
+        .select('id')
+        .eq('company_id', authCompany.id);
+
+      if (plansError) throw plansError;
+
+      if (!plansData || plansData.length === 0) {
+        setKeyResults([]);
+        setKeyResultValues([]);
+        setObjectives([]);
+        setLoading(false);
+        return;
+      }
+
+      const planIds = plansData.map(plan => plan.id);
+
+      // Load strategic objectives for this company's plans
+      const { data: objectivesData, error: objectivesError } = await supabase
+        .from('strategic_objectives')
+        .select('id, title')
+        .in('plan_id', planIds)
+        .order('title');
+
+      if (objectivesError) throw objectivesError;
+      setObjectives(objectivesData || []);
+
+      if (!objectivesData || objectivesData.length === 0) {
+        setKeyResults([]);
+        setKeyResultValues([]);
+        setLoading(false);
+        return;
+      }
+
+      const objectiveIds = objectivesData.map(obj => obj.id);
+
+      // Load key results with categories for this company's objectives
       const { data: keyResultsData, error: keyResultsError } = await supabase
         .from('key_results')
         .select('*')
+        .in('objective_id', objectiveIds)
         .not('category', 'is', null)
         .order('created_at', { ascending: false });
 
       if (keyResultsError) throw keyResultsError;
       setKeyResults(keyResultsData || []);
 
-      // Load key result values
-      const { data: valuesData, error: valuesError } = await supabase
-        .from('key_result_values')
-        .select('*')
-        .order('period_date', { ascending: false });
+      // Load key result values for this company's key results
+      if (keyResultsData && keyResultsData.length > 0) {
+        const keyResultIds = keyResultsData.map(kr => kr.id);
+        const { data: valuesData, error: valuesError } = await supabase
+          .from('key_result_values')
+          .select('*')
+          .in('key_result_id', keyResultIds)
+          .order('period_date', { ascending: false });
 
-      if (valuesError) throw valuesError;
-      setKeyResultValues(valuesData || []);
-
-      // Load strategic objectives
-      const { data: objectivesData, error: objectivesError } = await supabase
-        .from('strategic_objectives')
-        .select('id, title')
-        .order('title');
-
-      if (objectivesError) throw objectivesError;
-      setObjectives(objectivesData || []);
+        if (valuesError) throw valuesError;
+        setKeyResultValues(valuesData || []);
+      } else {
+        setKeyResultValues([]);
+      }
 
     } catch (error) {
       console.error('Error loading data:', error);
