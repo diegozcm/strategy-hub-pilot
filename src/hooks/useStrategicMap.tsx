@@ -361,6 +361,16 @@ export const useStrategicMap = () => {
   const createObjective = async (objectiveData: Omit<StrategicObjective, 'id' | 'created_at' | 'updated_at'>) => {
     if (!user) return null;
 
+    // Ensure pillar_id is provided
+    if (!objectiveData.pillar_id) {
+      toast({
+        title: "Erro",
+        description: "Pilar estratégico é obrigatório para criar objetivos",
+        variant: "destructive",
+      });
+      return null;
+    }
+
     try {
       const { data, error } = await supabase
         .from('strategic_objectives')

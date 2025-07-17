@@ -25,7 +25,7 @@ export interface StrategicPillar {
 export interface StrategicObjective {
   id: string;
   plan_id: string;
-  pillar_id?: string;
+  pillar_id: string;
   title: string;
   description?: string;
   responsible?: string;

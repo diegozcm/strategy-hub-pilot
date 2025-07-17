@@ -718,7 +718,7 @@ export type Database = {
           monthly_actual: Json | null
           monthly_targets: Json | null
           owner_id: string
-          pillar_id: string | null
+          pillar_id: string
           plan_id: string
           progress: number | null
           responsible: string | null
@@ -738,7 +738,7 @@ export type Database = {
           monthly_actual?: Json | null
           monthly_targets?: Json | null
           owner_id: string
-          pillar_id?: string | null
+          pillar_id: string
           plan_id: string
           progress?: number | null
           responsible?: string | null
@@ -758,7 +758,7 @@ export type Database = {
           monthly_actual?: Json | null
           monthly_targets?: Json | null
           owner_id?: string
-          pillar_id?: string | null
+          pillar_id?: string
           plan_id?: string
           progress?: number | null
           responsible?: string | null

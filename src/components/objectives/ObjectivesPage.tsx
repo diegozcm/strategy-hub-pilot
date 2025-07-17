@@ -33,8 +33,17 @@ interface StrategicObjective {
   weight: number;
   target_date: string;
   plan_id: string;
+  pillar_id: string;
   owner_id: string;
   created_at: string;
+}
+
+interface StrategicPillar {
+  id: string;
+  name: string;
+  description: string;
+  color: string;
+  company_id: string;
 }
 
 interface KeyResult {
@@ -52,6 +61,7 @@ export const ObjectivesPage: React.FC = () => {
   const { toast } = useToast();
   const [objectives, setObjectives] = useState<StrategicObjective[]>([]);
   const [plans, setPlans] = useState<StrategicPlan[]>([]);
+  const [pillars, setPillars] = useState<StrategicPillar[]>([]);
   const [keyResults, setKeyResults] = useState<KeyResult[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -71,7 +81,8 @@ export const ObjectivesPage: React.FC = () => {
     description: '',
     weight: 1,
     target_date: '',
-    plan_id: ''
+    plan_id: '',
+    pillar_id: ''
   });
 
   const [planForm, setPlanForm] = useState({
@@ -87,7 +98,8 @@ export const ObjectivesPage: React.FC = () => {
     description: '',
     weight: 1,
     target_date: '',
-    status: 'not_started'
+    status: 'not_started',
+    pillar_id: ''
   });
 
   useEffect(() => {
@@ -109,6 +121,7 @@ export const ObjectivesPage: React.FC = () => {
         setPlans([]);
         setObjectives([]);
         setKeyResults([]);
+        setPillars([]);
         setLoading(false);
         return;
       }
@@ -122,6 +135,16 @@ export const ObjectivesPage: React.FC = () => {
 
       if (plansError) throw plansError;
       setPlans(plansData || []);
+
+      // Load strategic pillars
+      const { data: pillarsData, error: pillarsError } = await supabase
+        .from('strategic_pillars')
+        .select('*')
+        .eq('company_id', authCompany.id)
+        .order('order_index', { ascending: true });
+
+      if (pillarsError) throw pillarsError;
+      setPillars(pillarsData || []);
 
       // Load objectives - filter by plans from the same company
       let objectivesQuery = supabase
@@ -217,10 +240,10 @@ export const ObjectivesPage: React.FC = () => {
   };
 
   const createObjective = async () => {
-    if (!user || !objectiveForm.title || !objectiveForm.plan_id) {
+    if (!user || !objectiveForm.title || !objectiveForm.plan_id || !objectiveForm.pillar_id) {
       toast({
         title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios.",
+        description: "Por favor, preencha todos os campos obrigatórios incluindo o pilar estratégico.",
         variant: "destructive",
       });
       return;
@@ -242,7 +265,7 @@ export const ObjectivesPage: React.FC = () => {
       if (error) throw error;
 
       setObjectives(prev => [data, ...prev]);
-      setObjectiveForm({ title: '', description: '', weight: 1, target_date: '', plan_id: '' });
+      setObjectiveForm({ title: '', description: '', weight: 1, target_date: '', plan_id: '', pillar_id: '' });
       setIsCreateObjectiveOpen(false);
       
       toast({
@@ -266,7 +289,8 @@ export const ObjectivesPage: React.FC = () => {
       description: objective.description || '',
       weight: objective.weight,
       target_date: objective.target_date || '',
-      status: objective.status
+      status: objective.status,
+      pillar_id: objective.pillar_id
     });
     setIsEditing(false);
     setIsDetailModalOpen(true);
@@ -279,10 +303,10 @@ export const ObjectivesPage: React.FC = () => {
   };
 
   const updateObjective = async () => {
-    if (!selectedObjective || !editForm.title) {
+    if (!selectedObjective || !editForm.title || !editForm.pillar_id) {
       toast({
         title: "Erro",
-        description: "Por favor, preencha o título do objetivo.",
+        description: "Por favor, preencha todos os campos obrigatórios incluindo o pilar estratégico.",
         variant: "destructive",
       });
       return;
@@ -296,7 +320,8 @@ export const ObjectivesPage: React.FC = () => {
           description: editForm.description,
           weight: editForm.weight,
           target_date: editForm.target_date || null,
-          status: editForm.status
+          status: editForm.status,
+          pillar_id: editForm.pillar_id
         })
         .eq('id', selectedObjective.id)
         .select()
@@ -552,7 +577,7 @@ export const ObjectivesPage: React.FC = () => {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="objective-plan">Plano Estratégico</Label>
+                  <Label htmlFor="objective-plan">Plano Estratégico *</Label>
                   <Select 
                     value={objectiveForm.plan_id} 
                     onValueChange={(value) => setObjectiveForm(prev => ({ ...prev, plan_id: value }))}
@@ -570,7 +595,31 @@ export const ObjectivesPage: React.FC = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="objective-title">Título do Objetivo</Label>
+                  <Label htmlFor="objective-pillar">Pilar Estratégico *</Label>
+                  <Select 
+                    value={objectiveForm.pillar_id} 
+                    onValueChange={(value) => setObjectiveForm(prev => ({ ...prev, pillar_id: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um pilar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pillars.map((pillar) => (
+                        <SelectItem key={pillar.id} value={pillar.id}>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: pillar.color }}
+                            />
+                            {pillar.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="objective-title">Título do Objetivo *</Label>
                   <Input
                     id="objective-title"
                     value={objectiveForm.title}
@@ -711,6 +760,15 @@ export const ObjectivesPage: React.FC = () => {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: pillars.find(p => p.id === objective.pillar_id)?.color || '#3B82F6' }}
+                        />
+                        <span className="text-xs text-gray-500 font-medium">
+                          {pillars.find(p => p.id === objective.pillar_id)?.name || 'Sem pilar'}
+                        </span>
+                      </div>
                       <CardTitle className="text-lg leading-tight">{objective.title}</CardTitle>
                       <CardDescription className="mt-1">
                         {objective.description}
@@ -868,6 +926,44 @@ export const ObjectivesPage: React.FC = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
+                    <Label htmlFor="detail-pillar">Pilar Estratégico</Label>
+                    {isEditing ? (
+                      <Select 
+                        value={editForm.pillar_id} 
+                        onValueChange={(value) => setEditForm(prev => ({ ...prev, pillar_id: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um pilar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pillars.map((pillar) => (
+                            <SelectItem key={pillar.id} value={pillar.id}>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: pillar.color }}
+                                />
+                                {pillar.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="bg-gray-50 p-3 rounded-md">
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: pillars.find(p => p.id === selectedObjective.pillar_id)?.color || '#3B82F6' }}
+                          />
+                          <span className="text-sm text-gray-900">
+                            {pillars.find(p => p.id === selectedObjective.pillar_id)?.name || 'Sem pilar'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div>
                     <Label htmlFor="detail-weight">Peso</Label>
                     {isEditing ? (
                       <Input
@@ -909,25 +1005,25 @@ export const ObjectivesPage: React.FC = () => {
                       </div>
                     )}
                   </div>
+                </div>
 
-                  <div>
-                    <Label htmlFor="detail-target-date">Data Meta</Label>
-                    {isEditing ? (
-                      <Input
-                        id="detail-target-date"
-                        type="date"
-                        value={editForm.target_date}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, target_date: e.target.value }))}
-                      />
-                    ) : (
-                      <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
-                        {selectedObjective.target_date 
-                          ? new Date(selectedObjective.target_date).toLocaleDateString('pt-BR')
-                          : 'Não definida'
-                        }
-                      </p>
-                    )}
-                  </div>
+                <div>
+                  <Label htmlFor="detail-target-date">Data Meta</Label>
+                  {isEditing ? (
+                    <Input
+                      id="detail-target-date"
+                      type="date"
+                      value={editForm.target_date}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, target_date: e.target.value }))}
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
+                      {selectedObjective.target_date 
+                        ? new Date(selectedObjective.target_date).toLocaleDateString('pt-BR')
+                        : 'Não definida'
+                      }
+                    </p>
+                  )}
                 </div>
               </div>
 
