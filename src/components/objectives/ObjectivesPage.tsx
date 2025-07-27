@@ -825,25 +825,28 @@ export const ObjectivesPage: React.FC = () => {
       {/* Detail/Edit Modal */}
       {selectedObjective && (
         <Dialog open={isDetailModalOpen} onOpenChange={closeDetailModal}>
-          <DialogContent className="w-[95vw] max-w-2xl sm:w-full">
-            <DialogHeader>
-              <div className="flex items-center justify-between">
-                <div>
+          <DialogContent className="w-[95vw] max-w-4xl h-[90vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
                   <DialogTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5" />
-                    {isEditing ? 'Editar Objetivo' : 'Detalhes do Objetivo'}
+                    <Target className="h-5 w-5 flex-shrink-0" />
+                    <span className="truncate">
+                      {isEditing ? 'Editar Objetivo' : 'Detalhes do Objetivo'}
+                    </span>
                   </DialogTitle>
-                  <DialogDescription>
+                  <DialogDescription className="mt-1">
                     {isEditing ? 'Edite as informações do objetivo estratégico' : 'Visualize e gerencie seu objetivo estratégico'}
                   </DialogDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2 flex-shrink-0">
                   {!isEditing ? (
                     <>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setIsAddResultadoChaveOpen(true)}
+                        className="hidden sm:flex"
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Adicionar Resultado-Chave
@@ -851,18 +854,26 @@ export const ObjectivesPage: React.FC = () => {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => setIsAddResultadoChaveOpen(true)}
+                        className="sm:hidden"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => setIsEditing(true)}
                       >
-                        <Edit className="h-4 w-4 mr-2" />
-                        Editar
+                        <Edit className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Editar</span>
                       </Button>
                       <Button
                         variant="destructive"
                         size="sm"
                         onClick={() => setIsDeleteConfirmOpen(true)}
                       >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Excluir
+                        <Trash2 className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Excluir</span>
                       </Button>
                     </>
                   ) : (
@@ -872,15 +883,15 @@ export const ObjectivesPage: React.FC = () => {
                         size="sm"
                         onClick={() => setIsEditing(false)}
                       >
-                        <X className="h-4 w-4 mr-2" />
-                        Cancelar
+                        <X className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Cancelar</span>
                       </Button>
                       <Button
                         size="sm"
                         onClick={updateObjective}
                       >
-                        <Save className="h-4 w-4 mr-2" />
-                        Salvar
+                        <Save className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">Salvar</span>
                       </Button>
                     </div>
                   )}
@@ -888,7 +899,7 @@ export const ObjectivesPage: React.FC = () => {
               </div>
             </DialogHeader>
 
-            <div className="space-y-6">
+            <div className="flex-1 overflow-y-auto space-y-6 pr-2">
               {/* Basic Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Informações Básicas</h3>
