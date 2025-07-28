@@ -29,10 +29,6 @@ const navigation = [{
   name: 'Relatórios',
   href: '/app/reports',
   icon: Activity
-}, {
-  name: 'Equipe',
-  href: '/app/team',
-  icon: Users
 }];
 const adminNavigation = [{
   name: 'Configurações',

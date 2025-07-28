@@ -17,7 +17,7 @@ import { ProjectsPage } from "@/components/projects/ProjectsPage";
 import { IndicatorsPage } from "@/components/indicators/IndicatorsPage";
 import { ReportsPage } from "@/components/reports/ReportsPage";
 import { AICopilotPage } from "@/components/ai/AICopilotPage";
-import TeamPage from "@/components/team/TeamPage";
+
 import { SettingsPage } from "@/components/settings/SettingsPage";
 import { ProfilePage } from "@/components/profile/ProfilePage";
 import { StrategicMapPage } from "@/components/strategic-map/StrategicMapPage";
@@ -51,7 +51,7 @@ const App = () => (
             <Route path="/indicators" element={<Navigate to="/app/indicators" replace />} />
             <Route path="/reports" element={<Navigate to="/app/reports" replace />} />
             <Route path="/ai-copilot" element={<Navigate to="/app/ai-copilot" replace />} />
-            <Route path="/team" element={<Navigate to="/app/team" replace />} />
+            
             <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
             <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
             
@@ -69,7 +69,7 @@ const App = () => (
               <Route path="indicators" element={<IndicatorsPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="ai-copilot" element={<AICopilotPage />} />
-              <Route path="team" element={<TeamPage />} />
+              
               <Route path="profile" element={<ProfilePage />} />
               <Route path="settings" element={<SettingsPage />} />
               

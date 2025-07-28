@@ -34,7 +34,6 @@ interface DashboardStats {
   onTimeKRs: number;
   onTimeKRsPercentage: number;
   overallScore: number;
-  teamMembers: number;
 }
 
 
@@ -66,15 +65,6 @@ const getDynamicStats = (stats: DashboardStats) => [
     color: 'text-orange-600',
     bgColor: 'bg-orange-50'
   },
-  {
-    title: 'Membros da Equipe',
-    value: stats.teamMembers.toString(),
-    change: stats.teamMembers > 0 ? `${stats.teamMembers} ativos` : '0',
-    changeType: 'positive' as const,
-    icon: Users,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50'
-  }
 ];
 
 export const DashboardHome: React.FC = () => {
@@ -85,8 +75,7 @@ export const DashboardHome: React.FC = () => {
     activeProjects: 0,
     onTimeKRs: 0,
     onTimeKRsPercentage: 0,
-    overallScore: 0,
-    teamMembers: 0
+    overallScore: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -121,8 +110,7 @@ export const DashboardHome: React.FC = () => {
           activeProjects: 0,
           onTimeKRs: 0,
           onTimeKRsPercentage: 0,
-          overallScore: 0,
-          teamMembers: 0
+          overallScore: 0
         });
         setLoading(false);
         return;
@@ -172,17 +160,6 @@ export const DashboardHome: React.FC = () => {
         `)
         .in('objective_id', objectiveIds);
 
-      // Buscar membros da equipe
-      const { data: teamRelations } = await supabase
-        .from('user_company_relations')
-        .select('user_id')
-        .eq('company_id', company.id);
-
-      const teamUserIds = teamRelations?.map(relation => relation.user_id) || [];
-      const { data: teamProfiles } = await supabase
-        .from('profiles')
-        .select('user_id, status')
-        .in('user_id', teamUserIds);
 
       // Buscar perfis dos proprietários dos objetivos
       const ownerIds = objectivesData?.map(obj => obj.owner_id) || [];
@@ -268,17 +245,13 @@ export const DashboardHome: React.FC = () => {
       });
       const overallScore = scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0;
 
-      // Contar membros ativos da equipe
-      const teamMembers = teamProfiles?.filter(profile => profile.status === 'active').length || 0;
-
       setObjectives(objectivesWithMetrics);
       setDashboardStats({
         activeObjectives,
         activeProjects,
         onTimeKRs,
         onTimeKRsPercentage,
-        overallScore,
-        teamMembers
+        overallScore
       });
 
     } catch (error) {
