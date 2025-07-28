@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
+import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 
 interface StrategicPlan {
   id: string;
@@ -437,6 +438,11 @@ export const ProjectsPage: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  // Block access if no company is associated
+  if (!authCompany) {
+    return <NoCompanyMessage />;
   }
 
   return (

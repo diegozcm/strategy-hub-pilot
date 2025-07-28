@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { AddResultadoChaveModal } from '@/components/strategic-map/AddResultadoChaveModal';
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
+import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 
 interface StrategicPlan {
   id: string;
@@ -476,6 +477,11 @@ export const ObjectivesPage: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  // Block access if no company is associated
+  if (!authCompany) {
+    return <NoCompanyMessage />;
   }
 
   return (

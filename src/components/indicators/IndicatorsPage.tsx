@@ -16,6 +16,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
+import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 
 interface KeyResult {
   id: string;
@@ -579,6 +580,11 @@ export const IndicatorsPage: React.FC = () => {
         </div>
       </div>
     );
+  }
+
+  // Block access if no company is associated
+  if (!authCompany) {
+    return <NoCompanyMessage />;
   }
 
   return (
