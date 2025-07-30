@@ -467,6 +467,8 @@ export const UserEditorPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
+      console.log('🔍 UserEditorPage: Carregando dados de usuários e empresas...');
+      
       const [usersResponse, companiesResponse] = await Promise.all([
         supabase
           .from('profiles')
@@ -477,6 +479,9 @@ export const UserEditorPage: React.FC = () => {
           .select('*')
           .order('name', { ascending: true })
       ]);
+
+      console.log('📊 UserEditorPage: Resposta usuários:', usersResponse);
+      console.log('🏢 UserEditorPage: Resposta empresas:', companiesResponse);
 
       if (usersResponse.error) throw usersResponse.error;
       if (companiesResponse.error) throw companiesResponse.error;
