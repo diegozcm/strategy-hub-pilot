@@ -25,8 +25,8 @@ import { CompaniesPage } from "@/components/admin/CompaniesPage";
 import { UserEditorPage } from "@/components/admin/UserEditorPage";
 import { SystemSettingsPage } from "@/components/admin/SystemSettingsPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import LandingPage from "./pages/LandingPage";
-import NotFound from "./pages/NotFound";
+import LandingPage from "./pages/LandingPage.tsx";
+import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
 
