@@ -1073,6 +1073,14 @@ export type Database = {
         Args: { _company_id: string }
         Returns: boolean
       }
+      create_missing_profiles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          missing_user_id: string
+          missing_email: string
+          action: string
+        }[]
+      }
       deactivate_user: {
         Args: { _user_id: string; _admin_id: string }
         Returns: boolean

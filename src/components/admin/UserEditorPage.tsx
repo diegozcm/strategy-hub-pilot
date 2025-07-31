@@ -103,9 +103,11 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
   const handleSaveUser = async () => {
     if (!editedUser || !currentUser) return;
 
+    console.log('💾 UserEditorPage: Salvando usuário:', editedUser);
     setIsLoading(true);
     try {
-      const { error } = await supabase
+      // Atualizar perfil na tabela profiles
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
           first_name: editedUser.first_name,
@@ -118,8 +120,27 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
         })
         .eq('user_id', editedUser.user_id);
 
-      if (error) throw error;
+      if (profileError) {
+        console.error('❌ Erro ao atualizar perfil:', profileError);
+        throw profileError;
+      }
 
+      // Atualizar role na tabela user_roles se necessário
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .upsert({
+          user_id: editedUser.user_id,
+          role: editedUser.role,
+          updated_at: new Date().toISOString()
+        })
+        .select();
+
+      if (roleError) {
+        console.error('❌ Erro ao atualizar role:', roleError);
+        // Não falha se o role não conseguir ser atualizado
+      }
+
+      console.log('✅ UserEditorPage: Usuário salvo com sucesso');
       toast({
         title: 'Sucesso',
         description: 'Dados do usuário atualizados com sucesso'
@@ -128,10 +149,10 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
       onUserUpdated();
       onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao atualizar usuário:', error);
+      console.error('❌ Erro ao atualizar usuário:', error);
       toast({
         title: 'Erro',
-        description: 'Erro ao atualizar dados do usuário',
+        description: `Erro ao atualizar dados do usuário: ${error.message}`,
         variant: 'destructive'
       });
     } finally {
