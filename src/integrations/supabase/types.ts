@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_impersonation_sessions: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          ended_at: string | null
+          id: string
+          impersonated_user_id: string
+          is_active: boolean
+          started_at: string
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          impersonated_user_id: string
+          is_active?: boolean
+          started_at?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          impersonated_user_id?: string
+          is_active?: boolean
+          started_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_analytics: {
         Row: {
           created_at: string | null
@@ -1085,6 +1118,10 @@ export type Database = {
         Args: { _user_id: string; _admin_id: string }
         Returns: boolean
       }
+      end_impersonation: {
+        Args: { _admin_id: string }
+        Returns: boolean
+      }
       get_monthly_objective_achievement: {
         Args: { objective_id: string; target_month: string }
         Returns: {
@@ -1115,6 +1152,10 @@ export type Database = {
       safe_delete_user: {
         Args: { _user_id: string; _admin_id: string }
         Returns: boolean
+      }
+      start_impersonation: {
+        Args: { _admin_id: string; _target_user_id: string }
+        Returns: string
       }
       unassign_user_from_company: {
         Args: { _user_id: string; _admin_id: string }

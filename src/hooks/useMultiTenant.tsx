@@ -17,6 +17,10 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  // Impersonation state
+  const [isImpersonating, setIsImpersonating] = useState(false);
+  const [originalAdmin, setOriginalAdmin] = useState<UserProfile | null>(null);
+  const [impersonationSession, setImpersonationSession] = useState<any>(null);
   const navigate = useNavigate();
 
   // Calculate permissions based on role
@@ -239,6 +243,75 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     return { error };
   };
 
+  // Start impersonation (admin only)
+  const startImpersonation = async (targetUserId: string) => {
+    if (!user || !isSystemAdmin) {
+      return { error: new Error('Only admins can start impersonation') };
+    }
+
+    try {
+      console.log('🎭 Starting impersonation of user:', targetUserId);
+      
+      // Call Supabase function to create impersonation session
+      const { data: sessionId, error } = await supabase.rpc('start_impersonation', {
+        _admin_id: user.id,
+        _target_user_id: targetUserId
+      });
+
+      if (error) throw error;
+
+      // Fetch target user profile
+      const targetProfile = await fetchProfile(targetUserId);
+      if (!targetProfile) {
+        throw new Error('Target user profile not found');
+      }
+
+      // Store current admin profile
+      setOriginalAdmin(profile);
+      
+      // Switch to impersonated user
+      setProfile(targetProfile);
+      setIsImpersonating(true);
+      setImpersonationSession({ id: sessionId, admin_user_id: user.id, impersonated_user_id: targetUserId });
+
+      console.log('✅ Impersonation started successfully');
+      return { error: null };
+    } catch (error) {
+      console.error('❌ Error starting impersonation:', error);
+      return { error };
+    }
+  };
+
+  // End impersonation
+  const endImpersonation = async () => {
+    if (!user || !isImpersonating || !originalAdmin) {
+      return { error: new Error('No active impersonation session') };
+    }
+
+    try {
+      console.log('🎭 Ending impersonation...');
+      
+      // Call Supabase function to end impersonation session
+      const { error } = await supabase.rpc('end_impersonation', {
+        _admin_id: user.id
+      });
+
+      if (error) throw error;
+
+      // Restore original admin profile
+      setProfile(originalAdmin);
+      setIsImpersonating(false);
+      setOriginalAdmin(null);
+      setImpersonationSession(null);
+
+      console.log('✅ Impersonation ended successfully');
+      return { error: null };
+    } catch (error) {
+      console.error('❌ Error ending impersonation:', error);
+      return { error };
+    }
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -257,6 +330,12 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       isSystemAdmin,
       isCompanyAdmin,
       switchCompany: isSystemAdmin ? switchCompany : undefined,
+      // Impersonation properties
+      isImpersonating,
+      originalAdmin,
+      impersonationSession,
+      startImpersonation: isSystemAdmin ? startImpersonation : undefined,
+      endImpersonation: isSystemAdmin ? endImpersonation : undefined,
     }}>
       {children}
     </AuthContext.Provider>

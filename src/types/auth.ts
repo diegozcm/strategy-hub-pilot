@@ -45,6 +45,15 @@ export interface Permission {
   admin?: boolean;
 }
 
+export interface ImpersonationSession {
+  id: string;
+  admin_user_id: string;
+  impersonated_user_id: string;
+  started_at: string;
+  ended_at?: string;
+  is_active: boolean;
+}
+
 export interface AuthContextType {
   user: any;
   session: any;
@@ -62,4 +71,10 @@ export interface AuthContextType {
   isSystemAdmin: boolean;
   isCompanyAdmin: boolean;
   switchCompany?: (companyId: string) => Promise<void>;
+  // Impersonation features
+  isImpersonating: boolean;
+  originalAdmin?: UserProfile;
+  impersonationSession?: ImpersonationSession;
+  startImpersonation?: (userId: string) => Promise<{ error: any }>;
+  endImpersonation?: () => Promise<{ error: any }>;
 }

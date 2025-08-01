@@ -11,7 +11,8 @@ import {
   Building,
   Plus,
   Trash2,
-  Save
+  Save,
+  Eye
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,7 +45,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
   onOpenChange, 
   onUserUpdated 
 }) => {
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, isSystemAdmin, startImpersonation, isImpersonating } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [editedUser, setEditedUser] = useState<UserProfile | null>(null);
@@ -250,6 +251,37 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
     }
   };
 
+  const handleStartImpersonation = async () => {
+    if (!user || !startImpersonation) return;
+
+    try {
+      const { error } = await startImpersonation(user.user_id);
+      if (error) {
+        toast({
+          title: 'Erro',
+          description: `Erro ao iniciar impersonation: ${error.message}`,
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Impersonation iniciada',
+          description: `Agora você está visualizando como ${user.first_name} ${user.last_name}`
+        });
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error('Error starting impersonation:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro inesperado ao iniciar impersonation',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Check if we can start impersonation (admin, not impersonating already, not self)
+  const canStartImpersonation = isSystemAdmin && !isImpersonating && user?.user_id !== currentUser?.id && user?.status === 'active';
+
   if (!editedUser) return null;
 
   const availableCompanies = companies.filter(company => 
@@ -450,6 +482,35 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+
+            {/* Botão de Impersonation */}
+            {canStartImpersonation && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="secondary">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Logar como usuário
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmar Impersonation</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja fazer login como {user.first_name} {user.last_name}?
+                      <br /><br />
+                      <strong>Atenção:</strong> Você verá o sistema com as permissões deste usuário. 
+                      Esta ação será registrada nos logs de auditoria.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleStartImpersonation}>
+                      Confirmar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
 
           <div className="flex gap-2">
