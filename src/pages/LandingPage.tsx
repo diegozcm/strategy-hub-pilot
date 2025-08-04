@@ -5,28 +5,22 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Brain, 
   BarChart3, 
-  Kanban, 
+  Target as TargetIcon, 
   FileText, 
   Users, 
   TrendingUp,
   ArrowRight,
   Play,
-  Crown,
-  CheckSquare,
-  BarChart,
-  User,
   Star,
   Shield,
   Zap,
   Lock,
-  Globe,
-  Slack,
-  Calendar,
-  Smartphone,
   Target,
   Award,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Map,
+  Lightbulb
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -34,12 +28,12 @@ const LandingPage = () => {
   const [currentScreenshot, setCurrentScreenshot] = React.useState(0);
   
   const screenshots = [
-    { title: "Dashboard Principal", description: "Visão completa das métricas estratégicas" },
-    { title: "Planejamento Estratégico", description: "Ferramenta de planejamento com IA" },
-    { title: "Gestão de Projetos", description: "Kanban para gerenciar iniciativas" },
-    { title: "Relatórios Analytics", description: "Insights automáticos e personalizados" },
-    { title: "Colaboração em Equipe", description: "Trabalhe junto em tempo real" },
-    { title: "Análise Preditiva", description: "Antecipe tendências futuras" }
+    { title: "Dashboard Executivo", description: "Visão completa das métricas estratégicas com IA" },
+    { title: "Mapa Estratégico", description: "Visualize objetivos e resultados-chave" },
+    { title: "Gestão de Projetos", description: "Kanban inteligente para iniciativas" },
+    { title: "Copiloto de IA", description: "Assistente inteligente para planejamento" },
+    { title: "Objetivos", description: "Defina e acompanhe metas estratégicas" },
+    { title: "Análise Preditiva", description: "Insights automáticos baseados em IA" }
   ];
 
   const nextScreenshot = () => {
@@ -64,9 +58,6 @@ const LandingPage = () => {
             <a href="#features" className="text-strategy-blue-navy hover:text-accent transition-colors">
               Funcionalidades
             </a>
-            <a href="#pricing" className="text-strategy-blue-navy hover:text-accent transition-colors">
-              Preços
-            </a>
             <a href="#cases" className="text-strategy-blue-navy hover:text-accent transition-colors">
               Casos de Uso
             </a>
@@ -79,9 +70,6 @@ const LandingPage = () => {
             <Link to="/auth">
               <Button variant="outline" className="border-strategy-blue-navy text-strategy-blue-navy hover:bg-strategy-blue-navy hover:text-white">Login</Button>
             </Link>
-            <Link to="/auth">
-              <Button className="bg-accent hover:bg-strategy-blue-bright-hover text-white">Teste Grátis por 14 dias</Button>
-            </Link>
           </div>
         </div>
       </header>
@@ -91,17 +79,17 @@ const LandingPage = () => {
         <div className="container mx-auto text-center">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl font-bold text-strategy-red-dark mb-6 leading-tight">
-              Transforme sua <span className="text-strategy-red-dark">Estratégia Empresarial</span> com IA
+              Planejamento Estratégico <span className="text-strategy-red-dark">Inteligente</span> com IA
             </h1>
             
             <p className="text-xl text-strategy-blue-navy mb-8 leading-relaxed">
-              Plataforma completa para planejamento estratégico, monitoramento de KPIs e tomada de decisões baseada em dados
+              Transforme sua estratégia empresarial com insights de IA, mapas estratégicos e gestão de objetivos automatizada
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link to="/auth">
                 <Button size="lg" className="text-lg px-8 py-6 bg-primary hover:bg-strategy-red-light text-white">
-                  Começar Teste Gratuito
+                  Fazer Login
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
@@ -109,12 +97,6 @@ const LandingPage = () => {
                 <Play className="mr-2 h-5 w-5" />
                 Ver Demonstração
               </Button>
-              <Link to="/admin-login">
-                <Button variant="ghost" size="sm" className="text-sm text-gray-500 hover:text-gray-700">
-                  <Shield className="mr-2 h-4 w-4" />
-                  Admin
-                </Button>
-              </Link>
             </div>
 
             {/* Trust Badges */}
@@ -152,27 +134,13 @@ const LandingPage = () => {
             <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
               <CardHeader>
                 <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                  <Brain className="h-6 w-6 text-accent" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Planejamento Estratégico IA</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base text-strategy-gray-medium">
-                  Crie planos estratégicos com sugestões inteligentes baseadas em IA
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
-              <CardHeader>
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
                   <BarChart3 className="h-6 w-6 text-accent" />
                 </div>
                 <CardTitle className="text-strategy-blue-navy">Dashboard Executivo</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base text-strategy-gray-medium">
-                  Visualize KPIs e métricas estratégicas em tempo real
+                  Visualize KPIs e métricas estratégicas com insights de IA em tempo real
                 </CardDescription>
               </CardContent>
             </Card>
@@ -180,13 +148,13 @@ const LandingPage = () => {
             <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
               <CardHeader>
                 <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                  <Kanban className="h-6 w-6 text-accent" />
+                  <Map className="h-6 w-6 text-accent" />
                 </div>
-                <CardTitle className="text-strategy-blue-navy">Gestão de Projetos</CardTitle>
+                <CardTitle className="text-strategy-blue-navy">Mapa Estratégico</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base text-strategy-gray-medium">
-                  Gerencie iniciativas estratégicas com metodologias ágeis
+                  Visualize objetivos e resultados-chave em mapas estratégicos inteligentes
                 </CardDescription>
               </CardContent>
             </Card>
@@ -194,27 +162,13 @@ const LandingPage = () => {
             <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
               <CardHeader>
                 <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                  <FileText className="h-6 w-6 text-accent" />
+                  <TargetIcon className="h-6 w-6 text-accent" />
                 </div>
-                <CardTitle className="text-strategy-blue-navy">Relatórios Inteligentes</CardTitle>
+                <CardTitle className="text-strategy-blue-navy">Objetivos</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base text-strategy-gray-medium">
-                  Gere relatórios automatizados com insights de IA
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
-              <CardHeader>
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                  <Users className="h-6 w-6 text-accent" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Colaboração em Equipe</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base text-strategy-gray-medium">
-                  Colabore com sua equipe em tempo real
+                  Defina e acompanhe objetivos estratégicos com suporte de IA
                 </CardDescription>
               </CardContent>
             </Card>
@@ -224,11 +178,39 @@ const LandingPage = () => {
                 <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
                   <TrendingUp className="h-6 w-6 text-accent" />
                 </div>
-                <CardTitle className="text-strategy-blue-navy">Análise Preditiva</CardTitle>
+                <CardTitle className="text-strategy-blue-navy">Resultados Chave</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base text-strategy-gray-medium">
-                  Antecipe tendências e cenários futuros
+                  Monitore indicadores e métricas com análise preditiva automática
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
+              <CardHeader>
+                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+                  <FileText className="h-6 w-6 text-accent" />
+                </div>
+                <CardTitle className="text-strategy-blue-navy">Gestão de Projetos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-base text-strategy-gray-medium">
+                  Gerencie iniciativas estratégicas com kanban inteligente e automações
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
+              <CardHeader>
+                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+                  <Brain className="h-6 w-6 text-accent" />
+                </div>
+                <CardTitle className="text-strategy-blue-navy">Copiloto de IA</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-base text-strategy-gray-medium">
+                  Assistente inteligente para planejamento estratégico e insights automáticos
                 </CardDescription>
               </CardContent>
             </Card>
@@ -286,122 +268,35 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* User Profiles */}
-      <section className="py-16 px-4 bg-strategy-gray-light">
-        <div className="container mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-strategy-red-dark mb-4">
-              Perfis de Acesso
-            </h2>
-            <p className="text-xl text-strategy-gray-medium">
-              Permissões e funcionalidades adaptadas para cada tipo de usuário
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="text-center hover:shadow-lg transition-all duration-300 bg-white border">
-              <CardHeader>
-                <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Crown className="h-8 w-8 text-accent" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">CEO/Diretor</CardTitle>
-                <Badge className="bg-primary text-white mx-auto">Acesso Total</Badge>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-strategy-gray-medium space-y-2">
-                  <li>• Visão completa</li>
-                  <li>• Aprovações</li>
-                  <li>• Definição de estratégias</li>
-                  <li>• Dashboard executivo</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center hover:shadow-lg transition-all duration-300 bg-white border">
-              <CardHeader>
-                <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckSquare className="h-8 w-8 text-accent" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Gerente de Projetos</CardTitle>
-                <Badge className="bg-primary text-white mx-auto">Gestão</Badge>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-strategy-gray-medium space-y-2">
-                  <li>• Gestão de projetos</li>
-                  <li>• Acompanhamento KPIs</li>
-                  <li>• Kanban</li>
-                  <li>• Timeline</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center hover:shadow-lg transition-all duration-300 bg-white border">
-              <CardHeader>
-                <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <BarChart className="h-8 w-8 text-accent" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Analista Estratégico</CardTitle>
-                <Badge className="bg-primary text-white mx-auto">Análise</Badge>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-strategy-gray-medium space-y-2">
-                  <li>• Análise de dados</li>
-                  <li>• Criação de relatórios</li>
-                  <li>• Dashboards personalizados</li>
-                  <li>• Analytics</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="text-center hover:shadow-lg transition-all duration-300 bg-white border">
-              <CardHeader>
-                <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <User className="h-8 w-8 text-accent" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Colaborador</CardTitle>
-                <Badge className="bg-primary text-white mx-auto">Participação</Badge>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-strategy-gray-medium space-y-2">
-                  <li>• Visualização</li>
-                  <li>• Tarefas atribuídas</li>
-                  <li>• Comentários</li>
-                  <li>• Notificações</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
 
       {/* ROI Benefits */}
       <section className="py-16 px-4 bg-white">
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-strategy-red-dark mb-4">
-              Resultados Comprovados
+              Resultados Comprovados com IA
             </h2>
             <p className="text-xl text-strategy-gray-medium">
-              Impacto real nos resultados das empresas
+              Transformação real no planejamento estratégico empresarial
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">40%</div>
-              <p className="text-strategy-gray-medium">Aumento na eficiência do planejamento estratégico</p>
+              <div className="text-5xl font-bold text-primary mb-2">70%</div>
+              <p className="text-strategy-gray-medium">Melhoria na qualidade das decisões estratégicas</p>
+            </div>
+            <div className="text-center">
+              <div className="text-5xl font-bold text-primary mb-2">85%</div>
+              <p className="text-strategy-gray-medium">Redução no tempo de planejamento com IA</p>
             </div>
             <div className="text-center">
               <div className="text-5xl font-bold text-primary mb-2">60%</div>
-              <p className="text-strategy-gray-medium">Redução no tempo de geração de relatórios</p>
+              <p className="text-strategy-gray-medium">Aumento na precisão de projeções futuras</p>
             </div>
             <div className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">35%</div>
-              <p className="text-strategy-gray-medium">Melhoria na tomada de decisões</p>
-            </div>
-            <div className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">300%</div>
-              <p className="text-strategy-gray-medium">ROI médio em 6 meses</p>
+              <div className="text-5xl font-bold text-primary mb-2">400%</div>
+              <p className="text-strategy-gray-medium">ROI médio em 8 meses com automação de IA</p>
             </div>
           </div>
         </div>
@@ -415,7 +310,7 @@ const LandingPage = () => {
               Casos de Uso
             </h2>
             <p className="text-xl text-strategy-gray-medium">
-              Soluções adaptadas para diferentes tipos de empresa
+              Planejamento estratégico inteligente para todos os tipos de empresa
             </p>
           </div>
 
@@ -423,16 +318,16 @@ const LandingPage = () => {
             <Card className="hover:shadow-lg transition-all duration-300 bg-white border">
               <CardHeader>
                 <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                  <Zap className="h-6 w-6 text-accent" />
+                  <Lightbulb className="h-6 w-6 text-accent" />
                 </div>
                 <CardTitle className="text-strategy-blue-navy">Startups e Scale-ups</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="text-strategy-gray-medium space-y-2">
-                  <li>• Planejamento ágil</li>
-                  <li>• Métricas de crescimento</li>
-                  <li>• Gestão de recursos</li>
-                  <li>• Validação de hipóteses</li>
+                  <li>• Planejamento estratégico ágil com IA</li>
+                  <li>• Mapas estratégicos simplificados</li>
+                  <li>• Métricas de crescimento automatizadas</li>
+                  <li>• Validação de hipóteses com dados</li>
                 </ul>
               </CardContent>
             </Card>
@@ -446,10 +341,10 @@ const LandingPage = () => {
               </CardHeader>
               <CardContent>
                 <ul className="text-strategy-gray-medium space-y-2">
-                  <li>• Alinhamento estratégico</li>
-                  <li>• Gestão de múltiplos projetos</li>
-                  <li>• Reporting estruturado</li>
-                  <li>• Governança corporativa</li>
+                  <li>• Alinhamento estratégico multi-área</li>
+                  <li>• Gestão inteligente de objetivos</li>
+                  <li>• Relatórios executivos automatizados</li>
+                  <li>• Copiloto de IA para decisões</li>
                 </ul>
               </CardContent>
             </Card>
@@ -457,16 +352,16 @@ const LandingPage = () => {
             <Card className="hover:shadow-lg transition-all duration-300 bg-white border">
               <CardHeader>
                 <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                  <Globe className="h-6 w-6 text-accent" />
+                  <Target className="h-6 w-6 text-accent" />
                 </div>
                 <CardTitle className="text-strategy-blue-navy">Corporações</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="text-strategy-gray-medium space-y-2">
-                  <li>• Governança estratégica</li>
-                  <li>• Compliance</li>
+                  <li>• Governança estratégica corporativa</li>
                   <li>• Análise preditiva avançada</li>
-                  <li>• Integração empresarial</li>
+                  <li>• Mapas estratégicos complexos</li>
+                  <li>• Integração de múltiplas unidades</li>
                 </ul>
               </CardContent>
             </Card>
@@ -474,84 +369,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Pricing */}
-      <section id="pricing" className="py-16 px-4 bg-white">
-        <div className="container mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-strategy-red-dark mb-4">
-              Planos e Preços
-            </h2>
-            <p className="text-xl text-strategy-gray-medium mb-8">
-              Escolha o plano ideal para sua empresa
-            </p>
-            <p className="text-sm text-strategy-gray-medium">
-              Todos os planos incluem 14 dias de teste gratuito
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <Card className="hover:shadow-lg transition-all duration-300 bg-strategy-gray-light border">
-              <CardHeader>
-                <CardTitle className="text-2xl text-strategy-blue-navy">Starter</CardTitle>
-                <div className="text-4xl font-bold text-strategy-red-dark">R$ 89<span className="text-lg text-strategy-gray-medium">/mês</span></div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-3 text-strategy-gray-medium">
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Até 5 usuários</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />3 projetos ativos</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Dashboard básico</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Relatórios mensais</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Suporte por email</li>
-                </ul>
-                <Link to="/auth">
-                  <Button className="w-full bg-strategy-blue-navy hover:bg-strategy-blue-navy-light text-white">Começar Teste Grátis</Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-all duration-300 border-accent shadow-accent/20 relative bg-white">
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-accent text-white">MAIS POPULAR</Badge>
-              </div>
-              <CardHeader>
-                <CardTitle className="text-2xl text-strategy-blue-navy">Professional</CardTitle>
-                <div className="text-4xl font-bold text-strategy-red-dark">R$ 199<span className="text-lg text-strategy-gray-medium">/mês</span></div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-3 text-strategy-gray-medium">
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Até 15 usuários</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Projetos ilimitados</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />IA avançada</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Relatórios personalizados</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Análise preditiva</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Suporte prioritário</li>
-                </ul>
-                <Link to="/auth">
-                  <Button className="w-full bg-accent hover:bg-strategy-blue-bright-hover text-white">Começar Teste Grátis</Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-all duration-300 bg-strategy-gray-light border">
-              <CardHeader>
-                <CardTitle className="text-2xl text-strategy-blue-navy">Enterprise</CardTitle>
-                <div className="text-4xl font-bold text-strategy-red-dark">Sob Consulta</div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ul className="space-y-3 text-strategy-gray-medium">
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Usuários ilimitados</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Customizações</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Integração avançada</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Suporte dedicado</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />Treinamento incluído</li>
-                  <li className="flex items-center"><CheckSquare className="h-4 w-4 mr-2 text-accent" />SLA garantido</li>
-                </ul>
-                <Button className="w-full bg-primary hover:bg-strategy-red-light text-white">Falar com Vendas</Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
 
       {/* Testimonials */}
       <section className="py-16 px-4 bg-strategy-blue-navy">
@@ -670,53 +487,22 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Integrations */}
-      <section className="py-16 px-4 bg-white">
-        <div className="container mx-auto text-center">
-          <h2 className="text-4xl font-bold text-strategy-red-dark mb-4">
-            Integre com suas ferramentas favoritas
-          </h2>
-          <p className="text-xl text-strategy-gray-medium mb-12">
-            Conecte o StrategyHUB com as ferramentas que sua equipe já usa
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-8">
-            <div className="w-16 h-16 bg-strategy-gray-light hover:bg-accent/10 transition-colors rounded-lg flex items-center justify-center border">
-              <Slack className="h-8 w-8 text-strategy-gray-medium" />
-            </div>
-            <div className="w-16 h-16 bg-strategy-gray-light hover:bg-accent/10 transition-colors rounded-lg flex items-center justify-center border">
-              <Calendar className="h-8 w-8 text-strategy-gray-medium" />
-            </div>
-            <div className="w-16 h-16 bg-strategy-gray-light hover:bg-accent/10 transition-colors rounded-lg flex items-center justify-center border">
-              <Smartphone className="h-8 w-8 text-strategy-gray-medium" />
-            </div>
-            <div className="w-16 h-16 bg-strategy-gray-light hover:bg-accent/10 transition-colors rounded-lg flex items-center justify-center border">
-              <BarChart3 className="h-8 w-8 text-strategy-gray-medium" />
-            </div>
-            <div className="w-16 h-16 bg-strategy-gray-light hover:bg-accent/10 transition-colors rounded-lg flex items-center justify-center border">
-              <Globe className="h-8 w-8 text-strategy-gray-medium" />
-            </div>
-            <div className="w-16 h-16 bg-strategy-gray-light hover:bg-accent/10 transition-colors rounded-lg flex items-center justify-center border">
-              <FileText className="h-8 w-8 text-strategy-gray-medium" />
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Final CTA */}
       <section className="py-16 px-4 bg-gradient-to-r from-strategy-red-dark to-strategy-blue-navy">
         <div className="container mx-auto text-center">
           <h2 className="text-4xl font-bold text-white mb-4">
-            Pronto para Revolucionar sua Estratégia?
+            Transforme sua Estratégia com IA
           </h2>
           <p className="text-xl text-strategy-gray-light mb-8">
-            Junte-se a mais de 1.000 empresas que já transformaram seus resultados
+            Descubra como o planejamento estratégico inteligente pode revolucionar seus resultados
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <Link to="/auth">
               <Button size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-strategy-blue-bright-hover text-white">
-                Começar Teste Gratuito de 14 Dias
+                Acessar Plataforma
+                <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-white text-white hover:bg-white hover:text-strategy-red-dark">
@@ -725,7 +511,7 @@ const LandingPage = () => {
           </div>
 
           <p className="text-sm text-strategy-gray-light/80">
-            Sem compromisso • Cancelamento fácil • Suporte incluído
+            Solução completa para planejamento estratégico empresarial
           </p>
         </div>
       </section>
@@ -740,27 +526,27 @@ const LandingPage = () => {
                 <span className="text-xl font-bold text-white">StrategyHUB</span>
               </div>
               <p className="text-strategy-gray-light">
-                Transformando estratégias empresariais com inteligência artificial
+                Planejamento estratégico inteligente com IA para empresas modernas
               </p>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4 text-white">Produto</h4>
+              <h4 className="font-semibold mb-4 text-white">Funcionalidades</h4>
               <ul className="space-y-2 text-strategy-gray-light">
-                <li><a href="#features" className="hover:text-accent transition-colors">Funcionalidades</a></li>
-                <li><a href="#pricing" className="hover:text-accent transition-colors">Preços</a></li>
-                <li><a href="#" className="hover:text-accent transition-colors">Demonstração</a></li>
-                <li><a href="#" className="hover:text-accent transition-colors">API</a></li>
+                <li><a href="#features" className="hover:text-accent transition-colors">Dashboard Executivo</a></li>
+                <li><a href="#features" className="hover:text-accent transition-colors">Mapa Estratégico</a></li>
+                <li><a href="#features" className="hover:text-accent transition-colors">Copiloto de IA</a></li>
+                <li><a href="#features" className="hover:text-accent transition-colors">Gestão de Objetivos</a></li>
               </ul>
             </div>
 
             <div>
               <h4 className="font-semibold mb-4 text-white">Empresa</h4>
               <ul className="space-y-2 text-strategy-gray-light">
+                <li><a href="#cases" className="hover:text-accent transition-colors">Casos de Uso</a></li>
                 <li><a href="#" className="hover:text-accent transition-colors">Sobre</a></li>
                 <li><a href="#" className="hover:text-accent transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-accent transition-colors">Carreiras</a></li>
-                <li><a href="#" className="hover:text-accent transition-colors">Contato</a></li>
+                <li><a href="#contact" className="hover:text-accent transition-colors">Contato</a></li>
               </ul>
             </div>
 
@@ -769,20 +555,28 @@ const LandingPage = () => {
               <ul className="space-y-2 text-strategy-gray-light">
                 <li><a href="#" className="hover:text-accent transition-colors">Central de Ajuda</a></li>
                 <li><a href="#" className="hover:text-accent transition-colors">Documentação</a></li>
-                <li><a href="#" className="hover:text-accent transition-colors">Status</a></li>
-                <li><a href="#" className="hover:text-accent transition-colors">Comunidade</a></li>
+                <li><a href="#" className="hover:text-accent transition-colors">Treinamentos</a></li>
+                <li><a href="#" className="hover:text-accent transition-colors">API</a></li>
               </ul>
             </div>
           </div>
 
-          <div className="border-t border-white/20 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-strategy-gray-light/60 mb-4 md:mb-0">
-              © 2024 StrategyHUB. Todos os direitos reservados.
-            </p>
-            <div className="flex space-x-6 text-strategy-gray-light">
-              <a href="#" className="hover:text-accent transition-colors">Termos</a>
-              <a href="#" className="hover:text-accent transition-colors">Privacidade</a>
-              <a href="#" className="hover:text-accent transition-colors">Cookies</a>
+          <div className="border-t border-white/20 pt-8">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-4">
+              <p className="text-strategy-gray-light/60 mb-4 md:mb-0">
+                © 2024 StrategyHUB. Todos os direitos reservados.
+              </p>
+              <div className="flex space-x-6 text-strategy-gray-light">
+                <a href="#" className="hover:text-accent transition-colors">Termos</a>
+                <a href="#" className="hover:text-accent transition-colors">Privacidade</a>
+                <a href="#" className="hover:text-accent transition-colors">Cookies</a>
+              </div>
+            </div>
+            
+            <div className="text-center pt-4 border-t border-white/10">
+              <p className="text-strategy-gray-light/80 text-sm">
+                <span className="font-semibold text-white">StrategyHUB</span>, um produto <span className="font-semibold text-accent">COFOUND</span> - Aceleradora de Negócios
+              </p>
             </div>
           </div>
         </div>
