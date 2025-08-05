@@ -7,7 +7,8 @@ import {
   Key, 
   Mail, 
   Chrome,
-  AlertTriangle
+  AlertTriangle,
+  Palette
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagement } from '@/components/admin/UserManagement';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 export const SettingsPage: React.FC = () => {
   const { user, profile } = useAuth();
@@ -104,6 +106,21 @@ export const SettingsPage: React.FC = () => {
                 <div>
                   <Label htmlFor="role">Sua Função</Label>
                   <Input id="role" value={getRoleLabel(profile?.role || 'member')} disabled />
+                </div>
+              </div>
+              
+              <div className="pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <Palette className="h-4 w-4 text-muted-foreground" />
+                      <Label className="text-sm font-medium">Tema</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Escolha entre tema claro, escuro ou seguir configurações do sistema
+                    </p>
+                  </div>
+                  <ThemeToggle />
                 </div>
               </div>
             </CardContent>

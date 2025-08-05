@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { MultiTenantAuthProvider } from "@/hooks/useMultiTenant";
+import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { AdminLoginPage } from "@/components/admin/AdminLoginPage";
 import { AdminLayout } from "@/components/admin/AdminLayout";
@@ -37,7 +38,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <MultiTenantAuthProvider>
-          <Routes>
+          <ThemeProvider>
+            <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/company-inactive" element={<CompanyInactivePage />} />
@@ -94,7 +96,8 @@ const App = () => (
               <Route path="settings" element={<SystemSettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
-          </Routes>
+            </Routes>
+          </ThemeProvider>
         </MultiTenantAuthProvider>
       </BrowserRouter>
     </TooltipProvider>
