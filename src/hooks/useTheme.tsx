@@ -29,8 +29,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (newTheme === 'system') {
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       root.classList.add(systemTheme);
+      root.setAttribute('data-theme', systemTheme);
     } else {
       root.classList.add(newTheme);
+      root.setAttribute('data-theme', newTheme);
     }
   };
 
@@ -107,11 +109,20 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       loadThemeFromDB();
     } else {
       // If no user, apply default theme
-      setThemeState('light');
-      applyTheme('light');
+      const defaultTheme = 'light';
+      setThemeState(defaultTheme);
+      applyTheme(defaultTheme);
       setIsLoading(false);
     }
   }, [user?.id]);
+
+  // Apply theme on component mount
+  useEffect(() => {
+    // Ensure theme is applied immediately on mount
+    if (!isLoading) {
+      applyTheme(theme);
+    }
+  }, [theme, isLoading]);
 
   // Listen for system theme changes when theme is set to 'system'
   useEffect(() => {

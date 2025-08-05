@@ -18,14 +18,14 @@ export const DashboardHeader: React.FC = () => {
   const { user, signOut } = useAuth();
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 lg:px-6 py-4">
+    <header className="bg-card border-b border-border px-4 lg:px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex-1 max-w-md">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Buscar projetos, objetivos..."
-              className="pl-10 bg-gray-50 border-gray-200"
+              className="pl-10 bg-muted border-border"
             />
           </div>
         </div>
@@ -50,7 +50,7 @@ export const DashboardHeader: React.FC = () => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-                <div className="bg-blue-600 text-white rounded-full h-8 w-8 flex items-center justify-center">
+               <div className="bg-primary text-primary-foreground rounded-full h-8 w-8 flex items-center justify-center">
                   <User className="h-4 w-4" />
                 </div>
                 <span className="hidden sm:block text-sm font-medium">
@@ -72,7 +72,7 @@ export const DashboardHeader: React.FC = () => {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={signOut} className="text-red-600">
+              <DropdownMenuItem onClick={signOut} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sair
               </DropdownMenuItem>
