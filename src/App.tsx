@@ -30,6 +30,9 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import { StartupHubPage } from "@/components/startup-hub/StartupHubPage";
+import { ModulesManagementPage } from "@/components/admin/ModulesManagementPage";
+import { UserModulesAccessPage } from "@/components/admin/UserModulesAccessPage";
+import { AdminNavigation } from "@/components/admin/AdminNavigation";
 
 const queryClient = new QueryClient();
 
@@ -79,13 +82,15 @@ const App = () => (
               <Route path="settings" element={<SettingsPage />} />
               <Route path="startup-hub" element={<StartupHubPage />} />
               
+              {/* Quick admin access */}
+              <Route path="admin" element={<AdminNavigation />} />
+              
               {/* Admin routes dentro do app */}
-              <Route path="admin" element={<AdminLayout />}>
-                <Route index element={<AdminDashboard />} />
-                <Route path="companies" element={<CompaniesPage />} />
-                <Route path="user-management" element={<UserEditorPage />} />
-                <Route path="settings" element={<SystemSettingsPage />} />
-              </Route>
+              <Route path="admin/companies" element={<CompaniesPage />} />
+              <Route path="admin/users" element={<UserEditorPage />} />
+              <Route path="admin/modules" element={<ModulesManagementPage />} />
+              <Route path="admin/user-modules" element={<UserModulesAccessPage />} />
+              <Route path="admin/settings" element={<SystemSettingsPage />} />
             </Route>
 
             {/* Admin routes */}

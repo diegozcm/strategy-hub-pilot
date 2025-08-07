@@ -109,12 +109,12 @@ export const Sidebar: React.FC = () => {
                   </span>
                 </div>
               </div>}
-            {systemAdminNavigation.map(item => <NavLink key={item.name} to={item.href} className={({
+            <NavLink to="/app/admin" className={({
             isActive
           }) => cn("flex items-center px-3 py-2 rounded-lg transition-colors", isActive ? "bg-destructive/10 text-destructive font-medium" : "text-foreground hover:bg-destructive/5", collapsed && "justify-center")}>
-                <item.icon className={cn("h-5 w-5", !collapsed && "mr-3")} />
-                {!collapsed && <span>{item.name}</span>}
-              </NavLink>)}
+                <Shield className={cn("h-5 w-5", !collapsed && "mr-3")} />
+                {!collapsed && <span>Painel Admin</span>}
+              </NavLink>
           </PermissionGate>
         </div>
       </nav>
