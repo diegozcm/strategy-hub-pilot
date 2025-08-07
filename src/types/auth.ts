@@ -33,6 +33,7 @@ export interface UserProfile {
   hire_date?: string;
   approved_by?: string;
   approved_at?: string;
+  current_module_id?: string;
   created_at: string;
   updated_at: string;
   company?: Company;

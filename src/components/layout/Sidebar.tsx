@@ -5,31 +5,46 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { PermissionGate } from '@/components/PermissionGate';
-const navigation = [{
-  name: 'Dashboard',
-  href: '/app/dashboard',
-  icon: BarChart3
-}, {
-  name: 'Mapa Estratégico',
-  href: '/app/strategic-map',
-  icon: Map
-}, {
-  name: 'Objetivos',
-  href: '/app/objectives',
-  icon: Target
-}, {
-  name: 'Resultados Chave',
-  href: '/app/indicators',
-  icon: TrendingUp
-}, {
-  name: 'Projetos',
-  href: '/app/projects',
-  icon: Briefcase
-}, {
-  name: 'Relatórios',
-  href: '/app/reports',
-  icon: Activity
-}];
+import { useModules } from '@/hooks/useModules';
+const getNavigationByModule = (moduleSlug: string) => {
+  if (moduleSlug === 'strategic-planning') {
+    return [{
+      name: 'Dashboard',
+      href: '/app/dashboard',
+      icon: BarChart3
+    }, {
+      name: 'Mapa Estratégico',
+      href: '/app/strategic-map',
+      icon: Map
+    }, {
+      name: 'Objetivos',
+      href: '/app/objectives',
+      icon: Target
+    }, {
+      name: 'Resultados Chave',
+      href: '/app/indicators',
+      icon: TrendingUp
+    }, {
+      name: 'Projetos',
+      href: '/app/projects',
+      icon: Briefcase
+    }, {
+      name: 'Relatórios',
+      href: '/app/reports',
+      icon: Activity
+    }];
+  }
+  
+  if (moduleSlug === 'startup-hub') {
+    return [{
+      name: 'Dashboard',
+      href: '/app/startup-hub',
+      icon: BarChart3
+    }];
+  }
+  
+  return [];
+};
 const adminNavigation = [{
   name: 'Configurações',
   href: '/app/settings',
@@ -46,6 +61,9 @@ const systemAdminNavigation = [{
 }];
 export const Sidebar: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const { currentModule } = useModules();
+  
+  const navigation = getNavigationByModule(currentModule?.slug || 'strategic-planning');
   return <div className={cn("bg-card border-r border-border flex flex-col transition-all duration-300", collapsed ? "w-16" : "w-64")}>
       {/* Header */}
       <div className="px-4 lg:px-6 py-4 border-b border-border">

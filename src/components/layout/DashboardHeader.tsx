@@ -13,6 +13,7 @@ import {
 import { useAuth } from '@/hooks/useMultiTenant';
 import { Input } from '@/components/ui/input';
 import { CompanySelector } from '@/components/CompanySelector';
+import { ModuleSelector } from '@/components/ui/ModuleSelector';
 
 export const DashboardHeader: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -31,6 +32,12 @@ export const DashboardHeader: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-3">
+          {/* Module Selector */}
+          <div className="hidden lg:block w-48">
+            <ModuleSelector />
+          </div>
+          
+          {/* Company Selector */}
           <CompanySelector />
           
           <NavLink to="/app/ai-copilot">

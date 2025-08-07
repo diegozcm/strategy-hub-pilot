@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { MultiTenantAuthProvider } from "@/hooks/useMultiTenant";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { ModulesProvider } from "@/hooks/useModules";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { AdminLoginPage } from "@/components/admin/AdminLoginPage";
 import { AdminLayout } from "@/components/admin/AdminLayout";
@@ -28,6 +29,7 @@ import { SystemSettingsPage } from "@/components/admin/SystemSettingsPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
+import { StartupHubPage } from "@/components/startup-hub/StartupHubPage";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +41,7 @@ const App = () => (
       <BrowserRouter>
         <MultiTenantAuthProvider>
           <ThemeProvider>
+            <ModulesProvider>
             <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
@@ -74,6 +77,7 @@ const App = () => (
               
               <Route path="profile" element={<ProfilePage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="startup-hub" element={<StartupHubPage />} />
               
               {/* Admin routes dentro do app */}
               <Route path="admin" element={<AdminLayout />}>
@@ -97,6 +101,7 @@ const App = () => (
             </Route>
             <Route path="*" element={<NotFound />} />
             </Routes>
+            </ModulesProvider>
           </ThemeProvider>
         </MultiTenantAuthProvider>
       </BrowserRouter>

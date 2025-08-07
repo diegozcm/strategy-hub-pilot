@@ -514,6 +514,7 @@ export type Database = {
           bio: string | null
           company_id: string | null
           created_at: string | null
+          current_module_id: string | null
           department: string | null
           email: string | null
           first_name: string | null
@@ -534,6 +535,7 @@ export type Database = {
           bio?: string | null
           company_id?: string | null
           created_at?: string | null
+          current_module_id?: string | null
           department?: string | null
           email?: string | null
           first_name?: string | null
@@ -554,6 +556,7 @@ export type Database = {
           bio?: string | null
           company_id?: string | null
           created_at?: string | null
+          current_module_id?: string | null
           department?: string | null
           email?: string | null
           first_name?: string | null
@@ -575,6 +578,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_current_module_id_fkey"
+            columns: ["current_module_id"]
+            isOneToOne: false
+            referencedRelation: "system_modules"
             referencedColumns: ["id"]
           },
         ]
@@ -980,6 +990,39 @@ export type Database = {
           },
         ]
       }
+      system_modules: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_settings: {
         Row: {
           category: string | null
@@ -1047,6 +1090,47 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_modules: {
+        Row: {
+          active: boolean
+          created_at: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          module_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          module_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          module_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_modules_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "system_modules"
             referencedColumns: ["id"]
           },
         ]
@@ -1141,6 +1225,20 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string
       }
+      get_user_modules: {
+        Args: { _user_id: string }
+        Returns: {
+          module_id: string
+          name: string
+          slug: string
+          description: string
+          icon: string
+        }[]
+      }
+      grant_module_access: {
+        Args: { _admin_id: string; _user_id: string; _module_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _user_id: string
@@ -1152,6 +1250,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      revoke_module_access: {
+        Args: { _admin_id: string; _user_id: string; _module_id: string }
+        Returns: boolean
+      }
       safe_delete_user: {
         Args: { _user_id: string; _admin_id: string }
         Returns: boolean
@@ -1159,6 +1261,10 @@ export type Database = {
       start_impersonation: {
         Args: { _admin_id: string; _target_user_id: string }
         Returns: string
+      }
+      switch_user_module: {
+        Args: { _user_id: string; _module_id: string }
+        Returns: boolean
       }
       unassign_user_from_company: {
         Args: { _user_id: string; _admin_id: string }
