@@ -62,11 +62,6 @@ export const ModuleSelector: React.FC = () => {
                 <Icon className="h-4 w-4" />
                 <div>
                   <div className="font-medium">{module.name}</div>
-                  {module.description && (
-                    <div className="text-xs text-muted-foreground">
-                      {module.description}
-                    </div>
-                  )}
                 </div>
               </div>
               {isActive && <Check className="h-4 w-4" />}
