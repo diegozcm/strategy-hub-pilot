@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { PermissionGate } from '@/components/PermissionGate';
 import { useModules } from '@/hooks/useModules';
+import { ModuleSelector } from '@/components/ui/ModuleSelector';
 const getNavigationByModule = (moduleSlug: string) => {
   if (moduleSlug === 'strategic-planning') {
     return [{
@@ -81,6 +82,11 @@ export const Sidebar: React.FC = () => {
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
         </div>
+        {!collapsed && (
+          <div className="mt-3">
+            <ModuleSelector />
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
