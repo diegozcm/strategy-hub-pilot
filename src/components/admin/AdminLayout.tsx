@@ -3,7 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/button';
-import { Shield, LogOut, Building, Users, BarChart3, Settings } from 'lucide-react';
+import { Shield, LogOut, Building, Users, BarChart3, Settings, Package } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 export const AdminLayout: React.FC = () => {
@@ -51,6 +51,18 @@ export const AdminLayout: React.FC = () => {
       path: '/admin/user-management',
       icon: Users,
       description: 'Gerenciar usuários'
+    },
+    {
+      name: 'Módulos',
+      path: '/admin/modules',
+      icon: Package,
+      description: 'Gerenciar módulos'
+    },
+    {
+      name: 'Acesso aos Módulos',
+      path: '/admin/user-modules',
+      icon: Shield,
+      description: 'Acessos dos usuários'
     },
     {
       name: 'Configurações',

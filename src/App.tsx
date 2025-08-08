@@ -102,6 +102,8 @@ const App = () => (
               <Route index element={<AdminDashboard />} />
               <Route path="companies" element={<CompaniesPage />} />
               <Route path="user-management" element={<UserEditorPage />} />
+              <Route path="modules" element={<ModulesManagementPage />} />
+              <Route path="user-modules" element={<UserModulesAccessPage />} />
               <Route path="settings" element={<SystemSettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
