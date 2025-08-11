@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Search, UserPlus, Shield, Eye, Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +33,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
+import StartupHubProfileDialog from './startup-hub/StartupHubProfileDialog';
 
 interface UserProfile {
   id: string;
@@ -68,6 +70,7 @@ export const UserModulesAccessPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
   const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
 
   // Fetch data
   const fetchData = async () => {
@@ -112,14 +115,14 @@ export const UserModulesAccessPage: React.FC = () => {
   };
 
   // Open access modal for user
-  const openAccessModal = (user: UserProfile) => {
-    setSelectedUser(user);
+  const openAccessModal = (userProfile: UserProfile) => {
+    setSelectedUser(userProfile);
     
     // Set current access status for this user
     const currentAccess: Record<string, boolean> = {};
     modules.forEach(module => {
       const hasAccess = userModules.some(um => 
-        um.user_id === user.user_id && 
+        um.user_id === userProfile.user_id && 
         um.module_id === module.id && 
         um.active
       );
@@ -193,6 +196,11 @@ export const UserModulesAccessPage: React.FC = () => {
   if (loading) {
     return <div>Carregando usuários...</div>;
   }
+
+  const startupHubModule = modules.find(m => m.slug === 'startup-hub');
+  const startupHubModuleId = startupHubModule?.id;
+
+  const canOpenProfileDialog = !!(startupHubModuleId && moduleAccess[startupHubModuleId]);
 
   return (
     <div className="space-y-6">
@@ -307,6 +315,32 @@ export const UserModulesAccessPage: React.FC = () => {
                 </div>
               </div>
             ))}
+
+            {startupHubModuleId && selectedUser && (
+              <div className="pt-2 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <div className="font-medium">Perfil do Startup HUB</div>
+                    <div className="text-muted-foreground">
+                      Defina o perfil de {selectedUser.first_name} como Startup ou Mentor
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => setIsProfileDialogOpen(true)}
+                    disabled={!canOpenProfileDialog}
+                    title={
+                      canOpenProfileDialog
+                        ? 'Abrir configuração de perfil'
+                        : 'Conceda acesso ao módulo startup-hub para habilitar'
+                    }
+                  >
+                    Configurar Perfil
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAccessModalOpen(false)}>
@@ -316,6 +350,16 @@ export const UserModulesAccessPage: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Startup HUB Profile Dialog */}
+      {selectedUser && (
+        <StartupHubProfileDialog
+          open={isProfileDialogOpen}
+          onOpenChange={setIsProfileDialogOpen}
+          user={selectedUser}
+          onSaved={fetchData}
+        />
+      )}
     </div>
   );
 };

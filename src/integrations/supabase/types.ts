@@ -755,6 +755,45 @@ export type Database = {
           },
         ]
       }
+      startup_hub_profiles: {
+        Row: {
+          areas_of_expertise: string[] | null
+          bio: string | null
+          created_at: string
+          id: string
+          startup_name: string | null
+          status: string
+          type: Database["public"]["Enums"]["startup_hub_profile_type"]
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          areas_of_expertise?: string[] | null
+          bio?: string | null
+          created_at?: string
+          id?: string
+          startup_name?: string | null
+          status?: string
+          type: Database["public"]["Enums"]["startup_hub_profile_type"]
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          areas_of_expertise?: string[] | null
+          bio?: string | null
+          created_at?: string
+          id?: string
+          startup_name?: string | null
+          status?: string
+          type?: Database["public"]["Enums"]["startup_hub_profile_type"]
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       strategic_objectives: {
         Row: {
           created_at: string
@@ -1285,6 +1324,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "manager" | "member"
+      startup_hub_profile_type: "startup" | "mentor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1413,6 +1453,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "manager", "member"],
+      startup_hub_profile_type: ["startup", "mentor"],
     },
   },
 } as const
