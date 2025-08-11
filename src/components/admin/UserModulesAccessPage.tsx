@@ -8,15 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+// Removed Dialog imports for inline panel UI
 import {
   Table,
   TableBody,
@@ -35,7 +27,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
-
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 
 interface UserProfile {
   id: string;
@@ -70,7 +62,7 @@ export const UserModulesAccessPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
-  const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+  
   const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
 const [profileType, setProfileType] = useState<'startup' | 'mentor'>('startup');
 const [bio, setBio] = useState('');
@@ -135,19 +127,26 @@ const [profileLoading, setProfileLoading] = useState(false);
   const loadStartupHubProfile = async (userId: string) => {
     try {
       setProfileLoading(true);
+      const startupModule = modules.find(m => m.slug === 'startup-hub');
+      if (!startupModule) {
+        resetStartupHubProfileState();
+        return;
+      }
       const { data, error } = await supabase
-        .from('startup_hub_profiles')
+        .from('user_module_profiles')
         .select('*')
         .eq('user_id', userId)
+        .eq('module_id', startupModule.id)
         .maybeSingle();
       if (error) throw error;
       if (data) {
         setExistingProfileId((data as any).id as string);
-        setProfileType(((data as any).type as 'startup' | 'mentor') || 'startup');
-        setBio(((data as any).bio as string) || '');
-        setAreasText((((data as any).areas_of_expertise as string[]) || []).join(', '));
-        setStartupName(((data as any).startup_name as string) || '');
-        setWebsite(((data as any).website as string) || '');
+        const pd = (data as any).profile_data || {};
+        setProfileType((pd.type as 'startup' | 'mentor') || 'startup');
+        setBio((pd.bio as string) || '');
+        setAreasText((((pd.areas_of_expertise as string[]) || []).join(', ')));
+        setStartupName((pd.startup_name as string) || '');
+        setWebsite((pd.website as string) || '');
       } else {
         resetStartupHubProfileState();
       }
@@ -163,32 +162,28 @@ const [profileLoading, setProfileLoading] = useState(false);
     }
   };
 
-  // Open access modal for user
-  const openAccessModal = (userProfile: UserProfile) => {
+  // Handle user selection for inline panel
+  const handleSelectUser = (userProfile: UserProfile) => {
     setSelectedUser(userProfile);
-    
-    // Set current access status for this user
+
     const currentAccess: Record<string, boolean> = {};
     modules.forEach(module => {
-      const hasAccess = userModules.some(um => 
-        um.user_id === userProfile.user_id && 
-        um.module_id === module.id && 
+      const hasAccess = userModules.some(um =>
+        um.user_id === userProfile.user_id &&
+        um.module_id === module.id &&
         um.active
       );
       currentAccess[module.id] = hasAccess;
     });
-    
+
     setModuleAccess(currentAccess);
 
-    // Load Startup HUB profile if access is granted
     const sh = modules.find(m => m.slug === 'startup-hub');
     if (sh && currentAccess[sh.id]) {
       loadStartupHubProfile(userProfile.user_id);
     } else {
       resetStartupHubProfileState();
     }
-
-    setIsAccessModalOpen(true);
   };
 
   // Save module access changes
@@ -199,73 +194,87 @@ const [profileLoading, setProfileLoading] = useState(false);
       // Process each module access change
       for (const [moduleId, hasAccess] of Object.entries(moduleAccess)) {
         if (hasAccess) {
-          // Grant access
           const { error } = await supabase.rpc('grant_module_access', {
             _admin_id: user.id,
             _user_id: selectedUser.user_id,
-            _module_id: moduleId
+            _module_id: moduleId,
           });
           if (error) throw error;
         } else {
-          // Revoke access
           const { error } = await supabase.rpc('revoke_module_access', {
             _admin_id: user.id,
             _user_id: selectedUser.user_id,
-            _module_id: moduleId
+            _module_id: moduleId,
           });
           if (error) throw error;
         }
       }
 
-      // Handle Startup HUB profile save/inactivation
-      const startupModule = modules.find(m => m.slug === 'startup-hub');
+      // Handle Startup HUB profile save/inactivation using user_module_profiles
+      const startupModule = modules.find((m) => m.slug === 'startup-hub');
       if (startupModule) {
         const hasStartup = moduleAccess[startupModule.id];
-        if (hasStartup) {
-          const payload: any = {
-            user_id: selectedUser.user_id,
-            type: profileType,
-            bio: bio || null,
-            areas_of_expertise: areasText
-              ? areasText.split(',').map(s => s.trim()).filter(Boolean)
-              : [],
-            startup_name: profileType === 'startup' ? (startupName || null) : null,
-            website: website || null,
-            status: 'active',
-          };
-          if (existingProfileId) payload.id = existingProfileId;
+        const profilePayload = {
+          type: profileType,
+          bio: bio || null,
+          areas_of_expertise: areasText
+            ? areasText.split(',').map((s) => s.trim()).filter(Boolean)
+            : [],
+          startup_name: profileType === 'startup' ? (startupName || null) : null,
+          website: website || null,
+        };
 
-          const { error: upsertError } = await supabase
-            .from('startup_hub_profiles')
-            .upsert(payload, { onConflict: 'user_id' })
-            .select()
-            .maybeSingle();
-          if (upsertError) throw upsertError;
-        } else {
-          const { error: updateError } = await supabase
-            .from('startup_hub_profiles')
+        // Load existing row for upsert safety
+        const { data: existing, error: existingErr } = await supabase
+          .from('user_module_profiles')
+          .select('id, status')
+          .eq('user_id', selectedUser.user_id)
+          .eq('module_id', startupModule.id)
+          .maybeSingle();
+        if (existingErr) throw existingErr;
+
+        if (hasStartup) {
+          if (existing) {
+            const { error: updErr } = await supabase
+              .from('user_module_profiles')
+              .update({ profile_data: profilePayload, status: 'active' })
+              .eq('id', existing.id as string);
+            if (updErr) throw updErr;
+          } else {
+            const { error: insErr } = await supabase
+              .from('user_module_profiles')
+              .insert({
+                user_id: selectedUser.user_id,
+                module_id: startupModule.id,
+                profile_data: profilePayload,
+                status: 'active',
+              });
+            if (insErr) throw insErr;
+          }
+        } else if (existing) {
+          const { error: inactErr } = await supabase
+            .from('user_module_profiles')
             .update({ status: 'inactive' })
-            .eq('user_id', selectedUser.user_id);
-          if (updateError) {
-            console.warn('Falha ao inativar perfil Startup HUB:', updateError.message);
+            .eq('id', existing.id as string);
+          if (inactErr) {
+            console.warn('Falha ao inativar perfil Startup HUB:', inactErr.message);
           }
         }
       }
 
       // Refresh data
       await fetchData();
-      setIsAccessModalOpen(false);
-      
+
       toast({
-        title: "Acesso atualizado",
-        description: `Os acessos de ${selectedUser.first_name} foram atualizados com sucesso.`
+        title: 'Acesso atualizado',
+        description: `Os acessos de ${selectedUser.first_name} foram atualizados com sucesso.`,
       });
     } catch (error: any) {
       console.error('Error updating access:', error);
       toast({
-        title: "Erro ao atualizar acesso",
-        description: error.message || "Não foi possível atualizar os acessos.",
-        variant: "destructive"
+        title: 'Erro ao atualizar acesso',
+        description: error.message || 'Não foi possível atualizar os acessos.',
+        variant: 'destructive',
       });
     }
   };
@@ -293,7 +302,7 @@ const [profileLoading, setProfileLoading] = useState(false);
   const startupHubModule = modules.find(m => m.slug === 'startup-hub');
   const startupHubModuleId = startupHubModule?.id;
 
-  const canOpenProfileDialog = !!(startupHubModuleId && moduleAccess[startupHubModuleId]);
+  
 
   return (
     <div className="space-y-6">
@@ -367,7 +376,7 @@ const [profileLoading, setProfileLoading] = useState(false);
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => openAccessModal(user)}
+                        onClick={() => handleSelectUser(user)}
                       >
                         <Shield className="h-4 w-4 mr-2" />
                         Gerenciar Acesso
