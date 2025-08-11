@@ -390,103 +390,104 @@ const [profileLoading, setProfileLoading] = useState(false);
         </CardContent>
       </Card>
 
-      {/* Access Management Modal */}
-      <Dialog open={isAccessModalOpen} onOpenChange={setIsAccessModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Gerenciar Acesso aos Módulos</DialogTitle>
-            <DialogDescription>
-              Configure quais módulos {selectedUser?.first_name} pode acessar
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            {modules.map((module) => (
-              <div key={module.id} className="flex items-center space-x-2">
-                <Checkbox
-                  id={module.id}
-                  checked={moduleAccess[module.id] || false}
-                  onCheckedChange={(checked) => {
-                    setModuleAccess(prev => ({ ...prev, [module.id]: !!checked }));
-                    if (module.slug === 'startup-hub') {
-                      if (!!checked) {
-                        if (selectedUser) loadStartupHubProfile(selectedUser.user_id);
-                      } else {
-                        resetStartupHubProfileState();
+      {/* Painel de Gestão de Acesso (inline) */}
+      {selectedUser && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Gerenciar Acesso aos Módulos</CardTitle>
+            <CardDescription>
+              Configure quais módulos {selectedUser.first_name} pode acessar
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {modules.map((module) => (
+                <div key={module.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={module.id}
+                    checked={moduleAccess[module.id] || false}
+                    onCheckedChange={(checked) => {
+                      setModuleAccess((prev) => ({ ...prev, [module.id]: !!checked }));
+                      if (module.slug === 'startup-hub') {
+                        if (!!checked) {
+                          if (selectedUser) loadStartupHubProfile(selectedUser.user_id);
+                        } else {
+                          resetStartupHubProfileState();
+                        }
                       }
-                    }
-                  }}
-                />
-                <div className="flex-1">
-                  <label htmlFor={module.id} className="text-sm font-medium cursor-pointer">
-                    {module.name}
-                  </label>
-                  <p className="text-xs text-muted-foreground">{module.slug}</p>
-                </div>
-              </div>
-            ))}
-
-            {startupHubModuleId && (moduleAccess[startupHubModuleId] || false) && (
-              <div className="pt-4 border-t space-y-3">
-                <div className="text-sm">
-                  <div className="font-medium">Perfil do Startup HUB</div>
-                  <div className="text-muted-foreground">
-                    Defina o perfil como Startup ou Mentor e preencha os detalhes.
+                    }}
+                  />
+                  <div className="flex-1">
+                    <label htmlFor={module.id} className="text-sm font-medium cursor-pointer">
+                      {module.name}
+                    </label>
+                    <p className="text-xs text-muted-foreground">{module.slug}</p>
                   </div>
                 </div>
-                {profileLoading ? (
-                  <div className="text-sm text-muted-foreground">Carregando perfil...</div>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Tipo de Perfil</Label>
-                        <Select value={profileType} onValueChange={(v) => setProfileType(v as 'startup' | 'mentor')}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="startup">Startup</SelectItem>
-                            <SelectItem value="mentor">Mentor</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Website</Label>
-                        <Input placeholder="https://" value={website} onChange={(e) => setWebsite(e.target.value)} />
-                      </div>
+              ))}
+
+              {startupHubModuleId && (moduleAccess[startupHubModuleId] || false) && (
+                <div className="pt-4 border-t space-y-3">
+                  <div className="text-sm">
+                    <div className="font-medium">Perfil do Startup HUB</div>
+                    <div className="text-muted-foreground">
+                      Defina o perfil como Startup ou Mentor e preencha os detalhes.
                     </div>
-
-                    {profileType === 'startup' && (
-                      <div>
-                        <Label>Nome da Startup</Label>
-                        <Input placeholder="Ex: Minha Startup Ltda." value={startupName} onChange={(e) => setStartupName(e.target.value)} />
+                  </div>
+                  {profileLoading ? (
+                    <div className="text-sm text-muted-foreground">Carregando perfil...</div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Tipo de Perfil</Label>
+                          <Select value={profileType} onValueChange={(v) => setProfileType(v as 'startup' | 'mentor')}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="startup">Startup</SelectItem>
+                              <SelectItem value="mentor">Mentor</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Website</Label>
+                          <Input placeholder="https://" value={website} onChange={(e) => setWebsite(e.target.value)} />
+                        </div>
                       </div>
-                    )}
 
-                    {profileType === 'mentor' && (
+                      {profileType === 'startup' && (
+                        <div>
+                          <Label>Nome da Startup</Label>
+                          <Input placeholder="Ex: Minha Startup Ltda." value={startupName} onChange={(e) => setStartupName(e.target.value)} />
+                        </div>
+                      )}
+
+                      {profileType === 'mentor' && (
+                        <div>
+                          <Label>Áreas de Atuação (separe por vírgula)</Label>
+                          <Input placeholder="Finanças, Marketing, Vendas" value={areasText} onChange={(e) => setAreasText(e.target.value)} />
+                        </div>
+                      )}
+
                       <div>
-                        <Label>Áreas de Atuação (separe por vírgula)</Label>
-                        <Input placeholder="Finanças, Marketing, Vendas" value={areasText} onChange={(e) => setAreasText(e.target.value)} />
+                        <Label>Bio</Label>
+                        <Textarea placeholder="Conte um pouco sobre a startup ou experiência do mentor..." value={bio} onChange={(e) => setBio(e.target.value)} className="min-h-[100px]" />
                       </div>
-                    )}
-
-                    <div>
-                      <Label>Bio</Label>
-                      <Textarea placeholder="Conte um pouco sobre a startup ou experiência do mentor..." value={bio} onChange={(e) => setBio(e.target.value)} className="min-h-[100px]" />
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAccessModalOpen(false)}>
-              Cancelar
-            </Button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+          <div className="flex justify-end gap-2 p-6 pt-0">
+            <Button variant="outline" onClick={() => setSelectedUser(null)}>Cancelar</Button>
             <Button onClick={saveModuleAccess}>Salvar Alterações</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </Card>
+      )}
+
 
     </div>
   );
