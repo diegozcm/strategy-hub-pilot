@@ -59,10 +59,10 @@ export const AdminLayout: React.FC = () => {
       description: 'Gerenciar módulos'
     },
     {
-      name: 'Acesso aos Módulos',
+      name: 'Gerenciamento de Usuários',
       path: '/admin/user-modules',
       icon: Shield,
-      description: 'Acessos dos usuários'
+      description: 'Perfis de acesso e módulos'
     },
     {
       name: 'Configurações',

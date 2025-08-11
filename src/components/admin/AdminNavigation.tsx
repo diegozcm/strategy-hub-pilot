@@ -27,8 +27,8 @@ const adminCards = [
     color: 'text-purple-600'
   },
   {
-    title: 'Acesso aos Módulos',
-    description: 'Gerenciar acesso dos usuários aos módulos',
+    title: 'Gerenciamento de Usuários',
+    description: 'Gerenciar perfis de acesso e módulos',
     icon: Shield,
     href: '/app/admin/user-modules',
     color: 'text-orange-600'
