@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, UserPlus, Shield, Eye, Users } from 'lucide-react';
+import { Search, Shield, Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +27,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+
 
 interface UserProfile {
   id: string;
@@ -69,7 +69,7 @@ const [bio, setBio] = useState('');
 const [areasText, setAreasText] = useState('');
 const [startupName, setStartupName] = useState('');
 const [website, setWebsite] = useState('');
-const [existingProfileId, setExistingProfileId] = useState<string | null>(null);
+
 const [profileLoading, setProfileLoading] = useState(false);
 
   // Fetch data
@@ -116,7 +116,7 @@ const [profileLoading, setProfileLoading] = useState(false);
 
   // Startup HUB profile helpers
   const resetStartupHubProfileState = () => {
-    setExistingProfileId(null);
+    
     setProfileType('startup');
     setBio('');
     setAreasText('');
@@ -140,7 +140,7 @@ const [profileLoading, setProfileLoading] = useState(false);
         .maybeSingle();
       if (error) throw error;
       if (data) {
-        setExistingProfileId((data as any).id as string);
+        
         const pd = (data as any).profile_data || {};
         setProfileType((pd.type as 'startup' | 'mentor') || 'startup');
         setBio((pd.bio as string) || '');
