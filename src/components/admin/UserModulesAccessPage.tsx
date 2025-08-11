@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
@@ -33,7 +35,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
-import StartupHubProfileDialog from './startup-hub/StartupHubProfileDialog';
+
 
 interface UserProfile {
   id: string;
@@ -70,7 +72,13 @@ export const UserModulesAccessPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
   const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
-  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+const [profileType, setProfileType] = useState<'startup' | 'mentor'>('startup');
+const [bio, setBio] = useState('');
+const [areasText, setAreasText] = useState('');
+const [startupName, setStartupName] = useState('');
+const [website, setWebsite] = useState('');
+const [existingProfileId, setExistingProfileId] = useState<string | null>(null);
+const [profileLoading, setProfileLoading] = useState(false);
 
   // Fetch data
   const fetchData = async () => {
@@ -114,6 +122,47 @@ export const UserModulesAccessPage: React.FC = () => {
     }
   };
 
+  // Startup HUB profile helpers
+  const resetStartupHubProfileState = () => {
+    setExistingProfileId(null);
+    setProfileType('startup');
+    setBio('');
+    setAreasText('');
+    setStartupName('');
+    setWebsite('');
+  };
+
+  const loadStartupHubProfile = async (userId: string) => {
+    try {
+      setProfileLoading(true);
+      const { data, error } = await supabase
+        .from('startup_hub_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (error) throw error;
+      if (data) {
+        setExistingProfileId((data as any).id as string);
+        setProfileType(((data as any).type as 'startup' | 'mentor') || 'startup');
+        setBio(((data as any).bio as string) || '');
+        setAreasText((((data as any).areas_of_expertise as string[]) || []).join(', '));
+        setStartupName(((data as any).startup_name as string) || '');
+        setWebsite(((data as any).website as string) || '');
+      } else {
+        resetStartupHubProfileState();
+      }
+    } catch (e: any) {
+      console.error('Erro ao carregar perfil Startup HUB:', e);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar o perfil do Startup HUB.',
+        variant: 'destructive',
+      });
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
   // Open access modal for user
   const openAccessModal = (userProfile: UserProfile) => {
     setSelectedUser(userProfile);
@@ -130,6 +179,15 @@ export const UserModulesAccessPage: React.FC = () => {
     });
     
     setModuleAccess(currentAccess);
+
+    // Load Startup HUB profile if access is granted
+    const sh = modules.find(m => m.slug === 'startup-hub');
+    if (sh && currentAccess[sh.id]) {
+      loadStartupHubProfile(userProfile.user_id);
+    } else {
+      resetStartupHubProfileState();
+    }
+
     setIsAccessModalOpen(true);
   };
 
@@ -156,6 +214,41 @@ export const UserModulesAccessPage: React.FC = () => {
             _module_id: moduleId
           });
           if (error) throw error;
+        }
+      }
+
+      // Handle Startup HUB profile save/inactivation
+      const startupModule = modules.find(m => m.slug === 'startup-hub');
+      if (startupModule) {
+        const hasStartup = moduleAccess[startupModule.id];
+        if (hasStartup) {
+          const payload: any = {
+            user_id: selectedUser.user_id,
+            type: profileType,
+            bio: bio || null,
+            areas_of_expertise: areasText
+              ? areasText.split(',').map(s => s.trim()).filter(Boolean)
+              : [],
+            startup_name: profileType === 'startup' ? (startupName || null) : null,
+            website: website || null,
+            status: 'active',
+          };
+          if (existingProfileId) payload.id = existingProfileId;
+
+          const { error: upsertError } = await supabase
+            .from('startup_hub_profiles')
+            .upsert(payload, { onConflict: 'user_id' })
+            .select()
+            .maybeSingle();
+          if (upsertError) throw upsertError;
+        } else {
+          const { error: updateError } = await supabase
+            .from('startup_hub_profiles')
+            .update({ status: 'inactive' })
+            .eq('user_id', selectedUser.user_id);
+          if (updateError) {
+            console.warn('Falha ao inativar perfil Startup HUB:', updateError.message);
+          }
         }
       }
 
@@ -303,9 +396,16 @@ export const UserModulesAccessPage: React.FC = () => {
                 <Checkbox
                   id={module.id}
                   checked={moduleAccess[module.id] || false}
-                  onCheckedChange={(checked) => 
-                    setModuleAccess(prev => ({ ...prev, [module.id]: !!checked }))
-                  }
+                  onCheckedChange={(checked) => {
+                    setModuleAccess(prev => ({ ...prev, [module.id]: !!checked }));
+                    if (module.slug === 'startup-hub') {
+                      if (!!checked) {
+                        if (selectedUser) loadStartupHubProfile(selectedUser.user_id);
+                      } else {
+                        resetStartupHubProfileState();
+                      }
+                    }
+                  }}
                 />
                 <div className="flex-1">
                   <label htmlFor={module.id} className="text-sm font-medium cursor-pointer">
@@ -316,29 +416,57 @@ export const UserModulesAccessPage: React.FC = () => {
               </div>
             ))}
 
-            {startupHubModuleId && selectedUser && (
-              <div className="pt-2 border-t">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm">
-                    <div className="font-medium">Perfil do Startup HUB</div>
-                    <div className="text-muted-foreground">
-                      Defina o perfil de {selectedUser.first_name} como Startup ou Mentor
-                    </div>
+            {startupHubModuleId && (moduleAccess[startupHubModuleId] || false) && (
+              <div className="pt-4 border-t space-y-3">
+                <div className="text-sm">
+                  <div className="font-medium">Perfil do Startup HUB</div>
+                  <div className="text-muted-foreground">
+                    Defina o perfil como Startup ou Mentor e preencha os detalhes.
                   </div>
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => setIsProfileDialogOpen(true)}
-                    disabled={!canOpenProfileDialog}
-                    title={
-                      canOpenProfileDialog
-                        ? 'Abrir configuração de perfil'
-                        : 'Conceda acesso ao módulo startup-hub para habilitar'
-                    }
-                  >
-                    Configurar Perfil
-                  </Button>
                 </div>
+                {profileLoading ? (
+                  <div className="text-sm text-muted-foreground">Carregando perfil...</div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Tipo de Perfil</Label>
+                        <Select value={profileType} onValueChange={(v) => setProfileType(v as 'startup' | 'mentor')}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="startup">Startup</SelectItem>
+                            <SelectItem value="mentor">Mentor</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label>Website</Label>
+                        <Input placeholder="https://" value={website} onChange={(e) => setWebsite(e.target.value)} />
+                      </div>
+                    </div>
+
+                    {profileType === 'startup' && (
+                      <div>
+                        <Label>Nome da Startup</Label>
+                        <Input placeholder="Ex: Minha Startup Ltda." value={startupName} onChange={(e) => setStartupName(e.target.value)} />
+                      </div>
+                    )}
+
+                    {profileType === 'mentor' && (
+                      <div>
+                        <Label>Áreas de Atuação (separe por vírgula)</Label>
+                        <Input placeholder="Finanças, Marketing, Vendas" value={areasText} onChange={(e) => setAreasText(e.target.value)} />
+                      </div>
+                    )}
+
+                    <div>
+                      <Label>Bio</Label>
+                      <Textarea placeholder="Conte um pouco sobre a startup ou experiência do mentor..." value={bio} onChange={(e) => setBio(e.target.value)} className="min-h-[100px]" />
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -351,15 +479,6 @@ export const UserModulesAccessPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Startup HUB Profile Dialog */}
-      {selectedUser && (
-        <StartupHubProfileDialog
-          open={isProfileDialogOpen}
-          onOpenChange={setIsProfileDialogOpen}
-          user={selectedUser}
-          onSaved={fetchData}
-        />
-      )}
     </div>
   );
 };
