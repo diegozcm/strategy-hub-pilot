@@ -7,27 +7,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-// Removed Dialog imports for inline panel UI
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
-// ADDED: Dialog imports for modal UI
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ModuleAccessRow from './user-modules/ModuleAccessRow';
+import type { UserRole } from '@/types/auth';
 
 interface UserProfile {
   id: string;
@@ -64,6 +55,7 @@ export const UserModulesAccessPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   
   const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
+  const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole[]>>({});
   const [selectedRole, setSelectedRole] = useState<'admin' | 'manager' | 'member'>('member');
   const [profileType, setProfileType] = useState<'startup' | 'mentor'>('startup');
   const [bio, setBio] = useState('');
@@ -163,8 +155,25 @@ export const UserModulesAccessPage: React.FC = () => {
     }
   };
 
-  // Handle user selection for inline panel
-  const handleSelectUser = (userProfile: UserProfile) => {
+  // Novo: carregar roles por módulo do usuário selecionado
+  const loadUserModuleRoles = async (userId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('get_user_module_roles', { _user_id: userId });
+      if (error) throw error;
+      const rolesMap: Record<string, UserRole[]> = {};
+      (data || []).forEach((row: any) => {
+        rolesMap[row.module_id] = (row.roles || []) as UserRole[];
+      });
+      setModuleRoles(rolesMap);
+    } catch (e) {
+      console.error('Erro ao carregar perfis por módulo:', e);
+      // Mantém vazio em caso de falha
+      setModuleRoles({});
+    }
+  };
+
+  // Selecionar usuário abre modal e carrega acessos e perfis
+  const handleSelectUser = (userProfile: any) => {
     setSelectedUser(userProfile);
     setSelectedRole((userProfile.role as 'admin' | 'manager' | 'member') || 'member');
     const currentAccess: Record<string, boolean> = {};
@@ -176,8 +185,10 @@ export const UserModulesAccessPage: React.FC = () => {
       );
       currentAccess[module.id] = hasAccess;
     });
-
     setModuleAccess(currentAccess);
+
+    // Carregar perfis por módulo
+    loadUserModuleRoles(userProfile.user_id);
 
     const sh = modules.find(m => m.slug === 'startup-hub');
     if (sh && currentAccess[sh.id]) {
@@ -187,12 +198,12 @@ export const UserModulesAccessPage: React.FC = () => {
     }
   };
 
-  // Save module access changes
+  // Salvar alterações
   const saveModuleAccess = async () => {
     if (!selectedUser || !user) return;
 
     try {
-      // Atualizar função (role) se alterada
+      // Atualizar "Perfil de Acesso" global (antigo role) se alterado
       if (selectedRole && selectedRole !== (selectedUser.role as any)) {
         const { error: roleErr } = await supabase.rpc('update_user_role', {
           _user_id: selectedUser.user_id,
@@ -202,7 +213,7 @@ export const UserModulesAccessPage: React.FC = () => {
         if (roleErr) throw roleErr;
       }
 
-      // Process each module access change
+      // Conceder/revogar acesso a cada módulo
       for (const [moduleId, hasAccess] of Object.entries(moduleAccess)) {
         if (hasAccess) {
           const { error } = await supabase.rpc('grant_module_access', {
@@ -221,6 +232,19 @@ export const UserModulesAccessPage: React.FC = () => {
         }
       }
 
+      // Definir perfis por módulo (admin/manager/member) usando a função criada
+      for (const mod of modules) {
+        const roles = moduleRoles[mod.id] || [];
+        const { error: rolesErr } = await supabase.rpc('set_user_module_roles', {
+          _admin_id: user.id,
+          _user_id: selectedUser.user_id,
+          _module_id: mod.id,
+          _roles: roles,
+        });
+        if (rolesErr) throw rolesErr;
+      }
+
+      // Manter lógica do Startup HUB (perfil específico)
       const startupModule = modules.find((m) => m.slug === 'startup-hub');
       if (startupModule) {
         const hasStartup = moduleAccess[startupModule.id];
@@ -234,7 +258,6 @@ export const UserModulesAccessPage: React.FC = () => {
           website: website || null,
         };
 
-        // Load existing row for upsert safety
         const { data: existing, error: existingErr } = await supabase
           .from('user_module_profiles')
           .select('id, status')
@@ -272,12 +295,12 @@ export const UserModulesAccessPage: React.FC = () => {
         }
       }
 
-      // Refresh data
+      // Recarregar dados
       await fetchData();
 
       toast({
         title: 'Acesso atualizado',
-        description: `Os acessos de ${selectedUser.first_name} foram atualizados com sucesso.`,
+        description: `Os acessos e perfis de ${selectedUser.first_name} foram atualizados com sucesso.`,
       });
     } catch (error: any) {
       console.error('Error updating access:', error);
@@ -418,18 +441,19 @@ export const UserModulesAccessPage: React.FC = () => {
             <DialogTitle>Gerenciar Usuário</DialogTitle>
             <DialogDescription>
               {selectedUser
-                ? `Defina a função (perfil de acesso) e os módulos permitidos para ${selectedUser.first_name}`
-                : 'Defina a função (perfil de acesso) e os módulos permitidos'}
+                ? `Defina o Perfil de Acesso (global) e os perfis por módulo para ${selectedUser.first_name}`
+                : 'Defina o Perfil de Acesso (global) e os perfis por módulo'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* Perfil Global (renomeado) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label>Função do Sistema</Label>
-                <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as 'admin' | 'manager' | 'member')}>
+                <Label>Perfil de Acesso</Label>
+                <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as UserRole)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione a função" />
+                    <SelectValue placeholder="Selecione o perfil" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="admin">Administrador</SelectItem>
@@ -445,30 +469,33 @@ export const UserModulesAccessPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-4">
+            {/* Acessos e Perfis por Módulo */}
+            <div className="space-y-3">
               {modules.map((module) => (
-                <div key={module.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={module.id}
-                    checked={moduleAccess[module.id] || false}
-                    onCheckedChange={(checked) => {
-                      setModuleAccess((prev) => ({ ...prev, [module.id]: !!checked }));
-                      if (module.slug === 'startup-hub') {
-                        if (!!checked) {
-                          if (selectedUser) loadStartupHubProfile(selectedUser.user_id);
-                        } else {
-                          resetStartupHubProfileState();
-                        }
+                <ModuleAccessRow
+                  key={module.id}
+                  module={module}
+                  checked={moduleAccess[module.id] || false}
+                  roles={moduleRoles[module.id] || []}
+                  onAccessChange={(checked) => {
+                    setModuleAccess((prev) => ({ ...prev, [module.id]: !!checked }));
+                    if (module.slug === 'startup-hub') {
+                      if (!!checked) {
+                        if (selectedUser) loadStartupHubProfile(selectedUser.user_id);
+                      } else {
+                        resetStartupHubProfileState();
                       }
-                    }}
-                  />
-                  <div className="flex-1">
-                    <label htmlFor={module.id} className="text-sm font-medium cursor-pointer">
-                      {module.name}
-                    </label>
-                    <p className="text-xs text-muted-foreground">{module.slug}</p>
-                  </div>
-                </div>
+                    }
+                  }}
+                  onRoleToggle={(role) => {
+                    setModuleRoles((prev) => {
+                      const current = prev[module.id] || [];
+                      const has = current.includes(role);
+                      const next = has ? current.filter((r) => r !== role) : [...current, role];
+                      return { ...prev, [module.id]: next };
+                    });
+                  }}
+                />
               ))}
 
               {startupHubModuleId && (moduleAccess[startupHubModuleId] || false) && (

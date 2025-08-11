@@ -1163,6 +1163,44 @@ export type Database = {
         }
         Relationships: []
       }
+      user_module_roles: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          module_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          module_id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          module_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_module_roles_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "system_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_modules: {
         Row: {
           active: boolean
@@ -1294,6 +1332,13 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string
       }
+      get_user_module_roles: {
+        Args: { _user_id: string }
+        Returns: {
+          module_id: string
+          roles: Database["public"]["Enums"]["app_role"][]
+        }[]
+      }
       get_user_modules: {
         Args: { _user_id: string }
         Returns: {
@@ -1325,6 +1370,15 @@ export type Database = {
       }
       safe_delete_user: {
         Args: { _user_id: string; _admin_id: string }
+        Returns: boolean
+      }
+      set_user_module_roles: {
+        Args: {
+          _admin_id: string
+          _user_id: string
+          _module_id: string
+          _roles: Database["public"]["Enums"]["app_role"][]
+        }
         Returns: boolean
       }
       start_impersonation: {
