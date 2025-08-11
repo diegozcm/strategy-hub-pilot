@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Search, Shield, Users } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,7 +26,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
-
+// ADDED: Dialog imports for modal UI
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface UserProfile {
   id: string;
@@ -71,7 +71,7 @@ export const UserModulesAccessPage: React.FC = () => {
   const [startupName, setStartupName] = useState('');
   const [website, setWebsite] = useState('');
 
-const [profileLoading, setProfileLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   // Fetch data
   const fetchData = async () => {
@@ -320,8 +320,6 @@ const [profileLoading, setProfileLoading] = useState(false);
   const startupHubModule = modules.find(m => m.slug === 'startup-hub');
   const startupHubModuleId = startupHubModule?.id;
 
-
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -408,128 +406,133 @@ const [profileLoading, setProfileLoading] = useState(false);
         </CardContent>
       </Card>
 
-      {/* Painel de Gestão de Acesso (inline) */}
-      {selectedUser && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Gerenciar Usuário</CardTitle>
-            <CardDescription>
-              Defina a função (perfil de acesso) e os módulos permitidos para {selectedUser.first_name}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Função do Sistema</Label>
-                  <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as 'admin' | 'manager' | 'member')}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a função" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Administrador</SelectItem>
-                      <SelectItem value="manager">Gestor</SelectItem>
-                      <SelectItem value="member">Membro</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="pt-6">
-                  <Badge variant={selectedUser?.status === 'active' ? 'default' : 'secondary'}>
-                    Status: {selectedUser?.status}
-                  </Badge>
-                </div>
+      {/* Modal de Gestão de Acesso */}
+      <Dialog
+        open={!!selectedUser}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setSelectedUser(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Gerenciar Usuário</DialogTitle>
+            <DialogDescription>
+              {selectedUser
+                ? `Defina a função (perfil de acesso) e os módulos permitidos para ${selectedUser.first_name}`
+                : 'Defina a função (perfil de acesso) e os módulos permitidos'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Função do Sistema</Label>
+                <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as 'admin' | 'manager' | 'member')}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a função" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                    <SelectItem value="manager">Gestor</SelectItem>
+                    <SelectItem value="member">Membro</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-
-              <div className="space-y-4">
-                {modules.map((module) => (
-                  <div key={module.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={module.id}
-                      checked={moduleAccess[module.id] || false}
-                      onCheckedChange={(checked) => {
-                        setModuleAccess((prev) => ({ ...prev, [module.id]: !!checked }));
-                        if (module.slug === 'startup-hub') {
-                          if (!!checked) {
-                            if (selectedUser) loadStartupHubProfile(selectedUser.user_id);
-                          } else {
-                            resetStartupHubProfileState();
-                          }
-                        }
-                      }}
-                    />
-                    <div className="flex-1">
-                      <label htmlFor={module.id} className="text-sm font-medium cursor-pointer">
-                        {module.name}
-                      </label>
-                      <p className="text-xs text-muted-foreground">{module.slug}</p>
-                    </div>
-                  </div>
-                ))}
-
-                {startupHubModuleId && (moduleAccess[startupHubModuleId] || false) && (
-                  <div className="pt-4 border-t space-y-3">
-                    <div className="text-sm">
-                      <div className="font-medium">Perfil do Startup HUB</div>
-                      <div className="text-muted-foreground">
-                        Defina o perfil como Startup ou Mentor e preencha os detalhes.
-                      </div>
-                    </div>
-                    {profileLoading ? (
-                      <div className="text-sm text-muted-foreground">Carregando perfil...</div>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label>Tipo de Perfil</Label>
-                            <Select value={profileType} onValueChange={(v) => setProfileType(v as 'startup' | 'mentor')}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione o tipo" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="startup">Startup</SelectItem>
-                                <SelectItem value="mentor">Mentor</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label>Website</Label>
-                            <Input placeholder="https://" value={website} onChange={(e) => setWebsite(e.target.value)} />
-                          </div>
-                        </div>
-
-                        {profileType === 'startup' && (
-                          <div>
-                            <Label>Nome da Startup</Label>
-                            <Input placeholder="Ex: Minha Startup Ltda." value={startupName} onChange={(e) => setStartupName(e.target.value)} />
-                          </div>
-                        )}
-
-                        {profileType === 'mentor' && (
-                          <div>
-                            <Label>Áreas de Atuação (separe por vírgula)</Label>
-                            <Input placeholder="Finanças, Marketing, Vendas" value={areasText} onChange={(e) => setAreasText(e.target.value)} />
-                          </div>
-                        )}
-
-                        <div>
-                          <Label>Bio</Label>
-                          <Textarea placeholder="Conte um pouco sobre a startup ou experiência do mentor..." value={bio} onChange={(e) => setBio(e.target.value)} className="min-h-[100px]" />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
+              <div className="pt-6">
+                <Badge variant={selectedUser?.status === 'active' ? 'default' : 'secondary'}>
+                  Status: {selectedUser?.status}
+                </Badge>
               </div>
             </div>
-          </CardContent>
-          <div className="flex justify-end gap-2 p-6 pt-0">
-            <Button variant="outline" onClick={() => setSelectedUser(null)}>Cancelar</Button>
-            <Button onClick={saveModuleAccess}>Salvar Alterações</Button>
+
+            <div className="space-y-4">
+              {modules.map((module) => (
+                <div key={module.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={module.id}
+                    checked={moduleAccess[module.id] || false}
+                    onCheckedChange={(checked) => {
+                      setModuleAccess((prev) => ({ ...prev, [module.id]: !!checked }));
+                      if (module.slug === 'startup-hub') {
+                        if (!!checked) {
+                          if (selectedUser) loadStartupHubProfile(selectedUser.user_id);
+                        } else {
+                          resetStartupHubProfileState();
+                        }
+                      }
+                    }}
+                  />
+                  <div className="flex-1">
+                    <label htmlFor={module.id} className="text-sm font-medium cursor-pointer">
+                      {module.name}
+                    </label>
+                    <p className="text-xs text-muted-foreground">{module.slug}</p>
+                  </div>
+                </div>
+              ))}
+
+              {startupHubModuleId && (moduleAccess[startupHubModuleId] || false) && (
+                <div className="pt-4 border-t space-y-3">
+                  <div className="text-sm">
+                    <div className="font-medium">Perfil do Startup HUB</div>
+                    <div className="text-muted-foreground">
+                      Defina o perfil como Startup ou Mentor e preencha os detalhes.
+                    </div>
+                  </div>
+                  {profileLoading ? (
+                    <div className="text-sm text-muted-foreground">Carregando perfil...</div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label>Tipo de Perfil</Label>
+                          <Select value={profileType} onValueChange={(v) => setProfileType(v as 'startup' | 'mentor')}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="startup">Startup</SelectItem>
+                              <SelectItem value="mentor">Mentor</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Website</Label>
+                          <Input placeholder="https://" value={website} onChange={(e) => setWebsite(e.target.value)} />
+                        </div>
+                      </div>
+
+                      {profileType === 'startup' && (
+                        <div>
+                          <Label>Nome da Startup</Label>
+                          <Input placeholder="Ex: Minha Startup Ltda." value={startupName} onChange={(e) => setStartupName(e.target.value)} />
+                        </div>
+                      )}
+
+                      {profileType === 'mentor' && (
+                        <div>
+                          <Label>Áreas de Atuação (separe por vírgula)</Label>
+                          <Input placeholder="Finanças, Marketing, Vendas" value={areasText} onChange={(e) => setAreasText(e.target.value)} />
+                        </div>
+                      )}
+
+                      <div>
+                        <Label>Bio</Label>
+                        <Textarea placeholder="Conte um pouco sobre a startup ou experiência do mentor..." value={bio} onChange={(e) => setBio(e.target.value)} className="min-h-[100px]" />
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSelectedUser(null)}>Cancelar</Button>
+              <Button onClick={saveModuleAccess}>Salvar Alterações</Button>
+            </div>
           </div>
-        </Card>
-      )}
-
-
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
