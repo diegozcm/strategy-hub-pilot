@@ -305,13 +305,6 @@ const [profileLoading, setProfileLoading] = useState(false);
     fetchData();
   }, []);
 
-  if (loading) {
-    return <div>Carregando usuários...</div>;
-  }
-
-  const startupHubModule = modules.find(m => m.slug === 'startup-hub');
-  const startupHubModuleId = startupHubModule?.id;
-
   useEffect(() => {
     document.title = 'Gerenciamento de Usuários | Admin';
     const meta = document.querySelector('meta[name="description"]');
@@ -319,6 +312,14 @@ const [profileLoading, setProfileLoading] = useState(false);
       meta.setAttribute('content', 'Gerencie perfis de acesso e módulos dos usuários.');
     }
   }, []);
+
+  if (loading) {
+    return <div>Carregando usuários...</div>;
+  }
+
+  const startupHubModule = modules.find(m => m.slug === 'startup-hub');
+  const startupHubModuleId = startupHubModule?.id;
+
 
 
   return (
