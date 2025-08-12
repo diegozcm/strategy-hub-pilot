@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -16,8 +17,6 @@ interface ModuleAccessRowProps {
   roles: UserRole[];
   onAccessChange: (checked: boolean) => void;
   onRoleToggle: (role: UserRole) => void;
-  startupOptions?: { startup: boolean; mentor: boolean };
-  onStartupOptionToggle?: (option: 'startup' | 'mentor') => void;
 }
 
 export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
@@ -26,8 +25,6 @@ export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
   roles,
   onAccessChange,
   onRoleToggle,
-  startupOptions,
-  onStartupOptionToggle,
 }) => {
   const roleList: UserRole[] = ['admin', 'manager', 'member'];
   const isDisabled = !checked;
@@ -67,6 +64,7 @@ export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
           );
         })}
       </div>
+
     </div>
   );
 };
