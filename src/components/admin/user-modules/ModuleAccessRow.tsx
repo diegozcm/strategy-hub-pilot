@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -68,26 +67,6 @@ export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
           );
         })}
       </div>
-
-      {module.slug === 'startup-hub' && checked && startupOptions && onStartupOptionToggle && (
-        <div className="grid grid-cols-2 gap-3 pl-7 sm:pl-0">
-          {(['startup', 'mentor'] as const).map((opt) => {
-            const optId = `sh-${module.id}-${opt}`;
-            return (
-              <div key={opt} className="flex items-center gap-2">
-                <Checkbox
-                  id={optId}
-                  checked={startupOptions[opt]}
-                  onCheckedChange={() => onStartupOptionToggle(opt)}
-                />
-                <Label htmlFor={optId}>
-                  {opt === 'startup' ? 'Startup' : 'Mentor'}
-                </Label>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 };
