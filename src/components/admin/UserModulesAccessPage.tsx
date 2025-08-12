@@ -56,7 +56,7 @@ export const UserModulesAccessPage: React.FC = () => {
   
   const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
   const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole[]>>({});
-  
+  const [startupHubOptions, setStartupHubOptions] = useState<{ startup: boolean; mentor: boolean }>({ startup: false, mentor: false });
 
   // Fetch data
   const fetchData = async () => {
@@ -100,6 +100,34 @@ export const UserModulesAccessPage: React.FC = () => {
     }
   };
 
+  // Startup HUB options helpers
+  const resetStartupHubOptions = () => {
+    setStartupHubOptions({ startup: false, mentor: false });
+  };
+
+  const loadStartupHubOptions = async (userId: string) => {
+    try {
+      const startupModule = modules.find(m => m.slug === 'startup-hub');
+      if (!startupModule) {
+        resetStartupHubOptions();
+        return;
+      }
+      const { data, error } = await supabase
+        .from('startup_hub_profiles')
+        .select('type, status')
+        .eq('user_id', userId)
+        .eq('status', 'active');
+      if (error) throw error;
+      const types = (data || []).map((row: any) => row.type as 'startup' | 'mentor');
+      setStartupHubOptions({
+        startup: types.includes('startup'),
+        mentor: types.includes('mentor'),
+      });
+    } catch (e) {
+      console.error('Erro ao carregar perfis Startup HUB:', e);
+      resetStartupHubOptions();
+    }
+  };
 
   // Novo: carregar roles por módulo do usuário selecionado
   const loadUserModuleRoles = async (userId: string) => {
@@ -134,6 +162,12 @@ export const UserModulesAccessPage: React.FC = () => {
     // Carregar perfis por módulo
     loadUserModuleRoles(userProfile.user_id);
 
+    const sh = modules.find(m => m.slug === 'startup-hub');
+    if (sh && currentAccess[sh.id]) {
+      loadStartupHubOptions(userProfile.user_id);
+    } else {
+      resetStartupHubOptions();
+    }
   };
 
   // Salvar alterações
@@ -172,6 +206,67 @@ export const UserModulesAccessPage: React.FC = () => {
         if (rolesErr) throw rolesErr;
       }
 
+      // Startup HUB: gerenciar perfis (startup/mentor) via checkboxes
+      const startupModule = modules.find((m) => m.slug === 'startup-hub');
+      if (startupModule) {
+        const hasStartupAccess = moduleAccess[startupModule.id];
+
+        if (hasStartupAccess) {
+          // Ativar/criar perfis marcados
+          const types: Array<'startup' | 'mentor'> = ['startup', 'mentor'];
+          for (const t of types) {
+            const checked = startupHubOptions[t];
+            const { data: existing, error: existingErr } = await supabase
+              .from('startup_hub_profiles')
+              .select('id, status')
+              .eq('user_id', selectedUser.user_id)
+              .eq('type', t)
+              .maybeSingle();
+            if (existingErr) throw existingErr;
+
+            if (checked) {
+              if (existing) {
+                const { error: updErr } = await supabase
+                  .from('startup_hub_profiles')
+                  .update({ status: 'active' })
+                  .eq('id', existing.id as string);
+                if (updErr) throw updErr;
+              } else {
+                const { error: insErr } = await supabase
+                  .from('startup_hub_profiles')
+                  .insert({
+                    user_id: selectedUser.user_id,
+                    type: t,
+                    status: 'active',
+                  });
+                if (insErr) throw insErr;
+              }
+            } else if (existing && existing.status === 'active') {
+              const { error: inactErr } = await supabase
+                .from('startup_hub_profiles')
+                .update({ status: 'inactive' })
+                .eq('id', existing.id as string);
+              if (inactErr) throw inactErr;
+            }
+          }
+        } else {
+          // Sem acesso ao módulo: desativar quaisquer perfis ativos
+          const { data: rows, error: listErr } = await supabase
+            .from('startup_hub_profiles')
+            .select('id, status')
+            .eq('user_id', selectedUser.user_id);
+          if (listErr) throw listErr;
+          for (const row of rows || []) {
+            if (row.status === 'active') {
+              const { error: inactErr } = await supabase
+                .from('startup_hub_profiles')
+                .update({ status: 'inactive' })
+                .eq('id', row.id as string);
+              if (inactErr) throw inactErr;
+            }
+          }
+        }
+      }
 
       // Recarregar dados
       await fetchData();
@@ -217,6 +312,9 @@ export const UserModulesAccessPage: React.FC = () => {
   if (loading) {
     return <div>Carregando usuários...</div>;
   }
+
+  const startupHubModule = modules.find(m => m.slug === 'startup-hub');
+  const startupHubModuleId = startupHubModule?.id;
 
   return (
     <div className="space-y-6">
@@ -326,7 +424,7 @@ export const UserModulesAccessPage: React.FC = () => {
             {/* Acessos e Perfis por Módulo */}
             <div className="space-y-3">
               {modules.map((module) => {
-                
+                const isStartupHub = module.slug === 'startup-hub';
                 const checked = moduleAccess[module.id] || false;
                 return (
                   <ModuleAccessRow
@@ -336,6 +434,13 @@ export const UserModulesAccessPage: React.FC = () => {
                     roles={moduleRoles[module.id] || []}
                     onAccessChange={(v) => {
                       setModuleAccess((prev) => ({ ...prev, [module.id]: !!v }));
+                      if (isStartupHub) {
+                        if (!!v && selectedUser) {
+                          loadStartupHubOptions(selectedUser.user_id);
+                        } else {
+                          resetStartupHubOptions();
+                        }
+                      }
                     }}
                     onRoleToggle={(role) => {
                       setModuleRoles((prev) => {
@@ -345,6 +450,13 @@ export const UserModulesAccessPage: React.FC = () => {
                         return { ...prev, [module.id]: next };
                       });
                     }}
+                    {...(isStartupHub
+                      ? {
+                          startupOptions: startupHubOptions,
+                          onStartupOptionToggle: (opt: 'startup' | 'mentor') =>
+                            setStartupHubOptions((prev) => ({ ...prev, [opt]: !prev[opt] })),
+                        }
+                      : {})}
                   />
                 );
               })}
