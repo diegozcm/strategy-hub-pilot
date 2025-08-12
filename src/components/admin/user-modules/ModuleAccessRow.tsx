@@ -17,6 +17,8 @@ interface ModuleAccessRowProps {
   roles: UserRole[];
   onAccessChange: (checked: boolean) => void;
   onRoleToggle: (role: UserRole) => void;
+  startupOptions?: { startup: boolean; mentor: boolean };
+  onStartupOptionToggle?: (option: 'startup' | 'mentor') => void;
 }
 
 export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
@@ -25,6 +27,8 @@ export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
   roles,
   onAccessChange,
   onRoleToggle,
+  startupOptions,
+  onStartupOptionToggle,
 }) => {
   const roleList: UserRole[] = ['admin', 'manager', 'member'];
   const isDisabled = !checked;
@@ -64,6 +68,26 @@ export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
           );
         })}
       </div>
+
+      {module.slug === 'startup-hub' && checked && startupOptions && onStartupOptionToggle && (
+        <div className="grid grid-cols-2 gap-3 pl-7 sm:pl-0">
+          {(['startup', 'mentor'] as const).map((opt) => {
+            const optId = `sh-${module.id}-${opt}`;
+            return (
+              <div key={opt} className="flex items-center gap-2">
+                <Checkbox
+                  id={optId}
+                  checked={startupOptions[opt]}
+                  onCheckedChange={() => onStartupOptionToggle(opt)}
+                />
+                <Label htmlFor={optId}>
+                  {opt === 'startup' ? 'Startup' : 'Mentor'}
+                </Label>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

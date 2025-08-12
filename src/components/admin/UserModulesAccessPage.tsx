@@ -56,14 +56,7 @@ export const UserModulesAccessPage: React.FC = () => {
   
   const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
   const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole[]>>({});
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'manager' | 'member'>('member');
-  const [profileType, setProfileType] = useState<'startup' | 'mentor'>('startup');
-  const [bio, setBio] = useState('');
-  const [areasText, setAreasText] = useState('');
-  const [startupName, setStartupName] = useState('');
-  const [website, setWebsite] = useState('');
-
-  const [profileLoading, setProfileLoading] = useState(false);
+  const [startupHubOptions, setStartupHubOptions] = useState<{ startup: boolean; mentor: boolean }>({ startup: false, mentor: false });
 
   // Fetch data
   const fetchData = async () => {
@@ -107,51 +100,32 @@ export const UserModulesAccessPage: React.FC = () => {
     }
   };
 
-  // Startup HUB profile helpers
-  const resetStartupHubProfileState = () => {
-    
-    setProfileType('startup');
-    setBio('');
-    setAreasText('');
-    setStartupName('');
-    setWebsite('');
+  // Startup HUB options helpers
+  const resetStartupHubOptions = () => {
+    setStartupHubOptions({ startup: false, mentor: false });
   };
 
-  const loadStartupHubProfile = async (userId: string) => {
+  const loadStartupHubOptions = async (userId: string) => {
     try {
-      setProfileLoading(true);
       const startupModule = modules.find(m => m.slug === 'startup-hub');
       if (!startupModule) {
-        resetStartupHubProfileState();
+        resetStartupHubOptions();
         return;
       }
       const { data, error } = await supabase
-        .from('user_module_profiles')
-        .select('*')
+        .from('startup_hub_profiles')
+        .select('type, status')
         .eq('user_id', userId)
-        .eq('module_id', startupModule.id)
-        .maybeSingle();
+        .eq('status', 'active');
       if (error) throw error;
-      if (data) {
-        
-        const pd = (data as any).profile_data || {};
-        setProfileType((pd.type as 'startup' | 'mentor') || 'startup');
-        setBio((pd.bio as string) || '');
-        setAreasText((((pd.areas_of_expertise as string[]) || []).join(', ')));
-        setStartupName((pd.startup_name as string) || '');
-        setWebsite((pd.website as string) || '');
-      } else {
-        resetStartupHubProfileState();
-      }
-    } catch (e: any) {
-      console.error('Erro ao carregar perfil Startup HUB:', e);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar o perfil do Startup HUB.',
-        variant: 'destructive',
+      const types = (data || []).map((row: any) => row.type as 'startup' | 'mentor');
+      setStartupHubOptions({
+        startup: types.includes('startup'),
+        mentor: types.includes('mentor'),
       });
-    } finally {
-      setProfileLoading(false);
+    } catch (e) {
+      console.error('Erro ao carregar perfis Startup HUB:', e);
+      resetStartupHubOptions();
     }
   };
 
@@ -172,10 +146,8 @@ export const UserModulesAccessPage: React.FC = () => {
     }
   };
 
-  // Selecionar usuário abre modal e carrega acessos e perfis
   const handleSelectUser = (userProfile: any) => {
     setSelectedUser(userProfile);
-    setSelectedRole((userProfile.role as 'admin' | 'manager' | 'member') || 'member');
     const currentAccess: Record<string, boolean> = {};
     modules.forEach(module => {
       const hasAccess = userModules.some(um =>
@@ -192,9 +164,9 @@ export const UserModulesAccessPage: React.FC = () => {
 
     const sh = modules.find(m => m.slug === 'startup-hub');
     if (sh && currentAccess[sh.id]) {
-      loadStartupHubProfile(userProfile.user_id);
+      loadStartupHubOptions(userProfile.user_id);
     } else {
-      resetStartupHubProfileState();
+      resetStartupHubOptions();
     }
   };
 
@@ -203,16 +175,6 @@ export const UserModulesAccessPage: React.FC = () => {
     if (!selectedUser || !user) return;
 
     try {
-      // Atualizar "Perfil de Acesso" global (antigo role) se alterado
-      if (selectedRole && selectedRole !== (selectedUser.role as any)) {
-        const { error: roleErr } = await supabase.rpc('update_user_role', {
-          _user_id: selectedUser.user_id,
-          _new_role: selectedRole,
-          _admin_id: user.id,
-        });
-        if (roleErr) throw roleErr;
-      }
-
       // Conceder/revogar acesso a cada módulo
       for (const [moduleId, hasAccess] of Object.entries(moduleAccess)) {
         if (hasAccess) {
@@ -232,7 +194,7 @@ export const UserModulesAccessPage: React.FC = () => {
         }
       }
 
-      // Definir perfis por módulo (admin/manager/member) usando a função criada
+      // Definir perfis por módulo (admin/manager/member)
       for (const mod of modules) {
         const roles = moduleRoles[mod.id] || [];
         const { error: rolesErr } = await supabase.rpc('set_user_module_roles', {
@@ -244,53 +206,64 @@ export const UserModulesAccessPage: React.FC = () => {
         if (rolesErr) throw rolesErr;
       }
 
-      // Manter lógica do Startup HUB (perfil específico)
+      // Startup HUB: gerenciar perfis (startup/mentor) via checkboxes
       const startupModule = modules.find((m) => m.slug === 'startup-hub');
       if (startupModule) {
-        const hasStartup = moduleAccess[startupModule.id];
-        const profilePayload = {
-          type: profileType,
-          bio: bio || null,
-          areas_of_expertise: areasText
-            ? areasText.split(',').map((s) => s.trim()).filter(Boolean)
-            : [],
-          startup_name: profileType === 'startup' ? (startupName || null) : null,
-          website: website || null,
-        };
+        const hasStartupAccess = moduleAccess[startupModule.id];
 
-        const { data: existing, error: existingErr } = await supabase
-          .from('user_module_profiles')
-          .select('id, status')
-          .eq('user_id', selectedUser.user_id)
-          .eq('module_id', startupModule.id)
-          .maybeSingle();
-        if (existingErr) throw existingErr;
+        if (hasStartupAccess) {
+          // Ativar/criar perfis marcados
+          const types: Array<'startup' | 'mentor'> = ['startup', 'mentor'];
+          for (const t of types) {
+            const checked = startupHubOptions[t];
+            const { data: existing, error: existingErr } = await supabase
+              .from('startup_hub_profiles')
+              .select('id, status')
+              .eq('user_id', selectedUser.user_id)
+              .eq('type', t)
+              .maybeSingle();
+            if (existingErr) throw existingErr;
 
-        if (hasStartup) {
-          if (existing) {
-            const { error: updErr } = await supabase
-              .from('user_module_profiles')
-              .update({ profile_data: profilePayload, status: 'active' })
-              .eq('id', existing.id as string);
-            if (updErr) throw updErr;
-          } else {
-            const { error: insErr } = await supabase
-              .from('user_module_profiles')
-              .insert({
-                user_id: selectedUser.user_id,
-                module_id: startupModule.id,
-                profile_data: profilePayload,
-                status: 'active',
-              });
-            if (insErr) throw insErr;
+            if (checked) {
+              if (existing) {
+                const { error: updErr } = await supabase
+                  .from('startup_hub_profiles')
+                  .update({ status: 'active' })
+                  .eq('id', existing.id as string);
+                if (updErr) throw updErr;
+              } else {
+                const { error: insErr } = await supabase
+                  .from('startup_hub_profiles')
+                  .insert({
+                    user_id: selectedUser.user_id,
+                    type: t,
+                    status: 'active',
+                  });
+                if (insErr) throw insErr;
+              }
+            } else if (existing && existing.status === 'active') {
+              const { error: inactErr } = await supabase
+                .from('startup_hub_profiles')
+                .update({ status: 'inactive' })
+                .eq('id', existing.id as string);
+              if (inactErr) throw inactErr;
+            }
           }
-        } else if (existing) {
-          const { error: inactErr } = await supabase
-            .from('user_module_profiles')
-            .update({ status: 'inactive' })
-            .eq('id', existing.id as string);
-          if (inactErr) {
-            console.warn('Falha ao inativar perfil Startup HUB:', inactErr.message);
+        } else {
+          // Sem acesso ao módulo: desativar quaisquer perfis ativos
+          const { data: rows, error: listErr } = await supabase
+            .from('startup_hub_profiles')
+            .select('id, status')
+            .eq('user_id', selectedUser.user_id);
+          if (listErr) throw listErr;
+          for (const row of rows || []) {
+            if (row.status === 'active') {
+              const { error: inactErr } = await supabase
+                .from('startup_hub_profiles')
+                .update({ status: 'inactive' })
+                .eq('id', row.id as string);
+              if (inactErr) throw inactErr;
+            }
           }
         }
       }
@@ -441,116 +414,53 @@ export const UserModulesAccessPage: React.FC = () => {
             <DialogTitle>Gerenciar Usuário</DialogTitle>
             <DialogDescription>
               {selectedUser
-                ? `Defina o Perfil de Acesso (global) e os perfis por módulo para ${selectedUser.first_name}`
-                : 'Defina o Perfil de Acesso (global) e os perfis por módulo'}
+                ? `Defina os perfis de acesso por módulo para ${selectedUser.first_name}`
+                : 'Defina os perfis de acesso por módulo'}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Perfil Global (renomeado) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Perfil de Acesso</Label>
-                <Select value={selectedRole} onValueChange={(v) => setSelectedRole(v as UserRole)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o perfil" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                    <SelectItem value="manager">Gestor</SelectItem>
-                    <SelectItem value="member">Membro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="pt-6">
-                <Badge variant={selectedUser?.status === 'active' ? 'default' : 'secondary'}>
-                  Status: {selectedUser?.status}
-                </Badge>
-              </div>
-            </div>
 
             {/* Acessos e Perfis por Módulo */}
             <div className="space-y-3">
-              {modules.map((module) => (
-                <ModuleAccessRow
-                  key={module.id}
-                  module={module}
-                  checked={moduleAccess[module.id] || false}
-                  roles={moduleRoles[module.id] || []}
-                  onAccessChange={(checked) => {
-                    setModuleAccess((prev) => ({ ...prev, [module.id]: !!checked }));
-                    if (module.slug === 'startup-hub') {
-                      if (!!checked) {
-                        if (selectedUser) loadStartupHubProfile(selectedUser.user_id);
-                      } else {
-                        resetStartupHubProfileState();
+              {modules.map((module) => {
+                const isStartupHub = module.slug === 'startup-hub';
+                const checked = moduleAccess[module.id] || false;
+                return (
+                  <ModuleAccessRow
+                    key={module.id}
+                    module={module}
+                    checked={checked}
+                    roles={moduleRoles[module.id] || []}
+                    onAccessChange={(v) => {
+                      setModuleAccess((prev) => ({ ...prev, [module.id]: !!v }));
+                      if (isStartupHub) {
+                        if (!!v && selectedUser) {
+                          loadStartupHubOptions(selectedUser.user_id);
+                        } else {
+                          resetStartupHubOptions();
+                        }
                       }
-                    }
-                  }}
-                  onRoleToggle={(role) => {
-                    setModuleRoles((prev) => {
-                      const current = prev[module.id] || [];
-                      const has = current.includes(role);
-                      const next = has ? current.filter((r) => r !== role) : [...current, role];
-                      return { ...prev, [module.id]: next };
-                    });
-                  }}
-                />
-              ))}
+                    }}
+                    onRoleToggle={(role) => {
+                      setModuleRoles((prev) => {
+                        const current = prev[module.id] || [];
+                        const has = current.includes(role);
+                        const next = has ? current.filter((r) => r !== role) : [...current, role];
+                        return { ...prev, [module.id]: next };
+                      });
+                    }}
+                    {...(isStartupHub
+                      ? {
+                          startupOptions: startupHubOptions,
+                          onStartupOptionToggle: (opt: 'startup' | 'mentor') =>
+                            setStartupHubOptions((prev) => ({ ...prev, [opt]: !prev[opt] })),
+                        }
+                      : {})}
+                  />
+                );
+              })}
 
-              {startupHubModuleId && (moduleAccess[startupHubModuleId] || false) && (
-                <div className="pt-4 border-t space-y-3">
-                  <div className="text-sm">
-                    <div className="font-medium">Perfil do Startup HUB</div>
-                    <div className="text-muted-foreground">
-                      Defina o perfil como Startup ou Mentor e preencha os detalhes.
-                    </div>
-                  </div>
-                  {profileLoading ? (
-                    <div className="text-sm text-muted-foreground">Carregando perfil...</div>
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label>Tipo de Perfil</Label>
-                          <Select value={profileType} onValueChange={(v) => setProfileType(v as 'startup' | 'mentor')}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione o tipo" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="startup">Startup</SelectItem>
-                              <SelectItem value="mentor">Mentor</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label>Website</Label>
-                          <Input placeholder="https://" value={website} onChange={(e) => setWebsite(e.target.value)} />
-                        </div>
-                      </div>
-
-                      {profileType === 'startup' && (
-                        <div>
-                          <Label>Nome da Startup</Label>
-                          <Input placeholder="Ex: Minha Startup Ltda." value={startupName} onChange={(e) => setStartupName(e.target.value)} />
-                        </div>
-                      )}
-
-                      {profileType === 'mentor' && (
-                        <div>
-                          <Label>Áreas de Atuação (separe por vírgula)</Label>
-                          <Input placeholder="Finanças, Marketing, Vendas" value={areasText} onChange={(e) => setAreasText(e.target.value)} />
-                        </div>
-                      )}
-
-                      <div>
-                        <Label>Bio</Label>
-                        <Textarea placeholder="Conte um pouco sobre a startup ou experiência do mentor..." value={bio} onChange={(e) => setBio(e.target.value)} className="min-h-[100px]" />
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
             </div>
 
             <div className="flex justify-end gap-2">
