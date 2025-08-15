@@ -58,7 +58,6 @@ export const UserModulesAccessPage: React.FC = () => {
   const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole[]>>({});
   const [startupHubOptions, setStartupHubOptions] = useState<{ startup: boolean; mentor: boolean }>({ startup: false, mentor: false });
 
-  // Fetch data
   const fetchData = async () => {
     try {
       // Fetch users
@@ -100,7 +99,6 @@ export const UserModulesAccessPage: React.FC = () => {
     }
   };
 
-  // Startup HUB options helpers
   const resetStartupHubOptions = () => {
     setStartupHubOptions({ startup: false, mentor: false });
   };
@@ -129,7 +127,6 @@ export const UserModulesAccessPage: React.FC = () => {
     }
   };
 
-  // Novo: carregar roles por módulo do usuário selecionado
   const loadUserModuleRoles = async (userId: string) => {
     try {
       const { data, error } = await supabase.rpc('get_user_module_roles', { _user_id: userId });
@@ -170,7 +167,6 @@ export const UserModulesAccessPage: React.FC = () => {
     }
   };
 
-  // Salvar alterações
   const saveModuleAccess = async () => {
     if (!selectedUser || !user) return;
 
@@ -194,8 +190,13 @@ export const UserModulesAccessPage: React.FC = () => {
         }
       }
 
-      // Definir perfis por módulo (admin/manager/member)
+      // Definir perfis por módulo (admin/manager/member) - pular Startup HUB
       for (const mod of modules) {
+        // Pular Startup HUB ao definir roles padrão
+        if (mod.slug === 'startup-hub') {
+          continue;
+        }
+
         const roles = moduleRoles[mod.id] || [];
         const { error: rolesErr } = await supabase.rpc('set_user_module_roles', {
           _admin_id: user.id,
@@ -285,12 +286,10 @@ export const UserModulesAccessPage: React.FC = () => {
     }
   };
 
-  // Get user's module access count
   const getUserModuleCount = (userId: string) => {
     return userModules.filter(um => um.user_id === userId && um.active).length;
   };
 
-  // Filter users based on search term
   const filteredUsers = users.filter(user => 
     user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -318,7 +317,6 @@ export const UserModulesAccessPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Gerenciamento de Usuários</h1>
@@ -328,7 +326,6 @@ export const UserModulesAccessPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Search */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
@@ -402,7 +399,6 @@ export const UserModulesAccessPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Modal de Gestão de Acesso */}
       <Dialog
         open={!!selectedUser}
         onOpenChange={(isOpen) => {
@@ -420,8 +416,6 @@ export const UserModulesAccessPage: React.FC = () => {
           </DialogHeader>
 
           <div className="space-y-6">
-
-            {/* Acessos e Perfis por Módulo */}
             <div className="space-y-3">
               {modules.map((module) => {
                 const isStartupHub = module.slug === 'startup-hub';
@@ -460,7 +454,6 @@ export const UserModulesAccessPage: React.FC = () => {
                   />
                 );
               })}
-
             </div>
 
             <div className="flex justify-end gap-2">

@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -1272,7 +1272,7 @@ export type Database = {
     }
     Functions: {
       activate_user: {
-        Args: { _user_id: string; _admin_id: string }
+        Args: { _admin_id: string; _user_id: string }
         Returns: boolean
       }
       analyze_user_data: {
@@ -1280,15 +1280,15 @@ export type Database = {
         Returns: Json
       }
       assign_user_to_company: {
-        Args: { _user_id: string; _company_id: string; _admin_id: string }
+        Args: { _admin_id: string; _company_id: string; _user_id: string }
         Returns: boolean
       }
       assign_user_to_company_v2: {
         Args: {
-          _user_id: string
-          _company_id: string
           _admin_id: string
+          _company_id: string
           _role?: string
+          _user_id: string
         }
         Returns: boolean
       }
@@ -1303,13 +1303,13 @@ export type Database = {
       create_missing_profiles: {
         Args: Record<PropertyKey, never>
         Returns: {
-          missing_user_id: string
-          missing_email: string
           action: string
+          missing_email: string
+          missing_user_id: string
         }[]
       }
       deactivate_user: {
-        Args: { _user_id: string; _admin_id: string }
+        Args: { _admin_id: string; _user_id: string }
         Returns: boolean
       }
       end_impersonation: {
@@ -1319,13 +1319,13 @@ export type Database = {
       get_monthly_objective_achievement: {
         Args: { objective_id: string; target_month: string }
         Returns: {
-          objective_title: string
-          monthly_target: number
           monthly_actual: number
           monthly_percentage: number
-          yearly_target: number
+          monthly_target: number
+          objective_title: string
           yearly_actual: number
           yearly_percentage: number
+          yearly_target: number
         }[]
       }
       get_user_company_id: {
@@ -1342,21 +1342,21 @@ export type Database = {
       get_user_modules: {
         Args: { _user_id: string }
         Returns: {
+          description: string
+          icon: string
           module_id: string
           name: string
           slug: string
-          description: string
-          icon: string
         }[]
       }
       grant_module_access: {
-        Args: { _admin_id: string; _user_id: string; _module_id: string }
+        Args: { _admin_id: string; _module_id: string; _user_id: string }
         Returns: boolean
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -1365,19 +1365,19 @@ export type Database = {
         Returns: boolean
       }
       revoke_module_access: {
-        Args: { _admin_id: string; _user_id: string; _module_id: string }
+        Args: { _admin_id: string; _module_id: string; _user_id: string }
         Returns: boolean
       }
       safe_delete_user: {
-        Args: { _user_id: string; _admin_id: string }
+        Args: { _admin_id: string; _user_id: string }
         Returns: boolean
       }
       set_user_module_roles: {
         Args: {
           _admin_id: string
-          _user_id: string
           _module_id: string
           _roles: Database["public"]["Enums"]["app_role"][]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -1386,22 +1386,22 @@ export type Database = {
         Returns: string
       }
       switch_user_module: {
-        Args: { _user_id: string; _module_id: string }
+        Args: { _module_id: string; _user_id: string }
         Returns: boolean
       }
       unassign_user_from_company: {
-        Args: { _user_id: string; _admin_id: string }
+        Args: { _admin_id: string; _user_id: string }
         Returns: boolean
       }
       unassign_user_from_company_v2: {
-        Args: { _user_id: string; _company_id: string; _admin_id: string }
+        Args: { _admin_id: string; _company_id: string; _user_id: string }
         Returns: boolean
       }
       update_user_role: {
         Args: {
-          _user_id: string
-          _new_role: Database["public"]["Enums"]["app_role"]
           _admin_id: string
+          _new_role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
