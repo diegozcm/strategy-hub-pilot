@@ -288,6 +288,232 @@ export type Database = {
         }
         Relationships: []
       }
+      beep_answers: {
+        Row: {
+          answer_value: number
+          assessment_id: string
+          created_at: string | null
+          id: string
+          question_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          answer_value: number
+          assessment_id: string
+          created_at?: string | null
+          id?: string
+          question_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          answer_value?: number
+          assessment_id?: string
+          created_at?: string | null
+          id?: string
+          question_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beep_answers_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "beep_assessments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "beep_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "beep_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beep_assessments: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          final_score: number | null
+          id: string
+          maturity_level:
+            | Database["public"]["Enums"]["beep_maturity_level"]
+            | null
+          startup_name: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          final_score?: number | null
+          id?: string
+          maturity_level?:
+            | Database["public"]["Enums"]["beep_maturity_level"]
+            | null
+          startup_name?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          final_score?: number | null
+          id?: string
+          maturity_level?:
+            | Database["public"]["Enums"]["beep_maturity_level"]
+            | null
+          startup_name?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      beep_categories: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          order_index: number
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          order_index: number
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          order_index?: number
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      beep_maturity_levels: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          level: Database["public"]["Enums"]["beep_maturity_level"]
+          max_score: number
+          min_score: number
+          name: string
+          order_index: number
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          level: Database["public"]["Enums"]["beep_maturity_level"]
+          max_score: number
+          min_score: number
+          name: string
+          order_index: number
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          level?: Database["public"]["Enums"]["beep_maturity_level"]
+          max_score?: number
+          min_score?: number
+          name?: string
+          order_index?: number
+        }
+        Relationships: []
+      }
+      beep_questions: {
+        Row: {
+          created_at: string | null
+          id: string
+          order_index: number
+          question_text: string
+          subcategory_id: string
+          updated_at: string | null
+          weight: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          order_index: number
+          question_text: string
+          subcategory_id: string
+          updated_at?: string | null
+          weight?: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          order_index?: number
+          question_text?: string
+          subcategory_id?: string
+          updated_at?: string | null
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beep_questions_subcategory_id_fkey"
+            columns: ["subcategory_id"]
+            isOneToOne: false
+            referencedRelation: "beep_subcategories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beep_subcategories: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          order_index: number
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          order_index: number
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          order_index?: number
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beep_subcategories_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "beep_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           created_at: string
@@ -1408,6 +1634,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "manager" | "member"
+      beep_maturity_level:
+        | "idealizando"
+        | "validando_problemas_solucoes"
+        | "iniciando_negocio"
+        | "validando_mercado"
+        | "evoluindo"
       startup_hub_profile_type: "startup" | "mentor"
     }
     CompositeTypes: {
@@ -1537,6 +1769,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "manager", "member"],
+      beep_maturity_level: [
+        "idealizando",
+        "validando_problemas_solucoes",
+        "iniciando_negocio",
+        "validando_mercado",
+        "evoluindo",
+      ],
       startup_hub_profile_type: ["startup", "mentor"],
     },
   },
