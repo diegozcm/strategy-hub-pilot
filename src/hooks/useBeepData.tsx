@@ -115,7 +115,7 @@ export const useBeepAssessmentCrud = () => {
     startup_name: string;
     status: 'draft' | 'completed';
     final_score: number;
-    maturity_level: string;
+    maturity_level: 'idealizando' | 'validando_problemas_solucoes' | 'iniciando_negocio' | 'validando_mercado' | 'evoluindo';
     completed_at: string;
   }>) => {
     const { data, error } = await supabase
