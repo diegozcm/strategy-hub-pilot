@@ -44,7 +44,7 @@ interface BeepAssessment {
   startup_name: string | null;
   status: 'draft' | 'completed';
   final_score: number | null;
-  maturity_level: string | null;
+  maturity_level: 'idealizando' | 'validando_problemas_solucoes' | 'iniciando_negocio' | 'validando_mercado' | 'evoluindo' | null;
   completed_at: string | null;
   created_at: string;
 }
@@ -108,7 +108,11 @@ export const BeepAssessmentPage = () => {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as BeepAssessment[];
+      return data.map(assessment => ({
+        ...assessment,
+        status: assessment.status as 'draft' | 'completed',
+        maturity_level: assessment.maturity_level as 'idealizando' | 'validando_problemas_solucoes' | 'iniciando_negocio' | 'validando_mercado' | 'evoluindo' | null
+      })) as BeepAssessment[];
     }
   });
 
@@ -161,7 +165,11 @@ export const BeepAssessmentPage = () => {
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return {
+        ...data,
+        status: data.status as 'draft' | 'completed',
+        maturity_level: data.maturity_level as 'idealizando' | 'validando_problemas_solucoes' | 'iniciando_negocio' | 'validando_mercado' | 'evoluindo' | null
+      } as BeepAssessment;
     },
     onSuccess: (data) => {
       setCurrentAssessment(data);
@@ -260,7 +268,7 @@ export const BeepAssessmentPage = () => {
     return totalMaxScore > 0 ? (totalScore / totalMaxScore) * 5 : 0;
   };
 
-  const getMaturityLevel = (score: number): string => {
+  const getMaturityLevel = (score: number): 'idealizando' | 'validando_problemas_solucoes' | 'iniciando_negocio' | 'validando_mercado' | 'evoluindo' => {
     if (score >= 4.3) return 'evoluindo';
     if (score >= 3.5) return 'validando_mercado';
     if (score >= 2.7) return 'iniciando_negocio';
@@ -300,7 +308,7 @@ export const BeepAssessmentPage = () => {
         
         <BeepScoreDisplay 
           score={currentAssessment.final_score || 0}
-          maturityLevel={currentAssessment.maturity_level || ''}
+          maturityLevel={currentAssessment.maturity_level || 'idealizando'}
           completedAt={currentAssessment.completed_at || ''}
         />
         
