@@ -12,7 +12,7 @@ export const MentorDashboard: React.FC = () => {
   const { user } = useAuth();
   const { profile } = useStartupProfile();
 
-  // Fetch startups count (for now, we'll show total startups in the system)
+  // Fetch startups count
   const { data: startupsCount } = useQuery({
     queryKey: ['startups-count'],
     queryFn: async () => {
@@ -27,22 +27,44 @@ export const MentorDashboard: React.FC = () => {
     }
   });
 
-  // Fetch recent BEEP assessments (mentors can view all)
+  // Fetch recent BEEP assessments
   const { data: recentAssessments } = useQuery({
     queryKey: ['recent-beep-assessments'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First, get the assessments
+      const { data: assessments, error: assessmentsError } = await supabase
         .from('beep_assessments')
-        .select(`
-          *,
-          startup_hub_profiles!inner(startup_name, user_id)
-        `)
+        .select('*')
         .eq('status', 'completed')
         .order('completed_at', { ascending: false })
         .limit(5);
 
-      if (error) throw error;
-      return data;
+      if (assessmentsError) throw assessmentsError;
+
+      if (!assessments || assessments.length === 0) {
+        return [];
+      }
+
+      // Get unique user IDs from assessments
+      const userIds = [...new Set(assessments.map(a => a.user_id))];
+
+      // Fetch startup profiles for those users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('startup_hub_profiles')
+        .select('user_id, startup_name')
+        .in('user_id', userIds)
+        .eq('type', 'startup');
+
+      if (profilesError) throw profilesError;
+
+      // Create a map for quick lookup
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+
+      // Combine assessments with profile data
+      return assessments.map(assessment => ({
+        ...assessment,
+        startup_profile: profileMap.get(assessment.user_id)
+      }));
     }
   });
 
@@ -135,7 +157,7 @@ export const MentorDashboard: React.FC = () => {
                   <div key={assessment.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div>
                       <p className="text-sm font-medium">
-                        {assessment.startup_hub_profiles?.startup_name || assessment.startup_name || 'Startup'}
+                        {assessment.startup_profile?.startup_name || assessment.startup_name || 'Startup'}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Score: {assessment.final_score?.toFixed(1)} | {assessment.maturity_level}
