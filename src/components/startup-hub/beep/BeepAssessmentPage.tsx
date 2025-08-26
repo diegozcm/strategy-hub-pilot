@@ -1,41 +1,23 @@
-
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, CheckCircle, TrendingUp } from 'lucide-react';
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { BeepQuestionCard } from "./BeepQuestionCard";
-import { BeepScoreDisplay } from "./BeepScoreDisplay";
-import { BeepAssessmentHistory } from "./BeepAssessmentHistory";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { BeepQuestionCard } from './BeepQuestionCard';
+import { BeepScoreDisplay } from './BeepScoreDisplay';
+import { BeepAssessmentHistory } from './BeepAssessmentHistory';
+import { useBeepCategories, useBeepMaturityLevels } from '@/hooks/useBeepData';
 
-interface BeepCategory {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  order_index: number;
-}
-
-interface BeepSubcategory {
-  id: string;
-  category_id: string;
-  name: string;
-  slug: string;
-  description: string;
-  order_index: number;
-}
-
-interface BeepQuestion {
-  id: string;
-  subcategory_id: string;
-  question_text: string;
-  weight: number;
-  order_index: number;
+interface BeepAnswer {
+  id?: string;
+  assessment_id: string;
+  question_id: string;
+  answer_value: number;
 }
 
 interface BeepAssessment {
@@ -49,60 +31,23 @@ interface BeepAssessment {
   created_at: string;
 }
 
-interface BeepAnswer {
-  question_id: string;
-  answer_value: number;
-}
-
 export const BeepAssessmentPage = () => {
   const [currentAssessment, setCurrentAssessment] = useState<BeepAssessment | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [currentTab, setCurrentTab] = useState<string>('');
+  const [startupName, setStartupName] = useState('');
+  const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
+  
   const queryClient = useQueryClient();
+  const { data: categories = [], isLoading: categoriesLoading } = useBeepCategories();
+  const { data: maturityLevels = [] } = useBeepMaturityLevels();
 
-  // Fetch categories
-  const { data: categories } = useQuery({
-    queryKey: ['beep-categories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('beep_categories')
-        .select('*')
-        .order('order_index');
-      if (error) throw error;
-      return data as BeepCategory[];
-    }
-  });
-
-  // Fetch subcategories
-  const { data: subcategories } = useQuery({
-    queryKey: ['beep-subcategories'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('beep_subcategories')
-        .select('*')
-        .order('order_index');
-      if (error) throw error;
-      return data as BeepSubcategory[];
-    }
-  });
-
-  // Fetch questions
-  const { data: questions } = useQuery({
-    queryKey: ['beep-questions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('beep_questions')
-        .select('*')
-        .order('order_index');
-      if (error) throw error;
-      return data as BeepQuestion[];
-    }
-  });
-
-  // Fetch current user's draft assessment
-  const { data: assessments } = useQuery({
+  // Get user's assessments
+  const { data: assessments = [] } = useQuery({
     queryKey: ['beep-assessments'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       const { data, error } = await supabase
         .from('beep_assessments')
         .select('*')
@@ -116,52 +61,36 @@ export const BeepAssessmentPage = () => {
     }
   });
 
-  // Load existing answers if there's a draft
-  useEffect(() => {
-    if (assessments && assessments.length > 0) {
-      const draft = assessments.find(a => a.status === 'draft') || assessments[0];
-      setCurrentAssessment(draft);
+  // Get answers for current assessment
+  const { data: currentAnswers = [] } = useQuery({
+    queryKey: ['beep-answers', currentAssessment?.id],
+    queryFn: async () => {
+      if (!currentAssessment?.id) return [];
       
-      if (draft.status === 'draft') {
-        loadAnswers(draft.id);
-      }
-    }
-  }, [assessments]);
+      const { data, error } = await supabase
+        .from('beep_answers')
+        .select('*')
+        .eq('assessment_id', currentAssessment.id);
+      
+      if (error) throw error;
+      return data as BeepAnswer[];
+    },
+    enabled: !!currentAssessment?.id
+  });
 
-  // Set initial tab
-  useEffect(() => {
-    if (categories && categories.length > 0 && !currentTab) {
-      setCurrentTab(categories[0].slug);
-    }
-  }, [categories, currentTab]);
-
-  const loadAnswers = async (assessmentId: string) => {
-    const { data, error } = await supabase
-      .from('beep_answers')
-      .select('question_id, answer_value')
-      .eq('assessment_id', assessmentId);
-    
-    if (error) {
-      console.error('Error loading answers:', error);
-      return;
-    }
-
-    const answersMap: Record<string, number> = {};
-    data?.forEach(answer => {
-      answersMap[answer.question_id] = answer.answer_value;
-    });
-    setAnswers(answersMap);
-  };
-
-  // Create or update assessment
+  // Create new assessment
   const createAssessmentMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (name: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       const { data, error } = await supabase
         .from('beep_assessments')
-        .insert([{
-          user_id: (await supabase.auth.getUser()).data.user?.id!,
+        .insert({
+          user_id: user.id,
+          startup_name: name,
           status: 'draft'
-        }])
+        })
         .select()
         .single();
       if (error) throw error;
@@ -173,98 +102,116 @@ export const BeepAssessmentPage = () => {
     },
     onSuccess: (data) => {
       setCurrentAssessment(data);
+      setAnswers({});
+      toast.success('Nova avaliação iniciada!');
       queryClient.invalidateQueries({ queryKey: ['beep-assessments'] });
+    },
+    onError: () => {
+      toast.error('Erro ao iniciar avaliação');
     }
   });
 
   // Save answer
   const saveAnswerMutation = useMutation({
     mutationFn: async ({ questionId, value }: { questionId: string; value: number }) => {
-      if (!currentAssessment) {
-        throw new Error('No assessment found');
-      }
+      if (!currentAssessment?.id) throw new Error('No current assessment');
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('beep_answers')
-        .upsert([{
+        .upsert({
           assessment_id: currentAssessment.id,
           question_id: questionId,
           answer_value: value
-        }]);
-      
+        })
+        .select()
+        .single();
+
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
-      // Auto-save feedback
-    },
-    onError: (error) => {
-      toast.error('Erro ao salvar resposta');
-      console.error('Error saving answer:', error);
+      queryClient.invalidateQueries({ queryKey: ['beep-answers', currentAssessment?.id] });
     }
   });
 
   // Complete assessment
   const completeAssessmentMutation = useMutation({
     mutationFn: async () => {
-      if (!currentAssessment || !questions) return;
+      if (!currentAssessment?.id) throw new Error('No current assessment');
 
-      const finalScore = calculateFinalScore();
-      const maturityLevel = getMaturityLevel(finalScore);
+      const score = calculateFinalScore();
+      const maturityLevel = getMaturityLevel(score);
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('beep_assessments')
         .update({
           status: 'completed',
-          final_score: finalScore,
+          final_score: score,
           maturity_level: maturityLevel,
           completed_at: new Date().toISOString()
         })
-        .eq('id', currentAssessment.id);
+        .eq('id', currentAssessment.id)
+        .select()
+        .single();
 
       if (error) throw error;
-      return { finalScore, maturityLevel };
+      return {
+        ...data,
+        status: data.status as 'draft' | 'completed',
+        maturity_level: data.maturity_level as 'idealizando' | 'validando_problemas_solucoes' | 'iniciando_negocio' | 'validando_mercado' | 'evoluindo' | null
+      } as BeepAssessment;
     },
-    onSuccess: () => {
-      toast.success('Avaliação concluída com sucesso!');
+    onSuccess: (data) => {
+      setCurrentAssessment(data);
+      toast.success('Avaliação concluída!');
       queryClient.invalidateQueries({ queryKey: ['beep-assessments'] });
     }
   });
 
-  const handleAnswerChange = (questionId: string, value: number) => {
-    setAnswers(prev => ({ ...prev, [questionId]: value }));
+  useEffect(() => {
+    if (currentAssessment?.id) {
+      const initialAnswers: Record<string, number> = {};
+      currentAnswers.forEach(answer => {
+        initialAnswers[answer.question_id] = answer.answer_value;
+      });
+      setAnswers(initialAnswers);
+    }
+  }, [currentAssessment?.id, currentAnswers]);
+
+  const handleAnswer = (questionId: string, value: number) => {
+    setAnswers(prevAnswers => ({
+      ...prevAnswers,
+      [questionId]: value,
+    }));
     saveAnswerMutation.mutate({ questionId, value });
   };
 
-  const calculateFinalScore = (): number => {
-    if (!questions || !subcategories || !categories) return 0;
-
-    let totalScore = 0;
-    let totalMaxScore = 0;
+  const calculateProgress = () => {
+    let answered = 0;
+    let total = 0;
 
     categories.forEach(category => {
-      const categorySubcategories = subcategories.filter(sub => sub.category_id === category.id);
-      let categoryScore = 0;
-      let categoryMaxScore = 0;
-
-      categorySubcategories.forEach(subcategory => {
-        const subcategoryQuestions = questions.filter(q => q.subcategory_id === subcategory.id);
-        let subcategoryScore = 0;
-        let subcategoryMaxScore = 0;
-
-        subcategoryQuestions.forEach(question => {
-          const answer = answers[question.id] || 0;
-          subcategoryScore += answer * question.weight;
-          subcategoryMaxScore += 5 * question.weight;
+      category.subcategories.forEach(subcategory => {
+        subcategory.questions.forEach(question => {
+          total++;
+          if (answers[question.id] !== undefined) {
+            answered++;
+          }
         });
-
-        categoryScore += subcategoryScore;
-        categoryMaxScore += subcategoryMaxScore;
       });
-
-      totalScore += categoryScore;
-      totalMaxScore += categoryMaxScore;
     });
 
+    return { answered, total };
+  };
+
+  const calculateFinalScore = (): number => {
+    const totalQuestions = categories.reduce((total, category) => 
+      total + category.subcategories.reduce((subTotal, subcategory) => 
+        subTotal + subcategory.questions.length, 0), 0);
+    
+    const totalScore = Object.values(answers).reduce((sum, value) => sum + value, 0);
+    const totalMaxScore = totalQuestions * 5;
+    
     return totalMaxScore > 0 ? (totalScore / totalMaxScore) * 5 : 0;
   };
 
@@ -276,32 +223,25 @@ export const BeepAssessmentPage = () => {
     return 'idealizando';
   };
 
-  const getProgressPercentage = (): number => {
-    if (!questions) return 0;
-    const answeredCount = Object.keys(answers).length;
-    return (answeredCount / questions.length) * 100;
+  const handleStartAssessment = () => {
+    createAssessmentMutation.mutate(startupName);
   };
 
-  const canComplete = (): boolean => {
-    return questions ? Object.keys(answers).length === questions.length : false;
+  const isAssessmentComplete = () => {
+    const { answered, total } = calculateProgress();
+    return answered === total;
   };
 
-  const startNewAssessment = () => {
-    createAssessmentMutation.mutate();
-    setAnswers({});
-  };
-
-  if (!categories || !subcategories || !questions) {
-    return <div className="p-6">Carregando avaliação BEEP...</div>;
+  if (categoriesLoading) {
+    return <div className="flex items-center justify-center h-64">Carregando...</div>;
   }
 
-  // Show results if assessment is completed
   if (currentAssessment?.status === 'completed') {
     return (
-      <div className="space-y-6 p-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Avaliação BEEP - Resultados</h1>
-          <Button onClick={startNewAssessment}>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Avaliação BEEP Concluída</h1>
+          <Button onClick={() => setCurrentAssessment(null)} variant="outline">
             Nova Avaliação
           </Button>
         </div>
@@ -312,111 +252,123 @@ export const BeepAssessmentPage = () => {
           completedAt={currentAssessment.completed_at || ''}
         />
         
-        <BeepAssessmentHistory assessments={assessments || []} />
+        <BeepAssessmentHistory assessments={assessments} />
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6 p-6">
-      <div className="flex justify-between items-center">
-        <div>
+  if (!currentAssessment) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center space-y-4">
           <h1 className="text-3xl font-bold">Avaliação BEEP</h1>
-          <p className="text-muted-foreground mt-2">
-            Business Entrepreneur and Evolution Phases - Avalie a maturidade da sua startup
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            O BEEP (Business Entrepreneur and Evolution Phases) é uma ferramenta de avaliação 
+            que ajuda a identificar o nível de maturidade da sua startup através de 100 questões 
+            organizadas em categorias estratégicas.
           </p>
         </div>
-        
-        {!currentAssessment && (
-          <Button onClick={startNewAssessment}>
-            Iniciar Avaliação
-          </Button>
+
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle>Iniciar Nova Avaliação</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="startup-name">Nome da Startup</Label>
+              <Input
+                id="startup-name"
+                value={startupName}
+                onChange={(e) => setStartupName(e.target.value)}
+                placeholder="Digite o nome da sua startup"
+              />
+            </div>
+            <Button 
+              onClick={() => createAssessmentMutation.mutate(startupName)}
+              disabled={!startupName.trim() || createAssessmentMutation.isPending}
+              className="w-full"
+            >
+              {createAssessmentMutation.isPending ? 'Iniciando...' : 'Iniciar Avaliação'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {assessments.length > 0 && (
+          <BeepAssessmentHistory assessments={assessments} />
         )}
       </div>
+    );
+  }
 
-      {currentAssessment && (
-        <>
-          <Card>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle>Progresso da Avaliação</CardTitle>
-                <Badge variant="outline">
-                  {Object.keys(answers).length} / {questions.length} respondidas
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Progress value={getProgressPercentage()} className="w-full" />
-              <p className="text-sm text-muted-foreground mt-2">
-                {getProgressPercentage().toFixed(1)}% concluído
-              </p>
-            </CardContent>
-          </Card>
+  const currentCategory = categories[currentCategoryIndex];
+  const progress = calculateProgress();
+  const isComplete = isAssessmentComplete();
 
-          <Tabs value={currentTab} onValueChange={setCurrentTab}>
-            <TabsList className="grid grid-cols-3 w-full">
-              {categories.map(category => (
-                <TabsTrigger key={category.id} value={category.slug}>
-                  {category.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Avaliação BEEP - {currentAssessment.startup_name}</h1>
+          <p className="text-gray-600">Categoria: {currentCategory?.name}</p>
+        </div>
+        <div className="text-sm text-gray-500">
+          {progress.answered}/{progress.total} perguntas respondidas
+        </div>
+      </div>
 
-            {categories.map(category => (
-              <TabsContent key={category.id} value={category.slug} className="space-y-6">
-                {subcategories
-                  .filter(sub => sub.category_id === category.id)
-                  .map(subcategory => (
-                    <Card key={subcategory.id}>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          {subcategory.name}
-                          <Badge variant="secondary">
-                            {questions.filter(q => q.subcategory_id === subcategory.id).length} perguntas
-                          </Badge>
-                        </CardTitle>
-                        <p className="text-muted-foreground">{subcategory.description}</p>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {questions
-                          .filter(q => q.subcategory_id === subcategory.id)
-                          .map(question => (
-                            <BeepQuestionCard
-                              key={question.id}
-                              question={question}
-                              value={answers[question.id] || 0}
-                              onChange={(value) => handleAnswerChange(question.id, value)}
-                            />
-                          ))}
-                      </CardContent>
-                    </Card>
+      <div className="space-y-2">
+        <div className="flex justify-between text-sm">
+          <span>Progresso da Avaliação</span>
+          <span>{Math.round((progress.answered / progress.total) * 100)}%</span>
+        </div>
+        <Progress value={(progress.answered / progress.total) * 100} />
+      </div>
+
+      <Tabs value={currentCategoryIndex.toString()} onValueChange={(value) => setCurrentCategoryIndex(parseInt(value))}>
+        <TabsList className="grid w-full grid-cols-3">
+          {categories.map((category, index) => (
+            <TabsTrigger key={category.id} value={index.toString()}>
+              {category.name}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        {categories.map((category, categoryIndex) => (
+          <TabsContent key={category.id} value={categoryIndex.toString()} className="space-y-6">
+            {category.subcategories.map((subcategory) => (
+              <Card key={subcategory.id}>
+                <CardHeader>
+                  <CardTitle className="text-lg">{subcategory.name}</CardTitle>
+                  {subcategory.description && (
+                    <p className="text-sm text-gray-600">{subcategory.description}</p>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {subcategory.questions.map((question) => (
+                    <BeepQuestionCard
+                      key={question.id}
+                      question={question}
+                      value={answers[question.id]}
+                      onChange={(value) => handleAnswer(question.id, value)}
+                    />
                   ))}
-              </TabsContent>
+                </CardContent>
+              </Card>
             ))}
-          </Tabs>
+          </TabsContent>
+        ))}
+      </Tabs>
 
-          {canComplete() && (
-            <Card className="border-green-200 bg-green-50">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-600" />
-                    <span className="font-medium">Avaliação completa!</span>
-                    <span className="text-muted-foreground">
-                      Todas as perguntas foram respondidas.
-                    </span>
-                  </div>
-                  <Button 
-                    onClick={() => completeAssessmentMutation.mutate()}
-                    disabled={completeAssessmentMutation.isPending}
-                  >
-                    {completeAssessmentMutation.isPending ? 'Finalizando...' : 'Finalizar Avaliação'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </>
+      {isComplete && (
+        <div className="flex justify-center pt-6">
+          <Button 
+            onClick={() => completeAssessmentMutation.mutate()}
+            disabled={completeAssessmentMutation.isPending}
+            size="lg"
+          >
+            {completeAssessmentMutation.isPending ? 'Finalizando...' : 'Finalizar Avaliação'}
+          </Button>
+        </div>
       )}
     </div>
   );
