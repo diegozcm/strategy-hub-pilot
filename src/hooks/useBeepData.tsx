@@ -2,6 +2,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { beepQuestionsData } from '@/data/beepQuestions';
+import { v5 as uuidv5 } from 'uuid';
+
+// Namespace UUID para gerar IDs determinísticos das perguntas BEEP
+const BEEP_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 
 export interface BeepQuestion {
   id: string;
@@ -40,6 +44,12 @@ export interface BeepMaturityLevel {
   order_index: number;
 }
 
+// Função para gerar UUID determinístico da pergunta
+const generateQuestionUuid = (subcategorySlug: string, questionIndex: number): string => {
+  const input = `${subcategorySlug}-${questionIndex}`;
+  return uuidv5(input, BEEP_NAMESPACE);
+};
+
 export const useBeepCategories = () => {
   return useQuery({
     queryKey: ['beep-categories'],
@@ -59,7 +69,7 @@ export const useBeepCategories = () => {
           description: sub.description,
           order_index: sub.order_index,
           questions: sub.questions.map((q, index) => ({
-            id: `${sub.slug}-${index}`,
+            id: generateQuestionUuid(sub.slug, index),
             subcategory_id: sub.slug,
             question_text: q.question_text,
             weight: q.weight,
@@ -166,6 +176,8 @@ export const useBeepAssessmentCrud = () => {
 export const useBeepAnswerCrud = () => {
   // Save/Update answer
   const saveAnswer = async (assessmentId: string, questionId: string, value: number) => {
+    console.log('Saving answer:', { assessmentId, questionId, value });
+    
     const { data, error } = await supabase
       .from('beep_answers')
       .upsert({
@@ -176,7 +188,12 @@ export const useBeepAnswerCrud = () => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error saving answer:', error);
+      throw error;
+    }
+    
+    console.log('Answer saved successfully:', data);
     return data;
   };
 

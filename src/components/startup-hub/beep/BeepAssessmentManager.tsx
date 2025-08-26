@@ -65,7 +65,8 @@ export const BeepAssessmentManager = () => {
       toast.success('Nova avaliação iniciada!');
       queryClient.invalidateQueries({ queryKey: ['beep-assessments'] });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Error creating assessment:', error);
       toast.error('Erro ao iniciar avaliação');
     }
   });
@@ -74,14 +75,17 @@ export const BeepAssessmentManager = () => {
   const saveAnswerMutation = useMutation({
     mutationFn: ({ questionId, value }: { questionId: string; value: number }) => {
       if (!currentAssessment?.id) throw new Error('No current assessment');
+      console.log('Mutation saving answer for question:', questionId, 'with value:', value);
       return saveAnswer(currentAssessment.id, questionId, value);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      console.log('Answer saved successfully via mutation:', data);
       queryClient.invalidateQueries({ queryKey: ['beep-answers', currentAssessment?.id] });
+      toast.success('Resposta salva!');
     },
-    onError: (error) => {
-      console.error('Error saving answer:', error);
-      toast.error('Erro ao salvar resposta');
+    onError: (error, variables) => {
+      console.error('Error saving answer via mutation:', error, 'for question:', variables.questionId);
+      toast.error('Erro ao salvar resposta: ' + error.message);
     }
   });
 
@@ -118,10 +122,12 @@ export const BeepAssessmentManager = () => {
         initialAnswers[answer.question_id] = answer.answer_value;
       });
       setAnswers(initialAnswers);
+      console.log('Loaded answers from database:', initialAnswers);
     }
   }, [currentAssessment?.id, currentAnswers]);
 
   const handleAnswer = (questionId: string, value: number) => {
+    console.log('Handling answer for question:', questionId, 'with value:', value);
     setAnswers(prevAnswers => ({
       ...prevAnswers,
       [questionId]: value,
