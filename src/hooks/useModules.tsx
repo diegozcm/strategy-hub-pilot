@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useMultiTenant';
 import { useToast } from './use-toast';
@@ -24,6 +25,7 @@ const ModulesContext = createContext<ModulesContextType | undefined>(undefined);
 export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [availableModules, setAvailableModules] = useState<SystemModule[]>([]);
   const [currentModule, setCurrentModule] = useState<SystemModule | null>(null);
   const [loading, setLoading] = useState(true);
@@ -85,6 +87,14 @@ export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const newModule = availableModules.find(m => m.id === moduleId);
       if (newModule) {
         setCurrentModule(newModule);
+        
+        // Redirecionar para a rota correta do módulo
+        if (newModule.slug === 'startup-hub') {
+          navigate('/app/startup-hub');
+        } else if (newModule.slug === 'strategic-planning') {
+          navigate('/app/dashboard');
+        }
+        
         toast({
           title: "Módulo alterado",
           description: `Você está agora no módulo ${newModule.name}.`
