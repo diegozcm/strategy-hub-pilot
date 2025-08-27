@@ -16,8 +16,8 @@ export const DashboardHeader: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex-1 max-w-md">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input placeholder="Buscar projetos, objetivos..." className="pl-10 bg-muted border-border" />
+            
+            
           </div>
         </div>
         
