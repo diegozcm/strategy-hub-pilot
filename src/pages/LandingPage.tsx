@@ -51,7 +51,7 @@ const LandingPage = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Target className="h-8 w-8 text-strategy-red-dark" />
-            <span className="text-2xl font-bold text-strategy-red-dark">StrategyHUB</span>
+            <span className="text-2xl font-bold text-strategy-red-dark">Start Together</span>
           </div>
           
           <nav className="hidden md:flex items-center space-x-8">
@@ -223,7 +223,7 @@ const LandingPage = () => {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">
-              Veja o StrategyHUB em Ação
+              Veja o Start Together em Ação
             </h2>
             <p className="text-xl text-strategy-gray-light">
               Explore as principais funcionalidades da plataforma
@@ -378,7 +378,7 @@ const LandingPage = () => {
               Depoimentos de Clientes
             </h2>
             <p className="text-xl text-strategy-gray-light">
-              Veja o que nossos clientes dizem sobre o StrategyHUB
+              Veja o que nossos clientes dizem sobre o Start Together
             </p>
           </div>
 
@@ -400,7 +400,7 @@ const LandingPage = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-strategy-gray-medium italic">
-                  "O StrategyHUB transformou nossa gestão estratégica. Conseguimos aumentar nossa eficiência em 40% no primeiro trimestre."
+                  "O Start Together transformou nossa gestão estratégica. Conseguimos aumentar nossa eficiência em 40% no primeiro trimestre."
                 </p>
               </CardContent>
             </Card>
@@ -523,7 +523,7 @@ const LandingPage = () => {
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <Target className="h-6 w-6 text-white" />
-                <span className="text-xl font-bold text-white">StrategyHUB</span>
+                <span className="text-xl font-bold text-white">Start Together</span>
               </div>
               <p className="text-strategy-gray-light">
                 Planejamento estratégico inteligente com IA para empresas modernas
@@ -564,7 +564,7 @@ const LandingPage = () => {
           <div className="border-t border-white/20 pt-8">
             <div className="flex flex-col md:flex-row justify-between items-center mb-4">
               <p className="text-strategy-gray-light/60 mb-4 md:mb-0">
-                © 2024 StrategyHUB. Todos os direitos reservados.
+                © 2024 Start Together. Todos os direitos reservados.
               </p>
               <div className="flex space-x-6 text-strategy-gray-light">
                 <a href="#" className="hover:text-accent transition-colors">Termos</a>
@@ -575,7 +575,7 @@ const LandingPage = () => {
             
             <div className="text-center pt-4 border-t border-white/10">
               <p className="text-strategy-gray-light/80 text-sm">
-                <span className="font-semibold text-white">StrategyHUB</span>, um produto <span className="font-semibold text-accent">COFOUND</span> - Aceleradora de Negócios
+                <span className="font-semibold text-white">Start Together</span>, um produto <span className="font-semibold text-accent">COFOUND</span> - Aceleradora de Negócios
               </p>
             </div>
           </div>

@@ -74,7 +74,7 @@ export const Sidebar: React.FC = () => {
                 <Zap className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-foreground">StrategyHub</h1>
+                <h1 className="text-lg font-bold text-foreground">Start Together</h1>
                 <p className="text-xs text-muted-foreground">By COFOUND</p>
               </div>
             </div>}

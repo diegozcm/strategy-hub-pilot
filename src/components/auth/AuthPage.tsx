@@ -69,7 +69,7 @@ export const AuthPage: React.FC = () => {
           <div className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 p-3 rounded-2xl mb-4">
             <Zap className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">StrategyHub</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Start Together</h1>
           <p className="text-gray-600 mt-2">Gestão Estratégica Inteligente</p>
         </div>
 
