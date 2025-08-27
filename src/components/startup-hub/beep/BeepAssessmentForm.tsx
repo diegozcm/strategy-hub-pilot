@@ -26,6 +26,7 @@ interface BeepAssessmentFormProps {
   onComplete: () => void;
   onCancel: () => void;
   isCompleting: boolean;
+  savingQuestions?: Set<string>;
 }
 
 export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
@@ -34,7 +35,8 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
   onAnswer,
   onComplete,
   onCancel,
-  isCompleting
+  isCompleting,
+  savingQuestions = new Set(),
 }) => {
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
   const { data: categories = [], isLoading: categoriesLoading } = useBeepCategories();
@@ -172,6 +174,7 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
                       question={question}
                       value={answers[question.id]}
                       onChange={(value) => onAnswer(question.id, value)}
+                      isLoading={savingQuestions.has(question.id)}
                     />
                   ))}
                 </CardContent>

@@ -184,6 +184,8 @@ export const useBeepAnswerCrud = () => {
         assessment_id: assessmentId,
         question_id: questionId,
         answer_value: value
+      }, {
+        onConflict: 'assessment_id,question_id'
       })
       .select()
       .single();

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -23,10 +23,22 @@ interface BeepAssessment {
 export const BeepAssessmentManager = () => {
   const [currentAssessment, setCurrentAssessment] = useState<BeepAssessment | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [savingQuestions, setSavingQuestions] = useState<Set<string>>(new Set());
+  const timeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
   
   const queryClient = useQueryClient();
   const { createAssessment, updateAssessment } = useBeepAssessmentCrud();
   const { saveAnswer, getAssessmentAnswers } = useBeepAnswerCrud();
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(timeoutsRef.current).forEach(timeout => {
+        clearTimeout(timeout);
+      });
+      timeoutsRef.current = {};
+    };
+  }, []);
 
   // Get user's assessments
   const { data: assessments = [] } = useQuery({
@@ -78,15 +90,45 @@ export const BeepAssessmentManager = () => {
       console.log('Mutation saving answer for question:', questionId, 'with value:', value);
       return saveAnswer(currentAssessment.id, questionId, value);
     },
+    onMutate: ({ questionId }) => {
+      setSavingQuestions(prev => new Set([...prev, questionId]));
+    },
     onSuccess: (data, variables) => {
       console.log('Answer saved successfully via mutation:', data);
+      setSavingQuestions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.questionId);
+        return newSet;
+      });
       queryClient.invalidateQueries({ queryKey: ['beep-answers', currentAssessment?.id] });
       toast.success('Resposta salva!');
     },
     onError: (error, variables) => {
       console.error('Error saving answer via mutation:', error, 'for question:', variables.questionId);
-      toast.error('Erro ao salvar resposta: ' + error.message);
-    }
+      setSavingQuestions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(variables.questionId);
+        return newSet;
+      });
+      
+      // Rollback local state on error
+      setAnswers(prevAnswers => {
+        const newAnswers = { ...prevAnswers };
+        delete newAnswers[variables.questionId];
+        return newAnswers;
+      });
+      
+      if (error.message.includes('duplicate key')) {
+        toast.error('Resposta já existe, tentando novamente...');
+        // Retry after a short delay
+        setTimeout(() => {
+          saveAnswerMutation.mutate(variables);
+        }, 500);
+      } else {
+        toast.error('Erro ao salvar resposta: ' + error.message);
+      }
+    },
+    retry: false, // Disable automatic retry to handle duplicates manually
   });
 
   // Complete assessment mutation
@@ -128,11 +170,25 @@ export const BeepAssessmentManager = () => {
 
   const handleAnswer = (questionId: string, value: number) => {
     console.log('Handling answer for question:', questionId, 'with value:', value);
+    
+    // Clear any existing timeout for this question
+    if (timeoutsRef.current[questionId]) {
+      clearTimeout(timeoutsRef.current[questionId]);
+    }
+    
+    // Update local state immediately for better UX
     setAnswers(prevAnswers => ({
       ...prevAnswers,
       [questionId]: value,
     }));
-    saveAnswerMutation.mutate({ questionId, value });
+    
+    // Debounce server save to prevent multiple simultaneous requests
+    timeoutsRef.current[questionId] = setTimeout(() => {
+      if (currentAssessment?.id && !savingQuestions.has(questionId)) {
+        saveAnswerMutation.mutate({ questionId, value });
+      }
+      delete timeoutsRef.current[questionId];
+    }, 500);
   };
 
   const calculateFinalScore = (): number => {
@@ -187,14 +243,15 @@ export const BeepAssessmentManager = () => {
   // Show assessment form if there's a current draft
   if (currentAssessment && currentAssessment.status === 'draft') {
     return (
-      <BeepAssessmentForm
-        assessment={currentAssessment}
-        answers={answers}
-        onAnswer={handleAnswer}
-        onComplete={handleCompleteAssessment}
-        onCancel={() => setCurrentAssessment(null)}
-        isCompleting={completeAssessmentMutation.isPending}
-      />
+        <BeepAssessmentForm
+          assessment={currentAssessment}
+          answers={answers}
+          onAnswer={handleAnswer}
+          onComplete={handleCompleteAssessment}
+          onCancel={() => setCurrentAssessment(null)}
+          isCompleting={completeAssessmentMutation.isPending}
+          savingQuestions={savingQuestions}
+        />
     );
   }
 

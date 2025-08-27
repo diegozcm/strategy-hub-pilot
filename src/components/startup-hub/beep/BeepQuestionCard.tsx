@@ -14,12 +14,14 @@ interface BeepQuestionCardProps {
   question: BeepQuestion;
   value: number;
   onChange: (value: number) => void;
+  isLoading?: boolean;
 }
 
 export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
   question,
   value,
-  onChange
+  onChange,
+  isLoading = false,
 }) => {
   const scaleLabels = {
     1: 'Discordo Totalmente',
@@ -49,8 +51,9 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
                   key={rating}
                   variant={value === rating ? "default" : "outline"}
                   size="sm"
-                  className="flex-1 h-12 flex flex-col gap-1"
+                  className={`flex-1 h-12 flex flex-col gap-1 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   onClick={() => onChange(rating)}
+                  disabled={isLoading}
                 >
                   <span className="font-bold">{rating}</span>
                 </Button>
