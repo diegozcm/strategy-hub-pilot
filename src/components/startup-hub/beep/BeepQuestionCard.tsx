@@ -34,6 +34,41 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
     5: 'Concordo Totalmente'
   };
 
+  const getColorClasses = (rating: number) => {
+    switch (rating) {
+      case 1:
+        return {
+          button: 'bg-red-500 hover:bg-red-400 text-white border-red-500',
+          text: 'text-red-600'
+        };
+      case 2:
+        return {
+          button: 'bg-orange-500 hover:bg-orange-400 text-white border-orange-500',
+          text: 'text-orange-600'
+        };
+      case 3:
+        return {
+          button: 'bg-yellow-500 hover:bg-yellow-400 text-white border-yellow-500',
+          text: 'text-yellow-600'
+        };
+      case 4:
+        return {
+          button: 'bg-lime-500 hover:bg-lime-400 text-white border-lime-500',
+          text: 'text-lime-600'
+        };
+      case 5:
+        return {
+          button: 'bg-green-500 hover:bg-green-400 text-white border-green-500',
+          text: 'text-green-600'
+        };
+      default:
+        return {
+          button: '',
+          text: ''
+        };
+    }
+  };
+
   return (
     <Card className={`relative transition-all ${value > 0 ? 'border-blue-200 bg-blue-50/30' : ''}`}>
       {isSaved && (
@@ -56,22 +91,31 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
             </div>
             
             <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map(rating => (
-                <Button
-                  key={rating}
-                  variant={value === rating ? "default" : "outline"}
-                  size="sm"
-                  className={`flex-1 h-12 flex flex-col gap-1 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  onClick={() => onChange(rating)}
-                  disabled={isLoading}
-                >
-                  <span className="font-bold">{rating}</span>
-                </Button>
-              ))}
+              {[1, 2, 3, 4, 5].map(rating => {
+                const colorClasses = getColorClasses(rating);
+                const isSelected = value === rating;
+                
+                return (
+                  <Button
+                    key={rating}
+                    variant={isSelected ? "default" : "outline"}
+                    size="sm"
+                    className={`flex-1 h-12 flex flex-col gap-1 transition-all ${
+                      isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                    } ${isSelected ? colorClasses.button : ''}`}
+                    onClick={() => onChange(rating)}
+                    disabled={isLoading}
+                  >
+                    <span className="font-bold">{rating}</span>
+                  </Button>
+                );
+              })}
             </div>
             
             {value > 0 && (
-              <p className="text-xs text-center text-muted-foreground bg-white p-2 rounded border">
+              <p className={`text-xs text-center bg-white p-2 rounded border font-medium ${
+                getColorClasses(value).text
+              }`}>
                 {scaleLabels[value as keyof typeof scaleLabels]}
               </p>
             )}
