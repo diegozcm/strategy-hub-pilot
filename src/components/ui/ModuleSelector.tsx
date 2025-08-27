@@ -37,7 +37,9 @@ export const ModuleSelector: React.FC = () => {
                 {React.createElement(getIcon(currentModule.icon), { 
                   className: "h-4 w-4" 
                 })}
-                <span className="truncate">{currentModule.name}</span>
+                <span className="truncate">
+                  {currentModule.name === "Planejamento Estratégico" ? "Strategy HUB" : currentModule.name}
+                </span>
               </>
             )}
           </div>
@@ -61,7 +63,9 @@ export const ModuleSelector: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <Icon className="h-4 w-4" />
                 <div>
-                  <div className="font-medium">{module.name}</div>
+                  <div className="font-medium">
+                    {module.name === "Planejamento Estratégico" ? "Strategy HUB" : module.name}
+                  </div>
                 </div>
               </div>
               {isActive && <Check className="h-4 w-4" />}
