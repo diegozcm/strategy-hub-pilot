@@ -516,6 +516,7 @@ export type Database = {
       }
       companies: {
         Row: {
+          company_type: Database["public"]["Enums"]["company_type"] | null
           created_at: string
           id: string
           logo_url: string | null
@@ -528,6 +529,7 @@ export type Database = {
           vision: string | null
         }
         Insert: {
+          company_type?: Database["public"]["Enums"]["company_type"] | null
           created_at?: string
           id?: string
           logo_url?: string | null
@@ -540,6 +542,7 @@ export type Database = {
           vision?: string | null
         }
         Update: {
+          company_type?: Database["public"]["Enums"]["company_type"] | null
           created_at?: string
           id?: string
           logo_url?: string | null
@@ -987,7 +990,6 @@ export type Database = {
           bio: string | null
           created_at: string
           id: string
-          startup_name: string | null
           status: string
           type: Database["public"]["Enums"]["startup_hub_profile_type"]
           updated_at: string
@@ -999,7 +1001,6 @@ export type Database = {
           bio?: string | null
           created_at?: string
           id?: string
-          startup_name?: string | null
           status?: string
           type: Database["public"]["Enums"]["startup_hub_profile_type"]
           updated_at?: string
@@ -1011,7 +1012,6 @@ export type Database = {
           bio?: string | null
           created_at?: string
           id?: string
-          startup_name?: string | null
           status?: string
           type?: Database["public"]["Enums"]["startup_hub_profile_type"]
           updated_at?: string
@@ -1575,6 +1575,20 @@ export type Database = {
           slug: string
         }[]
       }
+      get_user_startup_company: {
+        Args: { _user_id: string }
+        Returns: {
+          company_values: string[]
+          created_at: string
+          id: string
+          logo_url: string
+          mission: string
+          name: string
+          updated_at: string
+          vision: string
+          website: string
+        }[]
+      }
       grant_module_access: {
         Args: { _admin_id: string; _module_id: string; _user_id: string }
         Returns: boolean
@@ -1640,6 +1654,7 @@ export type Database = {
         | "iniciando_negocio"
         | "validando_mercado"
         | "evoluindo"
+      company_type: "regular" | "startup"
       startup_hub_profile_type: "startup" | "mentor"
     }
     CompositeTypes: {
@@ -1776,6 +1791,7 @@ export const Constants = {
         "validando_mercado",
         "evoluindo",
       ],
+      company_type: ["regular", "startup"],
       startup_hub_profile_type: ["startup", "mentor"],
     },
   },

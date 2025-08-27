@@ -7,6 +7,7 @@ export interface Company {
   values?: string[];
   logo_url?: string;
   status: 'active' | 'inactive';
+  company_type?: 'regular' | 'startup';
   created_at: string;
   updated_at: string;
 }

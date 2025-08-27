@@ -10,7 +10,7 @@ import { StartupProfileSetup } from './StartupProfileSetup';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export const StartupHubRouter: React.FC = () => {
-  const { profile, isLoading, hasProfile, isStartup, isMentor } = useStartupProfile();
+  const { profile, company, isLoading, hasProfile, isStartup, isMentor, hasStartupCompany } = useStartupProfile();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   if (isLoading) {
@@ -21,9 +21,25 @@ export const StartupHubRouter: React.FC = () => {
     );
   }
 
-  // If no profile exists, show profile setup
-  if (!hasProfile) {
-    return <StartupProfileSetup />;
+  // Show profile setup if no profile exists or if startup but no company
+  if (!hasProfile || (isStartup && !hasStartupCompany)) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center py-12">
+          <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">
+            {!hasProfile ? 'Configure seu Perfil' : 'Aguardando Associação à Startup'}
+          </h3>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            {!hasProfile 
+              ? 'Complete seu perfil para começar a usar o Startup HUB.'
+              : 'Você precisa estar associado a uma startup para acessar o dashboard. Entre em contato com o administrador.'
+            }
+          </p>
+        </div>
+        {!hasProfile && <StartupProfileSetup />}
+      </div>
+    );
   }
 
   // Navigation items based on profile type

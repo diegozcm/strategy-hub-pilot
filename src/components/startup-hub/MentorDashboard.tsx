@@ -48,22 +48,28 @@ export const MentorDashboard: React.FC = () => {
       // Get unique user IDs from assessments
       const userIds = [...new Set(assessments.map(a => a.user_id))];
 
-      // Fetch startup profiles for those users
-      const { data: profiles, error: profilesError } = await supabase
-        .from('startup_hub_profiles')
-        .select('user_id, startup_name')
+      // Fetch startup companies for those users
+      const { data: companies, error: companiesError } = await supabase
+        .from('user_company_relations')
+        .select(`
+          user_id,
+          companies!inner (
+            name,
+            company_type
+          )
+        `)
         .in('user_id', userIds)
-        .eq('type', 'startup');
+        .eq('companies.company_type', 'startup');
 
-      if (profilesError) throw profilesError;
+      if (companiesError) throw companiesError;
 
       // Create a map for quick lookup
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      const companyMap = new Map(companies?.map(c => [c.user_id, c.companies]) || []);
 
-      // Combine assessments with profile data
+      // Combine assessments with company data
       return assessments.map(assessment => ({
         ...assessment,
-        startup_profile: profileMap.get(assessment.user_id)
+        startup_company: companyMap.get(assessment.user_id)
       }));
     }
   });
@@ -157,7 +163,7 @@ export const MentorDashboard: React.FC = () => {
                   <div key={assessment.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div>
                       <p className="text-sm font-medium">
-                        {assessment.startup_profile?.startup_name || assessment.startup_name || 'Startup'}
+                        {assessment.startup_company?.name || assessment.startup_name || 'Startup'}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Score: {assessment.final_score?.toFixed(1)} | {assessment.maturity_level}

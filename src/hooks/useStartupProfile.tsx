@@ -11,10 +11,21 @@ export interface StartupProfile {
   user_id: string;
   type: StartupProfileType;
   status: 'active' | 'inactive';
-  startup_name?: string;
   website?: string;
   bio?: string;
   areas_of_expertise?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StartupCompany {
+  id: string;
+  name: string;
+  mission?: string;
+  vision?: string;
+  values?: string[];
+  logo_url?: string;
+  website?: string;
   created_at: string;
   updated_at: string;
 }
@@ -39,6 +50,22 @@ export const useStartupProfile = () => {
       if (error && error.code !== 'PGRST116') throw error;
       
       return data as StartupProfile | null;
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch user's startup company
+  const { data: company, isLoading: isLoadingCompany } = useQuery({
+    queryKey: ['startup-company', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+
+      const { data, error } = await supabase
+        .rpc('get_user_startup_company', { _user_id: user.id });
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      return data && data.length > 0 ? data[0] as StartupCompany : null;
     },
     enabled: !!user?.id
   });
@@ -79,13 +106,16 @@ export const useStartupProfile = () => {
   const isStartup = profile?.type === 'startup';
   const isMentor = profile?.type === 'mentor';
   const hasProfile = !!profile;
+  const hasStartupCompany = !!company && isStartup;
 
   return {
     profile,
-    isLoading,
+    company,
+    isLoading: isLoading || isLoadingCompany,
     isStartup,
     isMentor,
     hasProfile,
+    hasStartupCompany,
     createProfile: createProfileMutation.mutate,
     isCreatingProfile: createProfileMutation.isPending
   };

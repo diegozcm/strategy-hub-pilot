@@ -10,7 +10,7 @@ import { useStartupProfile } from '@/hooks/useStartupProfile';
 
 export const StartupDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { profile } = useStartupProfile();
+  const { profile, company } = useStartupProfile();
 
   // Fetch latest BEEP assessment
   const { data: latestAssessment } = useQuery({
@@ -73,7 +73,7 @@ export const StartupDashboard: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Target className="h-5 w-5" />
-            <span>Bem-vindo, {profile?.startup_name || 'Startup'}!</span>
+            <span>Bem-vindo, {company?.name || 'Startup'}!</span>
           </CardTitle>
           <CardDescription>
             Acompanhe o progresso e desenvolvimento da sua startup através do nosso ecossistema.

@@ -13,7 +13,6 @@ import { useStartupProfile, StartupProfileType } from '@/hooks/useStartupProfile
 export const StartupProfileSetup: React.FC = () => {
   const { profile, createProfile, isCreatingProfile } = useStartupProfile();
   const [profileType, setProfileType] = useState<StartupProfileType>(profile?.type || 'startup');
-  const [startupName, setStartupName] = useState(profile?.startup_name || '');
   const [website, setWebsite] = useState(profile?.website || '');
   const [bio, setBio] = useState(profile?.bio || '');
   const [expertiseAreas, setExpertiseAreas] = useState<string[]>(profile?.areas_of_expertise || []);
@@ -34,7 +33,6 @@ export const StartupProfileSetup: React.FC = () => {
     e.preventDefault();
     
     const profileData = {
-      startup_name: profileType === 'startup' ? startupName : undefined,
       website: website || undefined,
       bio: bio || undefined,
       areas_of_expertise: expertiseAreas.length > 0 ? expertiseAreas : undefined
@@ -44,9 +42,6 @@ export const StartupProfileSetup: React.FC = () => {
   };
 
   const isFormValid = () => {
-    if (profileType === 'startup') {
-      return startupName.trim().length > 0;
-    }
     return bio.trim().length > 0 || expertiseAreas.length > 0;
   };
 
@@ -59,7 +54,7 @@ export const StartupProfileSetup: React.FC = () => {
             <span>{profile ? 'Editar Perfil' : 'Configure seu Perfil'}</span>
           </CardTitle>
           <CardDescription>
-            {profile ? 'Atualize suas informações do Startup HUB' : 'Escolha seu tipo de perfil e complete as informações necessárias para começar.'}
+            {profile ? 'Atualize suas informações do Startup HUB' : 'Complete as informações do seu perfil. As startups são criadas e gerenciadas pelo administrador.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -98,27 +93,10 @@ export const StartupProfileSetup: React.FC = () => {
 
             {/* Startup-specific fields */}
             {profileType === 'startup' && (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="startup-name">Nome da Startup *</Label>
-                  <Input
-                    id="startup-name"
-                    value={startupName}
-                    onChange={(e) => setStartupName(e.target.value)}
-                    placeholder="Digite o nome da sua startup"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="website">Website</Label>
-                  <Input
-                    id="website"
-                    type="url"
-                    value={website}
-                    onChange={(e) => setWebsite(e.target.value)}
-                    placeholder="https://exemplo.com"
-                  />
+              <div className="space-y-4 p-4 bg-muted rounded-lg">
+                <div className="text-sm text-muted-foreground">
+                  <strong>Nota:</strong> Startups são criadas e gerenciadas pelo administrador do sistema. 
+                  Entre em contato com o administrador para ser associado à sua startup.
                 </div>
               </div>
             )}
@@ -126,8 +104,7 @@ export const StartupProfileSetup: React.FC = () => {
             {/* Bio */}
             <div>
               <Label htmlFor="bio">
-                {profileType === 'startup' ? 'Sobre a Startup' : 'Sobre Você'}
-                {profileType === 'mentor' && ' *'}
+                {profileType === 'startup' ? 'Sobre Você' : 'Sobre Você'} *
               </Label>
               <Textarea
                 id="bio"
@@ -135,19 +112,18 @@ export const StartupProfileSetup: React.FC = () => {
                 onChange={(e) => setBio(e.target.value)}
                 placeholder={
                   profileType === 'startup'
-                    ? 'Descreva brevemente sua startup, missão e objetivos...'
+                    ? 'Descreva brevemente seu papel na startup e sua experiência...'
                     : 'Descreva sua experiência e como pode ajudar startups...'
                 }
                 rows={4}
-                required={profileType === 'mentor'}
+                required
               />
             </div>
 
             {/* Areas of Expertise (especially for mentors) */}
             <div>
               <Label>
-                Áreas de {profileType === 'startup' ? 'Atuação' : 'Expertise'}
-                {profileType === 'mentor' && ' *'}
+                Áreas de {profileType === 'startup' ? 'Atuação' : 'Expertise'} *
               </Label>
               <div className="space-y-3">
                 <div className="flex space-x-2">

@@ -70,6 +70,12 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Badge 
+              variant={company.company_type === 'startup' ? 'outline' : 'secondary'}
+              className={company.company_type === 'startup' ? 'border-orange-500 text-orange-500' : ''}
+            >
+              {company.company_type === 'startup' ? 'Startup' : 'Empresa'}
+            </Badge>
             <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
               {company.status === 'active' ? 'Ativa' : 'Inativa'}
             </Badge>
@@ -382,6 +388,7 @@ export const CompaniesPage: React.FC = () => {
   const [companyUsers, setCompanyUsers] = useState<{ [key: string]: CompanyUser[] }>({});
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [companyTypeFilter, setCompanyTypeFilter] = useState<'all' | 'regular' | 'startup'>('all');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [managingUsers, setManagingUsers] = useState<Company | null>(null);
@@ -546,9 +553,11 @@ export const CompaniesPage: React.FC = () => {
     }
   };
 
-  const filteredCompanies = companies.filter(company =>
-    company.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCompanies = companies.filter(company => {
+    const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = companyTypeFilter === 'all' || company.company_type === companyTypeFilter;
+    return matchesSearch && matchesType;
+  });
 
   if (!isAdmin) {
     return (
@@ -586,6 +595,19 @@ export const CompaniesPage: React.FC = () => {
                 className="pl-10 bg-slate-700 border-slate-600 text-white"
               />
             </div>
+            <Select
+              value={companyTypeFilter}
+              onValueChange={(value: 'all' | 'regular' | 'startup') => setCompanyTypeFilter(value)}
+            >
+              <SelectTrigger className="w-48 bg-slate-700 border-slate-600 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                <SelectItem value="all">Todos os Tipos</SelectItem>
+                <SelectItem value="regular">Empresas Regulares</SelectItem>
+                <SelectItem value="startup">Startups</SelectItem>
+              </SelectContent>
+            </Select>
             <Button onClick={() => setShowCreateForm(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Nova Empresa

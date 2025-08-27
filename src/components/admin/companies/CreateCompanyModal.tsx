@@ -32,7 +32,8 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
     mission: '',
     vision: '',
     values: [] as string[],
-    status: 'active' as 'active' | 'inactive'
+    status: 'active' as 'active' | 'inactive',
+    company_type: 'regular' as 'regular' | 'startup'
   });
 
   const handleAddValue = () => {
@@ -81,6 +82,7 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
           vision: company.vision || null,
           values: company.values.length > 0 ? company.values : null,
           status: company.status,
+          company_type: company.company_type,
           owner_id: currentUser.id,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
@@ -100,7 +102,8 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
         mission: '',
         vision: '',
         values: [],
-        status: 'active'
+        status: 'active',
+        company_type: 'regular'
       });
 
       onCompanyCreated();
@@ -140,6 +143,24 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
               placeholder="Digite o nome da empresa"
               className="bg-slate-700 border-slate-600 text-white"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="company_type" className="text-white">Tipo de Empresa</Label>
+            <Select
+              value={company.company_type}
+              onValueChange={(value: 'regular' | 'startup') => 
+                setCompany({ ...company, company_type: value })
+              }
+            >
+              <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-700 text-white">
+                <SelectItem value="regular">Empresa Regular</SelectItem>
+                <SelectItem value="startup">Startup</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
