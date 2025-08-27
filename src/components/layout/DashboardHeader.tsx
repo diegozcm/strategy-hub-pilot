@@ -1,29 +1,41 @@
+
 import React from 'react';
 import { Bell, Search, User, Settings, LogOut, Brain } from 'lucide-react';
 import { NavLink, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { Input } from '@/components/ui/input';
 import { CompanySelector } from '@/components/CompanySelector';
 import { ModuleSelector } from '@/components/ui/ModuleSelector';
+
 export const DashboardHeader: React.FC = () => {
-  const {
-    user,
-    signOut
-  } = useAuth();
-  return <header className="bg-card border-b border-border px-4 lg:px-6 py-4">
+  const { user, signOut } = useAuth();
+
+  return (
+    <header className="bg-card border-b border-border px-4 lg:px-6 py-4">
       <div className="flex items-center justify-between">
         <div className="flex-1 max-w-md">
           <div className="relative">
-            
-            
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Buscar projetos, objetivos..."
+              className="pl-10 bg-muted border-border"
+            />
           </div>
         </div>
         
         <div className="flex items-center space-x-3">
           {/* Module Selector */}
-          
+          <div className="hidden lg:block w-48">
+            <ModuleSelector />
+          </div>
           
           {/* Company Selector */}
           <CompanySelector />
@@ -75,5 +87,6 @@ export const DashboardHeader: React.FC = () => {
           </DropdownMenu>
         </div>
       </div>
-    </header>;
+    </header>
+  );
 };
