@@ -87,6 +87,56 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Fetch companies by type for the current user
+  const fetchCompaniesByType = async (companyType: 'startup' | 'regular') => {
+    if (!user) return [];
+
+    try {
+      // Para admins, buscar todas as empresas do tipo solicitado
+      if (isSystemAdmin) {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('status', 'active')
+          .eq('company_type', companyType)
+          .order('name');
+
+        if (error) throw error;
+        return data || [];
+      }
+
+      // Para usuários não-admin, buscar apenas empresas às quais têm acesso
+      const { data, error } = await supabase
+        .from('user_company_relations')
+        .select(`
+          company_id,
+          companies!inner (
+            id,
+            name,
+            status,
+            company_type,
+            owner_id,
+            mission,
+            vision,
+            values,
+            logo_url,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('companies.status', 'active')
+        .eq('companies.company_type', companyType);
+
+      if (error) throw error;
+      
+      return data?.map(relation => relation.companies).filter(Boolean) || [];
+    } catch (error) {
+      console.error('Error fetching companies by type:', error);
+      return [];
+    }
+  };
+
   // Switch company (for system admins and users with multiple companies)
   const switchCompany = async (companyId: string) => {
     // Para admins, permite trocar para qualquer empresa
@@ -351,6 +401,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       isSystemAdmin,
       isCompanyAdmin,
       switchCompany,
+      fetchCompaniesByType,
       // Impersonation properties
       isImpersonating,
       originalAdmin,

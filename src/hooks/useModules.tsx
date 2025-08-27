@@ -23,7 +23,7 @@ interface ModulesContextType {
 const ModulesContext = createContext<ModulesContextType | undefined>(undefined);
 
 export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, profile } = useAuth();
+  const { user, profile, switchCompany, fetchCompaniesByType } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [availableModules, setAvailableModules] = useState<SystemModule[]>([]);
@@ -72,6 +72,11 @@ export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  // Get company type for module
+  const getCompanyTypeForModule = (moduleSlug: string): 'startup' | 'regular' => {
+    return moduleSlug === 'startup-hub' ? 'startup' : 'regular';
+  };
+
   // Switch to a different module
   const switchModule = async (moduleId: string) => {
     if (!user) return;
@@ -87,6 +92,17 @@ export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const newModule = availableModules.find(m => m.id === moduleId);
       if (newModule) {
         setCurrentModule(newModule);
+        
+        // Auto-switch company based on module type
+        if (switchCompany && fetchCompaniesByType) {
+          const requiredCompanyType = getCompanyTypeForModule(newModule.slug);
+          const compatibleCompanies = await fetchCompaniesByType(requiredCompanyType);
+          
+          if (compatibleCompanies.length > 0) {
+            // Switch to the first compatible company
+            await switchCompany(compatibleCompanies[0].id);
+          }
+        }
         
         // Redirecionar para a rota correta do módulo
         if (newModule.slug === 'startup-hub') {

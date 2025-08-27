@@ -72,6 +72,7 @@ export interface AuthContextType {
   isSystemAdmin: boolean;
   isCompanyAdmin: boolean;
   switchCompany?: (companyId: string) => Promise<void>;
+  fetchCompaniesByType?: (companyType: 'startup' | 'regular') => Promise<any[]>;
   // Impersonation features
   isImpersonating: boolean;
   originalAdmin?: UserProfile;
