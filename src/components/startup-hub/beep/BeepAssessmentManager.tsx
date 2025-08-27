@@ -24,7 +24,9 @@ export const BeepAssessmentManager = () => {
   const [currentAssessment, setCurrentAssessment] = useState<BeepAssessment | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [savingQuestions, setSavingQuestions] = useState<Set<string>>(new Set());
+  const [savedQuestions, setSavedQuestions] = useState<Set<string>>(new Set());
   const timeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
+  const savedTimeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
   
   const queryClient = useQueryClient();
   const { createAssessment, updateAssessment } = useBeepAssessmentCrud();
@@ -36,7 +38,11 @@ export const BeepAssessmentManager = () => {
       Object.values(timeoutsRef.current).forEach(timeout => {
         clearTimeout(timeout);
       });
+      Object.values(savedTimeoutsRef.current).forEach(timeout => {
+        clearTimeout(timeout);
+      });
       timeoutsRef.current = {};
+      savedTimeoutsRef.current = {};
     };
   }, []);
 
@@ -100,8 +106,26 @@ export const BeepAssessmentManager = () => {
         newSet.delete(variables.questionId);
         return newSet;
       });
+      
+      // Add to saved questions and set timeout to remove after 3 seconds
+      setSavedQuestions(prev => new Set([...prev, variables.questionId]));
+      
+      // Clear existing timeout for this question
+      if (savedTimeoutsRef.current[variables.questionId]) {
+        clearTimeout(savedTimeoutsRef.current[variables.questionId]);
+      }
+      
+      // Set new timeout to remove saved state
+      savedTimeoutsRef.current[variables.questionId] = setTimeout(() => {
+        setSavedQuestions(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(variables.questionId);
+          return newSet;
+        });
+        delete savedTimeoutsRef.current[variables.questionId];
+      }, 3000);
+      
       queryClient.invalidateQueries({ queryKey: ['beep-answers', currentAssessment?.id] });
-      toast.success('Resposta salva!');
     },
     onError: (error, variables) => {
       console.error('Error saving answer via mutation:', error, 'for question:', variables.questionId);
@@ -251,6 +275,7 @@ export const BeepAssessmentManager = () => {
           onCancel={() => setCurrentAssessment(null)}
           isCompleting={completeAssessmentMutation.isPending}
           savingQuestions={savingQuestions}
+          savedQuestions={savedQuestions}
         />
     );
   }

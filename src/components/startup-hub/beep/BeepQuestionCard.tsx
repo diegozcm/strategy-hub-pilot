@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Check } from "lucide-react";
 
 interface BeepQuestion {
   id: string;
@@ -15,6 +16,7 @@ interface BeepQuestionCardProps {
   value: number;
   onChange: (value: number) => void;
   isLoading?: boolean;
+  isSaved?: boolean;
 }
 
 export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
@@ -22,6 +24,7 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
   value,
   onChange,
   isLoading = false,
+  isSaved = false,
 }) => {
   const scaleLabels = {
     1: 'Discordo Totalmente',
@@ -32,7 +35,14 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
   };
 
   return (
-    <Card className={`transition-all ${value > 0 ? 'border-blue-200 bg-blue-50/30' : ''}`}>
+    <Card className={`relative transition-all ${value > 0 ? 'border-blue-200 bg-blue-50/30' : ''}`}>
+      {isSaved && (
+        <div className="absolute top-2 right-2 z-10 animate-fade-in">
+          <div className="bg-green-100 rounded-full p-1 shadow-sm">
+            <Check className="h-4 w-4 text-green-600" />
+          </div>
+        </div>
+      )}
       <CardContent className="p-4">
         <div className="space-y-4">
           <div>
