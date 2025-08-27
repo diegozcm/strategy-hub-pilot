@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 interface BeepQuestion {
@@ -34,11 +33,8 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
     <Card className={`transition-all ${value > 0 ? 'border-blue-200 bg-blue-50/30' : ''}`}>
       <CardContent className="p-4">
         <div className="space-y-4">
-          <div className="flex justify-between items-start gap-4">
+          <div>
             <p className="text-sm font-medium leading-relaxed">{question.question_text}</p>
-            <Badge variant="outline" className="shrink-0">
-              Peso {question.weight}
-            </Badge>
           </div>
           
           <div className="space-y-3">
