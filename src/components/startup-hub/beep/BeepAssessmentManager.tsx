@@ -12,7 +12,7 @@ import { useBeepAssessmentCrud, useBeepAnswerCrud } from '@/hooks/useBeepData';
 interface BeepAssessment {
   id: string;
   user_id: string;
-  startup_name: string | null;
+  company_id: string | null;
   status: 'draft' | 'completed';
   final_score: number | null;
   maturity_level: 'idealizando' | 'validando_problemas_solucoes' | 'iniciando_negocio' | 'validando_mercado' | 'evoluindo' | null;
@@ -151,8 +151,8 @@ export const BeepAssessmentManager = () => {
     return 'idealizando';
   };
 
-  const handleStartAssessment = (startupName: string) => {
-    createAssessmentMutation.mutate(startupName);
+  const handleStartAssessment = (companyId: string) => {
+    createAssessmentMutation.mutate(companyId);
   };
 
   const handleCompleteAssessment = () => {

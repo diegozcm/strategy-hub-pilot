@@ -84,8 +84,10 @@ export const CompanySelector: React.FC = () => {
   const handleCompanyChange = async (selectedCompany: Company) => {
     if (isSystemAdmin && switchCompany) {
       await switchCompany(selectedCompany.id);
+    } else if (availableCompanies.length > 1 && switchCompany) {
+      // Permite que usuários com múltiplas empresas também possam trocar
+      await switchCompany(selectedCompany.id);
     }
-    // Para usuários não admin, a empresa já é definida pelo relacionamento
   };
 
   // Para usuários não admin sem empresa selecionada

@@ -332,6 +332,7 @@ export type Database = {
       }
       beep_assessments: {
         Row: {
+          company_id: string | null
           completed_at: string | null
           created_at: string | null
           final_score: number | null
@@ -339,12 +340,12 @@ export type Database = {
           maturity_level:
             | Database["public"]["Enums"]["beep_maturity_level"]
             | null
-          startup_name: string | null
           status: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           completed_at?: string | null
           created_at?: string | null
           final_score?: number | null
@@ -352,12 +353,12 @@ export type Database = {
           maturity_level?:
             | Database["public"]["Enums"]["beep_maturity_level"]
             | null
-          startup_name?: string | null
           status?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          company_id?: string | null
           completed_at?: string | null
           created_at?: string | null
           final_score?: number | null
@@ -365,12 +366,19 @@ export type Database = {
           maturity_level?:
             | Database["public"]["Enums"]["beep_maturity_level"]
             | null
-          startup_name?: string | null
           status?: string | null
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "beep_assessments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       beep_categories: {
         Row: {

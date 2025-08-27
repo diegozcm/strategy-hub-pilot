@@ -11,7 +11,7 @@ import { useBeepCategories } from '@/hooks/useBeepData';
 interface BeepAssessment {
   id: string;
   user_id: string;
-  startup_name: string | null;
+  company_id: string | null;
   status: 'draft' | 'completed';
   final_score: number | null;
   maturity_level: string | null;
@@ -101,7 +101,7 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
               Voltar
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">Avaliação BEEP - {assessment.startup_name}</h1>
+              <h1 className="text-2xl font-bold">Avaliação BEEP</h1>
               <p className="text-muted-foreground">Categoria: {currentCategory?.name}</p>
             </div>
           </div>

@@ -163,7 +163,7 @@ export const MentorDashboard: React.FC = () => {
                   <div key={assessment.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div>
                       <p className="text-sm font-medium">
-                        {assessment.startup_company?.name || assessment.startup_name || 'Startup'}
+                        {assessment.startup_company?.name || 'Startup'}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         Score: {assessment.final_score?.toFixed(1)} | {assessment.maturity_level}

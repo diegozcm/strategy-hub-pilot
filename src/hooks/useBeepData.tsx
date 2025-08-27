@@ -102,7 +102,7 @@ export const useBeepMaturityLevels = () => {
 // Hook para CRUD de assessments
 export const useBeepAssessmentCrud = () => {
   // Create assessment
-  const createAssessment = async (startupName: string) => {
+  const createAssessment = async (companyId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -110,7 +110,7 @@ export const useBeepAssessmentCrud = () => {
       .from('beep_assessments')
       .insert({
         user_id: user.id,
-        startup_name: startupName,
+        company_id: companyId,
         status: 'draft'
       })
       .select()
@@ -122,7 +122,7 @@ export const useBeepAssessmentCrud = () => {
 
   // Update assessment
   const updateAssessment = async (id: string, updates: Partial<{
-    startup_name: string;
+    company_id: string;
     status: 'draft' | 'completed';
     final_score: number;
     maturity_level: 'idealizando' | 'validando_problemas_solucoes' | 'iniciando_negocio' | 'validando_mercado' | 'evoluindo';

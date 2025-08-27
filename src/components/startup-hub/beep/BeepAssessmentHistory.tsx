@@ -7,7 +7,7 @@ import { Calendar, TrendingUp } from 'lucide-react';
 interface BeepAssessment {
   id: string;
   user_id: string;
-  startup_name: string | null;
+  company_id: string | null;
   status: 'draft' | 'completed';
   final_score: number | null;
   maturity_level: string | null;
@@ -79,11 +79,7 @@ export const BeepAssessmentHistory: React.FC<BeepAssessmentHistoryProps> = ({
                     }
                   </span>
                 </div>
-                {assessment.startup_name && (
-                  <p className="text-sm text-muted-foreground">
-                    Startup: {assessment.startup_name}
-                  </p>
-                )}
+                {/* Removed company name display since it's not needed here */}
               </div>
             );
           })}

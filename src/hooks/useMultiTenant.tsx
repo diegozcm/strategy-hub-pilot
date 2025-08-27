@@ -87,15 +87,36 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Switch company (for system admins)
+  // Switch company (for system admins and users with multiple companies)
   const switchCompany = async (companyId: string) => {
-    if (!isSystemAdmin) return;
-    
-    const companyData = await fetchCompany(companyId);
-    if (companyData) {
-      setSelectedCompanyId(companyId);
-      setCompany(companyData);
-      localStorage.setItem('selectedCompanyId', companyId);
+    // Para admins, permite trocar para qualquer empresa
+    if (isSystemAdmin) {
+      const companyData = await fetchCompany(companyId);
+      if (companyData) {
+        setSelectedCompanyId(companyId);
+        setCompany(companyData);
+        localStorage.setItem('selectedCompanyId', companyId);
+      }
+      return;
+    }
+
+    // Para usuários não-admin, verificar se têm acesso à empresa
+    if (profile?.user_id) {
+      const { data: hasAccess } = await supabase
+        .from('user_company_relations')
+        .select('company_id')
+        .eq('user_id', profile.user_id)
+        .eq('company_id', companyId)
+        .maybeSingle();
+
+      if (hasAccess) {
+        const companyData = await fetchCompany(companyId);
+        if (companyData) {
+          setSelectedCompanyId(companyId);
+          setCompany(companyData);
+          localStorage.setItem('selectedCompanyId', companyId);
+        }
+      }
     }
   };
 
@@ -329,7 +350,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       canAdmin,
       isSystemAdmin,
       isCompanyAdmin,
-      switchCompany: isSystemAdmin ? switchCompany : undefined,
+      switchCompany,
       // Impersonation properties
       isImpersonating,
       originalAdmin,
