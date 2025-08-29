@@ -38,27 +38,27 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
     switch (rating) {
       case 1:
         return {
-          button: 'bg-red-500 hover:bg-red-400 text-white border-red-500',
+          button: 'bg-red-500 hover:bg-red-500 text-white border-red-500',
           text: 'text-red-600'
         };
       case 2:
         return {
-          button: 'bg-orange-500 hover:bg-orange-400 text-white border-orange-500',
+          button: 'bg-orange-500 hover:bg-orange-500 text-white border-orange-500',
           text: 'text-orange-600'
         };
       case 3:
         return {
-          button: 'bg-yellow-500 hover:bg-yellow-400 text-white border-yellow-500',
+          button: 'bg-yellow-500 hover:bg-yellow-500 text-white border-yellow-500',
           text: 'text-yellow-600'
         };
       case 4:
         return {
-          button: 'bg-lime-500 hover:bg-lime-400 text-white border-lime-500',
+          button: 'bg-lime-500 hover:bg-lime-500 text-white border-lime-500',
           text: 'text-lime-600'
         };
       case 5:
         return {
-          button: 'bg-green-500 hover:bg-green-400 text-white border-green-500',
+          button: 'bg-green-500 hover:bg-green-500 text-white border-green-500',
           text: 'text-green-600'
         };
       default:
@@ -102,7 +102,7 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
                     size="sm"
                     className={`flex-1 h-12 flex flex-col gap-1 transition-all ${
                       isLoading ? 'opacity-50 cursor-not-allowed' : ''
-                    } ${isSelected ? colorClasses.button : ''}`}
+                    } ${isSelected ? colorClasses.button : `hover:${colorClasses.button.split(' ')[0]} hover:${colorClasses.button.split(' ')[1]} hover:text-white hover:border-${colorClasses.button.split(' ')[0].replace('bg-', '')}`}`}
                     onClick={() => onChange(rating)}
                     disabled={isLoading}
                   >
