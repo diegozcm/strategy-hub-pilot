@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Building, TrendingUp, User, BarChart3, Users, Settings } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,6 +11,10 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 export const StartupHubRouter: React.FC = () => {
   const { profile, company, isLoading, hasProfile, isStartup, isMentor, hasStartupCompany } = useStartupProfile();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  const handleNavigateToBeep = () => {
+    setActiveTab('beep');
+  };
 
   if (isLoading) {
     return (
@@ -98,7 +101,11 @@ export const StartupHubRouter: React.FC = () => {
         </TabsList>
 
         <TabsContent value="dashboard">
-          {isStartup ? <StartupDashboard /> : <MentorDashboard />}
+          {isStartup ? (
+            <StartupDashboard onNavigateToBeep={handleNavigateToBeep} />
+          ) : (
+            <MentorDashboard />
+          )}
         </TabsContent>
 
         {isStartup && (

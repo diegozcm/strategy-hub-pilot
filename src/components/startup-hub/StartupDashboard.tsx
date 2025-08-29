@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useStartupProfile } from '@/hooks/useStartupProfile';
 
-export const StartupDashboard: React.FC = () => {
+interface StartupDashboardProps {
+  onNavigateToBeep?: () => void;
+}
+
+export const StartupDashboard: React.FC<StartupDashboardProps> = ({ onNavigateToBeep }) => {
   const { user } = useAuth();
   const { profile, company } = useStartupProfile();
 
@@ -52,6 +55,12 @@ export const StartupDashboard: React.FC = () => {
     },
     enabled: !!user?.id
   });
+
+  const handleStartAssessment = () => {
+    if (onNavigateToBeep) {
+      onNavigateToBeep();
+    }
+  };
 
   const getMaturityLevelInfo = (level: string | null) => {
     const levels = {
@@ -188,7 +197,7 @@ export const StartupDashboard: React.FC = () => {
                   <span className="text-sm">Nenhuma avaliação realizada</span>
                 </div>
               )}
-              <Button className="w-full">
+              <Button className="w-full" onClick={handleStartAssessment}>
                 {latestAssessment ? 'Nova Avaliação' : 'Iniciar Primeira Avaliação'}
               </Button>
             </div>
