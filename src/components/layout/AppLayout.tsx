@@ -3,21 +3,9 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { DashboardHeader } from './DashboardHeader';
 import { Sidebar } from './Sidebar';
-import { useAuth } from '@/hooks/useMultiTenant';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ImpersonationBanner } from '@/components/ui/ImpersonationBanner';
 
 export const AppLayout: React.FC = () => {
-  const { loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <ImpersonationBanner />
