@@ -213,59 +213,58 @@ export const UserModulesAccessPage: React.FC = () => {
         const hasStartupAccess = moduleAccess[startupModule.id];
 
         if (hasStartupAccess) {
-          // Ativar/criar perfis marcados
-          const types: Array<'startup' | 'mentor'> = ['startup', 'mentor'];
-          for (const t of types) {
-            const checked = startupHubOptions[t];
+          // Check which type is selected (only one can be selected at a time)
+          const isStartup = startupHubOptions.startup;
+          const isMentor = startupHubOptions.mentor;
+          
+          if (isStartup || isMentor) {
+            const selectedType = isStartup ? 'startup' : 'mentor';
+            
+            // Check if user already has a startup hub profile (regardless of type)
             const { data: existing, error: existingErr } = await supabase
               .from('startup_hub_profiles')
-              .select('id, status')
+              .select('id, type, status')
               .eq('user_id', selectedUser.user_id)
-              .eq('type', t)
               .maybeSingle();
             if (existingErr) throw existingErr;
 
-            if (checked) {
-              if (existing) {
-                const { error: updErr } = await supabase
-                  .from('startup_hub_profiles')
-                  .update({ status: 'active' })
-                  .eq('id', existing.id as string);
-                if (updErr) throw updErr;
-              } else {
-                const { error: insErr } = await supabase
-                  .from('startup_hub_profiles')
-                  .insert({
-                    user_id: selectedUser.user_id,
-                    type: t,
-                    status: 'active',
-                  });
-                if (insErr) throw insErr;
-              }
-            } else if (existing && existing.status === 'active') {
-              const { error: inactErr } = await supabase
+            if (existing) {
+              // Update existing profile
+              const { error: updErr } = await supabase
                 .from('startup_hub_profiles')
-                .update({ status: 'inactive' })
+                .update({ 
+                  type: selectedType,
+                  status: 'active',
+                  updated_at: new Date().toISOString()
+                })
                 .eq('id', existing.id as string);
-              if (inactErr) throw inactErr;
+              if (updErr) throw updErr;
+            } else {
+              // Create new profile
+              const { error: insErr } = await supabase
+                .from('startup_hub_profiles')
+                .insert({
+                  user_id: selectedUser.user_id,
+                  type: selectedType,
+                  status: 'active',
+                });
+              if (insErr) throw insErr;
             }
+          } else {
+            // No type selected, deactivate any existing profile
+            const { error: deactErr } = await supabase
+              .from('startup_hub_profiles')
+              .update({ status: 'inactive' })
+              .eq('user_id', selectedUser.user_id);
+            if (deactErr && deactErr.code !== 'PGRST116') throw deactErr;
           }
         } else {
-          // Sem acesso ao módulo: desativar quaisquer perfis ativos
-          const { data: rows, error: listErr } = await supabase
+          // No access to module: deactivate any existing profiles
+          const { error: deactErr } = await supabase
             .from('startup_hub_profiles')
-            .select('id, status')
+            .update({ status: 'inactive' })
             .eq('user_id', selectedUser.user_id);
-          if (listErr) throw listErr;
-          for (const row of rows || []) {
-            if (row.status === 'active') {
-              const { error: inactErr } = await supabase
-                .from('startup_hub_profiles')
-                .update({ status: 'inactive' })
-                .eq('id', row.id as string);
-              if (inactErr) throw inactErr;
-            }
-          }
+          if (deactErr && deactErr.code !== 'PGRST116') throw deactErr;
         }
       }
 
