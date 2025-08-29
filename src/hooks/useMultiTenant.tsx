@@ -170,6 +170,72 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Handle async profile loading
+  const loadUserProfile = async (userId: string) => {
+    try {
+      const userProfile = await fetchProfile(userId);
+      console.log('📋 Profile fetched:', userProfile);
+      
+      if (userProfile) {
+        // Verificar se o usuário tem empresa associada e se ela está ativa
+        let companyData = null;
+        
+        // Primeiro verificar se há company_id no perfil (método antigo)
+        if (userProfile.company_id) {
+          companyData = await fetchCompany(userProfile.company_id);
+          console.log('🏢 Company data from profile:', companyData);
+        } 
+        // Se não há company_id no perfil, verificar na tabela user_company_relations
+        else {
+          console.log('🔍 No company_id in profile, checking user_company_relations...');
+          const { data: relations, error } = await supabase
+            .from('user_company_relations')
+            .select('company_id, companies(*)')
+            .eq('user_id', userId)
+            .limit(1)
+            .maybeSingle();
+          
+          if (!error && relations) {
+            companyData = relations.companies;
+            console.log('🏢 Company data from relations:', companyData);
+          }
+        }
+        
+        if (companyData) {
+          if (companyData.status === 'inactive') {
+            console.log('❌ Company is inactive, redirecting to error page');
+            navigate('/company-inactive');
+            return;
+          }
+          setCompany(companyData);
+        } else {
+          console.log('❌ No company found for user');
+        }
+        
+        setProfile(userProfile);
+        
+        // Para admins, carregar empresa selecionada
+        if (userProfile.role === 'admin') {
+          console.log('🔧 Admin detected, loading selected company...');
+          const savedCompanyId = localStorage.getItem('selectedCompanyId');
+          if (savedCompanyId && savedCompanyId !== userProfile.company_id) {
+            const adminCompanyData = await fetchCompany(savedCompanyId);
+            if (adminCompanyData && adminCompanyData.status === 'active') {
+              setCompany(adminCompanyData);
+              setSelectedCompanyId(savedCompanyId);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading user profile:', error);
+      // Clear states on error
+      setProfile(null);
+      setCompany(null);
+      setSelectedCompanyId(null);
+    }
+  };
+
   useEffect(() => {
     console.log('📊 MultiTenantAuthProvider: Initializing...');
     
@@ -177,73 +243,23 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('🔐 Auth state change:', event, !!session);
+        
+        // Update session and user immediately
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           console.log('👤 User found, fetching profile for:', session.user.email);
-          // Use setTimeout to defer async operations and prevent blocking
-          setTimeout(async () => {
-            const userProfile = await fetchProfile(session.user.id);
-            console.log('📋 Profile fetched:', userProfile);
-            
-            if (userProfile) {
-              // Verificar se o usuário tem empresa associada e se ela está ativa
-              let companyData = null;
-              
-              // Primeiro verificar se há company_id no perfil (método antigo)
-              if (userProfile.company_id) {
-                companyData = await fetchCompany(userProfile.company_id);
-                console.log('🏢 Company data from profile:', companyData);
-              } 
-              // Se não há company_id no perfil, verificar na tabela user_company_relations
-              else {
-                console.log('🔍 No company_id in profile, checking user_company_relations...');
-                const { data: relations, error } = await supabase
-                  .from('user_company_relations')
-                  .select('company_id, companies(*)')
-                  .eq('user_id', session.user.id)
-                  .limit(1)
-                  .maybeSingle();
-                
-                if (!error && relations) {
-                  companyData = relations.companies;
-                  console.log('🏢 Company data from relations:', companyData);
-                }
-              }
-              
-              if (companyData) {
-                if (companyData.status === 'inactive') {
-                  console.log('❌ Company is inactive, redirecting to error page');
-                  navigate('/company-inactive');
-                  return;
-                }
-                setCompany(companyData);
-              } else {
-                console.log('❌ No company found for user');
-              }
-              
-              setProfile(userProfile);
-              
-              // Para admins, carregar empresa selecionada
-              if (userProfile.role === 'admin') {
-                console.log('🔧 Admin detected, loading selected company...');
-                const savedCompanyId = localStorage.getItem('selectedCompanyId');
-                if (savedCompanyId && savedCompanyId !== userProfile.company_id) {
-                  const adminCompanyData = await fetchCompany(savedCompanyId);
-                  if (adminCompanyData && adminCompanyData.status === 'active') {
-                    setCompany(adminCompanyData);
-                    setSelectedCompanyId(savedCompanyId);
-                  }
-                }
-              }
-            }
-          }, 0);
+          // Load profile data asynchronously but properly
+          loadUserProfile(session.user.id);
         } else {
           console.log('❌ No user session, clearing state');
           setProfile(null);
           setCompany(null);
           setSelectedCompanyId(null);
+          setIsImpersonating(false);
+          setOriginalAdmin(null);
+          setImpersonationSession(null);
           localStorage.removeItem('selectedCompanyId');
         }
         
@@ -264,19 +280,27 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (!error) {
-      navigate('/app');
+      if (error) {
+        console.error('❌ Sign in error:', error);
+        return { error };
+      }
+
+      // Don't navigate immediately - let the auth state change handle it
+      console.log('✅ Sign in successful');
+      return { error: null };
+    } catch (error) {
+      console.error('❌ Unexpected sign in error:', error);
+      return { error };
     }
-
-    return { error };
   };
 
   const signUp = async (email: string, password: string) => {
@@ -294,9 +318,37 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem('selectedCompanyId');
-    navigate('/auth');
+    try {
+      console.log('🚪 Starting sign out process...');
+      
+      // Clear local state first
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      setCompany(null);
+      setSelectedCompanyId(null);
+      setIsImpersonating(false);
+      setOriginalAdmin(null);
+      setImpersonationSession(null);
+      localStorage.removeItem('selectedCompanyId');
+      
+      // Attempt to sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.warn('⚠️ Supabase sign out error (continuing anyway):', error);
+      } else {
+        console.log('✅ Supabase sign out successful');
+      }
+      
+      // Always navigate to auth page regardless of Supabase errors
+      navigate('/auth');
+      
+    } catch (error) {
+      console.error('❌ Unexpected sign out error:', error);
+      // Force navigation even on unexpected errors
+      navigate('/auth');
+    }
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {

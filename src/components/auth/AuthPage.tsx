@@ -44,10 +44,16 @@ export const AuthPage: React.FC = () => {
         } else {
           setError(error.message);
         }
-      } else if (!isLogin) {
-        setError('Cadastro realizado! Verifique seu email para confirmar a conta.');
+      } else {
+        if (isLogin) {
+          // Navigate on successful login
+          navigate('/app');
+        } else {
+          setError('Cadastro realizado! Verifique seu email para confirmar a conta.');
+        }
       }
     } catch (err) {
+      console.error('Auth error:', err);
       setError('Ocorreu um erro. Tente novamente.');
     } finally {
       setLoading(false);
