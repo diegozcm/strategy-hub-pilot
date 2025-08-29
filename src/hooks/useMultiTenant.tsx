@@ -216,7 +216,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         
         // Para admins, carregar empresa selecionada
         if (userProfile.role === 'admin') {
-          console.log('🔧 Admin detected, loading selected company...');
+          console.log('🔧 Loading selected company for admin...');
           const savedCompanyId = localStorage.getItem('selectedCompanyId');
           if (savedCompanyId && savedCompanyId !== userProfile.company_id) {
             const adminCompanyData = await fetchCompany(savedCompanyId);
@@ -321,6 +321,10 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     try {
       console.log('🚪 Starting sign out process...');
       
+      // Determine user type for appropriate redirect
+      const isAdmin = profile?.role === 'admin';
+      const redirectPath = isAdmin ? '/admin-login' : '/auth';
+      
       // Clear local state first
       setUser(null);
       setSession(null);
@@ -332,22 +336,36 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       setImpersonationSession(null);
       localStorage.removeItem('selectedCompanyId');
       
+      // Force clear Supabase session from localStorage
+      try {
+        localStorage.removeItem(`sb-pdpzxjlnaqwlyqoyoyhr-auth-token`);
+      } catch (e) {
+        console.warn('Could not clear auth token from localStorage:', e);
+      }
+      
       // Attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.warn('⚠️ Supabase sign out error (continuing anyway):', error);
+        
+        // If session not found, that's actually good - user is already logged out
+        if (error.message?.includes('session_not_found') || error.message?.includes('Session not found')) {
+          console.log('✅ Session already cleared');
+        }
       } else {
         console.log('✅ Supabase sign out successful');
       }
       
-      // Always navigate to auth page regardless of Supabase errors
-      navigate('/auth');
+      // Always navigate regardless of Supabase errors
+      console.log(`🔄 Redirecting to ${redirectPath}`);
+      navigate(redirectPath);
       
     } catch (error) {
       console.error('❌ Unexpected sign out error:', error);
-      // Force navigation even on unexpected errors
-      navigate('/auth');
+      // Force navigation even on unexpected errors - default to normal auth
+      const redirectPath = profile?.role === 'admin' ? '/admin-login' : '/auth';
+      navigate(redirectPath);
     }
   };
 

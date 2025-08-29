@@ -27,6 +27,7 @@ import { CompaniesPage } from "@/components/admin/CompaniesPage";
 import { UserEditorPage } from "@/components/admin/UserEditorPage";
 import { SystemSettingsPage } from "@/components/admin/SystemSettingsPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import { StartupHubPage } from "@/components/startup-hub/StartupHubPage";
@@ -82,24 +83,13 @@ const App = () => (
               <Route path="profile" element={<ProfilePage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="startup-hub" element={<StartupHubPage />} />
-              
-              {/* Quick admin access */}
-              <Route path="admin" element={<AdminNavigation />} />
-              
-              {/* Admin routes dentro do app */}
-              <Route path="admin/companies" element={<CompaniesPage />} />
-              <Route path="admin/users" element={<UserEditorPage />} />
-              <Route path="admin/modules" element={<ModulesManagementPage />} />
-              <Route path="admin/user-modules" element={<UserModulesAccessPage />} />
-              <Route path="admin/mentorship-management" element={<MentorshipManagementPage />} />
-              <Route path="admin/settings" element={<SystemSettingsPage />} />
             </Route>
 
-            {/* Admin routes */}
+            {/* Admin routes - completely separate from regular app */}
             <Route path="/admin" element={
-              <ProtectedRoute>
+              <AdminProtectedRoute>
                 <AdminLayout />
-              </ProtectedRoute>
+              </AdminProtectedRoute>
             }>
               <Route index element={<AdminDashboard />} />
               <Route path="companies" element={<CompaniesPage />} />

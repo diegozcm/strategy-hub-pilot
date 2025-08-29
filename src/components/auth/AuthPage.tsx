@@ -21,10 +21,15 @@ export const AuthPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) {
-      navigate('/app');
+    if (user && profile) {
+      // Redirect admins to admin panel, regular users to app
+      if (profile.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/app');
+      }
     }
-  }, [user, navigate]);
+  }, [user, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,12 +50,10 @@ export const AuthPage: React.FC = () => {
           setError(error.message);
         }
       } else {
-        if (isLogin) {
-          // Navigate on successful login
-          navigate('/app');
-        } else {
+        if (!isLogin) {
           setError('Cadastro realizado! Verifique seu email para confirmar a conta.');
         }
+        // Don't navigate here - let useEffect handle it after profile loads
       }
     } catch (err) {
       console.error('Auth error:', err);

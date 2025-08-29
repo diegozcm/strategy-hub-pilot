@@ -17,13 +17,8 @@ export const DashboardHeader: React.FC = () => {
   const { user, signOut } = useAuth();
 
   const handleSignOut = async () => {
-    try {
-      console.log('🚪 DashboardHeader: Initiating sign out...');
-      await signOut();
-    } catch (error) {
-      console.error('❌ Sign out error in header:', error);
-      // Continue with logout even if there's an error
-    }
+    console.log('🚪 DashboardHeader: Starting logout process');
+    await signOut();
   };
 
   return (

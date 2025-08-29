@@ -1,15 +1,13 @@
-
 import React from 'react';
-// Prevent admins from accessing normal app - redirect to admin panel
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
-interface ProtectedRouteProps {
+interface AdminProtectedRouteProps {
   children: React.ReactNode;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) => {
   const { user, profile, loading } = useAuth();
 
   if (loading) {
@@ -21,12 +19,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/admin-login" replace />;
   }
 
-  // Prevent admins from accessing regular app - redirect to admin panel
-  if (profile?.role === 'admin') {
-    return <Navigate to="/admin" replace />;
+  if (!profile || profile.role !== 'admin') {
+    return <Navigate to="/auth" replace />;
   }
 
   return <>{children}</>;
