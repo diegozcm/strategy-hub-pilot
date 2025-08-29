@@ -16,16 +16,6 @@ import { CompanySelector } from '@/components/CompanySelector';
 export const DashboardHeader: React.FC = () => {
   const { user, signOut } = useAuth();
 
-  const handleSignOut = async () => {
-    try {
-      console.log('🔓 Iniciando logout...');
-      await signOut();
-      console.log('✅ Logout realizado com sucesso');
-    } catch (error) {
-      console.error('❌ Erro durante logout:', error);
-    }
-  };
-
   return (
     <header className="bg-card border-b border-border px-4 lg:px-6 py-4">
       <div className="flex items-center justify-end">
@@ -72,7 +62,7 @@ export const DashboardHeader: React.FC = () => {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+              <DropdownMenuItem onClick={signOut} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sair
               </DropdownMenuItem>

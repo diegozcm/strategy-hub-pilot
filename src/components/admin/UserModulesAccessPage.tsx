@@ -50,7 +50,6 @@ export const UserModulesAccessPage: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [modules, setModules] = useState<SystemModule[]>([]);
   const [userModules, setUserModules] = useState<UserModuleAccess[]>([]);
-  const [startupProfiles, setStartupProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
@@ -85,18 +84,9 @@ export const UserModulesAccessPage: React.FC = () => {
 
       if (userModulesError) throw userModulesError;
 
-      // Fetch startup hub profiles
-      const { data: startupProfilesData, error: startupProfilesError } = await supabase
-        .from('startup_hub_profiles')
-        .select('user_id, type, status')
-        .eq('status', 'active');
-
-      if (startupProfilesError) throw startupProfilesError;
-
       setUsers(usersData || []);
       setModules(modulesData || []);
       setUserModules(userModulesData || []);
-      setStartupProfiles(startupProfilesData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -299,12 +289,7 @@ export const UserModulesAccessPage: React.FC = () => {
     return userModules.filter(um => um.user_id === userId && um.active).length;
   };
 
-  const getUserStartupProfile = (userId: string) => {
-    const profile = startupProfiles.find(p => p.user_id === userId);
-    return profile ? profile.type : null;
-  };
-
-  const filteredUsers = users.filter(user =>
+  const filteredUsers = users.filter(user => 
     user.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -364,15 +349,14 @@ export const UserModulesAccessPage: React.FC = () => {
 
             <Table>
               <TableHeader>
-                 <TableRow>
-                   <TableHead>Nome</TableHead>
-                   <TableHead>Email</TableHead>
-                   <TableHead>Role</TableHead>
-                   <TableHead>Status</TableHead>
-                   <TableHead>Módulos</TableHead>
-                   <TableHead>Perfil Startup Hub</TableHead>
-                   <TableHead>Ações</TableHead>
-                 </TableRow>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Módulos</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => (
@@ -391,24 +375,12 @@ export const UserModulesAccessPage: React.FC = () => {
                         {user.status}
                       </Badge>
                     </TableCell>
-                     <TableCell>
-                       <Badge variant="outline">
-                         {getUserModuleCount(user.user_id)} de {modules.length}
-                       </Badge>
-                     </TableCell>
-                     <TableCell>
-                       {getUserStartupProfile(user.user_id) ? (
-                         <Badge 
-                           variant={getUserStartupProfile(user.user_id) === 'startup' ? 'default' : 'secondary'}
-                           className="capitalize"
-                         >
-                           {getUserStartupProfile(user.user_id)}
-                         </Badge>
-                       ) : (
-                         <span className="text-muted-foreground text-sm">-</span>
-                       )}
-                     </TableCell>
-                     <TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {getUserModuleCount(user.user_id)} de {modules.length}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
                       <Button
                         variant="ghost"
                         size="sm"
