@@ -1,4 +1,3 @@
-
 import React from 'react';
 import {
   Dialog,
@@ -71,9 +70,9 @@ export const BeepAssessmentDetailModal: React.FC<BeepAssessmentDetailModalProps>
     return 'text-red-600';
   };
 
-  // Custom progress component with gradient
-  const GradientProgress = ({ value, className }: { value: number; className?: string }) => (
-    <div className={`relative h-3 w-full overflow-hidden rounded-full bg-secondary ${className || ''}`}>
+  // Custom progress component with gradient and score indicator
+  const GradientProgress = ({ value, score, className }: { value: number; score: number; className?: string }) => (
+    <div className={`relative h-3 w-full overflow-hidden rounded-full ${className || ''}`}>
       <div 
         className="h-full transition-all duration-300 rounded-full"
         style={{ 
@@ -81,6 +80,15 @@ export const BeepAssessmentDetailModal: React.FC<BeepAssessmentDetailModalProps>
           background: 'linear-gradient(to right, #ef4444, #f97316, #eab308, #84cc16, #22c55e)'
         }}
       />
+      <div 
+        className="absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-white border-2 border-gray-300 flex items-center justify-center text-xs font-bold"
+        style={{ 
+          left: `${value}%`,
+          transform: 'translateX(-50%) translateY(-50%)'
+        }}
+      >
+        {score.toFixed(1)}
+      </div>
     </div>
   );
 
@@ -146,7 +154,7 @@ export const BeepAssessmentDetailModal: React.FC<BeepAssessmentDetailModalProps>
                   </p>
                 </div>
               </div>
-              <GradientProgress value={(finalScore / 5) * 100} />
+              <GradientProgress value={(finalScore / 5) * 100} score={finalScore} />
             </CardContent>
           </Card>
 
