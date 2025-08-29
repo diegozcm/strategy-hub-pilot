@@ -34,6 +34,13 @@ const adminCards = [
     color: 'text-orange-600'
   },
   {
+    title: 'Gestão de Mentorias',
+    description: 'Associar mentores com startups',
+    icon: Users,
+    href: '/app/admin/mentorship-management',
+    color: 'text-purple-600'
+  },
+  {
     title: 'Configurações',
     description: 'Configurações gerais do sistema',
     icon: Settings,

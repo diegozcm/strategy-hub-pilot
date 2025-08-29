@@ -688,6 +688,97 @@ export type Database = {
           },
         ]
       }
+      mentor_startup_relations: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          created_at: string
+          id: string
+          mentor_id: string
+          startup_company_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          created_at?: string
+          id?: string
+          mentor_id: string
+          startup_company_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          created_at?: string
+          id?: string
+          mentor_id?: string
+          startup_company_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_startup_relations_startup_company_id_fkey"
+            columns: ["startup_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentoring_tips: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          id: string
+          is_public: boolean
+          mentor_id: string
+          priority: string
+          startup_company_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          content: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          mentor_id: string
+          priority?: string
+          startup_company_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          mentor_id?: string
+          priority?: string
+          startup_company_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentoring_tips_startup_company_id_fkey"
+            columns: ["startup_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       performance_reviews: {
         Row: {
           collaboration_rating: number | null

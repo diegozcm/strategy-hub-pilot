@@ -6,6 +6,9 @@ import { StartupDashboard } from './StartupDashboard';
 import { MentorDashboard } from './MentorDashboard';
 import { BeepAssessmentPage } from './beep/BeepAssessmentPage';
 import { StartupProfileSetup } from './StartupProfileSetup';
+import { MentorStartupsPage } from './MentorStartupsPage';
+import { MentoringTipsPage } from './MentoringTipsPage';
+import { StartupMentoringPage } from './StartupMentoringPage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export const StartupHubRouter: React.FC = () => {
@@ -56,6 +59,7 @@ export const StartupHubRouter: React.FC = () => {
       return [
         ...baseItems.slice(0, 1),
         { id: 'beep', label: 'Avaliação BEEP', icon: TrendingUp },
+        { id: 'mentoring', label: 'Mentorias', icon: Users },
         ...baseItems.slice(1)
       ];
     }
@@ -114,22 +118,20 @@ export const StartupHubRouter: React.FC = () => {
           </TabsContent>
         )}
 
+        {isStartup && (
+          <TabsContent value="mentoring">
+            <StartupMentoringPage />
+          </TabsContent>
+        )}
+
         {isMentor && (
           <>
             <TabsContent value="startups">
-              <div className="text-center py-12">
-                <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Lista de Startups</h3>
-                <p className="text-muted-foreground">Em desenvolvimento...</p>
-              </div>
+              <MentorStartupsPage />
             </TabsContent>
 
             <TabsContent value="mentoring">
-              <div className="text-center py-12">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Mentorias Ativas</h3>
-                <p className="text-muted-foreground">Em desenvolvimento...</p>
-              </div>
+              <MentoringTipsPage />
             </TabsContent>
           </>
         )}
