@@ -191,7 +191,7 @@ export const BeepAssessmentDetailModal: React.FC<BeepAssessmentDetailModalProps>
               <CardTitle className="text-base">Legenda da Escala</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="flex flex-wrap gap-4 justify-center">
                 {[
                   { value: 1, label: 'Discordo Totalmente', color: 'bg-red-500' },
                   { value: 2, label: 'Discordo Parcialmente', color: 'bg-orange-500' },
@@ -199,11 +199,11 @@ export const BeepAssessmentDetailModal: React.FC<BeepAssessmentDetailModalProps>
                   { value: 4, label: 'Concordo Parcialmente', color: 'bg-lime-500' },
                   { value: 5, label: 'Concordo Totalmente', color: 'bg-green-500' }
                 ].map(item => (
-                  <div key={item.value} className="text-center">
-                    <div className={`w-8 h-8 rounded-full ${item.color} mx-auto mb-2 flex items-center justify-center text-white font-bold text-sm`}>
+                  <div key={item.value} className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-full ${item.color} flex items-center justify-center text-white font-bold text-sm`}>
                       {item.value}
                     </div>
-                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                    <p className="text-sm text-muted-foreground">{item.label}</p>
                   </div>
                 ))}
               </div>
