@@ -71,6 +71,19 @@ export const BeepAssessmentDetailModal: React.FC<BeepAssessmentDetailModalProps>
     return 'text-red-600';
   };
 
+  // Custom progress component with gradient
+  const GradientProgress = ({ value, className }: { value: number; className?: string }) => (
+    <div className={`relative h-3 w-full overflow-hidden rounded-full bg-secondary ${className || ''}`}>
+      <div 
+        className="h-full transition-all duration-300 rounded-full"
+        style={{ 
+          width: `${value}%`,
+          background: 'linear-gradient(to right, #ef4444, #f97316, #eab308, #84cc16, #22c55e)'
+        }}
+      />
+    </div>
+  );
+
   const calculateCategoryScore = (categoryId: string) => {
     const categoryQuestions = categories
       .find(cat => cat.id === categoryId)
@@ -133,7 +146,7 @@ export const BeepAssessmentDetailModal: React.FC<BeepAssessmentDetailModalProps>
                   </p>
                 </div>
               </div>
-              <Progress value={(finalScore / 5) * 100} className="h-3" />
+              <GradientProgress value={(finalScore / 5) * 100} />
             </CardContent>
           </Card>
 
@@ -184,31 +197,6 @@ export const BeepAssessmentDetailModal: React.FC<BeepAssessmentDetailModalProps>
               );
             })}
           </div>
-
-          {/* Scale Legend */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Legenda da Escala</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-4 justify-center">
-                {[
-                  { value: 1, label: 'Discordo Totalmente', color: 'bg-red-500' },
-                  { value: 2, label: 'Discordo Parcialmente', color: 'bg-orange-500' },
-                  { value: 3, label: 'Neutro', color: 'bg-yellow-500' },
-                  { value: 4, label: 'Concordo Parcialmente', color: 'bg-lime-500' },
-                  { value: 5, label: 'Concordo Totalmente', color: 'bg-green-500' }
-                ].map(item => (
-                  <div key={item.value} className="flex items-center gap-2">
-                    <div className={`w-6 h-6 rounded-full ${item.color} flex items-center justify-center text-white font-bold text-sm`}>
-                      {item.value}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{item.label}</p>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </DialogContent>
     </Dialog>
