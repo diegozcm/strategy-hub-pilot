@@ -78,6 +78,13 @@ export const useStartupProfile = () => {
     }) => {
       if (!user?.id) throw new Error('User not authenticated');
 
+      // First, check if profile already exists
+      const { data: existingProfile } = await supabase
+        .from('startup_hub_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       const profileData = {
         user_id: user.id,
         type,
@@ -85,13 +92,35 @@ export const useStartupProfile = () => {
         ...data
       };
 
-      const { data: result, error } = await supabase
-        .from('startup_hub_profiles')
-        .upsert(profileData, { onConflict: 'user_id' })
-        .select()
-        .single();
+      let result;
+      if (existingProfile) {
+        // Update existing profile
+        const { data: updatedData, error: updateError } = await supabase
+          .from('startup_hub_profiles')
+          .update({
+            type,
+            status: 'active' as const,
+            ...data,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id)
+          .select()
+          .single();
 
-      if (error) throw error;
+        if (updateError) throw updateError;
+        result = updatedData;
+      } else {
+        // Insert new profile
+        const { data: insertedData, error: insertError } = await supabase
+          .from('startup_hub_profiles')
+          .insert([profileData])
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        result = insertedData;
+      }
+
       return result as StartupProfile;
     },
     onSuccess: (data) => {
