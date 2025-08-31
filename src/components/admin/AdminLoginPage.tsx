@@ -25,7 +25,7 @@ export const AdminLoginPage: React.FC = () => {
       console.log('AdminLoginPage - User and profile loaded:', { userRole: profile.role });
       if (profile.role === 'admin') {
         console.log('AdminLoginPage - Redirecting to admin dashboard');
-        navigate('/admin');
+        navigate('/app/admin');
       } else {
         console.log('AdminLoginPage - User is not admin, staying on login page');
         setError('Acesso negado. Apenas administradores podem acessar esta área.');
