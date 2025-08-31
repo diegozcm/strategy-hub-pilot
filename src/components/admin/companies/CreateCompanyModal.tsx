@@ -148,41 +148,40 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-slate-800 border-slate-700 text-white">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-card border-border text-card-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
             Nova Empresa
           </DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-muted-foreground">
             Crie uma nova empresa no sistema
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-white">Nome da Empresa *</Label>
+            <Label htmlFor="name">Nome da Empresa *</Label>
             <Input
               id="name"
               value={company.name}
               onChange={(e) => setCompany({ ...company, name: e.target.value })}
               placeholder="Digite o nome da empresa"
-              className="bg-slate-700 border-slate-600 text-white"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="company_type" className="text-white">Tipo de Empresa</Label>
+            <Label htmlFor="company_type">Tipo de Empresa</Label>
             <Select
               value={company.company_type}
               onValueChange={(value: 'regular' | 'startup') => 
                 setCompany({ ...company, company_type: value })
               }
             >
-              <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700 text-white">
+              <SelectContent>
                 <SelectItem value="regular">Empresa Regular</SelectItem>
                 <SelectItem value="startup">Startup</SelectItem>
               </SelectContent>
@@ -190,17 +189,17 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="status" className="text-white">Status</Label>
+            <Label htmlFor="status">Status</Label>
             <Select
               value={company.status}
               onValueChange={(value: 'active' | 'inactive') => 
                 setCompany({ ...company, status: value })
               }
             >
-              <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+              <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700 text-white">
+              <SelectContent>
                 <SelectItem value="active">Ativa</SelectItem>
                 <SelectItem value="inactive">Inativa</SelectItem>
               </SelectContent>
@@ -208,38 +207,35 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="mission" className="text-white">Missão</Label>
+            <Label htmlFor="mission">Missão</Label>
             <Textarea
               id="mission"
               value={company.mission}
               onChange={(e) => setCompany({ ...company, mission: e.target.value })}
               placeholder="Descrição da missão da empresa"
               rows={3}
-              className="bg-slate-700 border-slate-600 text-white"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="vision" className="text-white">Visão</Label>
+            <Label htmlFor="vision">Visão</Label>
             <Textarea
               id="vision"
               value={company.vision}
               onChange={(e) => setCompany({ ...company, vision: e.target.value })}
               placeholder="Descrição da visão da empresa"
               rows={3}
-              className="bg-slate-700 border-slate-600 text-white"
             />
           </div>
 
           <div className="space-y-3">
-            <Label className="text-white">Valores</Label>
+            <Label>Valores</Label>
             <div className="flex gap-2">
               <Input
                 value={newValue}
                 onChange={(e) => setNewValue(e.target.value)}
                 placeholder="Adicionar novo valor"
                 onKeyPress={(e) => e.key === 'Enter' && handleAddValue()}
-                className="bg-slate-700 border-slate-600 text-white"
               />
               <Button onClick={handleAddValue} size="sm">
                 <Plus className="w-4 h-4" />
@@ -264,7 +260,7 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-slate-600">
+        <div className="flex justify-end gap-3 pt-4 border-t border-border">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>

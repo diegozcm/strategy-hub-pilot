@@ -78,9 +78,12 @@ const StartTogetherAdminSidebar: React.FC = () => {
   return (
     <Sidebar className="border-r border-border bg-background">
       <SidebarContent className="bg-background">
-        {/* Header */}
+        {/* Header com Trigger interno */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-3">
+            <SidebarTrigger className="p-2 hover:bg-muted rounded-md">
+              <Menu className="w-4 h-4" />
+            </SidebarTrigger>
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Package className="w-4 h-4 text-primary-foreground" />
             </div>
@@ -219,24 +222,14 @@ export const StartTogetherAdminLayout: React.FC = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen w-full flex bg-background">
-        {/* Global Header com Trigger */}
-        <header className="fixed top-0 left-0 right-0 z-50 h-12 flex items-center bg-background border-b border-border px-4">
-          <SidebarTrigger className="flex items-center gap-2">
-            <Menu className="w-4 h-4" />
-            <span className="text-sm font-medium">Start Together Admin</span>
-          </SidebarTrigger>
-        </header>
-
-        <div className="flex w-full pt-12">
-          <StartTogetherAdminSidebar />
-          
-          {/* Main Content Area */}
-          <main className="flex-1 p-6 overflow-auto bg-background">
-            <div className="max-w-7xl mx-auto">
-              <Outlet />
-            </div>
-          </main>
-        </div>
+        <StartTogetherAdminSidebar />
+        
+        {/* Main Content Area */}
+        <main className="flex-1 p-6 overflow-auto bg-background">
+          <div className="max-w-7xl mx-auto">
+            <Outlet />
+          </div>
+        </main>
       </div>
     </SidebarProvider>
   );
