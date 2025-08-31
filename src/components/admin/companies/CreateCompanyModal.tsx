@@ -75,9 +75,9 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
     setIsLoading(true);
     try {
       if (company.company_type === 'startup') {
-        // Usar função RPC específica para startups
+        // Usar função de debug com logging detalhado
         const { data, error } = await supabase
-          .rpc('create_startup_company', {
+          .rpc('create_startup_company_debug', {
             _name: company.name.trim(),
             _mission: company.mission || null,
             _vision: company.vision || null,
@@ -86,10 +86,17 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
             _owner_id: currentUser.id
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Erro ao criar startup:', error);
+          console.error('Detalhes do erro:', error.details, error.hint, error.code);
+          throw error;
+        }
 
         const result = data && data.length > 0 ? data[0] : null;
+        console.log('Log detalhado da criação de startup:', result?.step_log);
+        
         if (!result?.success) {
+          console.error('Falha na criação:', result?.message, result?.step_log);
           throw new Error(result?.message || 'Erro ao criar startup');
         }
 

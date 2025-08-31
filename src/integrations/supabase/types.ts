@@ -1648,6 +1648,22 @@ export type Database = {
           success: boolean
         }[]
       }
+      create_startup_company_debug: {
+        Args: {
+          _logo_url?: string
+          _mission?: string
+          _name: string
+          _owner_id?: string
+          _values?: string[]
+          _vision?: string
+        }
+        Returns: {
+          company_id: string
+          message: string
+          step_log: string
+          success: boolean
+        }[]
+      }
       deactivate_user: {
         Args: { _admin_id: string; _user_id: string }
         Returns: boolean
