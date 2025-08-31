@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,9 +8,9 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { ModulesProvider } from "@/hooks/useModules";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { AdminLoginPage } from "@/components/admin/AdminLoginPage";
-import { AdminLayout } from "@/components/admin/AdminLayout";
 import { CompanyInactivePage } from "@/pages/CompanyInactivePage";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
+import { StartTogetherAdminLayout } from "@/components/admin/StartTogetherAdminLayout";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { ObjectivesPage } from "@/components/objectives/ObjectivesPage";
@@ -19,23 +18,18 @@ import { ProjectsPage } from "@/components/projects/ProjectsPage";
 import { IndicatorsPage } from "@/components/indicators/IndicatorsPage";
 import { ReportsPage } from "@/components/reports/ReportsPage";
 import { AICopilotPage } from "@/components/ai/AICopilotPage";
-
 import { SettingsPage } from "@/components/settings/SettingsPage";
 import { ProfilePage } from "@/components/profile/ProfilePage";
 import { StrategicMapPage } from "@/components/strategic-map/StrategicMapPage";
 import { CompaniesPage } from "@/components/admin/CompaniesPage";
-import { UserEditorPage } from "@/components/admin/UserEditorPage";
+import { UserManagementPage } from "@/components/admin/UserManagementPage";
+import { ModulesManagementPage } from "@/components/admin/ModulesManagementPage";
 import { SystemSettingsPage } from "@/components/admin/SystemSettingsPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import { StartupHubPage } from "@/components/startup-hub/StartupHubPage";
-import { ModulesManagementPage } from "@/components/admin/ModulesManagementPage";
-import { UserModulesAccessPage } from "@/components/admin/UserModulesAccessPage";
-import { AdminNavigation } from "@/components/admin/AdminNavigation";
-import { MentorshipManagementPage } from "@/components/admin/MentorshipManagementPage";
-import { StartupManagementPage } from "@/components/admin/StartupManagementPage";
 
 const queryClient = new QueryClient();
 
@@ -86,19 +80,16 @@ const App = () => (
               <Route path="startup-hub" element={<StartupHubPage />} />
             </Route>
 
-            {/* Admin routes - completely separate from regular app */}
-            <Route path="/admin" element={
+            {/* Admin routes - Start Together Admin */}
+            <Route path="/app/admin" element={
               <AdminProtectedRoute>
-                <AdminLayout />
+                <StartTogetherAdminLayout />
               </AdminProtectedRoute>
             }>
               <Route index element={<AdminDashboard />} />
               <Route path="companies" element={<CompaniesPage />} />
-              <Route path="startups" element={<StartupManagementPage />} />
-              <Route path="user-management" element={<UserEditorPage />} />
+              <Route path="users" element={<UserManagementPage />} />
               <Route path="modules" element={<ModulesManagementPage />} />
-              <Route path="user-modules" element={<UserModulesAccessPage />} />
-              <Route path="mentorship" element={<MentorshipManagementPage />} />
               <Route path="settings" element={<SystemSettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />

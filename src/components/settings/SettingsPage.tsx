@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
-import { UserManagement } from '@/components/admin/UserManagement';
+import { UserManagementPage } from '@/components/admin/UserManagementPage';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 export const SettingsPage: React.FC = () => {
@@ -161,7 +161,7 @@ export const SettingsPage: React.FC = () => {
         {/* User Management (Admin Only) */}
         {isAdmin && (
           <TabsContent value="users">
-            <UserManagement />
+            <UserManagementPage />
           </TabsContent>
         )}
 
