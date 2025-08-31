@@ -81,23 +81,23 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
             </Badge>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-slate-400 hover:text-white">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700 text-white">
-                <DropdownMenuItem onClick={() => onEdit(company)} className="hover:bg-slate-700">
+              <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
+                <DropdownMenuItem onClick={() => onEdit(company)} className="hover:bg-accent">
                   <Edit className="w-4 h-4 mr-2" />
                   Editar
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onManageUsers(company)} className="hover:bg-slate-700">
+                <DropdownMenuItem onClick={() => onManageUsers(company)} className="hover:bg-accent">
                   <UserPlus className="w-4 h-4 mr-2" />
                   Gerenciar Usuários
                 </DropdownMenuItem>
-                <DropdownMenuSeparator className="bg-slate-600" />
+                <DropdownMenuSeparator className="bg-border" />
                 <DropdownMenuItem 
                   onClick={() => onToggleStatus(company.id, company.status)}
-                  className="hover:bg-slate-700"
+                  className="hover:bg-accent"
                 >
                   {company.status === 'active' ? (
                     <>
@@ -113,10 +113,10 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
                 </DropdownMenuItem>
                 {canDelete && (
                   <>
-                    <DropdownMenuSeparator className="bg-slate-600" />
+                    <DropdownMenuSeparator className="bg-border" />
                     <DropdownMenuItem 
                       onClick={() => onDelete(company)}
-                      className="hover:bg-red-900/50 text-red-400"
+                      className="hover:bg-destructive/10 text-destructive"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
                       Excluir
@@ -132,18 +132,18 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
         <div className="space-y-3">
           {company.mission && (
             <div>
-              <p className="text-xs text-slate-500 font-medium">Missão</p>
-              <p className="text-sm text-slate-300 line-clamp-2">{company.mission}</p>
+              <p className="text-xs text-muted-foreground font-medium">Missão</p>
+              <p className="text-sm text-foreground line-clamp-2">{company.mission}</p>
             </div>
           )}
           
           {users.length > 0 && (
             <div>
-              <p className="text-xs text-slate-500 font-medium mb-2">Usuários Recentes</p>
+              <p className="text-xs text-muted-foreground font-medium mb-2">Usuários Recentes</p>
               <div className="space-y-1">
                 {users.slice(0, 3).map((user) => (
                   <div key={user.user_id} className="flex items-center justify-between text-xs">
-                    <span className="text-slate-300 truncate">
+                    <span className="text-foreground truncate">
                       {user.first_name} {user.last_name}
                     </span>
                     <Badge variant="secondary" className="text-xs">
@@ -152,7 +152,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
                   </div>
                 ))}
                 {users.length > 3 && (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-muted-foreground">
                     +{users.length - 3} usuários
                   </p>
                 )}
@@ -273,37 +273,37 @@ const EditCompanyDialog: React.FC<EditCompanyDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-slate-800 border-slate-700 text-white">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-card border-border text-foreground">
         <DialogHeader>
           <DialogTitle>Editar Empresa</DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-muted-foreground">
             Edite as informações da empresa
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-white">Nome da Empresa</Label>
+            <Label htmlFor="name" className="text-foreground">Nome da Empresa</Label>
             <Input
               id="name"
               value={editedCompany.name}
               onChange={(e) => setEditedCompany({ ...editedCompany, name: e.target.value })}
-              className="bg-slate-700 border-slate-600 text-white"
+              className="bg-background border-input text-foreground"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="status" className="text-white">Status</Label>
+            <Label htmlFor="status" className="text-foreground">Status</Label>
             <Select
               value={editedCompany.status}
               onValueChange={(value: 'active' | 'inactive') => 
                 setEditedCompany({ ...editedCompany, status: value })
               }
             >
-              <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+              <SelectTrigger className="bg-background border-input text-foreground">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700 text-white">
+              <SelectContent className="bg-popover border-border text-popover-foreground">
                 <SelectItem value="active">Ativa</SelectItem>
                 <SelectItem value="inactive">Inativa</SelectItem>
               </SelectContent>
@@ -311,38 +311,38 @@ const EditCompanyDialog: React.FC<EditCompanyDialogProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="mission" className="text-white">Missão</Label>
+            <Label htmlFor="mission" className="text-foreground">Missão</Label>
             <Textarea
               id="mission"
               value={editedCompany.mission || ''}
               onChange={(e) => setEditedCompany({ ...editedCompany, mission: e.target.value })}
               placeholder="Descrição da missão da empresa"
               rows={3}
-              className="bg-slate-700 border-slate-600 text-white"
+              className="bg-background border-input text-foreground"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="vision" className="text-white">Visão</Label>
+            <Label htmlFor="vision" className="text-foreground">Visão</Label>
             <Textarea
               id="vision"
               value={editedCompany.vision || ''}
               onChange={(e) => setEditedCompany({ ...editedCompany, vision: e.target.value })}
               placeholder="Descrição da visão da empresa"
               rows={3}
-              className="bg-slate-700 border-slate-600 text-white"
+              className="bg-background border-input text-foreground"
             />
           </div>
 
           <div className="space-y-3">
-            <Label className="text-white">Valores</Label>
+            <Label className="text-foreground">Valores</Label>
             <div className="flex gap-2">
               <Input
                 value={newValue}
                 onChange={(e) => setNewValue(e.target.value)}
                 placeholder="Adicionar novo valor"
                 onKeyPress={(e) => e.key === 'Enter' && handleAddValue()}
-                className="bg-slate-700 border-slate-600 text-white"
+                className="bg-background border-input text-foreground"
               />
               <Button onClick={handleAddValue} size="sm">
                 Adicionar
@@ -367,7 +367,7 @@ const EditCompanyDialog: React.FC<EditCompanyDialogProps> = ({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-slate-600">
+        <div className="flex justify-end gap-3 pt-4 border-t border-border">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
@@ -561,11 +561,11 @@ export const CompaniesPage: React.FC = () => {
 
   if (!isAdmin) {
     return (
-      <Card className="bg-slate-800 border-slate-700">
+      <Card className="bg-card border-border">
         <CardContent className="p-6">
-          <div className="text-center text-white">
+          <div className="text-center text-foreground">
             <h2 className="text-2xl font-bold mb-4">Acesso Negado</h2>
-            <p className="text-slate-400">Você não tem permissão para acessar esta funcionalidade.</p>
+            <p className="text-muted-foreground">Você não tem permissão para acessar esta funcionalidade.</p>
           </div>
         </CardContent>
       </Card>
@@ -573,13 +573,13 @@ export const CompaniesPage: React.FC = () => {
   }
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
+    <Card className="bg-card border-border">
       <CardHeader>
-        <CardTitle className="flex items-center space-x-2 text-white">
+        <CardTitle className="flex items-center space-x-2 text-foreground">
           <Building2 className="h-5 w-5" />
           <span>Gerenciar Empresas</span>
         </CardTitle>
-        <CardDescription className="text-slate-400">
+        <CardDescription className="text-muted-foreground">
           Administre empresas e suas relações com usuários
         </CardDescription>
       </CardHeader>
@@ -587,22 +587,22 @@ export const CompaniesPage: React.FC = () => {
         <div className="space-y-4">
           <div className="flex space-x-2">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Buscar por nome da empresa..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-slate-700 border-slate-600 text-white"
+                className="pl-10 bg-background border-input text-foreground"
               />
             </div>
             <Select
               value={companyTypeFilter}
               onValueChange={(value: 'all' | 'regular' | 'startup') => setCompanyTypeFilter(value)}
             >
-              <SelectTrigger className="w-48 bg-slate-700 border-slate-600 text-white">
+              <SelectTrigger className="w-48 bg-background border-input text-foreground">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700 text-white">
+              <SelectContent className="bg-popover border-border text-popover-foreground">
                 <SelectItem value="all">Todos os Tipos</SelectItem>
                 <SelectItem value="regular">Empresas Regulares</SelectItem>
                 <SelectItem value="startup">Startups</SelectItem>
@@ -639,11 +639,11 @@ export const CompaniesPage: React.FC = () => {
 
           {!loading && filteredCompanies.length === 0 && (
             <div className="text-center py-8">
-              <Building2 className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-white mb-2">
+              <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
                 {searchTerm ? 'Nenhuma empresa encontrada' : 'Nenhuma empresa cadastrada'}
               </h3>
-              <p className="text-slate-400">
+              <p className="text-muted-foreground">
                 {searchTerm 
                   ? 'Tente ajustar os filtros de busca.' 
                   : 'Nenhuma empresa cadastrada no sistema.'
@@ -679,10 +679,10 @@ export const CompaniesPage: React.FC = () => {
 
         {/* Modal de confirmação de exclusão */}
         <AlertDialog open={!!deletingCompany} onOpenChange={(open) => !open && setDeletingCompany(null)}>
-          <AlertDialogContent className="bg-slate-800 border-slate-700 text-white">
+          <AlertDialogContent className="bg-card border-border text-foreground">
             <AlertDialogHeader>
               <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-              <AlertDialogDescription className="text-slate-400">
+              <AlertDialogDescription className="text-muted-foreground">
                 Tem certeza que deseja excluir a empresa "{deletingCompany?.name}"? 
                 Esta ação não pode ser desfeita e todos os dados associados à empresa serão removidos.
               </AlertDialogDescription>
@@ -693,7 +693,7 @@ export const CompaniesPage: React.FC = () => {
               </AlertDialogCancel>
               <AlertDialogAction 
                 onClick={() => deletingCompany && handleDeleteCompany(deletingCompany.id)}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-destructive hover:bg-destructive/90"
               >
                 Excluir
               </AlertDialogAction>
