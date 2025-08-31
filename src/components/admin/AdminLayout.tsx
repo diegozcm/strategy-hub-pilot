@@ -3,7 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Button } from '@/components/ui/button';
-import { Shield, LogOut, Building, Users, BarChart3, Settings, Package } from 'lucide-react';
+import { Shield, LogOut, Building, Users, BarChart3, Settings, Package, Rocket } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
 export const AdminLayout: React.FC = () => {
@@ -47,6 +47,12 @@ export const AdminLayout: React.FC = () => {
       description: 'Gerenciar empresas'
     },
     {
+      name: 'Startups',
+      path: '/admin/startups',
+      icon: Rocket,
+      description: 'Gerenciar startups'
+    },
+    {
       name: 'Usuários',
       path: '/admin/user-management',
       icon: Users,
@@ -63,6 +69,12 @@ export const AdminLayout: React.FC = () => {
       path: '/admin/user-modules',
       icon: Shield,
       description: 'Perfis de acesso e módulos'
+    },
+    {
+      name: 'Mentorias',
+      path: '/admin/mentorship',
+      icon: Users,
+      description: 'Gestão de mentorias'
     },
     {
       name: 'Configurações',

@@ -1633,6 +1633,21 @@ export type Database = {
           missing_user_id: string
         }[]
       }
+      create_startup_company: {
+        Args: {
+          _logo_url?: string
+          _mission?: string
+          _name: string
+          _owner_id?: string
+          _values?: string[]
+          _vision?: string
+        }
+        Returns: {
+          company_id: string
+          message: string
+          success: boolean
+        }[]
+      }
       deactivate_user: {
         Args: { _admin_id: string; _user_id: string }
         Returns: boolean

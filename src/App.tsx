@@ -35,6 +35,7 @@ import { ModulesManagementPage } from "@/components/admin/ModulesManagementPage"
 import { UserModulesAccessPage } from "@/components/admin/UserModulesAccessPage";
 import { AdminNavigation } from "@/components/admin/AdminNavigation";
 import { MentorshipManagementPage } from "@/components/admin/MentorshipManagementPage";
+import { StartupManagementPage } from "@/components/admin/StartupManagementPage";
 
 const queryClient = new QueryClient();
 
@@ -93,9 +94,11 @@ const App = () => (
             }>
               <Route index element={<AdminDashboard />} />
               <Route path="companies" element={<CompaniesPage />} />
+              <Route path="startups" element={<StartupManagementPage />} />
               <Route path="user-management" element={<UserEditorPage />} />
               <Route path="modules" element={<ModulesManagementPage />} />
               <Route path="user-modules" element={<UserModulesAccessPage />} />
+              <Route path="mentorship" element={<MentorshipManagementPage />} />
               <Route path="settings" element={<SystemSettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />

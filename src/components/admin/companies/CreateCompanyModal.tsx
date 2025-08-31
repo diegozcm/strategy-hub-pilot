@@ -74,27 +74,53 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('companies')
-        .insert({
-          name: company.name.trim(),
-          mission: company.mission || null,
-          vision: company.vision || null,
-          values: company.values.length > 0 ? company.values : null,
-          status: company.status,
-          company_type: company.company_type,
-          owner_id: currentUser.id,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select();
+      if (company.company_type === 'startup') {
+        // Usar função RPC específica para startups
+        const { data, error } = await supabase
+          .rpc('create_startup_company', {
+            _name: company.name.trim(),
+            _mission: company.mission || null,
+            _vision: company.vision || null,
+            _values: company.values.length > 0 ? company.values : null,
+            _logo_url: null,
+            _owner_id: currentUser.id
+          });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: 'Sucesso',
-        description: 'Empresa criada com sucesso'
-      });
+        const result = data && data.length > 0 ? data[0] : null;
+        if (!result?.success) {
+          throw new Error(result?.message || 'Erro ao criar startup');
+        }
+
+        toast({
+          title: 'Sucesso',
+          description: 'Startup criada e configurada com sucesso! Perfil Startup HUB automaticamente criado.'
+        });
+      } else {
+        // Processo normal para empresas regulares
+        const { data, error } = await supabase
+          .from('companies')
+          .insert({
+            name: company.name.trim(),
+            mission: company.mission || null,
+            vision: company.vision || null,
+            values: company.values.length > 0 ? company.values : null,
+            status: company.status,
+            company_type: company.company_type,
+            owner_id: currentUser.id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select();
+
+        if (error) throw error;
+
+        toast({
+          title: 'Sucesso',
+          description: 'Empresa criada com sucesso'
+        });
+      }
 
       // Reset form
       setCompany({
@@ -112,7 +138,7 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
       console.error('Erro ao criar empresa:', error);
       toast({
         title: 'Erro',
-        description: 'Erro ao criar empresa',
+        description: error instanceof Error ? error.message : 'Erro ao criar empresa',
         variant: 'destructive'
       });
     } finally {
