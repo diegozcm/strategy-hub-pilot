@@ -75,9 +75,9 @@ export const CreateCompanyModal: React.FC<CreateCompanyModalProps> = ({
     setIsLoading(true);
     try {
       if (company.company_type === 'startup') {
-        // Usar função de debug com logging detalhado
+        // Use the new improved function with better error handling and rollback
         const { data, error } = await supabase
-          .rpc('create_startup_company_debug', {
+          .rpc('create_startup_company_v2', {
             _name: company.name.trim(),
             _mission: company.mission || null,
             _vision: company.vision || null,

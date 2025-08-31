@@ -1625,6 +1625,16 @@ export type Database = {
         Args: { _company_id: string }
         Returns: boolean
       }
+      check_startup_integrity: {
+        Args: { _company_id: string }
+        Returns: {
+          has_company: boolean
+          has_profile: boolean
+          has_relation: boolean
+          is_complete: boolean
+          issues: string[]
+        }[]
+      }
       create_missing_profiles: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -1649,6 +1659,22 @@ export type Database = {
         }[]
       }
       create_startup_company_debug: {
+        Args: {
+          _logo_url?: string
+          _mission?: string
+          _name: string
+          _owner_id?: string
+          _values?: string[]
+          _vision?: string
+        }
+        Returns: {
+          company_id: string
+          message: string
+          step_log: string
+          success: boolean
+        }[]
+      }
+      create_startup_company_v2: {
         Args: {
           _logo_url?: string
           _mission?: string
@@ -1733,6 +1759,14 @@ export type Database = {
       is_admin: {
         Args: { _user_id: string }
         Returns: boolean
+      }
+      repair_startup: {
+        Args: { _company_id: string }
+        Returns: {
+          actions_taken: string[]
+          message: string
+          success: boolean
+        }[]
       }
       revoke_module_access: {
         Args: { _admin_id: string; _module_id: string; _user_id: string }
