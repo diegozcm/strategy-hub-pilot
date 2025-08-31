@@ -170,9 +170,14 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Handle async profile loading
-  const loadUserProfile = async (userId: string) => {
+  // Handle async profile loading with retry mechanism
+  const loadUserProfile = async (userId: string, retryCount = 0) => {
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 second
+
     try {
+      console.log(`📋 Loading profile for user ${userId} (attempt ${retryCount + 1}/${maxRetries + 1})`);
+      
       const userProfile = await fetchProfile(userId);
       console.log('📋 Profile fetched:', userProfile);
       
@@ -226,10 +231,34 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
             }
           }
         }
+        
+        console.log('✅ Profile loaded successfully');
+      } else {
+        // Se não conseguiu carregar perfil, tentar retry
+        if (retryCount < maxRetries) {
+          console.log(`⏳ Profile not found, retrying in ${retryDelay}ms...`);
+          setTimeout(() => {
+            loadUserProfile(userId, retryCount + 1);
+          }, retryDelay);
+          return;
+        } else {
+          console.log('❌ Failed to load profile after all retries');
+          setProfile(null);
+        }
       }
     } catch (error) {
       console.error('❌ Error loading user profile:', error);
-      // Clear states on error
+      
+      // Se for erro de RLS ou permissão, tentar retry
+      if (retryCount < maxRetries && (error as any)?.message?.includes('permission denied')) {
+        console.log(`⏳ Permission error, retrying in ${retryDelay}ms...`);
+        setTimeout(() => {
+          loadUserProfile(userId, retryCount + 1);
+        }, retryDelay);
+        return;
+      }
+      
+      // Clear states on final error
       setProfile(null);
       setCompany(null);
       setSelectedCompanyId(null);

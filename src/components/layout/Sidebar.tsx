@@ -62,9 +62,19 @@ const systemAdminNavigation = [{
 }];
 export const Sidebar: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const { currentModule } = useModules();
+  const { currentModule, loading: modulesLoading } = useModules();
   
-  const navigation = getNavigationByModule(currentModule?.slug || 'strategic-planning');
+  console.log('Sidebar - Current module:', currentModule);
+  
+  // Fallback para módulo padrão se não há módulo atual
+  const activeModuleSlug = currentModule?.slug || 'strategic-planning';
+  const navigation = getNavigationByModule(activeModuleSlug);
+  
+  // Se ainda está carregando módulos, mostrar navegação básica
+  if (modulesLoading && navigation.length === 0) {
+    const fallbackNavigation = getNavigationByModule('strategic-planning');
+    console.log('Sidebar - Using fallback navigation while loading');
+  }
   return <div className={cn("bg-card border-r border-border flex flex-col transition-all duration-300", collapsed ? "w-16" : "w-64")}>
       {/* Header */}
       <div className="px-4 lg:px-6 py-4 border-b border-border">

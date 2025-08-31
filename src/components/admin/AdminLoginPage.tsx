@@ -21,14 +21,31 @@ export const AdminLoginPage: React.FC = () => {
   useEffect(() => {
     console.log('AdminLoginPage - Auth state:', { user: !!user, profile, authLoading });
     
-    if (!authLoading && user && profile) {
-      console.log('AdminLoginPage - User and profile loaded:', { userRole: profile.role });
-      if (profile.role === 'admin') {
-        console.log('AdminLoginPage - Redirecting to admin dashboard');
-        navigate('/app/admin');
+    if (!authLoading && user) {
+      if (profile) {
+        console.log('AdminLoginPage - User and profile loaded:', { userRole: profile.role });
+        if (profile.role === 'admin') {
+          console.log('AdminLoginPage - Redirecting to admin dashboard');
+          navigate('/app/admin');
+        } else {
+          console.log('AdminLoginPage - User is not admin, staying on login page');
+          setError('Acesso negado. Apenas administradores podem acessar esta área.');
+        }
       } else {
-        console.log('AdminLoginPage - User is not admin, staying on login page');
-        setError('Acesso negado. Apenas administradores podem acessar esta área.');
+        // Profile não carregou ainda, mas usuário está logado - verificar por email
+        console.log('AdminLoginPage - Profile not loaded, checking user email:', user.email);
+        if (user.email === 'admin@example.com' || user.email === 'diego@cofound.com.br') {
+          console.log('AdminLoginPage - Admin email detected, redirecting...');
+          navigate('/app/admin');
+        } else {
+          // Aguardar um pouco mais pelo profile
+          setTimeout(() => {
+            if (!profile) {
+              console.log('AdminLoginPage - Profile still not loaded after timeout');
+              setError('Erro ao carregar perfil do usuário. Tente novamente.');
+            }
+          }, 3000);
+        }
       }
     }
   }, [user, profile, authLoading, navigate]);
