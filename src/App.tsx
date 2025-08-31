@@ -92,6 +92,10 @@ const App = () => (
               <Route path="modules" element={<ModulesManagementPage />} />
               <Route path="settings" element={<SystemSettingsPage />} />
             </Route>
+
+            {/* Redirect /admin to /app/admin */}
+            <Route path="/admin" element={<Navigate to="/app/admin" replace />} />
+            <Route path="/admin/*" element={<Navigate to="/app/admin" replace />} />
             <Route path="*" element={<NotFound />} />
             </Routes>
             </ModulesProvider>
