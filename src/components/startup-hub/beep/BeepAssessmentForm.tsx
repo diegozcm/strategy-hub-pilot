@@ -115,8 +115,8 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Fixed Header */}
-      <div className="flex-shrink-0 space-y-6 pb-4 border-b bg-background">
+      {/* Fixed Header - Never scrolls */}
+      <div className="flex-shrink-0 space-y-6 pb-6 border-b bg-background">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -148,8 +148,8 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
           />
         </div>
 
-        {/* Category Navigation Menu */}
-        <div className="border-b -mb-4">
+        {/* Category Navigation Menu - Horizontal */}
+        <div className="border-b">
           <nav className="flex space-x-1 overflow-x-auto">
             {categories.map((category, index) => {
               const categoryProgress = calculateCategoryProgress(index);
@@ -158,7 +158,7 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
                 <button
                   key={category.id}
                   onClick={() => setCurrentCategoryIndex(index)}
-                  className={`flex-shrink-0 px-3 py-2 text-sm font-medium border-b-2 transition-all duration-200 ${
+                  className={`flex-shrink-0 px-4 py-3 text-sm font-medium border-b-2 transition-all duration-200 ${
                     isSelected
                       ? 'border-primary text-primary bg-primary/5'
                       : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/50'
@@ -179,9 +179,9 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
         </div>
       </div>
 
-      {/* Scrollable Content Area */}
-      <div className="flex-1 flex flex-col min-h-0">
-        <ScrollArea className="flex-1">
+      {/* Scrollable Content Area - Only this part scrolls */}
+      <div className="flex-1 min-h-0">
+        <ScrollArea className="h-full">
           <div className="p-6 space-y-6">
             {/* Category Content */}
             {currentCategory?.subcategories.map((subcategory) => (
@@ -222,31 +222,31 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
             )}
           </div>
         </ScrollArea>
+      </div>
 
-        {/* Fixed Bottom Navigation */}
-        <div className="flex-shrink-0 flex items-center justify-between border-t pt-4 px-6 pb-4 bg-background">
-          <Button 
-            variant="outline" 
-            onClick={handlePreviousCategory}
-            disabled={currentCategoryIndex === 0}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Anterior
-          </Button>
-          
-          <div className="text-sm text-muted-foreground">
-            Categoria {currentCategoryIndex + 1} de {categories.length}
-          </div>
-          
-          <Button 
-            variant="outline" 
-            onClick={handleNextCategory}
-            disabled={currentCategoryIndex === categories.length - 1}
-          >
-            Próxima
-            <ArrowRight className="h-4 w-4 ml-2" />
-          </Button>
+      {/* Fixed Bottom Navigation - Never scrolls */}
+      <div className="flex-shrink-0 flex items-center justify-between border-t pt-4 px-6 pb-4 bg-background">
+        <Button 
+          variant="outline" 
+          onClick={handlePreviousCategory}
+          disabled={currentCategoryIndex === 0}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Anterior
+        </Button>
+        
+        <div className="text-sm text-muted-foreground">
+          Categoria {currentCategoryIndex + 1} de {categories.length}
         </div>
+        
+        <Button 
+          variant="outline" 
+          onClick={handleNextCategory}
+          disabled={currentCategoryIndex === categories.length - 1}
+        >
+          Próxima
+          <ArrowRight className="h-4 w-4 ml-2" />
+        </Button>
       </div>
     </div>
   );
