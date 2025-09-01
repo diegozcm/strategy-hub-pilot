@@ -41,8 +41,7 @@ export const useMentorStartupDetails = () => {
             vision,
             values,
             logo_url,
-            created_at,
-            company_type
+            created_at
           )
         `)
         .eq('user_id', user.id);
