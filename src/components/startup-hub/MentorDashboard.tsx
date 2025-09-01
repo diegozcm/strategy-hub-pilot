@@ -55,11 +55,17 @@ export const MentorDashboard: React.FC = () => {
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
       
+      const endOfMonth = new Date();
+      endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+      endOfMonth.setDate(0);
+      endOfMonth.setHours(23, 59, 59, 999);
+      
       const { data, error } = await supabase
         .from('mentoring_sessions')
         .select('id', { count: 'exact' })
         .eq('mentor_id', user.id)
-        .gte('session_date', startOfMonth.toISOString());
+        .gte('session_date', startOfMonth.toISOString())
+        .lte('session_date', endOfMonth.toISOString());
 
       if (error) throw error;
       return data?.length || 0;
