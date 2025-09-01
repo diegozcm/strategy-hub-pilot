@@ -93,17 +93,17 @@ export const Sidebar: React.FC = () => {
 
           return (
             <div key={group.name} className="space-y-2">
-              {/* Group Label */}
+              {/* Module Title - Non-clickable with emphasis */}
               {!collapsed && (
-                <div className="flex items-center px-3 py-1">
-                  <group.icon className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                <div className="flex items-center px-3 py-2">
+                  <group.icon className="h-5 w-5 mr-3 text-foreground" />
+                  <span className="text-sm font-semibold text-foreground uppercase tracking-wider">
                     {group.name}
                   </span>
                 </div>
               )}
               
-              {/* Group Items */}
+              {/* Group Items - Indented sub-menu */}
               <div className="space-y-1">
                 {group.items.map(item => {
                   // Check access for individual items
@@ -121,12 +121,16 @@ export const Sidebar: React.FC = () => {
                       key={item.name} 
                       to={item.href} 
                       className={({ isActive }) => cn(
-                        "flex items-center px-3 py-2 rounded-lg transition-colors",
-                        isActive ? "bg-accent text-accent-foreground font-medium" : "text-foreground hover:bg-accent/50",
-                        collapsed && "justify-center"
+                        "flex items-center py-2 rounded-lg transition-colors",
+                        // Indentation for sub-items
+                        collapsed ? "px-3 justify-center" : "px-3 ml-4",
+                        // Color scheme: muted by default, accent on hover/active
+                        isActive 
+                          ? "bg-accent text-accent-foreground font-medium" 
+                          : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
                       )}
                     >
-                      <item.icon className={cn("h-5 w-5", !collapsed && "mr-3")} />
+                      <item.icon className={cn("h-4 w-4", !collapsed && "mr-3")} />
                       {!collapsed && <span className="text-sm">{item.name}</span>}
                     </NavLink>
                   );
