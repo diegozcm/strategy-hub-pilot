@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building, Calendar, TrendingUp, Award, Users, ExternalLink, Eye, ChevronRight } from 'lucide-react';
+import { Building, Calendar, TrendingUp, Award, Users, ExternalLink, Eye, ChevronRight, Globe, Target, Heart } from 'lucide-react';
 import { useMentorStartupDetails } from '@/hooks/useMentorStartupDetails';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { BeepAssessmentDetailModal } from '../beep/BeepAssessmentDetailModal';
@@ -155,23 +156,98 @@ export const MentorStartupsOverviewPage: React.FC = () => {
                   <TabsTrigger value="mentoring">Mentoria</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="overview" className="space-y-4 mt-4">
-                  <div className="grid gap-4">
+                <TabsContent value="overview" className="space-y-6 mt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Informações Básicas */}
+                    <Card className="p-4">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <Building className="h-5 w-5 text-primary" />
+                        <h4 className="font-semibold">Informações Básicas</h4>
+                      </div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Nome da Startup</label>
+                          <p className="text-sm font-medium">{startup.name}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
+                          <p className="text-sm">{format(new Date(startup.created_at), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                        </div>
+                        {startup.latest_beep_assessment && (
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Nível de Maturidade</label>
+                            <div className="mt-1">
+                              <Badge 
+                                variant="outline" 
+                                className={maturityLevels[startup.latest_beep_assessment.maturity_level]?.color || 'bg-gray-100'}
+                              >
+                                {maturityLevels[startup.latest_beep_assessment.maturity_level]?.name || startup.latest_beep_assessment.maturity_level}
+                              </Badge>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+
+                    {/* Estatísticas */}
+                    <Card className="p-4">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <TrendingUp className="h-5 w-5 text-primary" />
+                        <h4 className="font-semibold">Estatísticas</h4>
+                      </div>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Avaliações BEEP</span>
+                          <span className="text-sm font-medium">{startup.beep_assessments_count}</span>
+                        </div>
+                        {startup.latest_beep_assessment && (
+                          <>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-muted-foreground">Último Score BEEP</span>
+                              <span className={`text-sm font-medium ${getScoreColor(startup.latest_beep_assessment.final_score)}`}>
+                                {startup.latest_beep_assessment.final_score.toFixed(1)}/10
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-muted-foreground">Última Avaliação</span>
+                              <span className="text-sm font-medium">
+                                {format(new Date(startup.latest_beep_assessment.completed_at), 'dd/MM/yyyy', { locale: ptBR })}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </Card>
+                  </div>
+
+                  {/* Missão, Visão e Valores */}
+                  <div className="grid grid-cols-1 gap-6">
                     {startup.mission && (
-                      <div>
-                        <h4 className="font-medium text-sm mb-2 text-muted-foreground">Missão</h4>
-                        <p className="text-sm">{startup.mission}</p>
-                      </div>
+                      <Card className="p-4">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <Target className="h-5 w-5 text-primary" />
+                          <h4 className="font-semibold">Missão</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{startup.mission}</p>
+                      </Card>
                     )}
+
                     {startup.vision && (
-                      <div>
-                        <h4 className="font-medium text-sm mb-2 text-muted-foreground">Visão</h4>
-                        <p className="text-sm">{startup.vision}</p>
-                      </div>
+                      <Card className="p-4">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <Eye className="h-5 w-5 text-primary" />
+                          <h4 className="font-semibold">Visão</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{startup.vision}</p>
+                      </Card>
                     )}
+
                     {startup.values && startup.values.length > 0 && (
-                      <div>
-                        <h4 className="font-medium text-sm mb-2 text-muted-foreground">Valores</h4>
+                      <Card className="p-4">
+                        <div className="flex items-center space-x-2 mb-3">
+                          <Heart className="h-5 w-5 text-primary" />
+                          <h4 className="font-semibold">Valores</h4>
+                        </div>
                         <div className="flex flex-wrap gap-2">
                           {startup.values.map((value, index) => (
                             <Badge key={index} variant="secondary" className="text-xs">
@@ -179,9 +255,34 @@ export const MentorStartupsOverviewPage: React.FC = () => {
                             </Badge>
                           ))}
                         </div>
-                      </div>
+                      </Card>
                     )}
                   </div>
+
+                  {/* Ações Rápidas */}
+                  <Card className="p-4">
+                    <h4 className="font-semibold mb-3">Ações Rápidas</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {startup.latest_beep_assessment && (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleViewAssessmentDetails(startup.latest_beep_assessment)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Ver Última Avaliação BEEP
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" disabled>
+                        <Users className="h-4 w-4 mr-2" />
+                        Agendar Mentoria
+                      </Button>
+                      <Button variant="outline" size="sm" disabled>
+                        <Globe className="h-4 w-4 mr-2" />
+                        Ver Website
+                      </Button>
+                    </div>
+                  </Card>
                 </TabsContent>
 
                 <TabsContent value="beep" className="space-y-4 mt-4">
