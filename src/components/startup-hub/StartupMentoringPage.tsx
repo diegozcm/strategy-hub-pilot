@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, MessageSquare, Globe, Lock, Calendar } from 'lucide-react';
 import { useStartupMentoring } from '@/hooks/useStartupMentoring';
+import { useStartupSessions } from '@/hooks/useStartupSessions';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { TipCard } from './TipCard';
 import { StartupSessionsPage } from './StartupSessionsPage';
@@ -13,12 +14,20 @@ import { StartupSessionsPage } from './StartupSessionsPage';
 export const StartupMentoringPage: React.FC = () => {
   console.log('📱 [StartupMentoringPage] Rendering component');
   
-  const { tips, loading, error } = useStartupMentoring();
+  const { tips, loading: tipsLoading, error: tipsError } = useStartupMentoring();
+  const { sessions, loading: sessionsLoading, error: sessionsError } = useStartupSessions();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
 
-  console.log('📱 [StartupMentoringPage] Tips state:', { tipsCount: tips.length, loading, error });
+  console.log('📱 [StartupMentoringPage] State:', { 
+    tipsCount: tips.length, 
+    tipsLoading, 
+    tipsError,
+    sessionsCount: sessions.length,
+    sessionsLoading,
+    sessionsError
+  });
 
   const filteredTips = tips.filter(tip => {
     const matchesSearch = tip.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -28,7 +37,7 @@ export const StartupMentoringPage: React.FC = () => {
     return matchesSearch && matchesCategory && matchesPriority;
   });
 
-  if (loading) {
+  if (tipsLoading && sessionsLoading) {
     return (
       <div className="flex items-center justify-center p-8">
         <LoadingSpinner size="lg" />
@@ -50,10 +59,20 @@ export const StartupMentoringPage: React.FC = () => {
           <TabsTrigger value="tips" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
             Dicas
+            {tips.length > 0 && (
+              <Badge variant="secondary" className="ml-1 px-1.5 py-0.5 text-xs">
+                {tips.length}
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="sessions" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
             Sessões
+            {sessions.length > 0 && (
+              <Badge variant="secondary" className="ml-1 px-1.5 py-0.5 text-xs">
+                {sessions.length}
+              </Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -95,10 +114,10 @@ export const StartupMentoringPage: React.FC = () => {
             </Select>
           </div>
 
-          {error && (
+          {tipsError && (
             <Card className="border-destructive">
               <CardContent className="p-4">
-                <p className="text-destructive">Erro ao carregar dicas: {error}</p>
+                <p className="text-destructive">Erro ao carregar dicas: {tipsError}</p>
               </CardContent>
             </Card>
           )}
