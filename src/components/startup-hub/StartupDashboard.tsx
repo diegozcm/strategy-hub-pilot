@@ -94,6 +94,15 @@ export const StartupDashboard: React.FC<StartupDashboardProps> = ({ onNavigateTo
 
   const maturityInfo = getMaturityLevelInfo(latestAssessment?.maturity_level);
 
+  // Debug logs
+  console.log('🔍 StartupDashboard Debug:', {
+    latestAssessment,
+    hasScore: !!latestAssessment?.final_score,
+    status: latestAssessment?.status,
+    maturityLevel: latestAssessment?.maturity_level,
+    scoreValue: latestAssessment?.final_score
+  });
+
   return (
     <div className="space-y-6">
       {/* Welcome Card */}
