@@ -28,6 +28,7 @@ const menuStructure = [
     items: [
       { name: 'Dashboard', href: '/app/startup-hub?tab=dashboard', icon: BarChart3 },
       { name: 'Avaliação BEEP', href: '/app/startup-hub?tab=beep', icon: TrendingUp, requiresStartup: true },
+      { name: 'Startups', href: '/app/startup-hub?tab=startups', icon: Building, requiresMentor: true },
       { name: 'Mentorias', href: '/app/startup-hub?tab=mentoring', icon: Users },
       { name: 'Perfil', href: '/app/startup-hub?tab=profile', icon: User }
     ]
@@ -132,6 +133,7 @@ export const Sidebar: React.FC = () => {
                   // Check startup profile requirements for startup hub items
                   if (item.href.includes('/startup-hub') && hasProfile) {
                     if (item.requiresStartup && !isStartup) return null;
+                    if (item.requiresMentor && !isMentor) return null;
                   }
 
                   const isActive = isRouteActive(item.href);
