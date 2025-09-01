@@ -825,38 +825,60 @@ export const UserManagementPage: React.FC = () => {
 
   const loadData = async () => {
     setLoading(true);
+    console.log('👥 Carregando dados de usuários...');
+    
     try {
-      // Load users
+      // Carregar usuários
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
         .select('*')
         .order('first_name');
 
-      if (usersError) throw usersError;
+      if (usersError) {
+        console.error('❌ Erro ao carregar usuários:', usersError);
+        throw usersError;
+      }
 
-      // Load companies
+      console.log(`✅ ${usersData?.length || 0} usuários carregados`);
+
+      // Carregar empresas
       const { data: companiesData, error: companiesError } = await supabase
         .from('companies')
         .select('*')
         .order('name');
 
-      if (companiesError) throw companiesError;
+      if (companiesError) {
+        console.error('❌ Erro ao carregar empresas:', companiesError);
+        throw companiesError;
+      }
 
-      // Load modules
+      console.log(`✅ ${companiesData?.length || 0} empresas carregadas`);
+
+      // Carregar módulos
       const { data: modulesData, error: modulesError } = await supabase
         .from('system_modules')
         .select('*')
         .eq('active', true)
         .order('name');
 
-      if (modulesError) throw modulesError;
+      if (modulesError) {
+        console.error('❌ Erro ao carregar módulos:', modulesError);
+        throw modulesError;
+      }
 
-      // Load user module access
+      console.log(`✅ ${modulesData?.length || 0} módulos carregados`);
+
+      // Carregar acesso dos usuários aos módulos
       const { data: userModulesData, error: userModulesError } = await supabase
         .from('user_modules')
         .select('*');
 
-      if (userModulesError) throw userModulesError;
+      if (userModulesError) {
+        console.error('❌ Erro ao carregar acessos de módulos:', userModulesError);
+        throw userModulesError;
+      }
+
+      console.log(`✅ ${userModulesData?.length || 0} acessos de módulos carregados`);
 
       const usersTyped = (usersData || []).map(user => ({
         ...user,
@@ -872,15 +894,19 @@ export const UserManagementPage: React.FC = () => {
       setCompanies(companiesTyped);
       setModules(modulesData || []);
       setUserModules(userModulesData || []);
+      
+      console.log('✅ Todos os dados carregados com sucesso');
+      
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('❌ Erro geral ao carregar dados:', error);
       toast({
         title: 'Erro',
-        description: 'Erro ao carregar dados',
+        description: `Erro ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
+      console.log('🏁 Carregamento de dados de usuários finalizado');
     }
   };
 

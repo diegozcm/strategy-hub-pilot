@@ -405,13 +405,21 @@ export const CompaniesPage: React.FC = () => {
 
   const loadData = async () => {
     setLoading(true);
+    console.log('🏢 Carregando dados de empresas...');
+    
     try {
+      // Carregar empresas
       const { data: companiesData, error: companiesError } = await supabase
         .from('companies')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (companiesError) throw companiesError;
+      if (companiesError) {
+        console.error('❌ Erro ao carregar empresas:', companiesError);
+        throw companiesError;
+      }
+
+      console.log(`✅ ${companiesData?.length || 0} empresas carregadas`);
 
       const companiesTyped = (companiesData || []).map(company => ({
         ...company,
@@ -420,59 +428,80 @@ export const CompaniesPage: React.FC = () => {
 
       setCompanies(companiesTyped);
 
-      // Buscar usuários para cada empresa
-      const usersPromises = companiesTyped.map(async (company) => {
-        const { data: relations, error } = await supabase
+      // Carregar usuários para cada empresa de forma mais eficiente
+      if (companiesTyped.length > 0) {
+        console.log('👥 Carregando usuários das empresas...');
+        
+        const companyIds = companiesTyped.map(c => c.id);
+        
+        // Buscar todas as relações de uma vez
+        const { data: allRelations, error: relationsError } = await supabase
           .from('user_company_relations')
-          .select('user_id, role')
-          .eq('company_id', company.id);
+          .select(`
+            user_id, 
+            company_id, 
+            role,
+            profiles!inner(
+              user_id,
+              id,
+              first_name,
+              last_name,
+              email,
+              status
+            )
+          `)
+          .in('company_id', companyIds);
 
-        if (error || !relations || relations.length === 0) {
-          return { companyId: company.id, users: [] };
+        if (relationsError) {
+          console.error('❌ Erro ao carregar relações usuário-empresa:', relationsError);
+          throw relationsError;
         }
 
-        const userIds = relations.map(r => r.user_id);
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('user_id, id, first_name, last_name, email, status')
-          .in('user_id', userIds);
+        console.log(`✅ ${allRelations?.length || 0} relações usuário-empresa carregadas`);
 
-        if (profilesError) {
-          return { companyId: company.id, users: [] };
-        }
+        // Agrupar usuários por empresa
+        const usersMap: { [key: string]: CompanyUser[] } = {};
+        
+        companiesTyped.forEach(company => {
+          usersMap[company.id] = [];
+        });
 
-        const users = relations.map(relation => {
-          const profile = profiles?.find(p => p.user_id === relation.user_id);
-          return {
-            user_id: relation.user_id,
-            id: profile?.id || '',
-            first_name: profile?.first_name,
-            last_name: profile?.last_name,
-            email: profile?.email,
-            role: relation.role as 'admin' | 'manager' | 'member',
-            status: profile?.status as 'active' | 'inactive'
-          };
-        }).filter(user => user.id);
+        (allRelations || []).forEach((relation: any) => {
+          const profile = relation.profiles;
+          if (profile && relation.company_id) {
+            const user: CompanyUser = {
+              user_id: relation.user_id,
+              id: profile.id,
+              first_name: profile.first_name,
+              last_name: profile.last_name,
+              email: profile.email,
+              role: relation.role as 'admin' | 'manager' | 'member',
+              status: profile.status as 'active' | 'inactive'
+            };
+            
+            if (!usersMap[relation.company_id]) {
+              usersMap[relation.company_id] = [];
+            }
+            usersMap[relation.company_id].push(user);
+          }
+        });
 
-        return { companyId: company.id, users };
-      });
+        setCompanyUsers(usersMap);
+        console.log('✅ Dados de usuários organizados por empresa');
+      } else {
+        setCompanyUsers({});
+      }
 
-      const usersResults = await Promise.all(usersPromises);
-      const usersMap = usersResults.reduce((acc, { companyId, users }) => {
-        acc[companyId] = users;
-        return acc;
-      }, {} as { [key: string]: CompanyUser[] });
-
-      setCompanyUsers(usersMap);
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
+      console.error('❌ Erro geral ao carregar dados:', error);
       toast({
         title: 'Erro',
-        description: 'Erro ao carregar dados',
+        description: `Erro ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
+      console.log('🏁 Carregamento de dados finalizado');
     }
   };
 
