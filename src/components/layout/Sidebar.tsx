@@ -30,7 +30,7 @@ const menuStructure = [
       { name: 'Avaliação BEEP', href: '/app/startup-hub?tab=beep', icon: TrendingUp, requiresStartup: true },
       { name: 'Startups', href: '/app/startup-hub?tab=startups', icon: Building, requiresMentor: true },
       { name: 'Avaliações BEEP', href: '/app/startup-hub?tab=beep-analytics', icon: Activity, requiresMentor: true },
-      { name: 'Mentorias', href: '/app/startup-hub?tab=sessions', icon: Users, requiresMentor: true },
+      { name: 'Sessões de Mentoria', href: '/app/startup-hub?tab=sessions', icon: Users, requiresMentor: true },
       { name: 'Mentorias', href: '/app/startup-hub?tab=mentoring', icon: Users, requiresStartup: true },
       { name: 'Perfil', href: '/app/startup-hub?tab=profile', icon: User }
     ]
