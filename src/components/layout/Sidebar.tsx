@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { PermissionGate } from '@/components/PermissionGate';
 import { useModules } from '@/hooks/useModules';
+import { useStartupProfile } from '@/hooks/useStartupProfile';
 
 const menuStructure = [
   {
@@ -50,6 +51,7 @@ const systemAdminNavigation = [
 export const Sidebar: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { hasModuleAccess } = useModules();
+  const { isStartup, isMentor, hasProfile } = useStartupProfile();
   const location = useLocation();
 
   // Helper function to check if a route is active
@@ -127,6 +129,12 @@ export const Sidebar: React.FC = () => {
                   }
 
                   if (!hasAccess) return null;
+
+                  // Check startup profile requirements for startup hub items
+                  if (item.href.includes('/startup-hub') && hasProfile) {
+                    if (item.requiresStartup && !isStartup) return null;
+                    if (item.requiresMentor && !isMentor) return null;
+                  }
 
                   const isActive = isRouteActive(item.href);
 
