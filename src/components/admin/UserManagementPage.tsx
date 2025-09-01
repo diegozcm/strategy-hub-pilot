@@ -12,14 +12,17 @@ import {
   UserCheck,
   UserX,
   Eye,
-  Settings
+  Settings,
+  UserCog,
+  Building,
+  Lock,
+  Activity
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -72,6 +75,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
   const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole[]>>({});
   const [startupHubOptions, setStartupHubOptions] = useState<{ startup: boolean; mentor: boolean }>({ startup: false, mentor: false });
+  const [activeTab, setActiveTab] = useState('personal');
 
   useEffect(() => {
     if (user && open) {
@@ -200,12 +204,12 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     }
   };
 
-  const handleSaveUser = async () => {
+  const saveAllChanges = async () => {
     if (!editedUser || !currentUser) return;
 
     setIsLoading(true);
     try {
-      // Update profile
+      // Save personal data
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -234,42 +238,19 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
         console.error('Aviso: Erro ao atualizar role:', roleError);
       }
 
-      toast({
-        title: 'Sucesso',
-        description: 'Dados do usuário atualizados com sucesso'
-      });
-
-      onUserUpdated();
-    } catch (error) {
-      console.error('Erro ao atualizar usuário:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao atualizar dados do usuário',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const saveModuleAccess = async () => {
-    if (!user || !currentUser) return;
-
-    setIsLoading(true);
-    try {
-      // Grant/revoke module access
+      // Save module access and roles
       for (const [moduleId, hasAccess] of Object.entries(moduleAccess)) {
         if (hasAccess) {
           const { error } = await supabase.rpc('grant_module_access', {
             _admin_id: currentUser.id,
-            _user_id: user.user_id,
+            _user_id: editedUser.user_id,
             _module_id: moduleId,
           });
           if (error) throw error;
         } else {
           const { error } = await supabase.rpc('revoke_module_access', {
             _admin_id: currentUser.id,
-            _user_id: user.user_id,
+            _user_id: editedUser.user_id,
             _module_id: moduleId,
           });
           if (error) throw error;
@@ -283,7 +264,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
         const roles = moduleRoles[mod.id] || [];
         const { error: rolesErr } = await supabase.rpc('set_user_module_roles', {
           _admin_id: currentUser.id,
-          _user_id: user.user_id,
+          _user_id: editedUser.user_id,
           _module_id: mod.id,
           _roles: roles,
         });
@@ -305,7 +286,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
             const { data: existing, error: existingErr } = await supabase
               .from('startup_hub_profiles')
               .select('id, type, status')
-              .eq('user_id', user.user_id)
+              .eq('user_id', editedUser.user_id)
               .maybeSingle();
             if (existingErr) throw existingErr;
 
@@ -323,7 +304,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
               const { error: insErr } = await supabase
                 .from('startup_hub_profiles')
                 .insert({
-                  user_id: user.user_id,
+                  user_id: editedUser.user_id,
                   type: selectedType,
                   status: 'active',
                 });
@@ -333,29 +314,30 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
             const { error: deactErr } = await supabase
               .from('startup_hub_profiles')
               .update({ status: 'inactive' })
-              .eq('user_id', user.user_id);
+              .eq('user_id', editedUser.user_id);
             if (deactErr && deactErr.code !== 'PGRST116') throw deactErr;
           }
         } else {
           const { error: deactErr } = await supabase
             .from('startup_hub_profiles')
             .update({ status: 'inactive' })
-            .eq('user_id', user.user_id);
+            .eq('user_id', editedUser.user_id);
           if (deactErr && deactErr.code !== 'PGRST116') throw deactErr;
         }
       }
 
       toast({
         title: 'Sucesso',
-        description: 'Permissões atualizadas com sucesso'
+        description: 'Todas as alterações foram salvas com sucesso'
       });
 
       onUserUpdated();
+      onOpenChange(false);
     } catch (error) {
-      console.error('Erro ao atualizar permissões:', error);
+      console.error('Erro ao salvar alterações:', error);
       toast({
         title: 'Erro',
-        description: 'Erro ao atualizar permissões',
+        description: 'Erro ao salvar alterações',
         variant: 'destructive'
       });
     } finally {
@@ -485,12 +467,19 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     !userCompanies.some(uc => uc.company_id === company.id)
   );
 
+  const sidebarItems = [
+    { id: 'personal', label: 'Dados Pessoais', icon: UserCog },
+    { id: 'companies', label: 'Empresas', icon: Building },
+    { id: 'modules', label: 'Módulos e Permissões', icon: Lock },
+    { id: 'actions', label: 'Ações', icon: Activity },
+  ];
+
   if (!editedUser) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden p-0">
+        <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
             Gerenciar Usuário: {editedUser.first_name} {editedUser.last_name}
@@ -500,305 +489,329 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="personal" className="flex-1">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="personal">Dados Pessoais</TabsTrigger>
-            <TabsTrigger value="companies">Empresas</TabsTrigger>
-            <TabsTrigger value="modules">Módulos e Permissões</TabsTrigger>
-            <TabsTrigger value="actions">Ações</TabsTrigger>
-          </TabsList>
+        <div className="flex flex-1 overflow-hidden">
+          {/* Sidebar */}
+          <div className="w-64 bg-sidebar border-r flex flex-col">
+            <div className="p-4">
+              <nav className="space-y-1">
+                {sidebarItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                        isActive
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                          : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
 
-          <div className="mt-4 overflow-y-auto max-h-[60vh]">
-            <TabsContent value="personal" className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">Nome</Label>
-                  <Input
-                    id="firstName"
-                    value={editedUser.first_name || ''}
-                    onChange={(e) => setEditedUser({ ...editedUser, first_name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="lastName">Sobrenome</Label>
-                  <Input
-                    id="lastName"
-                    value={editedUser.last_name || ''}
-                    onChange={(e) => setEditedUser({ ...editedUser, last_name: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={editedUser.email || ''}
-                  onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="department">Departamento</Label>
-                  <Input
-                    id="department"
-                    value={editedUser.department || ''}
-                    onChange={(e) => setEditedUser({ ...editedUser, department: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="position">Cargo</Label>
-                  <Input
-                    id="position"
-                    value={editedUser.position || ''}
-                    onChange={(e) => setEditedUser({ ...editedUser, position: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="role">Função no Sistema</Label>
-                <Select
-                  value={editedUser.role}
-                  onValueChange={(value: 'admin' | 'manager' | 'member') => 
-                    setEditedUser({ ...editedUser, role: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        Membro
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="manager">
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        Gerente
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="admin">
-                      <div className="flex items-center gap-2">
-                        <Crown className="h-4 w-4" />
-                        Administrador
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button onClick={handleSaveUser} disabled={isLoading}>
-                {isLoading ? 'Salvando...' : 'Salvar Dados Pessoais'}
-              </Button>
-            </TabsContent>
-
-            <TabsContent value="companies" className="space-y-4">
-              {userCompanies.length > 0 ? (
-                <div className="space-y-2">
-                  <Label>Empresas Associadas</Label>
-                  {userCompanies.map((companyUser) => (
-                    <div key={companyUser.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <Building2 className="w-4 h-4 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium">{companyUser.company_name}</p>
-                          <Badge variant="secondary" className="text-xs">
-                            {companyUser.role === 'admin' ? 'Administrador' : 
-                             companyUser.role === 'manager' ? 'Gerente' : 'Membro'}
-                          </Badge>
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleRemoveCompany(companyUser.company_id!)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+          {/* Content */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-6">
+              {activeTab === 'personal' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="firstName">Nome</Label>
+                      <Input
+                        id="firstName"
+                        value={editedUser.first_name || ''}
+                        onChange={(e) => setEditedUser({ ...editedUser, first_name: e.target.value })}
+                      />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-muted-foreground text-center py-4">
-                  Usuário não está associado a nenhuma empresa
-                </p>
-              )}
+                    <div>
+                      <Label htmlFor="lastName">Sobrenome</Label>
+                      <Input
+                        id="lastName"
+                        value={editedUser.last_name || ''}
+                        onChange={(e) => setEditedUser({ ...editedUser, last_name: e.target.value })}
+                      />
+                    </div>
+                  </div>
 
-              {availableCompanies.length > 0 && (
-                <div className="border-t pt-4">
-                  <Label>Adicionar à Empresa</Label>
-                  <div className="flex gap-2 mt-2">
-                    <Select onValueChange={(companyId) => {
-                      const company = companies.find(c => c.id === companyId);
-                      if (company) {
-                        handleAddCompany(companyId, 'member');
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={editedUser.email || ''}
+                      onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="department">Departamento</Label>
+                      <Input
+                        id="department"
+                        value={editedUser.department || ''}
+                        onChange={(e) => setEditedUser({ ...editedUser, department: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="position">Cargo</Label>
+                      <Input
+                        id="position"
+                        value={editedUser.position || ''}
+                        onChange={(e) => setEditedUser({ ...editedUser, position: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="role">Função no Sistema</Label>
+                    <Select
+                      value={editedUser.role}
+                      onValueChange={(value: 'admin' | 'manager' | 'member') => 
+                        setEditedUser({ ...editedUser, role: value })
                       }
-                    }}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="Selecione uma empresa" />
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableCompanies.map((company) => (
-                          <SelectItem key={company.id} value={company.id}>
-                            <div className="flex items-center gap-2">
-                              <Building2 className="w-4 h-4" />
-                              {company.name}
-                              <Badge variant="outline" className="text-xs ml-2">
-                                {company.company_type === 'startup' ? 'Startup' : 'Empresa'}
-                              </Badge>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="member">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            Membro
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="manager">
+                          <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4" />
+                            Gerente
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="admin">
+                          <div className="flex items-center gap-2">
+                            <Crown className="h-4 w-4" />
+                            Administrador
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
               )}
-            </TabsContent>
 
-            <TabsContent value="modules" className="space-y-4">
-              <div className="space-y-3">
-                {modules.map((module) => {
-                  const isStartupHub = module.slug === 'startup-hub';
-                  const checked = moduleAccess[module.id] || false;
-                  return (
-                    <ModuleAccessRow
-                      key={module.id}
-                      module={module}
-                      checked={checked}
-                      roles={moduleRoles[module.id] || []}
-                      onAccessChange={(v) => {
-                        setModuleAccess((prev) => ({ ...prev, [module.id]: !!v }));
-                        if (isStartupHub) {
-                          if (!!v && user) {
-                            loadStartupHubOptions(user.user_id);
-                          } else {
-                            resetStartupHubOptions();
+              {activeTab === 'companies' && (
+                <div className="space-y-4">
+                  {userCompanies.length > 0 ? (
+                    <div className="space-y-2">
+                      <Label>Empresas Associadas</Label>
+                      {userCompanies.map((companyUser) => (
+                        <div key={companyUser.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <Building2 className="w-4 h-4 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium">{companyUser.company_name}</p>
+                              <Badge variant="secondary" className="text-xs">
+                                {companyUser.role === 'admin' ? 'Administrador' : 
+                                 companyUser.role === 'manager' ? 'Gerente' : 'Membro'}
+                              </Badge>
+                            </div>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleRemoveCompany(companyUser.company_id!)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-center py-4">
+                      Usuário não está associado a nenhuma empresa
+                    </p>
+                  )}
+
+                  {availableCompanies.length > 0 && (
+                    <div className="border-t pt-4">
+                      <Label>Adicionar à Empresa</Label>
+                      <div className="flex gap-2 mt-2">
+                        <Select onValueChange={(companyId) => {
+                          const company = companies.find(c => c.id === companyId);
+                          if (company) {
+                            handleAddCompany(companyId, 'member');
                           }
-                        }
-                      }}
-                      onRoleToggle={(role) => {
-                        setModuleRoles((prev) => {
-                          const current = prev[module.id] || [];
-                          const has = current.includes(role);
-                          const next = has ? current.filter((r) => r !== role) : [...current, role];
-                          return { ...prev, [module.id]: next };
-                        });
-                      }}
-                      {...(isStartupHub
-                        ? {
-                            startupOptions: startupHubOptions,
-                            onStartupOptionToggle: (opt: 'startup' | 'mentor') =>
-                              setStartupHubOptions((prev) => ({ ...prev, [opt]: !prev[opt] })),
+                        }}>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Selecione uma empresa" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availableCompanies.map((company) => (
+                              <SelectItem key={company.id} value={company.id}>
+                                <div className="flex items-center gap-2">
+                                  <Building2 className="w-4 h-4" />
+                                  {company.name}
+                                  <Badge variant="outline" className="text-xs ml-2">
+                                    {company.company_type === 'startup' ? 'Startup' : 'Empresa'}
+                                  </Badge>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'modules' && (
+                <div className="space-y-3">
+                  {modules.map((module) => {
+                    const isStartupHub = module.slug === 'startup-hub';
+                    const checked = moduleAccess[module.id] || false;
+                    return (
+                      <ModuleAccessRow
+                        key={module.id}
+                        module={module}
+                        checked={checked}
+                        roles={moduleRoles[module.id] || []}
+                        onAccessChange={(v) => {
+                          setModuleAccess((prev) => ({ ...prev, [module.id]: !!v }));
+                          if (isStartupHub) {
+                            if (!!v && user) {
+                              loadStartupHubOptions(user.user_id);
+                            } else {
+                              resetStartupHubOptions();
+                            }
                           }
-                        : {})}
-                    />
-                  );
-                })}
-              </div>
+                        }}
+                        onRoleToggle={(role) => {
+                          setModuleRoles((prev) => {
+                            const current = prev[module.id] || [];
+                            const has = current.includes(role);
+                            const next = has ? current.filter((r) => r !== role) : [...current, role];
+                            return { ...prev, [module.id]: next };
+                          });
+                        }}
+                        {...(isStartupHub
+                          ? {
+                              startupOptions: startupHubOptions,
+                              onStartupOptionToggle: (opt: 'startup' | 'mentor') =>
+                                setStartupHubOptions((prev) => ({ ...prev, [opt]: !prev[opt] })),
+                            }
+                          : {})}
+                      />
+                    );
+                  })}
+                </div>
+              )}
 
-              <Button onClick={saveModuleAccess} disabled={isLoading}>
-                {isLoading ? 'Salvando...' : 'Salvar Permissões'}
-              </Button>
-            </TabsContent>
-
-            <TabsContent value="actions" className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Status do Usuário</CardTitle>
-                    <CardDescription>
-                      Ativar ou desativar o usuário no sistema
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant={user?.status === 'active' ? 'destructive' : 'default'}>
-                          {user?.status === 'active' ? (
-                            <>
-                              <UserX className="h-4 w-4 mr-2" />
-                              Desativar Usuário
-                            </>
-                          ) : (
-                            <>
-                              <UserCheck className="h-4 w-4 mr-2" />
-                              Ativar Usuário
-                            </>
-                          )}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            {user?.status === 'active' ? 'Desativar' : 'Ativar'} Usuário
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Tem certeza que deseja {user?.status === 'active' ? 'desativar' : 'ativar'} este usuário?
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={toggleUserStatus}>
-                            {user?.status === 'active' ? 'Desativar' : 'Ativar'}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </CardContent>
-                </Card>
-
-                {canStartImpersonation && (
+              {activeTab === 'actions' && (
+                <div className="grid grid-cols-1 gap-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-lg">Impersonation</CardTitle>
+                      <CardTitle className="text-lg">Status do Usuário</CardTitle>
                       <CardDescription>
-                        Fazer login como este usuário para testar permissões
+                        Ativar ou desativar o usuário no sistema
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="secondary">
-                            <Eye className="h-4 w-4 mr-2" />
-                            Logar como usuário
+                          <Button variant={user?.status === 'active' ? 'destructive' : 'default'}>
+                            {user?.status === 'active' ? (
+                              <>
+                                <UserX className="h-4 w-4 mr-2" />
+                                Desativar Usuário
+                              </>
+                            ) : (
+                              <>
+                                <UserCheck className="h-4 w-4 mr-2" />
+                                Ativar Usuário
+                              </>
+                            )}
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Confirmar Impersonation</AlertDialogTitle>
+                            <AlertDialogTitle>
+                              {user?.status === 'active' ? 'Desativar' : 'Ativar'} Usuário
+                            </AlertDialogTitle>
                             <AlertDialogDescription>
-                              Tem certeza que deseja fazer login como {user?.first_name} {user?.last_name}?
-                              <br /><br />
-                              Você poderá voltar ao seu usuário admin a qualquer momento.
+                              Tem certeza que deseja {user?.status === 'active' ? 'desativar' : 'ativar'} este usuário?
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleStartImpersonation}>
-                              Confirmar Impersonation
+                            <AlertDialogAction onClick={toggleUserStatus}>
+                              {user?.status === 'active' ? 'Desativar' : 'Ativar'}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
                     </CardContent>
                   </Card>
-                )}
-              </div>
-            </TabsContent>
-          </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Fechar
-            </Button>
+                  {canStartImpersonation && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg">Impersonation</CardTitle>
+                        <CardDescription>
+                          Fazer login como este usuário para testar permissões
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="secondary">
+                              <Eye className="h-4 w-4 mr-2" />
+                              Logar como usuário
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirmar Impersonation</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja fazer login como {user?.first_name} {user?.last_name}?
+                                <br /><br />
+                                Você poderá voltar ao seu usuário admin a qualquer momento.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleStartImpersonation}>
+                                Confirmar Impersonation
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer com botão de salvar */}
+            <div className="border-t p-4 bg-background">
+              <div className="flex justify-end gap-3">
+                <Button variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={saveAllChanges} disabled={isLoading}>
+                  {isLoading ? 'Salvando...' : 'Salvar e Fechar'}
+                </Button>
+              </div>
+            </div>
           </div>
-        </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
