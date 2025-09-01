@@ -95,139 +95,148 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
   const isComplete = isAssessmentComplete();
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={onCancel}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">Avaliação BEEP</h1>
-              <p className="text-muted-foreground">Categoria: {currentCategory?.name}</p>
+    <div className="relative">
+      {/* Fixed Progress Bar */}
+      <div className="fixed top-16 left-0 right-0 bg-background/95 backdrop-blur-sm border-b z-50 px-4 lg:px-6 py-3">
+        <div className="max-w-full mx-auto">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium">Progresso da Avaliação</span>
+              <span className="text-sm text-muted-foreground">
+                Categoria: {currentCategory?.name}
+              </span>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {progress.answered}/{progress.total} perguntas ({progress.total > 0 ? Math.round((progress.answered / progress.total) * 100) : 0}%)
+            </div>
+          </div>
+          <Progress 
+            value={progress.total > 0 ? (progress.answered / progress.total) * 100 : 0} 
+            className="h-2"
+          />
+        </div>
+      </div>
+
+      {/* Main Content with top margin to account for fixed progress bar */}
+      <div className="pt-24 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={onCancel}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Voltar
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold">Avaliação BEEP</h1>
+                <p className="text-muted-foreground">Categoria: {currentCategory?.name}</p>
+              </div>
             </div>
           </div>
         </div>
-        <div className="text-sm text-muted-foreground">
-          {progress.answered}/{progress.total} perguntas respondidas
-        </div>
-      </div>
 
-      {/* Progress */}
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span>Progresso da Avaliação</span>
-          <span>{progress.total > 0 ? Math.round((progress.answered / progress.total) * 100) : 0}%</span>
-        </div>
-        <Progress 
-          value={progress.total > 0 ? (progress.answered / progress.total) * 100 : 0} 
-          className="h-2 bg-gray-200"
-        />
-      </div>
-
-      {/* Navigation */}
-      <div className="flex items-center justify-between">
-        <Button 
-          variant="outline" 
-          onClick={handlePreviousCategory}
-          disabled={currentCategoryIndex === 0}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Anterior
-        </Button>
-        
-        <div className="text-sm text-muted-foreground">
-          Categoria {currentCategoryIndex + 1} de {categories.length}
-        </div>
-        
-        <Button 
-          variant="outline" 
-          onClick={handleNextCategory}
-          disabled={currentCategoryIndex === categories.length - 1}
-        >
-          Próxima
-          <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
-      </div>
-
-      {/* Category Tabs */}
-      <Tabs value={currentCategoryIndex.toString()} onValueChange={(value) => setCurrentCategoryIndex(parseInt(value))}>
-        <TabsList className="grid w-full grid-cols-3">
-          {categories.map((category, index) => (
-            <TabsTrigger key={category.id} value={index.toString()}>
-              {category.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {categories.map((category, categoryIndex) => (
-          <TabsContent key={category.id} value={categoryIndex.toString()} className="space-y-6">
-            {category.subcategories.map((subcategory) => (
-              <Card key={subcategory.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{subcategory.name}</CardTitle>
-                  {subcategory.description && (
-                    <p className="text-sm text-muted-foreground">{subcategory.description}</p>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {subcategory.questions.map((question) => (
-                    <BeepQuestionCard
-                      key={question.id}
-                      question={question}
-                      value={answers[question.id]}
-                      onChange={(value) => onAnswer(question.id, value)}
-                      isLoading={savingQuestions.has(question.id)}
-                      isSaved={savedQuestions.has(question.id)}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
-            ))}
-          </TabsContent>
-        ))}
-      </Tabs>
-
-      {/* Bottom Navigation - Replicated */}
-      <div className="flex items-center justify-between border-t pt-6">
-        <Button 
-          variant="outline" 
-          onClick={handlePreviousCategory}
-          disabled={currentCategoryIndex === 0}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Anterior
-        </Button>
-        
-        <div className="text-sm text-muted-foreground">
-          Categoria {currentCategoryIndex + 1} de {categories.length}
-        </div>
-        
-        <Button 
-          variant="outline" 
-          onClick={handleNextCategory}
-          disabled={currentCategoryIndex === categories.length - 1}
-        >
-          Próxima
-          <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
-      </div>
-
-      {/* Complete Button */}
-      {isComplete && (
-        <div className="flex justify-center pt-6">
+        {/* Navigation */}
+        <div className="flex items-center justify-between">
           <Button 
-            onClick={onComplete}
-            disabled={isCompleting}
-            size="lg"
-            className="px-8"
+            variant="outline" 
+            onClick={handlePreviousCategory}
+            disabled={currentCategoryIndex === 0}
           >
-            {isCompleting ? 'Finalizando...' : 'Finalizar Avaliação'}
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Anterior
+          </Button>
+          
+          <div className="text-sm text-muted-foreground">
+            Categoria {currentCategoryIndex + 1} de {categories.length}
+          </div>
+          
+          <Button 
+            variant="outline" 
+            onClick={handleNextCategory}
+            disabled={currentCategoryIndex === categories.length - 1}
+          >
+            Próxima
+            <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </div>
-      )}
+
+        {/* Category Tabs */}
+        <Tabs value={currentCategoryIndex.toString()} onValueChange={(value) => setCurrentCategoryIndex(parseInt(value))}>
+          <TabsList className="grid w-full grid-cols-3">
+            {categories.map((category, index) => (
+              <TabsTrigger key={category.id} value={index.toString()}>
+                {category.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {categories.map((category, categoryIndex) => (
+            <TabsContent key={category.id} value={categoryIndex.toString()} className="space-y-6">
+              {category.subcategories.map((subcategory) => (
+                <Card key={subcategory.id}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{subcategory.name}</CardTitle>
+                    {subcategory.description && (
+                      <p className="text-sm text-muted-foreground">{subcategory.description}</p>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {subcategory.questions.map((question) => (
+                      <BeepQuestionCard
+                        key={question.id}
+                        question={question}
+                        value={answers[question.id]}
+                        onChange={(value) => onAnswer(question.id, value)}
+                        isLoading={savingQuestions.has(question.id)}
+                        isSaved={savedQuestions.has(question.id)}
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </TabsContent>
+          ))}
+        </Tabs>
+
+        {/* Bottom Navigation - Replicated */}
+        <div className="flex items-center justify-between border-t pt-6">
+          <Button 
+            variant="outline" 
+            onClick={handlePreviousCategory}
+            disabled={currentCategoryIndex === 0}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Anterior
+          </Button>
+          
+          <div className="text-sm text-muted-foreground">
+            Categoria {currentCategoryIndex + 1} de {categories.length}
+          </div>
+          
+          <Button 
+            variant="outline" 
+            onClick={handleNextCategory}
+            disabled={currentCategoryIndex === categories.length - 1}
+          >
+            Próxima
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
+        </div>
+
+        {/* Complete Button */}
+        {isComplete && (
+          <div className="flex justify-center pt-6">
+            <Button 
+              onClick={onComplete}
+              disabled={isCompleting}
+              size="lg"
+              className="px-8"
+            >
+              {isCompleting ? 'Finalizando...' : 'Finalizar Avaliação'}
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
