@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,48 @@ export const MentorDashboard: React.FC = () => {
       return data?.length || 0;
     }
   });
+
+  // Fetch mentor's startups count
+  const { data: mentorStartupsCount } = useQuery({
+    queryKey: ['mentor-startups-count', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      
+      const { data, error } = await supabase
+        .from('user_company_relations')
+        .select('company_id', { count: 'exact' })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      return data?.length || 0;
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch mentor's sessions count for current month
+  const { data: monthlySessionsCount } = useQuery({
+    queryKey: ['mentor-sessions-count', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      
+      const { data, error } = await supabase
+        .from('mentoring_sessions')
+        .select('id', { count: 'exact' })
+        .eq('mentor_id', user.id)
+        .gte('session_date', startOfMonth.toISOString());
+
+      if (error) throw error;
+      return data?.length || 0;
+    },
+    enabled: !!user?.id
+  });
+
+  // Fetch mentor's average rating (placeholder - we'll use 5.0 for now as rating system isn't implemented)
+  const mentorRating = 5.0;
 
   // Fetch recent BEEP assessments
   const { data: recentAssessments } = useQuery({
@@ -75,26 +118,16 @@ export const MentorDashboard: React.FC = () => {
     }
   });
 
-  // Fetch mentor's startups count
-  const { data: mentorStartupsCount } = useQuery({
-    queryKey: ['mentor-startups-count', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return 0;
-      
-      const { data, error } = await supabase
-        .from('mentor_startup_relations')
-        .select('id', { count: 'exact' })
-        .eq('mentor_id', user.id)
-        .eq('status', 'active');
-
-      if (error) throw error;
-      return data?.length || 0;
-    },
-    enabled: !!user?.id
-  });
-
   const handleNavigateToBeep = () => {
-    setSearchParams({ tab: 'beep' });
+    setSearchParams({ tab: 'beep-analytics' });
+  };
+
+  const handleNavigateToStartups = () => {
+    setSearchParams({ tab: 'startups' });
+  };
+
+  const handleNavigateToSessions = () => {
+    setSearchParams({ tab: 'sessions' });
   };
 
   return (
@@ -146,7 +179,7 @@ export const MentorDashboard: React.FC = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{monthlySessionsCount || 0}</div>
             <p className="text-xs text-muted-foreground">
               Este mês
             </p>
@@ -159,7 +192,7 @@ export const MentorDashboard: React.FC = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5.0</div>
+            <div className="text-2xl font-bold">{mentorRating.toFixed(1)}</div>
             <p className="text-xs text-muted-foreground">
               Rating médio
             </p>
@@ -245,12 +278,19 @@ export const MentorDashboard: React.FC = () => {
                 Ver Resultados BEEP
               </Button>
               
-              <Button className="w-full" variant="outline">
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={handleNavigateToStartups}
+              >
                 <MessageCircle className="h-4 w-4 mr-2" />
                 Explorar Startups
               </Button>
               
-              <Button className="w-full">
+              <Button 
+                className="w-full"
+                onClick={handleNavigateToSessions}
+              >
                 <Calendar className="h-4 w-4 mr-2" />
                 Agendar Mentoria
               </Button>
