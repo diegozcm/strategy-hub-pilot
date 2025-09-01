@@ -556,21 +556,126 @@ export const CompaniesPage: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredCompanies.map((company) => (
-                <CompanyCard
-                  key={company.id}
-                  company={company}
-                  users={companyUsers[company.id] || []}
-                  onEdit={(company) => {
-                    setSelectedCompany(company);
-                    setIsEditDialogOpen(true);
-                  }}
-                  onToggleStatus={handleToggleStatus}
-                  onManageUsers={setManagingUsers}
-                  onDelete={setDeletingCompany}
-                />
-              ))}
+            <div className="border rounded-lg bg-background">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border">
+                    <TableHead className="text-foreground">Empresa</TableHead>
+                    <TableHead className="text-foreground">Tipo</TableHead>
+                    <TableHead className="text-foreground">Status</TableHead>
+                    <TableHead className="text-foreground">Usuários</TableHead>
+                    <TableHead className="text-foreground">Missão</TableHead>
+                    <TableHead className="text-foreground text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCompanies.map((company) => {
+                    const users = companyUsers[company.id] || [];
+                    const activeUsers = users.filter(u => u.status === 'active').length;
+                    const totalUsers = users.length;
+                    const canDelete = totalUsers === 0;
+
+                    return (
+                      <TableRow key={company.id} className="border-border hover:bg-muted/50">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                              <Building2 className="w-4 h-4 text-primary" />
+                            </div>
+                            <div>
+                              <div className="font-medium text-foreground">{company.name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                ID: {company.id.substring(0, 8)}...
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={company.company_type === 'startup' ? 'outline' : 'secondary'}
+                            className={company.company_type === 'startup' ? 'border-orange-500 text-orange-500' : ''}
+                          >
+                            {company.company_type === 'startup' ? 'Startup' : 'Empresa'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
+                            {company.status === 'active' ? 'Ativa' : 'Inativa'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Users className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-foreground">{activeUsers}/{totalUsers}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-xs">
+                            {company.mission ? (
+                              <p className="text-sm text-foreground truncate" title={company.mission}>
+                                {company.mission}
+                              </p>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">Não definida</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-popover border-border text-popover-foreground">
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedCompany(company);
+                                setIsEditDialogOpen(true);
+                              }} className="hover:bg-accent">
+                                <Edit className="w-4 h-4 mr-2" />
+                                Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setManagingUsers(company)} className="hover:bg-accent">
+                                <UserPlus className="w-4 h-4 mr-2" />
+                                Gerenciar Usuários
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator className="bg-border" />
+                              <DropdownMenuItem 
+                                onClick={() => handleToggleStatus(company.id, company.status)}
+                                className="hover:bg-accent"
+                              >
+                                {company.status === 'active' ? (
+                                  <>
+                                    <PowerOff className="w-4 h-4 mr-2" />
+                                    Desativar
+                                  </>
+                                ) : (
+                                  <>
+                                    <Power className="w-4 h-4 mr-2" />
+                                    Ativar
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                              {canDelete && (
+                                <>
+                                  <DropdownMenuSeparator className="bg-border" />
+                                  <DropdownMenuItem 
+                                    onClick={() => setDeletingCompany(company)}
+                                    className="hover:bg-destructive/10 text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Excluir
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </div>
           )}
 
