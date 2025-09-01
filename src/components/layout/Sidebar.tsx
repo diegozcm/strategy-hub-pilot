@@ -1,11 +1,13 @@
+
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { BarChart3, Target, Briefcase, Users, Settings, ChevronLeft, ChevronRight, Zap, TrendingUp, Activity, Brain, Map, Building2, UserCheck, Shield } from 'lucide-react';
+import { BarChart3, Target, Briefcase, Users, Settings, ChevronLeft, ChevronRight, Zap, TrendingUp, Activity, Brain, Map, Building2, UserCheck, Shield, Building, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { PermissionGate } from '@/components/PermissionGate';
 import { useModules } from '@/hooks/useModules';
+
 const menuStructure = [
   {
     name: 'STRATEGY HUB',
@@ -23,7 +25,11 @@ const menuStructure = [
     name: 'STARTUP HUB',
     icon: Brain,
     items: [
-      { name: 'Dashboard', href: '/app/startup-hub', icon: BarChart3 }
+      { name: 'Dashboard', href: '/app/startup-hub?tab=dashboard', icon: BarChart3 },
+      { name: 'Avaliação BEEP', href: '/app/startup-hub?tab=beep', icon: TrendingUp, requiresStartup: true },
+      { name: 'Startups', href: '/app/startup-hub?tab=startups', icon: Building, requiresMentor: true },
+      { name: 'Mentorias', href: '/app/startup-hub?tab=mentoring', icon: Users },
+      { name: 'Perfil', href: '/app/startup-hub?tab=profile', icon: User }
     ]
   },
   {
@@ -40,6 +46,7 @@ const systemAdminNavigation = [
   { name: 'Empresas', href: '/app/admin/companies', icon: Building2 },
   { name: 'Usuários Pendentes', href: '/app/admin/users', icon: UserCheck }
 ];
+
 export const Sidebar: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { hasModuleAccess } = useModules();

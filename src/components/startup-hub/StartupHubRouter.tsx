@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Building, TrendingUp, User, BarChart3, Users, Settings } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+import React, { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Building } from 'lucide-react';
 import { useStartupProfile } from '@/hooks/useStartupProfile';
 import { StartupDashboard } from './StartupDashboard';
 import { MentorDashboard } from './MentorDashboard';
@@ -13,11 +14,19 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export const StartupHubRouter: React.FC = () => {
   const { profile, company, isLoading, hasProfile, isStartup, isMentor, hasStartupCompany } = useStartupProfile();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'dashboard';
 
   const handleNavigateToBeep = () => {
-    setActiveTab('beep');
+    setSearchParams({ tab: 'beep' });
   };
+
+  // Set default tab if none specified
+  useEffect(() => {
+    if (!searchParams.get('tab')) {
+      setSearchParams({ tab: 'dashboard' });
+    }
+  }, [searchParams, setSearchParams]);
 
   if (isLoading) {
     return (
@@ -48,35 +57,41 @@ export const StartupHubRouter: React.FC = () => {
     );
   }
 
-  // Navigation items based on profile type
-  const getNavigationItems = () => {
-    const baseItems = [
-      { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-      { id: 'profile', label: 'Perfil', icon: User }
-    ];
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return isStartup ? (
+          <StartupDashboard onNavigateToBeep={handleNavigateToBeep} />
+        ) : (
+          <MentorDashboard />
+        );
 
-    if (isStartup) {
-      return [
-        ...baseItems.slice(0, 1),
-        { id: 'beep', label: 'Avaliação BEEP', icon: TrendingUp },
-        { id: 'mentoring', label: 'Mentorias', icon: Users },
-        ...baseItems.slice(1)
-      ];
+      case 'beep':
+        if (isStartup) {
+          return <BeepAssessmentPage />;
+        }
+        return <div className="text-center py-12">Acesso não autorizado</div>;
+
+      case 'startups':
+        if (isMentor) {
+          return <MentorStartupsPage />;
+        }
+        return <div className="text-center py-12">Acesso não autorizado</div>;
+
+      case 'mentoring':
+        return isStartup ? <StartupMentoringPage /> : <MentoringTipsPage />;
+
+      case 'profile':
+        return <StartupProfileSetup />;
+
+      default:
+        return isStartup ? (
+          <StartupDashboard onNavigateToBeep={handleNavigateToBeep} />
+        ) : (
+          <MentorDashboard />
+        );
     }
-
-    if (isMentor) {
-      return [
-        ...baseItems.slice(0, 1),
-        { id: 'startups', label: 'Startups', icon: Building },
-        { id: 'mentoring', label: 'Mentorias', icon: Users },
-        ...baseItems.slice(1)
-      ];
-    }
-
-    return baseItems;
   };
-
-  const navigationItems = getNavigationItems();
 
   return (
     <div className="space-y-6">
@@ -94,52 +109,7 @@ export const StartupHubRouter: React.FC = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-6">
-          {navigationItems.map((item) => (
-            <TabsTrigger key={item.id} value={item.id} className="flex items-center space-x-2">
-              <item.icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{item.label}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        <TabsContent value="dashboard">
-          {isStartup ? (
-            <StartupDashboard onNavigateToBeep={handleNavigateToBeep} />
-          ) : (
-            <MentorDashboard />
-          )}
-        </TabsContent>
-
-        {isStartup && (
-          <TabsContent value="beep">
-            <BeepAssessmentPage />
-          </TabsContent>
-        )}
-
-        {isStartup && (
-          <TabsContent value="mentoring">
-            <StartupMentoringPage />
-          </TabsContent>
-        )}
-
-        {isMentor && (
-          <>
-            <TabsContent value="startups">
-              <MentorStartupsPage />
-            </TabsContent>
-
-            <TabsContent value="mentoring">
-              <MentoringTipsPage />
-            </TabsContent>
-          </>
-        )}
-
-        <TabsContent value="profile">
-          <StartupProfileSetup />
-        </TabsContent>
-      </Tabs>
+      {renderContent()}
     </div>
   );
 };
