@@ -20,7 +20,21 @@ import {
   ChevronLeft,
   ChevronRight,
   Map,
-  Lightbulb
+  Lightbulb,
+  Building2,
+  Rocket,
+  CheckCircle,
+  Phone,
+  Mail,
+  MapPin,
+  Linkedin,
+  Twitter,
+  MessageSquare,
+  UserCheck,
+  TrendingDown,
+  Activity,
+  PieChart,
+  Clock
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -28,14 +42,23 @@ const LandingPage = () => {
   const [currentScreenshot, setCurrentScreenshot] = React.useState(0);
   
   const screenshots = [
-    { title: "Dashboard Executivo", description: "Visão completa das métricas estratégicas com IA", module: "Planejamento Estratégico", placeholder: "strategic-dashboard.png" },
-    { title: "Mapa Estratégico", description: "Visualize objetivos e resultados-chave", module: "Planejamento Estratégico", placeholder: "strategic-map.png" },
-    { title: "Dashboard Startup", description: "Painel completo para startups", module: "Startup HUB", placeholder: "startup-dashboard.png" },
-    { title: "Avaliação BEEP", description: "Business Excellence Evaluation Program", module: "Startup HUB", placeholder: "beep-assessment.png" },
-    { title: "Mentoria", description: "Gestão de sessões e mentoria", module: "Startup HUB", placeholder: "mentoring-sessions.png" },
-    { title: "Copiloto de IA", description: "Assistente inteligente estratégico", module: "Planejamento Estratégico", placeholder: "ai-copilot.png" },
-    { title: "Analytics Startup", description: "Métricas e performance das startups", module: "Startup HUB", placeholder: "startup-analytics.png" },
-    { title: "Gestão de Objetivos", description: "OKRs e metas estratégicas", module: "Planejamento Estratégico", placeholder: "objectives-management.png" }
+    { title: "Dashboard Executivo COFOUND", description: "Analytics estratégicos integrados com consultoria", module: "Strategy HUB", placeholder: "strategic-dashboard.png" },
+    { title: "Mapa Estratégico Interativo", description: "Planejamento visual conectado aos serviços COFOUND", module: "Strategy HUB", placeholder: "strategic-map.png" },
+    { title: "Dashboard Startup", description: "Métricas BEEP em tempo real", module: "Startup HUB", placeholder: "startup-dashboard.png" },
+    { title: "Avaliação BEEP Completa", description: "Business Entrepreneur Evolution Phases - 5 níveis de maturidade", module: "Startup HUB", placeholder: "beep-assessment.png" },
+    { title: "Mentoria COFOUND", description: "Sessões com especialistas certificados", module: "Startup HUB", placeholder: "mentoring-sessions.png" },
+    { title: "Copiloto Estratégico IA", description: "Inteligência artificial para consultoria estratégica", module: "Strategy HUB", placeholder: "ai-copilot.png" },
+    { title: "Analytics BEEP", description: "Evolução e benchmarking das startups", module: "Startup HUB", placeholder: "startup-analytics.png" },
+    { title: "OKRs Corporativos", description: "Gestão de objetivos empresariais", module: "Strategy HUB", placeholder: "objectives-management.png" }
+  ];
+
+  // BEEP Maturity Levels for visual representation
+  const beepLevels = [
+    { level: 1, name: "Idealizando", range: "1.0-1.8", color: "bg-red-500", description: "Conceituação inicial" },
+    { level: 2, name: "Validando", range: "1.9-2.6", color: "bg-orange-500", description: "Problemas e soluções" },
+    { level: 3, name: "Iniciando", range: "2.7-3.4", color: "bg-yellow-500", description: "Estruturação do negócio" },
+    { level: 4, name: "Validando Mercado", range: "3.5-4.2", color: "bg-blue-500", description: "Tração e escalabilidade" },
+    { level: 5, name: "Evoluindo", range: "4.3-5.0", color: "bg-green-500", description: "Crescimento sustentável" }
   ];
 
   const nextScreenshot = () => {
@@ -81,23 +104,23 @@ const LandingPage = () => {
         <div className="container mx-auto text-center">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl font-bold text-strategy-red-dark mb-6 leading-tight">
-              Planejamento Estratégico e <span className="text-strategy-red-dark">Aceleração de Startups</span>
+              Start Together, <span className="text-strategy-red-dark">onde a estratégia e a aceleração se encontram</span>
             </h1>
             
             <p className="text-xl text-strategy-blue-navy mb-8 leading-relaxed">
-              Plataforma completa para empresas que querem crescer de forma estratégica e startups que buscam aceleração. Conecte planejamento inteligente com mentoria especializada.
+              Plataforma corporativa COFOUND que integra consultoria estratégica empresarial com aceleração profissional de startups. Soluções completas para crescimento sustentável e inovação dirigida.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link to="/auth">
                 <Button size="lg" className="text-lg px-8 py-6 bg-primary hover:bg-strategy-red-light text-white">
-                  Fazer Login
+                  Acessar Plataforma
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-strategy-blue-navy text-strategy-blue-navy hover:bg-strategy-blue-navy hover:text-white">
-                <Play className="mr-2 h-5 w-5" />
-                Ver Demonstração
+                <Phone className="mr-2 h-5 w-5" />
+                Agendar Consultoria
               </Button>
             </div>
 
@@ -105,56 +128,58 @@ const LandingPage = () => {
             <div className="flex flex-wrap justify-center gap-6">
               <Badge className="bg-accent text-white px-4 py-2">
                 <Shield className="h-4 w-4 mr-2" />
-                Segurança SSL
+                Certificação ISO 27001
               </Badge>
               <Badge className="bg-accent text-white px-4 py-2">
                 <Lock className="h-4 w-4 mr-2" />
                 LGPD Compliance
               </Badge>
               <Badge className="bg-accent text-white px-4 py-2">
-                <Zap className="h-4 w-4 mr-2" />
-                99.9% Uptime
+                <Building2 className="h-4 w-4 mr-2" />
+                Produto COFOUND
               </Badge>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Main Features */}
+{/* Main Features */}
       <section id="features" className="py-16 px-4 bg-white">
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-strategy-red-dark mb-4">
-              Dois Módulos, Infinitas Possibilidades
+              Soluções Corporativas COFOUND
             </h2>
-            <p className="text-xl text-strategy-gray-medium max-w-2xl mx-auto">
-              Planejamento Estratégico para empresas e Startup HUB para aceleração de startups
+            <p className="text-xl text-strategy-gray-medium max-w-3xl mx-auto">
+              Dois módulos especializados para consultoria estratégica empresarial e aceleração profissional de startups
             </p>
           </div>
 
-          <div className="space-y-12">
-            {/* Módulo Planejamento Estratégico */}
+          <div className="space-y-16">
+            {/* Strategy HUB - Consultoria Estratégica */}
             <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-2xl p-8">
               <div className="text-center mb-8">
-                <Badge className="mb-4 bg-primary text-white px-4 py-2">
-                  <TargetIcon className="h-4 w-4 mr-2" />
-                  Módulo Planejamento Estratégico
+                <Badge className="mb-4 bg-primary text-white px-6 py-3 text-base">
+                  <Building2 className="h-5 w-5 mr-2" />
+                  Strategy HUB - Consultoria Estratégica COFOUND
                 </Badge>
-                <h3 className="text-2xl font-bold text-strategy-blue-navy mb-2">Para Empresas</h3>
-                <p className="text-strategy-gray-medium">Transforme sua gestão estratégica com IA</p>
+                <h3 className="text-3xl font-bold text-strategy-blue-navy mb-4">Consultoria Integrada com Tecnologia</h3>
+                <p className="text-lg text-strategy-gray-medium max-w-2xl mx-auto">
+                  Serviços de consultoria estratégica da COFOUND potencializados por uma plataforma digital avançada para acompanhamento e execução em tempo real.
+                </p>
               </div>
               
-              <div className="grid md:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-3 gap-6 mb-8">
                 <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
                   <CardHeader>
                     <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                       <BarChart3 className="h-6 w-6 text-primary" />
                     </div>
-                    <CardTitle className="text-strategy-blue-navy">Dashboard Executivo</CardTitle>
+                    <CardTitle className="text-strategy-blue-navy">Dashboard Executivo Integrado</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base text-strategy-gray-medium">
-                      Visualize KPIs e métricas estratégicas com insights de IA em tempo real
+                      Métricas estratégicas em tempo real conectadas aos projetos de consultoria COFOUND, com insights de IA personalizados para sua empresa.
                     </CardDescription>
                   </CardContent>
                 </Card>
@@ -164,11 +189,11 @@ const LandingPage = () => {
                     <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                       <Map className="h-6 w-6 text-primary" />
                     </div>
-                    <CardTitle className="text-strategy-blue-navy">Mapa Estratégico</CardTitle>
+                    <CardTitle className="text-strategy-blue-navy">Planejamento Estratégico Visual</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base text-strategy-gray-medium">
-                      Visualize objetivos e resultados-chave em mapas estratégicos inteligentes
+                      Mapas estratégicos desenvolvidos pela consultoria COFOUND e acompanhados digitalmente com OKRs, indicadores e metas integradas.
                     </CardDescription>
                   </CardContent>
                 </Card>
@@ -178,39 +203,81 @@ const LandingPage = () => {
                     <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                       <Brain className="h-6 w-6 text-primary" />
                     </div>
-                    <CardTitle className="text-strategy-blue-navy">Copiloto de IA</CardTitle>
+                    <CardTitle className="text-strategy-blue-navy">Copiloto Estratégico IA</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base text-strategy-gray-medium">
-                      Assistente inteligente para planejamento estratégico e insights automáticos
+                      Inteligência artificial treinada com metodologias COFOUND para análises preditivas, relatórios automáticos e recomendações estratégicas contínuas.
                     </CardDescription>
                   </CardContent>
                 </Card>
               </div>
+
+              <div className="bg-primary/10 rounded-xl p-6 text-center">
+                <p className="text-strategy-blue-navy font-semibold mb-2">
+                  <Building2 className="inline h-5 w-5 mr-2" />
+                  Consultoria COFOUND + Tecnologia
+                </p>
+                <p className="text-strategy-gray-medium">
+                  Combine a expertise de nossos consultores especializados com uma plataforma tecnológica avançada para execução e monitoramento contínuo da estratégia empresarial.
+                </p>
+              </div>
             </div>
 
-            {/* Módulo Startup HUB */}
+            {/* Startup HUB - Aceleração com BEEP */}
             <div className="bg-gradient-to-r from-accent/5 to-primary/5 rounded-2xl p-8">
               <div className="text-center mb-8">
-                <Badge className="mb-4 bg-accent text-white px-4 py-2">
-                  <Users className="h-4 w-4 mr-2" />
-                  Módulo Startup HUB
+                <Badge className="mb-4 bg-accent text-white px-6 py-3 text-base">
+                  <Rocket className="h-5 w-5 mr-2" />
+                  Startup HUB - Aceleração COFOUND
                 </Badge>
-                <h3 className="text-2xl font-bold text-strategy-blue-navy mb-2">Para Startups</h3>
-                <p className="text-strategy-gray-medium">Aceleração completa para startups inovadoras</p>
+                <h3 className="text-3xl font-bold text-strategy-blue-navy mb-4">Aceleração Profissional com Metodologia BEEP</h3>
+                <p className="text-lg text-strategy-gray-medium max-w-2xl mx-auto">
+                  Programa completo de aceleração COFOUND baseado na metodologia BEEP (Business Entrepreneur Evolution Phases), com mentoria especializada e acompanhamento personalizado.
+                </p>
+              </div>
+
+              {/* BEEP Visual Representation */}
+              <div className="bg-white rounded-xl p-6 mb-8">
+                <h4 className="text-xl font-bold text-strategy-blue-navy mb-6 text-center">
+                  Metodologia BEEP - 5 Fases de Evolução Empresarial
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                  {beepLevels.map((level, index) => (
+                    <div key={level.level} className="text-center">
+                      <div className={`w-16 h-16 ${level.color} rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold text-lg`}>
+                        {level.level}
+                      </div>
+                      <h5 className="font-semibold text-strategy-blue-navy mb-1">{level.name}</h5>
+                      <p className="text-xs text-strategy-gray-medium mb-2">{level.range}</p>
+                      <p className="text-xs text-strategy-gray-medium">{level.description}</p>
+                      {index < beepLevels.length - 1 && (
+                        <div className="hidden md:block absolute translate-x-8 translate-y-8">
+                          <ArrowRight className="h-4 w-4 text-strategy-gray-medium" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="bg-accent/10 rounded-lg p-4 text-center">
+                  <p className="text-strategy-blue-navy font-semibold mb-1">Avaliação Contínua BEEP</p>
+                  <p className="text-sm text-strategy-gray-medium">
+                    3 Dimensões principais: <span className="font-semibold">Modelo de Negócio</span> • <span className="font-semibold">Produto</span> • <span className="font-semibold">Operação</span>
+                  </p>
+                </div>
               </div>
               
-              <div className="grid md:grid-cols-3 gap-6">
+              <div className="grid md:grid-cols-3 gap-6 mb-8">
                 <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
                   <CardHeader>
                     <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                      <TrendingUp className="h-6 w-6 text-accent" />
+                      <Activity className="h-6 w-6 text-accent" />
                     </div>
-                    <CardTitle className="text-strategy-blue-navy">Dashboard Startup</CardTitle>
+                    <CardTitle className="text-strategy-blue-navy">Dashboard BEEP Analytics</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base text-strategy-gray-medium">
-                      Painel completo com métricas essenciais para startups
+                      Acompanhamento em tempo real da evolução nas 5 fases BEEP, com métricas detalhadas e benchmarking setorial.
                     </CardDescription>
                   </CardContent>
                 </Card>
@@ -220,11 +287,11 @@ const LandingPage = () => {
                     <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
                       <Award className="h-6 w-6 text-accent" />
                     </div>
-                    <CardTitle className="text-strategy-blue-navy">Avaliação BEEP</CardTitle>
+                    <CardTitle className="text-strategy-blue-navy">Avaliação BEEP Completa</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base text-strategy-gray-medium">
-                      Business Excellence Evaluation Program para análise completa
+                      Assessment completo das fases evolutivas com análise profissional COFOUND e plano de desenvolvimento personalizado.
                     </CardDescription>
                   </CardContent>
                 </Card>
@@ -232,16 +299,26 @@ const LandingPage = () => {
                 <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
                   <CardHeader>
                     <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                      <Users className="h-6 w-6 text-accent" />
+                      <UserCheck className="h-6 w-6 text-accent" />
                     </div>
-                    <CardTitle className="text-strategy-blue-navy">Mentoria Especializada</CardTitle>
+                    <CardTitle className="text-strategy-blue-navy">Mentoria COFOUND Especializada</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <CardDescription className="text-base text-strategy-gray-medium">
-                      Mentoria qualificada com gestão completa de sessões
+                      Sessões de mentoria com especialistas certificados COFOUND, focadas nas necessidades específicas identificadas pelo BEEP.
                     </CardDescription>
                   </CardContent>
                 </Card>
+              </div>
+
+              <div className="bg-accent/10 rounded-xl p-6 text-center">
+                <p className="text-strategy-blue-navy font-semibold mb-2">
+                  <Rocket className="inline h-5 w-5 mr-2" />
+                  Aceleração COFOUND Personalizada
+                </p>
+                <p className="text-strategy-gray-medium">
+                  Combine avaliação BEEP científica com mentoria especializada COFOUND para acelerar o crescimento da sua startup com metodologia comprovada e acompanhamento profissional.
+                </p>
               </div>
             </div>
           </div>
