@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
 
 interface BeepQuestion {
@@ -39,32 +40,38 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
       case 1:
         return {
           button: 'bg-red-500 hover:bg-red-500 text-white border-red-500',
-          text: 'text-red-600'
+          text: 'text-red-600',
+          badge: 'bg-red-100 text-red-700 border-red-200'
         };
       case 2:
         return {
           button: 'bg-orange-500 hover:bg-orange-500 text-white border-orange-500',
-          text: 'text-orange-600'
+          text: 'text-orange-600',
+          badge: 'bg-orange-100 text-orange-700 border-orange-200'
         };
       case 3:
         return {
           button: 'bg-yellow-500 hover:bg-yellow-500 text-white border-yellow-500',
-          text: 'text-yellow-600'
+          text: 'text-yellow-600',
+          badge: 'bg-yellow-100 text-yellow-700 border-yellow-200'
         };
       case 4:
         return {
           button: 'bg-lime-500 hover:bg-lime-500 text-white border-lime-500',
-          text: 'text-lime-600'
+          text: 'text-lime-600',
+          badge: 'bg-lime-100 text-lime-700 border-lime-200'
         };
       case 5:
         return {
           button: 'bg-green-500 hover:bg-green-500 text-white border-green-500',
-          text: 'text-green-600'
+          text: 'text-green-600',
+          badge: 'bg-green-100 text-green-700 border-green-200'
         };
       default:
         return {
           button: '',
-          text: ''
+          text: '',
+          badge: ''
         };
     }
   };
@@ -72,10 +79,18 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
   return (
     <Card className={`relative transition-all ${value > 0 ? 'border-blue-200 bg-blue-50/30' : ''}`}>
       {isSaved && (
-        <div className="absolute top-2 right-2 z-10 animate-fade-in">
+        <div className="absolute top-2 right-2 z-10 animate-fade-in flex items-center gap-2">
           <div className="bg-green-100 rounded-full p-1 shadow-sm">
             <Check className="h-4 w-4 text-green-600" />
           </div>
+          {value > 0 && (
+            <Badge 
+              variant="outline" 
+              className={`text-xs font-medium ${getColorClasses(value).badge}`}
+            >
+              {scaleLabels[value as keyof typeof scaleLabels]}
+            </Badge>
+          )}
         </div>
       )}
       <CardContent className="p-4">
@@ -111,14 +126,6 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
                 );
               })}
             </div>
-            
-            {value > 0 && (
-              <p className={`text-xs text-center bg-white p-2 rounded border font-medium ${
-                getColorClasses(value).text
-              }`}>
-                {scaleLabels[value as keyof typeof scaleLabels]}
-              </p>
-            )}
           </div>
         </div>
       </CardContent>
