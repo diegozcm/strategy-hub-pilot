@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -149,197 +148,134 @@ export const MentorStartupsOverviewPage: React.FC = () => {
             </CardHeader>
 
             <CardContent>
-              <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-                  <TabsTrigger value="beep">BEEP</TabsTrigger>
-                  <TabsTrigger value="mentoring">Mentoria</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="overview" className="space-y-6 mt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Informações Básicas */}
-                    <Card className="p-4">
-                      <div className="flex items-center space-x-2 mb-3">
-                        <Building className="h-5 w-5 text-primary" />
-                        <h4 className="font-semibold">Informações Básicas</h4>
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-sm font-medium text-muted-foreground">Nome da Startup</label>
-                          <p className="text-sm font-medium">{startup.name}</p>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
-                          <p className="text-sm">{format(new Date(startup.created_at), 'dd/MM/yyyy', { locale: ptBR })}</p>
-                        </div>
-                        {startup.latest_beep_assessment && (
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Nível de Maturidade</label>
-                            <div className="mt-1">
-                              <Badge 
-                                variant="outline" 
-                                className={maturityLevels[startup.latest_beep_assessment.maturity_level]?.color || 'bg-gray-100'}
-                              >
-                                {maturityLevels[startup.latest_beep_assessment.maturity_level]?.name || startup.latest_beep_assessment.maturity_level}
-                              </Badge>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-
-                    {/* Estatísticas */}
-                    <Card className="p-4">
-                      <div className="flex items-center space-x-2 mb-3">
-                        <TrendingUp className="h-5 w-5 text-primary" />
-                        <h4 className="font-semibold">Estatísticas</h4>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-muted-foreground">Avaliações BEEP</span>
-                          <span className="text-sm font-medium">{startup.beep_assessments_count}</span>
-                        </div>
-                        {startup.latest_beep_assessment && (
-                          <>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-muted-foreground">Último Score BEEP</span>
-                              <span className={`text-sm font-medium ${getScoreColor(startup.latest_beep_assessment.final_score)}`}>
-                                {startup.latest_beep_assessment.final_score.toFixed(1)}/10
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm text-muted-foreground">Última Avaliação</span>
-                              <span className="text-sm font-medium">
-                                {format(new Date(startup.latest_beep_assessment.completed_at), 'dd/MM/yyyy', { locale: ptBR })}
-                              </span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </Card>
-                  </div>
-
-                  {/* Missão, Visão e Valores */}
-                  <div className="grid grid-cols-1 gap-6">
-                    {startup.mission && (
-                      <Card className="p-4">
-                        <div className="flex items-center space-x-2 mb-3">
-                          <Target className="h-5 w-5 text-primary" />
-                          <h4 className="font-semibold">Missão</h4>
-                        </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">{startup.mission}</p>
-                      </Card>
-                    )}
-
-                    {startup.vision && (
-                      <Card className="p-4">
-                        <div className="flex items-center space-x-2 mb-3">
-                          <Eye className="h-5 w-5 text-primary" />
-                          <h4 className="font-semibold">Visão</h4>
-                        </div>
-                        <p className="text-sm text-muted-foreground leading-relaxed">{startup.vision}</p>
-                      </Card>
-                    )}
-
-                    {startup.values && startup.values.length > 0 && (
-                      <Card className="p-4">
-                        <div className="flex items-center space-x-2 mb-3">
-                          <Heart className="h-5 w-5 text-primary" />
-                          <h4 className="font-semibold">Valores</h4>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {startup.values.map((value, index) => (
-                            <Badge key={index} variant="secondary" className="text-xs">
-                              {value}
-                            </Badge>
-                          ))}
-                        </div>
-                      </Card>
-                    )}
-                  </div>
-
-                  {/* Ações Rápidas */}
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Informações Básicas */}
                   <Card className="p-4">
-                    <h4 className="font-semibold mb-3">Ações Rápidas</h4>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <Building className="h-5 w-5 text-primary" />
+                      <h4 className="font-semibold">Informações Básicas</h4>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Nome da Startup</label>
+                        <p className="text-sm font-medium">{startup.name}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Data de Criação</label>
+                        <p className="text-sm">{format(new Date(startup.created_at), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                      </div>
                       {startup.latest_beep_assessment && (
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleViewAssessmentDetails(startup.latest_beep_assessment)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver Última Avaliação BEEP
-                        </Button>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Nível de Maturidade</label>
+                          <div className="mt-1">
+                            <Badge 
+                              variant="outline" 
+                              className={maturityLevels[startup.latest_beep_assessment.maturity_level]?.color || 'bg-gray-100'}
+                            >
+                              {maturityLevels[startup.latest_beep_assessment.maturity_level]?.name || startup.latest_beep_assessment.maturity_level}
+                            </Badge>
+                          </div>
+                        </div>
                       )}
-                      <Button variant="outline" size="sm" disabled>
-                        <Users className="h-4 w-4 mr-2" />
-                        Agendar Mentoria
-                      </Button>
-                      <Button variant="outline" size="sm" disabled>
-                        <Globe className="h-4 w-4 mr-2" />
-                        Ver Website
-                      </Button>
                     </div>
                   </Card>
-                </TabsContent>
 
-                <TabsContent value="beep" className="space-y-4 mt-4">
-                  {startup.latest_beep_assessment ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                        <div>
-                          <div className="flex items-center space-x-3 mb-2">
-                            <Award className="h-5 w-5 text-primary" />
-                            <span className="font-medium">Última Avaliação BEEP</span>
-                          </div>
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            <p>Score: <span className={`font-medium ${getScoreColor(startup.latest_beep_assessment.final_score)}`}>
+                  {/* Estatísticas */}
+                  <Card className="p-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      <h4 className="font-semibold">Estatísticas</h4>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Avaliações BEEP</span>
+                        <span className="text-sm font-medium">{startup.beep_assessments_count}</span>
+                      </div>
+                      {startup.latest_beep_assessment && (
+                        <>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Último Score BEEP</span>
+                            <span className={`text-sm font-medium ${getScoreColor(startup.latest_beep_assessment.final_score)}`}>
                               {startup.latest_beep_assessment.final_score.toFixed(1)}/10
-                            </span></p>
-                            <p>Nível: <span className="font-medium">
-                              {maturityLevels[startup.latest_beep_assessment.maturity_level]?.name || startup.latest_beep_assessment.maturity_level}
-                            </span></p>
-                            <p>Concluída em: {format(new Date(startup.latest_beep_assessment.completed_at), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                            </span>
                           </div>
-                        </div>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleViewAssessmentDetails(startup.latest_beep_assessment)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          Ver Detalhes
-                        </Button>
-                      </div>
-                      
-                      <div className="text-sm text-muted-foreground">
-                        <p className="flex items-center">
-                          <TrendingUp className="h-4 w-4 mr-2" />
-                          Total de avaliações: {startup.beep_assessments_count}
-                        </p>
-                      </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-muted-foreground">Última Avaliação</span>
+                            <span className="text-sm font-medium">
+                              {format(new Date(startup.latest_beep_assessment.completed_at), 'dd/MM/yyyy', { locale: ptBR })}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
-                  ) : (
-                    <div className="text-center py-6 text-muted-foreground">
-                      <Award className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Nenhuma avaliação BEEP realizada</p>
-                    </div>
-                  )}
-                </TabsContent>
+                  </Card>
+                </div>
 
-                <TabsContent value="mentoring" className="space-y-4 mt-4">
-                  <div className="text-center py-6 text-muted-foreground">
-                    <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm mb-3">Funcionalidade de mentoria em desenvolvimento</p>
+                {/* Missão, Visão e Valores */}
+                <div className="grid grid-cols-1 gap-6">
+                  {startup.mission && (
+                    <Card className="p-4">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <Target className="h-5 w-5 text-primary" />
+                        <h4 className="font-semibold">Missão</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{startup.mission}</p>
+                    </Card>
+                  )}
+
+                  {startup.vision && (
+                    <Card className="p-4">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <Eye className="h-5 w-5 text-primary" />
+                        <h4 className="font-semibold">Visão</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{startup.vision}</p>
+                    </Card>
+                  )}
+
+                  {startup.values && startup.values.length > 0 && (
+                    <Card className="p-4">
+                      <div className="flex items-center space-x-2 mb-3">
+                        <Heart className="h-5 w-5 text-primary" />
+                        <h4 className="font-semibold">Valores</h4>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {startup.values.map((value, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {value}
+                          </Badge>
+                        ))}
+                      </div>
+                    </Card>
+                  )}
+                </div>
+
+                {/* Ações Rápidas */}
+                <Card className="p-4">
+                  <h4 className="font-semibold mb-3">Ações Rápidas</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {startup.latest_beep_assessment && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleViewAssessmentDetails(startup.latest_beep_assessment)}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver Última Avaliação BEEP
+                      </Button>
+                    )}
                     <Button variant="outline" size="sm" disabled>
-                      <Calendar className="h-4 w-4 mr-2" />
+                      <Users className="h-4 w-4 mr-2" />
                       Agendar Mentoria
                     </Button>
+                    <Button variant="outline" size="sm" disabled>
+                      <Globe className="h-4 w-4 mr-2" />
+                      Ver Website
+                    </Button>
                   </div>
-                </TabsContent>
-              </Tabs>
+                </Card>
+              </div>
             </CardContent>
           </Card>
         ))}
