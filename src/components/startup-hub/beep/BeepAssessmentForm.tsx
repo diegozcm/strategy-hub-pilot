@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,6 +55,25 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
             answered++;
           }
         });
+      });
+    });
+
+    return { answered, total };
+  };
+
+  const calculateCategoryProgress = (categoryIndex: number) => {
+    const category = categories[categoryIndex];
+    if (!category) return { answered: 0, total: 0 };
+
+    let answered = 0;
+    let total = 0;
+
+    category.subcategories.forEach(subcategory => {
+      subcategory.questions.forEach(question => {
+        total++;
+        if (answers[question.id] !== undefined) {
+          answered++;
+        }
       });
     });
 
@@ -129,11 +149,19 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
       {/* Category Tabs */}
       <Tabs value={currentCategoryIndex.toString()} onValueChange={(value) => setCurrentCategoryIndex(parseInt(value))}>
         <TabsList className="grid w-full grid-cols-3">
-          {categories.map((category, index) => (
-            <TabsTrigger key={category.id} value={index.toString()}>
-              {category.name}
-            </TabsTrigger>
-          ))}
+          {categories.map((category, index) => {
+            const categoryProgress = calculateCategoryProgress(index);
+            return (
+              <TabsTrigger key={category.id} value={index.toString()}>
+                <div className="flex flex-col items-center gap-1">
+                  <span>{category.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {categoryProgress.answered}/{categoryProgress.total}
+                  </span>
+                </div>
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         {categories.map((category, categoryIndex) => (
