@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -127,31 +126,6 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
         />
       </div>
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between">
-        <Button 
-          variant="outline" 
-          onClick={handlePreviousCategory}
-          disabled={currentCategoryIndex === 0}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Anterior
-        </Button>
-        
-        <div className="text-sm text-muted-foreground">
-          Categoria {currentCategoryIndex + 1} de {categories.length}
-        </div>
-        
-        <Button 
-          variant="outline" 
-          onClick={handleNextCategory}
-          disabled={currentCategoryIndex === categories.length - 1}
-        >
-          Próxima
-          <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
-      </div>
-
       {/* Category Tabs */}
       <Tabs value={currentCategoryIndex.toString()} onValueChange={(value) => setCurrentCategoryIndex(parseInt(value))}>
         <TabsList className="grid w-full grid-cols-3">
@@ -190,7 +164,7 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
         ))}
       </Tabs>
 
-      {/* Bottom Navigation - Replicated */}
+      {/* Bottom Navigation */}
       <div className="flex items-center justify-between border-t pt-6">
         <Button 
           variant="outline" 
