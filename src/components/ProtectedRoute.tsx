@@ -14,7 +14,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -24,10 +24,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Prevent admins from accessing regular app - redirect to admin panel
-  if (profile?.role === 'admin') {
-    return <Navigate to="/admin" replace />;
-  }
+  // Allow all authenticated users to access regular app
 
   return <>{children}</>;
 };

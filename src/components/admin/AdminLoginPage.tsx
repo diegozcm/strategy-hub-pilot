@@ -19,39 +19,14 @@ export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('AdminLoginPage - Auth state:', { 
-      user: !!user, 
-      userEmail: user?.email,
-      profile, 
-      authLoading 
-    });
-    
     if (!authLoading && user) {
-      // Verificação robusta: admins hardcoded têm prioridade
       const isHardcodedAdmin = user.email === 'admin@example.com' || user.email === 'diego@cofound.com.br';
       const isProfileAdmin = profile?.role === 'admin';
 
-      console.log('AdminLoginPage - Admin check:', { 
-        isHardcodedAdmin, 
-        isProfileAdmin,
-        userEmail: user.email 
-      });
-
       if (isHardcodedAdmin || isProfileAdmin) {
-        console.log('AdminLoginPage - Admin detected, redirecting to admin dashboard');
         navigate('/app/admin');
       } else if (profile && profile.role !== 'admin') {
-        console.log('AdminLoginPage - User is not admin, staying on login page');
         setError('Acesso negado. Apenas administradores podem acessar esta área.');
-      } else if (!profile) {
-        // Profile ainda não carregou - aguardar um pouco
-        console.log('AdminLoginPage - Profile not loaded yet, waiting...');
-        setTimeout(() => {
-          if (!profile && !isHardcodedAdmin) {
-            console.log('AdminLoginPage - Profile still not loaded and not hardcoded admin');
-            setError('Erro ao carregar perfil do usuário. Tente fazer login novamente.');
-          }
-        }, 2000);
       }
     }
   }, [user, profile, authLoading, navigate]);
@@ -62,16 +37,12 @@ export const AdminLoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      console.log('AdminLoginPage - Attempting login for:', email);
-      
-      // Use supabase auth directly to avoid the hardcoded redirect to /app
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        console.error('AdminLoginPage - Login error:', error);
         if (error.message.includes('Invalid login credentials')) {
           setError('Credenciais inválidas. Verifique seu email e senha.');
         } else {
@@ -79,12 +50,9 @@ export const AdminLoginPage: React.FC = () => {
         }
         return;
       }
-
-      console.log('AdminLoginPage - Login successful:', !!data.user);
       
-      // Don't redirect here - let the useEffect handle it after profile is loaded
+      // Don't redirect here - let the useEffect handle it
     } catch (err) {
-      console.error('AdminLoginPage - Unexpected error:', err);
       setError('Erro ao tentar fazer login. Tente novamente.');
     } finally {
       setLoading(false);
