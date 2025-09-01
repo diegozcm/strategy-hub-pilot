@@ -149,18 +149,23 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
 
       {/* Category Tabs */}
       <Tabs value={currentCategoryIndex.toString()} onValueChange={(value) => setCurrentCategoryIndex(parseInt(value))}>
-        <TabsList className="w-full h-auto p-1">
+        <TabsList className="w-full h-auto p-1 bg-muted">
           {categories.map((category, index) => {
             const categoryProgress = calculateCategoryProgress(index);
+            const isSelected = currentCategoryIndex === index;
             return (
               <TabsTrigger 
                 key={category.id} 
                 value={index.toString()}
-                className="flex-1 h-auto py-3 px-4"
+                className={`flex-1 h-auto py-3 px-4 transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md ${
+                  isSelected ? 'bg-primary text-primary-foreground shadow-md' : 'hover:bg-accent hover:text-accent-foreground'
+                }`}
               >
                 <div className="flex flex-col items-center justify-center gap-1 min-h-[48px]">
                   <span className="text-sm font-medium text-center leading-tight">{category.name}</span>
-                  <span className="text-xs text-muted-foreground font-normal">
+                  <span className={`text-xs font-normal ${
+                    isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                  }`}>
                     {categoryProgress.answered}/{categoryProgress.total}
                   </span>
                 </div>
@@ -238,4 +243,3 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
     </div>
   );
 };
-
