@@ -729,8 +729,57 @@ export type Database = {
           },
         ]
       }
+      mentoring_sessions: {
+        Row: {
+          action_items: Json | null
+          beep_related_items: Json | null
+          created_at: string
+          duration: number | null
+          follow_up_date: string | null
+          id: string
+          mentor_id: string
+          notes: string | null
+          session_date: string
+          session_type: string
+          startup_company_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action_items?: Json | null
+          beep_related_items?: Json | null
+          created_at?: string
+          duration?: number | null
+          follow_up_date?: string | null
+          id?: string
+          mentor_id: string
+          notes?: string | null
+          session_date: string
+          session_type?: string
+          startup_company_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_items?: Json | null
+          beep_related_items?: Json | null
+          created_at?: string
+          duration?: number | null
+          follow_up_date?: string | null
+          id?: string
+          mentor_id?: string
+          notes?: string | null
+          session_date?: string
+          session_type?: string
+          startup_company_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mentoring_tips: {
         Row: {
+          beep_category_related: string[] | null
           category: string
           content: string
           created_at: string
@@ -738,12 +787,14 @@ export type Database = {
           is_public: boolean
           mentor_id: string
           priority: string
+          session_id: string | null
           startup_company_id: string | null
           status: string
           title: string
           updated_at: string
         }
         Insert: {
+          beep_category_related?: string[] | null
           category?: string
           content: string
           created_at?: string
@@ -751,12 +802,14 @@ export type Database = {
           is_public?: boolean
           mentor_id: string
           priority?: string
+          session_id?: string | null
           startup_company_id?: string | null
           status?: string
           title: string
           updated_at?: string
         }
         Update: {
+          beep_category_related?: string[] | null
           category?: string
           content?: string
           created_at?: string
@@ -764,6 +817,7 @@ export type Database = {
           is_public?: boolean
           mentor_id?: string
           priority?: string
+          session_id?: string | null
           startup_company_id?: string | null
           status?: string
           title?: string

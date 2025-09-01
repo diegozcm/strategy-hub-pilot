@@ -29,7 +29,9 @@ const menuStructure = [
       { name: 'Dashboard', href: '/app/startup-hub?tab=dashboard', icon: BarChart3 },
       { name: 'Avaliação BEEP', href: '/app/startup-hub?tab=beep', icon: TrendingUp, requiresStartup: true },
       { name: 'Startups', href: '/app/startup-hub?tab=startups', icon: Building, requiresMentor: true },
-      { name: 'Mentorias', href: '/app/startup-hub?tab=mentoring', icon: Users },
+      { name: 'Avaliações BEEP', href: '/app/startup-hub?tab=beep-analytics', icon: Activity, requiresMentor: true },
+      { name: 'Mentorias', href: '/app/startup-hub?tab=sessions', icon: Users, requiresMentor: true },
+      { name: 'Mentorias', href: '/app/startup-hub?tab=mentoring', icon: Users, requiresStartup: true },
       { name: 'Perfil', href: '/app/startup-hub?tab=profile', icon: User }
     ]
   },
@@ -93,15 +95,24 @@ export const Sidebar: React.FC = () => {
       <nav className="flex-1 p-4 space-y-4">
         {menuStructure.map((group) => {
           // Check if user has access to at least one item in this group
-          const hasAccessToGroup = group.items.some(item => {
-            if (item.href.includes('/startup-hub')) {
-              return hasModuleAccess('startup-hub');
-            }
-            if (item.href.includes('/strategic-map') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
-              return hasModuleAccess('strategic-planning');
-            }
-            return true; // Dashboard and settings are always accessible
-          });
+                // For Startup Hub, check different conditions based on user type
+            const hasAccessToGroup = group.items.some(item => {
+              if (item.href.includes('/startup-hub')) {
+                // Check if user has startup-hub access
+                if (!hasModuleAccess('startup-hub')) return false;
+                
+                // Filter out 'startups' tab for mentors unless they have mentored startups
+                if (item.href.includes('?tab=startups') && isMentor) {
+                  return true; // Allow startups tab for mentors to see their mentored startups
+                }
+                
+                return true;
+              }
+              if (item.href.includes('/strategic-map') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
+                return hasModuleAccess('strategic-planning');
+              }
+              return true; // Dashboard and settings are always accessible
+            });
 
           if (!hasAccessToGroup) return null;
 

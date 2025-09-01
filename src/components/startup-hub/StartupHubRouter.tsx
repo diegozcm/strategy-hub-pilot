@@ -7,8 +7,9 @@ import { StartupDashboard } from './StartupDashboard';
 import { MentorDashboard } from './MentorDashboard';
 import { BeepAssessmentPage } from './beep/BeepAssessmentPage';
 import { StartupProfileSetup } from './StartupProfileSetup';
-import { MentorStartupDetailsPage } from './mentor/MentorStartupDetailsPage';
-import { MentoringTipsPage } from './MentoringTipsPage';
+import { MentorStartupsOverviewPage } from './mentor/MentorStartupsOverviewPage';
+import { MentorBeepAnalyticsPage } from './mentor/MentorBeepAnalyticsPage';
+import { MentorSessionsPage } from './mentor/MentorSessionsPage';
 import { StartupMentoringPage } from './StartupMentoringPage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { MentorBeepResultsPage } from './mentor/MentorBeepResultsPage';
@@ -71,19 +72,28 @@ export const StartupHubRouter: React.FC = () => {
         if (isStartup) {
           return <BeepAssessmentPage />;
         }
+        return <div className="text-center py-12">Acesso não autorizado</div>;
+
+      case 'beep-analytics':
         if (isMentor) {
-          return <MentorBeepResultsPage />;
+          return <MentorBeepAnalyticsPage />;
         }
         return <div className="text-center py-12">Acesso não autorizado</div>;
 
       case 'startups':
         if (isMentor) {
-          return <MentorStartupDetailsPage />;
+          return <MentorStartupsOverviewPage />;
+        }
+        return <div className="text-center py-12">Acesso não autorizado</div>;
+
+      case 'sessions':
+        if (isMentor) {
+          return <MentorSessionsPage />;
         }
         return <div className="text-center py-12">Acesso não autorizado</div>;
 
       case 'mentoring':
-        return isStartup ? <StartupMentoringPage /> : <MentoringTipsPage />;
+        return isStartup ? <StartupMentoringPage /> : <div className="text-center py-12">Acesso não autorizado</div>;
 
       case 'profile':
         return <StartupProfileSetup />;
