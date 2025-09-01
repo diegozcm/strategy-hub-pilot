@@ -1,10 +1,8 @@
 
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { BeepQuestionCard } from './BeepQuestionCard';
 import { useBeepCategories } from '@/hooks/useBeepData';
@@ -147,60 +145,61 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
         />
       </div>
 
-      {/* Category Tabs */}
-      <Tabs value={currentCategoryIndex.toString()} onValueChange={(value) => setCurrentCategoryIndex(parseInt(value))}>
-        <TabsList className="w-full h-auto p-1 bg-muted">
+      {/* Category Navigation Menu */}
+      <div className="border-b">
+        <nav className="flex space-x-1 overflow-x-auto">
           {categories.map((category, index) => {
             const categoryProgress = calculateCategoryProgress(index);
             const isSelected = currentCategoryIndex === index;
             return (
-              <TabsTrigger 
-                key={category.id} 
-                value={index.toString()}
-                className={`flex-1 h-auto py-3 px-4 transition-all duration-200 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md ${
-                  isSelected ? 'bg-primary text-primary-foreground shadow-md' : 'hover:bg-accent hover:text-accent-foreground'
+              <button
+                key={category.id}
+                onClick={() => setCurrentCategoryIndex(index)}
+                className={`flex-shrink-0 px-4 py-2 text-sm font-medium border-b-2 transition-colors duration-200 ${
+                  isSelected
+                    ? 'border-primary text-primary bg-primary/5'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                 }`}
               >
-                <div className="flex flex-col items-center justify-center gap-1 min-h-[48px]">
-                  <span className="text-sm font-medium text-center leading-tight">{category.name}</span>
-                  <span className={`text-xs font-normal ${
-                    isSelected ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-center leading-tight">{category.name}</span>
+                  <span className={`text-xs ${
+                    isSelected ? 'text-primary/80' : 'text-muted-foreground'
                   }`}>
                     {categoryProgress.answered}/{categoryProgress.total}
                   </span>
                 </div>
-              </TabsTrigger>
+              </button>
             );
           })}
-        </TabsList>
+        </nav>
+      </div>
 
-        {categories.map((category, categoryIndex) => (
-          <TabsContent key={category.id} value={categoryIndex.toString()} className="space-y-6">
-            {category.subcategories.map((subcategory) => (
-              <Card key={subcategory.id}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{subcategory.name}</CardTitle>
-                  {subcategory.description && (
-                    <p className="text-sm text-muted-foreground">{subcategory.description}</p>
-                  )}
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {subcategory.questions.map((question) => (
-                    <BeepQuestionCard
-                      key={question.id}
-                      question={question}
-                      value={answers[question.id]}
-                      onChange={(value) => onAnswer(question.id, value)}
-                      isLoading={savingQuestions.has(question.id)}
-                      isSaved={savedQuestions.has(question.id)}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
-            ))}
-          </TabsContent>
+      {/* Category Content */}
+      <div className="space-y-6">
+        {currentCategory?.subcategories.map((subcategory) => (
+          <Card key={subcategory.id}>
+            <CardHeader>
+              <CardTitle className="text-lg">{subcategory.name}</CardTitle>
+              {subcategory.description && (
+                <p className="text-sm text-muted-foreground">{subcategory.description}</p>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {subcategory.questions.map((question) => (
+                <BeepQuestionCard
+                  key={question.id}
+                  question={question}
+                  value={answers[question.id]}
+                  onChange={(value) => onAnswer(question.id, value)}
+                  isLoading={savingQuestions.has(question.id)}
+                  isSaved={savedQuestions.has(question.id)}
+                />
+              ))}
+            </CardContent>
+          </Card>
         ))}
-      </Tabs>
+      </div>
 
       {/* Bottom Navigation */}
       <div className="flex items-center justify-between border-t pt-6">
