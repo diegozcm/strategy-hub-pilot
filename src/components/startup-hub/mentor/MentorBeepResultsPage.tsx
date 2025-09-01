@@ -30,28 +30,37 @@ export const MentorBeepResultsPage: React.FC = () => {
     queryFn: async () => {
       if (!user?.id) throw new Error('User not authenticated');
 
-      // Get startups assigned to this mentor
-      const { data: mentorRelations, error: relationsError } = await supabase
-        .from('mentor_startup_relations')
+      // Get startup companies where this mentor has a relationship via user_company_relations
+      const { data: mentorCompanies, error: relationsError } = await supabase
+        .from('user_company_relations')
         .select(`
-          startup_company_id,
-          companies!startup_company_id (
+          company_id,
+          companies!company_id (
             id,
-            name
+            name,
+            company_type
           )
         `)
-        .eq('mentor_id', user.id)
-        .eq('status', 'active');
+        .eq('user_id', user.id);
 
       if (relationsError) throw relationsError;
 
-      if (!mentorRelations || mentorRelations.length === 0) {
+      if (!mentorCompanies || mentorCompanies.length === 0) {
         return [];
       }
 
-      const startupIds = mentorRelations.map(rel => rel.startup_company_id);
+      // Filter only startup companies
+      const startupCompanies = mentorCompanies.filter(
+        rel => rel.companies?.company_type === 'startup'
+      );
 
-      // Get BEEP assessments from these startups
+      if (startupCompanies.length === 0) {
+        return [];
+      }
+
+      const startupIds = startupCompanies.map(rel => rel.company_id);
+
+      // Get BEEP assessments from these startup companies
       const { data: assessments, error: assessmentsError } = await supabase
         .from('beep_assessments')
         .select(`
@@ -70,13 +79,13 @@ export const MentorBeepResultsPage: React.FC = () => {
 
       // Combine assessment data with startup names
       const results: BeepResult[] = assessments?.map(assessment => {
-        const relation = mentorRelations.find(rel => rel.startup_company_id === assessment.company_id);
+        const company = startupCompanies.find(rel => rel.company_id === assessment.company_id);
         return {
           id: assessment.id,
           final_score: assessment.final_score || 0,
           maturity_level: assessment.maturity_level || 'idealizando',
           completed_at: assessment.completed_at || '',
-          startup_name: relation?.companies?.name || 'Startup',
+          startup_name: company?.companies?.name || 'Startup',
           startup_id: assessment.company_id || ''
         };
       }) || [];
