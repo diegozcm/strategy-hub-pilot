@@ -11,10 +11,14 @@ import { TipCard } from './TipCard';
 import { StartupSessionsPage } from './StartupSessionsPage';
 
 export const StartupMentoringPage: React.FC = () => {
+  console.log('📱 [StartupMentoringPage] Rendering component');
+  
   const { tips, loading, error } = useStartupMentoring();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
+
+  console.log('📱 [StartupMentoringPage] Tips state:', { tipsCount: tips.length, loading, error });
 
   const filteredTips = tips.filter(tip => {
     const matchesSearch = tip.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

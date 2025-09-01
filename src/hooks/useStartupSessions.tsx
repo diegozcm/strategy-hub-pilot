@@ -23,61 +23,102 @@ interface MentoringSession {
 }
 
 export const useStartupSessions = () => {
+  console.log('🎯 [useStartupSessions] Hook initialization');
+  
   const { user } = useAuth();
   const [sessions, setSessions] = useState<MentoringSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  console.log('🎯 [useStartupSessions] Initial state:', { 
+    hasUser: !!user, 
+    userEmail: user?.email,
+    sessionsCount: sessions.length, 
+    loading, 
+    error 
+  });
+
   const fetchStartupSessions = async () => {
-    if (!user) return;
+    console.log('🔍 [useStartupSessions] Starting fetchStartupSessions');
+    
+    if (!user) {
+      console.log('❌ [useStartupSessions] No user found');
+      return;
+    }
+    
+    console.log('👤 [useStartupSessions] User:', user.id, user.email);
     
     try {
       setLoading(true);
       setError(null);
 
       // First, get user's startup company
-      const { data: userCompany } = await supabase.rpc('get_user_startup_company', {
+      console.log('🏢 [useStartupSessions] Getting user startup company...');
+      const { data: userCompany, error: companyError } = await supabase.rpc('get_user_startup_company', {
         _user_id: user.id
       });
 
+      console.log('🏢 [useStartupSessions] User company result:', { userCompany, companyError });
+
+      if (companyError) {
+        console.error('❌ [useStartupSessions] Error getting user company:', companyError);
+        setError(`Erro ao buscar empresa: ${companyError.message}`);
+        return;
+      }
+
       if (!userCompany || userCompany.length === 0) {
+        console.log('⚠️ [useStartupSessions] No company found for user');
         setSessions([]);
         setLoading(false);
         return;
       }
 
       const companyId = userCompany[0].id;
+      console.log('🏢 [useStartupSessions] Company found:', companyId, userCompany[0].name);
 
       // Get sessions for this startup
+      console.log('📅 [useStartupSessions] Fetching sessions for company:', companyId);
       const { data: sessionsData, error: sessionsError } = await supabase
         .from('mentoring_sessions')
         .select('*')
         .eq('startup_company_id', companyId)
         .order('session_date', { ascending: false });
 
+      console.log('📅 [useStartupSessions] Sessions result:', { 
+        sessionsData, 
+        sessionsError,
+        count: sessionsData?.length || 0 
+      });
+
       if (sessionsError) {
-        console.error('Error fetching startup sessions:', sessionsError);
-        setError(sessionsError.message);
+        console.error('❌ [useStartupSessions] Error fetching sessions:', sessionsError);
+        setError(`Erro ao buscar sessões: ${sessionsError.message}`);
         return;
       }
 
       if (!sessionsData || sessionsData.length === 0) {
+        console.log('⚠️ [useStartupSessions] No sessions found');
         setSessions([]);
         setLoading(false);
         return;
       }
 
+      console.log('📅 [useStartupSessions] Found sessions:', sessionsData.length);
+
       // Get mentor profiles
       const mentorIds = [...new Set(sessionsData.map(s => s.mentor_id))];
+      console.log('👨‍🏫 [useStartupSessions] Mentor IDs to fetch:', mentorIds);
 
       const { data: mentorProfiles, error: mentorError } = await supabase
         .from('profiles')
         .select('user_id, first_name, last_name')
         .in('user_id', mentorIds);
 
+      console.log('👨‍🏫 [useStartupSessions] Mentor profiles result:', { mentorProfiles, mentorError });
+
       if (mentorError) {
-        console.error('Error fetching mentor profiles:', mentorError);
-        setError(mentorError.message);
+        console.error('❌ [useStartupSessions] Error fetching mentor profiles:', mentorError);
+        setError(`Erro ao buscar perfis dos mentores: ${mentorError.message}`);
         return;
       }
 
@@ -87,21 +128,29 @@ export const useStartupSessions = () => {
         `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Mentor'
       ]) || []);
 
+      console.log('👨‍🏫 [useStartupSessions] Mentor map:', Array.from(mentorMap.entries()));
+
       const sessionsWithMentors = sessionsData.map(session => ({
         ...session,
         mentor_name: mentorMap.get(session.mentor_id) || 'Mentor Desconhecido'
       }));
 
+      console.log('✅ [useStartupSessions] Final sessions with mentors:', sessionsWithMentors);
       setSessions(sessionsWithMentors);
     } catch (err) {
-      console.error('Unexpected error fetching startup sessions:', err);
+      console.error('💥 [useStartupSessions] Unexpected error:', err);
       setError('Erro inesperado ao buscar sessões');
     } finally {
       setLoading(false);
+      console.log('🏁 [useStartupSessions] Fetch complete');
     }
   };
 
   useEffect(() => {
+    console.log('🔄 [useStartupSessions] useEffect triggered, user changed:', { 
+      hasUser: !!user, 
+      userEmail: user?.email 
+    });
     fetchStartupSessions();
   }, [user]);
 

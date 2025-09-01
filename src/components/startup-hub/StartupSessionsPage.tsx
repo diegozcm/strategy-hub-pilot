@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -21,9 +21,24 @@ const sessionTypes = [
 ];
 
 export const StartupSessionsPage: React.FC = () => {
-  const { sessions, loading, error } = useStartupSessions();
+  console.log('🚀 [StartupSessionsPage] Rendering component');
+  
+  const { sessions, loading, error, refetch } = useStartupSessions();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+
+  console.log('📊 [StartupSessionsPage] Hook state:', { 
+    sessionsCount: sessions?.length || 0, 
+    loading, 
+    error,
+    sessions: sessions?.map(s => ({ id: s.id, mentor: s.mentor_name, date: s.session_date }))
+  });
+
+  // Force refresh when component mounts to ensure fresh data
+  useEffect(() => {
+    console.log('🔄 [StartupSessionsPage] Component mounted, forcing refresh');
+    refetch();
+  }, [refetch]);
 
   // Filter sessions
   const filteredSessions = sessions?.filter(session => {
