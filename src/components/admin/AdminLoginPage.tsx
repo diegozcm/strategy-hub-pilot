@@ -21,7 +21,7 @@ export const AdminLoginPage: React.FC = () => {
   useEffect(() => {
     if (!authLoading && user) {
       const isHardcodedAdmin = user.email === 'admin@example.com' || user.email === 'diego@cofound.com.br';
-      const isProfileAdmin = profile?.role === 'admin';
+      const isProfileAdmin = profile?.role === 'admin' && profile?.status === 'active';
 
       if (isHardcodedAdmin || isProfileAdmin) {
         navigate('/app/admin');

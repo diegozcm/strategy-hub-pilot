@@ -1760,6 +1760,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      is_system_admin: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       repair_startup: {
         Args: { _company_id: string }
         Returns: {

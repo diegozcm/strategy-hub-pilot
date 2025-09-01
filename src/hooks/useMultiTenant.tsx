@@ -17,10 +17,12 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  
   // Impersonation state
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [originalAdmin, setOriginalAdmin] = useState<UserProfile | null>(null);
   const [impersonationSession, setImpersonationSession] = useState<any>(null);
+  
   const navigate = useNavigate();
 
   // Calculate permissions based on role
@@ -38,52 +40,75 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const permissions = profile ? getPermissions(profile.role) : { read: false, write: false, delete: false };
-
   const canEdit = permissions.write;
   const canDelete = permissions.delete;
   const canAdmin = permissions.admin || false;
   const isSystemAdmin = profile?.role === 'admin';
   const isCompanyAdmin = profile?.role === 'admin';
 
-  // Fetch user profile
-  const fetchProfile = async (userId: string) => {
+  // Load profile data - simplified version without auth.users access
+  const loadUserProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      console.log(`📋 Loading profile for user ${userId}`);
+      
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
-        .maybeSingle();
+        .single();
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return null;
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        
+        // If profile not found, user needs to be created by trigger
+        if (profileError.code === 'PGRST116') {
+          console.log('👤 Profile not found - may need to be created by system');
+          setProfile(null);
+          return;
+        }
+        
+        throw profileError;
       }
 
-      return data as any;
+      console.log('📋 Profile loaded successfully:', profile);
+      setProfile(profile as UserProfile);
+
+      // Load company if profile has company_id
+      if (profile?.company_id) {
+        await loadCompanyById(profile.company_id);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      return null;
+      setProfile(null);
     }
   };
 
-  // Fetch company for system admin
-  const fetchCompany = async (companyId: string) => {
+  // Load company by ID
+  const loadCompanyById = async (companyId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data: companyData, error } = await supabase
         .from('companies')
         .select('*')
         .eq('id', companyId)
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error('Error fetching company:', error);
-        return null;
+        return;
       }
 
-      return data as any;
+      if (companyData.status === 'inactive') {
+        console.log('❌ Company is inactive, redirecting to error page');
+        navigate('/company-inactive');
+        return;
+      }
+
+      setCompany({
+        ...companyData,
+        active: companyData.status === 'active'
+      } as Company);
     } catch (error) {
-      console.error('Error fetching company:', error);
-      return null;
+      console.error('Error loading company:', error);
     }
   };
 
@@ -139,14 +164,10 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
 
   // Switch company (for system admins and users with multiple companies)
   const switchCompany = async (companyId: string) => {
-    // Para admins, permite trocar para qualquer empresa
     if (isSystemAdmin) {
-      const companyData = await fetchCompany(companyId);
-      if (companyData) {
-        setSelectedCompanyId(companyId);
-        setCompany(companyData);
-        localStorage.setItem('selectedCompanyId', companyId);
-      }
+      await loadCompanyById(companyId);
+      setSelectedCompanyId(companyId);
+      localStorage.setItem('selectedCompanyId', companyId);
       return;
     }
 
@@ -160,127 +181,31 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         .maybeSingle();
 
       if (hasAccess) {
-        const companyData = await fetchCompany(companyId);
-        if (companyData) {
-          setSelectedCompanyId(companyId);
-          setCompany(companyData);
-          localStorage.setItem('selectedCompanyId', companyId);
-        }
+        await loadCompanyById(companyId);
+        setSelectedCompanyId(companyId);
+        localStorage.setItem('selectedCompanyId', companyId);
       }
     }
   };
 
-  // Handle async profile loading with retry mechanism
-  const loadUserProfile = async (userId: string, retryCount = 0) => {
-    const maxRetries = 3;
-    const retryDelay = 1000; // 1 second
-
-    try {
-      console.log(`📋 Loading profile for user ${userId} (attempt ${retryCount + 1}/${maxRetries + 1})`);
-      
-      const userProfile = await fetchProfile(userId);
-      console.log('📋 Profile fetched:', userProfile);
-      
-      if (userProfile) {
-        // Verificar se o usuário tem empresa associada e se ela está ativa
-        let companyData = null;
-        
-        // Primeiro verificar se há company_id no perfil (método antigo)
-        if (userProfile.company_id) {
-          companyData = await fetchCompany(userProfile.company_id);
-          console.log('🏢 Company data from profile:', companyData);
-        } 
-        // Se não há company_id no perfil, verificar na tabela user_company_relations
-        else {
-          console.log('🔍 No company_id in profile, checking user_company_relations...');
-          const { data: relations, error } = await supabase
-            .from('user_company_relations')
-            .select('company_id, companies(*)')
-            .eq('user_id', userId)
-            .limit(1)
-            .maybeSingle();
-          
-          if (!error && relations) {
-            companyData = relations.companies;
-            console.log('🏢 Company data from relations:', companyData);
-          }
-        }
-        
-        if (companyData) {
-          if (companyData.status === 'inactive') {
-            console.log('❌ Company is inactive, redirecting to error page');
-            navigate('/company-inactive');
-            return;
-          }
-          setCompany(companyData);
-        } else {
-          console.log('❌ No company found for user');
-        }
-        
-        setProfile(userProfile);
-        
-        // Para admins, carregar empresa selecionada
-        if (userProfile.role === 'admin') {
-          console.log('🔧 Loading selected company for admin...');
-          const savedCompanyId = localStorage.getItem('selectedCompanyId');
-          if (savedCompanyId && savedCompanyId !== userProfile.company_id) {
-            const adminCompanyData = await fetchCompany(savedCompanyId);
-            if (adminCompanyData && adminCompanyData.status === 'active') {
-              setCompany(adminCompanyData);
-              setSelectedCompanyId(savedCompanyId);
-            }
-          }
-        }
-        
-        console.log('✅ Profile loaded successfully');
-      } else {
-        // Se não conseguiu carregar perfil, tentar retry
-        if (retryCount < maxRetries) {
-          console.log(`⏳ Profile not found, retrying in ${retryDelay}ms...`);
-          setTimeout(() => {
-            loadUserProfile(userId, retryCount + 1);
-          }, retryDelay);
-          return;
-        } else {
-          console.log('❌ Failed to load profile after all retries');
-          setProfile(null);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error loading user profile:', error);
-      
-      // Se for erro de RLS ou permissão, tentar retry
-      if (retryCount < maxRetries && (error as any)?.message?.includes('permission denied')) {
-        console.log(`⏳ Permission error, retrying in ${retryDelay}ms...`);
-        setTimeout(() => {
-          loadUserProfile(userId, retryCount + 1);
-        }, retryDelay);
-        return;
-      }
-      
-      // Clear states on final error
-      setProfile(null);
-      setCompany(null);
-      setSelectedCompanyId(null);
-    }
-  };
-
+  // Initialize auth state
   useEffect(() => {
     console.log('📊 MultiTenantAuthProvider: Initializing...');
     
-    // Auth state listener
+    // Auth state listener - simplified to avoid conflicts
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('🔐 Auth state change:', event, !!session);
         
-        // Update session and user immediately
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          console.log('👤 User found, fetching profile for:', session.user.email);
-          // Load profile data asynchronously but properly
-          loadUserProfile(session.user.id);
+          console.log('👤 User found, loading profile for:', session.user.email);
+          // Use timeout to avoid potential auth state conflicts
+          setTimeout(() => {
+            loadUserProfile(session.user.id);
+          }, 100);
         } else {
           console.log('❌ No user session, clearing state');
           setProfile(null);
@@ -292,7 +217,6 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           localStorage.removeItem('selectedCompanyId');
         }
         
-        console.log('✅ Setting loading to false');
         setLoading(false);
       }
     );
@@ -303,9 +227,9 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       console.log('🔍 Existing session check result:', !!session);
       if (!session) {
         console.log('❌ No existing session found');
-        console.log('✅ Initial loading complete, setting loading to false');
         setLoading(false);
       }
+      // If session exists, the auth state listener above will handle it
     });
 
     return () => subscription.unsubscribe();
@@ -323,7 +247,6 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         return { error };
       }
 
-      // Don't navigate immediately - let the auth state change handle it
       console.log('✅ Sign in successful');
       return { error: null };
     } catch (error) {
@@ -365,34 +288,22 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       setImpersonationSession(null);
       localStorage.removeItem('selectedCompanyId');
       
-      // Force clear Supabase session from localStorage
-      try {
-        localStorage.removeItem(`sb-pdpzxjlnaqwlyqoyoyhr-auth-token`);
-      } catch (e) {
-        console.warn('Could not clear auth token from localStorage:', e);
-      }
-      
-      // Attempt to sign out from Supabase
+      // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.warn('⚠️ Supabase sign out error (continuing anyway):', error);
-        
-        // If session not found, that's actually good - user is already logged out
-        if (error.message?.includes('session_not_found') || error.message?.includes('Session not found')) {
-          console.log('✅ Session already cleared');
-        }
       } else {
         console.log('✅ Supabase sign out successful');
       }
       
-      // Always navigate regardless of Supabase errors
+      // Always navigate regardless of errors
       console.log(`🔄 Redirecting to ${redirectPath}`);
       navigate(redirectPath);
       
     } catch (error) {
       console.error('❌ Unexpected sign out error:', error);
-      // Force navigation even on unexpected errors - default to normal auth
+      // Force navigation even on unexpected errors
       const redirectPath = profile?.role === 'admin' ? '/admin-login' : '/auth';
       navigate(redirectPath);
     }
@@ -431,8 +342,13 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       if (error) throw error;
 
       // Fetch target user profile
-      const targetProfile = await fetchProfile(targetUserId);
-      if (!targetProfile) {
+      const { data: targetProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', targetUserId)
+        .single();
+
+      if (profileError || !targetProfile) {
         throw new Error('Target user profile not found');
       }
 
@@ -440,7 +356,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       setOriginalAdmin(profile);
       
       // Switch to impersonated user
-      setProfile(targetProfile);
+      setProfile(targetProfile as UserProfile);
       setIsImpersonating(true);
       setImpersonationSession({ id: sessionId, admin_user_id: user.id, impersonated_user_id: targetUserId });
 

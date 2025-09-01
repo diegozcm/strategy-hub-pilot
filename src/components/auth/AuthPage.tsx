@@ -22,12 +22,15 @@ export const AuthPage: React.FC = () => {
 
   useEffect(() => {
     if (user && profile) {
-      // Redirect admins to admin panel, regular users to app
-      if (profile.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/app');
+      // Only redirect if profile is active
+      if (profile.status === 'active') {
+        if (profile.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/app');
+        }
       }
+      // If status is pending, let the error display below handle it
     }
   }, [user, profile, navigate]);
 

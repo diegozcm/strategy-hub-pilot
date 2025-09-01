@@ -22,11 +22,13 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
     return <Navigate to="/admin-login" replace />;
   }
 
-  // Verificação simplificada: hardcoded ou profile admin
-  const isHardcodedAdmin = user.email === 'admin@example.com' || user.email === 'diego@cofound.com.br';
-  const isProfileAdmin = profile?.role === 'admin';
+  // Verificação de acesso admin: hardcoded emails ou perfil admin ativo
+  const isSystemAdmin = (
+    (user.email === 'admin@example.com' || user.email === 'diego@cofound.com.br') ||
+    (profile?.role === 'admin' && profile?.status === 'active')
+  );
   
-  if (!isHardcodedAdmin && !isProfileAdmin) {
+  if (!isSystemAdmin) {
     return <Navigate to="/auth" replace />;
   }
   return <>{children}</>;
