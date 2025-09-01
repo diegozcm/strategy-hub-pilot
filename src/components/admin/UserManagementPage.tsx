@@ -209,7 +209,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 
     setIsLoading(true);
     try {
-      // Save personal data
+      // Save personal data (without role)
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -218,14 +218,13 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           email: editedUser.email,
           department: editedUser.department,
           position: editedUser.position,
-          role: editedUser.role,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', editedUser.user_id);
 
       if (profileError) throw profileError;
 
-      // Update role
+      // Update role (only through module role management)
       const { error: roleError } = await supabase
         .from('user_roles')
         .upsert({
@@ -567,40 +566,6 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                         onChange={(e) => setEditedUser({ ...editedUser, position: e.target.value })}
                       />
                     </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="role">Função no Sistema</Label>
-                    <Select
-                      value={editedUser.role}
-                      onValueChange={(value: 'admin' | 'manager' | 'member') => 
-                        setEditedUser({ ...editedUser, role: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="member">
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4" />
-                            Membro
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="manager">
-                          <div className="flex items-center gap-2">
-                            <Shield className="h-4 w-4" />
-                            Gerente
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="admin">
-                          <div className="flex items-center gap-2">
-                            <Crown className="h-4 w-4" />
-                            Administrador
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
               )}
