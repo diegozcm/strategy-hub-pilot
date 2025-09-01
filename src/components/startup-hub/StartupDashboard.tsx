@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Target, Calendar, BarChart3, CheckCircle, AlertCircle } from 'lucide-react';
+import { TrendingUp, Target, Calendar, BarChart3, CheckCircle, AlertCircle, Award } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
@@ -73,6 +74,24 @@ export const StartupDashboard: React.FC<StartupDashboardProps> = ({ onNavigateTo
     return levels[level as keyof typeof levels] || { name: 'N/A', color: 'text-gray-400', bg: 'bg-gray-50' };
   };
 
+  const getScoreColor = (score: number | null) => {
+    if (!score) return 'text-gray-400';
+    if (score >= 4.3) return 'text-green-600';
+    if (score >= 3.5) return 'text-orange-600';
+    if (score >= 2.7) return 'text-blue-600';
+    if (score >= 1.9) return 'text-yellow-600';
+    return 'text-gray-600';
+  };
+
+  const getScoreBg = (score: number | null) => {
+    if (!score) return 'bg-gray-50';
+    if (score >= 4.3) return 'bg-green-50';
+    if (score >= 3.5) return 'bg-orange-50';
+    if (score >= 2.7) return 'bg-blue-50';
+    if (score >= 1.9) return 'bg-yellow-50';
+    return 'bg-gray-50';
+  };
+
   const maturityInfo = getMaturityLevelInfo(latestAssessment?.maturity_level);
 
   return (
@@ -89,6 +108,30 @@ export const StartupDashboard: React.FC<StartupDashboardProps> = ({ onNavigateTo
           </CardDescription>
         </CardHeader>
       </Card>
+
+      {/* BEEP Score Highlight Card */}
+      {latestAssessment?.final_score && (
+        <Card className={`border-2 ${getScoreBg(latestAssessment.final_score)}`}>
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="flex items-center justify-center gap-3 text-xl">
+              <Award className="h-6 w-6 text-primary" />
+              Score BEEP da Sua Startup
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <div className={`text-6xl font-bold mb-2 ${getScoreColor(latestAssessment.final_score)}`}>
+              {latestAssessment.final_score.toFixed(1)}
+            </div>
+            <p className="text-muted-foreground mb-4">de 5.0 pontos</p>
+            <div className={`inline-flex px-4 py-2 rounded-full text-sm font-medium ${maturityInfo.bg} ${maturityInfo.color}`}>
+              {maturityInfo.name}
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              Avaliação realizada em {new Date(latestAssessment.created_at).toLocaleDateString('pt-BR')}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
