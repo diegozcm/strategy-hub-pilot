@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { BarChart3, Target, Briefcase, Users, Settings, ChevronLeft, ChevronRight, Zap, TrendingUp, Activity, Brain, Map, Building2, UserCheck, Shield, Building, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,18 @@ const systemAdminNavigation = [
 export const Sidebar: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { hasModuleAccess } = useModules();
+  const location = useLocation();
+
+  // Helper function to check if a route is active
+  const isRouteActive = (href: string) => {
+    if (href.includes('?')) {
+      // For routes with query parameters, check both path and query
+      const [path, query] = href.split('?');
+      return location.pathname === path && location.search.includes(query);
+    }
+    // For regular routes, exact match
+    return location.pathname === href;
+  };
 
   // Force cache refresh - refactored sidebar structure
 
@@ -116,11 +128,13 @@ export const Sidebar: React.FC = () => {
 
                   if (!hasAccess) return null;
 
+                  const isActive = isRouteActive(item.href);
+
                   return (
                     <NavLink 
                       key={item.name} 
                       to={item.href} 
-                      className={({ isActive }) => cn(
+                      className={cn(
                         "flex items-center py-2 rounded-lg transition-colors",
                         // Indentation for sub-items
                         collapsed ? "px-3 justify-center" : "px-3 ml-4",
