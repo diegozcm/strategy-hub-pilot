@@ -32,6 +32,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Company, CompanyUser } from '@/types/admin';
 import { ManageUsersModal } from './companies/ManageUsersModal';
 import { CreateCompanyModal } from './companies/CreateCompanyModal';
+import { useCompanyDataLoader } from '@/hooks/useCompanyDataLoader';
 
 interface CompanyCardProps {
   company: Company;
@@ -384,9 +385,17 @@ const EditCompanyDialog: React.FC<EditCompanyDialogProps> = ({
 export const CompaniesPage: React.FC = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [companyUsers, setCompanyUsers] = useState<{ [key: string]: CompanyUser[] }>({});
-  const [loading, setLoading] = useState(false);
+  // Usar o hook customizado para carregamento de dados
+  const {
+    companies,
+    companyUsers,
+    loading,
+    errors,
+    loadAllData,
+    reloadUsers,
+    clearErrors,
+    hasErrors
+  } = useCompanyDataLoader();
   const [searchTerm, setSearchTerm] = useState('');
   const [companyTypeFilter, setCompanyTypeFilter] = useState<'all' | 'regular' | 'startup'>('all');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -399,111 +408,9 @@ export const CompaniesPage: React.FC = () => {
 
   useEffect(() => {
     if (isAdmin) {
-      loadData();
+      loadAllData();
     }
-  }, [isAdmin]);
-
-  const loadData = async () => {
-    setLoading(true);
-    console.log('🏢 Carregando dados de empresas...');
-    
-    try {
-      // Carregar empresas
-      const { data: companiesData, error: companiesError } = await supabase
-        .from('companies')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (companiesError) {
-        console.error('❌ Erro ao carregar empresas:', companiesError);
-        throw companiesError;
-      }
-
-      console.log(`✅ ${companiesData?.length || 0} empresas carregadas`);
-
-      const companiesTyped = (companiesData || []).map(company => ({
-        ...company,
-        status: company.status as 'active' | 'inactive'
-      })) as Company[];
-
-      setCompanies(companiesTyped);
-
-      // Carregar usuários para cada empresa de forma mais eficiente
-      if (companiesTyped.length > 0) {
-        console.log('👥 Carregando usuários das empresas...');
-        
-        const companyIds = companiesTyped.map(c => c.id);
-        
-        // Buscar todas as relações de uma vez
-        const { data: allRelations, error: relationsError } = await supabase
-          .from('user_company_relations')
-          .select(`
-            user_id, 
-            company_id, 
-            role,
-            profiles!inner(
-              user_id,
-              id,
-              first_name,
-              last_name,
-              email,
-              status
-            )
-          `)
-          .in('company_id', companyIds);
-
-        if (relationsError) {
-          console.error('❌ Erro ao carregar relações usuário-empresa:', relationsError);
-          throw relationsError;
-        }
-
-        console.log(`✅ ${allRelations?.length || 0} relações usuário-empresa carregadas`);
-
-        // Agrupar usuários por empresa
-        const usersMap: { [key: string]: CompanyUser[] } = {};
-        
-        companiesTyped.forEach(company => {
-          usersMap[company.id] = [];
-        });
-
-        (allRelations || []).forEach((relation: any) => {
-          const profile = relation.profiles;
-          if (profile && relation.company_id) {
-            const user: CompanyUser = {
-              user_id: relation.user_id,
-              id: profile.id,
-              first_name: profile.first_name,
-              last_name: profile.last_name,
-              email: profile.email,
-              role: relation.role as 'admin' | 'manager' | 'member',
-              status: profile.status as 'active' | 'inactive'
-            };
-            
-            if (!usersMap[relation.company_id]) {
-              usersMap[relation.company_id] = [];
-            }
-            usersMap[relation.company_id].push(user);
-          }
-        });
-
-        setCompanyUsers(usersMap);
-        console.log('✅ Dados de usuários organizados por empresa');
-      } else {
-        setCompanyUsers({});
-      }
-
-    } catch (error) {
-      console.error('❌ Erro geral ao carregar dados:', error);
-      toast({
-        title: 'Erro',
-        description: `Erro ao carregar dados: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-      console.log('🏁 Carregamento de dados finalizado');
-    }
-  };
+  }, [isAdmin, loadAllData]);
 
   const handleToggleStatus = async (companyId: string, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
@@ -519,9 +426,8 @@ export const CompaniesPage: React.FC = () => {
 
       if (error) throw error;
 
-      setCompanies(companies.map(c => 
-        c.id === companyId ? { ...c, status: newStatus as 'active' | 'inactive' } : c
-      ));
+      // Recarregar dados para garantir sincronização
+      await loadAllData();
 
       toast({
         title: "Sucesso",
@@ -562,7 +468,6 @@ export const CompaniesPage: React.FC = () => {
 
       if (error) throw error;
 
-      setCompanies(companies.filter(c => c.id !== companyId));
       setDeletingCompany(null);
 
       toast({
@@ -571,7 +476,7 @@ export const CompaniesPage: React.FC = () => {
       });
 
       // Recarregar dados para garantir sincronização
-      await loadData();
+      await loadAllData();
     } catch (error) {
       console.error('Erro ao excluir empresa:', error);
       toast({
@@ -643,9 +548,12 @@ export const CompaniesPage: React.FC = () => {
             </Button>
           </div>
 
-          {loading ? (
+          {loading.overall ? (
             <div className="text-center py-8">
               <LoadingSpinner size="lg" />
+              <p className="text-sm text-muted-foreground mt-2">
+                {loading.companies ? 'Carregando empresas...' : loading.users ? 'Carregando usuários...' : 'Carregando dados...'}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -666,7 +574,37 @@ export const CompaniesPage: React.FC = () => {
             </div>
           )}
 
-          {!loading && filteredCompanies.length === 0 && (
+          {/* Banner de aviso para erros não críticos */}
+          {hasErrors && !loading.overall && (
+            <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                    Alguns dados podem estar incompletos
+                  </h4>
+                  <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+                    {errors.users && "Erro ao carregar usuários das empresas. "}
+                    <button 
+                      onClick={reloadUsers}
+                      className="underline hover:no-underline"
+                    >
+                      Tentar recarregar
+                    </button>
+                  </p>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={clearErrors}
+                  className="text-orange-600 hover:text-orange-800"
+                >
+                  ×
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!loading.overall && filteredCompanies.length === 0 && (
             <div className="text-center py-8">
               <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">
@@ -686,14 +624,14 @@ export const CompaniesPage: React.FC = () => {
           company={selectedCompany}
           open={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
-          onCompanyUpdated={loadData}
+          onCompanyUpdated={loadAllData}
         />
 
         {/* Modal de criação de empresa */}
         <CreateCompanyModal
           open={showCreateForm}
           onOpenChange={setShowCreateForm}
-          onCompanyCreated={loadData}
+          onCompanyCreated={loadAllData}
         />
 
         {/* Modal de gestão de usuários */}
@@ -702,7 +640,7 @@ export const CompaniesPage: React.FC = () => {
             company={managingUsers}
             isOpen={!!managingUsers}
             onOpenChange={(open) => !open && setManagingUsers(null)}
-            onUpdated={loadData}
+            onUpdated={loadAllData}
           />
         )}
 
