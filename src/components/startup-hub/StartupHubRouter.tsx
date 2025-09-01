@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Building } from 'lucide-react';
@@ -6,7 +7,7 @@ import { StartupDashboard } from './StartupDashboard';
 import { MentorDashboard } from './MentorDashboard';
 import { BeepAssessmentPage } from './beep/BeepAssessmentPage';
 import { StartupProfileSetup } from './StartupProfileSetup';
-import { MentorStartupsPage } from './MentorStartupsPage';
+import { MentorStartupDetailsPage } from './mentor/MentorStartupDetailsPage';
 import { MentoringTipsPage } from './MentoringTipsPage';
 import { StartupMentoringPage } from './StartupMentoringPage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -77,7 +78,7 @@ export const StartupHubRouter: React.FC = () => {
 
       case 'startups':
         if (isMentor) {
-          return <MentorStartupsPage />;
+          return <MentorStartupDetailsPage />;
         }
         return <div className="text-center py-12">Acesso não autorizado</div>;
 
