@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Building } from 'lucide-react';
@@ -11,6 +10,7 @@ import { MentorStartupsPage } from './MentorStartupsPage';
 import { MentoringTipsPage } from './MentoringTipsPage';
 import { StartupMentoringPage } from './StartupMentoringPage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { MentorBeepResultsPage } from './mentor/MentorBeepResultsPage';
 
 export const StartupHubRouter: React.FC = () => {
   const { profile, company, isLoading, hasProfile, isStartup, isMentor, hasStartupCompany } = useStartupProfile();
@@ -69,6 +69,9 @@ export const StartupHubRouter: React.FC = () => {
       case 'beep':
         if (isStartup) {
           return <BeepAssessmentPage />;
+        }
+        if (isMentor) {
+          return <MentorBeepResultsPage />;
         }
         return <div className="text-center py-12">Acesso não autorizado</div>;
 

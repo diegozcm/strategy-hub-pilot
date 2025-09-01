@@ -1,16 +1,17 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Building, TrendingUp, Calendar, MessageCircle, Award } from 'lucide-react';
+import { Users, Building, TrendingUp, Calendar, MessageCircle, Award, BarChart3 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useStartupProfile } from '@/hooks/useStartupProfile';
+import { useSearchParams } from 'react-router-dom';
 
 export const MentorDashboard: React.FC = () => {
   const { user } = useAuth();
   const { profile } = useStartupProfile();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Fetch startups count
   const { data: startupsCount } = useQuery({
@@ -74,6 +75,28 @@ export const MentorDashboard: React.FC = () => {
     }
   });
 
+  // Fetch mentor's startups count
+  const { data: mentorStartupsCount } = useQuery({
+    queryKey: ['mentor-startups-count', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+      
+      const { data, error } = await supabase
+        .from('mentor_startup_relations')
+        .select('id', { count: 'exact' })
+        .eq('mentor_id', user.id)
+        .eq('status', 'active');
+
+      if (error) throw error;
+      return data?.length || 0;
+    },
+    enabled: !!user?.id
+  });
+
+  const handleNavigateToBeep = () => {
+    setSearchParams({ tab: 'beep' });
+  };
+
   return (
     <div className="space-y-6">
       {/* Welcome Card */}
@@ -106,13 +129,13 @@ export const MentorDashboard: React.FC = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Mentorias</CardTitle>
+            <CardTitle className="text-sm font-medium">Minhas Startups</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
+            <div className="text-2xl font-bold">{mentorStartupsCount || 0}</div>
             <p className="text-xs text-muted-foreground">
-              Em andamento
+              Startups mentoradas
             </p>
           </CardContent>
         </Card>
@@ -188,10 +211,10 @@ export const MentorDashboard: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Users className="h-5 w-5" />
-              <span>Oportunidades de Mentoria</span>
+              <span>Ferramentas de Mentoria</span>
             </CardTitle>
             <CardDescription>
-              Conecte-se com startups que podem se beneficiar da sua expertise.
+              Acesse as ferramentas para mentorar suas startups.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -212,6 +235,15 @@ export const MentorDashboard: React.FC = () => {
                   )}
                 </div>
               </div>
+              
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={handleNavigateToBeep}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Ver Resultados BEEP
+              </Button>
               
               <Button className="w-full" variant="outline">
                 <MessageCircle className="h-4 w-4 mr-2" />
