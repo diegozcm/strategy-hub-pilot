@@ -28,12 +28,14 @@ const LandingPage = () => {
   const [currentScreenshot, setCurrentScreenshot] = React.useState(0);
   
   const screenshots = [
-    { title: "Dashboard Executivo", description: "Visão completa das métricas estratégicas com IA" },
-    { title: "Mapa Estratégico", description: "Visualize objetivos e resultados-chave" },
-    { title: "Gestão de Projetos", description: "Kanban inteligente para iniciativas" },
-    { title: "Copiloto de IA", description: "Assistente inteligente para planejamento" },
-    { title: "Objetivos", description: "Defina e acompanhe metas estratégicas" },
-    { title: "Análise Preditiva", description: "Insights automáticos baseados em IA" }
+    { title: "Dashboard Executivo", description: "Visão completa das métricas estratégicas com IA", module: "Planejamento Estratégico", placeholder: "strategic-dashboard.png" },
+    { title: "Mapa Estratégico", description: "Visualize objetivos e resultados-chave", module: "Planejamento Estratégico", placeholder: "strategic-map.png" },
+    { title: "Dashboard Startup", description: "Painel completo para startups", module: "Startup HUB", placeholder: "startup-dashboard.png" },
+    { title: "Avaliação BEEP", description: "Business Excellence Evaluation Program", module: "Startup HUB", placeholder: "beep-assessment.png" },
+    { title: "Mentoria", description: "Gestão de sessões e mentoria", module: "Startup HUB", placeholder: "mentoring-sessions.png" },
+    { title: "Copiloto de IA", description: "Assistente inteligente estratégico", module: "Planejamento Estratégico", placeholder: "ai-copilot.png" },
+    { title: "Analytics Startup", description: "Métricas e performance das startups", module: "Startup HUB", placeholder: "startup-analytics.png" },
+    { title: "Gestão de Objetivos", description: "OKRs e metas estratégicas", module: "Planejamento Estratégico", placeholder: "objectives-management.png" }
   ];
 
   const nextScreenshot = () => {
@@ -79,11 +81,11 @@ const LandingPage = () => {
         <div className="container mx-auto text-center">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl font-bold text-strategy-red-dark mb-6 leading-tight">
-              Planejamento Estratégico <span className="text-strategy-red-dark">Inteligente</span> com IA
+              Planejamento Estratégico e <span className="text-strategy-red-dark">Aceleração de Startups</span>
             </h1>
             
             <p className="text-xl text-strategy-blue-navy mb-8 leading-relaxed">
-              Transforme sua estratégia empresarial com insights de IA, mapas estratégicos e gestão de objetivos automatizada
+              Plataforma completa para empresas que querem crescer de forma estratégica e startups que buscam aceleração. Conecte planejamento inteligente com mentoria especializada.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
@@ -123,97 +125,125 @@ const LandingPage = () => {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-strategy-red-dark mb-4">
-              Funcionalidades Principais
+              Dois Módulos, Infinitas Possibilidades
             </h2>
             <p className="text-xl text-strategy-gray-medium max-w-2xl mx-auto">
-              Tudo que você precisa para levar sua estratégia empresarial ao próximo nível
+              Planejamento Estratégico para empresas e Startup HUB para aceleração de startups
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
-              <CardHeader>
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                  <BarChart3 className="h-6 w-6 text-accent" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Dashboard Executivo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base text-strategy-gray-medium">
-                  Visualize KPIs e métricas estratégicas com insights de IA em tempo real
-                </CardDescription>
-              </CardContent>
-            </Card>
+          <div className="space-y-12">
+            {/* Módulo Planejamento Estratégico */}
+            <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-2xl p-8">
+              <div className="text-center mb-8">
+                <Badge className="mb-4 bg-primary text-white px-4 py-2">
+                  <TargetIcon className="h-4 w-4 mr-2" />
+                  Módulo Planejamento Estratégico
+                </Badge>
+                <h3 className="text-2xl font-bold text-strategy-blue-navy mb-2">Para Empresas</h3>
+                <p className="text-strategy-gray-medium">Transforme sua gestão estratégica com IA</p>
+              </div>
+              
+              <div className="grid md:grid-cols-3 gap-6">
+                <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                      <BarChart3 className="h-6 w-6 text-primary" />
+                    </div>
+                    <CardTitle className="text-strategy-blue-navy">Dashboard Executivo</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-base text-strategy-gray-medium">
+                      Visualize KPIs e métricas estratégicas com insights de IA em tempo real
+                    </CardDescription>
+                  </CardContent>
+                </Card>
 
-            <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
-              <CardHeader>
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                  <Map className="h-6 w-6 text-accent" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Mapa Estratégico</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base text-strategy-gray-medium">
-                  Visualize objetivos e resultados-chave em mapas estratégicos inteligentes
-                </CardDescription>
-              </CardContent>
-            </Card>
+                <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                      <Map className="h-6 w-6 text-primary" />
+                    </div>
+                    <CardTitle className="text-strategy-blue-navy">Mapa Estratégico</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-base text-strategy-gray-medium">
+                      Visualize objetivos e resultados-chave em mapas estratégicos inteligentes
+                    </CardDescription>
+                  </CardContent>
+                </Card>
 
-            <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
-              <CardHeader>
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                  <TargetIcon className="h-6 w-6 text-accent" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Objetivos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base text-strategy-gray-medium">
-                  Defina e acompanhe objetivos estratégicos com suporte de IA
-                </CardDescription>
-              </CardContent>
-            </Card>
+                <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                      <Brain className="h-6 w-6 text-primary" />
+                    </div>
+                    <CardTitle className="text-strategy-blue-navy">Copiloto de IA</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-base text-strategy-gray-medium">
+                      Assistente inteligente para planejamento estratégico e insights automáticos
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
 
-            <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
-              <CardHeader>
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                  <TrendingUp className="h-6 w-6 text-accent" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Resultados Chave</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base text-strategy-gray-medium">
-                  Monitore indicadores e métricas com análise preditiva automática
-                </CardDescription>
-              </CardContent>
-            </Card>
+            {/* Módulo Startup HUB */}
+            <div className="bg-gradient-to-r from-accent/5 to-primary/5 rounded-2xl p-8">
+              <div className="text-center mb-8">
+                <Badge className="mb-4 bg-accent text-white px-4 py-2">
+                  <Users className="h-4 w-4 mr-2" />
+                  Módulo Startup HUB
+                </Badge>
+                <h3 className="text-2xl font-bold text-strategy-blue-navy mb-2">Para Startups</h3>
+                <p className="text-strategy-gray-medium">Aceleração completa para startups inovadoras</p>
+              </div>
+              
+              <div className="grid md:grid-cols-3 gap-6">
+                <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+                      <TrendingUp className="h-6 w-6 text-accent" />
+                    </div>
+                    <CardTitle className="text-strategy-blue-navy">Dashboard Startup</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-base text-strategy-gray-medium">
+                      Painel completo com métricas essenciais para startups
+                    </CardDescription>
+                  </CardContent>
+                </Card>
 
-            <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
-              <CardHeader>
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                  <FileText className="h-6 w-6 text-accent" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Gestão de Projetos</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base text-strategy-gray-medium">
-                  Gerencie iniciativas estratégicas com kanban inteligente e automações
-                </CardDescription>
-              </CardContent>
-            </Card>
+                <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+                      <Award className="h-6 w-6 text-accent" />
+                    </div>
+                    <CardTitle className="text-strategy-blue-navy">Avaliação BEEP</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-base text-strategy-gray-medium">
+                      Business Excellence Evaluation Program para análise completa
+                    </CardDescription>
+                  </CardContent>
+                </Card>
 
-            <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
-              <CardHeader>
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
-                  <Brain className="h-6 w-6 text-accent" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Copiloto de IA</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base text-strategy-gray-medium">
-                  Assistente inteligente para planejamento estratégico e insights automáticos
-                </CardDescription>
-              </CardContent>
-            </Card>
+                <Card className="group hover:shadow-xl hover:shadow-accent/20 transition-all duration-300 border bg-white">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-accent/20 transition-colors">
+                      <Users className="h-6 w-6 text-accent" />
+                    </div>
+                    <CardTitle className="text-strategy-blue-navy">Mentoria Especializada</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-base text-strategy-gray-medium">
+                      Mentoria qualificada com gestão completa de sessões
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -232,13 +262,25 @@ const LandingPage = () => {
 
           <div className="max-w-4xl mx-auto">
             <div className="relative bg-white/10 backdrop-blur-sm rounded-2xl p-8 mb-8">
-              <div className="aspect-video bg-white/20 rounded-lg flex items-center justify-center mb-4">
+              <div className="aspect-video bg-white/20 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
                 <div className="text-center">
+                  <div className="absolute top-4 right-4">
+                    <Badge className={`text-xs px-3 py-1 ${
+                      screenshots[currentScreenshot].module === 'Startup HUB' 
+                        ? 'bg-accent text-white' 
+                        : 'bg-primary text-white'
+                    }`}>
+                      {screenshots[currentScreenshot].module}
+                    </Badge>
+                  </div>
                   <div className="w-16 h-16 bg-accent/30 rounded-full flex items-center justify-center mx-auto mb-4">
                     <BarChart3 className="h-8 w-8 text-accent" />
                   </div>
                   <h3 className="text-xl font-semibold mb-2 text-white">{screenshots[currentScreenshot].title}</h3>
-                  <p className="text-strategy-gray-light">{screenshots[currentScreenshot].description}</p>
+                  <p className="text-strategy-gray-light mb-4">{screenshots[currentScreenshot].description}</p>
+                  <p className="text-xs text-white/60">
+                    📸 Substitua por: {screenshots[currentScreenshot].placeholder}
+                  </p>
                 </div>
               </div>
 
@@ -274,29 +316,29 @@ const LandingPage = () => {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-strategy-red-dark mb-4">
-              Resultados Comprovados com IA
+              Resultados Comprovados
             </h2>
             <p className="text-xl text-strategy-gray-medium">
-              Transformação real no planejamento estratégico empresarial
+              Transformação real no planejamento estratégico e aceleração de startups
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">70%</div>
-              <p className="text-strategy-gray-medium">Melhoria na qualidade das decisões estratégicas</p>
+              <div className="text-5xl font-bold text-primary mb-2">90%</div>
+              <p className="text-strategy-gray-medium">Das startups melhoram seu score BEEP em 6 meses</p>
             </div>
             <div className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">85%</div>
-              <p className="text-strategy-gray-medium">Redução no tempo de planejamento com IA</p>
+              <div className="text-5xl font-bold text-primary mb-2">75%</div>
+              <p className="text-strategy-gray-medium">Redução no tempo de planejamento estratégico</p>
             </div>
             <div className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">60%</div>
-              <p className="text-strategy-gray-medium">Aumento na precisão de projeções futuras</p>
+              <div className="text-5xl font-bold text-primary mb-2">200+</div>
+              <p className="text-strategy-gray-medium">Sessões de mentoria realizadas mensalmente</p>
             </div>
             <div className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">400%</div>
-              <p className="text-strategy-gray-medium">ROI médio em 8 meses com automação de IA</p>
+              <div className="text-5xl font-bold text-primary mb-2">300%</div>
+              <p className="text-strategy-gray-medium">ROI médio para empresas em planejamento estratégico</p>
             </div>
           </div>
         </div>
@@ -307,10 +349,10 @@ const LandingPage = () => {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-strategy-red-dark mb-4">
-              Casos de Uso
+              Para Quem É o Start Together
             </h2>
             <p className="text-xl text-strategy-gray-medium">
-              Planejamento estratégico inteligente para todos os tipos de empresa
+              Soluções específicas para cada tipo de organização
             </p>
           </div>
 
@@ -320,48 +362,54 @@ const LandingPage = () => {
                 <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
                   <Lightbulb className="h-6 w-6 text-accent" />
                 </div>
-                <CardTitle className="text-strategy-blue-navy">Startups e Scale-ups</CardTitle>
+                <CardTitle className="text-strategy-blue-navy">Startups e Empreendedores</CardTitle>
               </CardHeader>
               <CardContent>
+                <p className="text-sm text-strategy-gray-medium mb-3">Módulo: Startup HUB</p>
                 <ul className="text-strategy-gray-medium space-y-2">
-                  <li>• Planejamento estratégico ágil com IA</li>
-                  <li>• Mapas estratégicos simplificados</li>
-                  <li>• Métricas de crescimento automatizadas</li>
-                  <li>• Validação de hipóteses com dados</li>
+                  <li>• Dashboard de métricas essenciais</li>
+                  <li>• Avaliação BEEP para evolução</li>
+                  <li>• Mentoria especializada</li>
+                  <li>• Gestão de sessões e feedback</li>
+                  <li>• Analytics de performance</li>
                 </ul>
               </CardContent>
             </Card>
 
             <Card className="hover:shadow-lg transition-all duration-300 bg-white border">
               <CardHeader>
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                  <Award className="h-6 w-6 text-accent" />
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <Award className="h-6 w-6 text-primary" />
                 </div>
-                <CardTitle className="text-strategy-blue-navy">Empresas Médias</CardTitle>
+                <CardTitle className="text-strategy-blue-navy">Empresas em Crescimento</CardTitle>
               </CardHeader>
               <CardContent>
+                <p className="text-sm text-strategy-gray-medium mb-3">Módulos: Ambos disponíveis</p>
                 <ul className="text-strategy-gray-medium space-y-2">
-                  <li>• Alinhamento estratégico multi-área</li>
-                  <li>• Gestão inteligente de objetivos</li>
-                  <li>• Relatórios executivos automatizados</li>
-                  <li>• Copiloto de IA para decisões</li>
+                  <li>• Planejamento estratégico completo</li>
+                  <li>• Gestão de objetivos e OKRs</li>
+                  <li>• Aceleração de projetos internos</li>
+                  <li>• Dashboard executivo com IA</li>
+                  <li>• Mentoria para inovação</li>
                 </ul>
               </CardContent>
             </Card>
 
             <Card className="hover:shadow-lg transition-all duration-300 bg-white border">
               <CardHeader>
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                  <Target className="h-6 w-6 text-accent" />
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <Target className="h-6 w-6 text-primary" />
                 </div>
                 <CardTitle className="text-strategy-blue-navy">Corporações</CardTitle>
               </CardHeader>
               <CardContent>
+                <p className="text-sm text-strategy-gray-medium mb-3">Módulo: Planejamento Estratégico</p>
                 <ul className="text-strategy-gray-medium space-y-2">
                   <li>• Governança estratégica corporativa</li>
-                  <li>• Análise preditiva avançada</li>
                   <li>• Mapas estratégicos complexos</li>
-                  <li>• Integração de múltiplas unidades</li>
+                  <li>• Análise preditiva avançada</li>
+                  <li>• Integração multi-unidades</li>
+                  <li>• Copiloto de IA estratégico</li>
                 </ul>
               </CardContent>
             </Card>
@@ -388,8 +436,9 @@ const LandingPage = () => {
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-strategy-gray-light rounded-full"></div>
                   <div>
-                    <h4 className="font-semibold text-strategy-red-dark">Maria Santos</h4>
-                    <p className="text-sm text-strategy-blue-navy">CEO, TechStart</p>
+                    <h4 className="font-semibold text-strategy-red-dark">Carolina Mendes</h4>
+                    <p className="text-sm text-strategy-blue-navy">Co-founder, FintechBR</p>
+                    <Badge className="mt-1 text-xs bg-accent text-white">Startup HUB</Badge>
                   </div>
                 </div>
                 <div className="flex space-x-1">
@@ -400,7 +449,7 @@ const LandingPage = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-strategy-gray-medium italic">
-                  "O Start Together transformou nossa gestão estratégica. Conseguimos aumentar nossa eficiência em 40% no primeiro trimestre."
+                  "O BEEP nos ajudou a identificar pontos fracos que não víamos. Evoluímos 65% no score em 4 meses com as mentorias."
                 </p>
               </CardContent>
             </Card>
@@ -410,8 +459,9 @@ const LandingPage = () => {
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-strategy-gray-light rounded-full"></div>
                   <div>
-                    <h4 className="font-semibold text-strategy-red-dark">João Silva</h4>
-                    <p className="text-sm text-strategy-blue-navy">Diretor, InnovaCorp</p>
+                    <h4 className="font-semibold text-strategy-red-dark">Ricardo Almeida</h4>
+                    <p className="text-sm text-strategy-blue-navy">CEO, TechGrow</p>
+                    <Badge className="mt-1 text-xs bg-primary text-white">Ambos Módulos</Badge>
                   </div>
                 </div>
                 <div className="flex space-x-1">
@@ -422,7 +472,7 @@ const LandingPage = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-strategy-gray-medium italic">
-                  "A análise preditiva nos ajudou a antecipar tendências de mercado e tomar decisões mais assertivas."
+                  "Usamos o planejamento estratégico para a empresa e o Startup HUB para nossos projetos internos. Transformação completa!"
                 </p>
               </CardContent>
             </Card>
@@ -432,8 +482,9 @@ const LandingPage = () => {
                 <div className="flex items-center space-x-4">
                   <div className="w-12 h-12 bg-strategy-gray-light rounded-full"></div>
                   <div>
-                    <h4 className="font-semibold text-strategy-red-dark">Ana Costa</h4>
+                    <h4 className="font-semibold text-strategy-red-dark">Ana Paula Costa</h4>
                     <p className="text-sm text-strategy-blue-navy">VP Estratégia, MegaCorp</p>
+                    <Badge className="mt-1 text-xs bg-primary text-white">Planejamento Estratégico</Badge>
                   </div>
                 </div>
                 <div className="flex space-x-1">
@@ -444,7 +495,7 @@ const LandingPage = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-strategy-gray-medium italic">
-                  "Interface intuitiva e relatórios automáticos que nos poupam horas de trabalho manual todos os meses."
+                  "O Copiloto de IA nos poupar 12 horas semanais no planejamento. Relatórios que eram manuais agora são automáticos."
                 </p>
               </CardContent>
             </Card>
@@ -492,10 +543,10 @@ const LandingPage = () => {
       <section className="py-16 px-4 bg-gradient-to-r from-strategy-red-dark to-strategy-blue-navy">
         <div className="container mx-auto text-center">
           <h2 className="text-4xl font-bold text-white mb-4">
-            Transforme sua Estratégia com IA
+            Acelere seu Crescimento Estratégico
           </h2>
           <p className="text-xl text-strategy-gray-light mb-8">
-            Descubra como o planejamento estratégico inteligente pode revolucionar seus resultados
+            Planejamento estratégico para empresas e aceleração completa para startups em uma única plataforma
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
@@ -511,7 +562,7 @@ const LandingPage = () => {
           </div>
 
           <p className="text-sm text-strategy-gray-light/80">
-            Solução completa para planejamento estratégico empresarial
+            Dois módulos especializados: Planejamento Estratégico e Startup HUB
           </p>
         </div>
       </section>
