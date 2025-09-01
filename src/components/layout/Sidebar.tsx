@@ -44,6 +44,8 @@ export const Sidebar: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { hasModuleAccess } = useModules();
 
+  // Force cache refresh - refactored sidebar structure
+
   return (
     <div className={cn("bg-card border-r border-border flex flex-col transition-all duration-300", collapsed ? "w-16" : "w-64")}>
       {/* Header */}
