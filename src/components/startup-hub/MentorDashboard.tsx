@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -68,8 +67,48 @@ export const MentorDashboard: React.FC = () => {
     enabled: !!user?.id
   });
 
-  // Fetch mentor's average rating (placeholder - we'll use 5.0 for now as rating system isn't implemented)
-  const mentorRating = 5.0;
+  // Fetch mentor's average rating based on BEEP assessments from mentor's startups
+  const { data: mentorRating } = useQuery({
+    queryKey: ['mentor-average-rating', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return 0;
+
+      // Get startup companies where this mentor has a relationship
+      const { data: mentorCompanies, error: relationsError } = await supabase
+        .from('user_company_relations')
+        .select('company_id')
+        .eq('user_id', user.id);
+
+      if (relationsError) throw relationsError;
+
+      if (!mentorCompanies || mentorCompanies.length === 0) {
+        return 0;
+      }
+
+      const companyIds = mentorCompanies.map(rel => rel.company_id);
+
+      // Get BEEP assessments from these companies
+      const { data: assessments, error: assessmentsError } = await supabase
+        .from('beep_assessments')
+        .select('final_score')
+        .eq('status', 'completed')
+        .in('company_id', companyIds)
+        .not('final_score', 'is', null);
+
+      if (assessmentsError) throw assessmentsError;
+
+      if (!assessments || assessments.length === 0) {
+        return 0;
+      }
+
+      // Calculate average rating
+      const totalScore = assessments.reduce((sum, assessment) => sum + (assessment.final_score || 0), 0);
+      const averageRating = totalScore / assessments.length;
+
+      return averageRating;
+    },
+    enabled: !!user?.id
+  });
 
   // Fetch recent BEEP assessments
   const { data: recentAssessments } = useQuery({
@@ -188,13 +227,15 @@ export const MentorDashboard: React.FC = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avaliação</CardTitle>
+            <CardTitle className="text-sm font-medium">Rating Médio</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mentorRating.toFixed(1)}</div>
+            <div className="text-2xl font-bold">
+              {mentorRating ? mentorRating.toFixed(1) : '0.0'}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Rating médio
+              Baseado nas avaliações BEEP
             </p>
           </CardContent>
         </Card>
