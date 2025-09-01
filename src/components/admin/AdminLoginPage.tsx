@@ -19,33 +19,39 @@ export const AdminLoginPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('AdminLoginPage - Auth state:', { user: !!user, profile, authLoading });
+    console.log('AdminLoginPage - Auth state:', { 
+      user: !!user, 
+      userEmail: user?.email,
+      profile, 
+      authLoading 
+    });
     
     if (!authLoading && user) {
-      if (profile) {
-        console.log('AdminLoginPage - User and profile loaded:', { userRole: profile.role });
-        if (profile.role === 'admin') {
-          console.log('AdminLoginPage - Redirecting to admin dashboard');
-          navigate('/app/admin');
-        } else {
-          console.log('AdminLoginPage - User is not admin, staying on login page');
-          setError('Acesso negado. Apenas administradores podem acessar esta área.');
-        }
-      } else {
-        // Profile não carregou ainda, mas usuário está logado - verificar por email
-        console.log('AdminLoginPage - Profile not loaded, checking user email:', user.email);
-        if (user.email === 'admin@example.com' || user.email === 'diego@cofound.com.br') {
-          console.log('AdminLoginPage - Admin email detected, redirecting...');
-          navigate('/app/admin');
-        } else {
-          // Aguardar um pouco mais pelo profile
-          setTimeout(() => {
-            if (!profile) {
-              console.log('AdminLoginPage - Profile still not loaded after timeout');
-              setError('Erro ao carregar perfil do usuário. Tente novamente.');
-            }
-          }, 3000);
-        }
+      // Verificação robusta: admins hardcoded têm prioridade
+      const isHardcodedAdmin = user.email === 'admin@example.com' || user.email === 'diego@cofound.com.br';
+      const isProfileAdmin = profile?.role === 'admin';
+
+      console.log('AdminLoginPage - Admin check:', { 
+        isHardcodedAdmin, 
+        isProfileAdmin,
+        userEmail: user.email 
+      });
+
+      if (isHardcodedAdmin || isProfileAdmin) {
+        console.log('AdminLoginPage - Admin detected, redirecting to admin dashboard');
+        navigate('/app/admin');
+      } else if (profile && profile.role !== 'admin') {
+        console.log('AdminLoginPage - User is not admin, staying on login page');
+        setError('Acesso negado. Apenas administradores podem acessar esta área.');
+      } else if (!profile) {
+        // Profile ainda não carregou - aguardar um pouco
+        console.log('AdminLoginPage - Profile not loaded yet, waiting...');
+        setTimeout(() => {
+          if (!profile && !isHardcodedAdmin) {
+            console.log('AdminLoginPage - Profile still not loaded and not hardcoded admin');
+            setError('Erro ao carregar perfil do usuário. Tente fazer login novamente.');
+          }
+        }, 2000);
       }
     }
   }, [user, profile, authLoading, navigate]);
@@ -88,23 +94,26 @@ export const AdminLoginPage: React.FC = () => {
   // Show loading while auth is being determined
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   // If user is already logged in and is admin, don't show login form
-  if (user && profile?.role === 'admin') {
+  const isHardcodedAdmin = user?.email === 'admin@example.com' || user?.email === 'diego@cofound.com.br';
+  const isProfileAdmin = profile?.role === 'admin';
+  
+  if (user && (isHardcodedAdmin || isProfileAdmin)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Admin Login</CardTitle>

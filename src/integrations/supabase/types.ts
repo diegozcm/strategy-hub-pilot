@@ -1698,10 +1698,6 @@ export type Database = {
         Args: { _admin_id: string }
         Returns: boolean
       }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
       get_monthly_objective_achievement: {
         Args: { objective_id: string; target_month: string }
         Returns: {
