@@ -107,23 +107,8 @@ export const BeepAssessmentManager = () => {
         return newSet;
       });
       
-      // Add to saved questions and set timeout to remove after 3 seconds
+      // Add to saved questions (keep permanently visible)
       setSavedQuestions(prev => new Set([...prev, variables.questionId]));
-      
-      // Clear existing timeout for this question
-      if (savedTimeoutsRef.current[variables.questionId]) {
-        clearTimeout(savedTimeoutsRef.current[variables.questionId]);
-      }
-      
-      // Set new timeout to remove saved state
-      savedTimeoutsRef.current[variables.questionId] = setTimeout(() => {
-        setSavedQuestions(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(variables.questionId);
-          return newSet;
-        });
-        delete savedTimeoutsRef.current[variables.questionId];
-      }, 3000);
       
       queryClient.invalidateQueries({ queryKey: ['beep-answers', currentAssessment?.id] });
     },
