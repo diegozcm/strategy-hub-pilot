@@ -11,6 +11,7 @@ import { MentorStartupsOverviewPage } from './mentor/MentorStartupsOverviewPage'
 import { MentorBeepAnalyticsPage } from './mentor/MentorBeepAnalyticsPage';
 import { MentorSessionsPage } from './mentor/MentorSessionsPage';
 import { StartupMentoringPage } from './StartupMentoringPage';
+import { StartupSessionsPage } from './StartupSessionsPage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { MentorBeepResultsPage } from './mentor/MentorBeepResultsPage';
 
@@ -89,6 +90,9 @@ export const StartupHubRouter: React.FC = () => {
       case 'sessions':
         if (isMentor) {
           return <MentorSessionsPage />;
+        }
+        if (isStartup) {
+          return <StartupSessionsPage />;
         }
         return <div className="text-center py-12">Acesso não autorizado</div>;
 
