@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -148,14 +149,18 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
 
       {/* Category Tabs */}
       <Tabs value={currentCategoryIndex.toString()} onValueChange={(value) => setCurrentCategoryIndex(parseInt(value))}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="w-full h-auto p-1">
           {categories.map((category, index) => {
             const categoryProgress = calculateCategoryProgress(index);
             return (
-              <TabsTrigger key={category.id} value={index.toString()}>
-                <div className="flex flex-col items-center gap-1">
-                  <span>{category.name}</span>
-                  <span className="text-xs text-muted-foreground">
+              <TabsTrigger 
+                key={category.id} 
+                value={index.toString()}
+                className="flex-1 h-auto py-3 px-4"
+              >
+                <div className="flex flex-col items-center justify-center gap-1 min-h-[48px]">
+                  <span className="text-sm font-medium text-center leading-tight">{category.name}</span>
+                  <span className="text-xs text-muted-foreground font-normal">
                     {categoryProgress.answered}/{categoryProgress.total}
                   </span>
                 </div>
@@ -233,3 +238,4 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
     </div>
   );
 };
+
