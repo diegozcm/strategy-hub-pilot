@@ -1,26 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
-import type { Json } from '@/integrations/supabase/types';
-
-interface MentoringSession {
-  id: string;
-  mentor_id: string;
-  startup_company_id: string;
-  session_date: string;
-  duration: number;
-  session_type: string;
-  notes: string;
-  action_items: Json;
-  follow_up_date?: string;
-  status: string;
-  created_at: string;
-  mentor_name?: string;
-  mentor_profile?: {
-    first_name: string;
-    last_name: string;
-  };
-}
+import type { MentoringSession, MentoringTip } from '@/types/mentoring';
 
 export const useStartupSessions = () => {
   console.log('🎯 [useStartupSessions] Hook initialization');
@@ -130,12 +111,52 @@ export const useStartupSessions = () => {
 
       console.log('👨‍🏫 [useStartupSessions] Mentor map:', Array.from(mentorMap.entries()));
 
+      // Get tips for each session
+      const sessionIds = sessionsData?.map(s => s.id) || [];
+      let tipsData: MentoringTip[] = [];
+      
+      if (sessionIds.length > 0) {
+        console.log('📝 [useStartupSessions] Fetching tips for sessions:', sessionIds);
+        const { data: tips, error: tipsError } = await supabase
+          .from('mentoring_tips')
+          .select('*')
+          .in('session_id', sessionIds)
+          .order('created_at', { ascending: false });
+
+        if (tipsError) {
+          console.error('👨‍🏫 [useStartupSessions] Error fetching tips:', tipsError);
+        } else {
+          tipsData = tips || [];
+          console.log('📝 [useStartupSessions] Tips fetched:', tipsData.length);
+        }
+      }
+
+      // Group tips by session
+      const tipsMap = new Map<string, MentoringTip[]>();
+      tipsData?.forEach(tip => {
+        if (tip.session_id) {
+          if (!tipsMap.has(tip.session_id)) {
+            tipsMap.set(tip.session_id, []);
+          }
+          tipsMap.get(tip.session_id)!.push(tip);
+        }
+      });
+
+      // Combine sessions with mentor profiles and tips
       const sessionsWithMentors = sessionsData.map(session => ({
         ...session,
-        mentor_name: mentorMap.get(session.mentor_id) || 'Mentor Desconhecido'
+        mentor_name: mentorMap.get(session.mentor_id) || 'Mentor Desconhecido',
+        tips: tipsMap.get(session.id) || [],
+        tips_count: tipsMap.get(session.id)?.length || 0
       }));
 
-      console.log('✅ [useStartupSessions] Final sessions with mentors:', sessionsWithMentors);
+      console.log('✅ [useStartupSessions] Final sessions with mentors and tips:', 
+        sessionsWithMentors.map(s => ({ 
+          id: s.id, 
+          mentor: s.mentor_name, 
+          tipsCount: s.tips_count 
+        }))
+      );
       setSessions(sessionsWithMentors);
     } catch (err) {
       console.error('💥 [useStartupSessions] Unexpected error:', err);

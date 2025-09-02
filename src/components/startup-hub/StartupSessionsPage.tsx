@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Users, Search, Clock, User } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import { useStartupSessions } from '@/hooks/useStartupSessions';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import type { Json } from '@/integrations/supabase/types';
+import { SessionAccordion } from './SessionAccordion';
 
 const sessionTypes = [
   { value: 'general', label: 'Geral' },
@@ -114,77 +111,17 @@ export const StartupSessionsPage: React.FC = () => {
             </p>
           </CardContent>
         </Card>
-      ) : (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {filteredSessions.length} {filteredSessions.length === 1 ? 'sessão encontrada' : 'sessões encontradas'}
-            </p>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {filteredSessions.length} {filteredSessions.length === 1 ? 'sessão encontrada' : 'sessões encontradas'}
+              </p>
+            </div>
+            
+            {/* Usar o novo componente SessionAccordion */}
+            <SessionAccordion sessions={filteredSessions} />
           </div>
-          
-          {filteredSessions.map((session) => (
-            <Card key={session.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <CardTitle className="text-lg">
-                        <div className="flex items-center gap-2">
-                          <User className="h-5 w-5 text-primary" />
-                          {session.mentor_name}
-                        </div>
-                      </CardTitle>
-                      <Badge variant="outline">
-                        {sessionTypes.find(t => t.value === session.session_type)?.label || session.session_type}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        {format(new Date(session.session_date), 'dd/MM/yyyy', { locale: ptBR })}
-                      </div>
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {session.duration}min
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {session.notes && (
-                  <div className="mb-4">
-                    <h4 className="font-medium text-sm mb-2 text-muted-foreground">Notas da Sessão</h4>
-                    <p className="text-sm whitespace-pre-wrap bg-muted/50 p-3 rounded-md">{session.notes}</p>
-                  </div>
-                )}
-                {session.action_items && Array.isArray(session.action_items) && session.action_items.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="font-medium text-sm mb-2 text-muted-foreground">Itens de Ação para Você</h4>
-                    <div className="bg-primary/5 p-3 rounded-md">
-                      <ul className="text-sm space-y-2">
-                        {(session.action_items as string[]).map((item, index) => (
-                          <li key={index} className="flex items-start">
-                            <span className="text-primary mr-2 font-bold">•</span>
-                            <span className="flex-1">{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
-                {session.follow_up_date && (
-                  <div className="text-sm">
-                    <Badge variant="secondary" className="text-xs">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      Follow-up: {format(new Date(session.follow_up_date), 'dd/MM/yyyy', { locale: ptBR })}
-                    </Badge>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
       )}
     </div>
   );
