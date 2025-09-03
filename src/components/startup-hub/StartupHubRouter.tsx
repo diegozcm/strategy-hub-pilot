@@ -95,6 +95,8 @@ export const StartupHubRouter: React.FC = () => {
         }
         return <div className="text-center py-12">Acesso não autorizado</div>;
 
+      case 'mentoring':
+        return isStartup ? <StartupSessionsPage /> : <div className="text-center py-12">Acesso não autorizado</div>;
 
       case 'profile':
         return <StartupProfileSetup />;
