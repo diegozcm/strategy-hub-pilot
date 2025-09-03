@@ -23,7 +23,7 @@ interface ModulesContextType {
 const ModulesContext = createContext<ModulesContextType | undefined>(undefined);
 
 export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, profile, switchCompany, fetchCompaniesByType } = useAuth();
+  const { user, profile, switchCompany, fetchCompaniesByType, fetchAllUserCompanies, isSystemAdmin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [availableModules, setAvailableModules] = useState<SystemModule[]>([]);
@@ -116,9 +116,23 @@ export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  // Get company type for module
-  const getCompanyTypeForModule = (moduleSlug: string): 'startup' | 'regular' => {
-    return moduleSlug === 'startup-hub' ? 'startup' : 'regular';
+  // Get compatible companies for module (same logic as CompanySelector)
+  const getCompatibleCompanies = async (moduleSlug: string) => {
+    if (!fetchCompaniesByType || !fetchAllUserCompanies) return [];
+    
+    try {
+      if (moduleSlug === 'startup-hub') {
+        return await fetchCompaniesByType('startup');
+      } else if (moduleSlug === 'strategic-planning') {
+        // Strategic planning accepts ALL companies (align with CompanySelector)
+        return isSystemAdmin ? await fetchAllUserCompanies() : await fetchAllUserCompanies();
+      } else {
+        return await fetchCompaniesByType('regular');
+      }
+    } catch (error) {
+      console.error('Error fetching compatible companies:', error);
+      return [];
+    }
   };
 
   // Switch to a different module
@@ -127,6 +141,12 @@ export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     // Don't switch if already on the same module
     if (currentModule?.id === moduleId) return;
+
+    console.log('🔧 switchModule called:', { 
+      moduleId, 
+      currentModuleId: currentModule?.id,
+      currentCompany: profile?.company_id 
+    });
 
     try {
       const { error } = await supabase.rpc('switch_user_module', {
@@ -138,25 +158,35 @@ export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       const newModule = availableModules.find(m => m.id === moduleId);
       if (newModule) {
+        console.log('🔧 Setting new module:', newModule.slug);
         setCurrentModule(newModule);
         
         // Only auto-switch company if:
         // 1. User has no company selected, OR 
         // 2. Current company is not compatible with the new module
-        if (switchCompany && fetchCompaniesByType) {
-          const requiredCompanyType = getCompanyTypeForModule(newModule.slug);
-          const compatibleCompanies = await fetchCompaniesByType(requiredCompanyType);
+        if (switchCompany) {
+          const compatibleCompanies = await getCompatibleCompanies(newModule.slug);
+          console.log('🔧 Compatible companies:', compatibleCompanies.map(c => ({ id: c.id, name: c.name })));
           
           // Check if current company is compatible
           const currentCompany = profile?.company_id;
           const isCurrentCompanyCompatible = currentCompany && 
             compatibleCompanies.some(comp => comp.id === currentCompany);
           
+          console.log('🔧 Company compatibility check:', {
+            currentCompany,
+            isCurrentCompanyCompatible,
+            compatibleCompaniesCount: compatibleCompanies.length
+          });
+          
           // Only auto-switch if no company selected or current one is incompatible
           if (!currentCompany || !isCurrentCompanyCompatible) {
             if (compatibleCompanies.length > 0) {
+              console.log('🔧 Auto-switching company to:', compatibleCompanies[0].name);
               await switchCompany(compatibleCompanies[0].id);
             }
+          } else {
+            console.log('🔧 Keeping current company - it is compatible');
           }
         }
         
