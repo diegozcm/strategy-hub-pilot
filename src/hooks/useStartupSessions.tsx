@@ -10,20 +10,70 @@ export const useStartupSessions = () => {
   const [sessions, setSessions] = useState<MentoringSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>({});
 
   console.log('🎯 [useStartupSessions] Initial state:', { 
     hasUser: !!user, 
     userEmail: user?.email,
+    userId: user?.id,
     sessionsCount: sessions.length, 
     loading, 
     error 
   });
+
+  const fetchStartupSessionsDirect = async () => {
+    console.log('🔄 [useStartupSessions] Trying direct approach...');
+    
+    try {
+      // Try direct query without RPC
+      const { data: userCompanies, error: companiesError } = await supabase
+        .from('user_company_relations')
+        .select('company_id, companies(id, name)')
+        .eq('user_id', user!.id)
+        .eq('role', 'member');
+
+      if (companiesError) {
+        console.error('❌ [Direct] Error fetching user companies:', companiesError);
+        return null;
+      }
+
+      console.log('🏢 [Direct] User companies:', userCompanies);
+
+      if (!userCompanies || userCompanies.length === 0) {
+        console.log('⚠️ [Direct] No companies found');
+        return [];
+      }
+
+      const companyIds = userCompanies.map(uc => uc.company_id);
+      console.log('🏢 [Direct] Company IDs:', companyIds);
+
+      // Get sessions directly
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('mentoring_sessions')
+        .select('*')
+        .in('startup_company_id', companyIds)
+        .order('session_date', { ascending: false });
+
+      if (sessionsError) {
+        console.error('❌ [Direct] Error fetching sessions:', sessionsError);
+        return null;
+      }
+
+      console.log('📅 [Direct] Sessions found:', sessionsData?.length || 0);
+      return sessionsData || [];
+
+    } catch (err) {
+      console.error('💥 [Direct] Unexpected error:', err);
+      return null;
+    }
+  };
 
   const fetchStartupSessions = async () => {
     console.log('🔍 [useStartupSessions] Starting fetchStartupSessions');
     
     if (!user) {
       console.log('❌ [useStartupSessions] No user found');
+      setLoading(false);
       return;
     }
     
@@ -32,30 +82,76 @@ export const useStartupSessions = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Update debug info
+      setDebugInfo(prev => ({
+        ...prev,
+        userId: user.id,
+        userEmail: user.email,
+        timestamp: new Date().toISOString(),
+        step: 'starting'
+      }));
 
-      // First, get user's startup company
+      // Try RPC first, then fallback to direct
       console.log('🏢 [useStartupSessions] Getting user startup company...');
+      let companyId: string | null = null;
+      let companyName: string | null = null;
+      
       const { data: userCompany, error: companyError } = await supabase.rpc('get_user_startup_company', {
         _user_id: user.id
       });
 
-      console.log('🏢 [useStartupSessions] User company result:', { userCompany, companyError });
+      console.log('🏢 [useStartupSessions] RPC result:', { userCompany, companyError });
 
       if (companyError) {
-        console.error('❌ [useStartupSessions] Error getting user company:', companyError);
-        setError(`Erro ao buscar empresa: ${companyError.message}`);
-        return;
+        console.warn('⚠️ [useStartupSessions] RPC failed, trying direct approach:', companyError);
+        
+        // Try direct approach
+        const directSessions = await fetchStartupSessionsDirect();
+        if (directSessions === null) {
+          setError(`Erro ao buscar empresa: ${companyError.message}`);
+          return;
+        } else if (directSessions.length === 0) {
+          console.log('⚠️ [useStartupSessions] No sessions found via direct approach');
+          setSessions([]);
+          setDebugInfo(prev => ({ ...prev, step: 'no_sessions_direct', sessions: 0 }));
+          return;
+        } else {
+          // Process direct sessions (simplified without tips/mentors for now)
+          const simpleSessions = directSessions.map(session => ({
+            ...session,
+            mentor_name: 'Mentor',
+            tips: [],
+            tips_count: 0
+          }));
+          setSessions(simpleSessions);
+          setDebugInfo(prev => ({ 
+            ...prev, 
+            step: 'success_direct', 
+            sessions: simpleSessions.length,
+            method: 'direct'
+          }));
+          return;
+        }
       }
 
       if (!userCompany || userCompany.length === 0) {
         console.log('⚠️ [useStartupSessions] No company found for user');
         setSessions([]);
-        setLoading(false);
+        setDebugInfo(prev => ({ ...prev, step: 'no_company', sessions: 0 }));
         return;
       }
 
-      const companyId = userCompany[0].id;
-      console.log('🏢 [useStartupSessions] Company found:', companyId, userCompany[0].name);
+      companyId = userCompany[0].id;
+      companyName = userCompany[0].name;
+      console.log('🏢 [useStartupSessions] Company found:', companyId, companyName);
+
+      setDebugInfo(prev => ({ 
+        ...prev, 
+        step: 'found_company',
+        companyId,
+        companyName 
+      }));
 
       // Get sessions for this startup
       console.log('📅 [useStartupSessions] Fetching sessions for company:', companyId);
@@ -74,13 +170,14 @@ export const useStartupSessions = () => {
       if (sessionsError) {
         console.error('❌ [useStartupSessions] Error fetching sessions:', sessionsError);
         setError(`Erro ao buscar sessões: ${sessionsError.message}`);
+        setDebugInfo(prev => ({ ...prev, step: 'error_sessions', error: sessionsError }));
         return;
       }
 
       if (!sessionsData || sessionsData.length === 0) {
         console.log('⚠️ [useStartupSessions] No sessions found');
         setSessions([]);
-        setLoading(false);
+        setDebugInfo(prev => ({ ...prev, step: 'no_sessions_found', sessions: 0 }));
         return;
       }
 
@@ -97,13 +194,7 @@ export const useStartupSessions = () => {
 
       console.log('👨‍🏫 [useStartupSessions] Mentor profiles result:', { mentorProfiles, mentorError });
 
-      if (mentorError) {
-        console.error('❌ [useStartupSessions] Error fetching mentor profiles:', mentorError);
-        setError(`Erro ao buscar perfis dos mentores: ${mentorError.message}`);
-        return;
-      }
-
-      // Create mentor map
+      // Create mentor map (don't fail if mentors not found)
       const mentorMap = new Map(mentorProfiles?.map(p => [
         p.user_id, 
         `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Mentor'
@@ -157,10 +248,20 @@ export const useStartupSessions = () => {
           tipsCount: s.tips_count 
         }))
       );
+      
       setSessions(sessionsWithMentors);
+      setDebugInfo(prev => ({ 
+        ...prev, 
+        step: 'success_rpc',
+        sessions: sessionsWithMentors.length,
+        method: 'rpc',
+        mentorIds,
+        mentorProfiles: mentorProfiles?.length || 0
+      }));
     } catch (err) {
       console.error('💥 [useStartupSessions] Unexpected error:', err);
       setError('Erro inesperado ao buscar sessões');
+      setDebugInfo(prev => ({ ...prev, step: 'unexpected_error', error: err }));
     } finally {
       setLoading(false);
       console.log('🏁 [useStartupSessions] Fetch complete');
@@ -179,6 +280,7 @@ export const useStartupSessions = () => {
     sessions,
     loading,
     error,
+    debugInfo,
     refetch: fetchStartupSessions
   };
 };
