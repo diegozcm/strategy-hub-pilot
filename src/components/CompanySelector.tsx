@@ -36,7 +36,7 @@ export const CompanySelector: React.FC = () => {
       if (currentModule.slug === 'startup-hub') {
         // StartupHUB: only startup companies (makes sense as it's startup-specific)
         companies = await fetchCompaniesByType?.('startup') || [];
-      } else if (currentModule.slug === 'strategic-map') {
+      } else if (currentModule.slug === 'strategic-planning') {
         // StrategyHUB: all companies (startups can create strategic plans too)
         companies = await fetchAllUserCompanies?.() || [];
       } else {
