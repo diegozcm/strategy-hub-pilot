@@ -13,16 +13,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Company } from '@/types/admin';
 
 export const CompanySelector: React.FC = () => {
-  const { isSystemAdmin, company, switchCompany, profile, fetchCompaniesByType } = useAuth();
+  const { isSystemAdmin, company, switchCompany, profile, fetchCompaniesByType, fetchAllUserCompanies } = useAuth();
   const { currentModule } = useModules();
   const [availableCompanies, setAvailableCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Get company type for current module
-  const getCompanyTypeForModule = (moduleSlug: string): 'startup' | 'regular' => {
-    return moduleSlug === 'startup-hub' ? 'startup' : 'regular';
-  };
-
+  // Load companies based on current module requirements
   useEffect(() => {
     if (currentModule) {
       loadCompaniesForCurrentModule();
@@ -34,8 +30,20 @@ export const CompanySelector: React.FC = () => {
     
     setLoading(true);
     try {
-      const requiredCompanyType = getCompanyTypeForModule(currentModule.slug);
-      const companies = await fetchCompaniesByType?.(requiredCompanyType) || [];
+      let companies: any[] = [];
+      
+      // Different logic based on module
+      if (currentModule.slug === 'startup-hub') {
+        // StartupHUB: only startup companies (makes sense as it's startup-specific)
+        companies = await fetchCompaniesByType?.('startup') || [];
+      } else if (currentModule.slug === 'strategic-map') {
+        // StrategyHUB: all companies (startups can create strategic plans too)
+        companies = await fetchAllUserCompanies?.() || [];
+      } else {
+        // Other modules: regular companies (default behavior)
+        companies = await fetchCompaniesByType?.('regular') || [];
+      }
+      
       setAvailableCompanies(companies as Company[]);
     } catch (error) {
       console.error('Erro ao carregar empresas:', error);

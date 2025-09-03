@@ -162,6 +162,54 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Fetch all companies for the current user (for modules like StrategyHUB)
+  const fetchAllUserCompanies = async () => {
+    if (!user) return [];
+
+    try {
+      // Para admins, buscar todas as empresas
+      if (isSystemAdmin) {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('*')
+          .eq('status', 'active')
+          .order('name');
+
+        if (error) throw error;
+        return data || [];
+      }
+
+      // Para usuários não-admin, buscar todas as empresas às quais têm acesso
+      const { data, error } = await supabase
+        .from('user_company_relations')
+        .select(`
+          company_id,
+          companies!inner (
+            id,
+            name,
+            status,
+            company_type,
+            owner_id,
+            mission,
+            vision,
+            values,
+            logo_url,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('companies.status', 'active');
+
+      if (error) throw error;
+      
+      return data?.map(relation => relation.companies).filter(Boolean) || [];
+    } catch (error) {
+      console.error('Error fetching all user companies:', error);
+      return [];
+    }
+  };
+
   // Switch company (for system admins and users with multiple companies)
   const switchCompany = async (companyId: string) => {
     if (isSystemAdmin) {
@@ -421,6 +469,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       isCompanyAdmin,
       switchCompany,
       fetchCompaniesByType,
+      fetchAllUserCompanies,
       // Impersonation properties
       isImpersonating,
       originalAdmin,
