@@ -63,12 +63,40 @@ export const CompanySelector: React.FC = () => {
     return null;
   }
 
-  // Se só há uma empresa disponível para o módulo atual, não mostrar o seletor
-  if (availableCompanies.length <= 1) {
+  // Se só há uma empresa disponível mas não está selecionada, permitir selecioná-la
+  if (availableCompanies.length === 1) {
+    const singleCompany = availableCompanies[0];
+    
+    // Se a empresa já está selecionada, mostrar apenas o nome
+    if (company?.id === singleCompany.id) {
+      return (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Building2 className="h-4 w-4" />
+          <span>{company.name}</span>
+        </div>
+      );
+    }
+    
+    // Se não está selecionada, mostrar botão para selecionar
+    return (
+      <Button 
+        variant="outline" 
+        size="sm" 
+        className="flex items-center gap-2"
+        onClick={() => handleCompanyChange(singleCompany)}
+      >
+        <Building2 className="h-4 w-4" />
+        <span>Selecionar {singleCompany.name}</span>
+      </Button>
+    );
+  }
+
+  // Se não há empresas disponíveis
+  if (availableCompanies.length === 0) {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <Building2 className="h-4 w-4" />
-        <span>{company?.name || 'Nenhuma empresa'}</span>
+        <span>Nenhuma empresa disponível</span>
       </div>
     );
   }

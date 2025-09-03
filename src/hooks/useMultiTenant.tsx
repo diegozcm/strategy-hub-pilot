@@ -76,10 +76,73 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       // Load company if profile has company_id
       if (profile?.company_id) {
         await loadCompanyById(profile.company_id);
+      } else {
+        // If no company_id, check if user has companies and auto-select if only one
+        console.log('🏢 No company_id in profile, checking available companies...');
+        await autoSelectSingleCompany(userId);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
       setProfile(null);
+    }
+  };
+
+  // Auto-select company if user has only one available
+  const autoSelectSingleCompany = async (userId: string) => {
+    try {
+      const { data: relations, error } = await supabase
+        .from('user_company_relations')
+        .select(`
+          company_id,
+          companies!inner (
+            id,
+            name,
+            status,
+            company_type,
+            owner_id,
+            mission,
+            vision,
+            values,
+            logo_url,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('companies.status', 'active');
+
+      if (error) {
+        console.error('Error fetching user companies for auto-select:', error);
+        return;
+      }
+
+      const companies = relations?.map(relation => relation.companies).filter(Boolean) || [];
+      
+      if (companies.length === 1) {
+        const singleCompany = companies[0];
+        console.log('🎯 Auto-selecting single company:', singleCompany.name);
+        
+        // Update profile with company_id
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ company_id: singleCompany.id })
+          .eq('user_id', userId);
+
+        if (updateError) {
+          console.error('Error updating profile with company_id:', updateError);
+        } else {
+          // Load the company
+          await loadCompanyById(singleCompany.id);
+          // Update profile state to reflect the change
+          setProfile(prev => prev ? { ...prev, company_id: singleCompany.id } : prev);
+        }
+      } else if (companies.length > 1) {
+        console.log('🏢 User has multiple companies available, waiting for manual selection');
+      } else {
+        console.log('❌ No companies available for user');
+      }
+    } catch (error) {
+      console.error('Error in auto-select company:', error);
     }
   };
 
