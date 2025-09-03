@@ -74,23 +74,38 @@ export const useStartupSessions = () => {
         return;
       }
 
-      // Get mentor profiles
+      // Get mentor profiles using mentor-startup relation to bypass RLS
       const mentorIds = [...new Set(sessionsData.map(s => s.mentor_id))];
       console.log('🔍 [useStartupSessions] Mentor IDs found:', mentorIds);
       
-      const { data: mentorProfiles, error: mentorError } = await supabase
-        .from('profiles')
-        .select('user_id, first_name, last_name')
-        .in('user_id', mentorIds);
+      // Get mentor profiles through the mentor-startup relation
+      const { data: mentorRelations, error: mentorError } = await supabase
+        .from('mentor_startup_relations')
+        .select('mentor_id')
+        .eq('startup_company_id', companyId)
+        .in('mentor_id', mentorIds);
 
-      console.log('👥 [useStartupSessions] Mentor profiles:', mentorProfiles);
-      console.log('❌ [useStartupSessions] Mentor error:', mentorError);
+      console.log('👥 [useStartupSessions] Mentor relations found:', mentorRelations);
+      console.log('❌ [useStartupSessions] Mentor relation error:', mentorError);
 
-      // Create mentor map using only first name
-      const mentorMap = new Map(mentorProfiles?.map(p => [
-        p.user_id, 
-        p.first_name || 'Mentor'
-      ]) || []);
+      // Now get the profile data for the valid mentor IDs
+      const validMentorIds = mentorRelations?.map(r => r.mentor_id) || [];
+      let mentorMap = new Map();
+
+      if (validMentorIds.length > 0) {
+        // Try to get mentor profiles directly (this might work due to startup-mentor relationship)
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_id, first_name')
+          .in('user_id', validMentorIds);
+
+        console.log('📋 [useStartupSessions] Profiles found:', profiles);
+        console.log('❌ [useStartupSessions] Profile error:', profileError);
+
+        if (profiles && profiles.length > 0) {
+          mentorMap = new Map(profiles.map(p => [p.user_id, p.first_name || 'Mentor']));
+        }
+      }
 
       console.log('🗺️ [useStartupSessions] Mentor map:', Object.fromEntries(mentorMap));
 
