@@ -44,16 +44,7 @@ export const MentorInfo = () => {
       // Get mentor relation
       const { data: mentorRelation, error: mentorError } = await supabase
         .from('mentor_startup_relations')
-        .select(`
-          mentor_id,
-          assigned_at,
-          status,
-          profiles!inner (
-            first_name,
-            last_name,
-            avatar_url
-          )
-        `)
+        .select('mentor_id, assigned_at, status')
         .eq('startup_company_id', companyId)
         .eq('status', 'active')
         .single();
@@ -63,18 +54,30 @@ export const MentorInfo = () => {
           // No mentor assigned
           setMentor(null);
         } else {
-          console.error('Error fetching mentor:', mentorError);
+          console.error('Error fetching mentor relation:', mentorError);
           setError('Erro ao buscar informações do mentor');
         }
         return;
       }
 
       if (mentorRelation) {
-        const profile = mentorRelation.profiles as any;
+        // Get mentor profile separately
+        const { data: mentorProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, avatar_url')
+          .eq('user_id', mentorRelation.mentor_id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching mentor profile:', profileError);
+          setError('Erro ao buscar perfil do mentor');
+          return;
+        }
+
         setMentor({
           mentor_id: mentorRelation.mentor_id,
-          mentor_name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
-          mentor_avatar: profile.avatar_url,
+          mentor_name: `${mentorProfile.first_name || ''} ${mentorProfile.last_name || ''}`.trim() || 'Mentor',
+          mentor_avatar: mentorProfile.avatar_url,
           assigned_at: mentorRelation.assigned_at,
           status: mentorRelation.status
         });

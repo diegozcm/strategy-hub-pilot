@@ -19,22 +19,28 @@ export const useStartupSessions = () => {
       setLoading(true);
       setError(null);
 
-      // Get user startup company using RPC
-      const { data: userCompany, error: companyError } = await supabase.rpc('get_user_startup_company', {
-        _user_id: user.id
-      });
+      // Get user startup company using direct query first
+      const { data: userCompanyRelations, error: relationError } = await supabase
+        .from('user_company_relations')
+        .select(`
+          company_id,
+          companies!inner(id, name, company_type)
+        `)
+        .eq('user_id', user.id)
+        .eq('companies.company_type', 'startup');
 
-      if (companyError) {
-        setError(`Erro ao buscar empresa: ${companyError.message}`);
+      if (relationError) {
+        console.error('Error fetching company relations:', relationError);
+        setError(`Erro ao buscar empresa: ${relationError.message}`);
         return;
       }
 
-      if (!userCompany || userCompany.length === 0) {
+      if (!userCompanyRelations || userCompanyRelations.length === 0) {
         setSessions([]);
         return;
       }
 
-      const companyId = userCompany[0].id;
+      const companyId = userCompanyRelations[0].company_id;
 
       // Get sessions for this startup
       const { data: sessionsData, error: sessionsError } = await supabase
