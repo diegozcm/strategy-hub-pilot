@@ -10,6 +10,7 @@ import { useStartupSessions } from '@/hooks/useStartupSessions';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { TipCard } from './TipCard';
 import { StartupSessionsPage } from './StartupSessionsPage';
+import { MentorInfo } from './MentorInfo';
 
 export const StartupMentoringPage: React.FC = () => {
   console.log('📱 [StartupMentoringPage] Rendering component');
@@ -48,11 +49,13 @@ export const StartupMentoringPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold mb-2">Mentoria</h1>
-        <p className="text-muted-foreground">
-          Acompanhe suas dicas e sessões de mentoria
+        <h1 className="text-2xl font-bold">Mentoria Startup</h1>
+        <p className="text-muted-foreground mt-2">
+          Acesse dicas personalizadas e histórico de sessões de mentoria
         </p>
       </div>
+
+      <MentorInfo />
 
       <Tabs defaultValue="tips" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
