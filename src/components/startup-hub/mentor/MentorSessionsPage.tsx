@@ -6,31 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Calendar, Users, Plus, Edit, Search, FileText, Clock, Building, Filter } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Calendar, Users, Plus, Edit, Search, Clock, Building, Filter, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useMentorStartupDetails } from '@/hooks/useMentorStartupDetails';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import type { Json } from '@/integrations/supabase/types';
-
-interface MentoringSession {
-  id: string;
-  mentor_id: string;
-  startup_company_id: string;
-  session_date: string;
-  duration: number;
-  session_type: string;
-  notes: string;
-  action_items: Json;
-  follow_up_date?: string;
-  status: string;
-  created_at: string;
-  startup_name?: string;
-}
+import { useMentorSessions, MentoringSession } from '@/hooks/useMentorSessions';
+import { ActionItemsManager } from '../ActionItemsManager';
 
 const sessionTypes = [
   { value: 'general', label: 'Geral' },
@@ -45,13 +30,14 @@ const sessionTypes = [
 export const MentorSessionsPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const { data: startups } = useMentorStartupDetails();
+  const { sessions, loading, error, createSession, updateSession, deleteSession } = useMentorSessions();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<MentoringSession | null>(null);
+  const [sessionToDelete, setSessionToDelete] = useState<MentoringSession | null>(null);
 
   const [formData, setFormData] = useState({
     startup_company_id: '',
@@ -59,102 +45,21 @@ export const MentorSessionsPage: React.FC = () => {
     duration: 60,
     session_type: 'general',
     notes: '',
-    action_items: '',
-    follow_up_date: ''
-  });
-
-  // Fetch mentoring sessions
-  const { data: sessions, isLoading, error } = useQuery({
-    queryKey: ['mentoring-sessions', user?.id],
-    queryFn: async () => {
-      if (!user?.id) throw new Error('User not authenticated');
-
-      // First get sessions
-      const { data: sessionsData, error: sessionsError } = await supabase
-        .from('mentoring_sessions')
-        .select('*')
-        .eq('mentor_id', user.id)
-        .order('session_date', { ascending: false });
-
-      if (sessionsError) throw sessionsError;
-
-      if (!sessionsData || sessionsData.length === 0) {
-        return [];
-      }
-
-      // Get company IDs
-      const companyIds = [...new Set(sessionsData.map(s => s.startup_company_id))];
-
-      // Get company names
-      const { data: companies, error: companiesError } = await supabase
-        .from('companies')
-        .select('id, name')
-        .in('id', companyIds);
-
-      if (companiesError) throw companiesError;
-
-      // Create company map
-      const companyMap = new Map(companies?.map(c => [c.id, c.name]) || []);
-
-      return sessionsData.map(session => ({
-        ...session,
-        startup_name: companyMap.get(session.startup_company_id) || 'Startup Desconhecida'
-      }));
-    },
-    enabled: !!user?.id
+    follow_up_date: '',
+    status: 'completed'
   });
 
   // Create or update session mutation
-  const sessionMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const actionItems = data.action_items ? data.action_items.split('\n').filter((item: string) => item.trim()) : [];
-      
-      const sessionData = {
-        ...data,
-        action_items: actionItems,
-        mentor_id: user?.id,
-        follow_up_date: data.follow_up_date || null
-      };
-
-      if (editingSession) {
-        const { data: result, error } = await supabase
-          .from('mentoring_sessions')
-          .update(sessionData)
-          .eq('id', editingSession.id)
-          .select()
-          .single();
-        if (error) throw error;
-        return result;
-      } else {
-        const { data: result, error } = await supabase
-          .from('mentoring_sessions')
-          .insert(sessionData)
-          .select()
-          .single();
-        if (error) throw error;
-        return result;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['mentoring-sessions'] });
-      toast({
-        title: editingSession ? 'Sessão atualizada' : 'Sessão criada',
-        description: editingSession ? 'A sessão foi atualizada com sucesso.' : 'A nova sessão foi criada com sucesso.'
-      });
-      handleCloseModal();
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Erro',
-        description: error.message || 'Ocorreu um erro ao salvar a sessão.',
-        variant: 'destructive'
-      });
-    }
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    sessionMutation.mutate(formData);
+    
+    const result = editingSession 
+      ? await updateSession(editingSession.id, formData)
+      : await createSession(formData);
+
+    if (!result.error) {
+      handleCloseModal();
+    }
   };
 
   const handleEdit = (session: MentoringSession) => {
@@ -165,10 +70,17 @@ export const MentorSessionsPage: React.FC = () => {
       duration: session.duration || 60,
       session_type: session.session_type,
       notes: session.notes || '',
-      action_items: session.action_items ? (Array.isArray(session.action_items) ? session.action_items.join('\n') : '') : '',
-      follow_up_date: session.follow_up_date ? format(new Date(session.follow_up_date), 'yyyy-MM-dd') : ''
+      follow_up_date: session.follow_up_date ? format(new Date(session.follow_up_date), 'yyyy-MM-dd') : '',
+      status: session.status || 'completed'
     });
     setIsCreateModalOpen(true);
+  };
+
+  const handleDelete = async (session: MentoringSession) => {
+    const result = await deleteSession(session.id);
+    if (!result.error) {
+      setSessionToDelete(null);
+    }
   };
 
   const handleCloseModal = () => {
@@ -180,8 +92,8 @@ export const MentorSessionsPage: React.FC = () => {
       duration: 60,
       session_type: 'general',
       notes: '',
-      action_items: '',
-      follow_up_date: ''
+      follow_up_date: '',
+      status: 'completed'
     });
   };
 
@@ -193,7 +105,7 @@ export const MentorSessionsPage: React.FC = () => {
     return matchesSearch && matchesType;
   }) || [];
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
         <LoadingSpinner size="lg" />
@@ -297,16 +209,6 @@ export const MentorSessionsPage: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Itens de Ação (um por linha)</label>
-                <Textarea
-                  value={formData.action_items}
-                  onChange={(e) => setFormData(prev => ({...prev, action_items: e.target.value}))}
-                  placeholder="Lista de ações a serem tomadas..."
-                  className="min-h-[80px]"
-                />
-              </div>
-
-              <div className="space-y-2">
                 <label className="text-sm font-medium">Data de Follow-up (opcional)</label>
                 <Input
                   type="date"
@@ -319,8 +221,8 @@ export const MentorSessionsPage: React.FC = () => {
                 <Button type="button" variant="outline" onClick={handleCloseModal}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={sessionMutation.isPending}>
-                  {sessionMutation.isPending ? 'Salvando...' : (editingSession ? 'Atualizar' : 'Criar Sessão')}
+                <Button type="submit">
+                  {editingSession ? 'Atualizar' : 'Criar Sessão'}
                 </Button>
               </div>
             </form>
@@ -357,7 +259,7 @@ export const MentorSessionsPage: React.FC = () => {
       {error && (
         <Card className="border-destructive">
           <CardContent className="p-4">
-            <p className="text-destructive">Erro ao carregar sessões: {error.message}</p>
+            <p className="text-destructive">Erro ao carregar sessões: {error}</p>
           </CardContent>
         </Card>
       )}
@@ -405,13 +307,22 @@ export const MentorSessionsPage: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleEdit(session)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleEdit(session)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setSessionToDelete(session)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -421,21 +332,14 @@ export const MentorSessionsPage: React.FC = () => {
                     <p className="text-sm whitespace-pre-wrap">{session.notes}</p>
                   </div>
                 )}
-                {session.action_items && Array.isArray(session.action_items) && session.action_items.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="font-medium text-sm mb-2 text-muted-foreground">Itens de Ação</h4>
-                    <ul className="text-sm space-y-1">
-                      {(session.action_items as string[]).map((item, index) => (
-                        <li key={index} className="flex items-start">
-                          <span className="text-primary mr-2">•</span>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                
+                {/* Action Items Manager */}
+                <div className="mt-4">
+                  <ActionItemsManager sessionId={session.id} canEdit={true} />
+                </div>
+                
                 {session.follow_up_date && (
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-sm text-muted-foreground mt-4">
                     <strong>Follow-up agendado:</strong> {format(new Date(session.follow_up_date), 'dd/MM/yyyy', { locale: ptBR })}
                   </div>
                 )}
@@ -444,6 +348,27 @@ export const MentorSessionsPage: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!sessionToDelete} onOpenChange={(open) => !open && setSessionToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Sessão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta sessão de mentoria? Esta ação não pode ser desfeita e todos os itens de ação relacionados também serão excluídos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => sessionToDelete && handleDelete(sessionToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir Sessão
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

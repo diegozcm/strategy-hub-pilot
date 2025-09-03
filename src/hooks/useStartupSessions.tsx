@@ -1,11 +1,26 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
-import type { MentoringSession, MentoringTip } from '@/types/mentoring';
+
+export interface MentoringSessionWithMentor {
+  id: string;
+  mentor_id: string;
+  startup_company_id: string;
+  session_date: string;
+  duration: number;
+  session_type: string;
+  notes: string;
+  follow_up_date?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  beep_related_items?: any;
+  mentor_name: string;
+}
 
 export const useStartupSessions = () => {
   const { user } = useAuth();
-  const [sessions, setSessions] = useState<MentoringSession[]>([]);
+  const [sessions, setSessions] = useState<MentoringSessionWithMentor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,37 +87,10 @@ export const useStartupSessions = () => {
         `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Mentor'
       ]) || []);
 
-      // Get tips for each session
-      const sessionIds = sessionsData.map(s => s.id);
-      let tipsData: MentoringTip[] = [];
-      
-      if (sessionIds.length > 0) {
-        const { data: tips } = await supabase
-          .from('mentoring_tips')
-          .select('*')
-          .in('session_id', sessionIds)
-          .order('created_at', { ascending: false });
-
-        tipsData = tips || [];
-      }
-
-      // Group tips by session
-      const tipsMap = new Map<string, MentoringTip[]>();
-      tipsData.forEach(tip => {
-        if (tip.session_id) {
-          if (!tipsMap.has(tip.session_id)) {
-            tipsMap.set(tip.session_id, []);
-          }
-          tipsMap.get(tip.session_id)!.push(tip);
-        }
-      });
-
-      // Combine sessions with mentor profiles and tips
+      // Combine sessions with mentor profiles
       const sessionsWithMentors = sessionsData.map(session => ({
         ...session,
-        mentor_name: mentorMap.get(session.mentor_id) || 'Mentor Desconhecido',
-        tips: tipsMap.get(session.id) || [],
-        tips_count: tipsMap.get(session.id)?.length || 0
+        mentor_name: mentorMap.get(session.mentor_id) || 'Mentor Desconhecido'
       }));
       
       setSessions(sessionsWithMentors);

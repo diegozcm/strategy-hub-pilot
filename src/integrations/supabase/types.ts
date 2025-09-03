@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_items: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string
+          session_id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          session_id: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string
+          session_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_action_items_session"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "mentoring_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_impersonation_sessions: {
         Row: {
           admin_user_id: string
@@ -731,7 +781,6 @@ export type Database = {
       }
       mentoring_sessions: {
         Row: {
-          action_items: Json | null
           beep_related_items: Json | null
           created_at: string
           duration: number | null
@@ -746,7 +795,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          action_items?: Json | null
           beep_related_items?: Json | null
           created_at?: string
           duration?: number | null
@@ -761,7 +809,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          action_items?: Json | null
           beep_related_items?: Json | null
           created_at?: string
           duration?: number | null
@@ -778,62 +825,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fk_mentoring_sessions_company"
-            columns: ["startup_company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      mentoring_tips: {
-        Row: {
-          beep_category_related: string[] | null
-          category: string
-          content: string
-          created_at: string
-          id: string
-          is_public: boolean
-          mentor_id: string
-          priority: string
-          session_id: string | null
-          startup_company_id: string | null
-          status: string
-          title: string
-          updated_at: string
-        }
-        Insert: {
-          beep_category_related?: string[] | null
-          category?: string
-          content: string
-          created_at?: string
-          id?: string
-          is_public?: boolean
-          mentor_id: string
-          priority?: string
-          session_id?: string | null
-          startup_company_id?: string | null
-          status?: string
-          title: string
-          updated_at?: string
-        }
-        Update: {
-          beep_category_related?: string[] | null
-          category?: string
-          content?: string
-          created_at?: string
-          id?: string
-          is_public?: boolean
-          mentor_id?: string
-          priority?: string
-          session_id?: string | null
-          startup_company_id?: string | null
-          status?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "mentoring_tips_startup_company_id_fkey"
             columns: ["startup_company_id"]
             isOneToOne: false
             referencedRelation: "companies"

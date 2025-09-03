@@ -10,7 +10,6 @@ import { StartupProfileSetup } from './StartupProfileSetup';
 import { MentorStartupsOverviewPage } from './mentor/MentorStartupsOverviewPage';
 import { MentorBeepAnalyticsPage } from './mentor/MentorBeepAnalyticsPage';
 import { MentorSessionsPage } from './mentor/MentorSessionsPage';
-import { StartupMentoringPage } from './StartupMentoringPage';
 import { StartupSessionsPage } from './StartupSessionsPage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { MentorBeepResultsPage } from './mentor/MentorBeepResultsPage';
