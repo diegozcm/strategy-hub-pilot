@@ -4,34 +4,20 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, MessageSquare, Globe, Lock, Calendar, Bug } from 'lucide-react';
+import { Search, MessageSquare, Globe, Lock, Calendar } from 'lucide-react';
 import { useStartupMentoring } from '@/hooks/useStartupMentoring';
 import { useStartupSessions } from '@/hooks/useStartupSessions';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { TipCard } from './TipCard';
 import { StartupSessionsPage } from './StartupSessionsPage';
 import { MentorInfo } from './MentorInfo';
-import { SessionDebugPanel } from './SessionDebugPanel';
 
 export const StartupMentoringPage: React.FC = () => {
-  console.log('📱 [StartupMentoringPage] Rendering component');
-  
   const { tips, loading: tipsLoading, error: tipsError } = useStartupMentoring();
-  const { sessions, loading: sessionsLoading, error: sessionsError, refetch, debugInfo } = useStartupSessions();
+  const { sessions, loading: sessionsLoading, error: sessionsError } = useStartupSessions();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
-  const [showDebug, setShowDebug] = useState(true); // Show debug panel by default
-
-  console.log('📱 [StartupMentoringPage] State:', { 
-    tipsCount: tips.length, 
-    tipsLoading, 
-    tipsError,
-    sessionsCount: sessions.length,
-    sessionsLoading,
-    sessionsError,
-    debugInfo
-  });
 
   const filteredTips = tips.filter(tip => {
     const matchesSearch = tip.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,17 +45,6 @@ export const StartupMentoringPage: React.FC = () => {
       </div>
 
       <MentorInfo />
-
-      {/* Debug Panel */}
-      {showDebug && (
-        <SessionDebugPanel
-          debugInfo={debugInfo}
-          sessions={sessions}
-          loading={sessionsLoading}
-          error={sessionsError}
-          onRefresh={refetch}
-        />
-      )}
 
       <Tabs defaultValue="tips" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
