@@ -35,7 +35,7 @@ export const StartupSessionsPage: React.FC = () => {
   useEffect(() => {
     console.log('🔄 [StartupSessionsPage] Component mounted, forcing refresh');
     refetch();
-  }, [refetch]);
+  }, []); // Remove refetch dependency to prevent infinite loop
 
   // Filter sessions
   const filteredSessions = sessions?.filter(session => {

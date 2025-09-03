@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 
@@ -24,7 +24,7 @@ export const useStartupSessions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStartupSessions = async () => {
+  const fetchStartupSessions = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
@@ -99,11 +99,11 @@ export const useStartupSessions = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchStartupSessions();
-  }, [user]);
+  }, [fetchStartupSessions]);
 
   return {
     sessions,
