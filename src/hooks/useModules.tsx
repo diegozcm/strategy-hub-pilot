@@ -125,6 +125,9 @@ export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const switchModule = async (moduleId: string) => {
     if (!user) return;
 
+    // Don't switch if already on the same module
+    if (currentModule?.id === moduleId) return;
+
     try {
       const { error } = await supabase.rpc('switch_user_module', {
         _user_id: user.id,
@@ -137,14 +140,23 @@ export const ModulesProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (newModule) {
         setCurrentModule(newModule);
         
-        // Auto-switch company based on module type
+        // Only auto-switch company if:
+        // 1. User has no company selected, OR 
+        // 2. Current company is not compatible with the new module
         if (switchCompany && fetchCompaniesByType) {
           const requiredCompanyType = getCompanyTypeForModule(newModule.slug);
           const compatibleCompanies = await fetchCompaniesByType(requiredCompanyType);
           
-          if (compatibleCompanies.length > 0) {
-            // Switch to the first compatible company
-            await switchCompany(compatibleCompanies[0].id);
+          // Check if current company is compatible
+          const currentCompany = profile?.company_id;
+          const isCurrentCompanyCompatible = currentCompany && 
+            compatibleCompanies.some(comp => comp.id === currentCompany);
+          
+          // Only auto-switch if no company selected or current one is incompatible
+          if (!currentCompany || !isCurrentCompanyCompatible) {
+            if (compatibleCompanies.length > 0) {
+              await switchCompany(compatibleCompanies[0].id);
+            }
           }
         }
         

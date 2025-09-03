@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useModules } from '@/hooks/useModules';
 import { Building2, ChevronDown } from 'lucide-react';
@@ -17,15 +17,10 @@ export const CompanySelector: React.FC = () => {
   const { currentModule } = useModules();
   const [availableCompanies, setAvailableCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
+  const [lastLoadedModule, setLastLoadedModule] = useState<string | null>(null);
 
-  // Load companies based on current module requirements
-  useEffect(() => {
-    if (currentModule) {
-      loadCompaniesForCurrentModule();
-    }
-  }, [currentModule, isSystemAdmin, profile?.role]);
-
-  const loadCompaniesForCurrentModule = async () => {
+  // Memoized load function to prevent unnecessary calls
+  const loadCompaniesForCurrentModule = useCallback(async () => {
     if (!currentModule) return;
     
     setLoading(true);
@@ -45,12 +40,20 @@ export const CompanySelector: React.FC = () => {
       }
       
       setAvailableCompanies(companies as Company[]);
+      setLastLoadedModule(currentModule.slug);
     } catch (error) {
       console.error('Erro ao carregar empresas:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentModule, isSystemAdmin, profile?.role, fetchCompaniesByType, fetchAllUserCompanies]);
+
+  // Load companies only when module actually changes
+  useEffect(() => {
+    if (currentModule && currentModule.slug !== lastLoadedModule) {
+      loadCompaniesForCurrentModule();
+    }
+  }, [currentModule?.slug, loadCompaniesForCurrentModule, lastLoadedModule]);
 
   const handleCompanyChange = async (selectedCompany: Company) => {
     if (switchCompany) {

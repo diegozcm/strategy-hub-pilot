@@ -347,7 +347,8 @@ export const useStrategicMap = () => {
   // React to company changes from auth context
   useEffect(() => {
     const reloadCompany = async () => {
-      if (user && authCompany) {
+      // Only reload if company actually changed (different ID)
+      if (user && authCompany && company?.id !== authCompany.id) {
         setLoading(true);
         await loadCompany();
         setLoading(false);
@@ -355,7 +356,7 @@ export const useStrategicMap = () => {
     };
 
     reloadCompany();
-  }, [authCompany?.id]);
+  }, [authCompany?.id, company?.id, user]);
 
   // Create objective
   const createObjective = async (objectiveData: Omit<StrategicObjective, 'id' | 'created_at' | 'updated_at'>) => {
