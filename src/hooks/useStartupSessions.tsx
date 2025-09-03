@@ -76,22 +76,35 @@ export const useStartupSessions = () => {
 
       // Get mentor profiles
       const mentorIds = [...new Set(sessionsData.map(s => s.mentor_id))];
-      const { data: mentorProfiles } = await supabase
+      console.log('🔍 [useStartupSessions] Mentor IDs found:', mentorIds);
+      
+      const { data: mentorProfiles, error: mentorError } = await supabase
         .from('profiles')
         .select('user_id, first_name, last_name')
         .in('user_id', mentorIds);
 
-      // Create mentor map
+      console.log('👥 [useStartupSessions] Mentor profiles:', mentorProfiles);
+      console.log('❌ [useStartupSessions] Mentor error:', mentorError);
+
+      // Create mentor map using only first name
       const mentorMap = new Map(mentorProfiles?.map(p => [
         p.user_id, 
-        `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Mentor'
+        p.first_name || 'Mentor'
       ]) || []);
+
+      console.log('🗺️ [useStartupSessions] Mentor map:', Object.fromEntries(mentorMap));
 
       // Combine sessions with mentor profiles
       const sessionsWithMentors = sessionsData.map(session => ({
         ...session,
         mentor_name: mentorMap.get(session.mentor_id) || 'Mentor Desconhecido'
       }));
+
+      console.log('🔗 [useStartupSessions] Sessions with mentors:', sessionsWithMentors.map(s => ({ 
+        id: s.id, 
+        mentor_id: s.mentor_id, 
+        mentor_name: s.mentor_name 
+      })));
       
       setSessions(sessionsWithMentors);
     } catch (err) {
