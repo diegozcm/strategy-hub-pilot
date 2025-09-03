@@ -22,7 +22,13 @@ export const AuthPage: React.FC = () => {
 
   useEffect(() => {
     if (user && profile) {
-      // Only redirect if profile is active
+      // Check if profile is inactive (admins can still deactivate users)
+      if (profile.status === 'inactive') {
+        setError('Sua conta foi desativada. Entre em contato com um administrador.');
+        return;
+      }
+      
+      // Redirect active users
       if (profile.status === 'active') {
         if (profile.role === 'admin') {
           navigate('/admin');
@@ -30,7 +36,6 @@ export const AuthPage: React.FC = () => {
           navigate('/app');
         }
       }
-      // If status is pending, let the error display below handle it
     }
   }, [user, profile, navigate]);
 
@@ -54,7 +59,7 @@ export const AuthPage: React.FC = () => {
         }
       } else {
         if (!isLogin) {
-          setError('Cadastro realizado! Verifique seu email para confirmar a conta.');
+          setError('Cadastro realizado com sucesso! Você já pode fazer login.');
         }
         // Don't navigate here - let useEffect handle it after profile loads
       }
@@ -66,10 +71,10 @@ export const AuthPage: React.FC = () => {
     }
   };
 
-  // Check for pending status
+  // Check for inactive status (pending status removed since users are active by default)
   useEffect(() => {
-    if (profile?.status === 'pending') {
-      setError('Sua conta está pendente de aprovação. Aguarde a liberação por um administrador.');
+    if (profile?.status === 'inactive') {
+      setError('Sua conta foi desativada por um administrador. Entre em contato para mais informações.');
     }
   }, [profile]);
 

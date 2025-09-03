@@ -256,7 +256,11 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signUp = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/app`;
+    // Use production URL for email redirect, fallback to current origin
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const redirectUrl = isLocalhost 
+      ? 'https://id-preview--c4bd542a-1a34-426d-be48-0c78008d9661.lovable.app/app'
+      : `${window.location.origin}/app`;
 
     const { error } = await supabase.auth.signUp({
       email,
