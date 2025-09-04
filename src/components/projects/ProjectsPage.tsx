@@ -282,6 +282,23 @@ export const ProjectsPage: React.FC = () => {
     }
   };
 
+  const getNextStatus = (currentStatus: string) => {
+    const statusFlow = ['todo', 'in_progress', 'review', 'done'];
+    const currentIndex = statusFlow.indexOf(currentStatus);
+    return currentIndex < statusFlow.length - 1 ? statusFlow[currentIndex + 1] : null;
+  };
+
+  const getPreviousStatus = (currentStatus: string) => {
+    const statusFlow = ['todo', 'in_progress', 'review', 'done'];
+    const currentIndex = statusFlow.indexOf(currentStatus);
+    return currentIndex > 0 ? statusFlow[currentIndex - 1] : null;
+  };
+
+  const handleStatusChange = (taskId: string, newStatus: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    updateTaskStatus(taskId, newStatus);
+  };
+
   const openProjectDetail = (project: StrategicProject) => {
     setSelectedProjectForDetail(project);
     setEditProjectForm({
@@ -1106,14 +1123,35 @@ export const ProjectsPage: React.FC = () => {
               </div>
               <div className="space-y-3">
                 {tasksByStatus.todo.map((task) => (
-                  <Card key={task.id} className="p-4 cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => updateTaskStatus(task.id, 'in_progress')}>
+                  <Card key={task.id} className="p-4 hover:shadow-md transition-shadow">
                     <div className="space-y-2">
                       <div className="flex items-start justify-between">
                         <h4 className="font-medium text-sm">{task.title}</h4>
-                        <Badge variant="outline" className={`${getPriorityColor(task.priority)} text-white border-0 text-xs`}>
-                          {getPriorityText(task.priority)}
-                        </Badge>
+                        <div className="flex items-center gap-1">
+                          {getPreviousStatus(task.status) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0 hover:bg-gray-100"
+                              onClick={(e) => handleStatusChange(task.id, getPreviousStatus(task.status)!, e)}
+                            >
+                              <ChevronLeft className="w-3 h-3 text-gray-400" />
+                            </Button>
+                          )}
+                          {getNextStatus(task.status) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0 hover:bg-gray-100"
+                              onClick={(e) => handleStatusChange(task.id, getNextStatus(task.status)!, e)}
+                            >
+                              <ChevronRight className="w-3 h-3 text-gray-400" />
+                            </Button>
+                          )}
+                          <Badge variant="outline" className={`${getPriorityColor(task.priority)} text-white border-0 text-xs`}>
+                            {getPriorityText(task.priority)}
+                          </Badge>
+                        </div>
                       </div>
                       {task.description && (
                         <p className="text-xs text-gray-600 line-clamp-2">{task.description}</p>
@@ -1146,14 +1184,35 @@ export const ProjectsPage: React.FC = () => {
               </div>
               <div className="space-y-3">
                 {tasksByStatus.in_progress.map((task) => (
-                  <Card key={task.id} className="p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-blue-500"
-                        onClick={() => updateTaskStatus(task.id, 'review')}>
+                  <Card key={task.id} className="p-4 hover:shadow-md transition-shadow border-l-4 border-blue-500">
                     <div className="space-y-2">
                       <div className="flex items-start justify-between">
                         <h4 className="font-medium text-sm">{task.title}</h4>
-                        <Badge variant="outline" className={`${getPriorityColor(task.priority)} text-white border-0 text-xs`}>
-                          {getPriorityText(task.priority)}
-                        </Badge>
+                        <div className="flex items-center gap-1">
+                          {getPreviousStatus(task.status) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0 hover:bg-gray-100"
+                              onClick={(e) => handleStatusChange(task.id, getPreviousStatus(task.status)!, e)}
+                            >
+                              <ChevronLeft className="w-3 h-3 text-gray-400" />
+                            </Button>
+                          )}
+                          {getNextStatus(task.status) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0 hover:bg-gray-100"
+                              onClick={(e) => handleStatusChange(task.id, getNextStatus(task.status)!, e)}
+                            >
+                              <ChevronRight className="w-3 h-3 text-gray-400" />
+                            </Button>
+                          )}
+                          <Badge variant="outline" className={`${getPriorityColor(task.priority)} text-white border-0 text-xs`}>
+                            {getPriorityText(task.priority)}
+                          </Badge>
+                        </div>
                       </div>
                       {task.description && (
                         <p className="text-xs text-gray-600 line-clamp-2">{task.description}</p>
@@ -1186,14 +1245,35 @@ export const ProjectsPage: React.FC = () => {
               </div>
               <div className="space-y-3">
                 {tasksByStatus.review.map((task) => (
-                  <Card key={task.id} className="p-4 cursor-pointer hover:shadow-md transition-shadow border-l-4 border-yellow-500"
-                        onClick={() => updateTaskStatus(task.id, 'done')}>
+                  <Card key={task.id} className="p-4 hover:shadow-md transition-shadow border-l-4 border-yellow-500">
                     <div className="space-y-2">
                       <div className="flex items-start justify-between">
                         <h4 className="font-medium text-sm">{task.title}</h4>
-                        <Badge variant="outline" className={`${getPriorityColor(task.priority)} text-white border-0 text-xs`}>
-                          {getPriorityText(task.priority)}
-                        </Badge>
+                        <div className="flex items-center gap-1">
+                          {getPreviousStatus(task.status) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0 hover:bg-gray-100"
+                              onClick={(e) => handleStatusChange(task.id, getPreviousStatus(task.status)!, e)}
+                            >
+                              <ChevronLeft className="w-3 h-3 text-gray-400" />
+                            </Button>
+                          )}
+                          {getNextStatus(task.status) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0 hover:bg-gray-100"
+                              onClick={(e) => handleStatusChange(task.id, getNextStatus(task.status)!, e)}
+                            >
+                              <ChevronRight className="w-3 h-3 text-gray-400" />
+                            </Button>
+                          )}
+                          <Badge variant="outline" className={`${getPriorityColor(task.priority)} text-white border-0 text-xs`}>
+                            {getPriorityText(task.priority)}
+                          </Badge>
+                        </div>
                       </div>
                       {task.description && (
                         <p className="text-xs text-gray-600 line-clamp-2">{task.description}</p>
@@ -1228,26 +1308,32 @@ export const ProjectsPage: React.FC = () => {
                 {tasksByStatus.done.map((task) => (
                    <Card key={task.id} className="p-4 hover:shadow-md transition-shadow border-l-4 border-green-500 opacity-75">
                      <div className="space-y-2">
-                       <div className="flex items-start justify-between">
-                         <h4 className="font-medium text-sm line-through">{task.title}</h4>
-                         <div className="flex items-center gap-1">
-                           <Button 
-                             variant="ghost" 
-                             size="sm" 
-                             className="h-6 w-6 p-0 hover:bg-gray-100"
-                           >
-                             <ChevronLeft className="w-3 h-3 text-gray-400" />
-                           </Button>
-                           <Button 
-                             variant="ghost" 
-                             size="sm" 
-                             className="h-6 w-6 p-0 hover:bg-gray-100"
-                           >
-                             <ChevronRight className="w-3 h-3 text-gray-400" />
-                           </Button>
-                           <CheckCircle className="w-4 h-4 text-green-500" />
-                         </div>
-                       </div>
+                        <div className="flex items-start justify-between">
+                          <h4 className="font-medium text-sm line-through">{task.title}</h4>
+                          <div className="flex items-center gap-1">
+                            {getPreviousStatus(task.status) && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 w-6 p-0 hover:bg-gray-100"
+                                onClick={(e) => handleStatusChange(task.id, getPreviousStatus(task.status)!, e)}
+                              >
+                                <ChevronLeft className="w-3 h-3 text-gray-400" />
+                              </Button>
+                            )}
+                            {getNextStatus(task.status) && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-6 w-6 p-0 hover:bg-gray-100"
+                                onClick={(e) => handleStatusChange(task.id, getNextStatus(task.status)!, e)}
+                              >
+                                <ChevronRight className="w-3 h-3 text-gray-400" />
+                              </Button>
+                            )}
+                            <CheckCircle className="w-4 h-4 text-green-500" />
+                          </div>
+                        </div>
                       {task.description && (
                         <p className="text-xs text-gray-600 line-clamp-2">{task.description}</p>
                       )}
