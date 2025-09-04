@@ -70,38 +70,24 @@ export const useGoldenCircle = () => {
 
     setLoading(true);
     try {
-      if (goldenCircle) {
-        // Update existing
-        const { error } = await supabase
-          .from('golden_circle')
-          .update({
-            why_question: formData.why_question,
-            how_question: formData.how_question,
-            what_question: formData.what_question,
-            updated_by: user.id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', goldenCircle.id);
+      // Use UPSERT to handle both insert and update cases
+      const { data, error } = await supabase
+        .from('golden_circle')
+        .upsert({
+          company_id: selectedCompany.id,
+          why_question: formData.why_question,
+          how_question: formData.how_question,
+          what_question: formData.what_question,
+          created_by: user.id,
+          updated_by: user.id,
+        }, {
+          onConflict: 'company_id'
+        })
+        .select()
+        .single();
 
-        if (error) throw error;
-      } else {
-        // Create new
-        const { data, error } = await supabase
-          .from('golden_circle')
-          .insert({
-            company_id: selectedCompany.id,
-            why_question: formData.why_question,
-            how_question: formData.how_question,
-            what_question: formData.what_question,
-            created_by: user.id,
-            updated_by: user.id,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        setGoldenCircle(data);
-      }
+      if (error) throw error;
+      setGoldenCircle(data);
 
       toast({
         title: 'Sucesso',
