@@ -27,35 +27,34 @@ interface KeyResultWithPillar {
 }
 
 interface DashboardStats {
+  totalObjectives: number;
   totalKRs: number;
   activeProjects: number;
-  onTimeKRs: number;
-  onTimeKRsPercentage: number;
   overallScore: number;
 }
 
 const getDynamicStats = (stats: DashboardStats) => [{
+  title: 'Objetivos Cadastrados',
+  value: stats.totalObjectives.toString(),
+  change: stats.totalObjectives > 0 ? '+' + stats.totalObjectives : '0',
+  changeType: stats.totalObjectives > 0 ? 'positive' as const : 'neutral' as const,
+  icon: Award,
+  color: 'text-blue-600',
+  bgColor: 'bg-blue-50'
+}, {
   title: 'Total de KRs',
   value: stats.totalKRs.toString(),
   change: stats.totalKRs > 0 ? '+' + stats.totalKRs : '0',
   changeType: stats.totalKRs > 0 ? 'positive' as const : 'neutral' as const,
   icon: Target,
-  color: 'text-blue-600',
-  bgColor: 'bg-blue-50'
+  color: 'text-green-600',
+  bgColor: 'bg-green-50'
 }, {
   title: 'Projetos em Andamento',
   value: stats.activeProjects.toString(),
   change: stats.activeProjects > 0 ? '+' + stats.activeProjects : '0',
   changeType: stats.activeProjects > 0 ? 'positive' as const : 'neutral' as const,
   icon: Briefcase,
-  color: 'text-green-600',
-  bgColor: 'bg-green-50'
-}, {
-  title: 'KRs no Prazo',
-  value: `${stats.onTimeKRsPercentage}%`,
-  change: stats.onTimeKRs > 0 ? `${stats.onTimeKRs} de ${stats.totalKRs}` : '0',
-  changeType: stats.onTimeKRsPercentage >= 80 ? 'positive' as const : stats.onTimeKRsPercentage >= 60 ? 'neutral' as const : 'negative' as const,
-  icon: TrendingUp,
   color: 'text-orange-600',
   bgColor: 'bg-orange-50'
 }];
@@ -66,10 +65,9 @@ export const DashboardHome: React.FC = () => {
   const [keyResults, setKeyResults] = useState<KeyResultWithPillar[]>([]);
   const [expandedKRs, setExpandedKRs] = useState<Set<string>>(new Set());
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    totalObjectives: 0,
     totalKRs: 0,
     activeProjects: 0,
-    onTimeKRs: 0,
-    onTimeKRsPercentage: 0,
     overallScore: 0
   });
   const [loading, setLoading] = useState(true);
@@ -100,10 +98,9 @@ export const DashboardHome: React.FC = () => {
       if (planIds.length === 0) {
         setKeyResults([]);
         setDashboardStats({
+          totalObjectives: 0,
           totalKRs: 0,
           activeProjects: 0,
-          onTimeKRs: 0,
-          onTimeKRsPercentage: 0,
           overallScore: 0
         });
         setLoading(false);
@@ -121,10 +118,9 @@ export const DashboardHome: React.FC = () => {
       if (objectiveIds.length === 0) {
         setKeyResults([]);
         setDashboardStats({
+          totalObjectives: 0,
           totalKRs: 0,
           activeProjects: 0,
-          onTimeKRs: 0,
-          onTimeKRsPercentage: 0,
           overallScore: 0
         });
         setLoading(false);
@@ -184,23 +180,11 @@ export const DashboardHome: React.FC = () => {
       })) || [];
 
       // Calcular estatísticas do dashboard
+      const totalObjectives = objectiveIds.length;
       const totalKRs = keyResultsWithPillars.length;
       const activeProjects = projectsData?.filter(proj => 
         proj.status === 'in_progress' || proj.status === 'planning'
       ).length || 0;
-
-      // Calcular KRs no prazo
-      const now = new Date();
-      const onTimeKRs = keyResultsWithPillars.filter(kr => {
-        if (kr.status === 'completed') return true;
-        if (!kr.due_date) return false;
-        const dueDate = new Date(kr.due_date);
-        const progress = kr.target_value > 0 ? kr.current_value / kr.target_value * 100 : 0;
-        const daysToDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        return daysToDue >= 0 && progress >= 80;
-      }).length;
-      
-      const onTimeKRsPercentage = totalKRs > 0 ? Math.round(onTimeKRs / totalKRs * 100) : 0;
 
       // Calcular score geral
       const scores = keyResultsWithPillars.map(kr => {
@@ -211,10 +195,9 @@ export const DashboardHome: React.FC = () => {
 
       setKeyResults(keyResultsWithPillars);
       setDashboardStats({
+        totalObjectives,
         totalKRs,
         activeProjects,
-        onTimeKRs,
-        onTimeKRsPercentage,
         overallScore
       });
     } catch (error) {
@@ -343,26 +326,22 @@ export const DashboardHome: React.FC = () => {
                 <div>
                   <p className="text-sm font-medium text-gray-600">{stat.title}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                  <div className="flex items-center mt-2">
-                    {stat.changeType === 'positive' ? (
-                      <ArrowUp className="h-3 w-3 text-green-500 mr-1" />
-                    ) : stat.changeType === 'negative' ? (
-                      <ArrowDown className="h-3 w-3 text-red-500 mr-1" />
-                    ) : (
-                      <div className="w-3 h-3 mr-1" />
-                    )}
-                    <span 
-                      className={`text-xs font-medium ${
-                        stat.changeType === 'positive' 
-                          ? 'text-green-600' 
-                          : stat.changeType === 'negative' 
-                          ? 'text-red-600' 
-                          : 'text-gray-600'
-                      }`}
-                    >
-                      {stat.change}
-                    </span>
-                  </div>
+                   <div className="flex items-center mt-2">
+                     {stat.changeType === 'positive' ? (
+                       <ArrowUp className="h-3 w-3 text-green-500 mr-1" />
+                     ) : (
+                       <div className="w-3 h-3 mr-1" />
+                     )}
+                     <span 
+                       className={`text-xs font-medium ${
+                         stat.changeType === 'positive' 
+                           ? 'text-green-600' 
+                           : 'text-gray-600'
+                       }`}
+                     >
+                       {stat.change}
+                     </span>
+                   </div>
                 </div>
                 <div className={`p-3 rounded-full ${stat.bgColor}`}>
                   <stat.icon className={`h-6 w-6 ${stat.color}`} />
