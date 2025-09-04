@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause, Edit3, Save, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause, Edit3, Save, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -356,6 +356,47 @@ export const ProjectsPage: React.FC = () => {
       toast({
         title: "Erro",
         description: "Erro ao atualizar projeto. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteProject = async (projectId: string, projectName: string) => {
+    // Confirmar com o usuário
+    const confirmed = window.confirm(`Tem certeza que deseja deletar o projeto "${projectName}"? Esta ação não pode ser desfeita.`);
+    
+    if (!confirmed) return;
+
+    try {
+      // Primeiro, deletar todas as tarefas relacionadas ao projeto
+      const { error: tasksError } = await supabase
+        .from('project_tasks')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (tasksError) throw tasksError;
+
+      // Depois, deletar o projeto
+      const { error: projectError } = await supabase
+        .from('strategic_projects')
+        .delete()
+        .eq('id', projectId);
+
+      if (projectError) throw projectError;
+
+      // Atualizar o estado local
+      setProjects(prev => prev.filter(project => project.id !== projectId));
+      setTasks(prev => prev.filter(task => task.project_id !== projectId));
+
+      toast({
+        title: "Sucesso",
+        description: "Projeto deletado com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao deletar projeto. Tente novamente.",
         variant: "destructive",
       });
     }
@@ -1030,7 +1071,7 @@ export const ProjectsPage: React.FC = () => {
                 const taskProgress = projectTasks.length > 0 ? (completedTasks / projectTasks.length) * 100 : 0;
 
                 return (
-                  <Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => openProjectDetail(project)}>
+                <Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => openProjectDetail(project)}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -1040,6 +1081,20 @@ export const ProjectsPage: React.FC = () => {
                           </CardDescription>
                         </div>
                         <div className="flex flex-col items-end space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteProject(project.id, project.name);
+                              }}
+                              title="Deletar projeto"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                           <Badge variant="secondary" className={`${getStatusColor(project.status)} text-white`}>
                             {getStatusText(project.status)}
                           </Badge>
