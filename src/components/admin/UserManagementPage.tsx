@@ -1004,9 +1004,14 @@ export const UserManagementPage: React.FC = () => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
-                        {user.status === 'active' ? 'Ativo' : 'Inativo'}
-                      </Badge>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        user.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
+                        user.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                        'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                      }`}>
+                        {user.status === 'active' ? 'Ativo' : 
+                         user.status === 'pending' ? 'Pendente' : 'Inativo'}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">

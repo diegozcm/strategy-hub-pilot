@@ -19,7 +19,7 @@ export interface CompanyUser {
   last_name?: string;
   email?: string;
   role: 'admin' | 'manager' | 'member';
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'pending';
   company_id?: string;
   company_name?: string;
 }
@@ -31,7 +31,7 @@ export interface UserProfile {
   last_name?: string;
   email?: string;
   role: 'admin' | 'manager' | 'member';
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'pending';
   department?: string;
   position?: string;
   created_at: string;
