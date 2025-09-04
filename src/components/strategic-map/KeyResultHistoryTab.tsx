@@ -97,14 +97,8 @@ export const KeyResultHistoryTab = ({ keyResult }: KeyResultHistoryTabProps) => 
               {entry.previous_status && (
                 <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <span className="text-sm font-medium">Status:</span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={getStatusColor(entry.previous_status as string)}>
-                      {getStatusText(entry.previous_status)}
-                    </Badge>
-                    <span className="text-muted-foreground">→</span>
-                    <Badge variant={getStatusColor(keyResult.status)}>
-                      {getStatusText(keyResult.status)}
-                    </Badge>
+                  <div className="text-xs text-muted-foreground">
+                    Progresso: {entry.change_reason || 'Atualização de valores'}
                   </div>
                 </div>
               )}

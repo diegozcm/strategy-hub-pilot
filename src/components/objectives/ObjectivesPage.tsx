@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AddResultadoChaveModal } from '@/components/strategic-map/AddResultadoChaveModal';
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
+import { KeyResult } from '@/types/strategic-map';
 
 interface StrategicPlan {
   id: string;
@@ -45,16 +46,6 @@ interface StrategicPillar {
   description: string;
   color: string;
   company_id: string;
-}
-
-interface KeyResult {
-  id: string;
-  title: string;
-  current_value: number;
-  target_value: number;
-  unit: string;
-  status: string;
-  objective_id: string;
 }
 
 export const ObjectivesPage: React.FC = () => {
@@ -179,7 +170,7 @@ export const ObjectivesPage: React.FC = () => {
           .order('created_at', { ascending: false });
 
         if (keyResultsError) throw keyResultsError;
-        setKeyResults(keyResultsData || []);
+        setKeyResults((keyResultsData || []) as unknown as KeyResult[]);
       } else {
         setKeyResults([]);
       }
@@ -401,7 +392,7 @@ export const ObjectivesPage: React.FC = () => {
       if (error) throw error;
 
       // Add to key results list
-      setKeyResults(prev => [data, ...prev]);
+      setKeyResults(prev => [data as unknown as KeyResult, ...prev]);
       
       toast({
         title: "Sucesso",
@@ -752,7 +743,9 @@ export const ObjectivesPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredObjectives.map((objective) => {
             const objectiveKRs = getObjectiveKeyResults(objective.id);
-            const completedKRs = objectiveKRs.filter(kr => kr.status === 'completed').length;
+            const completedKRs = objectiveKRs.filter(kr => 
+              kr.current_value >= kr.target_value
+            ).length;
             const avgProgress = objectiveKRs.length > 0 
               ? objectiveKRs.reduce((acc, kr) => acc + ((kr.current_value / kr.target_value) * 100), 0) / objectiveKRs.length
               : objective.progress;
@@ -1062,12 +1055,9 @@ export const ObjectivesPage: React.FC = () => {
                           <div className="space-y-2">
                             <div className="flex justify-between items-start">
                               <h4 className="font-medium text-sm">{kr.title}</h4>
-                              <Badge 
-                                variant={kr.status === 'completed' ? 'default' : 'secondary'}
-                                className={kr.status === 'completed' ? 'bg-green-500 text-white' : ''}
-                              >
-                                {getStatusText(kr.status)}
-                              </Badge>
+                              <div className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                                {Math.round(progress)}%
+                              </div>
                             </div>
                             <div className="flex justify-between text-sm text-gray-600">
                               <span>{kr.current_value} / {kr.target_value} {kr.unit}</span>

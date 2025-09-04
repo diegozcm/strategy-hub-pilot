@@ -65,9 +65,9 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, onUpdate }: ResultadoCh
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h4 className="font-medium text-sm truncate">{resultadoChave.title}</h4>
-            <Badge className={getStatusColor(resultadoChave.status)} variant="outline">
-              {getStatusText(resultadoChave.status)}
-            </Badge>
+            <div className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
+              {progress.toFixed(1)}%
+            </div>
           </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span>

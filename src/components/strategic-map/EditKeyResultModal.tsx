@@ -55,7 +55,6 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
       setMonthlyTargets(keyResult.monthly_targets as Record<string, number>);
       setOriginalMonthlyTargets(keyResult.monthly_targets as Record<string, number>);
     }
-    setStatus(keyResult.status || 'not_started');
   }, [keyResult]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,12 +79,9 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
       // Calcular meta anual a partir das metas mensais
       const yearlyTarget = Object.values(monthlyTargets).reduce((sum, value) => sum + (value || 0), 0);
       
-      // Determinar o status final
-      let finalStatus = status;
-      
-      // Se valores foram alterados e o status atual é "not_started", mudar para "in_progress"
-      if (valuesChanged && keyResult.status === 'not_started' && status === 'not_started') {
-        finalStatus = 'in_progress';
+      // Se valores foram alterados, mostrar progresso
+      if (valuesChanged && yearlyActual > 0) {
+        console.log('Values updated, showing progress');
       }
 
       const dataToSave = {
@@ -95,8 +91,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
         yearly_actual: yearlyActual,
         yearly_target: yearlyTarget,
         target_value: yearlyTarget, // Atualizar também o target_value para compatibilidade
-        current_value: yearlyActual, // Atualizar também o current_value para compatibilidade
-        status: finalStatus
+        current_value: yearlyActual // Atualizar também o current_value para compatibilidade
       };
       
       console.log('Data to save:', dataToSave);
@@ -147,25 +142,12 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="not_started">Não iniciado</SelectItem>
-                    <SelectItem value="in_progress">Em progresso</SelectItem>
-                    <SelectItem value="completed">Concluído</SelectItem>
-                    <SelectItem value="suspended">Suspenso</SelectItem>
-                  </SelectContent>
-                </Select>
-                {JSON.stringify(monthlyActual) !== JSON.stringify(originalMonthlyActual) && 
-                 keyResult.status === 'not_started' && 
-                 status === 'not_started' && (
-                  <p className="text-xs text-muted-foreground">
-                    💡 Como você está atualizando valores, o status será alterado automaticamente para "Em progresso"
+                <Label htmlFor="status">Informações Adicionais</Label>
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    O progresso é calculado automaticamente com base nos valores realizados.
                   </p>
-                )}
+                </div>
               </div>
 
               <div className="p-4 bg-muted rounded-lg">

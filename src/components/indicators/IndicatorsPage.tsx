@@ -456,16 +456,6 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'not_started': return 'Não Iniciado';
-      case 'in_progress': return 'Em Progresso';
-      case 'completed': return 'Completo';
-      case 'suspended': return 'Suspenso';
-      default: return status;
-    }
-  };
-
   const getKeyResultHistory = (keyResultId: string) => {
     return keyResultValues
       .filter(value => value.key_result_id === keyResultId)
@@ -608,22 +598,6 @@ export const IndicatorsPage: React.FC = () => {
             
             
             <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="not_started">Não Iniciado</SelectItem>
-                  <SelectItem value="in_progress">Em Progresso</SelectItem>
-                  <SelectItem value="completed">Completo</SelectItem>
-                  <SelectItem value="suspended">Suspenso</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
               <Label>Prioridade</Label>
               <Select value={priorityFilter} onValueChange={setPriorityFilter}>
                 <SelectTrigger>
@@ -733,11 +707,13 @@ export const IndicatorsPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Status */}
+                {/* Progress */}
                 <div className="flex items-center justify-between">
-                  <Badge variant={keyResult.status === 'completed' ? 'default' : keyResult.status === 'in_progress' ? 'secondary' : 'outline'}>
-                    {getStatusText(keyResult.status)}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-medium">
+                      Progresso: {progress}%
+                    </div>
+                  </div>
                   <span className="text-xs text-muted-foreground">
                     Mensal
                   </span>
@@ -758,7 +734,7 @@ export const IndicatorsPage: React.FC = () => {
           <CardContent className="text-center py-8">
             <Target className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              {searchTerm || statusFilter !== 'all' || priorityFilter !== 'all'
+              {searchTerm || priorityFilter !== 'all'
                 ? 'Nenhum resultado-chave encontrado com os filtros aplicados.'
                 : 'Nenhum resultado-chave cadastrado ainda. Crie seu primeiro resultado-chave!'}
             </p>
@@ -967,14 +943,14 @@ export const IndicatorsPage: React.FC = () => {
                 
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Status</CardTitle>
+                    <CardTitle className="text-sm">Progresso</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <Badge variant={selectedKeyResult.status === 'completed' ? 'default' : selectedKeyResult.status === 'in_progress' ? 'secondary' : 'outline'} className="text-base">
-                      {getStatusText(selectedKeyResult.status)}
-                    </Badge>
+                    <div className="text-2xl font-bold">
+                      {calculateProgress(selectedKeyResult)}%
+                    </div>
                     <p className="text-sm text-muted-foreground mt-2">
-                      Mensal
+                      Meta atingida
                     </p>
                   </CardContent>
                 </Card>
@@ -1234,20 +1210,6 @@ export const IndicatorsPage: React.FC = () => {
                     <SelectItem value="high">Alta</SelectItem>
                     <SelectItem value="medium">Média</SelectItem>
                     <SelectItem value="low">Baixa</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit_status">Status</Label>
-                <Select value={editData.status} onValueChange={(value) => setEditData({...editData, status: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="not_started">Não Iniciado</SelectItem>
-                    <SelectItem value="in_progress">Em Progresso</SelectItem>
-                    <SelectItem value="completed">Completo</SelectItem>
-                    <SelectItem value="suspended">Suspenso</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
