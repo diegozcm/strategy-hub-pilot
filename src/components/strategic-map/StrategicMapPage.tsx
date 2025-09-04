@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Plus, Building2, Target, Users, TrendingUp, Lightbulb, Heart, Edit, Trash2 } from 'lucide-react';
+import { Plus, Building2, Target, Users, TrendingUp, Lightbulb, Heart, Edit, Trash2, Check, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { useAuth } from '@/hooks/useMultiTenant';
@@ -16,7 +18,7 @@ import { PillarEditModal } from './PillarEditModal';
 import { DeletePillarModal } from './DeletePillarModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { PermissionGate } from '@/components/PermissionGate';
-import { StrategicPillar } from '@/types/strategic-map';
+import { StrategicPillar, Company } from '@/types/strategic-map';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 
 const defaultPillars = [
@@ -52,6 +54,70 @@ export const StrategicMapPage = () => {
   const [selectedPillarId, setSelectedPillarId] = useState<string>('');
   const [editingPillar, setEditingPillar] = useState<StrategicPillar | null>(null);
   const [deletingPillar, setDeletingPillar] = useState<StrategicPillar | null>(null);
+
+  // Inline editing states
+  const [editingField, setEditingField] = useState<'mission' | 'vision' | 'values' | null>(null);
+  const [tempMission, setTempMission] = useState('');
+  const [tempVision, setTempVision] = useState('');
+  const [tempValues, setTempValues] = useState<string[]>([]);
+  const [newValueInput, setNewValueInput] = useState('');
+
+  // Functions for inline editing
+  const startEditing = (field: 'mission' | 'vision' | 'values') => {
+    if (!company) return;
+    
+    setEditingField(field);
+    if (field === 'mission') {
+      setTempMission(company.mission || '');
+    } else if (field === 'vision') {
+      setTempVision(company.vision || '');
+    } else if (field === 'values') {
+      setTempValues([...(company.values || [])]);
+      setNewValueInput('');
+    }
+  };
+
+  const cancelEditing = () => {
+    setEditingField(null);
+    setTempMission('');
+    setTempVision('');
+    setTempValues([]);
+    setNewValueInput('');
+  };
+
+  const saveField = async (field: 'mission' | 'vision' | 'values') => {
+    if (!company) return;
+
+    let updateData: Partial<Company> = {};
+    
+    if (field === 'mission') {
+      updateData = { mission: tempMission };
+    } else if (field === 'vision') {
+      updateData = { vision: tempVision };
+    } else if (field === 'values') {
+      updateData = { values: tempValues };
+    }
+
+    const result = await updateCompany(company.id, updateData);
+    if (result) {
+      setEditingField(null);
+      setTempMission('');
+      setTempVision('');
+      setTempValues([]);
+      setNewValueInput('');
+    }
+  };
+
+  const addTempValue = () => {
+    if (newValueInput.trim() && !tempValues.includes(newValueInput.trim())) {
+      setTempValues([...tempValues, newValueInput.trim()]);
+      setNewValueInput('');
+    }
+  };
+
+  const removeTempValue = (valueToRemove: string) => {
+    setTempValues(tempValues.filter(value => value !== valueToRemove));
+  };
 
   if (loading) {
     return (
@@ -112,31 +178,175 @@ export const StrategicMapPage = () => {
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-3 gap-6">
-            <div>
-              <h3 className="font-semibold text-primary mb-2">Missão</h3>
-              <p className="text-sm text-muted-foreground">
-                {company.mission || 'Não definida'}
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-primary mb-2">Visão</h3>
-              <p className="text-sm text-muted-foreground">
-                {company.vision || 'Não definida'}
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-primary mb-2">Valores</h3>
-              <div className="flex flex-wrap gap-1">
-                {company.values && company.values.length > 0 ? (
-                  company.values.map((value, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {value}
-                    </Badge>
-                  ))
-                ) : (
-                  <span className="text-sm text-muted-foreground">Não definidos</span>
-                )}
+            {/* Mission */}
+            <div className="group">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-primary">Missão</h3>
+                <PermissionGate requiredRole="manager" fallback={null}>
+                  {editingField !== 'mission' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                      onClick={() => startEditing('mission')}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  )}
+                </PermissionGate>
               </div>
+              {editingField === 'mission' ? (
+                <div className="space-y-2">
+                  <Textarea
+                    value={tempMission}
+                    onChange={(e) => setTempMission(e.target.value)}
+                    placeholder="Digite a missão da empresa"
+                    rows={3}
+                    className="text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => saveField('mission')}>
+                      <Check className="h-3 w-3 mr-1" />
+                      Salvar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={cancelEditing}>
+                      <X className="h-3 w-3 mr-1" />
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {company.mission || 'Não definida'}
+                </p>
+              )}
+            </div>
+
+            {/* Vision */}
+            <div className="group">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-primary">Visão</h3>
+                <PermissionGate requiredRole="manager" fallback={null}>
+                  {editingField !== 'vision' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                      onClick={() => startEditing('vision')}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  )}
+                </PermissionGate>
+              </div>
+              {editingField === 'vision' ? (
+                <div className="space-y-2">
+                  <Textarea
+                    value={tempVision}
+                    onChange={(e) => setTempVision(e.target.value)}
+                    placeholder="Digite a visão da empresa"
+                    rows={3}
+                    className="text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => saveField('vision')}>
+                      <Check className="h-3 w-3 mr-1" />
+                      Salvar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={cancelEditing}>
+                      <X className="h-3 w-3 mr-1" />
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {company.vision || 'Não definida'}
+                </p>
+              )}
+            </div>
+
+            {/* Values */}
+            <div className="group">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-primary">Valores</h3>
+                <PermissionGate requiredRole="manager" fallback={null}>
+                  {editingField !== 'values' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                      onClick={() => startEditing('values')}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  )}
+                </PermissionGate>
+              </div>
+              {editingField === 'values' ? (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      value={newValueInput}
+                      onChange={(e) => setNewValueInput(e.target.value)}
+                      placeholder="Digite um valor"
+                      className="text-sm"
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addTempValue();
+                        }
+                      }}
+                    />
+                    <Button 
+                      size="sm" 
+                      variant="outline" 
+                      onClick={addTempValue}
+                      disabled={!newValueInput.trim()}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {tempValues.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {tempValues.map((value, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs flex items-center gap-1">
+                          {value}
+                          <button
+                            type="button"
+                            onClick={() => removeTempValue(value)}
+                            className="text-muted-foreground hover:text-destructive"
+                          >
+                            <X className="h-2 w-2" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => saveField('values')}>
+                      <Check className="h-3 w-3 mr-1" />
+                      Salvar
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={cancelEditing}>
+                      <X className="h-3 w-3 mr-1" />
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-1">
+                  {company.values && company.values.length > 0 ? (
+                    company.values.map((value, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {value}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-sm text-muted-foreground">Não definidos</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
