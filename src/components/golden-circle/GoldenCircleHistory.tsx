@@ -56,7 +56,7 @@ export const GoldenCircleHistory: React.FC<GoldenCircleHistoryProps> = ({
                           {new Date(entry.changed_at).toLocaleString('pt-BR')}
                         </Badge>
                         <Badge variant="outline">
-                          {(entry as any).profiles?.first_name} {(entry as any).profiles?.last_name}
+                          {entry.changed_by}
                         </Badge>
                       </div>
                     </div>

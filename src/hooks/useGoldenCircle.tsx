@@ -37,20 +37,28 @@ export const useGoldenCircle = () => {
   }, [selectedCompany?.id, toast]);
 
   const loadHistory = useCallback(async () => {
-    if (!goldenCircle?.id) return;
+    if (!selectedCompany?.id) return;
 
     try {
+      // First get the golden_circle record for this company
+      const { data: goldenCircleData, error: gcError } = await supabase
+        .from('golden_circle')
+        .select('id')
+        .eq('company_id', selectedCompany.id)
+        .maybeSingle();
+
+      if (gcError) throw gcError;
+      
+      if (!goldenCircleData) {
+        setHistory([]);
+        return;
+      }
+
+      // Then get the history for this golden circle
       const { data, error } = await supabase
         .from('golden_circle_history')
-        .select(`
-          *,
-          profiles:changed_by (
-            first_name,
-            last_name,
-            email
-          )
-        `)
-        .eq('golden_circle_id', goldenCircle.id)
+        .select('*')
+        .eq('golden_circle_id', goldenCircleData.id)
         .order('changed_at', { ascending: false });
 
       if (error) throw error;
@@ -63,7 +71,7 @@ export const useGoldenCircle = () => {
         variant: 'destructive',
       });
     }
-  }, [goldenCircle?.id, toast]);
+  }, [selectedCompany?.id, toast]);
 
   const saveGoldenCircle = useCallback(async (formData: GoldenCircleFormData) => {
     if (!selectedCompany?.id || !user?.id) return false;
