@@ -739,7 +739,6 @@ export type Database = {
           owner_id: string
           priority: string | null
           responsible: string | null
-          status: string
           target_value: number
           title: string
           unit: string
@@ -764,7 +763,6 @@ export type Database = {
           owner_id: string
           priority?: string | null
           responsible?: string | null
-          status?: string
           target_value: number
           title: string
           unit?: string
@@ -789,7 +787,6 @@ export type Database = {
           owner_id?: string
           priority?: string | null
           responsible?: string | null
-          status?: string
           target_value?: number
           title?: string
           unit?: string
@@ -819,7 +816,6 @@ export type Database = {
           previous_description: string | null
           previous_monthly_actual: Json | null
           previous_monthly_targets: Json | null
-          previous_status: string | null
           previous_target_value: number | null
           previous_title: string | null
           previous_yearly_actual: number | null
@@ -837,7 +833,6 @@ export type Database = {
           previous_description?: string | null
           previous_monthly_actual?: Json | null
           previous_monthly_targets?: Json | null
-          previous_status?: string | null
           previous_target_value?: number | null
           previous_title?: string | null
           previous_yearly_actual?: number | null
@@ -855,7 +850,6 @@ export type Database = {
           previous_description?: string | null
           previous_monthly_actual?: Json | null
           previous_monthly_targets?: Json | null
-          previous_status?: string | null
           previous_target_value?: number | null
           previous_title?: string | null
           previous_yearly_actual?: number | null

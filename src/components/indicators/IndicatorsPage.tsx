@@ -41,7 +41,6 @@ export const IndicatorsPage: React.FC = () => {
   const [pillars, setPillars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   
   // Modal states
@@ -67,8 +66,7 @@ export const IndicatorsPage: React.FC = () => {
     description: '',
     unit: '',
     priority: '',
-    objective_id: '',
-    status: ''
+    objective_id: ''
   });
 
   const [updateData, setUpdateData] = useState({
@@ -173,7 +171,6 @@ export const IndicatorsPage: React.FC = () => {
         unit: formData.unit,
         target_value: 0, // Will be calculated from monthly targets
         current_value: 0,
-        status: 'not_started',
         owner_id: user.id,
         objective_id: formData.objective_id === 'none' ? null : formData.objective_id,
         metric_type: 'number',
@@ -230,15 +227,10 @@ export const IndicatorsPage: React.FC = () => {
       
       const newValue = parseFloat(updateData.current_value);
       
-      // Update key result current value and status
+      // Update key result current value
       const updatePayload: any = {
         current_value: newValue,
       };
-
-      // Auto-change status if updating from not_started
-      if (selectedKeyResult.status === 'not_started' && newValue > 0) {
-        updatePayload.status = 'in_progress';
-      }
 
       const { error: updateError } = await supabase
         .from('key_results')
@@ -297,7 +289,6 @@ export const IndicatorsPage: React.FC = () => {
           description: editData.description,
           unit: editData.unit,
           frequency: 'monthly',
-          status: editData.status,
           objective_id: editData.objective_id === 'none' ? null : editData.objective_id
         })
         .eq('id', selectedKeyResult.id)
@@ -379,8 +370,7 @@ export const IndicatorsPage: React.FC = () => {
       description: keyResult.description || '',
       unit: keyResult.unit,
       priority: 'medium', // Default priority since not in KeyResult interface
-      objective_id: keyResult.objective_id || 'none',
-      status: keyResult.status
+      objective_id: keyResult.objective_id || 'none'
     });
     setIsEditModalOpen(true);
   };
@@ -487,10 +477,9 @@ export const IndicatorsPage: React.FC = () => {
   const filteredKeyResults = keyResults.filter(keyResult => {
     const matchesSearch = keyResult.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          keyResult.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || keyResult.status === statusFilter;
     const matchesPriority = priorityFilter === 'all' || priorityFilter === 'medium'; // Default to medium
     
-    return matchesSearch && matchesStatus && matchesPriority;
+    return matchesSearch && matchesPriority;
   });
 
   // Calculate summary statistics

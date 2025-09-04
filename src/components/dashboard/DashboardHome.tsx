@@ -19,7 +19,6 @@ interface KeyResultWithPillar {
   yearly_actual: number;
   current_value: number;
   target_value: number;
-  status: string;
   due_date?: string;
   pillar_name: string;
   pillar_color: string;
@@ -134,7 +133,6 @@ export const DashboardHome: React.FC = () => {
           id, 
           title,
           description,
-          status, 
           due_date, 
           current_value, 
           target_value,
@@ -172,7 +170,6 @@ export const DashboardHome: React.FC = () => {
         yearly_actual: kr.yearly_actual || kr.current_value || 0,
         current_value: kr.current_value || 0,
         target_value: kr.target_value || 0,
-        status: kr.status,
         due_date: kr.due_date,
         pillar_name: kr.strategic_objectives.strategic_pillars.name,
         pillar_color: kr.strategic_objectives.strategic_pillars.color,

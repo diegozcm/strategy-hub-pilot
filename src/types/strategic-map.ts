@@ -58,7 +58,6 @@ export interface KeyResult {
   responsible?: string;
   deadline?: string;
   due_date?: string;
-  status: string;
   owner_id: string;
   monthly_targets?: any;
   monthly_actual?: any;
@@ -105,5 +104,4 @@ export interface ProjectKRRelation {
 
 export type MetricType = 'percentage' | 'number' | 'currency' | 'time';
 export type Frequency = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
-export type Status = 'not_started' | 'in_progress' | 'completed' | 'suspended';
 export type ProjectStatus = 'planning' | 'in_progress' | 'completed' | 'suspended';
