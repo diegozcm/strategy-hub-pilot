@@ -16,7 +16,8 @@ import {
   UserCog,
   Building,
   Lock,
-  Activity
+  Activity,
+  Mail
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,10 @@ interface SystemModule {
   name: string;
   slug: string;
   active: boolean;
+}
+
+interface ExtendedUser extends UserProfile {
+  email_confirmed_at?: string | null;
 }
 
 interface UserModuleAccess {
@@ -785,13 +790,14 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 export const UserManagementPage: React.FC = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
-  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [users, setUsers] = useState<ExtendedUser[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [modules, setModules] = useState<SystemModule[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [userModules, setUserModules] = useState<UserModuleAccess[]>([]);
+  const [confirmingEmail, setConfirmingEmail] = useState<string | null>(null);
 
   const isAdmin = profile?.role === 'admin';
 
@@ -818,6 +824,13 @@ export const UserManagementPage: React.FC = () => {
       }
 
       console.log(`✅ ${usersData?.length || 0} usuários carregados`);
+
+      // Transformar usuários para ExtendedUser (sem dados de confirmação por enquanto)
+      const usersWithEmailData = (usersData || []).map(user => ({
+        ...user,
+        email_confirmed_at: null, // Por enquanto sem dados de confirmação
+        status: user.status as 'active' | 'inactive' | 'pending'
+      })) as ExtendedUser[];
 
       // Carregar empresas
       const { data: companiesData, error: companiesError } = await supabase
@@ -858,17 +871,12 @@ export const UserManagementPage: React.FC = () => {
 
       console.log(`✅ ${userModulesData?.length || 0} acessos de módulos carregados`);
 
-      const usersTyped = (usersData || []).map(user => ({
-        ...user,
-        status: user.status as 'active' | 'inactive'
-      })) as UserProfile[];
-
       const companiesTyped = (companiesData || []).map(company => ({
         ...company,
         status: company.status as 'active' | 'inactive'
       })) as Company[];
 
-      setUsers(usersTyped);
+      setUsers(usersWithEmailData);
       setCompanies(companiesTyped);
       setModules(modulesData || []);
       setUserModules(userModulesData || []);
@@ -890,6 +898,36 @@ export const UserManagementPage: React.FC = () => {
 
   const getUserModuleCount = (userId: string) => {
     return userModules.filter(um => um.user_id === userId && um.active).length;
+  };
+
+  const confirmUserEmail = async (userId: string) => {
+    if (!user) return;
+
+    setConfirmingEmail(userId);
+    try {
+      const { error } = await supabase.rpc('confirm_user_email', {
+        _user_id: userId,
+        _admin_id: user.id
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: 'E-mail confirmado com sucesso. O usuário agora pode fazer login.'
+      });
+
+      loadData(); // Recarregar dados para atualizar o status
+    } catch (error) {
+      console.error('Erro ao confirmar e-mail:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao confirmar e-mail do usuário',
+        variant: 'destructive'
+      });
+    } finally {
+      setConfirmingEmail(null);
+    }
   };
 
   const getUserCompanyCount = async (userId: string) => {
@@ -976,6 +1014,7 @@ export const UserManagementPage: React.FC = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Função</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>E-mail</TableHead>
                   <TableHead>Módulos</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
@@ -1012,6 +1051,23 @@ export const UserManagementPage: React.FC = () => {
                         {user.status === 'active' ? 'Ativo' : 
                          user.status === 'pending' ? 'Pendente' : 'Inativo'}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+                          Aguardando confirmação
+                        </span>
+                        {user.status === 'active' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={confirmingEmail === user.user_id}
+                            onClick={() => confirmUserEmail(user.user_id)}
+                          >
+                            {confirmingEmail === user.user_id ? 'Confirmando...' : 'Confirmar E-mail'}
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
