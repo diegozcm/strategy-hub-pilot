@@ -807,6 +807,63 @@ export type Database = {
           },
         ]
       }
+      key_results_history: {
+        Row: {
+          change_reason: string | null
+          changed_at: string
+          changed_by: string
+          created_at: string
+          id: string
+          key_result_id: string
+          previous_current_value: number | null
+          previous_description: string | null
+          previous_monthly_actual: Json | null
+          previous_monthly_targets: Json | null
+          previous_status: string | null
+          previous_target_value: number | null
+          previous_title: string | null
+          previous_yearly_actual: number | null
+          previous_yearly_target: number | null
+          updated_at: string
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by: string
+          created_at?: string
+          id?: string
+          key_result_id: string
+          previous_current_value?: number | null
+          previous_description?: string | null
+          previous_monthly_actual?: Json | null
+          previous_monthly_targets?: Json | null
+          previous_status?: string | null
+          previous_target_value?: number | null
+          previous_title?: string | null
+          previous_yearly_actual?: number | null
+          previous_yearly_target?: number | null
+          updated_at?: string
+        }
+        Update: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string
+          created_at?: string
+          id?: string
+          key_result_id?: string
+          previous_current_value?: number | null
+          previous_description?: string | null
+          previous_monthly_actual?: Json | null
+          previous_monthly_targets?: Json | null
+          previous_status?: string | null
+          previous_target_value?: number | null
+          previous_title?: string | null
+          previous_yearly_actual?: number | null
+          previous_yearly_target?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       mentor_startup_relations: {
         Row: {
           assigned_at: string

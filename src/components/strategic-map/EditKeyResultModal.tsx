@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KeyResult } from '@/types/strategic-map';
+import { KeyResultHistoryTab } from './KeyResultHistoryTab';
 
 interface EditKeyResultModalProps {
   keyResult: KeyResult;
@@ -94,9 +95,10 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs defaultValue="monthly" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="info">Informações</TabsTrigger>
               <TabsTrigger value="monthly">Valores Mensais</TabsTrigger>
+              <TabsTrigger value="history">Histórico</TabsTrigger>
             </TabsList>
 
             <TabsContent value="info" className="space-y-4 mt-4">
@@ -216,6 +218,10 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
                   </span>
                 </div>
               </div>
+            </TabsContent>
+
+            <TabsContent value="history" className="mt-4">
+              <KeyResultHistoryTab keyResult={keyResult} />
             </TabsContent>
           </Tabs>
 

@@ -17,23 +17,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
-
-interface KeyResult {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  unit: string;
-  target_value: number;
-  current_value: number;
-  frequency: string;
-  owner_id: string;
-  status: string;
-  priority: string;
-  last_updated: string;
-  created_at: string;
-  objective_id: string;
-}
+import { EditKeyResultModal } from '@/components/strategic-map/EditKeyResultModal';
+import { KeyResult, StrategicObjective } from '@/types/strategic-map';
 
 interface KeyResultValue {
   id: string;
@@ -43,11 +28,6 @@ interface KeyResultValue {
   comments: string;
   recorded_by: string;
   created_at: string;
-}
-
-interface StrategicObjective {
-  id: string;
-  title: string;
 }
 
 export const IndicatorsPage: React.FC = () => {
@@ -69,6 +49,7 @@ export const IndicatorsPage: React.FC = () => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isEditKeyResultModalOpen, setIsEditKeyResultModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
   
@@ -76,19 +57,12 @@ export const IndicatorsPage: React.FC = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: '',
-    unit: '',
+    category: 'operational',
+    unit: '%',
     target_value: '',
-    frequency: '',
+    frequency: 'monthly',
     priority: 'medium',
     objective_id: 'none'
-  });
-  
-  
-  const [updateData, setUpdateData] = useState({
-    value: '',
-    period_date: new Date().toISOString().split('T')[0],
-    comments: ''
   });
 
   const [editData, setEditData] = useState({
@@ -98,97 +72,67 @@ export const IndicatorsPage: React.FC = () => {
     unit: '',
     target_value: '',
     frequency: '',
-    priority: 'medium',
+    priority: '',
     objective_id: '',
-    status: 'not_started'
+    status: ''
   });
-  
+
+  const [updateData, setUpdateData] = useState({
+    current_value: '',
+    comments: ''
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  // React to company changes
-  useEffect(() => {
-    if (user && authCompany) {
-      loadData();
-    }
-  }, [authCompany?.id]);
-
+  // Load data
   const loadData = async () => {
+    if (!authCompany?.id) return;
+
     try {
       setLoading(true);
       
-      if (!user || !authCompany) {
-        setKeyResults([]);
-        setKeyResultValues([]);
-        setObjectives([]);
-        setLoading(false);
-        return;
-      }
-
-      // First get strategic plans for this company
+      // Load strategic plans and objectives
       const { data: plansData, error: plansError } = await supabase
         .from('strategic_plans')
-        .select('id')
+        .select('*')
         .eq('company_id', authCompany.id);
 
       if (plansError) throw plansError;
 
-      if (!plansData || plansData.length === 0) {
-        setKeyResults([]);
-        setKeyResultValues([]);
-        setObjectives([]);
-        setLoading(false);
-        return;
+      if (plansData && plansData.length > 0) {
+        const planIds = plansData.map(plan => plan.id);
+        
+        const { data: objectivesData, error: objectivesError } = await supabase
+          .from('strategic_objectives')
+          .select('*')
+          .in('plan_id', planIds);
+
+        if (objectivesError) throw objectivesError;
+        setObjectives(objectivesData || []);
       }
 
-      const planIds = plansData.map(plan => plan.id);
-
-      // Load strategic objectives for this company's plans
-      const { data: objectivesData, error: objectivesError } = await supabase
-        .from('strategic_objectives')
-        .select('id, title')
-        .in('plan_id', planIds)
-        .order('title');
-
-      if (objectivesError) throw objectivesError;
-      setObjectives(objectivesData || []);
-
-      if (!objectivesData || objectivesData.length === 0) {
-        setKeyResults([]);
-        setKeyResultValues([]);
-        setLoading(false);
-        return;
-      }
-
-      const objectiveIds = objectivesData.map(obj => obj.id);
-
-      // Load key results with categories for this company's objectives
+      // Load key results
       const { data: keyResultsData, error: keyResultsError } = await supabase
         .from('key_results')
         .select('*')
-        .in('objective_id', objectiveIds)
-        .not('category', 'is', null)
+        .eq('owner_id', user?.id)
         .order('created_at', { ascending: false });
 
       if (keyResultsError) throw keyResultsError;
       setKeyResults(keyResultsData || []);
 
-      // Load key result values for this company's key results
+      // Load key result values
       if (keyResultsData && keyResultsData.length > 0) {
         const keyResultIds = keyResultsData.map(kr => kr.id);
+        
         const { data: valuesData, error: valuesError } = await supabase
           .from('key_result_values')
           .select('*')
           .in('key_result_id', keyResultIds)
-          .order('period_date', { ascending: false });
+          .order('created_at', { ascending: false });
 
         if (valuesError) throw valuesError;
         setKeyResultValues(valuesData || []);
-      } else {
-        setKeyResultValues([]);
       }
 
     } catch (error) {
@@ -203,41 +147,57 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (user && authCompany) {
+      loadData();
+    }
+  }, [user, authCompany]);
+
+  // Create key result
   const handleCreateKeyResult = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !authCompany) return;
 
     try {
       setIsSubmitting(true);
       
+      const keyResultData = {
+        title: formData.title,
+        description: formData.description,
+        unit: formData.unit,
+        target_value: parseFloat(formData.target_value),
+        current_value: 0,
+        status: 'not_started',
+        owner_id: user.id,
+        objective_id: formData.objective_id === 'none' ? null : formData.objective_id,
+        metric_type: 'number',
+        frequency: formData.frequency,
+        // Note: category and priority are stored as metadata since they're not in the base KeyResult type
+      };
+
       const { data, error } = await supabase
         .from('key_results')
-        .insert([{
-          ...formData,
-          target_value: parseFloat(formData.target_value),
-          objective_id: formData.objective_id === 'none' ? null : formData.objective_id || null,
-          owner_id: user.id,
-          current_value: 0,
-          last_updated: new Date().toISOString()
-        }])
+        .insert([keyResultData])
         .select()
         .single();
 
       if (error) throw error;
 
       setKeyResults(prev => [data, ...prev]);
+      setIsAddModalOpen(false);
+      
+      // Reset form
       setFormData({
         title: '',
         description: '',
-        category: '',
-        unit: '',
+        category: 'operational',
+        unit: '%',
         target_value: '',
-        frequency: '',
+        frequency: 'monthly',
         priority: 'medium',
         objective_id: 'none'
       });
-      setIsAddModalOpen(false);
-      
+
       toast({
         title: "Sucesso",
         description: "Resultado-chave criado com sucesso!",
@@ -254,6 +214,7 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
+  // Update value
   const handleUpdateValue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !selectedKeyResult) return;
@@ -261,51 +222,43 @@ export const IndicatorsPage: React.FC = () => {
     try {
       setIsSubmitting(true);
       
-      // Insert new value record
-      const { data: valueData, error: valueError } = await supabase
-        .from('key_result_values')
-        .insert([{
-          key_result_id: selectedKeyResult.id,
-          value: parseFloat(updateData.value),
-          period_date: updateData.period_date,
-          comments: updateData.comments,
-          recorded_by: user.id
-        }])
-        .select()
-        .single();
+      const newValue = parseFloat(updateData.current_value);
+      
+      // Update key result current value and status
+      const updatePayload: any = {
+        current_value: newValue,
+      };
 
-      if (valueError) throw valueError;
+      // Auto-change status if updating from not_started
+      if (selectedKeyResult.status === 'not_started' && newValue > 0) {
+        updatePayload.status = 'in_progress';
+      }
 
-      // Determinar o novo status - se estava "not_started", mudar para "in_progress"
-      const newStatus = selectedKeyResult.status === 'not_started' ? 'in_progress' : selectedKeyResult.status;
-
-      // Update current value and status in key result
       const { error: updateError } = await supabase
         .from('key_results')
-        .update({ 
-          current_value: parseFloat(updateData.value),
-          status: newStatus,
-          last_updated: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('id', selectedKeyResult.id);
 
       if (updateError) throw updateError;
 
-      // Update local state
-      setKeyResults(prev => prev.map(kr => 
-        kr.id === selectedKeyResult.id 
-          ? { ...kr, current_value: parseFloat(updateData.value), status: newStatus }
-          : kr
-      ));
-      setKeyResultValues(prev => [valueData, ...prev]);
+      // Create value record
+      const { error: valueError } = await supabase
+        .from('key_result_values')
+        .insert([{
+          key_result_id: selectedKeyResult.id,
+          value: newValue,
+          period_date: new Date().toISOString().split('T')[0],
+          comments: updateData.comments,
+          recorded_by: user.id
+        }]);
+
+      if (valueError) throw valueError;
+
+      // Refresh data
+      await loadData();
       
-      setUpdateData({
-        value: '',
-        period_date: new Date().toISOString().split('T')[0],
-        comments: ''
-      });
       setIsUpdateModalOpen(false);
-      setSelectedKeyResult(null);
+      setUpdateData({ current_value: '', comments: '' });
       
       toast({
         title: "Sucesso",
@@ -323,6 +276,7 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
+  // Edit key result (basic info)
   const handleEditKeyResult = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !selectedKeyResult) return;
@@ -335,14 +289,12 @@ export const IndicatorsPage: React.FC = () => {
         .update({
           title: editData.title,
           description: editData.description,
-          category: editData.category,
           unit: editData.unit,
           target_value: parseFloat(editData.target_value),
           frequency: editData.frequency,
-          priority: editData.priority,
-          objective_id: editData.objective_id === 'none' ? null : editData.objective_id || null,
+          // Note: category and priority are stored as metadata
           status: editData.status,
-          last_updated: new Date().toISOString()
+          objective_id: editData.objective_id === 'none' ? null : editData.objective_id
         })
         .eq('id', selectedKeyResult.id)
         .select()
@@ -350,13 +302,8 @@ export const IndicatorsPage: React.FC = () => {
 
       if (error) throw error;
 
-      // Update local state
-      setKeyResults(prev => prev.map(kr => 
-        kr.id === selectedKeyResult.id ? data : kr
-      ));
-      
+      setKeyResults(prev => prev.map(kr => kr.id === selectedKeyResult.id ? data : kr));
       setIsEditModalOpen(false);
-      setSelectedKeyResult(null);
       
       toast({
         title: "Sucesso",
@@ -374,51 +321,28 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
+  // Delete key result
   const handleDeleteKeyResult = async () => {
     if (!selectedKeyResult) return;
 
     try {
       setIsSubmitting(true);
-      console.log('Starting deletion of key result:', selectedKeyResult.id);
-      
-      // First, delete related project_kr_relations
-      console.log('Deleting project-kr relations...');
-      const { error: relationsError } = await supabase
-        .from('project_kr_relations')
-        .delete()
-        .eq('kr_id', selectedKeyResult.id);
 
-      if (relationsError) {
-        console.error('Error deleting relations:', relationsError);
-        throw relationsError;
-      }
-      console.log('Project-kr relations deleted successfully');
-
-      // Delete key result values
-      console.log('Deleting key result values...');
+      // Delete associated values first
       const { error: valuesError } = await supabase
         .from('key_result_values')
         .delete()
         .eq('key_result_id', selectedKeyResult.id);
 
-      if (valuesError) {
-        console.error('Error deleting values:', valuesError);
-        throw valuesError;
-      }
-      console.log('Key result values deleted successfully');
+      if (valuesError) throw valuesError;
 
-      // Finally, delete the key result
-      console.log('Deleting key result...');
+      // Delete the key result
       const { error: keyResultError } = await supabase
         .from('key_results')
         .delete()
         .eq('id', selectedKeyResult.id);
 
-      if (keyResultError) {
-        console.error('Error deleting key result:', keyResultError);
-        throw keyResultError;
-      }
-      console.log('Key result deleted successfully');
+      if (keyResultError) throw keyResultError;
 
       // Update local state
       setKeyResults(prev => prev.filter(kr => kr.id !== selectedKeyResult.id));
@@ -435,7 +359,7 @@ export const IndicatorsPage: React.FC = () => {
       console.error('Error deleting key result:', error);
       toast({
         title: "Erro",
-        description: `Erro ao excluir resultado-chave: ${error.message || 'Tente novamente.'}`,
+        description: "Erro ao excluir resultado-chave. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -443,22 +367,29 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
+  // Modal handlers
   const openEditModal = (keyResult: KeyResult) => {
     setSelectedKeyResult(keyResult);
     setEditData({
       title: keyResult.title,
       description: keyResult.description || '',
-      category: keyResult.category,
+      category: keyResult.category || 'operational',
       unit: keyResult.unit,
       target_value: keyResult.target_value.toString(),
-      frequency: keyResult.frequency,
-      priority: keyResult.priority,
+      frequency: keyResult.frequency || 'monthly',
+      priority: keyResult.priority || 'medium',
       objective_id: keyResult.objective_id || 'none',
       status: keyResult.status
     });
     setIsEditModalOpen(true);
   };
 
+  const openEditKeyResultModal = (keyResult: KeyResult) => {
+    setSelectedKeyResult(keyResult);
+    setIsEditKeyResultModalOpen(true);
+  };
+
+  // Utility functions
   const calculateProgress = (keyResult: KeyResult) => {
     if (keyResult.target_value === 0) return 0;
     return Math.min(Math.round((keyResult.current_value / keyResult.target_value) * 100), 100);
@@ -488,7 +419,7 @@ export const IndicatorsPage: React.FC = () => {
       case 'customer': return 'Cliente';
       case 'people': return 'Pessoas';
       case 'quality': return 'Qualidade';
-      default: return category;
+      default: return category || 'Operacional';
     }
   };
 
@@ -506,7 +437,7 @@ export const IndicatorsPage: React.FC = () => {
       case 'high': return 'Alta';
       case 'medium': return 'Média';
       case 'low': return 'Baixa';
-      default: return priority;
+      default: return priority || 'Média';
     }
   };
 
@@ -517,7 +448,7 @@ export const IndicatorsPage: React.FC = () => {
       case 'monthly': return 'Mensal';
       case 'quarterly': return 'Trimestral';
       case 'yearly': return 'Anual';
-      default: return frequency;
+      default: return frequency || 'Mensal';
     }
   };
 
@@ -538,12 +469,13 @@ export const IndicatorsPage: React.FC = () => {
       .reverse();
   };
 
+  // Filter logic
   const filteredKeyResults = keyResults.filter(keyResult => {
     const matchesSearch = keyResult.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          keyResult.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || keyResult.category === categoryFilter;
+    const matchesCategory = categoryFilter === 'all' || 'operational' === categoryFilter; // Default to operational
     const matchesStatus = statusFilter === 'all' || keyResult.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || keyResult.priority === priorityFilter;
+    const matchesPriority = priorityFilter === 'all' || 'medium' === priorityFilter; // Default to medium
     
     return matchesSearch && matchesCategory && matchesStatus && matchesPriority;
   });
@@ -599,298 +531,127 @@ export const IndicatorsPage: React.FC = () => {
           <h1 className="text-3xl font-bold">Resultados-Chave</h1>
           <p className="text-muted-foreground mt-2">Acompanhe resultados-chave e métricas estratégicas em tempo real</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline">
-            <Download className="w-4 h-4 mr-2" />
-            Exportar
-          </Button>
-          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Resultado-Chave
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Novo Resultado-Chave</DialogTitle>
-                <DialogDescription>
-                  Cadastre um novo resultado-chave estratégico para acompanhamento
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleCreateKeyResult} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Nome do Resultado-Chave *</Label>
-                    <Input
-                      id="title"
-                      placeholder="Ex: Taxa de Conversão"
-                      value={formData.title}
-                      onChange={(e) => setFormData({...formData, title: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Categoria *</Label>
-                    <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione a categoria" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="financial">💰 Financeiro</SelectItem>
-                        <SelectItem value="operational">⚙️ Operacional</SelectItem>
-                        <SelectItem value="customer">👥 Cliente</SelectItem>
-                        <SelectItem value="people">👨‍💼 Pessoas</SelectItem>
-                        <SelectItem value="quality">⭐ Qualidade</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Descrição</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Descreva o que este resultado-chave mede..."
-                    value={formData.description}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                    rows={3}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="target_value">Meta *</Label>
-                    <Input
-                      id="target_value"
-                      type="number"
-                      step="0.01"
-                      placeholder="100"
-                      value={formData.target_value}
-                      onChange={(e) => setFormData({...formData, target_value: e.target.value})}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="unit">Unidade *</Label>
-                    <Select value={formData.unit} onValueChange={(value) => setFormData({...formData, unit: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Unidade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="%">% (Percentual)</SelectItem>
-                        <SelectItem value="R$">R$ (Real)</SelectItem>
-                        <SelectItem value="number">Número</SelectItem>
-                        <SelectItem value="dias">Dias</SelectItem>
-                        <SelectItem value="score">Score</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="frequency">Frequência *</Label>
-                    <Select value={formData.frequency} onValueChange={(value) => setFormData({...formData, frequency: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Frequência" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="daily">Diário</SelectItem>
-                        <SelectItem value="weekly">Semanal</SelectItem>
-                        <SelectItem value="monthly">Mensal</SelectItem>
-                        <SelectItem value="quarterly">Trimestral</SelectItem>
-                        <SelectItem value="yearly">Anual</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="objective">Objetivo Estratégico</Label>
-                    <Select value={formData.objective_id} onValueChange={(value) => setFormData({...formData, objective_id: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um objetivo" />
-                      </SelectTrigger>
-                       <SelectContent>
-                         <SelectItem value="none">Nenhum objetivo</SelectItem>
-                         {objectives.map((objective) => (
-                           <SelectItem key={objective.id} value={objective.id}>
-                             {objective.title}
-                           </SelectItem>
-                         ))}
-                       </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="priority">Prioridade</Label>
-                    <Select value={formData.priority} onValueChange={(value) => setFormData({...formData, priority: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Prioridade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="high">Alta</SelectItem>
-                        <SelectItem value="medium">Média</SelectItem>
-                        <SelectItem value="low">Baixa</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? 'Salvando...' : 'Salvar Resultado-Chave'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
+          <Plus className="w-4 h-4" />
+          Novo Resultado-Chave
+        </Button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total de Resultados-Chave</p>
-                <div className="flex items-center space-x-2">
-                  <p className="text-2xl font-bold">{totalKeyResults}</p>
-                </div>
-              </div>
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <BarChart3 className="w-4 h-4 text-blue-600" />
-              </div>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalKeyResults}</div>
+            <p className="text-xs text-muted-foreground">Resultados-chave</p>
           </CardContent>
         </Card>
-
+        
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">No Alvo</p>
-                <div className="flex items-center space-x-2">
-                  <p className="text-2xl font-bold text-green-600">{onTargetKeyResults}</p>
-                  <span className="text-sm text-muted-foreground">
-                    ({totalKeyResults > 0 ? Math.round((onTargetKeyResults / totalKeyResults) * 100) : 0}%)
-                  </span>
-                </div>
-              </div>
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-              </div>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">No Alvo</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{onTargetKeyResults}</div>
+            <p className="text-xs text-muted-foreground">≥90% da meta</p>
           </CardContent>
         </Card>
-
+        
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Em Atenção</p>
-                <div className="flex items-center space-x-2">
-                  <p className="text-2xl font-bold text-yellow-600">{atRiskKeyResults}</p>
-                  <span className="text-sm text-muted-foreground">
-                    ({totalKeyResults > 0 ? Math.round((atRiskKeyResults / totalKeyResults) * 100) : 0}%)
-                  </span>
-                </div>
-              </div>
-              <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                <Activity className="w-4 h-4 text-yellow-600" />
-              </div>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Em Risco</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">{atRiskKeyResults}</div>
+            <p className="text-xs text-muted-foreground">70-89% da meta</p>
           </CardContent>
         </Card>
-
+        
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Críticos</p>
-                <div className="flex items-center space-x-2">
-                  <p className="text-2xl font-bold text-red-600">{criticalKeyResults}</p>
-                  <span className="text-sm text-muted-foreground">
-                    ({totalKeyResults > 0 ? Math.round((criticalKeyResults / totalKeyResults) * 100) : 0}%)
-                  </span>
-                </div>
-              </div>
-              <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertTriangle className="w-4 h-4 text-red-600" />
-              </div>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Críticos</CardTitle>
+            <Activity className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{criticalKeyResults}</div>
+            <p className="text-xs text-muted-foreground">&lt;70% da meta</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex-1 min-w-[200px]">
+        <CardHeader>
+          <CardTitle className="text-lg">Filtros</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label>Buscar</Label>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar resultados-chave..."
+                  placeholder="Buscar por nome..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-8"
                 />
               </div>
             </div>
-          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="financial">💰 Financeiro</SelectItem>
-              <SelectItem value="operational">⚙️ Operacional</SelectItem>
-              <SelectItem value="customer">👥 Cliente</SelectItem>
-              <SelectItem value="people">👨‍💼 Pessoas</SelectItem>
-              <SelectItem value="quality">⭐ Qualidade</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="not_started">Não Iniciado</SelectItem>
-              <SelectItem value="in_progress">Em Progresso</SelectItem>
-              <SelectItem value="completed">Completo</SelectItem>
-              <SelectItem value="suspended">Suspenso</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Prioridade" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="high">Alta</SelectItem>
-              <SelectItem value="medium">Média</SelectItem>
-              <SelectItem value="low">Baixa</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSearchTerm('');
-                setCategoryFilter('all');
-                setStatusFilter('all');
-                setPriorityFilter('all');
-              }}
-            >
-              Limpar Filtros
-            </Button>
+            
+            <div className="space-y-2">
+              <Label>Categoria</Label>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="financial">💰 Financeiro</SelectItem>
+                  <SelectItem value="operational">⚙️ Operacional</SelectItem>
+                  <SelectItem value="customer">👥 Cliente</SelectItem>
+                  <SelectItem value="people">👨‍💼 Pessoas</SelectItem>
+                  <SelectItem value="quality">⭐ Qualidade</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="not_started">Não Iniciado</SelectItem>
+                  <SelectItem value="in_progress">Em Progresso</SelectItem>
+                  <SelectItem value="completed">Completo</SelectItem>
+                  <SelectItem value="suspended">Suspenso</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Prioridade</Label>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="high">Alta</SelectItem>
+                  <SelectItem value="medium">Média</SelectItem>
+                  <SelectItem value="low">Baixa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
         </CardContent>
       </Card>
 
@@ -898,117 +659,113 @@ export const IndicatorsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredKeyResults.map((keyResult) => {
           const progress = calculateProgress(keyResult);
-          const history = getKeyResultHistory(keyResult.id);
           
           return (
-            <Card key={keyResult.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start">
+            <Card key={keyResult.id} className="h-full">
+              <CardHeader>
+                <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-lg">{getCategoryIcon(keyResult.category)}</span>
-                      <CardTitle className="text-lg leading-tight">{keyResult.title}</CardTitle>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">{getCategoryIcon('operational')}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {getCategoryText('operational')}
+                      </Badge>
+                      <Badge variant={getPriorityColor('medium')} className="text-xs">
+                        {getPriorityText('medium')}
+                      </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">{keyResult.description}</p>
+                    <CardTitle className="text-lg leading-tight">{keyResult.title}</CardTitle>
+                    {keyResult.description && (
+                      <CardDescription className="mt-1 text-sm">
+                        {keyResult.description}
+                      </CardDescription>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={getPriorityColor(keyResult.priority)}>
-                      {getPriorityText(keyResult.priority)}
-                    </Badge>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectedKeyResult(keyResult);
-                            setIsUpdateModalOpen(true);
-                          }}
-                        >
-                          <Edit className="w-4 h-4 mr-2" />
-                          Atualizar Valor
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openEditModal(keyResult)}>
-                          <Edit className="w-4 h-4 mr-2" />
-                          Editar Resultado-Chave
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectedKeyResult(keyResult);
-                            setIsDetailsModalOpen(true);
-                          }}
-                        >
-                          <BarChart3 className="w-4 h-4 mr-2" />
-                          Ver Detalhes
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            setSelectedKeyResult(keyResult);
-                            setIsDeleteConfirmOpen(true);
-                          }}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedKeyResult(keyResult);
+                          setIsUpdateModalOpen(true);
+                        }}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Atualizar Valor
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openEditKeyResultModal(keyResult)}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Atualizar Valores Mensais
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openEditModal(keyResult)}>
+                        <Edit className="w-4 h-4 mr-2" />
+                        Editar Resultado-Chave
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedKeyResult(keyResult);
+                          setIsDetailsModalOpen(true);
+                        }}
+                      >
+                        <BarChart3 className="w-4 h-4 mr-2" />
+                        Ver Detalhes
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedKeyResult(keyResult);
+                          setIsDeleteConfirmOpen(true);
+                        }}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Excluir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </CardHeader>
-              <CardContent>
+              
+              <CardContent className="space-y-4">
                 {/* Progress */}
-                <div className="mb-4">
-                  <div className="flex justify-between text-sm mb-2">
-                    <span className="text-muted-foreground">Progresso</span>
-                    <span className={`font-semibold ${getProgressColor(progress)}`}>
-                      {progress}% do objetivo
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Progresso</span>
+                    <span className={`text-sm font-bold ${getProgressColor(progress)}`}>
+                      {progress}%
                     </span>
                   </div>
                   <Progress value={progress} className="h-2" />
                 </div>
 
-                {/* Values */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="text-center p-3 bg-primary/5 rounded-lg border">
-                    <p className="text-2xl font-bold text-primary">
-                      {keyResult.current_value.toLocaleString('pt-BR')}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Atual {keyResult.unit}</p>
+                {/* Current vs Target */}
+                <div className="flex justify-between items-center text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Atual</p>
+                    <p className="font-semibold">{keyResult.current_value.toLocaleString('pt-BR')} {keyResult.unit}</p>
                   </div>
-                  <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
-                    <p className="text-2xl font-bold text-green-600">
-                      {keyResult.target_value.toLocaleString('pt-BR')}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Meta {keyResult.unit}</p>
+                  <div className="text-right">
+                    <p className="text-muted-foreground">Meta</p>
+                    <p className="font-semibold">{keyResult.target_value.toLocaleString('pt-BR')} {keyResult.unit}</p>
                   </div>
                 </div>
 
-                {/* Additional Info */}
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Categoria:</span>
-                    <Badge variant="outline">{getCategoryText(keyResult.category)}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Frequência:</span>
-                    <span className="font-medium">{getFrequencyText(keyResult.frequency)}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Status:</span>
-                    <Badge variant={keyResult.status === 'in_progress' ? 'default' : 'secondary'}>
-                      {getStatusText(keyResult.status)}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Última atualização:</span>
-                    <span className="text-xs font-medium">
-                      {new Date(keyResult.last_updated).toLocaleDateString('pt-BR')}
-                    </span>
-                  </div>
+                {/* Status */}
+                <div className="flex items-center justify-between">
+                  <Badge variant={keyResult.status === 'completed' ? 'default' : keyResult.status === 'in_progress' ? 'secondary' : 'outline'}>
+                    {getStatusText(keyResult.status)}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {getFrequencyText(keyResult.frequency || 'monthly')}
+                  </span>
+                </div>
+
+                {/* Last Update */}
+                <div className="text-xs text-muted-foreground">
+                  Última atualização: {new Date(keyResult.updated_at).toLocaleDateString('pt-BR')}
                 </div>
               </CardContent>
             </Card>
@@ -1016,25 +773,156 @@ export const IndicatorsPage: React.FC = () => {
         })}
       </div>
 
-      {filteredKeyResults.length === 0 && !loading && (
-        <Card className="text-center py-12">
-          <CardContent>
-            <BarChart3 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              {keyResults.length === 0 ? 'Nenhum resultado-chave cadastrado' : 'Nenhum resultado-chave encontrado'}
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              {keyResults.length === 0 
-                ? 'Crie seu primeiro resultado-chave para começar o acompanhamento de KRs.' 
-                : 'Tente ajustar os filtros para encontrar os resultados-chave desejados.'}
+      {filteredKeyResults.length === 0 && (
+        <Card>
+          <CardContent className="text-center py-8">
+            <Target className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">
+              {searchTerm || categoryFilter !== 'all' || statusFilter !== 'all' || priorityFilter !== 'all'
+                ? 'Nenhum resultado-chave encontrado com os filtros aplicados.'
+                : 'Nenhum resultado-chave cadastrado ainda. Crie seu primeiro resultado-chave!'}
             </p>
-            <Button onClick={() => setIsAddModalOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Resultado-Chave
-            </Button>
           </CardContent>
         </Card>
       )}
+
+      {/* Add Key Result Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Novo Resultado-Chave</DialogTitle>
+            <DialogDescription>
+              Crie um novo resultado-chave para acompanhar o progresso de suas metas.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateKeyResult} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="title">Nome do Resultado-Chave *</Label>
+                <Input
+                  id="title"
+                  placeholder="Ex: Taxa de Conversão"
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category">Categoria *</Label>
+                <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="financial">💰 Financeiro</SelectItem>
+                    <SelectItem value="operational">⚙️ Operacional</SelectItem>
+                    <SelectItem value="customer">👥 Cliente</SelectItem>
+                    <SelectItem value="people">👨‍💼 Pessoas</SelectItem>
+                    <SelectItem value="quality">⭐ Qualidade</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="description">Descrição</Label>
+              <Textarea
+                id="description"
+                placeholder="Descreva o que este resultado-chave mede..."
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="target_value">Meta *</Label>
+                <Input
+                  id="target_value"
+                  type="number"
+                  step="0.01"
+                  placeholder="100"
+                  value={formData.target_value}
+                  onChange={(e) => setFormData({...formData, target_value: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unit">Unidade *</Label>
+                <Select value={formData.unit} onValueChange={(value) => setFormData({...formData, unit: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Unidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="%">% (Percentual)</SelectItem>
+                    <SelectItem value="R$">R$ (Real)</SelectItem>
+                    <SelectItem value="number">Número</SelectItem>
+                    <SelectItem value="dias">Dias</SelectItem>
+                    <SelectItem value="score">Score</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="frequency">Frequência *</Label>
+                <Select value={formData.frequency} onValueChange={(value) => setFormData({...formData, frequency: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Frequência" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Diário</SelectItem>
+                    <SelectItem value="weekly">Semanal</SelectItem>
+                    <SelectItem value="monthly">Mensal</SelectItem>
+                    <SelectItem value="quarterly">Trimestral</SelectItem>
+                    <SelectItem value="yearly">Anual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="objective">Objetivo Estratégico</Label>
+                <Select value={formData.objective_id} onValueChange={(value) => setFormData({...formData, objective_id: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um objetivo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum objetivo</SelectItem>
+                    {objectives.map((objective) => (
+                      <SelectItem key={objective.id} value={objective.id}>
+                        {objective.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="priority">Prioridade</Label>
+                <Select value={formData.priority} onValueChange={(value) => setFormData({...formData, priority: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Prioridade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">Alta</SelectItem>
+                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="low">Baixa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Criando...' : 'Criar Resultado-Chave'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Update Value Modal */}
       <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>
@@ -1042,44 +930,31 @@ export const IndicatorsPage: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Atualizar Valor</DialogTitle>
             <DialogDescription>
-              Registre o novo valor para: {selectedKeyResult?.title}
+              Atualize o valor atual do resultado-chave: {selectedKeyResult?.title}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdateValue} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new_value">Novo Valor *</Label>
+              <Label htmlFor="current_value">Novo Valor *</Label>
               <Input
-                id="new_value"
+                id="current_value"
                 type="number"
                 step="0.01"
                 placeholder="Digite o novo valor"
-                value={updateData.value}
-                onChange={(e) => setUpdateData({...updateData, value: e.target.value})}
+                value={updateData.current_value}
+                onChange={(e) => setUpdateData({...updateData, current_value: e.target.value})}
                 required
               />
-              {selectedKeyResult && (
-                <p className="text-sm text-muted-foreground">
-                  Valor atual: {selectedKeyResult.current_value.toLocaleString('pt-BR')} {selectedKeyResult.unit}
-                </p>
-              )}
+              <p className="text-sm text-muted-foreground">
+                Meta: {selectedKeyResult?.target_value} {selectedKeyResult?.unit}
+              </p>
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="period_date">Data de Referência *</Label>
-              <Input
-                id="period_date"
-                type="date"
-                value={updateData.period_date}
-                onChange={(e) => setUpdateData({...updateData, period_date: e.target.value})}
-                required
-              />
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="comments">Comentários</Label>
               <Textarea
                 id="comments"
-                placeholder="Observações sobre esta medição..."
+                placeholder="Adicione comentários sobre esta atualização (opcional)"
                 value={updateData.comments}
                 onChange={(e) => setUpdateData({...updateData, comments: e.target.value})}
                 rows={3}
@@ -1102,112 +977,139 @@ export const IndicatorsPage: React.FC = () => {
       <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Detalhes do Resultado-Chave</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-lg">{getCategoryIcon(selectedKeyResult?.category || 'operational')}</span>
+              {selectedKeyResult?.title}
+            </DialogTitle>
             <DialogDescription>
-              {selectedKeyResult?.title} - Histórico e estatísticas
+              Histórico completo e estatísticas detalhadas do resultado-chave
             </DialogDescription>
           </DialogHeader>
+          
           {selectedKeyResult && (
             <div className="space-y-6">
-              {/* Key Result Overview */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {/* Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Card>
-                  <CardContent className="p-6 text-center">
-                    <div className="text-3xl font-bold text-primary mb-2">
-                      {selectedKeyResult.current_value.toLocaleString('pt-BR')}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Valor Atual</div>
-                    <div className="text-xs text-muted-foreground mt-1">{selectedKeyResult.unit}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-6 text-center">
-                    <div className="text-3xl font-bold text-green-600 mb-2">
-                      {selectedKeyResult.target_value.toLocaleString('pt-BR')}
-                    </div>
-                    <div className="text-sm text-muted-foreground">Meta</div>
-                    <div className="text-xs text-muted-foreground mt-1">{selectedKeyResult.unit}</div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="p-6 text-center">
-                    <div className={`text-3xl font-bold mb-2 ${getProgressColor(calculateProgress(selectedKeyResult))}`}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Progresso Atual</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-primary">
                       {calculateProgress(selectedKeyResult)}%
                     </div>
-                    <div className="text-sm text-muted-foreground">Progresso</div>
-                    <div className="text-xs text-muted-foreground mt-1">do objetivo</div>
+                    <Progress value={calculateProgress(selectedKeyResult)} className="mt-2" />
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Valor Atual</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {selectedKeyResult.current_value.toLocaleString('pt-BR')} {selectedKeyResult.unit}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Meta: {selectedKeyResult.target_value.toLocaleString('pt-BR')} {selectedKeyResult.unit}
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Status</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Badge variant={selectedKeyResult.status === 'completed' ? 'default' : selectedKeyResult.status === 'in_progress' ? 'secondary' : 'outline'} className="text-base">
+                      {getStatusText(selectedKeyResult.status)}
+                    </Badge>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {getFrequencyText(selectedKeyResult.frequency || 'monthly')}
+                    </p>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Chart */}
-              <Card className="mb-6">
+              <Card>
                 <CardHeader>
-                  <CardTitle>Histórico de Valores</CardTitle>
+                  <CardTitle>Evolução do Resultado-Chave</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={getKeyResultHistory(selectedKeyResult.id)}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="period_date" 
-                          tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' })}
-                        />
-                        <YAxis />
-                        <Tooltip 
-                          labelFormatter={(value) => new Date(value).toLocaleDateString('pt-BR')}
-                          formatter={(value, name) => [
-                            `${Number(value).toLocaleString('pt-BR')} ${selectedKeyResult.unit}`, 
-                            name
-                          ]}
-                        />
-                        <Legend />
-                        <Line 
-                          type="monotone" 
-                          dataKey="value" 
-                          stroke="hsl(var(--primary))" 
-                          strokeWidth={2}
-                          name="Valor Real"
-                          dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey={() => selectedKeyResult.target_value} 
-                          stroke="#10b981" 
-                          strokeWidth={2}
-                          strokeDasharray="5 5"
-                          name="Meta"
-                          dot={false}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
+                  {(() => {
+                    const history = getKeyResultHistory(selectedKeyResult.id);
+                    if (history.length === 0) {
+                      return (
+                        <div className="text-center py-8 text-muted-foreground">
+                          Nenhum histórico disponível ainda.
+                        </div>
+                      );
+                    }
+
+                    const chartData = history.map(entry => ({
+                      date: new Date(entry.period_date).toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' }),
+                      value: entry.value,
+                      target: selectedKeyResult.target_value
+                    }));
+
+                    return (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="date" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Line type="monotone" dataKey="value" stroke="#8884d8" name="Valor Atual" />
+                          <Line type="monotone" dataKey="target" stroke="#82ca9d" strokeDasharray="5 5" name="Meta" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    );
+                  })()}
                 </CardContent>
               </Card>
 
-              {/* Recent Updates and Statistics */}
+              {/* History and Statistics */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Últimas Atualizações</CardTitle>
+                    <CardTitle>Histórico de Atualizações</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="max-h-96 overflow-y-auto">
                     <div className="space-y-3">
-                      {getKeyResultHistory(selectedKeyResult.id).slice(0, 5).map((update) => (
-                        <div key={update.id} className="border-l-4 border-primary/20 pl-4 py-2 bg-muted/30 rounded-r">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
+                      {getKeyResultHistory(selectedKeyResult.id).map((update, index) => (
+                        <div key={update.id} className="flex items-start space-x-3 p-3 rounded-lg border">
+                          <div className="flex-shrink-0">
+                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-medium text-primary">{index + 1}</span>
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
                               <p className="font-medium">{update.value.toLocaleString('pt-BR')} {selectedKeyResult.unit}</p>
-                              {update.comments && (
-                                <p className="text-sm text-muted-foreground mt-1">{update.comments}</p>
-                              )}
+                              <div className="flex items-center space-x-2">
+                                {update.value > (getKeyResultHistory(selectedKeyResult.id)[index + 1]?.value || 0) ? (
+                                  <TrendingUp className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <TrendingDown className="w-4 h-4 text-red-600" />
+                                )}
+                              </div>
                             </div>
-                            <div className="text-right">
-                              <p className="text-sm text-muted-foreground">
+                            <div className="flex items-center justify-between mt-1">
+                              <Badge variant="outline" className="text-xs">
                                 {new Date(update.period_date).toLocaleDateString('pt-BR')}
-                              </p>
+                              </Badge>
+                              <Badge variant="outline">
+                                {update.comments && update.comments.length > 20 
+                                  ? `${update.comments.slice(0, 17)}...` 
+                                  : update.comments || 'Sem comentários'
+                                }
+                              </Badge>
                             </div>
+                            {update.comments && (
+                              <p className="text-sm text-muted-foreground mt-1">{update.comments}</p>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1467,6 +1369,43 @@ export const IndicatorsPage: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Key Result Modal with Monthly Values */}
+      {selectedKeyResult && (
+        <EditKeyResultModal
+          keyResult={selectedKeyResult}
+          open={isEditKeyResultModalOpen}
+          onClose={() => setIsEditKeyResultModalOpen(false)}
+          onSave={async (keyResultData) => {
+            if (!user || !selectedKeyResult) return;
+
+            try {
+              const { error } = await supabase
+                .from('key_results')
+                .update(keyResultData)
+                .eq('id', selectedKeyResult.id);
+
+              if (error) throw error;
+
+              // Refresh data
+              await loadData();
+              
+              toast({
+                title: "Sucesso",
+                description: "Resultado-chave atualizado com sucesso!",
+              });
+            } catch (error) {
+              console.error('Error updating key result:', error);
+              toast({
+                title: "Erro",
+                description: "Erro ao atualizar resultado-chave",
+                variant: "destructive",
+              });
+              throw error;
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
