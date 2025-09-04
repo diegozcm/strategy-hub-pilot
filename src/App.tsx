@@ -30,6 +30,7 @@ import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import { GoldenCirclePage } from "@/components/golden-circle/GoldenCirclePage";
+import { ToolsPage } from "@/components/tools/ToolsPage";
 import { StartupHubPage } from "@/components/startup-hub/StartupHubPage";
 
 const queryClient = new QueryClient();
@@ -56,7 +57,7 @@ const App = () => (
             <Route path="/projects" element={<Navigate to="/app/projects" replace />} />
             <Route path="/indicators" element={<Navigate to="/app/indicators" replace />} />
             <Route path="/reports" element={<Navigate to="/app/reports" replace />} />
-            <Route path="/golden-circle" element={<Navigate to="/app/golden-circle" replace />} />
+            <Route path="/golden-circle" element={<Navigate to="/app/tools" replace />} />
             <Route path="/ai-copilot" element={<Navigate to="/app/ai-copilot" replace />} />
             
             <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
@@ -79,7 +80,8 @@ const App = () => (
               
               <Route path="profile" element={<ProfilePage />} />
               <Route path="settings" element={<SettingsPage />} />
-              <Route path="golden-circle" element={<GoldenCirclePage />} />
+            <Route path="golden-circle" element={<Navigate to="/app/tools" replace />} />
+            <Route path="tools" element={<ToolsPage />} />
               <Route path="startup-hub" element={<StartupHubPage />} />
             </Route>
 

@@ -1476,6 +1476,81 @@ export type Database = {
           },
         ]
       }
+      swot_analysis: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          id: string
+          opportunities: string | null
+          strengths: string | null
+          threats: string | null
+          updated_at: string
+          updated_by: string
+          weaknesses: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          opportunities?: string | null
+          strengths?: string | null
+          threats?: string | null
+          updated_at?: string
+          updated_by: string
+          weaknesses?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          opportunities?: string | null
+          strengths?: string | null
+          threats?: string | null
+          updated_at?: string
+          updated_by?: string
+          weaknesses?: string | null
+        }
+        Relationships: []
+      }
+      swot_history: {
+        Row: {
+          change_reason: string | null
+          changed_at: string
+          changed_by: string
+          id: string
+          previous_opportunities: string | null
+          previous_strengths: string | null
+          previous_threats: string | null
+          previous_weaknesses: string | null
+          swot_analysis_id: string
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by: string
+          id?: string
+          previous_opportunities?: string | null
+          previous_strengths?: string | null
+          previous_threats?: string | null
+          previous_weaknesses?: string | null
+          swot_analysis_id: string
+        }
+        Update: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          previous_opportunities?: string | null
+          previous_strengths?: string | null
+          previous_threats?: string | null
+          previous_weaknesses?: string | null
+          swot_analysis_id?: string
+        }
+        Relationships: []
+      }
       system_modules: {
         Row: {
           active: boolean
