@@ -112,7 +112,7 @@ export const IndicatorsPage: React.FC = () => {
         const { data: pillarsData, error: pillarsError } = await supabase
           .from('strategic_pillars')
           .select('*')
-          .eq('company_id', user?.user_metadata?.company_id)
+          .eq('company_id', authCompany.id)
           .order('order_index');
 
         if (pillarsError) throw pillarsError;
@@ -127,6 +127,8 @@ export const IndicatorsPage: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (keyResultsError) throw keyResultsError;
+      
+      console.log('Loaded key results:', keyResultsData);
       setKeyResults(keyResultsData || []);
 
       // Load key result values
@@ -1347,12 +1349,17 @@ export const IndicatorsPage: React.FC = () => {
             if (!user || !selectedKeyResult) return;
 
             try {
-              const { error } = await supabase
+              console.log('Saving key result data:', keyResultData);
+              
+              const { data, error } = await supabase
                 .from('key_results')
                 .update(keyResultData)
-                .eq('id', selectedKeyResult.id);
+                .eq('id', selectedKeyResult.id)
+                .select();
 
               if (error) throw error;
+
+              console.log('Key result updated successfully:', data);
 
               // Refresh data
               await loadData();

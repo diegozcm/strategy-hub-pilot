@@ -57,12 +57,18 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
     try {
       setLoading(true);
       
+      console.log('Current monthlyTargets:', monthlyTargets);
+      console.log('Current monthlyActual:', monthlyActual);
+      
       // Calcular valor anual atual a partir dos valores mensais
       const yearlyActual = Object.values(monthlyActual).reduce((sum, value) => sum + (value || 0), 0);
 
       // Verificar se houve alteração nos valores mensais ou metas
       const valuesChanged = JSON.stringify(monthlyActual) !== JSON.stringify(originalMonthlyActual);
       const targetsChanged = JSON.stringify(monthlyTargets) !== JSON.stringify(originalMonthlyTargets);
+      
+      console.log('Values changed:', valuesChanged);
+      console.log('Targets changed:', targetsChanged);
       
       // Calcular meta anual a partir das metas mensais
       const yearlyTarget = Object.values(monthlyTargets).reduce((sum, value) => sum + (value || 0), 0);
@@ -75,7 +81,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
         finalStatus = 'in_progress';
       }
 
-      await onSave({
+      const dataToSave = {
         id: keyResult.id,
         monthly_actual: monthlyActual,
         monthly_targets: monthlyTargets,
@@ -84,7 +90,11 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
         target_value: yearlyTarget, // Atualizar também o target_value para compatibilidade
         current_value: yearlyActual, // Atualizar também o current_value para compatibilidade
         status: finalStatus
-      });
+      };
+      
+      console.log('Data to save:', dataToSave);
+
+      await onSave(dataToSave);
       
       onClose();
     } catch (error) {
