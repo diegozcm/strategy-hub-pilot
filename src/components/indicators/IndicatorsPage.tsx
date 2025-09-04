@@ -58,7 +58,6 @@ export const IndicatorsPage: React.FC = () => {
     title: '',
     description: '',
     unit: '%',
-    frequency: 'monthly',
     priority: 'medium',
     objective_id: 'none'
   });
@@ -67,7 +66,6 @@ export const IndicatorsPage: React.FC = () => {
     title: '',
     description: '',
     unit: '',
-    frequency: '',
     priority: '',
     objective_id: '',
     status: ''
@@ -179,7 +177,7 @@ export const IndicatorsPage: React.FC = () => {
         owner_id: user.id,
         objective_id: formData.objective_id === 'none' ? null : formData.objective_id,
         metric_type: 'number',
-        frequency: formData.frequency,
+        frequency: 'monthly',
         monthly_targets: {},
         monthly_actual: {},
         yearly_target: 0,
@@ -202,7 +200,6 @@ export const IndicatorsPage: React.FC = () => {
         title: '',
         description: '',
         unit: '%',
-        frequency: 'monthly',
         priority: 'medium',
         objective_id: 'none'
       });
@@ -299,7 +296,7 @@ export const IndicatorsPage: React.FC = () => {
           title: editData.title,
           description: editData.description,
           unit: editData.unit,
-          frequency: editData.frequency,
+          frequency: 'monthly',
           status: editData.status,
           objective_id: editData.objective_id === 'none' ? null : editData.objective_id
         })
@@ -381,7 +378,6 @@ export const IndicatorsPage: React.FC = () => {
       title: keyResult.title,
       description: keyResult.description || '',
       unit: keyResult.unit,
-      frequency: keyResult.frequency || 'monthly',
       priority: 'medium', // Default priority since not in KeyResult interface
       objective_id: keyResult.objective_id || 'none',
       status: keyResult.status
@@ -754,7 +750,7 @@ export const IndicatorsPage: React.FC = () => {
                     {getStatusText(keyResult.status)}
                   </Badge>
                   <span className="text-xs text-muted-foreground">
-                    {getFrequencyText(keyResult.frequency || 'monthly')}
+                    Mensal
                   </span>
                 </div>
 
@@ -815,7 +811,7 @@ export const IndicatorsPage: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="target_value">Meta Anual *</Label>
                 <div className="px-3 py-2 border rounded-md bg-muted">
@@ -836,21 +832,6 @@ export const IndicatorsPage: React.FC = () => {
                     <SelectItem value="number">Número</SelectItem>
                     <SelectItem value="dias">Dias</SelectItem>
                     <SelectItem value="score">Score</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="frequency">Frequência *</Label>
-                <Select value={formData.frequency} onValueChange={(value) => setFormData({...formData, frequency: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Frequência" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Diário</SelectItem>
-                    <SelectItem value="weekly">Semanal</SelectItem>
-                    <SelectItem value="monthly">Mensal</SelectItem>
-                    <SelectItem value="quarterly">Trimestral</SelectItem>
-                    <SelectItem value="yearly">Anual</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1004,7 +985,7 @@ export const IndicatorsPage: React.FC = () => {
                       {getStatusText(selectedKeyResult.status)}
                     </Badge>
                     <p className="text-sm text-muted-foreground mt-2">
-                      {getFrequencyText(selectedKeyResult.frequency || 'monthly')}
+                      Mensal
                     </p>
                   </CardContent>
                 </Card>
@@ -1208,7 +1189,7 @@ export const IndicatorsPage: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit_target_value">Meta Anual *</Label>
                 <div className="px-3 py-2 border rounded-md bg-muted">
@@ -1232,21 +1213,6 @@ export const IndicatorsPage: React.FC = () => {
                     <SelectItem value="number">Número</SelectItem>
                     <SelectItem value="dias">Dias</SelectItem>
                     <SelectItem value="score">Score</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit_frequency">Frequência *</Label>
-                <Select value={editData.frequency} onValueChange={(value) => setEditData({...editData, frequency: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Frequência" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Diário</SelectItem>
-                    <SelectItem value="weekly">Semanal</SelectItem>
-                    <SelectItem value="monthly">Mensal</SelectItem>
-                    <SelectItem value="quarterly">Trimestral</SelectItem>
-                    <SelectItem value="yearly">Anual</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
