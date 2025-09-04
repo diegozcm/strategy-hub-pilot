@@ -182,6 +182,20 @@ export const SystemSettingsPage: React.FC = () => {
   const renderSettingInput = (setting: SystemSetting) => {
     const value = editedSettings[setting.key];
     
+    // Tratamento especial para email de notificação do admin
+    if (setting.key === 'admin_notification_email') {
+      const emailValue = typeof value === 'string' ? value : (typeof value === 'object' && value !== null ? JSON.stringify(value).replace(/"/g, '') : '');
+      return (
+        <Input
+          type="email"
+          value={emailValue}
+          onChange={(e) => updateSetting(setting.key, e.target.value)}
+          className="bg-slate-700 border-slate-600 text-white"
+          placeholder="admin@empresa.com"
+        />
+      );
+    }
+    
     if (typeof value === 'boolean') {
       return (
         <Switch

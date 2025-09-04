@@ -59,7 +59,9 @@ export const AuthPage: React.FC = () => {
         }
       } else {
         if (!isLogin) {
-          setError('Cadastro realizado com sucesso! Você já pode fazer login.');
+          // Sucesso no cadastro - mostrar mensagem sobre aprovação do admin  
+          setError('');
+          alert('Cadastro realizado com sucesso! Sua conta foi criada e está aguardando aprovação do administrador. Você receberá notificação quando sua conta for ativada.');
         }
         // Don't navigate here - let useEffect handle it after profile loads
       }
@@ -71,12 +73,10 @@ export const AuthPage: React.FC = () => {
     }
   };
 
-  // Check for inactive status (pending status removed since users are active by default)
-  useEffect(() => {
-    if (profile?.status === 'inactive') {
-      setError('Sua conta foi desativada por um administrador. Entre em contato para mais informações.');
-    }
-  }, [profile]);
+      // Check for inactive status - agora usuários inativos aguardam aprovação
+      if (profile?.status === 'inactive') {
+        setError('Sua conta está aguardando aprovação do administrador. Você será notificado quando for ativada.');
+      }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
