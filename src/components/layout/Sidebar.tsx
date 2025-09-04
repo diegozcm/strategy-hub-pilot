@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { BarChart3, Target, Briefcase, Users, Settings, ChevronLeft, ChevronRight, Zap, TrendingUp, Activity, Brain, Map, Building2, UserCheck, Shield, Building, User } from 'lucide-react';
+import { BarChart3, Target, Briefcase, Users, Settings, ChevronLeft, ChevronRight, Zap, TrendingUp, Activity, Brain, Map, Building2, UserCheck, Shield, Building, User, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useMultiTenant';
@@ -16,6 +16,7 @@ const menuStructure = [
     items: [
       { name: 'Dashboard', href: '/app/dashboard', icon: BarChart3 },
       { name: 'Mapa Estratégico', href: '/app/strategic-map', icon: Map },
+      { name: 'Golden Circle', href: '/app/golden-circle', icon: Circle },
       { name: 'Objetivos', href: '/app/objectives', icon: Target },
       { name: 'Resultados Chave', href: '/app/indicators', icon: TrendingUp },
       { name: 'Projetos', href: '/app/projects', icon: Briefcase },
@@ -108,7 +109,7 @@ export const Sidebar: React.FC = () => {
                 
                 return true;
               }
-              if (item.href.includes('/strategic-map') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
+              if (item.href.includes('/strategic-map') || item.href.includes('/golden-circle') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
                 return hasModuleAccess('strategic-planning');
               }
               return true; // Dashboard and settings are always accessible
@@ -135,7 +136,7 @@ export const Sidebar: React.FC = () => {
                   let hasAccess = true;
                   if (item.href.includes('/startup-hub')) {
                     hasAccess = hasModuleAccess('startup-hub');
-                  } else if (item.href.includes('/strategic-map') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
+                  } else if (item.href.includes('/strategic-map') || item.href.includes('/golden-circle') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
                     hasAccess = hasModuleAccess('strategic-planning');
                   }
 

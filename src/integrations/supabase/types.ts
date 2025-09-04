@@ -614,6 +614,75 @@ export type Database = {
         }
         Relationships: []
       }
+      golden_circle: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          how_question: string | null
+          id: string
+          updated_at: string
+          updated_by: string
+          what_question: string | null
+          why_question: string | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          how_question?: string | null
+          id?: string
+          updated_at?: string
+          updated_by: string
+          what_question?: string | null
+          why_question?: string | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          how_question?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string
+          what_question?: string | null
+          why_question?: string | null
+        }
+        Relationships: []
+      }
+      golden_circle_history: {
+        Row: {
+          change_reason: string | null
+          changed_at: string
+          changed_by: string
+          golden_circle_id: string
+          id: string
+          previous_how: string | null
+          previous_what: string | null
+          previous_why: string | null
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by: string
+          golden_circle_id: string
+          id?: string
+          previous_how?: string | null
+          previous_what?: string | null
+          previous_why?: string | null
+        }
+        Update: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string
+          golden_circle_id?: string
+          id?: string
+          previous_how?: string | null
+          previous_what?: string | null
+          previous_why?: string | null
+        }
+        Relationships: []
+      }
       key_result_values: {
         Row: {
           comments: string | null
