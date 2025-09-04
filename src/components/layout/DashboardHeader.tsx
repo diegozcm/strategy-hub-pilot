@@ -14,7 +14,7 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { CompanySelector } from '@/components/CompanySelector';
 
 export const DashboardHeader: React.FC = () => {
-  const { user, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
 
   const handleSignOut = async () => {
     console.log('🚪 DashboardHeader: Starting logout process');
@@ -42,9 +42,9 @@ export const DashboardHeader: React.FC = () => {
                <div className="bg-primary text-primary-foreground rounded-full h-8 w-8 flex items-center justify-center">
                   <User className="h-4 w-4" />
                 </div>
-                <span className="hidden sm:block text-sm font-medium">
-                  {user?.email?.split('@')[0] || 'Usuário'}
-                </span>
+                 <span className="hidden sm:block text-sm font-medium">
+                   {profile?.first_name || 'Usuário'}
+                 </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
