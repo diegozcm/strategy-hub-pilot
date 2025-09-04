@@ -58,7 +58,6 @@ export const IndicatorsPage: React.FC = () => {
     title: '',
     description: '',
     unit: '%',
-    target_value: '',
     frequency: 'monthly',
     priority: 'medium',
     objective_id: 'none'
@@ -68,7 +67,6 @@ export const IndicatorsPage: React.FC = () => {
     title: '',
     description: '',
     unit: '',
-    target_value: '',
     frequency: '',
     priority: '',
     objective_id: '',
@@ -175,13 +173,17 @@ export const IndicatorsPage: React.FC = () => {
         title: formData.title,
         description: formData.description,
         unit: formData.unit,
-        target_value: parseFloat(formData.target_value),
+        target_value: 0, // Will be calculated from monthly targets
         current_value: 0,
         status: 'not_started',
         owner_id: user.id,
         objective_id: formData.objective_id === 'none' ? null : formData.objective_id,
         metric_type: 'number',
         frequency: formData.frequency,
+        monthly_targets: {},
+        monthly_actual: {},
+        yearly_target: 0,
+        yearly_actual: 0,
       };
 
       const { data, error } = await supabase
@@ -200,7 +202,6 @@ export const IndicatorsPage: React.FC = () => {
         title: '',
         description: '',
         unit: '%',
-        target_value: '',
         frequency: 'monthly',
         priority: 'medium',
         objective_id: 'none'
@@ -298,9 +299,8 @@ export const IndicatorsPage: React.FC = () => {
           title: editData.title,
           description: editData.description,
           unit: editData.unit,
-          target_value: parseFloat(editData.target_value),
-        frequency: editData.frequency,
-        status: editData.status,
+          frequency: editData.frequency,
+          status: editData.status,
           objective_id: editData.objective_id === 'none' ? null : editData.objective_id
         })
         .eq('id', selectedKeyResult.id)
@@ -381,7 +381,6 @@ export const IndicatorsPage: React.FC = () => {
       title: keyResult.title,
       description: keyResult.description || '',
       unit: keyResult.unit,
-      target_value: keyResult.target_value.toString(),
       frequency: keyResult.frequency || 'monthly',
       priority: 'medium', // Default priority since not in KeyResult interface
       objective_id: keyResult.objective_id || 'none',
@@ -818,16 +817,12 @@ export const IndicatorsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="target_value">Meta *</Label>
-                <Input
-                  id="target_value"
-                  type="number"
-                  step="0.01"
-                  placeholder="100"
-                  value={formData.target_value}
-                  onChange={(e) => setFormData({...formData, target_value: e.target.value})}
-                  required
-                />
+                <Label htmlFor="target_value">Meta Anual *</Label>
+                <div className="px-3 py-2 border rounded-md bg-muted">
+                  <span className="text-sm font-medium">
+                    Será calculada automaticamente após definir as metas mensais
+                  </span>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="unit">Unidade *</Label>
@@ -1215,16 +1210,15 @@ export const IndicatorsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="edit_target_value">Meta *</Label>
-                <Input
-                  id="edit_target_value"
-                  type="number"
-                  step="0.01"
-                  placeholder="100"
-                  value={editData.target_value}
-                  onChange={(e) => setEditData({...editData, target_value: e.target.value})}
-                  required
-                />
+                <Label htmlFor="edit_target_value">Meta Anual *</Label>
+                <div className="px-3 py-2 border rounded-md bg-muted">
+                  <span className="text-sm font-medium">
+                    {selectedKeyResult?.yearly_target || selectedKeyResult?.target_value || 0} {selectedKeyResult?.unit}
+                  </span>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Calculada automaticamente a partir das metas mensais
+                  </p>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_unit">Unidade *</Label>
