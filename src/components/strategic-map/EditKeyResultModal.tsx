@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KeyResult } from '@/types/strategic-map';
 
@@ -16,6 +17,8 @@ interface EditKeyResultModalProps {
 export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKeyResultModalProps) => {
   const [loading, setLoading] = useState(false);
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
+  const [status, setStatus] = useState<string>('');
+  const [originalMonthlyActual, setOriginalMonthlyActual] = useState<Record<string, number>>({});
 
   const currentYear = new Date().getFullYear();
   const months = [
@@ -36,7 +39,9 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
   useEffect(() => {
     if (keyResult.monthly_actual) {
       setMonthlyActual(keyResult.monthly_actual as Record<string, number>);
+      setOriginalMonthlyActual(keyResult.monthly_actual as Record<string, number>);
     }
+    setStatus(keyResult.status || 'not_started');
   }, [keyResult]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,11 +53,23 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
       // Calcular valor anual atual a partir dos valores mensais
       const yearlyActual = Object.values(monthlyActual).reduce((sum, value) => sum + (value || 0), 0);
 
+      // Verificar se houve alteração nos valores mensais
+      const valuesChanged = JSON.stringify(monthlyActual) !== JSON.stringify(originalMonthlyActual);
+      
+      // Determinar o status final
+      let finalStatus = status;
+      
+      // Se valores foram alterados e o status atual é "not_started", mudar para "in_progress"
+      if (valuesChanged && keyResult.status === 'not_started' && status === 'not_started') {
+        finalStatus = 'in_progress';
+      }
+
       await onSave({
         id: keyResult.id,
         monthly_actual: monthlyActual,
         yearly_actual: yearlyActual,
-        current_value: yearlyActual // Atualizar também o current_value para compatibilidade
+        current_value: yearlyActual, // Atualizar também o current_value para compatibilidade
+        status: finalStatus
       });
       
       onClose();
@@ -94,6 +111,28 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
                     {Object.values(monthlyActual).reduce((sum, value) => sum + (value || 0), 0).toFixed(2)} {keyResult.unit}
                   </p>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not_started">Não iniciado</SelectItem>
+                    <SelectItem value="in_progress">Em progresso</SelectItem>
+                    <SelectItem value="completed">Concluído</SelectItem>
+                    <SelectItem value="suspended">Suspenso</SelectItem>
+                  </SelectContent>
+                </Select>
+                {JSON.stringify(monthlyActual) !== JSON.stringify(originalMonthlyActual) && 
+                 keyResult.status === 'not_started' && 
+                 status === 'not_started' && (
+                  <p className="text-xs text-muted-foreground">
+                    💡 Como você está atualizando valores, o status será alterado automaticamente para "Em progresso"
+                  </p>
+                )}
               </div>
 
               <div className="p-4 bg-muted rounded-lg">

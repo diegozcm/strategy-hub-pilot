@@ -276,11 +276,15 @@ export const IndicatorsPage: React.FC = () => {
 
       if (valueError) throw valueError;
 
-      // Update current value in key result
+      // Determinar o novo status - se estava "not_started", mudar para "in_progress"
+      const newStatus = selectedKeyResult.status === 'not_started' ? 'in_progress' : selectedKeyResult.status;
+
+      // Update current value and status in key result
       const { error: updateError } = await supabase
         .from('key_results')
         .update({ 
           current_value: parseFloat(updateData.value),
+          status: newStatus,
           last_updated: new Date().toISOString()
         })
         .eq('id', selectedKeyResult.id);
@@ -290,7 +294,7 @@ export const IndicatorsPage: React.FC = () => {
       // Update local state
       setKeyResults(prev => prev.map(kr => 
         kr.id === selectedKeyResult.id 
-          ? { ...kr, current_value: parseFloat(updateData.value) }
+          ? { ...kr, current_value: parseFloat(updateData.value), status: newStatus }
           : kr
       ));
       setKeyResultValues(prev => [valueData, ...prev]);
