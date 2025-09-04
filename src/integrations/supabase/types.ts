@@ -1688,6 +1688,10 @@ export type Database = {
           issues: string[]
         }[]
       }
+      confirm_user_email: {
+        Args: { _admin_id: string; _user_id: string }
+        Returns: boolean
+      }
       create_missing_profiles: {
         Args: Record<PropertyKey, never>
         Returns: {
