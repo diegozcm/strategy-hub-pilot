@@ -54,6 +54,8 @@ export const AuthPage: React.FC = () => {
           setError('Email ou senha incorretos');
         } else if (error.message.includes('User already registered')) {
           setError('Este email já está cadastrado');
+        } else if (error.message.includes('Email not confirmed')) {
+          setError('O seu usuário está aguardando aprovação do administrador. Entre em contato com diego@cofound.com.br para mais detalhes.');
         } else {
           setError(error.message);
         }
