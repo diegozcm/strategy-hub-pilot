@@ -22,22 +22,29 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
   const [status, setStatus] = useState<string>('');
   const [originalMonthlyActual, setOriginalMonthlyActual] = useState<Record<string, number>>({});
   const [originalMonthlyTargets, setOriginalMonthlyTargets] = useState<Record<string, number>>({});
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
   const currentYear = new Date().getFullYear();
   const months = [
-    { key: `${currentYear}-01`, name: 'Janeiro', short: 'Jan' },
-    { key: `${currentYear}-02`, name: 'Fevereiro', short: 'Fev' },
-    { key: `${currentYear}-03`, name: 'Março', short: 'Mar' },
-    { key: `${currentYear}-04`, name: 'Abril', short: 'Abr' },
-    { key: `${currentYear}-05`, name: 'Maio', short: 'Mai' },
-    { key: `${currentYear}-06`, name: 'Junho', short: 'Jun' },
-    { key: `${currentYear}-07`, name: 'Julho', short: 'Jul' },
-    { key: `${currentYear}-08`, name: 'Agosto', short: 'Ago' },
-    { key: `${currentYear}-09`, name: 'Setembro', short: 'Set' },
-    { key: `${currentYear}-10`, name: 'Outubro', short: 'Out' },
-    { key: `${currentYear}-11`, name: 'Novembro', short: 'Nov' },
-    { key: `${currentYear}-12`, name: 'Dezembro', short: 'Dez' },
+    { key: `${selectedYear}-01`, name: 'Janeiro', short: 'Jan' },
+    { key: `${selectedYear}-02`, name: 'Fevereiro', short: 'Fev' },
+    { key: `${selectedYear}-03`, name: 'Março', short: 'Mar' },
+    { key: `${selectedYear}-04`, name: 'Abril', short: 'Abr' },
+    { key: `${selectedYear}-05`, name: 'Maio', short: 'Mai' },
+    { key: `${selectedYear}-06`, name: 'Junho', short: 'Jun' },
+    { key: `${selectedYear}-07`, name: 'Julho', short: 'Jul' },
+    { key: `${selectedYear}-08`, name: 'Agosto', short: 'Ago' },
+    { key: `${selectedYear}-09`, name: 'Setembro', short: 'Set' },
+    { key: `${selectedYear}-10`, name: 'Outubro', short: 'Out' },
+    { key: `${selectedYear}-11`, name: 'Novembro', short: 'Nov' },
+    { key: `${selectedYear}-12`, name: 'Dezembro', short: 'Dez' },
   ];
+
+  // Generate year options (from 2020 to current year + 5)
+  const yearOptions = [];
+  for (let year = 2020; year <= currentYear + 5; year++) {
+    yearOptions.push(year);
+  }
 
   useEffect(() => {
     if (keyResult.monthly_actual) {
@@ -183,11 +190,29 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
             </TabsContent>
 
             <TabsContent value="targets" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label>Metas Mensais ({currentYear})</Label>
-                <p className="text-sm text-muted-foreground">
-                  Defina as metas planejadas para cada mês. A soma das metas mensais será sua meta anual.
-                </p>
+              <div className="flex justify-between items-center">
+                <div className="space-y-2">
+                  <Label>Metas Mensais ({selectedYear})</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Defina as metas planejadas para cada mês. A soma das metas mensais será sua meta anual.
+                  </p>
+                </div>
+                
+                <div className="w-32">
+                  <Label className="text-sm font-medium">Ano</Label>
+                  <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {yearOptions.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -238,11 +263,29 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
             </TabsContent>
 
             <TabsContent value="monthly" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label>Valores Realizados por Mês ({currentYear})</Label>
-                <p className="text-sm text-muted-foreground">
-                  Atualize os valores que foram efetivamente realizados em cada mês.
-                </p>
+              <div className="flex justify-between items-center">
+                <div className="space-y-2">
+                  <Label>Valores Realizados por Mês ({selectedYear})</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Atualize os valores que foram efetivamente realizados em cada mês.
+                  </p>
+                </div>
+                
+                <div className="w-32">
+                  <Label className="text-sm font-medium">Ano</Label>
+                  <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {yearOptions.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="space-y-4">
