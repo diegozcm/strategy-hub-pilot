@@ -688,15 +688,6 @@ export const IndicatorsPage: React.FC = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setSelectedKeyResult(keyResult);
-                          setIsUpdateModalOpen(true);
-                        }}
-                      >
-                        <Edit className="w-4 h-4 mr-2" />
-                        Atualizar Valor
-                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEditKeyResultModal(keyResult)}>
                         <Edit className="w-4 h-4 mr-2" />
                         Atualizar Valores Mensais
