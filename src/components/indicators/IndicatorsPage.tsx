@@ -373,11 +373,11 @@ export const IndicatorsPage: React.FC = () => {
     setEditData({
       title: keyResult.title,
       description: keyResult.description || '',
-      category: keyResult.category || 'operational',
+      category: 'operational', // Default category since not in KeyResult interface
       unit: keyResult.unit,
       target_value: keyResult.target_value.toString(),
       frequency: keyResult.frequency || 'monthly',
-      priority: keyResult.priority || 'medium',
+      priority: 'medium', // Default priority since not in KeyResult interface
       objective_id: keyResult.objective_id || 'none',
       status: keyResult.status
     });
@@ -475,7 +475,7 @@ export const IndicatorsPage: React.FC = () => {
                          keyResult.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || 'operational' === categoryFilter; // Default to operational
     const matchesStatus = statusFilter === 'all' || keyResult.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || 'medium' === priorityFilter; // Default to medium
+    const matchesPriority = priorityFilter === 'all' || priorityFilter === 'medium'; // Default to medium
     
     return matchesSearch && matchesCategory && matchesStatus && matchesPriority;
   });
@@ -978,7 +978,7 @@ export const IndicatorsPage: React.FC = () => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <span className="text-lg">{getCategoryIcon(selectedKeyResult?.category || 'operational')}</span>
+              <span className="text-lg">{getCategoryIcon('operational')}</span>
               {selectedKeyResult?.title}
             </DialogTitle>
             <DialogDescription>

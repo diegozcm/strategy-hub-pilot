@@ -18,8 +18,10 @@ interface EditKeyResultModalProps {
 export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKeyResultModalProps) => {
   const [loading, setLoading] = useState(false);
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
+  const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
   const [status, setStatus] = useState<string>('');
   const [originalMonthlyActual, setOriginalMonthlyActual] = useState<Record<string, number>>({});
+  const [originalMonthlyTargets, setOriginalMonthlyTargets] = useState<Record<string, number>>({});
 
   const currentYear = new Date().getFullYear();
   const months = [
@@ -42,6 +44,10 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
       setMonthlyActual(keyResult.monthly_actual as Record<string, number>);
       setOriginalMonthlyActual(keyResult.monthly_actual as Record<string, number>);
     }
+    if (keyResult.monthly_targets) {
+      setMonthlyTargets(keyResult.monthly_targets as Record<string, number>);
+      setOriginalMonthlyTargets(keyResult.monthly_targets as Record<string, number>);
+    }
     setStatus(keyResult.status || 'not_started');
   }, [keyResult]);
 
@@ -54,8 +60,12 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
       // Calcular valor anual atual a partir dos valores mensais
       const yearlyActual = Object.values(monthlyActual).reduce((sum, value) => sum + (value || 0), 0);
 
-      // Verificar se houve alteração nos valores mensais
+      // Verificar se houve alteração nos valores mensais ou metas
       const valuesChanged = JSON.stringify(monthlyActual) !== JSON.stringify(originalMonthlyActual);
+      const targetsChanged = JSON.stringify(monthlyTargets) !== JSON.stringify(originalMonthlyTargets);
+      
+      // Calcular meta anual a partir das metas mensais
+      const yearlyTarget = Object.values(monthlyTargets).reduce((sum, value) => sum + (value || 0), 0);
       
       // Determinar o status final
       let finalStatus = status;
@@ -68,7 +78,10 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
       await onSave({
         id: keyResult.id,
         monthly_actual: monthlyActual,
+        monthly_targets: monthlyTargets,
         yearly_actual: yearlyActual,
+        yearly_target: yearlyTarget,
+        target_value: yearlyTarget, // Atualizar também o target_value para compatibilidade
         current_value: yearlyActual, // Atualizar também o current_value para compatibilidade
         status: finalStatus
       });
@@ -81,8 +94,6 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
     }
   };
 
-  const monthlyTargets = (keyResult.monthly_targets as Record<string, number>) || {};
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
@@ -94,10 +105,11 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Tabs defaultValue="monthly" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+          <Tabs defaultValue="targets" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="info">Informações</TabsTrigger>
-              <TabsTrigger value="monthly">Valores Mensais</TabsTrigger>
+              <TabsTrigger value="targets">Metas Mensais</TabsTrigger>
+              <TabsTrigger value="monthly">Valores Realizados</TabsTrigger>
               <TabsTrigger value="history">Histórico</TabsTrigger>
             </TabsList>
 
@@ -105,7 +117,9 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium">Meta Anual</Label>
-                  <p className="text-lg font-semibold">{keyResult.yearly_target || keyResult.target_value} {keyResult.unit}</p>
+                  <p className="text-lg font-semibold">
+                    {Object.values(monthlyTargets).reduce((sum, value) => sum + (value || 0), 0).toFixed(2)} {keyResult.unit}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Realizado no Ano</Label>
@@ -141,7 +155,11 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
                 <div className="flex justify-between items-center">
                   <span className="font-medium">% de Atingimento:</span>
                   <span className="text-lg font-bold">
-                    {((Object.values(monthlyActual).reduce((sum, value) => sum + (value || 0), 0) / (keyResult.yearly_target || keyResult.target_value)) * 100).toFixed(1)}%
+                    {(() => {
+                      const totalTarget = Object.values(monthlyTargets).reduce((sum, value) => sum + (value || 0), 0);
+                      const totalActual = Object.values(monthlyActual).reduce((sum, value) => sum + (value || 0), 0);
+                      return totalTarget > 0 ? ((totalActual / totalTarget) * 100).toFixed(1) : '0.0';
+                    })()}%
                   </span>
                 </div>
               </div>
@@ -152,6 +170,61 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
                   <p className="text-sm text-muted-foreground">{keyResult.responsible}</p>
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="targets" className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label>Metas Mensais ({currentYear})</Label>
+                <p className="text-sm text-muted-foreground">
+                  Defina as metas planejadas para cada mês. A soma das metas mensais será sua meta anual.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {months.map((month) => {
+                  const target = monthlyTargets[month.key] || 0;
+                  
+                  return (
+                    <div key={month.key} className="grid grid-cols-3 gap-4 items-center p-3 border rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">{month.name}</Label>
+                      </div>
+                      <div>
+                        <Label htmlFor={`target-${month.key}`} className="text-xs text-muted-foreground">
+                          Meta
+                        </Label>
+                        <Input
+                          id={`target-${month.key}`}
+                          type="number"
+                          step="0.01"
+                          placeholder="0"
+                          value={monthlyTargets[month.key] || ''}
+                          onChange={(e) => {
+                            const value = e.target.value ? parseFloat(e.target.value) : 0;
+                            setMonthlyTargets(prev => ({
+                              ...prev,
+                              [month.key]: value
+                            }));
+                          }}
+                        />
+                      </div>
+                      <div className="text-center">
+                        <Label className="text-xs text-muted-foreground">Unidade</Label>
+                        <p className="text-sm font-medium">{keyResult.unit || ''}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Meta Anual Total:</span>
+                  <span className="text-lg font-bold">
+                    {Object.values(monthlyTargets).reduce((sum, value) => sum + (value || 0), 0).toFixed(2)} {keyResult.unit}
+                  </span>
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="monthly" className="space-y-4 mt-4">
