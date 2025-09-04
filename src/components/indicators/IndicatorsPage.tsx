@@ -38,9 +38,9 @@ export const IndicatorsPage: React.FC = () => {
   const [keyResults, setKeyResults] = useState<KeyResult[]>([]);
   const [keyResultValues, setKeyResultValues] = useState<KeyResultValue[]>([]);
   const [objectives, setObjectives] = useState<StrategicObjective[]>([]);
+  const [pillars, setPillars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
   
@@ -57,7 +57,6 @@ export const IndicatorsPage: React.FC = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    category: 'operational',
     unit: '%',
     target_value: '',
     frequency: 'monthly',
@@ -68,7 +67,6 @@ export const IndicatorsPage: React.FC = () => {
   const [editData, setEditData] = useState({
     title: '',
     description: '',
-    category: '',
     unit: '',
     target_value: '',
     frequency: '',
@@ -109,6 +107,16 @@ export const IndicatorsPage: React.FC = () => {
 
         if (objectivesError) throw objectivesError;
         setObjectives(objectivesData || []);
+
+        // Load strategic pillars
+        const { data: pillarsData, error: pillarsError } = await supabase
+          .from('strategic_pillars')
+          .select('*')
+          .eq('company_id', user?.user_metadata?.company_id)
+          .order('order_index');
+
+        if (pillarsError) throw pillarsError;
+        setPillars(pillarsData || []);
       }
 
       // Load key results
@@ -172,7 +180,6 @@ export const IndicatorsPage: React.FC = () => {
         objective_id: formData.objective_id === 'none' ? null : formData.objective_id,
         metric_type: 'number',
         frequency: formData.frequency,
-        // Note: category and priority are stored as metadata since they're not in the base KeyResult type
       };
 
       const { data, error } = await supabase
@@ -190,7 +197,6 @@ export const IndicatorsPage: React.FC = () => {
       setFormData({
         title: '',
         description: '',
-        category: 'operational',
         unit: '%',
         target_value: '',
         frequency: 'monthly',
@@ -291,9 +297,8 @@ export const IndicatorsPage: React.FC = () => {
           description: editData.description,
           unit: editData.unit,
           target_value: parseFloat(editData.target_value),
-          frequency: editData.frequency,
-          // Note: category and priority are stored as metadata
-          status: editData.status,
+        frequency: editData.frequency,
+        status: editData.status,
           objective_id: editData.objective_id === 'none' ? null : editData.objective_id
         })
         .eq('id', selectedKeyResult.id)
@@ -373,7 +378,6 @@ export const IndicatorsPage: React.FC = () => {
     setEditData({
       title: keyResult.title,
       description: keyResult.description || '',
-      category: 'operational', // Default category since not in KeyResult interface
       unit: keyResult.unit,
       target_value: keyResult.target_value.toString(),
       frequency: keyResult.frequency || 'monthly',
@@ -389,7 +393,20 @@ export const IndicatorsPage: React.FC = () => {
     setIsEditKeyResultModalOpen(true);
   };
 
-  // Utility functions
+  // Get strategic pillar info for a key result
+  const getKeyResultPillar = (keyResult: any) => {
+    const objective = objectives.find(obj => obj.id === keyResult.objective_id);
+    if (!objective) return { name: 'Sem pilar', color: '#6B7280' };
+    
+    const pillar = pillars.find(p => p.id === objective.pillar_id);
+    if (!pillar) return { name: 'Sem pilar', color: '#6B7280' };
+    
+    return {
+      name: pillar.name,
+      color: pillar.color
+    };
+  };
+
   const calculateProgress = (keyResult: KeyResult) => {
     if (keyResult.target_value === 0) return 0;
     return Math.min(Math.round((keyResult.current_value / keyResult.target_value) * 100), 100);
@@ -473,11 +490,10 @@ export const IndicatorsPage: React.FC = () => {
   const filteredKeyResults = keyResults.filter(keyResult => {
     const matchesSearch = keyResult.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          keyResult.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || 'operational' === categoryFilter; // Default to operational
     const matchesStatus = statusFilter === 'all' || keyResult.status === statusFilter;
     const matchesPriority = priorityFilter === 'all' || priorityFilter === 'medium'; // Default to medium
     
-    return matchesSearch && matchesCategory && matchesStatus && matchesPriority;
+    return matchesSearch && matchesStatus && matchesPriority;
   });
 
   // Calculate summary statistics
@@ -604,22 +620,6 @@ export const IndicatorsPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="space-y-2">
-              <Label>Categoria</Label>
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="financial">💰 Financeiro</SelectItem>
-                  <SelectItem value="operational">⚙️ Operacional</SelectItem>
-                  <SelectItem value="customer">👥 Cliente</SelectItem>
-                  <SelectItem value="people">👨‍💼 Pessoas</SelectItem>
-                  <SelectItem value="quality">⭐ Qualidade</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             
             <div className="space-y-2">
               <Label>Status</Label>
@@ -666,9 +666,12 @@ export const IndicatorsPage: React.FC = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-lg">{getCategoryIcon('operational')}</span>
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: getKeyResultPillar(keyResult).color }}
+                      />
                       <Badge variant="outline" className="text-xs">
-                        {getCategoryText('operational')}
+                        {getKeyResultPillar(keyResult).name}
                       </Badge>
                       <Badge variant={getPriorityColor('medium')} className="text-xs">
                         {getPriorityText('medium')}
@@ -769,7 +772,7 @@ export const IndicatorsPage: React.FC = () => {
           <CardContent className="text-center py-8">
             <Target className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              {searchTerm || categoryFilter !== 'all' || statusFilter !== 'all' || priorityFilter !== 'all'
+              {searchTerm || statusFilter !== 'all' || priorityFilter !== 'all'
                 ? 'Nenhum resultado-chave encontrado com os filtros aplicados.'
                 : 'Nenhum resultado-chave cadastrado ainda. Crie seu primeiro resultado-chave!'}
             </p>
@@ -797,21 +800,6 @@ export const IndicatorsPage: React.FC = () => {
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
                   required
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Categoria *</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({...formData, category: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="financial">💰 Financeiro</SelectItem>
-                    <SelectItem value="operational">⚙️ Operacional</SelectItem>
-                    <SelectItem value="customer">👥 Cliente</SelectItem>
-                    <SelectItem value="people">👨‍💼 Pessoas</SelectItem>
-                    <SelectItem value="quality">⭐ Qualidade</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
             
@@ -969,7 +957,10 @@ export const IndicatorsPage: React.FC = () => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <span className="text-lg">{getCategoryIcon('operational')}</span>
+              <div
+                className="w-4 h-4 rounded-full"
+                style={{ backgroundColor: selectedKeyResult ? getKeyResultPillar(selectedKeyResult).color : '#6B7280' }}
+              />
               {selectedKeyResult?.title}
             </DialogTitle>
             <DialogDescription>
@@ -1206,21 +1197,6 @@ export const IndicatorsPage: React.FC = () => {
                   onChange={(e) => setEditData({...editData, title: e.target.value})}
                   required
                 />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit_category">Categoria *</Label>
-                <Select value={editData.category} onValueChange={(value) => setEditData({...editData, category: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="financial">💰 Financeiro</SelectItem>
-                    <SelectItem value="operational">⚙️ Operacional</SelectItem>
-                    <SelectItem value="customer">👥 Cliente</SelectItem>
-                    <SelectItem value="people">👨‍💼 Pessoas</SelectItem>
-                    <SelectItem value="quality">⭐ Qualidade</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
             
