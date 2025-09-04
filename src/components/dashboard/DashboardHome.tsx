@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useNavigate } from 'react-router-dom';
@@ -72,6 +73,7 @@ export const DashboardHome: React.FC = () => {
     overallScore: 0
   });
   const [loading, setLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
   const currentYear = new Date().getFullYear();
@@ -82,7 +84,7 @@ export const DashboardHome: React.FC = () => {
     } else {
       setLoading(false);
     }
-  }, [company?.id]);
+  }, [company?.id, selectedYear]);
 
   const fetchDashboardData = async () => {
     if (!company?.id) return;
@@ -257,7 +259,7 @@ export const DashboardHome: React.FC = () => {
   const getMonthsOfYear = () => {
     const months = [];
     for (let i = 0; i < 12; i++) {
-      const date = new Date(currentYear, i);
+      const date = new Date(selectedYear, i);
       const monthKey = date.toISOString().slice(0, 7); // YYYY-MM format
       const monthName = date.toLocaleDateString('pt-BR', {
         month: 'short'
@@ -309,6 +311,27 @@ export const DashboardHome: React.FC = () => {
             Visão geral estratégica da empresa - {company.name}
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">Ano:</span>
+          <Select
+            value={selectedYear.toString()}
+            onValueChange={(value) => {
+              setSelectedYear(parseInt(value));
+              setExpandedKRs(new Set()); // Collapse all KRs when changing year
+            }}
+          >
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: currentYear - 2019 + 5 }, (_, i) => 2020 + i).map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Stats Grid */}
@@ -357,7 +380,7 @@ export const DashboardHome: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle>Performance dos Key Results</CardTitle>
-              <CardDescription>Resultados Chave individuais - Previsto vs Realizado ({currentYear})</CardDescription>
+              <CardDescription>Resultados Chave individuais - Previsto vs Realizado ({selectedYear})</CardDescription>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -431,63 +454,63 @@ export const DashboardHome: React.FC = () => {
                                 <TableHeader>
                                   <TableRow>
                                     <TableHead className="w-32">Indicador</TableHead>
-                                    {months.map(month => (
-                                      <TableHead key={month.key} className="text-center min-w-20">
-                                        {month.name}
-                                        {month.key === currentMonth && (
-                                          <span className="block text-xs text-blue-600">(atual)</span>
-                                        )}
-                                      </TableHead>
-                                    ))}
+                                       {months.map(month => (
+                                         <TableHead key={month.key} className="text-center min-w-20">
+                                           {month.name}
+                                           {month.key === currentMonth && selectedYear === currentYear && (
+                                             <span className="block text-xs text-blue-600">(atual)</span>
+                                           )}
+                                         </TableHead>
+                                       ))}
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                   <TableRow>
                                     <TableCell className="font-medium bg-white">Previsto</TableCell>
-                                    {months.map(month => {
-                                      const performance = getMonthlyPerformance(kr, month.key);
-                                      const isCurrentMonth = month.key === currentMonth;
-                                      return (
-                                        <TableCell 
-                                          key={month.key} 
-                                          className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-white"}`}
-                                        >
-                                          {performance.target || '-'}
-                                        </TableCell>
+                                     {months.map(month => {
+                                       const performance = getMonthlyPerformance(kr, month.key);
+                                       const isCurrentMonth = month.key === currentMonth && selectedYear === currentYear;
+                                       return (
+                                         <TableCell 
+                                           key={month.key} 
+                                           className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-white"}`}
+                                         >
+                                           {performance.target || '-'}
+                                         </TableCell>
                                       );
                                     })}
                                   </TableRow>
-                                  <TableRow>
-                                    <TableCell className="font-medium bg-white">Realizado</TableCell>
-                                    {months.map(month => {
-                                      const performance = getMonthlyPerformance(kr, month.key);
-                                      const isCurrentMonth = month.key === currentMonth;
-                                      return (
-                                        <TableCell 
-                                          key={month.key} 
-                                          className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-white"}`}
-                                        >
-                                          {performance.actual || '-'}
-                                        </TableCell>
-                                      );
-                                    })}
+                                   <TableRow>
+                                     <TableCell className="font-medium bg-white">Realizado</TableCell>
+                                     {months.map(month => {
+                                       const performance = getMonthlyPerformance(kr, month.key);
+                                       const isCurrentMonth = month.key === currentMonth && selectedYear === currentYear;
+                                       return (
+                                         <TableCell 
+                                           key={month.key} 
+                                           className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-white"}`}
+                                         >
+                                           {performance.actual || '-'}
+                                         </TableCell>
+                                       );
+                                     })}
                                   </TableRow>
-                                  <TableRow>
-                                    <TableCell className="font-medium bg-white">% Atingimento</TableCell>
-                                    {months.map(month => {
-                                      const performance = getMonthlyPerformance(kr, month.key);
-                                      const isCurrentMonth = month.key === currentMonth;
-                                      return (
-                                        <TableCell 
-                                          key={month.key} 
-                                          className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-white"}`}
-                                        >
-                                          <span className={getStatusColor(performance.percentage)}>
-                                            {performance.percentage > 0 ? `${performance.percentage}%` : '-'}
-                                          </span>
-                                        </TableCell>
-                                      );
-                                    })}
+                                   <TableRow>
+                                     <TableCell className="font-medium bg-white">% Atingimento</TableCell>
+                                     {months.map(month => {
+                                       const performance = getMonthlyPerformance(kr, month.key);
+                                       const isCurrentMonth = month.key === currentMonth && selectedYear === currentYear;
+                                       return (
+                                         <TableCell 
+                                           key={month.key} 
+                                           className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-white"}`}
+                                         >
+                                           <span className={getStatusColor(performance.percentage)}>
+                                             {performance.percentage > 0 ? `${performance.percentage}%` : '-'}
+                                           </span>
+                                         </TableCell>
+                                       );
+                                     })}
                                   </TableRow>
                                 </TableBody>
                               </Table>
