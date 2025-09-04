@@ -60,6 +60,8 @@ export interface KeyResult {
   due_date?: string;
   status: string;
   owner_id: string;
+  category?: string;
+  priority?: string;
   monthly_targets?: any;
   monthly_actual?: any;
   yearly_target?: number;
