@@ -24,24 +24,160 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    const openAIKey = Deno.env.get('OPENAI_API_KEY');
+
     const { user_id } = await req.json();
 
     if (!user_id) {
       throw new Error('User ID is required');
     }
 
+    console.log(`Generating insights for user: ${user_id}`);
+
     // Get user data using the database function
     const { data: analysisData, error: analysisError } = await supabaseClient
       .rpc('analyze_user_data', { target_user_id: user_id });
 
     if (analysisError) {
+      console.error('Analysis error:', analysisError);
       throw analysisError;
     }
 
     const analysis: AnalysisResult = analysisData;
-    const insights = [];
+    console.log('Analysis data:', analysis);
 
-    // Analyze projects for risks and opportunities
+    const insights = [];
+    const aiRecommendations = [];
+
+    // Enhanced analysis with AI integration
+    if (openAIKey && (analysis.projects?.length > 0 || analysis.indicators?.length > 0 || analysis.objectives?.length > 0)) {
+      try {
+        // Prepare data for OpenAI analysis
+        const contextData = {
+          projects: analysis.projects?.map(p => ({
+            name: p.name,
+            progress: p.progress,
+            status: p.status,
+            start_date: p.start_date,
+            end_date: p.end_date,
+            budget: p.budget,
+            priority: p.priority
+          })) || [],
+          keyResults: analysis.indicators?.map(kr => ({
+            name: kr.name,
+            current: kr.current_value,
+            target: kr.target_value,
+            unit: kr.unit,
+            due_date: kr.due_date,
+            priority: kr.priority
+          })) || [],
+          objectives: analysis.objectives?.map(o => ({
+            title: o.title,
+            progress: o.progress,
+            status: o.status,
+            target_date: o.target_date
+          })) || []
+        };
+
+        const prompt = `Analise os seguintes dados de uma empresa e gere insights estratégicos em português:
+
+PROJETOS: ${JSON.stringify(contextData.projects, null, 2)}
+RESULTADOS-CHAVE: ${JSON.stringify(contextData.keyResults, null, 2)}
+OBJETIVOS: ${JSON.stringify(contextData.objectives, null, 2)}
+
+Para cada insight, forneça:
+1. Tipo (risk/opportunity/info)
+2. Categoria (projects/indicators/objectives/strategic)
+3. Título conciso
+4. Descrição detalhada
+5. Severidade (low/medium/high/critical)
+6. Ações recomendadas específicas
+7. Prioridade das ações (low/medium/high)
+8. Impacto estimado (low/medium/high)
+
+Formato JSON: {"insights": [{"type": "", "category": "", "title": "", "description": "", "severity": "", "recommendations": []}]}
+
+Foque em:
+- Projetos atrasados ou em risco
+- Metas não atingidas ou super executadas  
+- Tendências preocupantes ou positivas
+- Oportunidades de melhoria
+- Gargalos e dependências críticas`;
+
+        const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${openAIKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'gpt-4.1-2025-04-14',
+            messages: [
+              {
+                role: 'system',
+                content: 'Você é um consultor estratégico especializado em análise de dados empresariais. Forneça insights práticos e acionáveis.'
+              },
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            temperature: 0.3,
+            max_tokens: 2000
+          }),
+        });
+
+        if (openAIResponse.ok) {
+          const aiResult = await openAIResponse.json();
+          const aiContent = aiResult.choices[0]?.message?.content;
+          
+          try {
+            const parsedAI = JSON.parse(aiContent);
+            if (parsedAI.insights) {
+              for (const aiInsight of parsedAI.insights) {
+                insights.push({
+                  insight_type: aiInsight.type || 'info',
+                  category: aiInsight.category || 'strategic',
+                  title: aiInsight.title,
+                  description: aiInsight.description,
+                  severity: aiInsight.severity || 'medium',
+                  confidence_score: 0.85,
+                  related_entity_type: aiInsight.category === 'projects' ? 'project' : 
+                                     aiInsight.category === 'indicators' ? 'key_result' : 'objective',
+                  actionable: true,
+                  metadata: {
+                    source: 'ai_analysis',
+                    recommendations: aiInsight.recommendations || [],
+                    ai_generated: true
+                  }
+                });
+
+                // Create recommendations for each insight
+                if (aiInsight.recommendations && Array.isArray(aiInsight.recommendations)) {
+                  aiInsight.recommendations.forEach((rec: any) => {
+                    aiRecommendations.push({
+                      title: typeof rec === 'string' ? rec : rec.title || rec.action,
+                      description: typeof rec === 'string' ? rec : rec.description,
+                      action_type: 'improvement',
+                      priority: rec.priority || 'medium',
+                      estimated_impact: rec.impact || 'medium',
+                      effort_required: rec.effort || 'medium',
+                      status: 'pending'
+                    });
+                  });
+                }
+              }
+            }
+          } catch (parseError) {
+            console.log('AI response was not valid JSON, using fallback analysis');
+          }
+        }
+      } catch (aiError) {
+        console.log('AI analysis failed, continuing with rule-based analysis:', aiError);
+      }
+    }
+
+    // Enhanced rule-based analysis (improved from original)
     if (analysis.projects && analysis.projects.length > 0) {
       for (const project of analysis.projects) {
         const progress = project.progress || 0;
@@ -49,62 +185,39 @@ serve(async (req) => {
         const endDate = project.end_date ? new Date(project.end_date) : null;
         const now = new Date();
 
-        // Risk analysis for delayed projects
+        // Critical: Overdue projects
         if (endDate && endDate < now && project.status !== 'completed') {
+          const daysOverdue = Math.ceil((now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
           insights.push({
             insight_type: 'risk',
             category: 'projects',
-            title: `Projeto "${project.name}" em Atraso`,
-            description: `O projeto "${project.name}" ultrapassou o prazo previsto (${endDate.toLocaleDateString('pt-BR')}) e ainda não foi concluído. Status atual: ${project.status}. Progresso: ${progress}%.`,
-            severity: 'high',
+            title: `Projeto "${project.name}" Atrasado`,
+            description: `O projeto "${project.name}" está ${daysOverdue} dias atrasado (prazo: ${endDate.toLocaleDateString('pt-BR')}). Status: ${project.status}, Progresso: ${progress}%. Ação urgente necessária.`,
+            severity: daysOverdue > 30 ? 'critical' : 'high',
             confidence_score: 0.95,
             related_entity_type: 'project',
             related_entity_id: project.id,
             actionable: true,
             metadata: {
               project_name: project.name,
-              original_end_date: project.end_date,
+              days_overdue: daysOverdue,
               current_progress: progress,
               status: project.status,
-              days_overdue: Math.ceil((now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24))
+              priority: project.priority
             }
           });
         }
 
-        // Risk analysis for projects with low progress near deadline
-        if (endDate && progress < 50) {
+        // Risk: Projects at risk
+        if (endDate && progress < 75) {
           const daysUntilDeadline = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
           if (daysUntilDeadline <= 30 && daysUntilDeadline > 0) {
             insights.push({
               insight_type: 'risk',
               category: 'projects',
-              title: `Projeto "${project.name}" com Risco de Atraso`,
-              description: `O projeto "${project.name}" tem apenas ${daysUntilDeadline} dias até o prazo e está com ${progress}% de progresso. Há risco significativo de não ser concluído a tempo.`,
-              severity: progress < 30 ? 'critical' : 'high',
-              confidence_score: 0.85,
-              related_entity_type: 'project',
-              related_entity_id: project.id,
-              actionable: true,
-              metadata: {
-                project_name: project.name,
-                days_until_deadline: daysUntilDeadline,
-                current_progress: progress,
-                status: project.status
-              }
-            });
-          }
-        }
-
-        // Opportunity analysis for projects ahead of schedule
-        if (progress > 80 && endDate) {
-          const daysUntilDeadline = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          if (daysUntilDeadline > 15) {
-            insights.push({
-              insight_type: 'opportunity',
-              category: 'projects',
-              title: `Projeto "${project.name}" Adiantado`,
-              description: `O projeto "${project.name}" está ${progress}% concluído com ${daysUntilDeadline} dias restantes até o prazo. Há oportunidade de entregar antecipadamente ou alocar recursos para outros projetos.`,
-              severity: 'low',
+              title: `Risco de Atraso: "${project.name}"`,
+              description: `Projeto "${project.name}" com ${progress}% concluído e apenas ${daysUntilDeadline} dias restantes. Taxa atual sugere possível atraso.`,
+              severity: progress < 50 ? 'high' : 'medium',
               confidence_score: 0.80,
               related_entity_type: 'project',
               related_entity_id: project.id,
@@ -112,6 +225,30 @@ serve(async (req) => {
               metadata: {
                 project_name: project.name,
                 days_until_deadline: daysUntilDeadline,
+                current_progress: progress,
+                expected_progress: Math.max(0, 100 - (daysUntilDeadline * 2))
+              }
+            });
+          }
+        }
+
+        // Opportunity: Ahead of schedule
+        if (progress > 80 && endDate) {
+          const daysUntilDeadline = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          if (daysUntilDeadline > 15) {
+            insights.push({
+              insight_type: 'opportunity',
+              category: 'projects',
+              title: `Projeto "${project.name}" Adiantado`,
+              description: `Excelente progresso! O projeto está ${progress}% concluído com ${daysUntilDeadline} dias de folga. Considere realocar recursos ou antecipar entrega.`,
+              severity: 'low',
+              confidence_score: 0.85,
+              related_entity_type: 'project',
+              related_entity_id: project.id,
+              actionable: true,
+              metadata: {
+                project_name: project.name,
+                days_ahead: daysUntilDeadline,
                 current_progress: progress,
                 potential_early_delivery: true
               }
@@ -121,23 +258,23 @@ serve(async (req) => {
       }
     }
 
-    // Analyze indicators for performance insights
+    // Enhanced Key Results analysis
     if (analysis.indicators && analysis.indicators.length > 0) {
       for (const indicator of analysis.indicators) {
         const currentValue = indicator.current_value || 0;
         const targetValue = indicator.target_value || 0;
         const achievement = targetValue > 0 ? (currentValue / targetValue) * 100 : 0;
 
-        // Performance alerts
-        if (achievement < 70) {
+        // Critical underperformance
+        if (achievement < 50) {
           insights.push({
             insight_type: 'risk',
             category: 'indicators',
-            title: `Indicador "${indicator.name}" Abaixo da Meta`,
-            description: `O indicador "${indicator.name}" está com ${achievement.toFixed(1)}% de atingimento da meta. Valor atual: ${currentValue} ${indicator.unit}, Meta: ${targetValue} ${indicator.unit}.`,
-            severity: achievement < 50 ? 'critical' : 'high',
-            confidence_score: 0.90,
-            related_entity_type: 'indicator',
+            title: `Meta Crítica: "${indicator.name}"`,
+            description: `O resultado-chave "${indicator.name}" está severamente abaixo da meta com apenas ${achievement.toFixed(1)}% de atingimento. Valor: ${currentValue} ${indicator.unit || ''} / Meta: ${targetValue} ${indicator.unit || ''}. Intervenção imediata necessária.`,
+            severity: 'critical',
+            confidence_score: 0.95,
+            related_entity_type: 'key_result',
             related_entity_id: indicator.id,
             actionable: true,
             metadata: {
@@ -146,21 +283,39 @@ serve(async (req) => {
               target_value: targetValue,
               achievement_percentage: achievement,
               unit: indicator.unit,
-              category: indicator.category
+              gap: targetValue - currentValue
+            }
+          });
+        } else if (achievement < 70) {
+          insights.push({
+            insight_type: 'risk',
+            category: 'indicators',
+            title: `Atenção: "${indicator.name}" Abaixo da Meta`,
+            description: `Resultado-chave "${indicator.name}" com ${achievement.toFixed(1)}% da meta atingida. Necessário plano de ação para alcançar ${targetValue} ${indicator.unit || ''}.`,
+            severity: 'high',
+            confidence_score: 0.85,
+            related_entity_type: 'key_result',
+            related_entity_id: indicator.id,
+            actionable: true,
+            metadata: {
+              indicator_name: indicator.name,
+              current_value: currentValue,
+              target_value: targetValue,
+              achievement_percentage: achievement
             }
           });
         }
 
-        // Opportunity alerts
-        if (achievement > 120) {
+        // Outstanding performance
+        if (achievement > 130) {
           insights.push({
             insight_type: 'opportunity',
             category: 'indicators',
-            title: `Indicador "${indicator.name}" Superando Expectativas`,
-            description: `O indicador "${indicator.name}" está ${achievement.toFixed(1)}% acima da meta! Valor atual: ${currentValue} ${indicator.unit}, Meta: ${targetValue} ${indicator.unit}. Considere ajustar metas ou identificar boas práticas.`,
+            title: `Desempenho Excepcional: "${indicator.name}"`,
+            description: `Parabéns! O resultado "${indicator.name}" está ${achievement.toFixed(1)}% acima da meta. Valor: ${currentValue} vs Meta: ${targetValue} ${indicator.unit || ''}. Considere revisar metas ou identificar fatores de sucesso para replicar.`,
             severity: 'low',
-            confidence_score: 0.95,
-            related_entity_type: 'indicator',
+            confidence_score: 0.90,
+            related_entity_type: 'key_result',
             related_entity_id: indicator.id,
             actionable: true,
             metadata: {
@@ -168,32 +323,32 @@ serve(async (req) => {
               current_value: currentValue,
               target_value: targetValue,
               achievement_percentage: achievement,
-              unit: indicator.unit,
-              category: indicator.category,
-              overperformance: true
+              overperformance_factor: achievement / 100,
+              success_story: true
             }
           });
         }
       }
     }
 
-    // Analyze objectives for progress insights
+    // Enhanced Objectives analysis
     if (analysis.objectives && analysis.objectives.length > 0) {
       for (const objective of analysis.objectives) {
         const progress = objective.progress || 0;
         const targetDate = objective.target_date ? new Date(objective.target_date) : null;
         const now = new Date();
 
-        if (targetDate && progress < 75) {
+        if (targetDate) {
           const daysUntilTarget = Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          if (daysUntilTarget <= 60 && daysUntilTarget > 0) {
+          
+          if (progress < 60 && daysUntilTarget <= 60 && daysUntilTarget > 0) {
             insights.push({
               insight_type: 'risk',
               category: 'objectives',
-              title: `Objetivo "${objective.title}" em Risco`,
-              description: `O objetivo "${objective.title}" tem ${progress}% de progresso com ${daysUntilTarget} dias restantes até a meta. Ação urgente pode ser necessária.`,
-              severity: progress < 50 ? 'critical' : 'high',
-              confidence_score: 0.85,
+              title: `Objetivo em Risco: "${objective.title}"`,
+              description: `O objetivo "${objective.title}" tem ${progress}% de progresso com ${daysUntilTarget} dias restantes. Velocidade atual insuficiente para atingir meta no prazo.`,
+              severity: progress < 40 ? 'critical' : 'high',
+              confidence_score: 0.80,
               related_entity_type: 'objective',
               related_entity_id: objective.id,
               actionable: true,
@@ -201,7 +356,7 @@ serve(async (req) => {
                 objective_title: objective.title,
                 current_progress: progress,
                 days_until_target: daysUntilTarget,
-                status: objective.status
+                required_velocity: Math.ceil((100 - progress) / (daysUntilTarget / 7))
               }
             });
           }
@@ -210,21 +365,55 @@ serve(async (req) => {
     }
 
     // Insert insights into database
+    let insertedInsights = 0;
     for (const insight of insights) {
-      await supabaseClient
-        .from('ai_insights')
-        .insert([{
-          ...insight,
-          user_id: user_id,
-          status: 'active'
-        }]);
+      try {
+        const { error } = await supabaseClient
+          .from('ai_insights')
+          .insert([{
+            ...insight,
+            user_id: user_id,
+            status: 'active'
+          }]);
+        
+        if (!error) {
+          insertedInsights++;
+        } else {
+          console.error('Error inserting insight:', error);
+        }
+      } catch (err) {
+        console.error('Error processing insight:', err);
+      }
     }
+
+    // Insert AI recommendations
+    let insertedRecommendations = 0;
+    for (const rec of aiRecommendations) {
+      try {
+        const { error } = await supabaseClient
+          .from('ai_recommendations')
+          .insert([rec]);
+        
+        if (!error) {
+          insertedRecommendations++;
+        }
+      } catch (err) {
+        console.error('Error inserting recommendation:', err);
+      }
+    }
+
+    console.log(`Generated ${insights.length} insights, inserted ${insertedInsights}`);
+    console.log(`Generated ${aiRecommendations.length} recommendations, inserted ${insertedRecommendations}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         insights_generated: insights.length,
-        insights: insights 
+        insights_inserted: insertedInsights,
+        recommendations_generated: aiRecommendations.length,
+        recommendations_inserted: insertedRecommendations,
+        ai_enhanced: openAIKey ? true : false,
+        insights: insights.slice(0, 5) // Return first 5 for preview
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -232,7 +421,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error generating insights:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        success: false 
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
