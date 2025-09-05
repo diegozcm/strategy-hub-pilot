@@ -97,11 +97,12 @@ export const CreateUserPage = () => {
     }
   };
 
-  const generatePassword = async () => {
+  const generatePassword = async (): Promise<string> => {
     try {
       const { data, error } = await supabase.rpc('generate_temporary_password');
       if (error) throw error;
       setGeneratedPassword(data);
+      return data;
     } catch (error) {
       console.error('Error generating password:', error);
       // Fallback local generation
@@ -111,6 +112,7 @@ export const CreateUserPage = () => {
         password += chars.charAt(Math.floor(Math.random() * chars.length));
       }
       setGeneratedPassword(password);
+      return password;
     }
   };
 
@@ -122,11 +124,9 @@ export const CreateUserPage = () => {
 
     try {
       // Ensure password is generated first
-      if (!generatedPassword) {
-        await generatePassword();
-        if (!generatedPassword) {
-          throw new Error('Falha ao gerar senha temporária');
-        }
+      let passwordToUse = generatedPassword;
+      if (!passwordToUse) {
+        passwordToUse = await generatePassword();
       }
 
       console.log('Creating user with edge function:', {
@@ -140,7 +140,7 @@ export const CreateUserPage = () => {
       const { data: createResult, error: createError } = await supabase.functions.invoke('create-user-admin', {
         body: {
           email: formData.email,
-          password: generatedPassword,
+          password: passwordToUse,
           firstName: formData.firstName,
           lastName: formData.lastName,
           phone: formData.phone || null,
@@ -205,7 +205,7 @@ export const CreateUserPage = () => {
             to: formData.email,
             userName: `${formData.firstName} ${formData.lastName}`,
             email: formData.email,
-            temporaryPassword: generatedPassword
+            temporaryPassword: passwordToUse
           }
         });
 
@@ -222,7 +222,7 @@ export const CreateUserPage = () => {
         id: newUserId,
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
-        password: generatedPassword,
+        password: passwordToUse,
         company: selectedCompany?.name || null,
         emailSent: true // Assume success for now
       });
