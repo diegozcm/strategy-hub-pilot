@@ -490,13 +490,23 @@ export const CreateUserPage = () => {
         </Card>
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={loading} className="flex items-center gap-2">
+          <Button 
+            type="submit" 
+            disabled={loading} 
+            className="flex items-center gap-2"
+            variant={generatedPassword ? "default" : "default"}
+          >
             {loading ? (
               <>Criando...</>
-            ) : (
+            ) : generatedPassword ? (
               <>
                 <Send className="h-4 w-4" />
-                {generatedPassword ? 'Criar Usuário e Enviar Credenciais' : 'Gerar Senha e Criar Usuário'}
+                Criar Usuário
+              </>
+            ) : (
+              <>
+                <Key className="h-4 w-4" />
+                Gerar Senha
               </>
             )}
           </Button>
