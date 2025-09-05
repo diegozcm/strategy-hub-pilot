@@ -1909,6 +1909,25 @@ export type Database = {
           success: boolean
         }[]
       }
+      configure_user_profile: {
+        Args: {
+          _admin_id: string
+          _company_id?: string
+          _department?: string
+          _email: string
+          _first_name: string
+          _last_name: string
+          _phone?: string
+          _position?: string
+          _role?: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: {
+          debug_log: string
+          message: string
+          success: boolean
+        }[]
+      }
       confirm_user_email: {
         Args: { _admin_id: string; _user_id: string }
         Returns: boolean
@@ -1966,45 +1985,6 @@ export type Database = {
           message: string
           step_log: string
           success: boolean
-        }[]
-      }
-      create_user_by_admin: {
-        Args: {
-          _admin_id: string
-          _company_id?: string
-          _department?: string
-          _email: string
-          _first_name: string
-          _last_name: string
-          _password: string
-          _phone?: string
-          _position?: string
-          _role?: Database["public"]["Enums"]["app_role"]
-        }
-        Returns: {
-          message: string
-          success: boolean
-          user_id: string
-        }[]
-      }
-      create_user_by_admin_v2: {
-        Args: {
-          _admin_id: string
-          _company_id?: string
-          _department?: string
-          _email: string
-          _first_name: string
-          _last_name: string
-          _password: string
-          _phone?: string
-          _position?: string
-          _role?: Database["public"]["Enums"]["app_role"]
-        }
-        Returns: {
-          debug_log: string
-          message: string
-          success: boolean
-          user_id: string
         }[]
       }
       deactivate_user: {
