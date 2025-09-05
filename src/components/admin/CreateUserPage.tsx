@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User, Mail, Phone, Building, Shield, Key, Send, Settings } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, Building, Key, Send, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import ModuleAccessRow from './user-modules/ModuleAccessRow';
@@ -382,45 +382,6 @@ export const CreateUserPage = () => {
                   placeholder="Ex: TI, RH, Vendas"
                 />
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Acesso e Permissões
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="role">Nível de Acesso</Label>
-              <Select value={formData.role} onValueChange={(value: any) => setFormData(prev => ({ ...prev, role: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o nível de acesso" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="member">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary">Membro</Badge>
-                      <span className="text-sm text-muted-foreground">Acesso básico</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="manager">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="default">Gerente</Badge>
-                      <span className="text-sm text-muted-foreground">Pode editar dados</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="admin">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="destructive">Admin</Badge>
-                      <span className="text-sm text-muted-foreground">Acesso total</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </CardContent>
         </Card>
