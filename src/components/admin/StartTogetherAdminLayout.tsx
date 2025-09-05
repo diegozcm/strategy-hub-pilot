@@ -6,9 +6,7 @@ import {
   Package, 
   Settings, 
   LogOut,
-  User,
-  ChevronLeft,
-  Menu
+  User
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -78,12 +76,9 @@ const StartTogetherAdminSidebar: React.FC = () => {
   return (
     <Sidebar className="border-r border-border bg-background">
       <SidebarContent className="bg-background">
-        {/* Header com Trigger interno */}
+        {/* Header sem Trigger */}
         <div className="p-4 border-b border-border">
           <div className="flex items-center gap-3">
-            <SidebarTrigger className="p-2 hover:bg-muted rounded-md">
-              <Menu className="w-4 h-4" />
-            </SidebarTrigger>
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Package className="w-4 h-4 text-primary-foreground" />
             </div>
@@ -140,39 +135,25 @@ const StartTogetherAdminSidebar: React.FC = () => {
                 </div>
               </div>
               
-              <div className="flex gap-2">
-                <Link to="/app" className="flex-1">
-                  <Button variant="outline" size="sm" className="w-full">
-                    <ChevronLeft className="w-3 h-3 mr-1" />
-                    Voltar ao App
-                  </Button>
-                </Link>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={signOut}
-                  className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                >
-                  <LogOut className="w-3 h-3" />
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <Link to="/app">
-                <Button variant="outline" size="sm" className="w-full p-2">
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-              </Link>
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={signOut}
-                className="w-full p-2 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                className="w-full text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3 h-3 mr-2" />
+                Sair
               </Button>
             </div>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={signOut}
+              className="w-full p-2 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
           )}
         </div>
       </SidebarContent>
@@ -222,12 +203,25 @@ export const StartTogetherAdminLayout: React.FC = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen w-full flex bg-background">
+        {/* Header global com trigger sempre visível no mobile */}
+        <header className="fixed top-0 left-0 right-0 h-12 bg-background border-b border-border flex items-center z-40 lg:hidden">
+          <SidebarTrigger className="ml-2" />
+          <div className="flex items-center gap-2 ml-2">
+            <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
+              <Package className="w-3 h-3 text-primary-foreground" />
+            </div>
+            <span className="text-sm font-semibold">Start Together Admin</span>
+          </div>
+        </header>
+
         <StartTogetherAdminSidebar />
         
         {/* Main Content Area */}
-        <main className="flex-1 p-6 overflow-auto bg-background">
-          <div className="max-w-7xl mx-auto">
-            <Outlet />
+        <main className="flex-1 overflow-auto bg-background pt-12 lg:pt-0">
+          <div className="p-6">
+            <div className="max-w-7xl mx-auto">
+              <Outlet />
+            </div>
           </div>
         </main>
       </div>
