@@ -21,13 +21,23 @@ interface SystemModule {
   active: boolean;
 }
 
+interface Company {
+  id: string;
+  name: string;
+  company_type: 'regular' | 'startup';
+  status: string;
+}
+
 export const CreateUserPage = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [companiesLoading, setCompaniesLoading] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [createdUser, setCreatedUser] = useState<any>(null);
   const [modules, setModules] = useState<SystemModule[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -47,9 +57,10 @@ export const CreateUserPage = () => {
     mentor: false 
   });
 
-  // Carregar módulos do sistema
+  // Carregar módulos do sistema e empresas
   useEffect(() => {
     loadModules();
+    loadCompanies();
   }, []);
 
   const loadModules = async () => {
@@ -64,6 +75,25 @@ export const CreateUserPage = () => {
       setModules(modulesData || []);
     } catch (error) {
       console.error('Erro ao carregar módulos:', error);
+    }
+  };
+
+  const loadCompanies = async () => {
+    setCompaniesLoading(true);
+    try {
+      const { data: companiesData, error: companiesError } = await supabase
+        .from('companies')
+        .select('id, name, company_type, status')
+        .eq('status', 'active')
+        .order('name');
+
+      if (companiesError) throw companiesError;
+      setCompanies(companiesData || []);
+    } catch (error) {
+      console.error('Erro ao carregar empresas:', error);
+      toast.error('Erro ao carregar lista de empresas');
+    } finally {
+      setCompaniesLoading(false);
     }
   };
 
@@ -142,7 +172,8 @@ export const CreateUserPage = () => {
         _phone: formData.phone || null,
         _position: formData.position || null,
         _department: formData.department || null,
-        _role: formData.role
+        _role: formData.role,
+        _company_id: selectedCompanyId || null
       });
 
       if (profileError) {
@@ -185,11 +216,14 @@ export const CreateUserPage = () => {
         console.error('Error invoking send-user-credentials function:', emailErr);
       }
 
+      const selectedCompany = companies.find(c => c.id === selectedCompanyId);
+      
       setCreatedUser({
         id: newUserId,
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
         password: generatedPassword,
+        company: selectedCompany?.name || null,
         emailSent: true // Assume success for now
       });
 
@@ -286,6 +320,12 @@ export const CreateUserPage = () => {
                   <Label className="text-sm text-muted-foreground">E-mail</Label>
                   <p className="font-medium">{createdUser.email}</p>
                 </div>
+                {createdUser.company && (
+                  <div>
+                    <Label className="text-sm text-muted-foreground">Empresa</Label>
+                    <p className="font-medium">{createdUser.company}</p>
+                  </div>
+                )}
               </div>
               <div className="mt-3 p-3 bg-background border rounded">
                 <Label className="text-sm text-muted-foreground">Senha Temporária</Label>
@@ -320,6 +360,7 @@ export const CreateUserPage = () => {
                   role: 'member'
                 });
                 setGeneratedPassword('');
+                setSelectedCompanyId('');
                 setModuleAccess({});
                 setModuleRoles({});
                 setStartupHubOptions({ startup: false, mentor: false });
@@ -432,6 +473,51 @@ export const CreateUserPage = () => {
                   placeholder="Ex: TI, RH, Vendas"
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building className="h-5 w-5" />
+              Empresa
+            </CardTitle>
+            <CardDescription>
+              Selecione a empresa que será associada ao usuário
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div>
+              <Label htmlFor="company">Empresa</Label>
+              <Select 
+                value={selectedCompanyId} 
+                onValueChange={setSelectedCompanyId}
+                disabled={companiesLoading}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={companiesLoading ? "Carregando empresas..." : "Selecione uma empresa"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {companies.length === 0 && !companiesLoading ? (
+                    <SelectItem value="" disabled>
+                      Nenhuma empresa disponível
+                    </SelectItem>
+                  ) : (
+                    companies.map((company) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.name} 
+                        {company.company_type === 'startup' && (
+                          <Badge variant="secondary" className="ml-2">Startup</Badge>
+                        )}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Opcional: O usuário poderá ser associado a uma empresa específica
+              </p>
             </div>
           </CardContent>
         </Card>
