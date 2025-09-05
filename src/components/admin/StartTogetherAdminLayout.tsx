@@ -76,8 +76,8 @@ const StartTogetherAdminSidebar: React.FC = () => {
   return (
     <Sidebar className="border-r border-border bg-background">
       <SidebarContent className="bg-background">
-        {/* Header sem Trigger */}
-        <div className="p-4 border-b border-border">
+        {/* Header - sem padding-top em mobile para evitar sobreposição */}
+        <div className="p-4 border-b border-border lg:mt-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <Package className="w-4 h-4 text-primary-foreground" />
@@ -202,28 +202,33 @@ export const StartTogetherAdminLayout: React.FC = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen w-full flex bg-background">
-        {/* Header global com trigger sempre visível no mobile */}
-        <header className="fixed top-0 left-0 right-0 h-12 bg-background border-b border-border flex items-center z-40 lg:hidden">
-          <SidebarTrigger className="ml-2" />
-          <div className="flex items-center gap-2 ml-2">
-            <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
-              <Package className="w-3 h-3 text-primary-foreground" />
+      <div className="min-h-screen w-full bg-background">
+        {/* Header global apenas para mobile */}
+        <div className="lg:hidden">
+          <header className="h-14 bg-background border-b border-border flex items-center px-4 relative z-50">
+            <SidebarTrigger className="mr-3" />
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
+                <Package className="w-3 h-3 text-primary-foreground" />
+              </div>
+              <span className="text-sm font-semibold">Start Together Admin</span>
             </div>
-            <span className="text-sm font-semibold">Start Together Admin</span>
-          </div>
-        </header>
+          </header>
+        </div>
 
-        <StartTogetherAdminSidebar />
-        
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-auto bg-background pt-12 lg:pt-0">
-          <div className="p-6">
-            <div className="max-w-7xl mx-auto">
-              <Outlet />
+        {/* Layout flex para desktop e mobile */}
+        <div className="flex min-h-[calc(100vh-3.5rem)] lg:min-h-screen">
+          <StartTogetherAdminSidebar />
+          
+          {/* Main Content Area */}
+          <main className="flex-1 overflow-auto bg-background">
+            <div className="p-6">
+              <div className="max-w-7xl mx-auto">
+                <Outlet />
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
     </SidebarProvider>
   );
