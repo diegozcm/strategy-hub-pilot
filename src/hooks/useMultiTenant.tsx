@@ -3,6 +3,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, Company, Permission, AuthContextType, UserRole } from '@/types/auth';
+import { FirstLoginModal } from '@/components/ui/FirstLoginModal';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -17,6 +18,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [showFirstLoginModal, setShowFirstLoginModal] = useState(false);
   
   // Impersonation state
   const [isImpersonating, setIsImpersonating] = useState(false);
@@ -72,6 +74,12 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
 
       console.log('📋 Profile loaded successfully:', profile);
       setProfile(profile as UserProfile);
+
+      // Check if user must change password
+      if (profile?.must_change_password === true) {
+        console.log('🔐 User must change password - showing modal');
+        setShowFirstLoginModal(true);
+      }
 
       // Load company if profile has company_id
       if (profile?.company_id) {
@@ -505,6 +513,24 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Handle first login password change
+  const handleFirstLoginPasswordChange = () => {
+    console.log('✅ Password changed successfully - refreshing profile');
+    setShowFirstLoginModal(false);
+    
+    // Refresh profile to get updated must_change_password flag
+    if (user) {
+      loadUserProfile(user.id);
+    }
+  };
+
+  // Handle first login modal close (logout user)
+  const handleFirstLoginModalClose = () => {
+    console.log('❌ First login modal closed without password change - logging out');
+    setShowFirstLoginModal(false);
+    signOut();
+  };
+
   return (
     <AuthContext.Provider value={{
       user,
@@ -534,6 +560,13 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       endImpersonation: isSystemAdmin ? endImpersonation : undefined,
     }}>
       {children}
+      
+      <FirstLoginModal 
+        isOpen={showFirstLoginModal}
+        userEmail={profile?.email || user?.email || ''}
+        onPasswordChanged={handleFirstLoginPasswordChange}
+        onClose={handleFirstLoginModalClose}
+      />
     </AuthContext.Provider>
   );
 };

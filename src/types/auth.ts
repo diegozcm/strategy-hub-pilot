@@ -34,6 +34,7 @@ export interface UserProfile {
   approved_by?: string;
   approved_at?: string;
   current_module_id?: string;
+  must_change_password?: boolean;
   created_at: string;
   updated_at: string;
   company?: Company;

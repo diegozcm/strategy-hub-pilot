@@ -12,12 +12,14 @@ interface FirstLoginModalProps {
   isOpen: boolean;
   userEmail: string;
   onPasswordChanged: () => void;
+  onClose: () => void;
 }
 
 export const FirstLoginModal: React.FC<FirstLoginModalProps> = ({
   isOpen,
   userEmail,
-  onPasswordChanged
+  onPasswordChanged,
+  onClose
 }) => {
   const [passwords, setPasswords] = useState({
     current: '',
@@ -114,8 +116,25 @@ export const FirstLoginModal: React.FC<FirstLoginModalProps> = ({
   };
 
   return (
-    <Dialog open={isOpen}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose(); // Logout user if modal is closed
+        }
+      }}
+    >
+      <DialogContent 
+        className="sm:max-w-md" 
+        onEscapeKeyDown={(e) => {
+          e.preventDefault(); // Prevent closing with ESC
+          onClose(); // Logout user instead
+        }}
+        onPointerDownOutside={(e) => {
+          e.preventDefault(); // Prevent closing by clicking outside
+          onClose(); // Logout user instead
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Lock className="h-5 w-5 text-amber-500" />
@@ -129,7 +148,7 @@ export const FirstLoginModal: React.FC<FirstLoginModalProps> = ({
         <Alert className="border-amber-200 bg-amber-50">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
-            <strong>Importante:</strong> Não é possível pular esta etapa. Você deve alterar sua senha para acessar o sistema.
+            <strong>Importante:</strong> Esta etapa é obrigatória. Se você fechar este modal, será deslogado do sistema. Para continuar, altere sua senha temporária.
           </AlertDescription>
         </Alert>
 
