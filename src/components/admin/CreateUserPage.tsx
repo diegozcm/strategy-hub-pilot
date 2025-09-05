@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User, Mail, Phone, Building, Shield, Key, Send } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, Building, Shield, Key, Send, Settings } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import ModuleAccessRow from './user-modules/ModuleAccessRow';
+import type { UserRole } from '@/types/auth';
+
+interface SystemModule {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+}
 
 export const CreateUserPage = () => {
   const navigate = useNavigate();
@@ -18,6 +27,7 @@ export const CreateUserPage = () => {
   const [loading, setLoading] = useState(false);
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [createdUser, setCreatedUser] = useState<any>(null);
+  const [modules, setModules] = useState<SystemModule[]>([]);
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -28,6 +38,34 @@ export const CreateUserPage = () => {
     department: '',
     role: 'member' as 'admin' | 'manager' | 'member'
   });
+
+  // Estados para módulos e permissões
+  const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
+  const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole[]>>({});
+  const [startupHubOptions, setStartupHubOptions] = useState<{ startup: boolean; mentor: boolean }>({ 
+    startup: false, 
+    mentor: false 
+  });
+
+  // Carregar módulos do sistema
+  useEffect(() => {
+    loadModules();
+  }, []);
+
+  const loadModules = async () => {
+    try {
+      const { data: modulesData, error: modulesError } = await supabase
+        .from('system_modules')
+        .select('*')
+        .eq('active', true)
+        .order('name');
+
+      if (modulesError) throw modulesError;
+      setModules(modulesData || []);
+    } catch (error) {
+      console.error('Erro ao carregar módulos:', error);
+    }
+  };
 
   const generatePassword = async () => {
     try {
@@ -76,6 +114,11 @@ export const CreateUserPage = () => {
         throw new Error(result.message);
       }
 
+      const newUserId = result.user_id;
+
+      // Configure module access and permissions
+      await configureUserModules(newUserId);
+
       // Send credentials email
       const emailResponse = await supabase.functions.invoke('send-user-credentials', {
         body: {
@@ -91,7 +134,7 @@ export const CreateUserPage = () => {
       }
 
       setCreatedUser({
-        id: result.user_id,
+        id: newUserId,
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
         password: generatedPassword,
@@ -104,6 +147,63 @@ export const CreateUserPage = () => {
       toast.error(error.message || 'Erro ao criar usuário');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const configureUserModules = async (userId: string) => {
+    if (!currentUser?.id) return;
+
+    try {
+      // Configure module access
+      for (const [moduleId, hasAccess] of Object.entries(moduleAccess)) {
+        if (hasAccess) {
+          const { error } = await supabase.rpc('grant_module_access', {
+            _admin_id: currentUser.id,
+            _user_id: userId,
+            _module_id: moduleId,
+          });
+          if (error) throw error;
+        }
+      }
+
+      // Configure module roles (skip Startup HUB)
+      for (const module of modules) {
+        if (module.slug === 'startup-hub') continue;
+
+        const roles = moduleRoles[module.id] || [];
+        if (roles.length > 0) {
+          const { error } = await supabase.rpc('set_user_module_roles', {
+            _admin_id: currentUser.id,
+            _user_id: userId,
+            _module_id: module.id,
+            _roles: roles,
+          });
+          if (error) throw error;
+        }
+      }
+
+      // Handle Startup HUB profile
+      const startupModule = modules.find((m) => m.slug === 'startup-hub');
+      if (startupModule && moduleAccess[startupModule.id]) {
+        const isStartup = startupHubOptions.startup;
+        const isMentor = startupHubOptions.mentor;
+        
+        if (isStartup || isMentor) {
+          const selectedType = isStartup ? 'startup' : 'mentor';
+          
+          const { error } = await supabase
+            .from('startup_hub_profiles')
+            .insert({
+              user_id: userId,
+              type: selectedType,
+              status: 'active',
+            });
+          if (error) throw error;
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao configurar módulos do usuário:', error);
+      throw error;
     }
   };
 
@@ -170,6 +270,9 @@ export const CreateUserPage = () => {
                   role: 'member'
                 });
                 setGeneratedPassword('');
+                setModuleAccess({});
+                setModuleRoles({});
+                setStartupHubOptions({ startup: false, mentor: false });
               }}>
                 Criar Outro Usuário
               </Button>
@@ -319,6 +422,82 @@ export const CreateUserPage = () => {
                 </SelectContent>
               </Select>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Módulos e Permissões
+            </CardTitle>
+            <CardDescription>
+              Configure quais módulos o usuário terá acesso e suas permissões específicas
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {modules.length === 0 ? (
+              <Alert>
+                <AlertDescription>
+                  Nenhum módulo ativo encontrado no sistema.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              modules.map((module) => {
+                const isStartupHub = module.slug === 'startup-hub';
+                const checked = moduleAccess[module.id] || false;
+                const roles = moduleRoles[module.id] || [];
+                
+                return (
+                  <ModuleAccessRow
+                    key={module.id}
+                    module={module}
+                    checked={checked}
+                    roles={roles}
+                    onAccessChange={(hasAccess) => {
+                      setModuleAccess(prev => ({
+                        ...prev,
+                        [module.id]: hasAccess
+                      }));
+                      
+                      // Reset roles when access is removed
+                      if (!hasAccess) {
+                        setModuleRoles(prev => ({
+                          ...prev,
+                          [module.id]: []
+                        }));
+                        
+                        // Reset startup hub options if it's the startup hub module
+                        if (isStartupHub) {
+                          setStartupHubOptions({ startup: false, mentor: false });
+                        }
+                      }
+                    }}
+                    onRoleToggle={(role) => {
+                      const currentRoles = moduleRoles[module.id] || [];
+                      const hasRole = currentRoles.includes(role);
+                      
+                      setModuleRoles(prev => ({
+                        ...prev,
+                        [module.id]: hasRole 
+                          ? currentRoles.filter(r => r !== role)
+                          : [...currentRoles, role]
+                      }));
+                    }}
+                    startupOptions={isStartupHub ? startupHubOptions : undefined}
+                    onStartupOptionToggle={isStartupHub ? (option) => {
+                      setStartupHubOptions(prev => ({
+                        ...prev,
+                        [option]: !prev[option],
+                        // Ensure only one option is selected
+                        ...(option === 'startup' && !prev[option] ? { mentor: false } : {}),
+                        ...(option === 'mentor' && !prev[option] ? { startup: false } : {})
+                      }));
+                    } : undefined}
+                  />
+                );
+              })
+            )}
           </CardContent>
         </Card>
 
