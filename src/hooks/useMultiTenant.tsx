@@ -514,7 +514,8 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       loading,
       permissions,
       signIn,
-      signUp,
+      // signUp removed - admin creates users
+      // signUp removed
       signOut,
       updateProfile,
       canEdit,

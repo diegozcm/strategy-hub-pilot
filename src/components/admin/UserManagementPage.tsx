@@ -37,6 +37,7 @@ import { UserProfile, Company, CompanyUser } from '@/types/admin';
 import { Checkbox } from '@/components/ui/checkbox';
 import ModuleAccessRow from './user-modules/ModuleAccessRow';
 import type { UserRole } from '@/types/auth';
+import { useNavigate } from 'react-router-dom';
 
 interface SystemModule {
   id: string;
@@ -979,11 +980,17 @@ export const UserManagementPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Gerenciamento de Usuários</h1>
-        <p className="text-muted-foreground">
-          Gerencie usuários, suas empresas associadas e permissões de módulos de forma unificada
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Gerenciamento de Usuários</h1>
+          <p className="text-muted-foreground">
+            Gerencie usuários, suas empresas associadas e permissões de módulos de forma unificada
+          </p>
+        </div>
+        <Button onClick={() => navigate('/app/admin/users/create')} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Criar Novo Usuário
+        </Button>
       </div>
 
       <Card>

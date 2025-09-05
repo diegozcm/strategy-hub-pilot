@@ -25,6 +25,7 @@ import { CompaniesPage } from "@/components/admin/CompaniesPage";
 import { UserManagementPage } from "@/components/admin/UserManagementPage";
 import { ModulesManagementPage } from "@/components/admin/ModulesManagementPage";
 import { SystemSettingsPage } from "@/components/admin/SystemSettingsPage";
+import { CreateUserPage } from "@/components/admin/CreateUserPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 import LandingPage from "@/pages/LandingPage";
@@ -94,6 +95,7 @@ const App = () => (
               <Route index element={<AdminDashboard />} />
               <Route path="companies" element={<CompaniesPage />} />
               <Route path="users" element={<UserManagementPage />} />
+              <Route path="users/create" element={<CreateUserPage />} />
               <Route path="modules" element={<ModulesManagementPage />} />
               <Route path="settings" element={<SystemSettingsPage />} />
             </Route>

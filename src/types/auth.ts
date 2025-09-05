@@ -63,7 +63,7 @@ export interface AuthContextType {
   loading: boolean;
   permissions: Permission;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  // signUp removed - admin only user creation
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: any }>;
   canEdit: boolean;

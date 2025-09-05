@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Zap, Eye, EyeOff, Mail, Lock, Target, BarChart3, Shield } from 'lucide-react';
+import { Zap, Eye, EyeOff, Mail, Lock, Target, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,19 +9,18 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Separator } from '@/components/ui/separator';
 
 export const AuthPage: React.FC = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { signIn, signUp, user, profile } = useAuth();
+  const { signIn, user, profile } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user && profile) {
-      // Check if profile is inactive (admins can still deactivate users)
+      // Check if profile is inactive
       if (profile.status === 'inactive') {
         setError('Sua conta foi desativada. Entre em contato com um administrador.');
         return;
@@ -41,44 +39,27 @@ export const AuthPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
+    setError('');
 
     try {
-      const { error } = isLogin 
-        ? await signIn(email, password)
-        : await signUp(email, password);
-
-      if (error) {
-        if (error.message.includes('Invalid login credentials')) {
-          setError('Email ou senha incorretos');
-        } else if (error.message.includes('User already registered')) {
-          setError('Este email já está cadastrado');
-        } else if (error.message.includes('Email not confirmed')) {
-          setError('O seu usuário está aguardando aprovação do administrador. Entre em contato com diego@cofound.com.br para mais detalhes.');
+      const result = await signIn(email, password);
+      
+      if (result.error) {
+        if (result.error.message?.includes('Invalid login credentials')) {
+          setError('E-mail ou senha incorretos.');
+        } else if (result.error.message?.includes('User not found')) {
+          setError('Usuário não encontrado. Entre em contato com o administrador.');
         } else {
-          setError(error.message);
+          setError(result.error.message);
         }
-      } else {
-        if (!isLogin) {
-          // Sucesso no cadastro - mostrar mensagem sobre aprovação do admin  
-          setError('');
-          alert('Cadastro realizado com sucesso! Sua conta foi criada e está aguardando aprovação do administrador. Você receberá notificação quando sua conta for ativada.');
-        }
-        // Don't navigate here - let useEffect handle it after profile loads
       }
-    } catch (err) {
-      console.error('Auth error:', err);
-      setError('Ocorreu um erro. Tente novamente.');
+    } catch (error: any) {
+      setError('Ocorreu um erro inesperado. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
-
-      // Check for inactive status - agora usuários inativos aguardam aprovação
-      if (profile?.status === 'inactive') {
-        setError('Sua conta está aguardando aprovação do administrador. Você será notificado quando for ativada.');
-      }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center p-4">
@@ -94,15 +75,12 @@ export const AuthPage: React.FC = () => {
 
         {/* Auth Form */}
         <Card className="shadow-xl border-0">
-          <CardHeader className="space-y-1 pb-4">
+          <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">
-              {isLogin ? 'Entrar' : 'Criar Conta'}
+              Entrar no Sistema
             </CardTitle>
             <CardDescription className="text-center">
-              {isLogin 
-                ? 'Acesse sua conta para continuar' 
-                : 'Crie sua conta para começar'
-              }
+              Entre com suas credenciais para acessar o Start Together
             </CardDescription>
           </CardHeader>
           
@@ -149,48 +127,26 @@ export const AuthPage: React.FC = () => {
                 </div>
               )}
 
-              <Button 
-                type="submit" 
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-                disabled={loading}
-              >
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
-                  <LoadingSpinner size="sm" className="mr-2" />
-                ) : null}
-                {isLogin ? 'Entrar' : 'Criar Conta'}
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Entrando...
+                  </>
+                ) : (
+                  'Entrar no Sistema'
+                )}
               </Button>
             </form>
 
             <div className="my-6">
               <Separator />
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white px-2 text-gray-500">Ou continue com</span>
-                </div>
-              </div>
             </div>
 
-            {!isLogin && (
-              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  <strong>Importante:</strong> Após o cadastro, sua conta ficará pendente de aprovação por um administrador do sistema.
-                </p>
-              </div>
-            )}
-
-            <div className="mt-6 text-center">
-              <button
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-              >
-                {isLogin 
-                  ? 'Não tem conta? Criar conta' 
-                  : 'Já tem conta? Fazer login'
-                }
-              </button>
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground">
+                Não tem acesso? Entre em contato com o administrador do sistema.
+              </p>
             </div>
           </CardContent>
         </Card>

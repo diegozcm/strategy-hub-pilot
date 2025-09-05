@@ -1015,13 +1015,17 @@ export type Database = {
           bio: string | null
           company_id: string | null
           created_at: string | null
+          created_by_admin: string | null
           current_module_id: string | null
           department: string | null
           email: string | null
+          first_login_at: string | null
           first_name: string | null
           hire_date: string | null
           id: string
           last_name: string | null
+          must_change_password: boolean | null
+          password_changed_at: string | null
           phone: string | null
           position: string | null
           role: Database["public"]["Enums"]["app_role"] | null
@@ -1036,13 +1040,17 @@ export type Database = {
           bio?: string | null
           company_id?: string | null
           created_at?: string | null
+          created_by_admin?: string | null
           current_module_id?: string | null
           department?: string | null
           email?: string | null
+          first_login_at?: string | null
           first_name?: string | null
           hire_date?: string | null
           id?: string
           last_name?: string | null
+          must_change_password?: boolean | null
+          password_changed_at?: string | null
           phone?: string | null
           position?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
@@ -1057,13 +1065,17 @@ export type Database = {
           bio?: string | null
           company_id?: string | null
           created_at?: string | null
+          created_by_admin?: string | null
           current_module_id?: string | null
           department?: string | null
           email?: string | null
+          first_login_at?: string | null
           first_name?: string | null
           hire_date?: string | null
           id?: string
           last_name?: string | null
+          must_change_password?: boolean | null
+          password_changed_at?: string | null
           phone?: string | null
           position?: string | null
           role?: Database["public"]["Enums"]["app_role"] | null
@@ -1942,6 +1954,25 @@ export type Database = {
           success: boolean
         }[]
       }
+      create_user_by_admin: {
+        Args: {
+          _admin_id: string
+          _company_id?: string
+          _department?: string
+          _email: string
+          _first_name: string
+          _last_name: string
+          _password: string
+          _phone?: string
+          _position?: string
+          _role?: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: {
+          message: string
+          success: boolean
+          user_id: string
+        }[]
+      }
       deactivate_user: {
         Args: { _admin_id: string; _user_id: string }
         Returns: boolean
@@ -1949,6 +1980,10 @@ export type Database = {
       end_impersonation: {
         Args: { _admin_id: string }
         Returns: boolean
+      }
+      generate_temporary_password: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_monthly_objective_achievement: {
         Args: { objective_id: string; target_month: string }
