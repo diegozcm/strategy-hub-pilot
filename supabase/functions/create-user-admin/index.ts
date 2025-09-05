@@ -66,7 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
           error: 'Usuário com este email já existe' 
         }),
         {
-          status: 400,
+          status: 422, // Unprocessable Entity ao invés de 400
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );

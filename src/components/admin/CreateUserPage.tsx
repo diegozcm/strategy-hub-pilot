@@ -155,28 +155,35 @@ export const CreateUserPage = () => {
         
         createResult = result.data;
         createError = result.error;
-      } catch (err: any) {
-        console.error('Edge function invocation error:', err);
-        throw new Error('Erro de comunicação com o servidor');
-      }
-
-      if (createError) {
-        console.error('Create user error:', createError);
-        // Try to extract the error message from the edge function response
-        let errorMessage = 'Erro ao criar usuário';
         
-        if (createError.message) {
-          // If the error comes from the edge function, it should contain the proper message
-          errorMessage = createError.message;
+        // Se há erro de comunicação (network, etc)
+        if (createError) {
+          console.error('Edge function invocation error:', createError);
+          throw new Error('Erro de comunicação com o servidor');
         }
         
-        throw new Error(errorMessage);
-      }
-
-      if (!createResult?.success) {
-        // Extract error from the function response
-        const errorMessage = createResult?.error || 'Falha na criação do usuário';
-        throw new Error(errorMessage);
+        // Se o edge function retornou mas com erro de negócio
+        if (createResult && !createResult.success) {
+          const errorMessage = createResult.error || 'Falha na criação do usuário';
+          console.error('Create user business error:', errorMessage);
+          throw new Error(errorMessage);
+        }
+        
+        // Se não há resultado
+        if (!createResult) {
+          throw new Error('Resposta inválida do servidor');
+        }
+        
+      } catch (err: any) {
+        console.error('Unexpected error in edge function call:', err);
+        // Se é um erro que já tratamos, re-lança
+        if (err.message.includes('Usuário com este email já existe') || 
+            err.message.includes('Erro de comunicação') ||
+            err.message.includes('Falha na criação')) {
+          throw err;
+        }
+        // Outros erros inesperados
+        throw new Error('Erro inesperado ao criar usuário');
       }
 
       const newUserId = createResult.user_id;
