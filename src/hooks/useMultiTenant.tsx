@@ -48,6 +48,24 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   const isSystemAdmin = profile?.role === 'admin';
   const isCompanyAdmin = profile?.role === 'admin';
 
+  // Handle first login password change
+  const handleFirstLoginPasswordChange = () => {
+    console.log('✅ Password changed successfully - refreshing profile');
+    setShowFirstLoginModal(false);
+    
+    // Refresh profile to get updated must_change_password flag
+    if (user) {
+      loadUserProfile(user.id);
+    }
+  };
+
+  // Handle first login modal close (logout user)
+  const handleFirstLoginModalClose = () => {
+    console.log('❌ First login modal closed without password change - logging out');
+    setShowFirstLoginModal(false);
+    signOut();
+  };
+
   // Load profile data - simplified version without auth.users access
   const loadUserProfile = async (userId: string) => {
     try {
@@ -333,6 +351,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           setIsImpersonating(false);
           setOriginalAdmin(null);
           setImpersonationSession(null);
+          setShowFirstLoginModal(false);
           localStorage.removeItem('selectedCompanyId');
         }
         
@@ -401,6 +420,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       setIsImpersonating(false);
       setOriginalAdmin(null);
       setImpersonationSession(null);
+      setShowFirstLoginModal(false);
       localStorage.removeItem('selectedCompanyId');
       
       // Sign out from Supabase
@@ -511,24 +531,6 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       console.error('❌ Error ending impersonation:', error);
       return { error };
     }
-  };
-
-  // Handle first login password change
-  const handleFirstLoginPasswordChange = () => {
-    console.log('✅ Password changed successfully - refreshing profile');
-    setShowFirstLoginModal(false);
-    
-    // Refresh profile to get updated must_change_password flag
-    if (user) {
-      loadUserProfile(user.id);
-    }
-  };
-
-  // Handle first login modal close (logout user)
-  const handleFirstLoginModalClose = () => {
-    console.log('❌ First login modal closed without password change - logging out');
-    setShowFirstLoginModal(false);
-    signOut();
   };
 
   return (
