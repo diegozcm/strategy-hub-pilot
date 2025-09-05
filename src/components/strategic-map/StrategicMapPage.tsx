@@ -162,18 +162,13 @@ export const StrategicMapPage = () => {
                 {company.name}
               </CardTitle>
             </div>
-            <PermissionGate 
-              requiredRole="manager"
-              fallback={null}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCompanySetup(true)}
             >
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCompanySetup(true)}
-              >
-                Editar
-              </Button>
-            </PermissionGate>
+              Editar
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -182,18 +177,16 @@ export const StrategicMapPage = () => {
             <div className="group">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-primary">Missão</h3>
-                <PermissionGate requiredRole="manager" fallback={null}>
-                  {editingField !== 'mission' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                      onClick={() => startEditing('mission')}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                  )}
-                </PermissionGate>
+                {editingField !== 'mission' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                    onClick={() => startEditing('mission')}
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
               {editingField === 'mission' ? (
                 <div className="space-y-2">
@@ -226,18 +219,16 @@ export const StrategicMapPage = () => {
             <div className="group">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-primary">Visão</h3>
-                <PermissionGate requiredRole="manager" fallback={null}>
-                  {editingField !== 'vision' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                      onClick={() => startEditing('vision')}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                  )}
-                </PermissionGate>
+                {editingField !== 'vision' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                    onClick={() => startEditing('vision')}
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
               {editingField === 'vision' ? (
                 <div className="space-y-2">
@@ -270,18 +261,16 @@ export const StrategicMapPage = () => {
             <div className="group">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-primary">Valores</h3>
-                <PermissionGate requiredRole="manager" fallback={null}>
-                  {editingField !== 'values' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                      onClick={() => startEditing('values')}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
-                  )}
-                </PermissionGate>
+                {editingField !== 'values' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                    onClick={() => startEditing('values')}
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
               {editingField === 'values' ? (
                 <div className="space-y-2">
