@@ -30,7 +30,32 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { userId, email, firstName, lastName }: NewUserNotificationRequest = await req.json();
+    // Parse and validate request body with better error handling
+    let requestData: NewUserNotificationRequest;
+    
+    try {
+      const body = await req.text();
+      console.log("Raw request body:", body);
+      
+      requestData = JSON.parse(body);
+      console.log("Parsed request data:", requestData);
+      
+      // Validate required fields
+      if (!requestData.userId || !requestData.email || !requestData.firstName || !requestData.lastName) {
+        throw new Error("Missing required fields: userId, email, firstName, lastName");
+      }
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError);
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON in request body", details: parseError.message }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const { userId, email, firstName, lastName } = requestData;
     console.log("Processing new user notification:", { userId, email, firstName, lastName });
 
     // Buscar configuração do email de notificação do admin
@@ -38,12 +63,12 @@ const handler = async (req: Request): Promise<Response> => {
       .from('system_settings')
       .select('value')
       .eq('key', 'admin_notification_email')
-      .single();
+      .maybeSingle();
 
     if (settingError) {
       console.error("Error fetching admin notification email setting:", settingError);
       return new Response(
-        JSON.stringify({ error: "Failed to fetch admin email configuration" }),
+        JSON.stringify({ error: "Failed to fetch admin email configuration", details: settingError.message }),
         {
           status: 500,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -51,7 +76,26 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const adminEmail = adminEmailSetting?.value ? JSON.parse(adminEmailSetting.value) : "";
+    // Handle JSON parsing more safely
+    let adminEmail = "";
+    try {
+      if (adminEmailSetting?.value) {
+        // Try to parse as JSON first, fallback to direct string
+        if (typeof adminEmailSetting.value === 'string') {
+          try {
+            adminEmail = JSON.parse(adminEmailSetting.value);
+          } catch {
+            // If JSON parsing fails, use as direct string
+            adminEmail = adminEmailSetting.value;
+          }
+        } else {
+          adminEmail = adminEmailSetting.value;
+        }
+      }
+    } catch (jsonError) {
+      console.error("Error parsing admin email from settings:", jsonError);
+      adminEmail = "";
+    }
     
     if (!adminEmail || adminEmail.trim() === "") {
       console.log("No admin notification email configured, skipping notification");
