@@ -790,6 +790,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 };
 
 export const UserManagementPage: React.FC = () => {
+  const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [users, setUsers] = useState<ExtendedUser[]>([]);
