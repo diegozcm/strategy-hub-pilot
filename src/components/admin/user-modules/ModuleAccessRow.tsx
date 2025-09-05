@@ -50,7 +50,7 @@ export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
         </div>
       </div>
 
-      {/* Renderizar roles padrão apenas se NÃO for Startup HUB */}
+      {/* Renderizar roles padrão sempre (mesmo quando desabilitado) se NÃO for Startup HUB */}
       {!isStartupHub && (
         <div className="grid grid-cols-3 gap-3 pl-7 sm:pl-0">
           {roleList.map((role) => {
@@ -64,7 +64,10 @@ export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
                   onCheckedChange={() => onRoleToggle(role)}
                   disabled={isDisabled}
                 />
-                <Label htmlFor={roleId} className={isDisabled ? 'text-muted-foreground' : ''}>
+                <Label 
+                  htmlFor={roleId} 
+                  className={`cursor-pointer ${isDisabled ? 'text-muted-foreground opacity-60' : ''}`}
+                >
                   {role === 'admin' ? 'Admin' : role === 'manager' ? 'Gestor' : 'Membro'}
                 </Label>
               </div>
@@ -73,8 +76,8 @@ export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
         </div>
       )}
 
-      {/* Renderizar opções Startup/Mentor apenas para Startup HUB e se tiver acesso */}
-      {isStartupHub && checked && startupOptions && onStartupOptionToggle && (
+      {/* Renderizar opções Startup/Mentor sempre para Startup HUB (mesmo quando desabilitado) */}
+      {isStartupHub && (
         <div className="grid grid-cols-2 gap-3 pl-7 sm:pl-0">
           {(['startup', 'mentor'] as const).map((opt) => {
             const optId = `sh-${module.id}-${opt}`;
@@ -82,10 +85,14 @@ export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
               <div key={opt} className="flex items-center gap-2">
                 <Checkbox
                   id={optId}
-                  checked={startupOptions[opt]}
-                  onCheckedChange={() => onStartupOptionToggle(opt)}
+                  checked={checked && startupOptions ? startupOptions[opt] : false}
+                  onCheckedChange={() => onStartupOptionToggle && onStartupOptionToggle(opt)}
+                  disabled={isDisabled}
                 />
-                <Label htmlFor={optId}>
+                <Label 
+                  htmlFor={optId}
+                  className={`cursor-pointer ${isDisabled ? 'text-muted-foreground opacity-60' : ''}`}
+                >
                   {opt === 'startup' ? 'Startup' : 'Mentor'}
                 </Label>
               </div>
