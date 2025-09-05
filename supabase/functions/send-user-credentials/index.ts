@@ -78,14 +78,29 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (emailResponse.error) {
       console.error('Error sending email:', emailResponse.error);
-      throw emailResponse.error;
+      
+      // Return success but with email failure info - don't fail the entire operation
+      return new Response(JSON.stringify({ 
+        success: true, 
+        emailSent: false,
+        emailError: emailResponse.error.message || 'Falha no envio do e-mail',
+        message: 'Usuário criado, mas falha no envio do e-mail. Verifique as configurações do Resend.'
+      }), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
     }
 
     console.log("Credentials email sent successfully:", emailResponse);
 
     return new Response(JSON.stringify({ 
       success: true, 
-      messageId: emailResponse.data?.id 
+      emailSent: true,
+      messageId: emailResponse.data?.id,
+      message: 'E-mail com credenciais enviado com sucesso'
     }), {
       status: 200,
       headers: {

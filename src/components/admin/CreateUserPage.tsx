@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, User, Mail, Phone, Building, Key, Send, Settings } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, Building, Key, Send, Settings, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import ModuleAccessRow from './user-modules/ModuleAccessRow';
@@ -226,21 +226,37 @@ export const CreateUserPage = () => {
       }
 
       // Step 4: Send credentials to user
+      let emailStatus = 'pending';
+      let emailMessage = '';
+
       try {
-        const { error: emailError } = await supabase.functions.invoke('send-user-credentials', {
+        const emailResult = await supabase.functions.invoke('send-user-credentials', {
           body: {
             to: formData.email,
             userName: `${formData.firstName} ${formData.lastName}`,
             email: formData.email,
-            temporaryPassword: passwordToUse
+            temporaryPassword: passwordToUse,
+            companyName: companies.find(c => c.id === selectedCompanyId)?.name
           }
         });
 
-        if (emailError) {
-          console.error('Error sending credentials email:', emailError);
+        if (emailResult.error) {
+          console.error('Email edge function error:', emailResult.error);
+          emailStatus = 'failed';
+          emailMessage = 'Falha na comunicação com o serviço de e-mail';
+        } else if (emailResult.data?.emailSent === false) {
+          console.error('Email sending failed:', emailResult.data.emailError);
+          emailStatus = 'failed';
+          emailMessage = emailResult.data.emailError || 'Falha no envio do e-mail';
+        } else {
+          console.log('Email sent successfully');
+          emailStatus = 'sent';
+          emailMessage = 'E-mail enviado com sucesso';
         }
-      } catch (emailErr) {
+      } catch (emailErr: any) {
         console.error('Error invoking send-user-credentials function:', emailErr);
+        emailStatus = 'failed';
+        emailMessage = 'Erro inesperado no envio do e-mail';
       }
 
       const selectedCompany = companies.find(c => c.id === selectedCompanyId);
@@ -251,10 +267,21 @@ export const CreateUserPage = () => {
         email: formData.email,
         password: passwordToUse,
         company: selectedCompany?.name || null,
-        emailSent: true // Assume success for now
+        emailSent: emailStatus === 'sent',
+        emailStatus,
+        emailMessage
       });
 
-      toast.success('Usuário criado com sucesso!');
+      const toastTitle = emailStatus === 'sent' 
+        ? "Usuário criado com sucesso" 
+        : "Usuário criado com aviso";
+      const toastDescription = emailStatus === 'sent'
+        ? "E-mail com credenciais enviado"
+        : `Usuário criado, mas ${emailMessage.toLowerCase()}`;
+
+      toast(toastDescription, {
+        description: toastTitle,
+      });
     } catch (error: any) {
       console.error('Error creating user:', error);
       toast.error(error.message || 'Erro ao criar usuário');
@@ -319,6 +346,8 @@ export const CreateUserPage = () => {
   };
 
   if (createdUser) {
+    const isEmailSent = createdUser.emailStatus === 'sent';
+    
     return (
       <div className="container mx-auto py-6 space-y-6">
         <div className="flex items-center gap-4">
@@ -330,12 +359,27 @@ export const CreateUserPage = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-emerald-600">✅ Usuário Criado com Sucesso!</CardTitle>
+            <CardTitle className={`flex items-center gap-2 ${
+              isEmailSent ? 'text-emerald-600' : 'text-yellow-600'
+            }`}>
+              {isEmailSent ? '✅' : '⚠️'} Usuário Criado{isEmailSent ? ' com Sucesso!' : ' com Aviso'}
+            </CardTitle>
             <CardDescription>
-              O usuário foi criado e as credenciais foram {createdUser.emailSent ? 'enviadas por e-mail' : 'geradas (falha no envio do e-mail)'}.
+              O usuário foi criado{isEmailSent ? ' e as credenciais foram enviadas por e-mail' : ', mas houve problema no envio do e-mail'}.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {!isEmailSent && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Problema no envio:</strong> {createdUser.emailMessage}
+                  <br />
+                  Por favor, informe as credenciais ao usuário manualmente.
+                </AlertDescription>
+              </Alert>
+            )}
+            
             <div className="bg-muted p-4 rounded-lg">
               <h3 className="font-semibold mb-3">Credenciais do Usuário:</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -363,10 +407,10 @@ export const CreateUserPage = () => {
               </div>
             </div>
 
-            <Alert>
+            <Alert variant={isEmailSent ? 'default' : 'destructive'}>
               <Mail className="h-4 w-4" />
               <AlertDescription>
-                {createdUser.emailSent ? (
+                {isEmailSent ? (
                   <>E-mail enviado com sucesso! O usuário receberá as credenciais em sua caixa de entrada.</>
                 ) : (
                   <>Falha no envio do e-mail. Compartilhe manualmente as credenciais acima com o usuário.</>
