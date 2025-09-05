@@ -94,8 +94,8 @@ export const CreateUserPage = () => {
         return;
       }
 
-      // Create user via database function
-      const { data, error } = await supabase.rpc('create_user_by_admin', {
+      // Create user via new robust database function
+      const { data, error } = await supabase.rpc('create_user_by_admin_v2', {
         _admin_id: currentUser?.id,
         _email: formData.email,
         _password: generatedPassword,
@@ -111,13 +111,15 @@ export const CreateUserPage = () => {
 
       const result = data[0];
       if (!result.success) {
+        console.error('User creation debug log:', result.debug_log);
         throw new Error(result.message);
       }
 
+      console.log('User creation successful:', result.debug_log);
       const newUserId = result.user_id;
 
-      // Configure module access and permissions
-      await configureUserModules(newUserId);
+      // Configure module access and permissions using new separate function
+      await configureUserModulesV2(newUserId);
 
       // Send credentials email
       const emailResponse = await supabase.functions.invoke('send-user-credentials', {
@@ -150,57 +152,54 @@ export const CreateUserPage = () => {
     }
   };
 
-  const configureUserModules = async (userId: string) => {
+  const configureUserModulesV2 = async (userId: string) => {
     if (!currentUser?.id) return;
 
     try {
-      // Configure module access
-      for (const [moduleId, hasAccess] of Object.entries(moduleAccess)) {
-        if (hasAccess) {
-          const { error } = await supabase.rpc('grant_module_access', {
-            _admin_id: currentUser.id,
-            _user_id: userId,
-            _module_id: moduleId,
-          });
-          if (error) throw error;
-        }
-      }
+      // Collect module IDs that have access
+      const moduleIds = Object.entries(moduleAccess)
+        .filter(([_, hasAccess]) => hasAccess)
+        .map(([moduleId, _]) => moduleId);
 
-      // Configure module roles (skip Startup HUB)
-      for (const module of modules) {
-        if (module.slug === 'startup-hub') continue;
+      if (moduleIds.length === 0) return;
 
-        const roles = moduleRoles[module.id] || [];
+      // Prepare module roles JSON
+      const moduleRolesJson: Record<string, string[]> = {};
+      for (const [moduleId, roles] of Object.entries(moduleRoles)) {
         if (roles.length > 0) {
-          const { error } = await supabase.rpc('set_user_module_roles', {
-            _admin_id: currentUser.id,
-            _user_id: userId,
-            _module_id: module.id,
-            _roles: roles,
-          });
-          if (error) throw error;
+          moduleRolesJson[moduleId] = roles;
         }
       }
 
-      // Handle Startup HUB profile
-      const startupModule = modules.find((m) => m.slug === 'startup-hub');
+      // Prepare startup hub options JSON
+      let startupHubOptionsJson = {};
+      const startupModule = modules.find(m => m.slug === 'startup-hub');
       if (startupModule && moduleAccess[startupModule.id]) {
-        const isStartup = startupHubOptions.startup;
-        const isMentor = startupHubOptions.mentor;
-        
-        if (isStartup || isMentor) {
-          const selectedType = isStartup ? 'startup' : 'mentor';
-          
-          const { error } = await supabase
-            .from('startup_hub_profiles')
-            .insert({
-              user_id: userId,
-              type: selectedType,
-              status: 'active',
-            });
-          if (error) throw error;
+        if (startupHubOptions.startup) {
+          startupHubOptionsJson = { type: 'startup' };
+        } else if (startupHubOptions.mentor) {
+          startupHubOptionsJson = { type: 'mentor' };
         }
       }
+
+      // Use the new configure_user_modules function
+      const { data, error } = await supabase.rpc('configure_user_modules', {
+        _admin_id: currentUser.id,
+        _user_id: userId,
+        _module_ids: moduleIds,
+        _module_roles: moduleRolesJson,
+        _startup_hub_options: startupHubOptionsJson
+      });
+
+      if (error) throw error;
+
+      const result = data[0];
+      if (!result.success) {
+        console.error('Module configuration debug log:', result.debug_log);
+        throw new Error(result.message);
+      }
+
+      console.log('Module configuration successful:', result.debug_log);
     } catch (error) {
       console.error('Erro ao configurar módulos do usuário:', error);
       throw error;

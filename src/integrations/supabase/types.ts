@@ -1895,6 +1895,20 @@ export type Database = {
           issues: string[]
         }[]
       }
+      configure_user_modules: {
+        Args: {
+          _admin_id: string
+          _module_ids: string[]
+          _module_roles?: Json
+          _startup_hub_options?: Json
+          _user_id: string
+        }
+        Returns: {
+          debug_log: string
+          message: string
+          success: boolean
+        }[]
+      }
       confirm_user_email: {
         Args: { _admin_id: string; _user_id: string }
         Returns: boolean
@@ -1968,6 +1982,26 @@ export type Database = {
           _role?: Database["public"]["Enums"]["app_role"]
         }
         Returns: {
+          message: string
+          success: boolean
+          user_id: string
+        }[]
+      }
+      create_user_by_admin_v2: {
+        Args: {
+          _admin_id: string
+          _company_id?: string
+          _department?: string
+          _email: string
+          _first_name: string
+          _last_name: string
+          _password: string
+          _phone?: string
+          _position?: string
+          _role?: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: {
+          debug_log: string
           message: string
           success: boolean
           user_id: string
