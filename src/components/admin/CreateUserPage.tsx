@@ -137,26 +137,46 @@ export const CreateUserPage = () => {
       });
 
       // Step 1: Create auth user using edge function
-      const { data: createResult, error: createError } = await supabase.functions.invoke('create-user-admin', {
-        body: {
-          email: formData.email,
-          password: passwordToUse,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phone: formData.phone || null,
-          position: formData.position || null,
-          department: formData.department || null,
-          role: formData.role
-        }
-      });
+      let createResult, createError;
+      
+      try {
+        const result = await supabase.functions.invoke('create-user-admin', {
+          body: {
+            email: formData.email,
+            password: passwordToUse,
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            phone: formData.phone || null,
+            position: formData.position || null,
+            department: formData.department || null,
+            role: formData.role
+          }
+        });
+        
+        createResult = result.data;
+        createError = result.error;
+      } catch (err: any) {
+        console.error('Edge function invocation error:', err);
+        throw new Error('Erro de comunicação com o servidor');
+      }
 
       if (createError) {
         console.error('Create user error:', createError);
-        throw new Error(createError.message || 'Erro ao criar usuário');
+        // Try to extract the error message from the edge function response
+        let errorMessage = 'Erro ao criar usuário';
+        
+        if (createError.message) {
+          // If the error comes from the edge function, it should contain the proper message
+          errorMessage = createError.message;
+        }
+        
+        throw new Error(errorMessage);
       }
 
       if (!createResult?.success) {
-        throw new Error(createResult?.error || 'Falha na criação do usuário');
+        // Extract error from the function response
+        const errorMessage = createResult?.error || 'Falha na criação do usuário';
+        throw new Error(errorMessage);
       }
 
       const newUserId = createResult.user_id;
