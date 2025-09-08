@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Target } from 'lucide-react';
 import { ActionItemCard } from './ActionItemCard';
 import { useActionItems, ActionItem } from '@/hooks/useActionItems';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/useMultiTenant';
 
 interface ActionItemsManagerProps {
@@ -46,6 +47,10 @@ export const ActionItemsManager: React.FC<ActionItemsManagerProps> = ({
         due_date: ''
       });
     }
+  };
+
+  const handleUpdate = async (id: string, updates: Partial<ActionItem>) => {
+    await updateActionItem(id, updates);
   };
 
   const handleDelete = async (id: string) => {
