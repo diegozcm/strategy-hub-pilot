@@ -96,24 +96,19 @@ export const Sidebar: React.FC = () => {
       <nav className="flex-1 p-4 space-y-4">
         {menuStructure.map((group) => {
           // Check if user has access to at least one item in this group
-                // For Startup Hub, check different conditions based on user type
-            const hasAccessToGroup = group.items.some(item => {
-              if (item.href.includes('/startup-hub')) {
-                // Check if user has startup-hub access
-                if (!hasModuleAccess('startup-hub')) return false;
-                
-                // Filter out 'startups' tab for mentors unless they have mentored startups
-                if (item.href.includes('?tab=startups') && isMentor) {
-                  return true; // Allow startups tab for mentors to see their mentored startups
-                }
-                
-                return true;
-              }
-              if (item.href.includes('/strategic-map') || item.href.includes('/tools') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
-                return hasModuleAccess('strategic-planning');
-              }
-              return true; // Dashboard and settings are always accessible
-            });
+          const hasAccessToGroup = group.items.some(item => {
+            if (item.href.includes('/startup-hub')) {
+              // Check if user has startup-hub access
+              return hasModuleAccess('startup-hub');
+            }
+            if (item.href.includes('/dashboard') || item.href.includes('/strategic-map') || item.href.includes('/tools') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
+              return hasModuleAccess('strategic-planning');
+            }
+            if (item.href.includes('/settings')) {
+              return true; // Settings is always accessible
+            }
+            return false; // Default deny if not explicitly allowed
+          });
 
           if (!hasAccessToGroup) return null;
 
@@ -133,11 +128,13 @@ export const Sidebar: React.FC = () => {
               <div className="space-y-1">
                 {group.items.map(item => {
                   // Check access for individual items
-                  let hasAccess = true;
+                  let hasAccess = false;
                   if (item.href.includes('/startup-hub')) {
                     hasAccess = hasModuleAccess('startup-hub');
-                  } else if (item.href.includes('/strategic-map') || item.href.includes('/tools') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
+                  } else if (item.href.includes('/dashboard') || item.href.includes('/strategic-map') || item.href.includes('/tools') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
                     hasAccess = hasModuleAccess('strategic-planning');
+                  } else if (item.href.includes('/settings')) {
+                    hasAccess = true; // Settings is always accessible
                   }
 
                   if (!hasAccess) return null;
