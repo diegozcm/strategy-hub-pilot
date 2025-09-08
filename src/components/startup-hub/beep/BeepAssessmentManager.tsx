@@ -39,6 +39,43 @@ export const BeepAssessmentManager = () => {
   const { saveAnswer, getAssessmentAnswers } = useBeepAnswerCrud();
   const { autoSaveAnswer } = useBeepAutoSave(currentAssessment?.id);
 
+  // Function to update assessment progress
+  const updateAssessmentProgress = async (assessmentId: string) => {
+    try {
+      // Get total questions count
+      const { data: questionsData, error: questionsError } = await supabase
+        .from('beep_questions')
+        .select('id');
+      
+      if (questionsError) throw questionsError;
+      const totalQuestions = questionsData?.length || 0;
+
+      // Get answered questions count
+      const { data: answersData, error: answersError } = await supabase
+        .from('beep_answers')
+        .select('id')
+        .eq('assessment_id', assessmentId);
+      
+      if (answersError) throw answersError;
+      const answeredQuestions = answersData?.length || 0;
+
+      // Calculate progress percentage
+      const progressPercentage = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
+
+      // Update assessment with progress info
+      await updateAssessment(assessmentId, {
+        total_questions: totalQuestions,
+        answered_questions: answeredQuestions,
+        progress_percentage: progressPercentage,
+        last_answer_at: new Date().toISOString()
+      });
+
+      console.log('Progress updated:', { totalQuestions, answeredQuestions, progressPercentage });
+    } catch (error) {
+      console.error('Failed to update progress:', error);
+    }
+  };
+
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
@@ -198,31 +235,36 @@ export const BeepAssessmentManager = () => {
       [questionId]: value,
     }));
     
-    // Use auto-save hook with debounce
-    timeoutsRef.current[questionId] = setTimeout(async () => {
-      if (currentAssessment?.id && !savingQuestions.has(questionId)) {
-        try {
-          setSavingQuestions(prev => new Set([...prev, questionId]));
-          await autoSaveAnswer(questionId, value);
-          setSavingQuestions(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(questionId);
-            return newSet;
-          });
-          setSavedQuestions(prev => new Set([...prev, questionId]));
-          queryClient.invalidateQueries({ queryKey: ['beep-answers', currentAssessment?.id] });
-        } catch (error) {
-          setSavingQuestions(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(questionId);
-            return newSet;
-          });
-          console.error('Auto-save failed:', error);
-          toast.error('Erro ao salvar resposta');
-        }
+  // Use auto-save hook with debounce
+  timeoutsRef.current[questionId] = setTimeout(async () => {
+    if (currentAssessment?.id && !savingQuestions.has(questionId)) {
+      try {
+        setSavingQuestions(prev => new Set([...prev, questionId]));
+        await autoSaveAnswer(questionId, value);
+        
+        // Update progress after saving answer
+        await updateAssessmentProgress(currentAssessment.id);
+        
+        setSavingQuestions(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(questionId);
+          return newSet;
+        });
+        setSavedQuestions(prev => new Set([...prev, questionId]));
+        queryClient.invalidateQueries({ queryKey: ['beep-answers', currentAssessment?.id] });
+        queryClient.invalidateQueries({ queryKey: ['beep-assessments'] });
+      } catch (error) {
+        setSavingQuestions(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(questionId);
+          return newSet;
+        });
+        console.error('Auto-save failed:', error);
+        toast.error('Erro ao salvar resposta');
       }
-      delete timeoutsRef.current[questionId];
-    }, 500);
+    }
+    delete timeoutsRef.current[questionId];
+  }, 500);
   };
 
   const calculateFinalScore = (): number => {
