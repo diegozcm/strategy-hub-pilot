@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 
 interface BeepQuestion {
   id: string;
@@ -89,7 +89,7 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
       {isSaved && (
         <div className="absolute top-2 right-2 z-10 animate-fade-in flex items-center gap-2">
           <div className="bg-green-100 rounded-full px-2 py-1 shadow-sm">
-            <span className="text-xs font-medium text-green-600">salvo</span>
+            <Save className="h-3 w-3 text-green-600" />
           </div>
           {value > 0 && (
             <Badge 
