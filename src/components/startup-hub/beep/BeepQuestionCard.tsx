@@ -85,22 +85,7 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
   };
 
   return (
-    <Card className={`relative transition-all ${value > 0 ? 'border-blue-200 bg-blue-50/30' : ''}`}>
-      {isSaved && (
-        <div className="absolute top-2 right-2 z-10 animate-fade-in flex items-center gap-2">
-          <div className="bg-green-100 rounded-full px-2 py-1 shadow-sm">
-            <Save className="h-3 w-3 text-green-600" />
-          </div>
-          {value > 0 && (
-            <Badge 
-              variant="outline" 
-              className={`text-xs font-medium ${getColorClasses(value).badge}`}
-            >
-              {scaleLabels[value as keyof typeof scaleLabels]}
-            </Badge>
-          )}
-        </div>
-      )}
+    <Card className={`relative transition-all ${(isSaved || value > 0) ? 'border-green-200 bg-green-50/30' : ''}`}>
       <CardContent className="p-4">
         <div className="space-y-4">
           <div>
