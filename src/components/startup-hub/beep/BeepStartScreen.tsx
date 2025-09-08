@@ -8,6 +8,7 @@ import { BeepAssessmentHistory } from './BeepAssessmentHistory';
 import { useStartupProfile } from '@/hooks/useStartupProfile';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Target } from 'lucide-react';
 
 interface BeepAssessment {
   id: string;
@@ -18,6 +19,12 @@ interface BeepAssessment {
   maturity_level: string | null;
   completed_at: string | null;
   created_at: string;
+  total_questions?: number;
+  answered_questions?: number;
+  progress_percentage?: number;
+  last_answer_at?: string | null;
+  current_category_id?: string | null;
+  current_question_index?: number;
 }
 
 interface BeepStartScreenProps {
@@ -130,35 +137,78 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
           </CardHeader>
           <CardContent>
             {draftAssessments.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {draftAssessments.slice(0, 3).map((assessment) => {
                   const company = startupCompanies.find((c: any) => c.id === assessment.company_id);
+                  const progress = assessment.progress_percentage || 0;
+                  const answeredQuestions = assessment.answered_questions || 0;
+                  const totalQuestions = assessment.total_questions || 100;
+                  const lastAnswerDate = assessment.last_answer_at 
+                    ? new Date(assessment.last_answer_at).toLocaleDateString('pt-BR')
+                    : new Date(assessment.created_at).toLocaleDateString('pt-BR');
+                  
                   return (
-                    <div key={assessment.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{company?.name || 'Startup'}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Iniciada em {new Date(assessment.created_at).toLocaleDateString('pt-BR')}
+                    <div key={assessment.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{company?.name || 'Startup'}</h4>
+                          <p className="text-sm text-gray-600">
+                            {answeredQuestions > 0 
+                              ? `Última resposta em ${lastAnswerDate}`
+                              : `Iniciada em ${new Date(assessment.created_at).toLocaleDateString('pt-BR')}`
+                            }
+                          </p>
+                        </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => onStartAssessment(assessment.company_id || '')}
+                          className="ml-3"
+                        >
+                          Continuar
+                        </Button>
+                      </div>
+                      
+                      {/* Progress Bar */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">
+                            {answeredQuestions}/{totalQuestions} perguntas respondidas
+                          </span>
+                          <span className="font-medium text-gray-900">
+                            {Math.round(progress)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                            style={{ width: `${Math.min(progress, 100)}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {progress < 25 && "Avaliação iniciada"}
+                          {progress >= 25 && progress < 50 && "Progresso inicial"}
+                          {progress >= 50 && progress < 75 && "Meio caminho andado"}
+                          {progress >= 75 && progress < 100 && "Quase finalizando"}
+                          {progress >= 100 && "Pronto para finalizar"}
                         </p>
                       </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => onStartAssessment(assessment.company_id || '')}
-                      >
-                        Continuar
-                      </Button>
                     </div>
                   );
                 })}
                 {draftAssessments.length > 3 && (
-                  <p className="text-sm text-muted-foreground text-center">
-                    +{draftAssessments.length - 3} outros rascunhos
-                  </p>
+                  <div className="text-center pt-2">
+                    <p className="text-sm text-muted-foreground">
+                      +{draftAssessments.length - 3} outros rascunhos disponíveis
+                    </p>
+                  </div>
                 )}
               </div>
             ) : (
               <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <Target className="w-8 h-8 text-gray-400" />
+                </div>
                 <p className="text-muted-foreground">Nenhum rascunho encontrado</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Inicie uma nova avaliação para começar

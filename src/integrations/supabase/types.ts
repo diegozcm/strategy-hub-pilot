@@ -581,41 +581,59 @@ export type Database = {
       }
       beep_assessments: {
         Row: {
+          answered_questions: number | null
           company_id: string | null
           completed_at: string | null
           created_at: string | null
+          current_category_id: string | null
+          current_question_index: number | null
           final_score: number | null
           id: string
+          last_answer_at: string | null
           maturity_level:
             | Database["public"]["Enums"]["beep_maturity_level"]
             | null
+          progress_percentage: number | null
           status: string | null
+          total_questions: number | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
+          answered_questions?: number | null
           company_id?: string | null
           completed_at?: string | null
           created_at?: string | null
+          current_category_id?: string | null
+          current_question_index?: number | null
           final_score?: number | null
           id?: string
+          last_answer_at?: string | null
           maturity_level?:
             | Database["public"]["Enums"]["beep_maturity_level"]
             | null
+          progress_percentage?: number | null
           status?: string | null
+          total_questions?: number | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
+          answered_questions?: number | null
           company_id?: string | null
           completed_at?: string | null
           created_at?: string | null
+          current_category_id?: string | null
+          current_question_index?: number | null
           final_score?: number | null
           id?: string
+          last_answer_at?: string | null
           maturity_level?:
             | Database["public"]["Enums"]["beep_maturity_level"]
             | null
+          progress_percentage?: number | null
           status?: string | null
+          total_questions?: number | null
           updated_at?: string | null
           user_id?: string
         }

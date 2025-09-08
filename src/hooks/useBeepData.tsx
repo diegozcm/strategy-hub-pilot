@@ -127,6 +127,12 @@ export const useBeepAssessmentCrud = () => {
     final_score: number;
     maturity_level: 'idealizando' | 'validando_problemas_solucoes' | 'iniciando_negocio' | 'validando_mercado' | 'evoluindo';
     completed_at: string;
+    total_questions: number;
+    answered_questions: number;
+    progress_percentage: number;
+    last_answer_at: string;
+    current_category_id: string;
+    current_question_index: number;
   }>) => {
     const { data, error } = await supabase
       .from('beep_assessments')
@@ -225,5 +231,46 @@ export const useBeepAnswerCrud = () => {
     saveAnswer,
     getAssessmentAnswers,
     deleteAnswer
+  };
+};
+
+// Hook para auto-save e tracking de progresso
+export const useBeepAutoSave = (assessmentId?: string) => {
+  const { saveAnswer } = useBeepAnswerCrud();
+  const { updateAssessment } = useBeepAssessmentCrud();
+
+  // Auto-save com debounce
+  const autoSaveAnswer = async (questionId: string, value: number) => {
+    if (!assessmentId) return;
+    
+    try {
+      // Salvar resposta
+      await saveAnswer(assessmentId, questionId, value);
+      
+      // O trigger do banco de dados já vai atualizar o progresso automaticamente
+      console.log('Auto-save successful for question:', questionId);
+    } catch (error) {
+      console.error('Auto-save failed:', error);
+      throw error;
+    }
+  };
+
+  // Atualizar posição atual na avaliação
+  const updateCurrentPosition = async (categoryId: string, questionIndex: number) => {
+    if (!assessmentId) return;
+    
+    try {
+      await updateAssessment(assessmentId, {
+        current_category_id: categoryId,
+        current_question_index: questionIndex
+      });
+    } catch (error) {
+      console.error('Failed to update current position:', error);
+    }
+  };
+
+  return {
+    autoSaveAnswer,
+    updateCurrentPosition
   };
 };
