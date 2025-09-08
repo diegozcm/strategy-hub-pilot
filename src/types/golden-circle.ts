@@ -19,6 +19,11 @@ export interface GoldenCircleHistory {
   changed_by: string;
   change_reason?: string;
   changed_at: string;
+  profiles?: {
+    user_id: string;
+    first_name: string | null;
+    last_name: string | null;
+  } | null;
 }
 
 export interface GoldenCircleFormData {

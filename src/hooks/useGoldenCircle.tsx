@@ -55,14 +55,37 @@ export const useGoldenCircle = () => {
       }
 
       // Then get the history for this golden circle
-      const { data, error } = await supabase
+      const { data: historyData, error } = await supabase
         .from('golden_circle_history')
         .select('*')
         .eq('golden_circle_id', goldenCircleData.id)
         .order('changed_at', { ascending: false });
 
       if (error) throw error;
-      setHistory(data || []);
+
+      if (!historyData || historyData.length === 0) {
+        setHistory([]);
+        return;
+      }
+
+      // Get unique user IDs
+      const userIds = [...new Set(historyData.map(h => h.changed_by))];
+
+      // Fetch user profiles
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name')
+        .in('user_id', userIds);
+
+      if (profileError) throw profileError;
+
+      // Map profiles to history entries
+      const historyWithProfiles = historyData.map(historyEntry => ({
+        ...historyEntry,
+        profiles: profiles?.find(p => p.user_id === historyEntry.changed_by) || null
+      }));
+
+      setHistory(historyWithProfiles);
     } catch (error) {
       console.error('Error loading history:', error);
       toast({
