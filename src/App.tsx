@@ -11,6 +11,7 @@ import { AdminLoginPage } from "@/components/admin/AdminLoginPage";
 import { CompanyInactivePage } from "@/pages/CompanyInactivePage";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { StartTogetherAdminLayout } from "@/components/admin/StartTogetherAdminLayout";
+import { MonitoringPage } from "@/components/admin/MonitoringPage";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { ObjectivesPageWrapper } from "@/components/objectives/ObjectivesPageWrapper";
@@ -98,11 +99,12 @@ const App = () => (
               <Route path="users/create" element={<CreateUserPage />} />
               <Route path="modules" element={<ModulesManagementPage />} />
               <Route path="settings" element={<SystemSettingsPage />} />
+              <Route path="monitoring" element={<MonitoringPage />} />
             </Route>
 
-            {/* Redirect /admin to /app/admin */}
-            <Route path="/admin" element={<Navigate to="/app/admin" replace />} />
-            <Route path="/admin/*" element={<Navigate to="/app/admin" replace />} />
+          {/* Redirect /admin to /app/admin */}
+          <Route path="/admin" element={<Navigate to="/app/admin" replace />} />
+          <Route path="/admin/*" element={<Navigate to="/app/admin" replace />} />
             <Route path="*" element={<NotFound />} />
             </Routes>
             </ModulesProvider>

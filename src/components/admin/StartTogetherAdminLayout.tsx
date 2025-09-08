@@ -6,7 +6,8 @@ import {
   Package, 
   Settings, 
   LogOut,
-  User
+  User,
+  Monitor
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -57,6 +58,12 @@ const adminMenuItems = [
     path: '/app/admin/settings',
     icon: Settings,
     description: 'Configurações gerais do sistema'
+  },
+  {
+    name: 'Monitoramento',
+    path: '/app/admin/monitoring',
+    icon: Monitor,
+    description: 'Monitoramento e saúde do sistema'
   }
 ];
 
