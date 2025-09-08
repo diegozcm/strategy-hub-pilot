@@ -1864,6 +1864,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: Json
       }
+      analyze_user_relations: {
+        Args: { _user_id: string }
+        Returns: Json
+      }
       assign_user_to_company: {
         Args: { _admin_id: string; _company_id: string; _user_id: string }
         Returns: boolean
@@ -1995,6 +1999,18 @@ export type Database = {
         Args: { _admin_id: string }
         Returns: boolean
       }
+      find_compatible_replacement_users: {
+        Args: { _admin_id: string; _user_id: string }
+        Returns: {
+          compatibility_details: Json
+          compatibility_score: number
+          email: string
+          first_name: string
+          last_name: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }[]
+      }
       generate_temporary_password: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -2080,6 +2096,14 @@ export type Database = {
       safe_delete_user: {
         Args: { _admin_id: string; _user_id: string }
         Returns: boolean
+      }
+      safe_delete_user_with_replacement: {
+        Args: {
+          _admin_id: string
+          _replacement_user_id: string
+          _user_id: string
+        }
+        Returns: Json
       }
       set_user_module_roles: {
         Args: {
