@@ -99,7 +99,7 @@ export const SessionAccordion: React.FC<SessionAccordionProps> = ({ sessions }) 
 
               {/* Action Items */}
               <div>
-                <ActionItemsManager sessionId={session.id} canEdit={false} />
+                <ActionItemsManager sessionId={session.id} canEdit={true} />
               </div>
 
               {/* Tips removed - no longer showing tips */}
