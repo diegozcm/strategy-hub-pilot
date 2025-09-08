@@ -13,31 +13,71 @@ interface ActionItemCardProps {
   canEdit?: boolean;
 }
 
-const statusLabels = {
-  pending: 'Pendente',
-  in_progress: 'Em Andamento',
-  completed: 'Concluído',
-  cancelled: 'Cancelado'
+const getStatusConfig = (status: ActionItem['status']) => {
+  switch (status) {
+    case 'completed': 
+      return { 
+        variant: 'default' as const,
+        className: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
+        icon: '✓',
+        label: 'Concluído'
+      };
+    case 'in_progress': 
+      return { 
+        variant: 'default' as const,
+        className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+        icon: '⏳',
+        label: 'Em Progresso'
+      };
+    case 'cancelled': 
+      return { 
+        variant: 'destructive' as const,
+        className: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+        icon: '✕',
+        label: 'Cancelado'
+      };
+    default: // pending
+      return { 
+        variant: 'secondary' as const,
+        className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700',
+        icon: '○',
+        label: 'Pendente'
+      };
+  }
 };
 
-const statusColors = {
-  pending: 'default',
-  in_progress: 'secondary',
-  completed: 'default',
-  cancelled: 'destructive'
-} as const;
-
-const priorityLabels = {
-  low: 'Baixa',
-  medium: 'Média',
-  high: 'Alta'
+const getPriorityConfig = (priority: ActionItem['priority']) => {
+  switch (priority) {
+    case 'high': 
+      return { 
+        variant: 'destructive' as const,
+        className: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+        icon: '🔴',
+        label: 'Alta'
+      };
+    case 'medium': 
+      return { 
+        variant: 'default' as const,
+        className: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800',
+        icon: '🟡',
+        label: 'Média'
+      };
+    case 'low': 
+      return { 
+        variant: 'secondary' as const,
+        className: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
+        icon: '🟢',
+        label: 'Baixa'
+      };
+    default:
+      return { 
+        variant: 'default' as const,
+        className: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800',
+        icon: '🟡',
+        label: 'Média'
+      };
+  }
 };
-
-const priorityColors = {
-  low: 'secondary',
-  medium: 'default',
-  high: 'destructive'
-} as const;
 
 export const ActionItemCard: React.FC<ActionItemCardProps> = ({ 
   item, 
@@ -49,6 +89,8 @@ export const ActionItemCard: React.FC<ActionItemCardProps> = ({
   };
 
   const isOverdue = item.due_date && new Date(item.due_date) < new Date() && item.status !== 'completed';
+  const statusConfig = getStatusConfig(item.status);
+  const priorityConfig = getPriorityConfig(item.priority);
 
   return (
     <Card className={`transition-all hover:shadow-md ${isOverdue ? 'border-destructive' : ''}`}>
@@ -59,28 +101,46 @@ export const ActionItemCard: React.FC<ActionItemCardProps> = ({
             {item.title}
           </CardTitle>
           <div className="flex items-center gap-2">
-            <Badge variant={priorityColors[item.priority]}>
-              {priorityLabels[item.priority]}
-            </Badge>
+            <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${priorityConfig.className}`}>
+              <span>{priorityConfig.icon}</span>
+              {priorityConfig.label}
+            </div>
             {canEdit ? (
               <Select
                 value={item.status}
                 onValueChange={handleStatusChange}
               >
-                <SelectTrigger className="w-32">
+                <SelectTrigger className="w-36">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="in_progress">Em Andamento</SelectItem>
-                  <SelectItem value="completed">Concluído</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
+                  <SelectItem value="pending">
+                    <span className="flex items-center gap-2">
+                      <span>○</span> Pendente
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="in_progress">
+                    <span className="flex items-center gap-2">
+                      <span>⏳</span> Em Progresso
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="completed">
+                    <span className="flex items-center gap-2">
+                      <span>✓</span> Concluído
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="cancelled">
+                    <span className="flex items-center gap-2">
+                      <span>✕</span> Cancelado
+                    </span>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             ) : (
-              <Badge variant={statusColors[item.status]}>
-                {statusLabels[item.status]}
-              </Badge>
+              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${statusConfig.className}`}>
+                <span>{statusConfig.icon}</span>
+                {statusConfig.label}
+              </div>
             )}
           </div>
         </div>
@@ -92,10 +152,10 @@ export const ActionItemCard: React.FC<ActionItemCardProps> = ({
           </p>
         )}
         {item.due_date && (
-          <div className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-destructive' : 'text-muted-foreground'}`}>
+          <div className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
             <Calendar className="h-3 w-3" />
             Prazo: {format(new Date(item.due_date), 'dd/MM/yyyy', { locale: ptBR })}
-            {isOverdue && ' (Atrasado)'}
+            {isOverdue && <span className="text-destructive font-medium">(Atrasado)</span>}
           </div>
         )}
       </CardContent>
