@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, ChevronDown, ChevronUp, Edit } from 'lucide-react';
+import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, ChevronDown, ChevronUp, Edit, Settings } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -30,6 +30,7 @@ interface DashboardStats {
   totalKRs: number;
   activeProjects: number;
   overallScore: number;
+  filledTools: number;
 }
 
 const getDynamicStats = (stats: DashboardStats) => [{
@@ -56,6 +57,14 @@ const getDynamicStats = (stats: DashboardStats) => [{
   icon: Briefcase,
   color: 'text-orange-600',
   bgColor: 'bg-orange-50'
+}, {
+  title: 'Ferramentas Preenchidas',
+  value: `${stats.filledTools}/3`,
+  change: stats.filledTools > 0 ? `${stats.filledTools} preenchidas` : 'Nenhuma preenchida',
+  changeType: stats.filledTools > 0 ? 'positive' as const : 'neutral' as const,
+  icon: Settings,
+  color: 'text-purple-600',
+  bgColor: 'bg-purple-50'
 }];
 
 export const DashboardHome: React.FC = () => {
@@ -67,7 +76,8 @@ export const DashboardHome: React.FC = () => {
     totalObjectives: 0,
     totalKRs: 0,
     activeProjects: 0,
-    overallScore: 0
+    overallScore: 0,
+    filledTools: 0
   });
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -100,7 +110,8 @@ export const DashboardHome: React.FC = () => {
           totalObjectives: 0,
           totalKRs: 0,
           activeProjects: 0,
-          overallScore: 0
+          overallScore: 0,
+          filledTools: 0
         });
         setLoading(false);
         return;
@@ -120,7 +131,8 @@ export const DashboardHome: React.FC = () => {
           totalObjectives: 0,
           totalKRs: 0,
           activeProjects: 0,
-          overallScore: 0
+          overallScore: 0,
+          filledTools: 0
         });
         setLoading(false);
         return;
@@ -190,12 +202,39 @@ export const DashboardHome: React.FC = () => {
       });
       const overallScore = scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0;
 
+      // Contar ferramentas preenchidas
+      const toolsPromises = [
+        // Golden Circle
+        supabase
+          .from('golden_circle')
+          .select('id')
+          .eq('company_id', company.id)
+          .single(),
+        // SWOT Analysis  
+        supabase
+          .from('swot_analysis')
+          .select('id')
+          .eq('company_id', company.id)
+          .single(),
+        // BEEP Assessments (completed)
+        supabase
+          .from('beep_assessments')
+          .select('id')
+          .eq('company_id', company.id)
+          .eq('status', 'completed')
+          .single()
+      ];
+
+      const toolsResults = await Promise.allSettled(toolsPromises);
+      const filledTools = toolsResults.filter(result => result.status === 'fulfilled' && result.value.data).length;
+
       setKeyResults(keyResultsWithPillars);
       setDashboardStats({
         totalObjectives,
         totalKRs,
         activeProjects,
-        overallScore
+        overallScore,
+        filledTools
       });
     } catch (error) {
       console.error('Erro ao buscar dados do dashboard:', error);
