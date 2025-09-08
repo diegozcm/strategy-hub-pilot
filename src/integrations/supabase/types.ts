@@ -338,6 +338,205 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_files: {
+        Row: {
+          backup_job_id: string
+          checksum: string | null
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size_bytes: number
+          id: string
+          record_count: number | null
+          table_name: string | null
+        }
+        Insert: {
+          backup_job_id: string
+          checksum?: string | null
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size_bytes: number
+          id?: string
+          record_count?: number | null
+          table_name?: string | null
+        }
+        Update: {
+          backup_job_id?: string
+          checksum?: string | null
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size_bytes?: number
+          id?: string
+          record_count?: number | null
+          table_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backup_files_backup_job_id_fkey"
+            columns: ["backup_job_id"]
+            isOneToOne: false
+            referencedRelation: "backup_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      backup_jobs: {
+        Row: {
+          admin_user_id: string
+          backup_size_bytes: number | null
+          backup_type: Database["public"]["Enums"]["backup_type"]
+          compression_ratio: number | null
+          created_at: string
+          end_time: string | null
+          error_message: string | null
+          id: string
+          notes: string | null
+          processed_tables: number | null
+          start_time: string | null
+          status: Database["public"]["Enums"]["backup_status"]
+          tables_included: string[] | null
+          total_records: number | null
+          total_tables: number | null
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          backup_size_bytes?: number | null
+          backup_type?: Database["public"]["Enums"]["backup_type"]
+          compression_ratio?: number | null
+          created_at?: string
+          end_time?: string | null
+          error_message?: string | null
+          id?: string
+          notes?: string | null
+          processed_tables?: number | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["backup_status"]
+          tables_included?: string[] | null
+          total_records?: number | null
+          total_tables?: number | null
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          backup_size_bytes?: number | null
+          backup_type?: Database["public"]["Enums"]["backup_type"]
+          compression_ratio?: number | null
+          created_at?: string
+          end_time?: string | null
+          error_message?: string | null
+          id?: string
+          notes?: string | null
+          processed_tables?: number | null
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["backup_status"]
+          tables_included?: string[] | null
+          total_records?: number | null
+          total_tables?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      backup_restore_logs: {
+        Row: {
+          admin_user_id: string
+          backup_job_id: string
+          created_at: string
+          end_time: string | null
+          error_message: string | null
+          id: string
+          notes: string | null
+          records_restored: number | null
+          restore_type: string
+          start_time: string | null
+          status: Database["public"]["Enums"]["restore_status"]
+          tables_restored: string[] | null
+        }
+        Insert: {
+          admin_user_id: string
+          backup_job_id: string
+          created_at?: string
+          end_time?: string | null
+          error_message?: string | null
+          id?: string
+          notes?: string | null
+          records_restored?: number | null
+          restore_type: string
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["restore_status"]
+          tables_restored?: string[] | null
+        }
+        Update: {
+          admin_user_id?: string
+          backup_job_id?: string
+          created_at?: string
+          end_time?: string | null
+          error_message?: string | null
+          id?: string
+          notes?: string | null
+          records_restored?: number | null
+          restore_type?: string
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["restore_status"]
+          tables_restored?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backup_restore_logs_backup_job_id_fkey"
+            columns: ["backup_job_id"]
+            isOneToOne: false
+            referencedRelation: "backup_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      backup_schedules: {
+        Row: {
+          admin_user_id: string
+          backup_type: Database["public"]["Enums"]["backup_type"]
+          created_at: string
+          cron_expression: string
+          id: string
+          is_active: boolean
+          last_run: string | null
+          next_run: string | null
+          retention_days: number
+          schedule_name: string
+          tables_included: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          admin_user_id: string
+          backup_type?: Database["public"]["Enums"]["backup_type"]
+          created_at?: string
+          cron_expression: string
+          id?: string
+          is_active?: boolean
+          last_run?: string | null
+          next_run?: string | null
+          retention_days?: number
+          schedule_name: string
+          tables_included?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          admin_user_id?: string
+          backup_type?: Database["public"]["Enums"]["backup_type"]
+          created_at?: string
+          cron_expression?: string
+          id?: string
+          is_active?: boolean
+          last_run?: string | null
+          next_run?: string | null
+          retention_days?: number
+          schedule_name?: string
+          tables_included?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       beep_answers: {
         Row: {
           answer_value: number
@@ -2248,6 +2447,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "manager" | "member"
+      backup_status:
+        | "pending"
+        | "running"
+        | "completed"
+        | "failed"
+        | "cancelled"
+      backup_type: "full" | "incremental" | "selective" | "schema_only"
       beep_maturity_level:
         | "idealizando"
         | "validando_problemas_solucoes"
@@ -2255,6 +2461,12 @@ export type Database = {
         | "validando_mercado"
         | "evoluindo"
       company_type: "regular" | "startup"
+      restore_status:
+        | "pending"
+        | "running"
+        | "completed"
+        | "failed"
+        | "cancelled"
       startup_hub_profile_type: "startup" | "mentor"
     }
     CompositeTypes: {
@@ -2384,6 +2596,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "manager", "member"],
+      backup_status: ["pending", "running", "completed", "failed", "cancelled"],
+      backup_type: ["full", "incremental", "selective", "schema_only"],
       beep_maturity_level: [
         "idealizando",
         "validando_problemas_solucoes",
@@ -2392,6 +2606,13 @@ export const Constants = {
         "evoluindo",
       ],
       company_type: ["regular", "startup"],
+      restore_status: [
+        "pending",
+        "running",
+        "completed",
+        "failed",
+        "cancelled",
+      ],
       startup_hub_profile_type: ["startup", "mentor"],
     },
   },

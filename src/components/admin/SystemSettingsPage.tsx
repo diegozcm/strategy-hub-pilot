@@ -11,9 +11,11 @@ import {
   Clock,
   Key,
   AlertTriangle,
-  Trash2
+  Trash2,
+  HardDrive
 } from 'lucide-react';
 import { DatabaseCleanupTab } from './DatabaseCleanupTab';
+import { BackupTab } from './BackupTab';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -293,13 +295,13 @@ export const SystemSettingsPage: React.FC = () => {
       <Card>
         <CardContent className="p-6">
           <Tabs defaultValue="settings" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger 
                 value="settings"
               >
                 <div className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
-                  <span className="hidden sm:inline">Configurações do Sistema</span>
+                  <span className="hidden sm:inline">Configurações</span>
                 </div>
               </TabsTrigger>
               <TabsTrigger 
@@ -308,6 +310,14 @@ export const SystemSettingsPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Trash2 className="h-4 w-4" />
                   <span className="hidden sm:inline">Limpeza de Dados</span>
+                </div>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="backup"
+              >
+                <div className="flex items-center gap-2">
+                  <HardDrive className="h-4 w-4" />
+                  <span className="hidden sm:inline">Backup & Restore</span>
                 </div>
               </TabsTrigger>
             </TabsList>
@@ -388,6 +398,10 @@ export const SystemSettingsPage: React.FC = () => {
 
             <TabsContent value="cleanup" className="space-y-6">
               <DatabaseCleanupTab />
+            </TabsContent>
+
+            <TabsContent value="backup" className="space-y-6">
+              <BackupTab />
             </TabsContent>
           </Tabs>
         </CardContent>
