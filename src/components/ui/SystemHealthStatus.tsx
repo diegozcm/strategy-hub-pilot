@@ -18,7 +18,6 @@ import { useHealthMonitor } from '@/hooks/useHealthMonitor';
 import { useOperationState } from '@/hooks/useOperationState';
 
 export const SystemHealthStatus: React.FC = () => {
-  const [isExpanded, setIsExpanded] = useState(false);
   const { healthStatus, checkPageHealth } = useHealthMonitor();
   const { operations, getFailedOperations } = useOperationState();
 
@@ -39,36 +38,44 @@ export const SystemHealthStatus: React.FC = () => {
   };
 
   return (
-    <Card className="border-l-4 border-l-primary">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            <CardTitle className="text-sm">Sistema de Monitoramento</CardTitle>
+    <div className="grid gap-4">
+      {/* System Health Overview Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="text-center p-4">
+          <div className="flex items-center justify-center mb-2">
             {getHealthIcon()}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="h-6 w-6 p-0"
-          >
-            {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </Button>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Saúde do Sistema</span>
-            <span className={`text-xs font-medium ${getHealthColor()}`}>
-              {healthScore}%
-            </span>
-          </div>
-          <Progress value={healthScore} className="h-1" />
-        </div>
-      </CardHeader>
+          <div className="text-2xl font-bold">{healthScore}%</div>
+          <div className="text-sm text-muted-foreground">Saúde do Sistema</div>
+          <Progress value={healthScore} className="h-2 mt-2" />
+        </Card>
 
-      {isExpanded && (
-        <CardContent className="pt-0 space-y-4">
+        <Card className="text-center p-4">
+          <div className="flex items-center justify-center mb-2">
+            <Activity className="h-4 w-4 text-blue-500" />
+          </div>
+          <div className="text-2xl font-bold">{activeOperations.length}</div>
+          <div className="text-sm text-muted-foreground">Operações Ativas</div>
+        </Card>
+
+        <Card className="text-center p-4">
+          <div className="flex items-center justify-center mb-2">
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+          </div>
+          <div className="text-2xl font-bold">{failedOperations.length}</div>
+          <div className="text-sm text-muted-foreground">Operações Falharam</div>
+        </Card>
+      </div>
+
+      {/* Detailed Status */}
+      <Card className="border-l-4 border-l-primary">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            <CardTitle>Status Detalhado do Sistema</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6">
           {/* System Status */}
           <div>
             <h4 className="text-xs font-semibold mb-2 flex items-center gap-1">
@@ -179,7 +186,7 @@ export const SystemHealthStatus: React.FC = () => {
             Última verificação: {healthStatus.lastCheck.toLocaleTimeString()}
           </div>
         </CardContent>
-      )}
-    </Card>
+      </Card>
+    </div>
   );
 };
