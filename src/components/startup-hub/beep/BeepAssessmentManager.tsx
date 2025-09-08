@@ -29,7 +29,7 @@ interface BeepAssessment {
 export const BeepAssessmentManager = () => {
   const [currentAssessment, setCurrentAssessment] = useState<BeepAssessment | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
-  const [savingQuestions, setSavingQuestions] = useState<Set<string>>(new Set());
+  const [savingQuestions, setSavingQuestions] = useState<Record<string, number>>({});
   const [savedQuestions, setSavedQuestions] = useState<Set<string>>(new Set());
   const timeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
   const savedTimeoutsRef = useRef<Record<string, NodeJS.Timeout>>({});
@@ -140,15 +140,15 @@ export const BeepAssessmentManager = () => {
       console.log('Mutation saving answer for question:', questionId, 'with value:', value);
       return saveAnswer(currentAssessment.id, questionId, value);
     },
-    onMutate: ({ questionId }) => {
-      setSavingQuestions(prev => new Set([...prev, questionId]));
+    onMutate: ({ questionId, value }) => {
+      setSavingQuestions(prev => ({ ...prev, [questionId]: value }));
     },
     onSuccess: (data, variables) => {
       console.log('Answer saved successfully via mutation:', data);
       setSavingQuestions(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(variables.questionId);
-        return newSet;
+        const newSaving = { ...prev };
+        delete newSaving[variables.questionId];
+        return newSaving;
       });
       
       // Add to saved questions (keep permanently visible)
@@ -159,9 +159,9 @@ export const BeepAssessmentManager = () => {
     onError: (error, variables) => {
       console.error('Error saving answer via mutation:', error, 'for question:', variables.questionId);
       setSavingQuestions(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(variables.questionId);
-        return newSet;
+        const newSaving = { ...prev };
+        delete newSaving[variables.questionId];
+        return newSaving;
       });
       
       // Rollback local state on error
@@ -237,27 +237,27 @@ export const BeepAssessmentManager = () => {
     
   // Use auto-save hook with debounce
   timeoutsRef.current[questionId] = setTimeout(async () => {
-    if (currentAssessment?.id && !savingQuestions.has(questionId)) {
+    if (currentAssessment?.id && !(questionId in savingQuestions)) {
       try {
-        setSavingQuestions(prev => new Set([...prev, questionId]));
+        setSavingQuestions(prev => ({ ...prev, [questionId]: value }));
         await autoSaveAnswer(questionId, value);
         
         // Update progress after saving answer
         await updateAssessmentProgress(currentAssessment.id);
         
         setSavingQuestions(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(questionId);
-          return newSet;
+          const newSaving = { ...prev };
+          delete newSaving[questionId];
+          return newSaving;
         });
         setSavedQuestions(prev => new Set([...prev, questionId]));
         queryClient.invalidateQueries({ queryKey: ['beep-answers', currentAssessment?.id] });
         queryClient.invalidateQueries({ queryKey: ['beep-assessments'] });
       } catch (error) {
         setSavingQuestions(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(questionId);
-          return newSet;
+          const newSaving = { ...prev };
+          delete newSaving[questionId];
+          return newSaving;
         });
         console.error('Auto-save failed:', error);
         toast.error('Erro ao salvar resposta');

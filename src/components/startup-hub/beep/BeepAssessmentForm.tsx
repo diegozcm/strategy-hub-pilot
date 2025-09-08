@@ -28,7 +28,7 @@ interface BeepAssessmentFormProps {
   onSaveProgress?: () => void;
   isCompleting: boolean;
   isSavingProgress?: boolean;
-  savingQuestions?: Set<string>;
+  savingQuestions?: Record<string, number>;
   savedQuestions?: Set<string>;
 }
 
@@ -41,7 +41,7 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
   onSaveProgress,
   isCompleting,
   isSavingProgress = false,
-  savingQuestions = new Set(),
+  savingQuestions = {},
   savedQuestions = new Set(),
 }) => {
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
@@ -203,8 +203,9 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
                       question={question}
                       value={answers[question.id]}
                       onChange={(value) => onAnswer(question.id, value)}
-                      isLoading={savingQuestions.has(question.id)}
+                      isLoading={question.id in savingQuestions}
                       isSaved={savedQuestions.has(question.id)}
+                      loadingValue={savingQuestions[question.id]}
                     />
                   ))}
                 </CardContent>

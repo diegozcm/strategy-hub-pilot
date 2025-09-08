@@ -3,6 +3,7 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Loader2 } from "lucide-react";
 
 interface BeepQuestion {
   id: string;
@@ -17,6 +18,7 @@ interface BeepQuestionCardProps {
   onChange: (value: number) => void;
   isLoading?: boolean;
   isSaved?: boolean;
+  loadingValue?: number;
 }
 
 export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
@@ -25,6 +27,7 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
   onChange,
   isLoading = false,
   isSaved = false,
+  loadingValue,
 }) => {
   const scaleLabels = {
     1: 'Discordo Totalmente',
@@ -114,6 +117,7 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
               {[1, 2, 3, 4, 5].map(rating => {
                 const colorClasses = getColorClasses(rating);
                 const isSelected = value === rating;
+                const isLoadingThis = loadingValue === rating;
                 
                 return (
                   <Button
@@ -121,12 +125,16 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
                     variant={isSelected ? "default" : "outline"}
                     size="sm"
                     className={`flex-1 h-12 flex flex-col gap-1 transition-all ${
-                      isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                      isLoadingThis ? 'opacity-75 cursor-not-allowed' : ''
                     } ${isSelected ? colorClasses.button : colorClasses.hover}`}
                     onClick={() => onChange(rating)}
-                    disabled={isLoading}
+                    disabled={isLoadingThis}
                   >
-                    <span className="font-bold">{rating}</span>
+                    {isLoadingThis ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <span className="font-bold">{rating}</span>
+                    )}
                   </Button>
                 );
               })}
