@@ -23,6 +23,8 @@ import { PlanCard } from './PlanCard';
 import { PlanDetailModal } from './PlanDetailModal';
 import { EditPlanModal } from './EditPlanModal';
 import { DeletePlanModal } from './DeletePlanModal';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -63,10 +65,14 @@ interface StrategicPillar {
 export const ObjectivesPage: React.FC = () => {
   const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
-  const [objectives, setObjectives] = useState<StrategicObjective[]>([]);
-  const [plans, setPlans] = useState<StrategicPlan[]>([]);
-  const [pillars, setPillars] = useState<StrategicPillar[]>([]);
-  const [keyResults, setKeyResults] = useState<KeyResult[]>([]);
+  
+  // Use our new data management hook
+  const { 
+    objectives, plans, pillars, keyResults, loading, error,
+    setObjectives, setPlans, setPillars, setKeyResults,
+    refreshData, invalidateAndReload, handleError, clearError
+  } = useObjectivesData();
+  
   const [selectedPlan, setSelectedPlan] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -75,9 +81,9 @@ export const ObjectivesPage: React.FC = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedObjective, setSelectedObjective] = useState<StrategicObjective | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [isAddResultadoChaveOpen, setIsAddResultadoChaveOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Plan management states
   const [selectedPlanForDetail, setSelectedPlanForDetail] = useState<StrategicPlan | null>(null);
@@ -91,7 +97,7 @@ export const ObjectivesPage: React.FC = () => {
   const [objectiveForm, setObjectiveForm] = useState({
     title: '',
     description: '',
-    weight: 1,
+    weight: 50, // Use default value from database
     target_date: '',
     plan_id: '',
     pillar_id: '',
@@ -116,11 +122,12 @@ export const ObjectivesPage: React.FC = () => {
     pillar_id: ''
   });
 
+  // Clear error when component mounts or when user changes
   useEffect(() => {
-    loadData();
-  }, []);
+    clearError();
+  }, [user, authCompany, clearError]);
 
-  // React to company changes
+  // Data management is handled by useObjectivesData hook
   useEffect(() => {
     if (user && authCompany) {
       loadData();
@@ -129,14 +136,13 @@ export const ObjectivesPage: React.FC = () => {
 
   const loadData = async () => {
     try {
-      setLoading(true);
+      // Remove old loadData references since we use the hook now
       
       if (!user || !authCompany) {
         setPlans([]);
         setObjectives([]);
         setKeyResults([]);
         setPillars([]);
-        setLoading(false);
         return;
       }
       
@@ -178,7 +184,6 @@ export const ObjectivesPage: React.FC = () => {
         // If no plans, set empty objectives
         setObjectives([]);
         setKeyResults([]);
-        setLoading(false);
         return;
       }
       
@@ -211,7 +216,7 @@ export const ObjectivesPage: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      // Loading is handled by the hook
     }
   };
 
@@ -227,7 +232,12 @@ export const ObjectivesPage: React.FC = () => {
       return;
     }
 
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     try {
+      console.log('🔄 Creating plan...');
+      
       const { data, error } = await supabase
         .from('strategic_plans')
         .insert([{
@@ -240,6 +250,7 @@ export const ObjectivesPage: React.FC = () => {
 
       if (error) throw error;
 
+      // Optimistic update
       setPlans(prev => [data, ...prev]);
       setSelectedPlan(data.id);
       setPlanForm({ name: '', vision: '', mission: '', period_start: '', period_end: '' });
@@ -249,13 +260,16 @@ export const ObjectivesPage: React.FC = () => {
         title: "Sucesso",
         description: "Plano estratégico criado com sucesso!",
       });
+
+      // Reload data to ensure consistency
+      await invalidateAndReload();
+      console.log('✅ Plan created successfully');
     } catch (error) {
-      console.error('Error creating plan:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar plano estratégico. Tente novamente.",
-        variant: "destructive",
-      });
+      handleError(error, 'criar plano estratégico');
+      // Revert optimistic update if needed
+      await refreshData();
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -279,16 +293,30 @@ export const ObjectivesPage: React.FC = () => {
       return;
     }
 
+    // Validate weight
+    if (objectiveForm.weight < 1 || objectiveForm.weight > 100) {
+      toast({
+        title: "Erro",
+        description: "O peso deve ser um valor entre 1 e 100.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     try {
       const objectiveData = {
         ...objectiveForm,
         owner_id: user.id,
         target_date: objectiveForm.target_date ? objectiveForm.target_date : null,
         status: 'not_started',
-        progress: 0
+        progress: 0,
+        weight: Math.max(1, Math.min(100, objectiveForm.weight)) // Ensure weight is in valid range
       };
 
-      console.log('Creating objective with data:', objectiveData);
+      console.log('🔄 Creating objective with data:', objectiveData);
 
       const { data, error } = await supabase
         .from('strategic_objectives')
@@ -298,11 +326,12 @@ export const ObjectivesPage: React.FC = () => {
 
       if (error) throw error;
 
+      // Optimistic update
       setObjectives(prev => [data, ...prev]);
       setObjectiveForm({ 
         title: '', 
         description: '', 
-        weight: 1, 
+        weight: 50, // Use default value 
         target_date: '', 
         plan_id: '', 
         pillar_id: '',
@@ -315,26 +344,16 @@ export const ObjectivesPage: React.FC = () => {
         title: "Sucesso",
         description: "Objetivo estratégico criado com sucesso!",
       });
+
+      // Reload data to ensure consistency
+      await invalidateAndReload();
+      console.log('✅ Objective created successfully');
     } catch (error) {
-      console.error('Error creating objective:', error);
-      let errorMessage = "Erro ao criar objetivo estratégico. Tente novamente.";
-      
-      // Provide more specific error messages
-      if (error instanceof Error) {
-        if (error.message.includes('weight')) {
-          errorMessage = "O peso deve ser um valor entre 1 e 100.";
-        } else if (error.message.includes('strategic_objectives_weight_check')) {
-          errorMessage = "O peso do objetivo deve ser um valor válido entre 1 e 100.";
-        } else if (error.message.includes('status')) {
-          errorMessage = "Status inválido. Selecione um status válido.";
-        }
-      }
-      
-      toast({
-        title: "Erro",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      handleError(error, 'criar objetivo estratégico');
+      // Revert optimistic update if needed
+      await refreshData();
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -368,24 +387,41 @@ export const ObjectivesPage: React.FC = () => {
       return;
     }
 
+    // Validate weight
+    if (editForm.weight < 1 || editForm.weight > 100) {
+      toast({
+        title: "Erro",
+        description: "O peso deve ser um valor entre 1 e 100.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     try {
+      console.log('🔄 Updating objective:', selectedObjective.id);
+      
+      const updateData = {
+        title: editForm.title,
+        description: editForm.description,
+        weight: Math.max(1, Math.min(100, editForm.weight)), // Ensure valid range
+        target_date: editForm.target_date || null,
+        status: editForm.status,
+        pillar_id: editForm.pillar_id
+      };
+
       const { data, error } = await supabase
         .from('strategic_objectives')
-        .update({
-          title: editForm.title,
-          description: editForm.description,
-          weight: editForm.weight,
-          target_date: editForm.target_date || null,
-          status: editForm.status,
-          pillar_id: editForm.pillar_id
-        })
+        .update(updateData)
         .eq('id', selectedObjective.id)
         .select()
         .single();
 
       if (error) throw error;
 
-      // Update the objectives list
+      // Optimistic update
       setObjectives(prev => prev.map(obj => 
         obj.id === selectedObjective.id ? data : obj
       ));
@@ -397,20 +433,26 @@ export const ObjectivesPage: React.FC = () => {
         title: "Sucesso",
         description: "Objetivo atualizado com sucesso!",
       });
+
+      // Reload data to ensure consistency
+      await invalidateAndReload();
+      console.log('✅ Objective updated successfully');
     } catch (error) {
-      console.error('Error updating objective:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar objetivo. Tente novamente.",
-        variant: "destructive",
-      });
+      handleError(error, 'atualizar objetivo');
+      // Revert optimistic update if needed
+      await refreshData();
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const deleteObjective = async () => {
-    if (!selectedObjective) return;
+    if (!selectedObjective || isSubmitting) return;
+    setIsSubmitting(true);
 
     try {
+      console.log('🔄 Deleting objective:', selectedObjective.id);
+      
       const { error } = await supabase
         .from('strategic_objectives')
         .delete()
@@ -418,7 +460,7 @@ export const ObjectivesPage: React.FC = () => {
 
       if (error) throw error;
 
-      // Remove from objectives list
+      // Optimistic update
       setObjectives(prev => prev.filter(obj => obj.id !== selectedObjective.id));
       
       // Close modals
@@ -429,20 +471,26 @@ export const ObjectivesPage: React.FC = () => {
         title: "Sucesso",
         description: "Objetivo excluído com sucesso!",
       });
+
+      // Reload data to ensure consistency
+      await invalidateAndReload();
+      console.log('✅ Objective deleted successfully');
     } catch (error) {
-      console.error('Error deleting objective:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao excluir objetivo. Tente novamente.",
-        variant: "destructive",
-      });
+      handleError(error, 'excluir objetivo');
+      // Revert optimistic update if needed
+      await refreshData();
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const createResultadoChave = async (resultadoChaveData: any) => {
-    if (!selectedObjective || !user) return;
+    if (!selectedObjective || !user || isSubmitting) return;
+    setIsSubmitting(true);
 
     try {
+      console.log('🔄 Creating key result for objective:', selectedObjective.id);
+      
       const { data, error } = await supabase
         .from('key_results')
         .insert([{
@@ -455,20 +503,23 @@ export const ObjectivesPage: React.FC = () => {
 
       if (error) throw error;
 
-      // Add to key results list
+      // Optimistic update
       setKeyResults(prev => [data as unknown as KeyResult, ...prev]);
       
       toast({
         title: "Sucesso",
         description: "Resultado-chave criado com sucesso!",
       });
+
+      // Reload data to ensure consistency
+      await invalidateAndReload();
+      console.log('✅ Key result created successfully');
     } catch (error) {
-      console.error('Error creating key result:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao criar resultado-chave. Tente novamente.",
-        variant: "destructive",
-      });
+      handleError(error, 'criar resultado-chave');
+      // Revert optimistic update if needed
+      await refreshData();
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
