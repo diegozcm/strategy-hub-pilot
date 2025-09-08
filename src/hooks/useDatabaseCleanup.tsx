@@ -154,19 +154,16 @@ export const useDatabaseCleanup = () => {
       
       switch (category) {
         case 'mentoring': {
-          const { count: sessionsCount, error } = await supabase
+          const query = supabase
             .from('mentoring_sessions')
-            .select('*', { count: 'exact', head: true })
-            .eq(filters?.companyId ? 'startup_company_id' : 'id', filters?.companyId || 'any');
+            .select('*', { count: 'exact', head: true });
           
-          if (error && !filters?.companyId) {
-            const { count: allCount } = await supabase
-              .from('mentoring_sessions')
-              .select('*', { count: 'exact', head: true });
-            count = allCount || 0;
-          } else {
-            count = sessionsCount || 0;
+          if (filters?.companyId) {
+            query.eq('startup_company_id', filters.companyId);
           }
+          
+          const { count: sessionsCount } = await query;
+          count = sessionsCount || 0;
           break;
         }
         
@@ -193,17 +190,29 @@ export const useDatabaseCleanup = () => {
         }
         
         case 'analyses': {
-          const { count: gcCount } = await supabase
+          const query = supabase
             .from('golden_circle')
             .select('*', { count: 'exact', head: true });
+          
+          if (filters?.companyId) {
+            query.eq('company_id', filters.companyId);
+          }
+          
+          const { count: gcCount } = await query;
           count = gcCount || 0;
           break;
         }
         
         case 'beep': {
-          const { count: assessmentsCount } = await supabase
+          const query = supabase
             .from('beep_assessments')
             .select('*', { count: 'exact', head: true });
+          
+          if (filters?.companyId) {
+            query.eq('company_id', filters.companyId);
+          }
+          
+          const { count: assessmentsCount } = await query;
           count = assessmentsCount || 0;
           break;
         }
@@ -247,6 +256,7 @@ export const useDatabaseCleanup = () => {
   const loadStats = useCallback(async () => {
     const newStats: CleanupStats[] = [];
     
+    // Initialize loading state for all categories
     for (const category of categories) {
       newStats.push({
         category: category.id,
@@ -260,15 +270,24 @@ export const useDatabaseCleanup = () => {
     // Load counts for each category
     for (let i = 0; i < categories.length; i++) {
       const category = categories[i];
-      const count = await getRecordCount(category.id);
-      
-      setStats(prev => prev.map(stat => 
-        stat.category === category.id 
-          ? { ...stat, totalRecords: count, loading: false }
-          : stat
-      ));
+      try {
+        const count = await getRecordCount(category.id);
+        
+        setStats(prev => prev.map(stat => 
+          stat.category === category.id 
+            ? { ...stat, totalRecords: count, loading: false }
+            : stat
+        ));
+      } catch (error) {
+        console.error(`Error loading stats for ${category.id}:`, error);
+        setStats(prev => prev.map(stat => 
+          stat.category === category.id 
+            ? { ...stat, totalRecords: 0, loading: false }
+            : stat
+        ));
+      }
     }
-  }, [categories, getRecordCount]);
+  }, []); // Remove dependencies to prevent infinite loop
 
   const executeCleanup = useCallback(async (request: CleanupRequest): Promise<CleanupResult> => {
     setLoading(true);

@@ -50,16 +50,22 @@ export const DatabaseCleanupTab: React.FC = () => {
     loadStats();
     loadCompanies();
     loadUsers();
-  }, [loadStats, loadCompanies, loadUsers]);
+  }, []); // Remove dependencies to prevent infinite loop
 
   useEffect(() => {
     const updateFilteredCount = async () => {
       if (!selectedCategory) return;
       
       setLoadingFilteredCount(true);
-      const count = await getRecordCount(selectedCategory.id, filters);
-      setFilteredRecordCount(count);
-      setLoadingFilteredCount(false);
+      try {
+        const count = await getRecordCount(selectedCategory.id, filters);
+        setFilteredRecordCount(count);
+      } catch (error) {
+        console.error('Error updating filtered count:', error);
+        setFilteredRecordCount(0);
+      } finally {
+        setLoadingFilteredCount(false);
+      }
     };
 
     if (selectedCategory && (filters.companyId || filters.userId || filters.beforeDate)) {
@@ -68,7 +74,7 @@ export const DatabaseCleanupTab: React.FC = () => {
       const categoryStats = stats.find(s => s.category === selectedCategory.id);
       setFilteredRecordCount(categoryStats?.totalRecords || 0);
     }
-  }, [selectedCategory, filters, stats, getRecordCount]);
+  }, [selectedCategory, filters.companyId, filters.userId, filters.beforeDate]); // Optimize dependencies
 
   const handleCategorySelect = (category: CleanupCategory) => {
     setSelectedCategory(category);
