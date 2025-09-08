@@ -116,109 +116,16 @@ export const ObjectivesPage: React.FC = () => {
   const [editForm, setEditForm] = useState({
     title: '',
     description: '',
-    weight: 1,
+    weight: 50,
     target_date: '',
     status: 'not_started',
     pillar_id: ''
   });
 
-  // Clear error when component mounts or when user changes
+  // Clear error when component mounts
   useEffect(() => {
     clearError();
   }, [user, authCompany, clearError]);
-
-  // Data management is handled by useObjectivesData hook
-  useEffect(() => {
-    if (user && authCompany) {
-      loadData();
-    }
-  }, [authCompany?.id]);
-
-  const loadData = async () => {
-    try {
-      // Remove old loadData references since we use the hook now
-      
-      if (!user || !authCompany) {
-        setPlans([]);
-        setObjectives([]);
-        setKeyResults([]);
-        setPillars([]);
-        return;
-      }
-      
-      // Load strategic plans with explicit company validation
-      const { data: plansData, error: plansError } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('company_id', authCompany.id)
-        .order('created_at', { ascending: false });
-
-      if (plansError) {
-        console.error('Error loading plans:', plansError);
-        throw plansError;
-      }
-      
-      // Ensure we only use plans from the current company
-      const validPlans = (plansData || []).filter(plan => plan.company_id === authCompany.id);
-      setPlans(validPlans);
-
-      // Load strategic pillars
-      const { data: pillarsData, error: pillarsError } = await supabase
-        .from('strategic_pillars')
-        .select('*')
-        .eq('company_id', authCompany.id)
-        .order('order_index', { ascending: true });
-
-      if (pillarsError) throw pillarsError;
-      setPillars(pillarsData || []);
-
-      // Load objectives - filter by plans from the same company
-      let objectivesQuery = supabase
-        .from('strategic_objectives')
-        .select('*');
-      
-      if (plansData && plansData.length > 0) {
-        const planIds = plansData.map(plan => plan.id);
-        objectivesQuery = objectivesQuery.in('plan_id', planIds);
-      } else {
-        // If no plans, set empty objectives
-        setObjectives([]);
-        setKeyResults([]);
-        return;
-      }
-      
-      const { data: objectivesData, error: objectivesError } = await objectivesQuery
-        .order('created_at', { ascending: false });
-
-      if (objectivesError) throw objectivesError;
-      setObjectives(objectivesData || []);
-
-      // Load key results - filter by objectives from this company
-      if (objectivesData && objectivesData.length > 0) {
-        const objectiveIds = objectivesData.map(obj => obj.id);
-        const { data: keyResultsData, error: keyResultsError } = await supabase
-          .from('key_results')
-          .select('*')
-          .in('objective_id', objectiveIds)
-          .order('created_at', { ascending: false });
-
-        if (keyResultsError) throw keyResultsError;
-        setKeyResults((keyResultsData || []) as unknown as KeyResult[]);
-      } else {
-        setKeyResults([]);
-      }
-
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar dados. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      // Loading is handled by the hook
-    }
-  };
 
   const createPlan = async () => {
     if (!user || !authCompany || !planForm.name || !planForm.period_start || !planForm.period_end) {
@@ -633,32 +540,59 @@ export const ObjectivesPage: React.FC = () => {
     return objectives.filter(obj => obj.plan_id === planId).length;
   };
 
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <ErrorBoundary>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Objetivos Estratégicos</h1>
+              <p className="text-gray-600 mt-2">Gerencie seus objetivos e resultados-chave (OKRs)</p>
+            </div>
+          </div>
+          <Card className="p-6 text-center">
+            <AlertTriangle className="mx-auto h-12 w-12 text-destructive mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Erro ao carregar dados</h3>
+            <p className="text-muted-foreground mb-4">{error}</p>
+            <Button onClick={() => {
+              clearError();
+              refreshData();
+            }}>
+              Tentar novamente
+            </Button>
+          </Card>
+        </div>
+      </ErrorBoundary>
+    );
+  }
+
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Objetivos Estratégicos</h1>
-            <p className="text-gray-600 mt-2">Gerencie seus objetivos e resultados-chave (OKRs)</p>
+      <ErrorBoundary>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Objetivos Estratégicos</h1>
+              <p className="text-gray-600 mt-2">Gerencie seus objetivos e resultados-chave (OKRs)</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader>
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-16 bg-gray-200 rounded mb-4"></div>
+                  <div className="h-2 bg-gray-200 rounded w-full"></div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="h-3 bg-gray-200 rounded"></div>
-                  <div className="h-2 bg-gray-200 rounded w-full"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+      </ErrorBoundary>
     );
   }
 
@@ -668,171 +602,577 @@ export const ObjectivesPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Objetivos Estratégicos</h1>
-          <p className="text-gray-600 mt-2">Gerencie seus planos estratégicos e objetivos</p>
+    <ErrorBoundary>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Objetivos Estratégicos</h1>
+            <p className="text-gray-600 mt-2">Gerencie seus planos estratégicos e objetivos</p>
+          </div>
+          <div className="flex space-x-3">
+            <Dialog open={isCreatePlanOpen} onOpenChange={setIsCreatePlanOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Plano
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Criar Plano Estratégico</DialogTitle>
+                  <DialogDescription>
+                    Crie um novo plano estratégico para organizar seus objetivos
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="plan-name">Nome do Plano</Label>
+                    <Input
+                      id="plan-name"
+                      value={planForm.name}
+                      onChange={(e) => setPlanForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Ex: Plano Estratégico 2024-2026"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="grid gap-2">
+                      <Label htmlFor="period-start">Data de Início</Label>
+                      <Input
+                        id="period-start"
+                        type="date"
+                        value={planForm.period_start}
+                        onChange={(e) => setPlanForm(prev => ({ ...prev, period_start: e.target.value }))}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="period-end">Data de Fim</Label>
+                      <Input
+                        id="period-end"
+                        type="date"
+                        value={planForm.period_end}
+                        onChange={(e) => setPlanForm(prev => ({ ...prev, period_end: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="plan-vision">Visão (Opcional)</Label>
+                    <Textarea
+                      id="plan-vision"
+                      value={planForm.vision}
+                      onChange={(e) => setPlanForm(prev => ({ ...prev, vision: e.target.value }))}
+                      placeholder="Descreva a visão da empresa para este período"
+                      rows={2}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="plan-mission">Missão (Opcional)</Label>
+                    <Textarea
+                      id="plan-mission"
+                      value={planForm.mission}
+                      onChange={(e) => setPlanForm(prev => ({ ...prev, mission: e.target.value }))}
+                      placeholder="Descreva a missão da empresa"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setIsCreatePlanOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={createPlan}>
+                    Criar Plano
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            
+            <Dialog open={isCreateObjectiveOpen} onOpenChange={setIsCreateObjectiveOpen}>
+              <DialogTrigger asChild>
+                <Button disabled={plans.length === 0}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Objetivo
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Criar Objetivo Estratégico</DialogTitle>
+                  <DialogDescription>
+                    {plans.length === 0 
+                      ? "Primeiro você precisa criar um plano estratégico"
+                      : "Defina um novo objetivo estratégico para sua organização."
+                    }
+                  </DialogDescription>
+                </DialogHeader>
+                {plans.length > 0 && (
+                  <>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="objective-title">Título do Objetivo</Label>
+                        <Input
+                          id="objective-title"
+                          value={objectiveForm.title}
+                          onChange={(e) => setObjectiveForm(prev => ({ ...prev, title: e.target.value }))}
+                          placeholder="Ex: Aumentar receita em 30%"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="objective-description">Descrição</Label>
+                        <Textarea
+                          id="objective-description"
+                          value={objectiveForm.description}
+                          onChange={(e) => setObjectiveForm(prev => ({ ...prev, description: e.target.value }))}
+                          placeholder="Descreva o objetivo..."
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="objective-weight">Peso (%)</Label>
+                          <Input
+                            id="objective-weight"
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={objectiveForm.weight}
+                            onChange={(e) => setObjectiveForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="objective-target-date">Data Meta</Label>
+                          <Input
+                            id="objective-target-date"
+                            type="date"
+                            value={objectiveForm.target_date}
+                            onChange={(e) => setObjectiveForm(prev => ({ ...prev, target_date: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="objective-plan">Plano Estratégico</Label>
+                          <Select value={objectiveForm.plan_id} onValueChange={(value) => setObjectiveForm(prev => ({ ...prev, plan_id: value }))}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um plano" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {plans.map((plan) => (
+                                <SelectItem key={plan.id} value={plan.id}>
+                                  {plan.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="objective-pillar">Pilar Estratégico</Label>
+                          <Select value={objectiveForm.pillar_id} onValueChange={(value) => setObjectiveForm(prev => ({ ...prev, pillar_id: value }))}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um pilar" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {pillars.map((pillar) => (
+                                <SelectItem key={pillar.id} value={pillar.id}>
+                                  {pillar.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <Button variant="outline" onClick={() => setIsCreateObjectiveOpen(false)}>
+                        Cancelar
+                      </Button>
+                      <Button onClick={createObjective}>
+                        Criar Objetivo
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
-        <div className="flex space-x-3">
-          <Dialog open={isCreatePlanOpen} onOpenChange={setIsCreatePlanOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Plano
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Criar Plano Estratégico</DialogTitle>
-                <DialogDescription>
-                  Crie um novo plano estratégico para organizar seus objetivos
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="plan-name">Nome do Plano</Label>
-                  <Input
-                    id="plan-name"
-                    value={planForm.name}
-                    onChange={(e) => setPlanForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Ex: Plano Estratégico 2024-2026"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="grid gap-2">
-                    <Label htmlFor="period-start">Data de Início</Label>
-                    <Input
-                      id="period-start"
-                      type="date"
-                      value={planForm.period_start}
-                      onChange={(e) => setPlanForm(prev => ({ ...prev, period_start: e.target.value }))}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="period-end">Data de Fim</Label>
-                    <Input
-                      id="period-end"
-                      type="date"
-                      value={planForm.period_end}
-                      onChange={(e) => setPlanForm(prev => ({ ...prev, period_end: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="plan-vision">Visão (Opcional)</Label>
-                  <Textarea
-                    id="plan-vision"
-                    value={planForm.vision}
-                    onChange={(e) => setPlanForm(prev => ({ ...prev, vision: e.target.value }))}
-                    placeholder="Descreva a visão da empresa para este período"
-                    rows={2}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="plan-mission">Missão (Opcional)</Label>
-                  <Textarea
-                    id="plan-mission"
-                    value={planForm.mission}
-                    onChange={(e) => setPlanForm(prev => ({ ...prev, mission: e.target.value }))}
-                    placeholder="Descreva a missão da empresa"
-                    rows={2}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsCreatePlanOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={createPlan}>
-                  Criar Plano
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+
+        {/* Plans Management Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Layout className="h-5 w-5" />
+              <h2 className="text-xl font-semibold">Planos Estratégicos</h2>
+            </div>
+          </div>
           
-          <Dialog open={isCreateObjectiveOpen} onOpenChange={setIsCreateObjectiveOpen}>
-            <DialogTrigger asChild>
-              <Button disabled={plans.length === 0}>
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Objetivo
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Criar Objetivo Estratégico</DialogTitle>
-                <DialogDescription>
-                  {plans.length === 0 
-                    ? "Primeiro você precisa criar um plano estratégico"
-                    : "Defina um novo objetivo estratégico para sua organização."
-                  }
-                </DialogDescription>
-              </DialogHeader>
-              {plans.length > 0 && (
-                <>
+          {plans.length === 0 ? (
+            <Card>
+              <CardContent className="py-8 text-center">
+                <Layout className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Nenhum plano estratégico</h3>
+                <p className="text-muted-foreground mb-4">
+                  Crie seu primeiro plano estratégico para começar a definir objetivos.
+                </p>
+                <Button onClick={() => setIsCreatePlanOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar Primeiro Plano
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome do Plano</TableHead>
+                      <TableHead>Período</TableHead>
+                      <TableHead>Objetivos</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Visão</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {plans.map((plan) => {
+                      const getStatusConfig = (status: string) => {
+                        switch (status) {
+                          case 'active':
+                            return {
+                              className: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300',
+                              label: 'Ativo'
+                            };
+                          case 'draft':
+                            return {
+                              className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300',
+                              label: 'Rascunho'
+                            };
+                          case 'completed':
+                            return {
+                              className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300',
+                              label: 'Concluído'
+                            };
+                          case 'paused':
+                            return {
+                              className: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300',
+                              label: 'Pausado'
+                            };
+                          default:
+                            return {
+                              className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300',
+                              label: status
+                            };
+                        }
+                      };
+
+                      const statusConfig = getStatusConfig(plan.status);
+                      const objectivesCount = getObjectivesCountForPlan(plan.id);
+
+                      return (
+                        <TableRow key={plan.id} className="hover:bg-muted/50">
+                          <TableCell className="font-medium">{plan.name}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {format(new Date(plan.period_start), 'MM/yyyy', { locale: ptBR })} - {format(new Date(plan.period_end), 'MM/yyyy', { locale: ptBR })}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Target className="h-3 w-3" />
+                              {objectivesCount} objetivo{objectivesCount !== 1 ? 's' : ''}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={`${statusConfig.className} border`}>
+                              {statusConfig.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="max-w-xs">
+                            {plan.vision ? (
+                              <p className="text-sm text-muted-foreground truncate">
+                                {plan.vision}
+                              </p>
+                            ) : (
+                              <span className="text-sm text-muted-foreground italic">Sem visão definida</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handlePlanView(plan)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Ver Detalhes
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handlePlanEdit(plan)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handlePlanDelete(plan)}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Objectives Section */}
+        <div className="space-y-4">
+          {/* Filters and Search */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-between">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="Buscar objetivos..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full sm:w-64"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-32">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="not_started">Não Iniciado</SelectItem>
+                  <SelectItem value="in_progress">Em Progresso</SelectItem>
+                  <SelectItem value="at_risk">Em Risco</SelectItem>
+                  <SelectItem value="delayed">Atrasado</SelectItem>
+                  <SelectItem value="completed">Concluído</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+                <SelectTrigger className="w-full sm:w-40">
+                  <SelectValue placeholder="Plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os Planos</SelectItem>
+                  {plans.map((plan) => (
+                    <SelectItem key={plan.id} value={plan.id}>
+                      {plan.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Objectives Grid */}
+          {filteredObjectives.length === 0 ? (
+            <div className="text-center py-12">
+              <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {objectives.length === 0 ? 'Nenhum objetivo criado' : 'Nenhum objetivo encontrado'}
+              </h3>
+              <p className="text-gray-500 mb-4">
+                {objectives.length === 0 
+                  ? 'Comece criando seu primeiro objetivo estratégico.'
+                  : 'Tente ajustar os filtros ou termo de busca.'
+                }
+              </p>
+              {objectives.length === 0 && plans.length > 0 && (
+                <Button onClick={() => setIsCreateObjectiveOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar Primeiro Objetivo
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              {filteredObjectives.map((objective) => {
+                const pillar = pillars.find(p => p.id === objective.pillar_id);
+                const plan = plans.find(p => p.id === objective.plan_id);
+                const objectiveKeyResults = getObjectiveKeyResults(objective.id);
+                
+                return (
+                  <Card 
+                    key={objective.id} 
+                    className="hover:shadow-lg transition-all cursor-pointer group"
+                    onClick={() => openDetailModal(objective)}
+                  >
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
+                            {objective.title}
+                          </CardTitle>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge 
+                              variant="secondary" 
+                              style={{ backgroundColor: `${pillar?.color}20`, color: pillar?.color }}
+                            >
+                              {pillar?.name}
+                            </Badge>
+                            <Badge variant="outline">
+                              {plan?.name}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className={`w-2 h-2 rounded-full ${getStatusColor(objective.status)}`}></div>
+                          <span className="text-xs text-gray-500">{getStatusText(objective.status)}</span>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {objective.description && (
+                          <p className="text-sm text-gray-600 line-clamp-2">{objective.description}</p>
+                        )}
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-1 text-gray-500">
+                            <Target className="w-3 h-3" />
+                            <span>{objectiveKeyResults.length} resultados-chave</span>
+                          </div>
+                          <div className="flex items-center gap-1 text-gray-500">
+                            <TrendingUp className="w-3 h-3" />
+                            <span>Peso: {objective.weight}%</span>
+                          </div>
+                        </div>
+                        {objective.target_date && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <Clock className="w-3 h-3" />
+                            <span>Meta: {new Date(objective.target_date).toLocaleDateString('pt-BR')}</span>
+                          </div>
+                        )}
+                        <Progress value={objective.progress || 0} className="h-2" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Objective Detail Modal */}
+        <Dialog open={isDetailModalOpen} onOpenChange={closeDetailModal}>
+          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <DialogTitle className="text-xl">
+                    {isEditing ? 'Editar Objetivo' : 'Detalhes do Objetivo'}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {selectedObjective && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="secondary">
+                          {pillars.find(p => p.id === selectedObjective.pillar_id)?.name}
+                        </Badge>
+                        <Badge variant="outline">
+                          {plans.find(p => p.id === selectedObjective.plan_id)?.name}
+                        </Badge>
+                      </div>
+                    )}
+                  </DialogDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!isEditing && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                        <Edit className="w-4 h-4 mr-1" />
+                        Editar
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)}>
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Excluir
+                      </Button>
+                    </>
+                  )}
+                  {isEditing && (
+                    <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                      <X className="w-4 h-4 mr-1" />
+                      Cancelar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </DialogHeader>
+
+            {selectedObjective && (
+              <div className="space-y-6">
+                {isEditing ? (
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="objective-title">Título do Objetivo</Label>
+                      <Label htmlFor="edit-title">Título</Label>
                       <Input
-                        id="objective-title"
-                        value={objectiveForm.title}
-                        onChange={(e) => setObjectiveForm(prev => ({ ...prev, title: e.target.value }))}
-                        placeholder="Ex: Aumentar receita em 30%"
+                        id="edit-title"
+                        value={editForm.title}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="objective-description">Descrição</Label>
+                      <Label htmlFor="edit-description">Descrição</Label>
                       <Textarea
-                        id="objective-description"
-                        value={objectiveForm.description}
-                        onChange={(e) => setObjectiveForm(prev => ({ ...prev, description: e.target.value }))}
-                        placeholder="Descreva o objetivo..."
+                        id="edit-description"
+                        value={editForm.description}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                        rows={3}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="objective-weight">Peso (%)</Label>
+                        <Label htmlFor="edit-weight">Peso (%)</Label>
                         <Input
-                          id="objective-weight"
+                          id="edit-weight"
                           type="number"
                           min="1"
                           max="100"
-                          value={objectiveForm.weight}
-                          onChange={(e) => setObjectiveForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
+                          value={editForm.weight}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
                         />
                       </div>
                       <div>
-                        <Label htmlFor="objective-target-date">Data Meta</Label>
+                        <Label htmlFor="edit-target-date">Data Meta</Label>
                         <Input
-                          id="objective-target-date"
+                          id="edit-target-date"
                           type="date"
-                          value={objectiveForm.target_date}
-                          onChange={(e) => setObjectiveForm(prev => ({ ...prev, target_date: e.target.value }))}
+                          value={editForm.target_date}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, target_date: e.target.value }))}
                         />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="objective-plan">Plano Estratégico</Label>
-                        <Select value={objectiveForm.plan_id} onValueChange={(value) => setObjectiveForm(prev => ({ ...prev, plan_id: value }))}>
+                        <Label htmlFor="edit-status">Status</Label>
+                        <Select value={editForm.status} onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value }))}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione um plano" />
+                            <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            {plans.map((plan) => (
-                              <SelectItem key={plan.id} value={plan.id}>
-                                {plan.name}
-                              </SelectItem>
-                            ))}
+                            <SelectItem value="not_started">Não Iniciado</SelectItem>
+                            <SelectItem value="in_progress">Em Progresso</SelectItem>
+                            <SelectItem value="at_risk">Em Risco</SelectItem>
+                            <SelectItem value="delayed">Atrasado</SelectItem>
+                            <SelectItem value="completed">Concluído</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="objective-pillar">Pilar Estratégico</Label>
-                        <Select value={objectiveForm.pillar_id} onValueChange={(value) => setObjectiveForm(prev => ({ ...prev, pillar_id: value }))}>
+                        <Label htmlFor="edit-pillar">Pilar Estratégico</Label>
+                        <Select value={editForm.pillar_id} onValueChange={(value) => setEditForm(prev => ({ ...prev, pillar_id: value }))}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione um pilar" />
+                            <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {pillars.map((pillar) => (
@@ -844,542 +1184,138 @@ export const ObjectivesPage: React.FC = () => {
                         </Select>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setIsCreateObjectiveOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button onClick={createObjective}>
-                      Criar Objetivo
-                    </Button>
-                  </div>
-                </>
-              )}
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Plans Management Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Layout className="h-5 w-5" />
-            <h2 className="text-xl font-semibold">Planos Estratégicos</h2>
-          </div>
-        </div>
-        
-        {plans.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center">
-              <Layout className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Nenhum plano estratégico</h3>
-              <p className="text-muted-foreground mb-4">
-                Crie seu primeiro plano estratégico para começar a definir objetivos.
-              </p>
-              <Button onClick={() => setIsCreatePlanOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Criar Primeiro Plano
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome do Plano</TableHead>
-                    <TableHead>Período</TableHead>
-                    <TableHead>Objetivos</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Visão</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {plans.map((plan) => {
-                    const getStatusConfig = (status: string) => {
-                      switch (status) {
-                        case 'active':
-                          return {
-                            className: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300',
-                            label: 'Ativo'
-                          };
-                        case 'draft':
-                          return {
-                            className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300',
-                            label: 'Rascunho'
-                          };
-                        case 'completed':
-                          return {
-                            className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300',
-                            label: 'Concluído'
-                          };
-                        case 'paused':
-                          return {
-                            className: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300',
-                            label: 'Pausado'
-                          };
-                        default:
-                          return {
-                            className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300',
-                            label: status
-                          };
-                      }
-                    };
-
-                    const statusConfig = getStatusConfig(plan.status);
-                    const objectivesCount = getObjectivesCountForPlan(plan.id);
-
-                    return (
-                      <TableRow key={plan.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">{plan.name}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {format(new Date(plan.period_start), 'MM/yyyy', { locale: ptBR })} - {format(new Date(plan.period_end), 'MM/yyyy', { locale: ptBR })}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Target className="h-3 w-3" />
-                            {objectivesCount} objetivo{objectivesCount !== 1 ? 's' : ''}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`${statusConfig.className} border`}>
-                            {statusConfig.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-xs">
-                          {plan.vision ? (
-                            <p className="text-sm text-muted-foreground truncate">
-                              {plan.vision}
-                            </p>
-                          ) : (
-                            <span className="text-sm text-muted-foreground italic">Sem visão definida</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handlePlanView(plan)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                Ver Detalhes
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handlePlanEdit(plan)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handlePlanDelete(plan)}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Excluir
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Objectives Section */}
-      <div className="space-y-4">
-        {/* Filters and Search */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Buscar objetivos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 w-full sm:w-64"
-              />
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-32">
-                <Filter className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="not_started">Não Iniciado</SelectItem>
-                <SelectItem value="in_progress">Em Progresso</SelectItem>
-                <SelectItem value="at_risk">Em Risco</SelectItem>
-                <SelectItem value="delayed">Atrasado</SelectItem>
-                <SelectItem value="completed">Concluído</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={selectedPlan} onValueChange={setSelectedPlan}>
-              <SelectTrigger className="w-full sm:w-40">
-                <SelectValue placeholder="Plano" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os Planos</SelectItem>
-                {plans.map((plan) => (
-                  <SelectItem key={plan.id} value={plan.id}>
-                    {plan.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Objectives Grid */}
-        {filteredObjectives.length === 0 ? (
-          <div className="text-center py-12">
-            <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {objectives.length === 0 ? 'Nenhum objetivo criado' : 'Nenhum objetivo encontrado'}
-            </h3>
-            <p className="text-gray-500 mb-4">
-              {objectives.length === 0 
-                ? 'Comece criando seu primeiro objetivo estratégico.'
-                : 'Tente ajustar os filtros ou termo de busca.'
-              }
-            </p>
-            {objectives.length === 0 && plans.length > 0 && (
-              <Button onClick={() => setIsCreateObjectiveOpen(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Criar Primeiro Objetivo
-              </Button>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredObjectives.map((objective) => {
-              const pillar = pillars.find(p => p.id === objective.pillar_id);
-              const plan = plans.find(p => p.id === objective.plan_id);
-              const objectiveKeyResults = getObjectiveKeyResults(objective.id);
-              
-              return (
-                <Card 
-                  key={objective.id} 
-                  className="hover:shadow-lg transition-all cursor-pointer group"
-                  onClick={() => openDetailModal(objective)}
-                >
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
-                          {objective.title}
-                        </CardTitle>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge 
-                            variant="secondary" 
-                            style={{ backgroundColor: `${pillar?.color}20`, color: pillar?.color }}
-                          >
-                            {pillar?.name}
-                          </Badge>
-                          <Badge variant="outline">
-                            {plan?.name}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className={`w-2 h-2 rounded-full ${getStatusColor(objective.status)}`}></div>
-                        <span className="text-xs text-gray-500">{getStatusText(objective.status)}</span>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {objective.description && (
-                        <p className="text-sm text-gray-600 line-clamp-2">{objective.description}</p>
-                      )}
-                      <div className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-1 text-gray-500">
-                          <Target className="w-3 h-3" />
-                          <span>{objectiveKeyResults.length} resultados-chave</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-gray-500">
-                          <TrendingUp className="w-3 h-3" />
-                          <span>Peso: {objective.weight}%</span>
-                        </div>
-                      </div>
-                      {objective.target_date && (
-                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                          <Clock className="w-3 h-3" />
-                          <span>Meta: {new Date(objective.target_date).toLocaleDateString('pt-BR')}</span>
-                        </div>
-                      )}
-                      <Progress value={objective.progress || 0} className="h-2" />
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Objective Detail Modal */}
-      <Dialog open={isDetailModalOpen} onOpenChange={closeDetailModal}>
-        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <DialogTitle className="text-xl">
-                  {isEditing ? 'Editar Objetivo' : 'Detalhes do Objetivo'}
-                </DialogTitle>
-                <DialogDescription>
-                  {selectedObjective && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="secondary">
-                        {pillars.find(p => p.id === selectedObjective.pillar_id)?.name}
-                      </Badge>
-                      <Badge variant="outline">
-                        {plans.find(p => p.id === selectedObjective.plan_id)?.name}
-                      </Badge>
-                    </div>
-                  )}
-                </DialogDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                {!isEditing && (
-                  <>
-                    <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                      <Edit className="w-4 h-4 mr-1" />
-                      Editar
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)}>
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Excluir
-                    </Button>
-                  </>
-                )}
-                {isEditing && (
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
-                    <X className="w-4 h-4 mr-1" />
-                    Cancelar
-                  </Button>
-                )}
-              </div>
-            </div>
-          </DialogHeader>
-
-          {selectedObjective && (
-            <div className="space-y-6">
-              {isEditing ? (
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="edit-title">Título</Label>
-                    <Input
-                      id="edit-title"
-                      value={editForm.title}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-description">Descrição</Label>
-                    <Textarea
-                      id="edit-description"
-                      value={editForm.description}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="edit-weight">Peso (%)</Label>
-                      <Input
-                        id="edit-weight"
-                        type="number"
-                        min="1"
-                        max="100"
-                        value={editForm.weight}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="edit-target-date">Data Meta</Label>
-                      <Input
-                        id="edit-target-date"
-                        type="date"
-                        value={editForm.target_date}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, target_date: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="edit-status">Status</Label>
-                      <Select value={editForm.status} onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="not_started">Não Iniciado</SelectItem>
-                          <SelectItem value="in_progress">Em Progresso</SelectItem>
-                          <SelectItem value="at_risk">Em Risco</SelectItem>
-                          <SelectItem value="delayed">Atrasado</SelectItem>
-                          <SelectItem value="completed">Concluído</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="edit-pillar">Pilar Estratégico</Label>
-                      <Select value={editForm.pillar_id} onValueChange={(value) => setEditForm(prev => ({ ...prev, pillar_id: value }))}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {pillars.map((pillar) => (
-                            <SelectItem key={pillar.id} value={pillar.id}>
-                              {pillar.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className="flex justify-end space-x-2 pt-4">
-                    <Button variant="outline" onClick={() => setIsEditing(false)}>
-                      Cancelar
-                    </Button>
-                    <Button onClick={updateObjective}>
-                      <Save className="w-4 h-4 mr-2" />
-                      Salvar
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-medium mb-2">Descrição</h3>
-                    <p className="text-gray-600">{selectedObjective.description || 'Nenhuma descrição fornecida.'}</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-medium text-sm text-gray-500">Peso</h4>
-                      <p className="text-lg">{selectedObjective.weight}%</p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium text-sm text-gray-500">Status</h4>
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${getStatusColor(selectedObjective.status)}`}></div>
-                        <span>{getStatusText(selectedObjective.status)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {selectedObjective.target_date && (
-                    <div>
-                      <h4 className="font-medium text-sm text-gray-500">Data Meta</h4>
-                      <p>{new Date(selectedObjective.target_date).toLocaleDateString('pt-BR')}</p>
-                    </div>
-                  )}
-
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-medium">Resultados-Chave</h3>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        onClick={() => setIsAddResultadoChaveOpen(true)}
-                      >
-                        <Plus className="w-3 h-3 mr-1" />
-                        Adicionar
+                    <div className="flex justify-end space-x-2 pt-4">
+                      <Button variant="outline" onClick={() => setIsEditing(false)}>
+                        Cancelar
+                      </Button>
+                      <Button onClick={updateObjective}>
+                        <Save className="w-4 h-4 mr-2" />
+                        Salvar
                       </Button>
                     </div>
-                    <div className="space-y-2">
-                      {getObjectiveKeyResults(selectedObjective.id).map((kr) => (
-                        <ResultadoChaveMiniCard key={kr.id} resultadoChave={kr} />
-                      ))}
-                      {getObjectiveKeyResults(selectedObjective.id).length === 0 && (
-                        <p className="text-sm text-gray-500 text-center py-4">
-                          Nenhum resultado-chave definido. Clique em "Adicionar" para criar o primeiro.
-                        </p>
-                      )}
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="font-medium mb-2">Descrição</h3>
+                      <p className="text-gray-600">{selectedObjective.description || 'Nenhuma descrição fornecida.'}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <h4 className="font-medium text-sm text-gray-500">Peso</h4>
+                        <p className="text-lg">{selectedObjective.weight}%</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-sm text-gray-500">Status</h4>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${getStatusColor(selectedObjective.status)}`}></div>
+                          <span>{getStatusText(selectedObjective.status)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {selectedObjective.target_date && (
+                      <div>
+                        <h4 className="font-medium text-sm text-gray-500">Data Meta</h4>
+                        <p>{new Date(selectedObjective.target_date).toLocaleDateString('pt-BR')}</p>
+                      </div>
+                    )}
+
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-medium">Resultados-Chave</h3>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => setIsAddResultadoChaveOpen(true)}
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          Adicionar
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {getObjectiveKeyResults(selectedObjective.id).map((kr) => (
+                          <ResultadoChaveMiniCard key={kr.id} resultadoChave={kr} />
+                        ))}
+                        {getObjectiveKeyResults(selectedObjective.id).length === 0 && (
+                          <p className="text-sm text-gray-500 text-center py-4">
+                            Nenhum resultado-chave definido. Clique em "Adicionar" para criar o primeiro.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
-      {/* Add Key Result Modal */}
-      {selectedObjective && (
-        <AddResultadoChaveModal
-          objectiveId={selectedObjective.id}
-          open={isAddResultadoChaveOpen}
-          onClose={() => setIsAddResultadoChaveOpen(false)}
-          onSave={createResultadoChave}
+        {/* Add Key Result Modal */}
+        {selectedObjective && (
+          <AddResultadoChaveModal
+            objectiveId={selectedObjective.id}
+            open={isAddResultadoChaveOpen}
+            onClose={() => setIsAddResultadoChaveOpen(false)}
+            onSave={createResultadoChave}
+          />
+        )}
+
+        {/* Delete Confirmation Modal */}
+        <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir o objetivo "{selectedObjective?.title}"?
+                Esta ação não pode ser desfeita e todos os resultados-chave associados também serão removidos.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={deleteObjective}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Excluir Objetivo
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Plan Management Modals */}
+        <PlanDetailModal
+          plan={selectedPlanForDetail}
+          isOpen={isPlanDetailOpen}
+          onClose={() => {
+            setIsPlanDetailOpen(false);
+            setSelectedPlanForDetail(null);
+          }}
+          objectivesCount={selectedPlanForDetail ? getObjectivesCountForPlan(selectedPlanForDetail.id) : 0}
         />
-      )}
 
-      {/* Delete Confirmation Modal */}
-      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir o objetivo "{selectedObjective?.title}"?
-              Esta ação não pode ser desfeita e todos os resultados-chave associados também serão removidos.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={deleteObjective}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Excluir Objetivo
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        <EditPlanModal
+          plan={selectedPlanForEdit}
+          isOpen={isPlanEditOpen}
+          onClose={() => {
+            setIsPlanEditOpen(false);
+            setSelectedPlanForEdit(null);
+          }}
+          onUpdate={updatePlan}
+        />
 
-      {/* Plan Management Modals */}
-      <PlanDetailModal
-        plan={selectedPlanForDetail}
-        isOpen={isPlanDetailOpen}
-        onClose={() => {
-          setIsPlanDetailOpen(false);
-          setSelectedPlanForDetail(null);
-        }}
-        objectivesCount={selectedPlanForDetail ? getObjectivesCountForPlan(selectedPlanForDetail.id) : 0}
-      />
-
-      <EditPlanModal
-        plan={selectedPlanForEdit}
-        isOpen={isPlanEditOpen}
-        onClose={() => {
-          setIsPlanEditOpen(false);
-          setSelectedPlanForEdit(null);
-        }}
-        onUpdate={updatePlan}
-      />
-
-      <DeletePlanModal
-        plan={selectedPlanForDelete}
-        isOpen={isPlanDeleteOpen}
-        onClose={() => {
-          setIsPlanDeleteOpen(false);
-          setSelectedPlanForDelete(null);
-        }}
-        onDelete={deletePlan}
-        objectivesCount={selectedPlanForDelete ? getObjectivesCountForPlan(selectedPlanForDelete.id) : 0}
-      />
-    </div>
+        <DeletePlanModal
+          plan={selectedPlanForDelete}
+          isOpen={isPlanDeleteOpen}
+          onClose={() => {
+            setIsPlanDeleteOpen(false);
+            setSelectedPlanForDelete(null);
+          }}
+          onDelete={deletePlan}
+          objectivesCount={selectedPlanForDelete ? getObjectivesCountForPlan(selectedPlanForDelete.id) : 0}
+        />
+      </div>
+    </ErrorBoundary>
   );
 };
