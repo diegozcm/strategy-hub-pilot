@@ -48,7 +48,7 @@ export const SettingsPage: React.FC = () => {
     try {
       // Use Supabase's built-in password reset functionality
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth?mode=recovery`,
+        redirectTo: `https://app.cofound.com.br/auth?mode=recovery`,
       });
 
       if (error) {
