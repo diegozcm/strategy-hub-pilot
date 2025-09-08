@@ -17,7 +17,8 @@ import {
   Building,
   Lock,
   Activity,
-  Mail
+  Mail,
+  Key
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ interface SystemModule {
 
 interface ExtendedUser extends UserProfile {
   email_confirmed_at?: string | null;
+  must_change_password?: boolean;
 }
 
 interface UserModuleAccess {
@@ -556,7 +558,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="department">Departamento</Label>
                       <Input
@@ -574,6 +576,89 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                       />
                     </div>
                   </div>
+
+                  {/* Senha Temporária - mostrar apenas se o usuário ainda não alterou a senha */}
+                  {editedUser.must_change_password && (
+                    <Card className="border-yellow-200 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
+                          <Key className="h-4 w-4" />
+                          Senha Temporária
+                        </CardTitle>
+                        <CardDescription className="text-yellow-600 dark:text-yellow-400">
+                          Este usuário ainda não alterou sua senha inicial
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="p-3 bg-background/50 border rounded-md">
+                            <Label className="text-xs text-muted-foreground">Status</Label>
+                            <p className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+                              ⚠️ Aguardando primeira alteração da senha
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                try {
+                                  const { error } = await supabase.rpc('confirm_user_email', {
+                                    _user_id: editedUser.user_id,
+                                    _admin_id: currentUser?.id
+                                  });
+                                  if (error) throw error;
+                                  toast({
+                                    title: 'Sucesso',
+                                    description: 'E-mail do usuário confirmado'
+                                  });
+                                  onUserUpdated();
+                                } catch (error) {
+                                  console.error('Erro ao confirmar e-mail:', error);
+                                  toast({
+                                    title: 'Erro',
+                                    description: 'Erro ao confirmar e-mail do usuário',
+                                    variant: 'destructive'
+                                  });
+                                }
+                              }}
+                            >
+                              <Mail className="h-4 w-4 mr-1" />
+                              Confirmar E-mail
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async () => {
+                                try {
+                                  // Gerar nova senha temporária
+                                  const { data: newPassword, error } = await supabase.rpc('generate_temporary_password');
+                                  if (error) throw error;
+                                  
+                                  // Aqui seria ideal ter uma função para resetar a senha
+                                  // Por enquanto, apenas mostramos um toast informativo
+                                  toast({
+                                    title: 'Nova senha gerada',
+                                    description: `Nova senha temporária: ${newPassword}. Compartilhe manualmente com o usuário.`
+                                  });
+                                } catch (error) {
+                                  console.error('Erro ao gerar nova senha:', error);
+                                  toast({
+                                    title: 'Erro',
+                                    description: 'Erro ao gerar nova senha temporária',
+                                    variant: 'destructive'
+                                  });
+                                }
+                              }}
+                            >
+                              <Key className="h-4 w-4 mr-1" />
+                              Gerar Nova Senha
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
               )}
 

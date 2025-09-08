@@ -156,34 +156,43 @@ export const CreateUserPage = () => {
         createResult = result.data;
         createError = result.error;
         
-        // Se há erro de comunicação (network, etc)
+        // Se há erro de comunicação real (network, timeout, etc)
         if (createError) {
           console.error('Edge function invocation error:', createError);
-          throw new Error('Erro de comunicação com o servidor');
+          throw new Error('Erro de comunicação com o servidor. Verifique sua conexão e tente novamente.');
         }
         
-        // Se o edge function retornou mas com erro de negócio
-        if (createResult && !createResult.success) {
-          const errorMessage = createResult.error || 'Falha na criação do usuário';
-          console.error('Create user business error:', errorMessage);
-          throw new Error(errorMessage);
-        }
-        
-        // Se não há resultado
+        // Se não há resultado da função
         if (!createResult) {
           throw new Error('Resposta inválida do servidor');
         }
         
+        // Se o edge function retornou mas com erro de negócio (422, 400, etc)
+        if (!createResult.success) {
+          const errorMessage = createResult.error || 'Falha na criação do usuário';
+          console.error('Create user business error:', errorMessage);
+          
+          // Tratar erro específico de usuário já existente
+          if (errorMessage.includes('Usuário com este email já existe')) {
+            throw new Error('Este e-mail já está cadastrado no sistema. Verifique o e-mail informado.');
+          }
+          
+          // Outros erros de negócio
+          throw new Error(errorMessage);
+        }
+        
       } catch (err: any) {
         console.error('Unexpected error in edge function call:', err);
-        // Se é um erro que já tratamos, re-lança
-        if (err.message.includes('Usuário com este email já existe') || 
+        
+        // Re-lançar erros já tratados
+        if (err.message.includes('e-mail já está cadastrado') || 
             err.message.includes('Erro de comunicação') ||
-            err.message.includes('Falha na criação')) {
+            err.message.includes('Resposta inválida')) {
           throw err;
         }
+        
         // Outros erros inesperados
-        throw new Error('Erro inesperado ao criar usuário');
+        throw new Error('Erro inesperado ao criar usuário. Tente novamente.');
       }
 
       const newUserId = createResult.user_id;

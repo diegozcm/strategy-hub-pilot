@@ -34,6 +34,7 @@ export interface UserProfile {
   status: 'active' | 'inactive' | 'pending';
   department?: string;
   position?: string;
+  must_change_password?: boolean;
   created_at: string;
   updated_at: string;
 }
