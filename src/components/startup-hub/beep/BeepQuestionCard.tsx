@@ -92,6 +92,17 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
             <p className="text-sm font-medium leading-relaxed">{question.question_text}</p>
           </div>
           
+          {value > 0 && (
+            <div className="flex items-center gap-2">
+              <Badge 
+                variant="outline" 
+                className={`text-xs font-medium ${getColorClasses(value).badge}`}
+              >
+                {scaleLabels[value as keyof typeof scaleLabels]}
+              </Badge>
+            </div>
+          )}
+          
           <div className="space-y-3">
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Discordo Totalmente</span>
