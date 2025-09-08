@@ -2,11 +2,13 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, Target, Calendar, BarChart3, CheckCircle, AlertCircle, Award } from 'lucide-react';
+import { TrendingUp, Target, Calendar, BarChart3, CheckCircle, AlertCircle, Award, Users, Lightbulb, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useStartupProfile } from '@/hooks/useStartupProfile';
+import { useStartupSessions } from '@/hooks/useStartupSessions';
+import { useAIInsights } from '@/hooks/useAIInsights';
 
 interface StartupDashboardProps {
   onNavigateToBeep?: () => void;
@@ -15,6 +17,8 @@ interface StartupDashboardProps {
 export const StartupDashboard: React.FC<StartupDashboardProps> = ({ onNavigateToBeep }) => {
   const { user } = useAuth();
   const { profile, company } = useStartupProfile();
+  const { sessions: mentoringSessions, loading: sessionsLoading } = useStartupSessions();
+  const { getActiveInsights, getCriticalInsights, loading: insightsLoading } = useAIInsights();
 
   // Fetch latest BEEP assessment
   const { data: latestAssessment } = useQuery({
@@ -57,6 +61,27 @@ export const StartupDashboard: React.FC<StartupDashboardProps> = ({ onNavigateTo
     enabled: !!user?.id
   });
 
+  // Fetch action items count
+  const { data: actionItemsStats } = useQuery({
+    queryKey: ['startup-action-items-stats', user?.id],
+    queryFn: async () => {
+      if (!user?.id || !company?.id) return { total: 0, pending: 0 };
+
+      const { data, error } = await supabase
+        .from('action_items')
+        .select('status, mentoring_sessions!inner(startup_company_id)')
+        .eq('mentoring_sessions.startup_company_id', company.id);
+
+      if (error) throw error;
+
+      const total = data.length;
+      const pending = data.filter(a => a.status === 'pending').length;
+
+      return { total, pending };
+    },
+    enabled: !!user?.id && !!company?.id
+  });
+
   const handleStartAssessment = () => {
     if (onNavigateToBeep) {
       onNavigateToBeep();
@@ -94,14 +119,11 @@ export const StartupDashboard: React.FC<StartupDashboardProps> = ({ onNavigateTo
 
   const maturityInfo = getMaturityLevelInfo(latestAssessment?.maturity_level);
 
-  // Debug logs
-  console.log('🔍 StartupDashboard Debug:', {
-    latestAssessment,
-    hasScore: !!latestAssessment?.final_score,
-    status: latestAssessment?.status,
-    maturityLevel: latestAssessment?.maturity_level,
-    scoreValue: latestAssessment?.final_score
-  });
+  // Get real-time data
+  const activeInsights = getActiveInsights();
+  const criticalInsights = getCriticalInsights();
+  const recentSessions = mentoringSessions?.slice(0, 3) || [];
+  const nextSession = mentoringSessions?.find(s => s.status === 'scheduled') || null;
 
   return (
     <div className="space-y-6">
@@ -205,17 +227,47 @@ export const StartupDashboard: React.FC<StartupDashboardProps> = ({ onNavigateTo
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Status</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Sessões de Mentoria</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="flex items-center space-x-2">
-              <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-              <span className="text-sm">Ativo</span>
-            </div>
+            <div className="text-2xl font-bold">{mentoringSessions?.length || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              {nextSession ? `Próxima: ${new Date(nextSession.session_date).toLocaleDateString('pt-BR')}` : 'Nenhuma agendada'}
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Action Items Card */}
+      {actionItemsStats && actionItemsStats.pending > 0 && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-orange-800">
+              <Clock className="h-5 w-5" />
+              <span>Itens de Ação Pendentes</span>
+            </CardTitle>
+            <CardDescription className="text-orange-700">
+              Você tem {actionItemsStats.pending} item(ns) de ação pendente(s) das suas sessões de mentoria.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      {/* Critical Insights Alert */}
+      {criticalInsights.length > 0 && (
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-red-800">
+              <AlertCircle className="h-5 w-5" />
+              <span>Insights Críticos</span>
+            </CardTitle>
+            <CardDescription className="text-red-700">
+              {criticalInsights.length} insight(s) crítico(s) requer(em) sua atenção imediata.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -258,41 +310,76 @@ export const StartupDashboard: React.FC<StartupDashboardProps> = ({ onNavigateTo
 
         <Card>
           <CardHeader>
-            <CardTitle>Próximos Passos</CardTitle>
+            <CardTitle className="flex items-center space-x-2">
+              <Lightbulb className="h-5 w-5" />
+              <span>Dicas do AI Copilot</span>
+            </CardTitle>
             <CardDescription>
-              Recomendações personalizadas para o crescimento da sua startup.
+              Insights personalizados baseados nos dados da sua startup.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-start space-x-3">
-                <div className="h-2 w-2 bg-primary rounded-full mt-2"></div>
-                <div>
-                  <p className="text-sm font-medium">Complete sua avaliação BEEP</p>
-                  <p className="text-xs text-muted-foreground">
-                    Identifique áreas de melhoria e oportunidades de crescimento
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="h-2 w-2 bg-muted-foreground rounded-full mt-2"></div>
-                <div>
-                  <p className="text-sm font-medium">Conecte-se com mentores</p>
-                  <p className="text-xs text-muted-foreground">
-                    Encontre mentores especializados na sua área de atuação
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-3">
-                <div className="h-2 w-2 bg-muted-foreground rounded-full mt-2"></div>
-                <div>
-                  <p className="text-sm font-medium">Acompanhe métricas</p>
-                  <p className="text-xs text-muted-foreground">
-                    Configure indicadores de performance da sua startup
-                  </p>
-                </div>
-              </div>
+              {activeInsights.length > 0 ? (
+                activeInsights.slice(0, 3).map((insight) => (
+                  <div key={insight.id} className="flex items-start space-x-3">
+                    <div className={`h-2 w-2 rounded-full mt-2 ${
+                      insight.severity === 'critical' ? 'bg-red-500' :
+                      insight.severity === 'high' ? 'bg-orange-500' :
+                      insight.severity === 'medium' ? 'bg-yellow-500' :
+                      'bg-blue-500'
+                    }`}></div>
+                    <div>
+                      <p className="text-sm font-medium">{insight.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {insight.description}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <>
+                  {!latestAssessment && (
+                    <div className="flex items-start space-x-3">
+                      <div className="h-2 w-2 bg-primary rounded-full mt-2"></div>
+                      <div>
+                        <p className="text-sm font-medium">Complete sua primeira avaliação BEEP</p>
+                        <p className="text-xs text-muted-foreground">
+                          Identifique o nível de maturidade da sua startup e áreas de melhoria
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {mentoringSessions?.length === 0 && (
+                    <div className="flex items-start space-x-3">
+                      <div className="h-2 w-2 bg-blue-500 rounded-full mt-2"></div>
+                      <div>
+                        <p className="text-sm font-medium">Conecte-se com mentores</p>
+                        <p className="text-xs text-muted-foreground">
+                          Agende sessões com mentores especializados na sua área
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-start space-x-3">
+                    <div className="h-2 w-2 bg-green-500 rounded-full mt-2"></div>
+                    <div>
+                      <p className="text-sm font-medium">Mantenha seus dados atualizados</p>
+                      <p className="text-xs text-muted-foreground">
+                        Complete o perfil da sua startup para receber insights mais precisos
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
+            {activeInsights.length > 3 && (
+              <div className="mt-4">
+                <Button variant="outline" size="sm" className="w-full">
+                  Ver todos os insights ({activeInsights.length})
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
