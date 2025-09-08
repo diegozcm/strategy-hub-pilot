@@ -67,50 +67,34 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
     }
   };
 
+  const draftAssessments = assessments.filter(assessment => assessment.status === 'draft');
+  const completedAssessments = assessments.filter(assessment => assessment.status === 'completed');
+
   return (
     <div className="space-y-8">
-      {/* Introduction */}
-      <div className="text-center space-y-4">
+      {/* Header */}
+      <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold">Avaliação BEEP</h1>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          O BEEP (Business Entrepreneur and Evolution Phases) é uma ferramenta de avaliação 
-          que ajuda a identificar o nível de maturidade da sua startup através de questões 
-          organizadas em categorias estratégicas.
+        <p className="text-muted-foreground">
+          Avalie o nível de maturidade da sua startup
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto mt-8">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-blue-600">100+</div>
-              <p className="text-sm text-muted-foreground">Perguntas estratégicas</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">5</div>
-              <p className="text-sm text-muted-foreground">Níveis de maturidade</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">3</div>
-              <p className="text-sm text-muted-foreground">Categorias principais</p>
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
-      {/* Start Assessment Form */}
-      <Card className="max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle>Iniciar Nova Avaliação</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="startup-select">Selecionar Startup</Label>
+      {/* Main Actions */}
+      <div className="max-w-4xl mx-auto grid gap-6 md:grid-cols-2">
+        {/* New Assessment */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Nova Avaliação</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Inicie uma nova avaliação completa para sua startup
+            </p>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
               <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma startup para avaliar" />
+                  <SelectValue placeholder="Selecione uma startup" />
                 </SelectTrigger>
                 <SelectContent className="bg-background border z-50">
                   {startupCompanies.map((company: any) => (
@@ -120,27 +104,76 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-              {startupCompanies.length === 0 && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  Nenhuma startup encontrada. Entre em contato com o administrador para associar uma startup ao seu perfil.
-                </p>
-              )}
-            </div>
-            <Button 
-              type="submit"
-              disabled={!selectedCompanyId || isCreating || startupCompanies.length === 0}
-              className="w-full"
-            >
-              {isCreating ? 'Iniciando...' : 'Iniciar Avaliação'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Button 
+                type="submit"
+                disabled={!selectedCompanyId || isCreating || startupCompanies.length === 0}
+                className="w-full"
+              >
+                {isCreating ? 'Iniciando...' : 'Iniciar Nova Avaliação'}
+              </Button>
+            </form>
+            {startupCompanies.length === 0 && (
+              <p className="text-sm text-muted-foreground mt-4">
+                Nenhuma startup encontrada. Entre em contato com o administrador.
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
-      {/* Assessment History */}
-      {assessments.length > 0 && (
+        {/* Draft Assessments */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Rascunhos</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Continue avaliações em andamento
+            </p>
+          </CardHeader>
+          <CardContent>
+            {draftAssessments.length > 0 ? (
+              <div className="space-y-3">
+                {draftAssessments.slice(0, 3).map((assessment) => {
+                  const company = startupCompanies.find((c: any) => c.id === assessment.company_id);
+                  return (
+                    <div key={assessment.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{company?.name || 'Startup'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Iniciada em {new Date(assessment.created_at).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => onStartAssessment(assessment.company_id || '')}
+                      >
+                        Continuar
+                      </Button>
+                    </div>
+                  );
+                })}
+                {draftAssessments.length > 3 && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    +{draftAssessments.length - 3} outros rascunhos
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Nenhum rascunho encontrado</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Inicie uma nova avaliação para começar
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Completed Assessments History */}
+      {completedAssessments.length > 0 && (
         <div className="max-w-4xl mx-auto">
-          <BeepAssessmentHistory assessments={assessments} />
+          <h2 className="text-xl font-semibold mb-4">Histórico de Avaliações</h2>
+          <BeepAssessmentHistory assessments={completedAssessments} />
         </div>
       )}
     </div>
