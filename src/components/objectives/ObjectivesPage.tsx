@@ -89,7 +89,9 @@ export const ObjectivesPage: React.FC = () => {
     weight: 1,
     target_date: '',
     plan_id: '',
-    pillar_id: ''
+    pillar_id: '',
+    status: 'not_started',
+    progress: 0
   });
 
   const [planForm, setPlanForm] = useState({
@@ -276,8 +278,12 @@ export const ObjectivesPage: React.FC = () => {
       const objectiveData = {
         ...objectiveForm,
         owner_id: user.id,
-        target_date: objectiveForm.target_date ? objectiveForm.target_date : null
+        target_date: objectiveForm.target_date ? objectiveForm.target_date : null,
+        status: 'not_started',
+        progress: 0
       };
+
+      console.log('Creating objective with data:', objectiveData);
 
       const { data, error } = await supabase
         .from('strategic_objectives')
@@ -288,7 +294,16 @@ export const ObjectivesPage: React.FC = () => {
       if (error) throw error;
 
       setObjectives(prev => [data, ...prev]);
-      setObjectiveForm({ title: '', description: '', weight: 1, target_date: '', plan_id: '', pillar_id: '' });
+      setObjectiveForm({ 
+        title: '', 
+        description: '', 
+        weight: 1, 
+        target_date: '', 
+        plan_id: '', 
+        pillar_id: '',
+        status: 'not_started',
+        progress: 0
+      });
       setIsCreateObjectiveOpen(false);
       
       toast({
@@ -297,9 +312,22 @@ export const ObjectivesPage: React.FC = () => {
       });
     } catch (error) {
       console.error('Error creating objective:', error);
+      let errorMessage = "Erro ao criar objetivo estratégico. Tente novamente.";
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('weight')) {
+          errorMessage = "O peso deve ser um valor entre 1 e 100.";
+        } else if (error.message.includes('strategic_objectives_weight_check')) {
+          errorMessage = "O peso do objetivo deve ser um valor válido entre 1 e 100.";
+        } else if (error.message.includes('status')) {
+          errorMessage = "Status inválido. Selecione um status válido.";
+        }
+      }
+      
       toast({
         title: "Erro",
-        description: "Erro ao criar objetivo estratégico. Tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
