@@ -10,8 +10,10 @@ import {
   Database,
   Clock,
   Key,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from 'lucide-react';
+import { DatabaseCleanupTab } from './DatabaseCleanupTab';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -293,51 +295,80 @@ export const SystemSettingsPage: React.FC = () => {
 
       <Card className="bg-slate-800 border-slate-700">
         <CardContent className="p-6">
-          <Tabs defaultValue={Object.keys(settings)[0]} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 bg-slate-700">
-              {Object.keys(settings).map((category) => (
-                <TabsTrigger 
-                  key={category} 
-                  value={category}
-                  className="data-[state=active]:bg-slate-600 text-white"
-                >
-                  <div className="flex items-center gap-2">
-                    {getCategoryIcon(category)}
-                    <span className="hidden sm:inline">{getCategoryTitle(category)}</span>
-                  </div>
-                </TabsTrigger>
-              ))}
+          <Tabs defaultValue="settings" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2 bg-slate-700">
+              <TabsTrigger 
+                value="settings"
+                className="data-[state=active]:bg-slate-600 text-white"
+              >
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden sm:inline">Configurações do Sistema</span>
+                </div>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="cleanup"
+                className="data-[state=active]:bg-slate-600 text-white"
+              >
+                <div className="flex items-center gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Limpeza de Dados</span>
+                </div>
+              </TabsTrigger>
             </TabsList>
 
-            {Object.entries(settings).map(([category, categorySettings]) => (
-              <TabsContent key={category} value={category} className="space-y-4">
-                <div className="grid gap-6">
-                  {categorySettings.map((setting) => (
-                    <div key={setting.key} className="space-y-4 p-4 border border-slate-600 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <Label className="text-sm font-medium text-white">
-                            {setting.key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                          </Label>
-                          <p className="text-xs text-slate-400">{setting.description}</p>
-                        </div>
-                        <Badge variant="secondary" className="text-xs">
-                          {getCategoryTitle(setting.category)}
-                        </Badge>
+            <TabsContent value="settings" className="space-y-6">
+              <Tabs defaultValue={Object.keys(settings)[0]} className="space-y-6">
+                <TabsList className="grid w-full grid-cols-6 bg-slate-700">
+                  {Object.keys(settings).map((category) => (
+                    <TabsTrigger 
+                      key={category} 
+                      value={category}
+                      className="data-[state=active]:bg-slate-600 text-white"
+                    >
+                      <div className="flex items-center gap-2">
+                        {getCategoryIcon(category)}
+                        <span className="hidden sm:inline">{getCategoryTitle(category)}</span>
                       </div>
-                      
-                      <div className="max-w-md">
-                        {renderSettingInput(setting)}
-                      </div>
-                      
-                      <div className="text-xs text-slate-500">
-                        Última atualização: {new Date(setting.updated_at).toLocaleString('pt-BR')}
-                      </div>
-                    </div>
+                    </TabsTrigger>
                   ))}
-                </div>
-              </TabsContent>
-            ))}
+                </TabsList>
+
+                {Object.entries(settings).map(([category, categorySettings]) => (
+                  <TabsContent key={category} value={category} className="space-y-4">
+                    <div className="grid gap-6">
+                      {categorySettings.map((setting) => (
+                        <div key={setting.key} className="space-y-4 p-4 border border-slate-600 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium text-white">
+                                {setting.key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              </Label>
+                              <p className="text-xs text-slate-400">{setting.description}</p>
+                            </div>
+                            <Badge variant="secondary" className="text-xs">
+                              {getCategoryTitle(setting.category)}
+                            </Badge>
+                          </div>
+                          
+                          <div className="max-w-md">
+                            {renderSettingInput(setting)}
+                          </div>
+                          
+                          <div className="text-xs text-slate-500">
+                            Última atualização: {new Date(setting.updated_at).toLocaleString('pt-BR')}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </TabsContent>
+                ))}
+              </Tabs>
+            </TabsContent>
+
+            <TabsContent value="cleanup" className="space-y-6">
+              <DatabaseCleanupTab />
+            </TabsContent>
           </Tabs>
         </CardContent>
       </Card>
