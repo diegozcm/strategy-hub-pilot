@@ -3,7 +3,6 @@ import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check } from "lucide-react";
 
 interface BeepQuestion {
   id: string;
@@ -86,8 +85,8 @@ export const BeepQuestionCard: React.FC<BeepQuestionCardProps> = ({
     <Card className={`relative transition-all ${value > 0 ? 'border-blue-200 bg-blue-50/30' : ''}`}>
       {isSaved && (
         <div className="absolute top-2 right-2 z-10 animate-fade-in flex items-center gap-2">
-          <div className="bg-green-100 rounded-full p-1 shadow-sm">
-            <Check className="h-4 w-4 text-green-600" />
+          <div className="bg-green-100 rounded-full px-2 py-1 shadow-sm">
+            <span className="text-xs font-medium text-green-600">salvo</span>
           </div>
           {value > 0 && (
             <Badge 
