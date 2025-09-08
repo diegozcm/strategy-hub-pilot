@@ -13,7 +13,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { 
   Sidebar,
   SidebarContent,
@@ -136,12 +135,7 @@ const StartTogetherAdminSidebar: React.FC = () => {
                 </div>
               </div>
               
-              {/* Theme Toggle for Desktop */}
-              <div className="hidden lg:block">
-                <ThemeToggle />
-              </div>
-              
-              <Button 
+              <Button
                 variant="outline" 
                 size="sm"
                 onClick={signOut}
@@ -219,7 +213,6 @@ export const StartTogetherAdminLayout: React.FC = () => {
               </div>
               <span className="text-sm font-semibold">Start Together Admin</span>
             </div>
-            <ThemeToggle />
           </header>
         </div>
 

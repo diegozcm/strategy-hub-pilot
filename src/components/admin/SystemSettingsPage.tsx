@@ -14,6 +14,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { DatabaseCleanupTab } from './DatabaseCleanupTab';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -318,6 +319,32 @@ export const SystemSettingsPage: React.FC = () => {
             </TabsList>
 
             <TabsContent value="settings" className="space-y-6">
+              {/* Seção de Tema */}
+              <Card className="bg-slate-800 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2 text-white">
+                    <Settings className="h-4 w-4" />
+                    <span>Tema do Sistema</span>
+                  </CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Configure o tema visual do sistema administrativo
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-medium text-white">
+                        Seletor de Tema
+                      </Label>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Escolha entre tema claro, escuro ou automático
+                      </p>
+                    </div>
+                    <ThemeToggle />
+                  </div>
+                </CardContent>
+              </Card>
+
               <Tabs defaultValue={Object.keys(settings)[0]} className="space-y-6">
                 <TabsList className="grid w-full grid-cols-6 bg-slate-700">
                   {Object.keys(settings).map((category) => (
