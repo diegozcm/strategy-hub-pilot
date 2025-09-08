@@ -7,7 +7,7 @@ import { BeepAssessmentForm } from './BeepAssessmentForm';
 import { BeepScoreDisplay } from './BeepScoreDisplay';
 import { BeepAssessmentHistory } from './BeepAssessmentHistory';
 import { BeepStartScreen } from './BeepStartScreen';
-import { useBeepAssessmentCrud, useBeepAnswerCrud } from '@/hooks/useBeepData';
+import { useBeepAssessmentCrud, useBeepAnswerCrud, useBeepAutoSave } from '@/hooks/useBeepData';
 
 interface BeepAssessment {
   id: string;
@@ -18,6 +18,12 @@ interface BeepAssessment {
   maturity_level: 'idealizando' | 'validando_problemas_solucoes' | 'iniciando_negocio' | 'validando_mercado' | 'evoluindo' | null;
   completed_at: string | null;
   created_at: string;
+  total_questions?: number;
+  answered_questions?: number;
+  progress_percentage?: number;
+  last_answer_at?: string | null;
+  current_category_id?: string | null;
+  current_question_index?: number;
 }
 
 export const BeepAssessmentManager = () => {
@@ -31,6 +37,7 @@ export const BeepAssessmentManager = () => {
   const queryClient = useQueryClient();
   const { createAssessment, updateAssessment } = useBeepAssessmentCrud();
   const { saveAnswer, getAssessmentAnswers } = useBeepAnswerCrud();
+  const { autoSaveAnswer } = useBeepAutoSave(currentAssessment?.id);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -191,10 +198,28 @@ export const BeepAssessmentManager = () => {
       [questionId]: value,
     }));
     
-    // Debounce server save to prevent multiple simultaneous requests
-    timeoutsRef.current[questionId] = setTimeout(() => {
+    // Use auto-save hook with debounce
+    timeoutsRef.current[questionId] = setTimeout(async () => {
       if (currentAssessment?.id && !savingQuestions.has(questionId)) {
-        saveAnswerMutation.mutate({ questionId, value });
+        try {
+          setSavingQuestions(prev => new Set([...prev, questionId]));
+          await autoSaveAnswer(questionId, value);
+          setSavingQuestions(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(questionId);
+            return newSet;
+          });
+          setSavedQuestions(prev => new Set([...prev, questionId]));
+          queryClient.invalidateQueries({ queryKey: ['beep-answers', currentAssessment?.id] });
+        } catch (error) {
+          setSavingQuestions(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(questionId);
+            return newSet;
+          });
+          console.error('Auto-save failed:', error);
+          toast.error('Erro ao salvar resposta');
+        }
       }
       delete timeoutsRef.current[questionId];
     }, 500);
@@ -216,12 +241,36 @@ export const BeepAssessmentManager = () => {
     return 'idealizando';
   };
 
-  const handleStartAssessment = (companyId: string) => {
+  const handleStartAssessment = async (companyId: string) => {
+    // Check if there's already a draft for this company
+    const existingDraft = assessments.find(
+      assessment => assessment.company_id === companyId && assessment.status === 'draft'
+    );
+    
+    if (existingDraft) {
+      // Continue existing draft instead of creating new one
+      setCurrentAssessment(existingDraft);
+      toast.info('Continuando avaliação em rascunho');
+      return;
+    }
+    
     createAssessmentMutation.mutate(companyId);
+  };
+
+  const handleContinueAssessment = (assessmentId: string) => {
+    const assessment = assessments.find(a => a.id === assessmentId);
+    if (assessment) {
+      setCurrentAssessment(assessment);
+      toast.info('Continuando avaliação');
+    }
   };
 
   const handleCompleteAssessment = () => {
     completeAssessmentMutation.mutate();
+  };
+
+  const handleSaveProgress = () => {
+    toast.success('Progresso salvo automaticamente!');
   };
 
   // Show completed assessment result
@@ -258,7 +307,9 @@ export const BeepAssessmentManager = () => {
           onAnswer={handleAnswer}
           onComplete={handleCompleteAssessment}
           onCancel={() => setCurrentAssessment(null)}
+          onSaveProgress={handleSaveProgress}
           isCompleting={completeAssessmentMutation.isPending}
+          isSavingProgress={false}
           savingQuestions={savingQuestions}
           savedQuestions={savedQuestions}
         />
@@ -269,6 +320,7 @@ export const BeepAssessmentManager = () => {
   return (
     <BeepStartScreen
       onStartAssessment={handleStartAssessment}
+      onContinueAssessment={handleContinueAssessment}
       isCreating={createAssessmentMutation.isPending}
       assessments={assessments}
     />

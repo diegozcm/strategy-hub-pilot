@@ -25,7 +25,9 @@ interface BeepAssessmentFormProps {
   onAnswer: (questionId: string, value: number) => void;
   onComplete: () => void;
   onCancel: () => void;
+  onSaveProgress?: () => void;
   isCompleting: boolean;
+  isSavingProgress?: boolean;
   savingQuestions?: Set<string>;
   savedQuestions?: Set<string>;
 }
@@ -36,7 +38,9 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
   onAnswer,
   onComplete,
   onCancel,
+  onSaveProgress,
   isCompleting,
+  isSavingProgress = false,
   savingQuestions = new Set(),
   savedQuestions = new Set(),
 }) => {
@@ -207,9 +211,21 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
               </Card>
             ))}
 
-            {/* Complete Button */}
-            {isComplete && (
-              <div className="flex justify-center pt-6">
+            {/* Action Buttons */}
+            <div className="flex justify-center gap-4 pt-6">
+              {onSaveProgress && (
+                <Button 
+                  variant="outline"
+                  onClick={onSaveProgress}
+                  disabled={isSavingProgress}
+                  size="lg"
+                  className="px-6"
+                >
+                  {isSavingProgress ? 'Salvando...' : 'Salvar Progresso'}
+                </Button>
+              )}
+              
+              {isComplete && (
                 <Button 
                   onClick={onComplete}
                   disabled={isCompleting}
@@ -218,8 +234,8 @@ export const BeepAssessmentForm: React.FC<BeepAssessmentFormProps> = ({
                 >
                   {isCompleting ? 'Finalizando...' : 'Finalizar Avaliação'}
                 </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </ScrollArea>
       </div>

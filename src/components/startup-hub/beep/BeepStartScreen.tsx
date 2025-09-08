@@ -29,12 +29,14 @@ interface BeepAssessment {
 
 interface BeepStartScreenProps {
   onStartAssessment: (companyId: string) => void;
+  onContinueAssessment: (assessmentId: string) => void;
   isCreating: boolean;
   assessments: BeepAssessment[];
 }
 
 export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
   onStartAssessment,
+  onContinueAssessment,
   isCreating,
   assessments
 }) => {
@@ -162,7 +164,7 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => onStartAssessment(assessment.company_id || '')}
+                          onClick={() => onContinueAssessment(assessment.id)}
                           className="ml-3"
                         >
                           Continuar
