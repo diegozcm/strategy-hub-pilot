@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Target } from 'lucide-react';
 import { ActionItemCard } from './ActionItemCard';
 import { useActionItems, ActionItem } from '@/hooks/useActionItems';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useAuth } from '@/hooks/useMultiTenant';
 
 interface ActionItemsManagerProps {
   sessionId: string;
@@ -18,7 +18,8 @@ export const ActionItemsManager: React.FC<ActionItemsManagerProps> = ({
   sessionId, 
   canEdit = false 
 }) => {
-  const { actionItems, loading, createActionItem, updateActionItem } = useActionItems(sessionId);
+  const { user } = useAuth();
+  const { actionItems, loading, createActionItem, updateActionItem, deleteActionItem } = useActionItems(sessionId);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -47,8 +48,8 @@ export const ActionItemsManager: React.FC<ActionItemsManagerProps> = ({
     }
   };
 
-  const handleUpdate = async (id: string, updates: Partial<ActionItem>) => {
-    await updateActionItem(id, updates);
+  const handleDelete = async (id: string) => {
+    await deleteActionItem(id);
   };
 
   if (loading) {
@@ -150,14 +151,19 @@ export const ActionItemsManager: React.FC<ActionItemsManagerProps> = ({
         </div>
       ) : (
         <div className="space-y-3">
-          {actionItems.map((item) => (
-            <ActionItemCard
-              key={item.id}
-              item={item}
-              onUpdate={handleUpdate}
-              canEdit={canEdit}
-            />
-          ))}
+          {actionItems.map((item) => {
+            const isCreator = user?.id === item.created_by;
+            return (
+              <ActionItemCard
+                key={item.id}
+                item={item}
+                onUpdate={handleUpdate}
+                onDelete={handleDelete}
+                canEdit={canEdit || isCreator}
+                canDelete={isCreator}
+              />
+            );
+          })}
         </div>
       )}
     </div>

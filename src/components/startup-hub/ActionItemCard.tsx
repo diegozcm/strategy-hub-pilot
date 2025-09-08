@@ -10,7 +10,9 @@ import { ptBR } from 'date-fns/locale';
 interface ActionItemCardProps {
   item: ActionItem;
   onUpdate: (id: string, updates: Partial<ActionItem>) => Promise<void>;
+  onDelete?: (id: string) => Promise<void>;
   canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 const getStatusConfig = (status: ActionItem['status']) => {
@@ -81,8 +83,10 @@ const getPriorityConfig = (priority: ActionItem['priority']) => {
 
 export const ActionItemCard: React.FC<ActionItemCardProps> = ({ 
   item, 
-  onUpdate, 
-  canEdit = false 
+  onUpdate,
+  onDelete, 
+  canEdit = false,
+  canDelete = false 
 }) => {
   const handleStatusChange = async (newStatus: ActionItem['status']) => {
     await onUpdate(item.id, { status: newStatus });
@@ -96,15 +100,31 @@ export const ActionItemCard: React.FC<ActionItemCardProps> = ({
     <Card className={`transition-all hover:shadow-md ${isOverdue ? 'border-destructive' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <CardTitle className="text-base flex items-center gap-2">
-            {isOverdue && <AlertCircle className="h-4 w-4 text-destructive" />}
-            {item.title}
-          </CardTitle>
+          <div className="flex-1">
+            <CardTitle className="text-base flex items-center gap-2">
+              {isOverdue && <AlertCircle className="h-4 w-4 text-destructive" />}
+              {item.title}
+            </CardTitle>
+            {item.creator_name && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Criado por: {item.creator_name}
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${priorityConfig.className}`}>
               <span>{priorityConfig.icon}</span>
               {priorityConfig.label}
             </div>
+            {canDelete && onDelete && (
+              <button
+                onClick={() => onDelete(item.id)}
+                className="text-destructive hover:bg-destructive/10 p-1 rounded"
+                title="Excluir item"
+              >
+                <span className="text-xs">🗑️</span>
+              </button>
+            )}
             {canEdit ? (
               <Select
                 value={item.status}
