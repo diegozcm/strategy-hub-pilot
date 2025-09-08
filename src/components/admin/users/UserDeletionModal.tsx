@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '@/types/admin';
 import { UserRelations, CompatibleUser, useUserDeletion } from '@/hooks/useUserDeletion';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useMultiTenant';
+import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -58,6 +61,9 @@ export const UserDeletionModal: React.FC<UserDeletionModalProps> = ({
   const [deletionProgress, setDeletionProgress] = useState(0);
   const [completedOperations, setCompletedOperations] = useState<string[]>([]);
 
+  const { profile } = useAuth();
+  const { toast } = useToast();
+
   const {
     loading,
     userRelations,
@@ -89,31 +95,66 @@ export const UserDeletionModal: React.FC<UserDeletionModalProps> = ({
   };
 
   const handleProceedToConfirmation = () => {
-    if (selectedReplacementUser) {
-      setStep('confirmation');
-    }
+    setStep('confirmation');
   };
 
   const handleConfirmDeletion = async () => {
-    if (!user || !selectedReplacementUser || confirmationName !== user.first_name) {
+    if (!user || confirmationName !== user.first_name) {
       return;
     }
 
     setStep('progress');
     setDeletionProgress(0);
 
-    const result = await deleteUserWithReplacement(user.id, selectedReplacementUser);
-    
-    if (result?.success) {
-      setCompletedOperations(result.operations_log || []);
-      setDeletionProgress(100);
-      setStep('completed');
-      setTimeout(() => {
-        onDeleted();
-        onClose();
-      }, 3000);
+    if (selectedReplacementUser) {
+      // Deletion with replacement
+      const result = await deleteUserWithReplacement(user.id, selectedReplacementUser);
+      
+      if (result?.success) {
+        setCompletedOperations(result.operations_log || []);
+        setDeletionProgress(100);
+        setStep('completed');
+        setTimeout(() => {
+          onDeleted();
+          onClose();
+        }, 3000);
+      } else {
+        setStep('analysis');
+      }
     } else {
-      setStep('analysis');
+      // Deletion without replacement - use the safe delete function with no replacement
+      try {
+        const { error } = await supabase.rpc('safe_delete_user', {
+          _user_id: user.id,
+          _admin_id: profile?.user_id
+        });
+
+        if (error) {
+          console.error('❌ Erro ao excluir usuário:', error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível excluir o usuário: " + error.message,
+            variant: "destructive",
+          });
+          setStep('analysis');
+        } else {
+          setCompletedOperations(['Usuário excluído sem substituição', 'Relações removidas', 'Dados limpos']);
+          setDeletionProgress(100);
+          setStep('completed');
+          setTimeout(() => {
+            onDeleted();
+            onClose();
+          }, 3000);
+        }
+      } catch (error) {
+        console.error('❌ Erro inesperado ao excluir usuário:', error);
+        toast({
+          title: "Erro",
+          description: "Erro inesperado ao excluir usuário",
+          variant: "destructive",
+        });
+        setStep('analysis');
+      }
     }
   };
 
@@ -328,10 +369,41 @@ export const UserDeletionModal: React.FC<UserDeletionModalProps> = ({
                   </Button>
                 </div>
               ) : (
-                <div className="text-center py-4 text-muted-foreground">
-                  Nenhum usuário compatível encontrado. 
-                  <br />
-                  Este usuário não pode ser excluído sem violar a integridade do sistema.
+                <div className="space-y-4">
+                  <div className="text-center py-4 text-muted-foreground">
+                    <div className="mb-2">
+                      <User className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    </div>
+                    <div className="font-medium mb-1">Nenhum usuário compatível encontrado</div>
+                    <div className="text-sm">
+                      Você ainda pode excluir este usuário, mas algumas ações podem ser necessárias:
+                    </div>
+                  </div>
+                  
+                  <Card className="bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800">
+                    <CardContent className="pt-4">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                        <div className="text-sm text-yellow-800 dark:text-yellow-200">
+                          <div className="font-medium mb-1">Exclusão sem substituição:</div>
+                          <ul className="list-disc list-inside space-y-1 text-xs">
+                            <li>Propriedades de empresas serão removidas</li>
+                            <li>Projetos e objetivos estratégicos podem ficar órfãos</li>
+                            <li>Histórico de sessões de mentoria será preservado</li>
+                            <li>Alguns dados podem precisar ser reatribuídos manualmente</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Button 
+                    onClick={handleProceedToConfirmation} 
+                    className="w-full" 
+                    variant="destructive"
+                  >
+                    Continuar Exclusão sem Substituição
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -354,11 +426,11 @@ export const UserDeletionModal: React.FC<UserDeletionModalProps> = ({
           <div className="p-4 bg-destructive/10 rounded-lg">
             <p className="text-sm">
               <strong>ATENÇÃO:</strong> Esta ação é irreversível. Todos os dados do usuário serão 
-              permanentemente removidos e suas relações serão transferidas para o usuário substituto.
+              permanentemente removidos{selectedUser ? ' e suas relações serão transferidas para o usuário substituto' : ' e alguns dados podem ficar órfãos'}.
             </p>
           </div>
 
-          {selectedUser && (
+          {selectedUser ? (
             <div className="space-y-2">
               <Label>Usuário Substituto Selecionado:</Label>
               <Card>
@@ -375,6 +447,18 @@ export const UserDeletionModal: React.FC<UserDeletionModalProps> = ({
                 </CardContent>
               </Card>
             </div>
+          ) : (
+            <Card className="bg-yellow-50 border-yellow-200 dark:bg-yellow-950/20 dark:border-yellow-800">
+              <CardContent className="pt-4">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5" />
+                  <div className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <div className="font-medium mb-1">Exclusão sem usuário substituto</div>
+                    <div>Dados órfãos podem precisar ser reatribuídos manualmente após a exclusão.</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           <div className="space-y-2">

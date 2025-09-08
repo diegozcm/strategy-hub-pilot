@@ -75,13 +75,14 @@ export const useUserDeletion = () => {
 
     try {
       setLoading(true);
+      console.log('🔍 Analisando relações do usuário:', userId);
       
       const { data, error } = await supabase.rpc('analyze_user_relations', {
         _user_id: userId
       });
 
       if (error) {
-        console.error('Error analyzing user relations:', error);
+        console.error('❌ Erro ao analisar relações do usuário:', error);
         toast({
           title: "Erro",
           description: "Não foi possível analisar as relações do usuário: " + error.message,
@@ -90,11 +91,18 @@ export const useUserDeletion = () => {
         return null;
       }
 
+      console.log('✅ Relações analisadas:', data);
+      
+      if (!data) {
+        console.warn('⚠️ Nenhuma relação encontrada para o usuário');
+        return null;
+      }
+
       const relations = data as unknown as UserRelations;
       setUserRelations(relations);
       return relations;
     } catch (error) {
-      console.error('Error analyzing user relations:', error);
+      console.error('❌ Erro inesperado ao analisar relações:', error);
       toast({
         title: "Erro",
         description: "Erro inesperado ao analisar relações do usuário",
@@ -111,6 +119,7 @@ export const useUserDeletion = () => {
 
     try {
       setLoading(true);
+      console.log('🔍 Buscando usuários compatíveis para:', userId);
       
       const { data, error } = await supabase.rpc('find_compatible_replacement_users', {
         _user_id: userId,
@@ -118,7 +127,7 @@ export const useUserDeletion = () => {
       });
 
       if (error) {
-        console.error('Error finding compatible users:', error);
+        console.error('❌ Erro ao buscar usuários compatíveis:', error);
         toast({
           title: "Erro",
           description: "Não foi possível encontrar usuários compatíveis: " + error.message,
@@ -127,11 +136,51 @@ export const useUserDeletion = () => {
         return [];
       }
 
-      const users = (data || []) as unknown as CompatibleUser[];
-      setCompatibleUsers(users);
-      return users;
+      console.log('📊 Dados retornados da função:', data);
+
+      if (!data || !Array.isArray(data)) {
+        console.warn('⚠️ Nenhum dado válido retornado da função');
+        toast({
+          title: "Aviso",
+          description: "Nenhum usuário compatível foi encontrado. Você pode excluir o usuário sem substituição se necessário.",
+          variant: "default",
+        });
+        setCompatibleUsers([]);
+        return [];
+      }
+
+      if (data.length === 0) {
+        console.warn('⚠️ Array vazio - nenhum usuário compatível encontrado');
+        toast({
+          title: "Aviso",
+          description: "Nenhum usuário compatível foi encontrado. Você pode excluir o usuário sem substituição se necessário.",
+          variant: "default",
+        });
+        setCompatibleUsers([]);
+        return [];
+      }
+
+      // Process and validate each user
+      const processedUsers = data.map((user: any) => {
+        console.log('🔄 Processando usuário:', user);
+        
+        return {
+          user_id: user.user_id,
+          first_name: user.first_name || '',
+          last_name: user.last_name || '',
+          email: user.email || '',
+          role: user.role,
+          compatibility_score: user.compatibility_score || 0,
+          compatibility_details: user.compatibility_details || {}
+        };
+      }) as CompatibleUser[];
+
+      console.log(`✅ ${processedUsers.length} usuários compatíveis processados:`, processedUsers);
+      setCompatibleUsers(processedUsers);
+      return processedUsers;
+      
     } catch (error) {
-      console.error('Error finding compatible users:', error);
+      console.error('❌ Erro inesperado ao buscar usuários compatíveis:', error);
       toast({
         title: "Erro", 
         description: "Erro inesperado ao buscar usuários compatíveis",
