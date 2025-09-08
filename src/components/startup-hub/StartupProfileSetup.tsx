@@ -50,7 +50,7 @@ export const StartupProfileSetup: React.FC = () => {
 
   if (!profile) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -67,8 +67,8 @@ export const StartupProfileSetup: React.FC = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <Card>
+    <div className="space-y-6">
+      <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Building className="h-5 w-5" />
