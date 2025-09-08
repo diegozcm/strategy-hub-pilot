@@ -118,7 +118,7 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="text-center space-y-2">
+      <div className="space-y-2">
         <h1 className="text-3xl font-bold">Avaliação BEEP</h1>
         <p className="text-muted-foreground">
           Avalie o nível de maturidade da sua startup
@@ -126,7 +126,7 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
       </div>
 
       {/* Main Actions */}
-      <div className="max-w-4xl mx-auto grid gap-6 md:grid-cols-2">
+      <div className="max-w-4xl grid gap-6 md:grid-cols-2">
         {/* New Assessment */}
         <Card>
           <CardHeader>
@@ -259,7 +259,7 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
 
       {/* Completed Assessments History */}
       {completedAssessments.length > 0 && (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl">
           <h2 className="text-xl font-semibold mb-4">Histórico de Avaliações</h2>
           <BeepAssessmentHistory assessments={completedAssessments} />
         </div>
