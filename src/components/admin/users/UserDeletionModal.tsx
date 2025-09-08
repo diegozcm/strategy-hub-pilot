@@ -84,8 +84,8 @@ export const UserDeletionModal: React.FC<UserDeletionModalProps> = ({
       setCompletedOperations([]);
       
       // Start analysis
-      analyzeUserRelations(user.id).then(() => {
-        findCompatibleUsers(user.id);
+      analyzeUserRelations(user.user_id).then(() => {
+        findCompatibleUsers(user.user_id);
       });
     }
   }, [open, user, analyzeUserRelations, findCompatibleUsers]);
@@ -108,7 +108,7 @@ export const UserDeletionModal: React.FC<UserDeletionModalProps> = ({
 
     if (selectedReplacementUser) {
       // Deletion with replacement
-      const result = await deleteUserWithReplacement(user.id, selectedReplacementUser);
+      const result = await deleteUserWithReplacement(user.user_id, selectedReplacementUser);
       
       if (result?.success) {
         setCompletedOperations(result.operations_log || []);
@@ -125,7 +125,7 @@ export const UserDeletionModal: React.FC<UserDeletionModalProps> = ({
       // Deletion without replacement - use the safe delete function with no replacement
       try {
         const { error } = await supabase.rpc('safe_delete_user', {
-          _user_id: user.id,
+          _user_id: user.user_id,
           _admin_id: profile?.user_id
         });
 
