@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X, Trash2, Layout } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +17,10 @@ import { AddResultadoChaveModal } from '@/components/strategic-map/AddResultadoC
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 import { KeyResult } from '@/types/strategic-map';
+import { PlanCard } from './PlanCard';
+import { PlanDetailModal } from './PlanDetailModal';
+import { EditPlanModal } from './EditPlanModal';
+import { DeletePlanModal } from './DeletePlanModal';
 
 interface StrategicPlan {
   id: string;
@@ -24,6 +28,9 @@ interface StrategicPlan {
   status: string;
   period_start: string;
   period_end: string;
+  vision?: string;
+  mission?: string;
+  created_at: string;
 }
 
 interface StrategicObjective {
@@ -66,6 +73,14 @@ export const ObjectivesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isAddResultadoChaveOpen, setIsAddResultadoChaveOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  
+  // Plan management states
+  const [selectedPlanForDetail, setSelectedPlanForDetail] = useState<StrategicPlan | null>(null);
+  const [selectedPlanForEdit, setSelectedPlanForEdit] = useState<StrategicPlan | null>(null);
+  const [selectedPlanForDelete, setSelectedPlanForDelete] = useState<StrategicPlan | null>(null);
+  const [isPlanDetailOpen, setIsPlanDetailOpen] = useState(false);
+  const [isPlanEditOpen, setIsPlanEditOpen] = useState(false);
+  const [isPlanDeleteOpen, setIsPlanDeleteOpen] = useState(false);
 
   // Form states
   const [objectiveForm, setObjectiveForm] = useState({
@@ -238,6 +253,16 @@ export const ObjectivesPage: React.FC = () => {
   };
 
   const createObjective = async () => {
+    // Check if there are any plans first
+    if (plans.length === 0) {
+      toast({
+        title: "Erro",
+        description: "É necessário criar um plano estratégico antes de criar objetivos.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!user || !objectiveForm.title || !objectiveForm.plan_id || !objectiveForm.pillar_id) {
       toast({
         title: "Erro",
@@ -447,6 +472,83 @@ export const ObjectivesPage: React.FC = () => {
     return keyResults.filter(kr => kr.objective_id === objectiveId);
   };
 
+  // Plan management functions
+  const updatePlan = async (planId: string, updates: Partial<StrategicPlan>) => {
+    try {
+      const { data, error } = await supabase
+        .from('strategic_plans')
+        .update(updates)
+        .eq('id', planId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setPlans(prev => prev.map(plan => plan.id === planId ? data : plan));
+      
+      toast({
+        title: "Sucesso",
+        description: "Plano estratégico atualizado com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error updating plan:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar plano estratégico. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deletePlan = async (planId: string) => {
+    try {
+      const { error } = await supabase
+        .from('strategic_plans')
+        .delete()
+        .eq('id', planId);
+
+      if (error) throw error;
+
+      setPlans(prev => prev.filter(plan => plan.id !== planId));
+      
+      // Reset selected plan if it was deleted
+      if (selectedPlan === planId) {
+        setSelectedPlan('all');
+      }
+      
+      toast({
+        title: "Sucesso",
+        description: "Plano estratégico excluído com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error deleting plan:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir plano estratégico. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePlanView = (plan: StrategicPlan) => {
+    setSelectedPlanForDetail(plan);
+    setIsPlanDetailOpen(true);
+  };
+
+  const handlePlanEdit = (plan: StrategicPlan) => {
+    setSelectedPlanForEdit(plan);
+    setIsPlanEditOpen(true);
+  };
+
+  const handlePlanDelete = (plan: StrategicPlan) => {
+    setSelectedPlanForDelete(plan);
+    setIsPlanDeleteOpen(true);
+  };
+
+  const getObjectivesCountForPlan = (planId: string) => {
+    return objectives.filter(obj => obj.plan_id === planId).length;
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -487,7 +589,7 @@ export const ObjectivesPage: React.FC = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Objetivos Estratégicos</h1>
-          <p className="text-gray-600 mt-2">Gerencie seus objetivos e resultados-chave</p>
+          <p className="text-gray-600 mt-2">Gerencie seus planos estratégicos e objetivos</p>
         </div>
         <div className="flex space-x-3">
           <Dialog open={isCreatePlanOpen} onOpenChange={setIsCreatePlanOpen}>
@@ -501,11 +603,11 @@ export const ObjectivesPage: React.FC = () => {
               <DialogHeader>
                 <DialogTitle>Criar Plano Estratégico</DialogTitle>
                 <DialogDescription>
-                  Defina um novo plano estratégico para sua organização.
+                  Crie um novo plano estratégico para organizar seus objetivos
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
                   <Label htmlFor="plan-name">Nome do Plano</Label>
                   <Input
                     id="plan-name"
@@ -514,26 +616,8 @@ export const ObjectivesPage: React.FC = () => {
                     placeholder="Ex: Plano Estratégico 2024-2026"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="plan-vision">Visão</Label>
-                  <Textarea
-                    id="plan-vision"
-                    value={planForm.vision}
-                    onChange={(e) => setPlanForm(prev => ({ ...prev, vision: e.target.value }))}
-                    placeholder="Descreva a visão da organização"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="plan-mission">Missão</Label>
-                  <Textarea
-                    id="plan-mission"
-                    value={planForm.mission}
-                    onChange={(e) => setPlanForm(prev => ({ ...prev, mission: e.target.value }))}
-                    placeholder="Descreva a missão da organização"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="grid gap-2">
                     <Label htmlFor="period-start">Data de Início</Label>
                     <Input
                       id="period-start"
@@ -542,8 +626,8 @@ export const ObjectivesPage: React.FC = () => {
                       onChange={(e) => setPlanForm(prev => ({ ...prev, period_start: e.target.value }))}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="period-end">Data de Término</Label>
+                  <div className="grid gap-2">
+                    <Label htmlFor="period-end">Data de Fim</Label>
                     <Input
                       id="period-end"
                       type="date"
@@ -552,21 +636,41 @@ export const ObjectivesPage: React.FC = () => {
                     />
                   </div>
                 </div>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsCreatePlanOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={createPlan}>
-                    Criar Plano
-                  </Button>
+                <div className="grid gap-2">
+                  <Label htmlFor="plan-vision">Visão (Opcional)</Label>
+                  <Textarea
+                    id="plan-vision"
+                    value={planForm.vision}
+                    onChange={(e) => setPlanForm(prev => ({ ...prev, vision: e.target.value }))}
+                    placeholder="Descreva a visão da empresa para este período"
+                    rows={2}
+                  />
                 </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="plan-mission">Missão (Opcional)</Label>
+                  <Textarea
+                    id="plan-mission"
+                    value={planForm.mission}
+                    onChange={(e) => setPlanForm(prev => ({ ...prev, mission: e.target.value }))}
+                    placeholder="Descreva a missão da empresa"
+                    rows={2}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsCreatePlanOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={createPlan}>
+                  Criar Plano
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
-
+          
           <Dialog open={isCreateObjectiveOpen} onOpenChange={setIsCreateObjectiveOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button disabled={plans.length === 0}>
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Objetivo
               </Button>
@@ -575,553 +679,469 @@ export const ObjectivesPage: React.FC = () => {
               <DialogHeader>
                 <DialogTitle>Criar Objetivo Estratégico</DialogTitle>
                 <DialogDescription>
-                  Defina um novo objetivo estratégico para alcançar suas metas.
+                  {plans.length === 0 
+                    ? "Primeiro você precisa criar um plano estratégico"
+                    : "Defina um novo objetivo estratégico para sua organização."
+                  }
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="objective-plan">Plano Estratégico *</Label>
-                  <Select 
-                    value={objectiveForm.plan_id} 
-                    onValueChange={(value) => setObjectiveForm(prev => ({ ...prev, plan_id: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um plano" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {plans.map((plan) => (
-                        <SelectItem key={plan.id} value={plan.id}>
-                          {plan.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="objective-pillar">Pilar Estratégico *</Label>
-                  <Select 
-                    value={objectiveForm.pillar_id} 
-                    onValueChange={(value) => setObjectiveForm(prev => ({ ...prev, pillar_id: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um pilar" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {pillars.map((pillar) => (
-                        <SelectItem key={pillar.id} value={pillar.id}>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: pillar.color }}
-                            />
-                            {pillar.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="objective-title">Título do Objetivo *</Label>
-                  <Input
-                    id="objective-title"
-                    value={objectiveForm.title}
-                    onChange={(e) => setObjectiveForm(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Ex: Aumentar receita em 30%"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="objective-description">Descrição</Label>
-                  <Textarea
-                    id="objective-description"
-                    value={objectiveForm.description}
-                    onChange={(e) => setObjectiveForm(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Descreva o objetivo em detalhes"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="objective-weight">Peso (1-10)</Label>
-                    <Input
-                      id="objective-weight"
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={objectiveForm.weight}
-                      onChange={(e) => setObjectiveForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
-                    />
+              {plans.length > 0 && (
+                <>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="objective-title">Título do Objetivo</Label>
+                      <Input
+                        id="objective-title"
+                        value={objectiveForm.title}
+                        onChange={(e) => setObjectiveForm(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Ex: Aumentar receita em 30%"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="objective-description">Descrição</Label>
+                      <Textarea
+                        id="objective-description"
+                        value={objectiveForm.description}
+                        onChange={(e) => setObjectiveForm(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Descreva o objetivo..."
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="objective-weight">Peso (%)</Label>
+                        <Input
+                          id="objective-weight"
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={objectiveForm.weight}
+                          onChange={(e) => setObjectiveForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="objective-target-date">Data Meta</Label>
+                        <Input
+                          id="objective-target-date"
+                          type="date"
+                          value={objectiveForm.target_date}
+                          onChange={(e) => setObjectiveForm(prev => ({ ...prev, target_date: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="objective-plan">Plano Estratégico</Label>
+                        <Select value={objectiveForm.plan_id} onValueChange={(value) => setObjectiveForm(prev => ({ ...prev, plan_id: value }))}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um plano" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {plans.map((plan) => (
+                              <SelectItem key={plan.id} value={plan.id}>
+                                {plan.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="objective-pillar">Pilar Estratégico</Label>
+                        <Select value={objectiveForm.pillar_id} onValueChange={(value) => setObjectiveForm(prev => ({ ...prev, pillar_id: value }))}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um pilar" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {pillars.map((pillar) => (
+                              <SelectItem key={pillar.id} value={pillar.id}>
+                                {pillar.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="objective-target-date">Data Meta</Label>
-                    <Input
-                      id="objective-target-date"
-                      type="date"
-                      value={objectiveForm.target_date}
-                      onChange={(e) => setObjectiveForm(prev => ({ ...prev, target_date: e.target.value }))}
-                    />
+                  <div className="flex justify-end space-x-2">
+                    <Button variant="outline" onClick={() => setIsCreateObjectiveOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={createObjective}>
+                      Criar Objetivo
+                    </Button>
                   </div>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsCreateObjectiveOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={createObjective}>
-                    Criar Objetivo
-                  </Button>
-                </div>
-              </div>
+                </>
+              )}
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Buscar objetivos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+      {/* Plans Management Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Layout className="h-5 w-5" />
+            <h2 className="text-xl font-semibold">Planos Estratégicos</h2>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Select value={selectedPlan} onValueChange={setSelectedPlan}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Todos os planos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os planos</SelectItem>
-              {plans.map((plan) => (
-                <SelectItem key={plan.id} value={plan.id}>
-                  {plan.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="not_started">Não Iniciado</SelectItem>
-              <SelectItem value="in_progress">Em Progresso</SelectItem>
-              <SelectItem value="completed">Concluído</SelectItem>
-              <SelectItem value="at_risk">Em Risco</SelectItem>
-              <SelectItem value="delayed">Atrasado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        
+        {plans.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center">
+              <Layout className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium mb-2">Nenhum plano estratégico</h3>
+              <p className="text-muted-foreground mb-4">
+                Crie seu primeiro plano estratégico para começar a definir objetivos.
+              </p>
+              <Button onClick={() => setIsCreatePlanOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Primeiro Plano
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {plans.map((plan) => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                objectivesCount={getObjectivesCountForPlan(plan.id)}
+                onView={handlePlanView}
+                onEdit={handlePlanEdit}
+                onDelete={handlePlanDelete}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Empty State */}
-      {plans.length === 0 ? (
-        <Card className="text-center py-12">
-          <CardContent>
+      {/* Objectives Section */}
+      <div className="space-y-4">
+        {/* Filters and Search */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-between">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Buscar objetivos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-full sm:w-64"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-32">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="not_started">Não Iniciado</SelectItem>
+                <SelectItem value="in_progress">Em Progresso</SelectItem>
+                <SelectItem value="at_risk">Em Risco</SelectItem>
+                <SelectItem value="delayed">Atrasado</SelectItem>
+                <SelectItem value="completed">Concluído</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={selectedPlan} onValueChange={setSelectedPlan}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Plano" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os Planos</SelectItem>
+                {plans.map((plan) => (
+                  <SelectItem key={plan.id} value={plan.id}>
+                    {plan.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Objectives Grid */}
+        {filteredObjectives.length === 0 ? (
+          <div className="text-center py-12">
             <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum plano estratégico encontrado</h3>
-            <p className="text-gray-600 mb-4">Comece criando seu primeiro plano estratégico.</p>
-            <Button onClick={() => setIsCreatePlanOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Primeiro Plano
-            </Button>
-          </CardContent>
-        </Card>
-      ) : filteredObjectives.length === 0 ? (
-        <Card className="text-center py-12">
-          <CardContent>
-            <Target className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum objetivo encontrado</h3>
-            <p className="text-gray-600 mb-4">Comece criando seu primeiro objetivo estratégico.</p>
-            <Button onClick={() => setIsCreateObjectiveOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Primeiro Objetivo
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        /* Objectives Grid */
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredObjectives.map((objective) => {
-            const objectiveKRs = getObjectiveKeyResults(objective.id);
-            const completedKRs = objectiveKRs.filter(kr => 
-              kr.current_value >= kr.target_value
-            ).length;
-            const avgProgress = objectiveKRs.length > 0 
-              ? objectiveKRs.reduce((acc, kr) => acc + ((kr.current_value / kr.target_value) * 100), 0) / objectiveKRs.length
-              : objective.progress;
-
-            return (
-              <Card 
-                key={objective.id} 
-                className="hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => openDetailModal(objective)}
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: pillars.find(p => p.id === objective.pillar_id)?.color || '#3B82F6' }}
-                        />
-                        <span className="text-xs text-gray-500 font-medium">
-                          {pillars.find(p => p.id === objective.pillar_id)?.name || 'Sem pilar'}
-                        </span>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {objectives.length === 0 ? 'Nenhum objetivo criado' : 'Nenhum objetivo encontrado'}
+            </h3>
+            <p className="text-gray-500 mb-4">
+              {objectives.length === 0 
+                ? 'Comece criando seu primeiro objetivo estratégico.'
+                : 'Tente ajustar os filtros ou termo de busca.'
+              }
+            </p>
+            {objectives.length === 0 && plans.length > 0 && (
+              <Button onClick={() => setIsCreateObjectiveOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Criar Primeiro Objetivo
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredObjectives.map((objective) => {
+              const pillar = pillars.find(p => p.id === objective.pillar_id);
+              const plan = plans.find(p => p.id === objective.plan_id);
+              const objectiveKeyResults = getObjectiveKeyResults(objective.id);
+              
+              return (
+                <Card 
+                  key={objective.id} 
+                  className="hover:shadow-lg transition-all cursor-pointer group"
+                  onClick={() => openDetailModal(objective)}
+                >
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
+                          {objective.title}
+                        </CardTitle>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Badge 
+                            variant="secondary" 
+                            style={{ backgroundColor: `${pillar?.color}20`, color: pillar?.color }}
+                          >
+                            {pillar?.name}
+                          </Badge>
+                          <Badge variant="outline">
+                            {plan?.name}
+                          </Badge>
+                        </div>
                       </div>
-                      <CardTitle className="text-lg leading-tight">{objective.title}</CardTitle>
-                      <CardDescription className="mt-1">
-                        {objective.description}
-                      </CardDescription>
-                    </div>
-                    <Badge variant="secondary" className={`${getStatusColor(objective.status)} text-white`}>
-                      {getStatusText(objective.status)}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Progress */}
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-600">Progresso</span>
-                        <span className="font-medium">{Math.round(avgProgress)}%</span>
+                      <div className="flex items-center gap-1">
+                        <div className={`w-2 h-2 rounded-full ${getStatusColor(objective.status)}`}></div>
+                        <span className="text-xs text-gray-500">{getStatusText(objective.status)}</span>
                       </div>
-                      <Progress value={avgProgress} className="h-2" />
                     </div>
-
-                    {/* Key Results Summary */}
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center text-gray-600">
-                        <TrendingUp className="w-4 h-4 mr-1" />
-                        Resultados-Chave
-                      </div>
-                      <span className="font-medium">
-                        {completedKRs}/{objectiveKRs.length} concluídos
-                      </span>
-                    </div>
-
-                    {/* Meta info */}
-                    <div className="flex items-center justify-between text-sm text-gray-600">
-                      <div className="flex items-center">
-                        <Clock className="w-4 h-4 mr-1" />
-                        Peso: {objective.weight}/10
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {objective.description && (
+                        <p className="text-sm text-gray-600 line-clamp-2">{objective.description}</p>
+                      )}
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-1 text-gray-500">
+                          <Target className="w-3 h-3" />
+                          <span>{objectiveKeyResults.length} resultados-chave</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-500">
+                          <TrendingUp className="w-3 h-3" />
+                          <span>Peso: {objective.weight}%</span>
+                        </div>
                       </div>
                       {objective.target_date && (
-                        <div className="flex items-center">
-                          <AlertTriangle className="w-4 h-4 mr-1" />
-                          {new Date(objective.target_date).toLocaleDateString('pt-BR')}
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <Clock className="w-3 h-3" />
+                          <span>Meta: {new Date(objective.target_date).toLocaleDateString('pt-BR')}</span>
                         </div>
                       )}
+                      <Progress value={objective.progress || 0} className="h-2" />
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-      {/* Detail/Edit Modal */}
-      {selectedObjective && (
-        <Dialog open={isDetailModalOpen} onOpenChange={closeDetailModal}>
-          <DialogContent className="w-[95vw] max-w-4xl h-[90vh] flex flex-col">
-            <DialogHeader className="flex-shrink-0">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <DialogTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5 flex-shrink-0" />
-                    <span className="truncate">
-                      {isEditing ? 'Editar Objetivo' : 'Detalhes do Objetivo'}
-                    </span>
-                  </DialogTitle>
-                  <DialogDescription className="mt-1">
-                    {isEditing ? 'Edite as informações do objetivo estratégico' : 'Visualize e gerencie seu objetivo estratégico'}
-                  </DialogDescription>
-                </div>
-                <div className="flex flex-wrap gap-2 flex-shrink-0">
-                  {!isEditing ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsAddResultadoChaveOpen(true)}
-                        className="hidden sm:flex"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Adicionar Resultado-Chave
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsAddResultadoChaveOpen(true)}
-                        className="sm:hidden"
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditing(true)}
-                      >
-                        <Edit className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Editar</span>
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setIsDeleteConfirmOpen(true)}
-                      >
-                        <Trash2 className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Excluir</span>
-                      </Button>
-                    </>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditing(false)}
-                      >
-                        <X className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Cancelar</span>
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={updateObjective}
-                      >
-                        <Save className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Salvar</span>
-                      </Button>
+      {/* Objective Detail Modal */}
+      <Dialog open={isDetailModalOpen} onOpenChange={closeDetailModal}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <DialogTitle className="text-xl">
+                  {isEditing ? 'Editar Objetivo' : 'Detalhes do Objetivo'}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedObjective && (
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="secondary">
+                        {pillars.find(p => p.id === selectedObjective.pillar_id)?.name}
+                      </Badge>
+                      <Badge variant="outline">
+                        {plans.find(p => p.id === selectedObjective.plan_id)?.name}
+                      </Badge>
                     </div>
                   )}
-                </div>
+                </DialogDescription>
               </div>
-            </DialogHeader>
+              <div className="flex items-center gap-2">
+                {!isEditing && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                      <Edit className="w-4 h-4 mr-1" />
+                      Editar
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)}>
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Excluir
+                    </Button>
+                  </>
+                )}
+                {isEditing && (
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                    <X className="w-4 h-4 mr-1" />
+                    Cancelar
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
 
-            <div className="flex-1 overflow-y-auto space-y-6 pr-2">
-              {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Informações Básicas</h3>
-                
-                <div>
-                  <Label htmlFor="detail-title">Título</Label>
-                  {isEditing ? (
+          {selectedObjective && (
+            <div className="space-y-6">
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="edit-title">Título</Label>
                     <Input
-                      id="detail-title"
+                      id="edit-title"
                       value={editForm.title}
                       onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Título do objetivo"
                     />
-                  ) : (
-                    <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">{selectedObjective.title}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="detail-description">Descrição</Label>
-                  {isEditing ? (
-                    <Textarea
-                      id="detail-description"
-                      value={editForm.description}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Descrição do objetivo"
-                      rows={4}
-                    />
-                  ) : (
-                    <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-md min-h-[80px]">
-                      {selectedObjective.description || 'Nenhuma descrição fornecida'}
-                    </p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="detail-pillar">Pilar Estratégico</Label>
-                    {isEditing ? (
-                      <Select 
-                        value={editForm.pillar_id} 
-                        onValueChange={(value) => setEditForm(prev => ({ ...prev, pillar_id: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um pilar" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {pillars.map((pillar) => (
-                            <SelectItem key={pillar.id} value={pillar.id}>
-                              <div className="flex items-center gap-2">
-                                <div 
-                                  className="w-3 h-3 rounded-full" 
-                                  style={{ backgroundColor: pillar.color }}
-                                />
-                                {pillar.name}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className="bg-gray-50 p-3 rounded-md">
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: pillars.find(p => p.id === selectedObjective.pillar_id)?.color || '#3B82F6' }}
-                          />
-                          <span className="text-sm text-gray-900">
-                            {pillars.find(p => p.id === selectedObjective.pillar_id)?.name || 'Sem pilar'}
-                          </span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                   <div>
-                    <Label htmlFor="detail-weight">Peso</Label>
-                    {isEditing ? (
+                    <Label htmlFor="edit-description">Descrição</Label>
+                    <Textarea
+                      id="edit-description"
+                      value={editForm.description}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-weight">Peso (%)</Label>
                       <Input
-                        id="detail-weight"
+                        id="edit-weight"
                         type="number"
                         min="1"
-                        max="10"
+                        max="100"
                         value={editForm.weight}
                         onChange={(e) => setEditForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
                       />
-                    ) : (
-                      <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">{selectedObjective.weight}/10</p>
-                    )}
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-target-date">Data Meta</Label>
+                      <Input
+                        id="edit-target-date"
+                        type="date"
+                        value={editForm.target_date}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, target_date: e.target.value }))}
+                      />
+                    </div>
                   </div>
-
-                  <div>
-                    <Label htmlFor="detail-status">Status</Label>
-                    {isEditing ? (
-                      <Select 
-                        value={editForm.status} 
-                        onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value }))}
-                      >
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-status">Status</Label>
+                      <Select value={editForm.status} onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value }))}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="not_started">Não Iniciado</SelectItem>
                           <SelectItem value="in_progress">Em Progresso</SelectItem>
-                          <SelectItem value="completed">Concluído</SelectItem>
                           <SelectItem value="at_risk">Em Risco</SelectItem>
                           <SelectItem value="delayed">Atrasado</SelectItem>
+                          <SelectItem value="completed">Concluído</SelectItem>
                         </SelectContent>
                       </Select>
-                    ) : (
-                      <div className="bg-gray-50 p-3 rounded-md">
-                        <Badge variant="secondary" className={`${getStatusColor(selectedObjective.status)} text-white`}>
-                          {getStatusText(selectedObjective.status)}
-                        </Badge>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-pillar">Pilar Estratégico</Label>
+                      <Select value={editForm.pillar_id} onValueChange={(value) => setEditForm(prev => ({ ...prev, pillar_id: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pillars.map((pillar) => (
+                            <SelectItem key={pillar.id} value={pillar.id}>
+                              {pillar.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button variant="outline" onClick={() => setIsEditing(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={updateObjective}>
+                      <Save className="w-4 h-4 mr-2" />
+                      Salvar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="font-medium mb-2">Descrição</h3>
+                    <p className="text-gray-600">{selectedObjective.description || 'Nenhuma descrição fornecida.'}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-500">Peso</h4>
+                      <p className="text-lg">{selectedObjective.weight}%</p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-500">Status</h4>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${getStatusColor(selectedObjective.status)}`}></div>
+                        <span>{getStatusText(selectedObjective.status)}</span>
                       </div>
-                    )}
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <Label htmlFor="detail-target-date">Data Meta</Label>
-                  {isEditing ? (
-                    <Input
-                      id="detail-target-date"
-                      type="date"
-                      value={editForm.target_date}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, target_date: e.target.value }))}
-                    />
-                  ) : (
-                    <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-md">
-                      {selectedObjective.target_date 
-                        ? new Date(selectedObjective.target_date).toLocaleDateString('pt-BR')
-                        : 'Não definida'
-                      }
-                    </p>
+                  {selectedObjective.target_date && (
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-500">Data Meta</h4>
+                      <p>{new Date(selectedObjective.target_date).toLocaleDateString('pt-BR')}</p>
+                    </div>
                   )}
-                </div>
-              </div>
 
-              {/* Key Results Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">Resultados-Chave</h3>
-                  <Badge variant="outline">
-                    {getObjectiveKeyResults(selectedObjective.id).length} Resultados-Chave
-                  </Badge>
-                </div>
-
-                {getObjectiveKeyResults(selectedObjective.id).length > 0 ? (
-                  <div className="space-y-3">
-                    {getObjectiveKeyResults(selectedObjective.id).map((kr) => {
-                      const progress = kr.target_value > 0 ? (kr.current_value / kr.target_value) * 100 : 0;
-                      return (
-                        <Card key={kr.id} className="p-4">
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-start">
-                              <h4 className="font-medium text-sm">{kr.title}</h4>
-                              <div className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">
-                                {Math.round(progress)}%
-                              </div>
-                            </div>
-                            <div className="flex justify-between text-sm text-gray-600">
-                              <span>{kr.current_value} / {kr.target_value} {kr.unit}</span>
-                              <span>{Math.round(progress)}%</span>
-                            </div>
-                            <Progress value={progress} className="h-2" />
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-500">
-                    <TrendingUp className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Nenhum resultado-chave definido</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Metadata */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="text-sm font-semibold mb-3">Informações Adicionais</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-600">Plano:</span>
-                    <span className="ml-2 font-medium">
-                      {plans.find(p => p.id === selectedObjective.plan_id)?.name || 'N/A'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Criado em:</span>
-                    <span className="ml-2 font-medium">
-                      {new Date(selectedObjective.created_at).toLocaleDateString('pt-BR')}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Progresso Geral:</span>
-                    <span className="ml-2 font-medium">
-                      {selectedObjective.progress || 0}%
-                    </span>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium">Resultados-Chave</h3>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => setIsAddResultadoChaveOpen(true)}
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Adicionar
+                      </Button>
+                    </div>
+                    <div className="space-y-2">
+                      {getObjectiveKeyResults(selectedObjective.id).map((kr) => (
+                        <ResultadoChaveMiniCard key={kr.id} resultado={kr} />
+                      ))}
+                      {getObjectiveKeyResults(selectedObjective.id).length === 0 && (
+                        <p className="text-sm text-gray-500 text-center py-4">
+                          Nenhum resultado-chave definido. Clique em "Adicionar" para criar o primeiro.
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
+          )}
+        </DialogContent>
+      </Dialog>
 
-      {/* Add Resultado-Chave Modal */}
+      {/* Add Key Result Modal */}
       {selectedObjective && (
         <AddResultadoChaveModal
-          objectiveId={selectedObjective.id}
           open={isAddResultadoChaveOpen}
-          onClose={() => setIsAddResultadoChaveOpen(false)}
-          onSave={async (resultadoChaveData) => {
-            await createResultadoChave(resultadoChaveData);
-            setIsAddResultadoChaveOpen(false);
-          }}
+          onOpenChange={setIsAddResultadoChaveOpen}
+          onAdd={createResultadoChave}
+          objectiveTitle={selectedObjective.title}
         />
       )}
 
@@ -1146,6 +1166,38 @@ export const ObjectivesPage: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Plan Management Modals */}
+      <PlanDetailModal
+        plan={selectedPlanForDetail}
+        isOpen={isPlanDetailOpen}
+        onClose={() => {
+          setIsPlanDetailOpen(false);
+          setSelectedPlanForDetail(null);
+        }}
+        objectivesCount={selectedPlanForDetail ? getObjectivesCountForPlan(selectedPlanForDetail.id) : 0}
+      />
+
+      <EditPlanModal
+        plan={selectedPlanForEdit}
+        isOpen={isPlanEditOpen}
+        onClose={() => {
+          setIsPlanEditOpen(false);
+          setSelectedPlanForEdit(null);
+        }}
+        onUpdate={updatePlan}
+      />
+
+      <DeletePlanModal
+        plan={selectedPlanForDelete}
+        isOpen={isPlanDeleteOpen}
+        onClose={() => {
+          setIsPlanDeleteOpen(false);
+          setSelectedPlanForDelete(null);
+        }}
+        onDelete={deletePlan}
+        objectivesCount={selectedPlanForDelete ? getObjectivesCountForPlan(selectedPlanForDelete.id) : 0}
+      />
     </div>
   );
 };

@@ -65,8 +65,7 @@ export const useStrategicMap = () => {
       if (data) {
         setStrategicPlan(data);
       } else {
-        // Create a default strategic plan if none exists
-        await createDefaultStrategicPlan(companyId);
+        setStrategicPlan(null);
       }
     } catch (error) {
       console.error('Error loading strategic plan:', error);
@@ -220,9 +219,6 @@ export const useStrategicMap = () => {
       }
 
       setCompany(data);
-      
-      // Create default strategic plan
-      await createDefaultStrategicPlan(data.id);
       
       // Create default strategic pillars
       await createDefaultPillars(data.id);
