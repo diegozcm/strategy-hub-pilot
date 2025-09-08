@@ -118,15 +118,21 @@ export const ObjectivesPage: React.FC = () => {
         return;
       }
       
-      // Load strategic plans
+      // Load strategic plans with explicit company validation
       const { data: plansData, error: plansError } = await supabase
         .from('strategic_plans')
         .select('*')
         .eq('company_id', authCompany.id)
         .order('created_at', { ascending: false });
 
-      if (plansError) throw plansError;
-      setPlans(plansData || []);
+      if (plansError) {
+        console.error('Error loading plans:', plansError);
+        throw plansError;
+      }
+      
+      // Ensure we only use plans from the current company
+      const validPlans = (plansData || []).filter(plan => plan.company_id === authCompany.id);
+      setPlans(validPlans);
 
       // Load strategic pillars
       const { data: pillarsData, error: pillarsError } = await supabase
