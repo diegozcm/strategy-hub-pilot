@@ -111,7 +111,7 @@ export const useActionItems = (sessionId?: string) => {
         .update(updates)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (updateError) {
         console.error('Error updating action item:', updateError);
