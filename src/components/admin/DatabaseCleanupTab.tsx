@@ -207,7 +207,7 @@ export const DatabaseCleanupTab: React.FC = () => {
                     <Building className="h-4 w-4" />
                     Empresa
                   </Label>
-                  <Select
+                   <Select
                     value={filters.companyId || ''}
                     onValueChange={(value) => 
                       setFilters(prev => ({ ...prev, companyId: value || undefined }))
@@ -217,7 +217,6 @@ export const DatabaseCleanupTab: React.FC = () => {
                       <SelectValue placeholder="Todas as empresas" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas as empresas</SelectItem>
                       {companies.map(company => (
                         <SelectItem key={company.id} value={company.id}>
                           {company.name}
@@ -234,7 +233,7 @@ export const DatabaseCleanupTab: React.FC = () => {
                     <User className="h-4 w-4" />
                     Usuário
                   </Label>
-                  <Select
+                   <Select
                     value={filters.userId || ''}
                     onValueChange={(value) => 
                       setFilters(prev => ({ ...prev, userId: value || undefined }))
@@ -244,7 +243,6 @@ export const DatabaseCleanupTab: React.FC = () => {
                       <SelectValue placeholder="Todos os usuários" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os usuários</SelectItem>
                       {users.map(user => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.name} ({user.email})
