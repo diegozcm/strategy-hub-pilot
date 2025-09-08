@@ -18,7 +18,7 @@ export const ActionItemsManager: React.FC<ActionItemsManagerProps> = ({
   sessionId, 
   canEdit = false 
 }) => {
-  const { actionItems, loading, createActionItem, updateActionItem, deleteActionItem } = useActionItems(sessionId);
+  const { actionItems, loading, createActionItem, updateActionItem } = useActionItems(sessionId);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -49,10 +49,6 @@ export const ActionItemsManager: React.FC<ActionItemsManagerProps> = ({
 
   const handleUpdate = async (id: string, updates: Partial<ActionItem>) => {
     await updateActionItem(id, updates);
-  };
-
-  const handleDelete = async (id: string) => {
-    await deleteActionItem(id);
   };
 
   if (loading) {
@@ -159,7 +155,6 @@ export const ActionItemsManager: React.FC<ActionItemsManagerProps> = ({
               key={item.id}
               item={item}
               onUpdate={handleUpdate}
-              onDelete={handleDelete}
               canEdit={canEdit}
             />
           ))}
