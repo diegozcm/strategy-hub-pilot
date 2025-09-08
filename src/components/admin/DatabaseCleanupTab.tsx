@@ -6,7 +6,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { AlertTriangle, Trash2, RefreshCw, Shield, Calendar, Building, User } from 'lucide-react';
+import { 
+  AlertTriangle, 
+  Trash2, 
+  RefreshCw, 
+  Shield, 
+  Calendar, 
+  Building, 
+  User,
+  Users,
+  Target,
+  BarChart3,
+  Brain,
+  ClipboardCheck,
+  Bot,
+  Award,
+  Database
+} from 'lucide-react';
 import { useDatabaseCleanup, CleanupCategory, CleanupRequest } from '@/hooks/useDatabaseCleanup';
 import { DatabaseCleanupModal } from './DatabaseCleanupModal';
 
@@ -69,15 +85,15 @@ export const DatabaseCleanupTab: React.FC = () => {
 
   const getCategoryIcon = (iconName: string) => {
     const icons: Record<string, React.ComponentType<any>> = {
-      Users: require('lucide-react').Users,
-      Target: require('lucide-react').Target,
-      BarChart3: require('lucide-react').BarChart3,
-      Brain: require('lucide-react').Brain,
-      ClipboardCheck: require('lucide-react').ClipboardCheck,
-      Bot: require('lucide-react').Bot,
-      Award: require('lucide-react').Award,
+      Users,
+      Target,
+      BarChart3,
+      Brain,
+      ClipboardCheck,
+      Bot,
+      Award,
     };
-    const IconComponent = icons[iconName] || require('lucide-react').Database;
+    const IconComponent = icons[iconName] || Database;
     return <IconComponent className="h-5 w-5" />;
   };
 
