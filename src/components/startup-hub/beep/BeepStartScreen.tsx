@@ -9,7 +9,9 @@ import { BeepAssessmentHistory } from './BeepAssessmentHistory';
 import { useStartupProfile } from '@/hooks/useStartupProfile';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Target, AlertTriangle } from 'lucide-react';
+import { Target, AlertTriangle, TrendingUp } from 'lucide-react';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
 interface BeepAssessment {
   id: string;
@@ -115,6 +117,34 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
   const draftAssessments = assessments.filter(assessment => assessment.status === 'draft');
   const completedAssessments = assessments.filter(assessment => assessment.status === 'completed');
 
+  // Prepare chart data for score evolution
+  const chartData = completedAssessments
+    .sort((a, b) => new Date(a.completed_at!).getTime() - new Date(b.completed_at!).getTime())
+    .map((assessment, index) => ({
+      assessment: `Avaliação ${index + 1}`,
+      score: assessment.final_score || 0,
+      date: new Date(assessment.completed_at!).toLocaleDateString('pt-BR', { 
+        day: '2-digit', 
+        month: '2-digit' 
+      })
+    }));
+
+  // Get color based on score (BEEP scale 1-5)
+  const getScoreColor = (score: number) => {
+    if (score <= 1) return 'hsl(0, 84%, 60%)'; // red
+    if (score <= 2) return 'hsl(25, 95%, 53%)'; // orange  
+    if (score <= 3) return 'hsl(221, 83%, 53%)'; // blue
+    if (score <= 4) return 'hsl(142, 76%, 36%)'; // green
+    return 'hsl(271, 81%, 56%)'; // purple
+  };
+
+  const chartConfig = {
+    score: {
+      label: "Nota BEEP",
+      color: "hsl(var(--primary))",
+    },
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -124,6 +154,98 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
           Avalie o nível de maturidade da sua startup
         </p>
       </div>
+
+      {/* Score Evolution Chart */}
+      {completedAssessments.length > 0 && (
+        <div className="max-w-4xl">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Evolução das Notas BEEP
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Acompanhe o progresso das suas avaliações ao longo do tempo
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <LineChart data={chartData}>
+                  <XAxis 
+                    dataKey="assessment" 
+                    tickLine={false}
+                    axisLine={false}
+                    className="text-xs"
+                  />
+                  <YAxis 
+                    domain={[0, 5]}
+                    tickCount={6}
+                    tickLine={false}
+                    axisLine={false}
+                    className="text-xs"
+                  />
+                  <ChartTooltip 
+                    content={
+                      <ChartTooltipContent 
+                        formatter={(value, name) => [
+                          `${Number(value).toFixed(1)}`,
+                          "Nota BEEP"
+                        ]}
+                        labelFormatter={(label, payload) => {
+                          const data = payload?.[0]?.payload;
+                          return data ? `${label} (${data.date})` : label;
+                        }}
+                      />
+                    }
+                  />
+                  <Line
+                    dataKey="score"
+                    strokeWidth={3}
+                    dot={(props) => {
+                      const { cx, cy, payload } = props;
+                      const color = getScoreColor(payload.score);
+                      return (
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={6}
+                          fill={color}
+                          stroke="white"
+                          strokeWidth={2}
+                        />
+                      );
+                    }}
+                    stroke="hsl(var(--primary))"
+                    type="monotone"
+                  />
+                </LineChart>
+              </ChartContainer>
+              <div className="mt-4 flex flex-wrap gap-2 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(0, 84%, 60%)' }} />
+                  <span>1.0 - Idealizando</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(25, 95%, 53%)' }} />
+                  <span>2.0 - Validando Problemas</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(221, 83%, 53%)' }} />
+                  <span>3.0 - Iniciando Negócio</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(142, 76%, 36%)' }} />
+                  <span>4.0 - Validando Mercado</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: 'hsl(271, 81%, 56%)' }} />
+                  <span>5.0 - Evoluindo</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Main Actions */}
       <div className="max-w-4xl grid gap-6 md:grid-cols-2">
