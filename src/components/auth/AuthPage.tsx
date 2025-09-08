@@ -26,13 +26,9 @@ export const AuthPage: React.FC = () => {
         return;
       }
       
-      // Redirect active users
+      // Redirect active users to company selection
       if (profile.status === 'active') {
-        if (profile.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate('/app');
-        }
+        navigate('/company-selection');
       }
     }
   }, [user, profile, navigate]);

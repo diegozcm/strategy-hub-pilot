@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, company, loading } = useAuth();
 
   if (loading) {
     return (
@@ -24,7 +24,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // Allow all authenticated users to access regular app
+  if (!profile) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Check if user needs to select a company
+  if (!company && profile.status === 'active') {
+    return <Navigate to="/company-selection" replace />;
+  }
 
   return <>{children}</>;
 };

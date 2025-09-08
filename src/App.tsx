@@ -29,6 +29,7 @@ import { SystemSettingsPage } from "@/components/admin/SystemSettingsPage";
 import { CreateUserPage } from "@/components/admin/CreateUserPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
+import { CompanySelectionPage } from "@/pages/CompanySelectionPage";
 import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import { GoldenCirclePage } from "@/components/golden-circle/GoldenCirclePage";
@@ -49,6 +50,7 @@ const App = () => (
             <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/company-selection" element={<CompanySelectionPage />} />
             <Route path="/company-inactive" element={<CompanyInactivePage />} />
             <Route path="/admin-login" element={<AdminLoginPage />} />
             

@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useMultiTenant';
-import { CompanySelector } from '@/components/CompanySelector';
+import { CompanyDisplay } from '@/components/CompanyDisplay';
 
 export const DashboardHeader: React.FC = () => {
   const { user, profile, signOut } = useAuth();
@@ -25,8 +25,8 @@ export const DashboardHeader: React.FC = () => {
     <header className="bg-card border-b border-border px-4 lg:px-6 py-4">
       <div className="flex items-center justify-end">
         <div className="flex items-center space-x-3">
-          {/* Company Selector */}
-          <CompanySelector />
+          {/* Company Display */}
+          <CompanyDisplay />
           
           <NavLink to="/app/ai-copilot">
             <Button variant="ghost" size="sm" className="flex items-center space-x-2">
