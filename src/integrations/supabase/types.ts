@@ -614,6 +614,42 @@ export type Database = {
         }
         Relationships: []
       }
+      database_cleanup_logs: {
+        Row: {
+          admin_user_id: string
+          cleanup_category: string
+          error_details: string | null
+          executed_at: string
+          filter_criteria: Json | null
+          id: string
+          notes: string | null
+          records_deleted: number
+          success: boolean
+        }
+        Insert: {
+          admin_user_id: string
+          cleanup_category: string
+          error_details?: string | null
+          executed_at?: string
+          filter_criteria?: Json | null
+          id?: string
+          notes?: string | null
+          records_deleted?: number
+          success?: boolean
+        }
+        Update: {
+          admin_user_id?: string
+          cleanup_category?: string
+          error_details?: string | null
+          executed_at?: string
+          filter_criteria?: Json | null
+          id?: string
+          notes?: string | null
+          records_deleted?: number
+          success?: boolean
+        }
+        Relationships: []
+      }
       golden_circle: {
         Row: {
           company_id: string
@@ -1897,6 +1933,77 @@ export type Database = {
           has_relation: boolean
           is_complete: boolean
           issues: string[]
+        }[]
+      }
+      cleanup_ai_data: {
+        Args: { _admin_id: string; _user_id?: string }
+        Returns: {
+          deleted_analytics: number
+          deleted_insights: number
+          deleted_messages: number
+          deleted_recommendations: number
+          deleted_sessions: number
+          message: string
+          success: boolean
+        }[]
+      }
+      cleanup_analyses_data: {
+        Args: { _admin_id: string; _company_id?: string }
+        Returns: {
+          deleted_gc: number
+          deleted_gc_history: number
+          deleted_swot: number
+          deleted_swot_history: number
+          message: string
+          success: boolean
+        }[]
+      }
+      cleanup_beep_data: {
+        Args: { _admin_id: string; _company_id?: string }
+        Returns: {
+          deleted_answers: number
+          deleted_assessments: number
+          message: string
+          success: boolean
+        }[]
+      }
+      cleanup_mentoring_data: {
+        Args: { _admin_id: string; _before_date?: string; _company_id?: string }
+        Returns: {
+          deleted_actions: number
+          deleted_relations: number
+          deleted_sessions: number
+          message: string
+          success: boolean
+        }[]
+      }
+      cleanup_metrics_data: {
+        Args: { _admin_id: string; _company_id?: string }
+        Returns: {
+          deleted_history: number
+          deleted_results: number
+          deleted_values: number
+          message: string
+          success: boolean
+        }[]
+      }
+      cleanup_performance_data: {
+        Args: { _admin_id: string; _user_id?: string }
+        Returns: {
+          deleted_reviews: number
+          message: string
+          success: boolean
+        }[]
+      }
+      cleanup_strategic_data: {
+        Args: { _admin_id: string; _company_id?: string }
+        Returns: {
+          deleted_objectives: number
+          deleted_pillars: number
+          deleted_plans: number
+          deleted_projects: number
+          message: string
+          success: boolean
         }[]
       }
       configure_user_modules: {
