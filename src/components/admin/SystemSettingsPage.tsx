@@ -193,7 +193,6 @@ export const SystemSettingsPage: React.FC = () => {
           type="email"
           value={emailValue}
           onChange={(e) => updateSetting(setting.key, e.target.value)}
-          className="bg-slate-700 border-slate-600 text-white"
           placeholder="admin@empresa.com"
         />
       );
@@ -214,7 +213,6 @@ export const SystemSettingsPage: React.FC = () => {
           type="number"
           value={value}
           onChange={(e) => updateSetting(setting.key, Number(e.target.value))}
-          className="bg-slate-700 border-slate-600 text-white"
         />
       );
     }
@@ -224,7 +222,6 @@ export const SystemSettingsPage: React.FC = () => {
         <Textarea
           value={value}
           onChange={(e) => updateSetting(setting.key, e.target.value)}
-          className="bg-slate-700 border-slate-600 text-white"
           rows={3}
         />
       );
@@ -234,19 +231,18 @@ export const SystemSettingsPage: React.FC = () => {
       <Input
         value={value || ''}
         onChange={(e) => updateSetting(setting.key, e.target.value)}
-        className="bg-slate-700 border-slate-600 text-white"
       />
     );
   };
 
   if (!isAdmin) {
     return (
-      <Card className="bg-slate-800 border-slate-700">
+      <Card>
         <CardContent className="p-6">
-          <div className="text-center text-white">
-            <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-red-500" />
+          <div className="text-center">
+            <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive" />
             <h2 className="text-2xl font-bold mb-4">Acesso Negado</h2>
-            <p className="text-slate-400">Você não tem permissão para acessar as configurações do sistema.</p>
+            <p className="text-muted-foreground">Você não tem permissão para acessar as configurações do sistema.</p>
           </div>
         </CardContent>
       </Card>
@@ -255,11 +251,11 @@ export const SystemSettingsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <Card className="bg-slate-800 border-slate-700">
+      <Card>
         <CardContent className="p-6">
           <div className="text-center py-8">
             <LoadingSpinner size="lg" />
-            <p className="text-slate-400 mt-4">Carregando configurações...</p>
+            <p className="text-muted-foreground mt-4">Carregando configurações...</p>
           </div>
         </CardContent>
       </Card>
@@ -268,15 +264,15 @@ export const SystemSettingsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-slate-800 border-slate-700">
+      <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center space-x-2 text-white">
+              <CardTitle className="flex items-center space-x-2">
                 <Settings className="h-5 w-5" />
                 <span>Configurações do Sistema</span>
               </CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardDescription>
                 Gerencie as configurações globais do sistema
               </CardDescription>
             </div>
@@ -294,13 +290,12 @@ export const SystemSettingsPage: React.FC = () => {
         </CardHeader>
       </Card>
 
-      <Card className="bg-slate-800 border-slate-700">
+      <Card>
         <CardContent className="p-6">
           <Tabs defaultValue="settings" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 bg-slate-700">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger 
                 value="settings"
-                className="data-[state=active]:bg-slate-600 text-white"
               >
                 <div className="flex items-center gap-2">
                   <Settings className="h-4 w-4" />
@@ -309,7 +304,6 @@ export const SystemSettingsPage: React.FC = () => {
               </TabsTrigger>
               <TabsTrigger 
                 value="cleanup"
-                className="data-[state=active]:bg-slate-600 text-white"
               >
                 <div className="flex items-center gap-2">
                   <Trash2 className="h-4 w-4" />
@@ -320,23 +314,23 @@ export const SystemSettingsPage: React.FC = () => {
 
             <TabsContent value="settings" className="space-y-6">
               {/* Seção de Tema */}
-              <Card className="bg-slate-800 border-slate-700">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2 text-white">
+                  <CardTitle className="flex items-center space-x-2">
                     <Settings className="h-4 w-4" />
                     <span>Tema do Sistema</span>
                   </CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardDescription>
                     Configure o tema visual do sistema administrativo
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label className="text-sm font-medium text-white">
+                      <Label className="text-sm font-medium">
                         Seletor de Tema
                       </Label>
-                      <p className="text-xs text-slate-400 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Escolha entre tema claro, escuro ou automático
                       </p>
                     </div>
@@ -346,12 +340,11 @@ export const SystemSettingsPage: React.FC = () => {
               </Card>
 
               <Tabs defaultValue={Object.keys(settings)[0]} className="space-y-6">
-                <TabsList className="grid w-full grid-cols-6 bg-slate-700">
+                <TabsList className="grid w-full grid-cols-6">
                   {Object.keys(settings).map((category) => (
                     <TabsTrigger 
                       key={category} 
                       value={category}
-                      className="data-[state=active]:bg-slate-600 text-white"
                     >
                       <div className="flex items-center gap-2">
                         {getCategoryIcon(category)}
@@ -365,13 +358,13 @@ export const SystemSettingsPage: React.FC = () => {
                   <TabsContent key={category} value={category} className="space-y-4">
                     <div className="grid gap-6">
                       {categorySettings.map((setting) => (
-                        <div key={setting.key} className="space-y-4 p-4 border border-slate-600 rounded-lg">
+                        <div key={setting.key} className="space-y-4 p-4 border rounded-lg">
                           <div className="flex items-center justify-between">
                             <div className="space-y-1">
-                              <Label className="text-sm font-medium text-white">
+                              <Label className="text-sm font-medium">
                                 {setting.key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                               </Label>
-                              <p className="text-xs text-slate-400">{setting.description}</p>
+                              <p className="text-xs text-muted-foreground">{setting.description}</p>
                             </div>
                             <Badge variant="secondary" className="text-xs">
                               {getCategoryTitle(setting.category)}
@@ -382,7 +375,7 @@ export const SystemSettingsPage: React.FC = () => {
                             {renderSettingInput(setting)}
                           </div>
                           
-                          <div className="text-xs text-slate-500">
+                          <div className="text-xs text-muted-foreground">
                             Última atualização: {new Date(setting.updated_at).toLocaleString('pt-BR')}
                           </div>
                         </div>
