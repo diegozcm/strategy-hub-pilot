@@ -19,32 +19,69 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { UserManagementPage } from '@/components/admin/UserManagementPage';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { supabase } from '@/integrations/supabase/client';
 
 export const SettingsPage: React.FC = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [resetEmail, setResetEmail] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
 
   const isAdmin = profile?.role === 'admin';
 
   const handlePasswordReset = async () => {
     if (!resetEmail) return;
 
-    try {
-      // Note: Password reset functionality would need to be implemented separately
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(resetEmail)) {
       toast({
-        title: 'Funcionalidade não disponível',
-        description: 'Reset de senha não implementado no novo sistema',
+        title: 'Email inválido',
+        description: 'Por favor, insira um endereço de email válido',
         variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsResetting(true);
+
+    try {
+      // Use Supabase's built-in password reset functionality
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth?mode=recovery`,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: 'Email enviado com sucesso',
+        description: `Um email de reset de senha foi enviado para ${resetEmail}`,
       });
       
       setResetEmail('');
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error sending password reset:', error);
+      
+      let errorMessage = 'Erro ao enviar email de reset';
+      
+      // Handle specific error cases
+      if (error.message?.includes('User not found')) {
+        errorMessage = 'Usuário não encontrado com este email';
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = 'Email não confirmado. Verifique se o usuário confirmou o email';
+      } else if (error.message?.includes('rate limit')) {
+        errorMessage = 'Muitas tentativas. Tente novamente em alguns minutos';
+      }
+      
       toast({
         title: 'Erro',
-        description: 'Erro ao enviar email de reset',
+        description: errorMessage,
         variant: 'destructive',
       });
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -148,9 +185,12 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setResetEmail(e.target.value)}
                     type="email"
                   />
-                  <Button onClick={handlePasswordReset} disabled={!resetEmail}>
+                  <Button 
+                    onClick={handlePasswordReset} 
+                    disabled={!resetEmail || isResetting}
+                  >
                     <Mail className="h-4 w-4 mr-2" />
-                    Enviar Reset
+                    {isResetting ? 'Enviando...' : 'Enviar Reset'}
                   </Button>
                 </div>
               </CardContent>
