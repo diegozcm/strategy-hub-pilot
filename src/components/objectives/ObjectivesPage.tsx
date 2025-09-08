@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
+import { useHealthMonitor } from '@/hooks/useHealthMonitor';
+import { useOperationState } from '@/hooks/useOperationState';
 import { AddResultadoChaveModal } from '@/components/strategic-map/AddResultadoChaveModal';
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
@@ -25,6 +27,8 @@ import { EditPlanModal } from './EditPlanModal';
 import { DeletePlanModal } from './DeletePlanModal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
+import { OperationFeedback } from '@/components/ui/OperationFeedback';
+import { SystemHealthStatus } from '@/components/ui/SystemHealthStatus';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -122,10 +126,15 @@ export const ObjectivesPage: React.FC = () => {
     pillar_id: ''
   });
 
-  // Clear error when component mounts
+  // Health monitoring hooks
+  const { logRenderCycle } = useHealthMonitor();
+  const { isAnyLoading, getFailedOperations } = useOperationState();
+  
+  // Log render cycle for monitoring
   useEffect(() => {
-    clearError();
-  }, [user, authCompany, clearError]);
+    logRenderCycle('ObjectivesPage', 'mount');
+    return () => logRenderCycle('ObjectivesPage', 'unmount');
+  }, [logRenderCycle]);
 
   const createPlan = async () => {
     if (!user || !authCompany || !planForm.name || !planForm.period_start || !planForm.period_end) {
@@ -604,6 +613,15 @@ export const ObjectivesPage: React.FC = () => {
   return (
     <ErrorBoundary>
       <div className="space-y-6">
+        {/* System Health Monitoring */}
+        <SystemHealthStatus />
+
+        {/* Operation Monitoring */}
+        <OperationFeedback 
+          operations={getFailedOperations()} 
+          className="mb-4" 
+        />
+
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>

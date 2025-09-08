@@ -13,14 +13,14 @@ import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { StartTogetherAdminLayout } from "@/components/admin/StartTogetherAdminLayout";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
-import { ObjectivesPage } from "@/components/objectives/ObjectivesPage";
+import { ObjectivesPageWrapper } from "@/components/objectives/ObjectivesPageWrapper";
 import { ProjectsPage } from "@/components/projects/ProjectsPage";
 import { IndicatorsPage } from "@/components/indicators/IndicatorsPage";
 import { ReportsPage } from "@/components/reports/ReportsPage";
 import { AICopilotPage } from "@/components/ai/AICopilotPage";
 import { SettingsPage } from "@/components/settings/SettingsPage";
 import { ProfilePage } from "@/components/profile/ProfilePage";
-import { StrategicMapPage } from "@/components/strategic-map/StrategicMapPage";
+import { StrategicMapPageWrapper } from "@/components/strategic-map/StrategicMapPageWrapper";
 import { CompaniesPage } from "@/components/admin/CompaniesPage";
 import { UserManagementPage } from "@/components/admin/UserManagementPage";
 import { ModulesManagementPage } from "@/components/admin/ModulesManagementPage";
@@ -72,8 +72,8 @@ const App = () => (
             }>
               <Route index element={<Navigate to="/app/dashboard" replace />} />
               <Route path="dashboard" element={<DashboardHome />} />
-              <Route path="strategic-map" element={<StrategicMapPage />} />
-              <Route path="objectives" element={<ObjectivesPage />} />
+              <Route path="strategic-map" element={<StrategicMapPageWrapper />} />
+              <Route path="objectives" element={<ObjectivesPageWrapper />} />
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="indicators" element={<IndicatorsPage />} />
               <Route path="reports" element={<ReportsPage />} />

@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { KeyResult } from '@/types/strategic-map';
+import { useHealthMonitor } from './useHealthMonitor';
+import { useOperationState } from './useOperationState';
 
 interface StrategicPlan {
   id: string;
@@ -41,6 +43,14 @@ interface StrategicPillar {
 export const useObjectivesData = () => {
   const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
+  const { logPerformance, logRenderCycle } = useHealthMonitor();
+  const { 
+    startOperation, 
+    completeOperation, 
+    failOperation, 
+    getOperationStatus,
+    isAnyLoading 
+  } = useOperationState();
   
   const [objectives, setObjectives] = useState<StrategicObjective[]>([]);
   const [plans, setPlans] = useState<StrategicPlan[]>([]);
@@ -79,10 +89,16 @@ export const useObjectivesData = () => {
   }, [toast]);
 
   const loadData = useCallback(async (forceReload = false) => {
+    const operationId = `loadData-${Date.now()}`;
+    const startTime = Date.now();
+    
     if (!user || !authCompany) {
       setLoading(false);
+      logRenderCycle('ObjectivesData', 'mount');
       return;
     }
+
+    startOperation(operationId, 'Carregando dados dos objetivos');
 
     // Only show loading on initial load or force reload
     if (forceReload || objectives.length === 0) {
@@ -90,11 +106,12 @@ export const useObjectivesData = () => {
     }
     
     setError(null);
+    logRenderCycle('ObjectivesData', 'update');
 
     try {
       console.log('🔄 Loading objectives data for company:', authCompany.id);
 
-      // Load all data in parallel
+      // Load all data in parallel with performance tracking
       const [plansResponse, pillarsResponse] = await Promise.all([
         supabase
           .from('strategic_plans')
@@ -109,11 +126,15 @@ export const useObjectivesData = () => {
           .order('created_at', { ascending: true })
       ]);
 
+      logPerformance('Load plans and pillars', startTime);
+
       if (plansResponse.error) throw plansResponse.error;
       if (pillarsResponse.error) throw pillarsResponse.error;
 
       const loadedPlans = plansResponse.data || [];
       const loadedPillars = pillarsResponse.data || [];
+
+      console.log(`📊 Loaded ${loadedPlans.length} plans and ${loadedPillars.length} pillars`);
 
       setPlans(loadedPlans);
       setPillars(loadedPillars);
@@ -121,6 +142,7 @@ export const useObjectivesData = () => {
       // Load objectives if we have plans
       if (loadedPlans.length > 0) {
         const planIds = loadedPlans.map(p => p.id);
+        const objectivesStartTime = Date.now();
         
         const objectivesResponse = await supabase
           .from('strategic_objectives')
@@ -128,14 +150,18 @@ export const useObjectivesData = () => {
           .in('plan_id', planIds)
           .order('created_at', { ascending: false });
 
+        logPerformance('Load objectives', objectivesStartTime);
+
         if (objectivesResponse.error) throw objectivesResponse.error;
         
         const loadedObjectives = objectivesResponse.data || [];
+        console.log(`🎯 Loaded ${loadedObjectives.length} objectives`);
         setObjectives(loadedObjectives);
 
         // Load key results if we have objectives
         if (loadedObjectives.length > 0) {
           const objectiveIds = loadedObjectives.map(o => o.id);
+          const keyResultsStartTime = Date.now();
           
           const keyResultsResponse = await supabase
             .from('key_results')
@@ -143,23 +169,36 @@ export const useObjectivesData = () => {
             .in('objective_id', objectiveIds)
             .order('created_at', { ascending: false });
 
+          logPerformance('Load key results', keyResultsStartTime);
+
           if (keyResultsResponse.error) throw keyResultsResponse.error;
-          setKeyResults((keyResultsResponse.data || []) as unknown as KeyResult[]);
+          
+          const loadedKeyResults = (keyResultsResponse.data || []) as unknown as KeyResult[];
+          console.log(`🔑 Loaded ${loadedKeyResults.length} key results`);
+          setKeyResults(loadedKeyResults);
         } else {
           setKeyResults([]);
         }
       } else {
+        console.log('📝 No plans found, clearing objectives and key results');
         setObjectives([]);
         setKeyResults([]);
       }
 
+      logPerformance('Complete data load', startTime);
+      completeOperation(operationId, `Carregados: ${loadedPlans.length} planos, ${loadedPillars.length} pilares, ${objectives.length} objetivos`);
       console.log('✅ Data loaded successfully');
     } catch (error) {
+      failOperation(operationId, error, 'carregar dados dos objetivos');
       handleError(error, 'carregar dados');
     } finally {
       setLoading(false);
     }
-  }, [user, authCompany, handleError, objectives.length]);
+  }, [
+    user, authCompany, handleError, objectives.length,
+    startOperation, completeOperation, failOperation,
+    logPerformance, logRenderCycle
+  ]);
 
   const refreshData = useCallback(() => {
     console.log('🔄 Refreshing data...');
@@ -183,7 +222,7 @@ export const useObjectivesData = () => {
     plans,
     pillars,
     keyResults,
-    loading,
+    loading: loading || isAnyLoading(),
     error,
     
     // Setters for optimistic updates
@@ -199,6 +238,10 @@ export const useObjectivesData = () => {
     handleError,
     
     // Clear error state
-    clearError: () => setError(null)
+    clearError: () => setError(null),
+    
+    // Operation tracking
+    isOperationLoading: (operationId: string) => getOperationStatus(operationId).loading,
+    getOperationError: (operationId: string) => getOperationStatus(operationId).error
   };
 };
