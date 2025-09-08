@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, AlertCircle } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Calendar, AlertCircle, MoreVertical, Edit, Trash2, Eye } from 'lucide-react';
 import { ActionItem } from '@/hooks/useActionItems';
+import { ActionItemEditModal } from './ActionItemEditModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -88,92 +90,97 @@ export const ActionItemCard: React.FC<ActionItemCardProps> = ({
   canEdit = false,
   canDelete = false 
 }) => {
-  const handleStatusChange = async (newStatus: ActionItem['status']) => {
-    await onUpdate(item.id, { status: newStatus });
-  };
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const isOverdue = item.due_date && new Date(item.due_date) < new Date() && item.status !== 'completed';
   const statusConfig = getStatusConfig(item.status);
   const priorityConfig = getPriorityConfig(item.priority);
 
+  const handleDelete = async () => {
+    if (onDelete) {
+      await onDelete(item.id);
+    }
+  };
+
   return (
-    <Card className={`transition-all hover:shadow-md ${isOverdue ? 'border-destructive' : ''}`}>
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <CardTitle className="text-base flex items-center gap-2">
-              {isOverdue && <AlertCircle className="h-4 w-4 text-destructive" />}
-              {item.title}
-            </CardTitle>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${priorityConfig.className}`}>
-              <span>{priorityConfig.icon}</span>
-              {priorityConfig.label}
+    <>
+      <Card className={`transition-all hover:shadow-md ${isOverdue ? 'border-destructive' : ''}`}>
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <CardTitle className="text-base flex items-center gap-2">
+                {isOverdue && <AlertCircle className="h-4 w-4 text-destructive" />}
+                {item.title}
+              </CardTitle>
             </div>
-            {canDelete && onDelete && (
-              <button
-                onClick={() => onDelete(item.id)}
-                className="text-destructive hover:bg-destructive/10 p-1 rounded"
-                title="Excluir item"
-              >
-                <span className="text-xs">🗑️</span>
-              </button>
-            )}
-            {canEdit ? (
-              <Select
-                value={item.status}
-                onValueChange={handleStatusChange}
-              >
-                <SelectTrigger className="w-36">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">
-                    <span className="flex items-center gap-2">
-                      <span>○</span> Pendente
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="in_progress">
-                    <span className="flex items-center gap-2">
-                      <span>⏳</span> Em Progresso
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="completed">
-                    <span className="flex items-center gap-2">
-                      <span>✓</span> Concluído
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="cancelled">
-                    <span className="flex items-center gap-2">
-                      <span>✕</span> Cancelado
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
+            <div className="flex items-center gap-2">
+              <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${priorityConfig.className}`}>
+                <span>{priorityConfig.icon}</span>
+                {priorityConfig.label}
+              </div>
               <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${statusConfig.className}`}>
                 <span>{statusConfig.icon}</span>
                 {statusConfig.label}
               </div>
-            )}
+              
+              {/* Menu dropdown para ações */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setShowEditModal(true)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Ver Detalhes
+                  </DropdownMenuItem>
+                  {canEdit && (
+                    <DropdownMenuItem onClick={() => setShowEditModal(true)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Editar
+                    </DropdownMenuItem>
+                  )}
+                  {canDelete && onDelete && (
+                    <DropdownMenuItem 
+                      onClick={handleDelete}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Excluir
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {item.description && (
-          <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap">
-            {item.description}
-          </p>
-        )}
-        {item.due_date && (
-          <div className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-            <Calendar className="h-3 w-3" />
-            Prazo: {format(new Date(item.due_date), 'dd/MM/yyyy', { locale: ptBR })}
-            {isOverdue && <span className="text-destructive font-medium">(Atrasado)</span>}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          {item.description && (
+            <p className="text-sm text-muted-foreground mb-3 whitespace-pre-wrap">
+              {item.description}
+            </p>
+          )}
+          {item.due_date && (
+            <div className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
+              <Calendar className="h-3 w-3" />
+              Prazo: {format(new Date(item.due_date), 'dd/MM/yyyy', { locale: ptBR })}
+              {isOverdue && <span className="text-destructive font-medium">(Atrasado)</span>}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Modal de edição */}
+      <ActionItemEditModal
+        item={item}
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onUpdate={onUpdate}
+        onDelete={handleDelete}
+        canEdit={canEdit}
+        canDelete={canDelete}
+      />
+    </>
   );
 };
