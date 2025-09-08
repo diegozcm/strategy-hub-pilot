@@ -63,6 +63,56 @@ export interface DeletionResult {
   failed_at?: string;
 }
 
+// Função para sanitizar e converter tipos de dados vindos do JSON
+const sanitizeUserRelations = (data: any): UserRelations => {
+  const parseNumber = (value: any): number => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = parseInt(value, 10);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+    return 0;
+  };
+
+  const parseArray = (value: any): any[] => {
+    if (Array.isArray(value)) return value;
+    return [];
+  };
+
+  return {
+    user_id: data.user_id || '',
+    ownership: {
+      companies: parseArray(data.ownership?.companies),
+      strategic_projects: parseNumber(data.ownership?.strategic_projects),
+      strategic_objectives: parseNumber(data.ownership?.strategic_objectives), 
+      key_results: parseNumber(data.ownership?.key_results),
+    },
+    participation: {
+      company_relations: parseArray(data.participation?.company_relations),
+      project_members: parseNumber(data.participation?.project_members),
+      user_modules: parseArray(data.participation?.user_modules),
+    },
+    creation: {
+      golden_circle: parseNumber(data.creation?.golden_circle),
+      swot_analysis: parseNumber(data.creation?.swot_analysis),
+      system_settings: parseNumber(data.creation?.system_settings),
+    },
+    assignment: {
+      action_items: parseNumber(data.assignment?.action_items),
+      ai_recommendations: parseNumber(data.assignment?.ai_recommendations),
+      performance_reviews_as_reviewer: parseNumber(data.assignment?.performance_reviews_as_reviewer),
+      performance_reviews_as_reviewee: parseNumber(data.assignment?.performance_reviews_as_reviewee),
+    },
+    mentoring: {
+      mentor_sessions_historical: parseNumber(data.mentoring?.mentor_sessions_historical),
+      mentor_sessions_active: parseNumber(data.mentoring?.mentor_sessions_active),
+      startup_relations: parseArray(data.mentoring?.startup_relations),
+      startup_hub_profile: data.mentoring?.startup_hub_profile || null,
+    },
+    analyzed_at: data.analyzed_at || '',
+  };
+};
+
 export const useUserDeletion = () => {
   const [loading, setLoading] = useState(false);
   const [userRelations, setUserRelations] = useState<UserRelations | null>(null);
@@ -98,9 +148,9 @@ export const useUserDeletion = () => {
         return null;
       }
 
-      const relations = data as unknown as UserRelations;
-      setUserRelations(relations);
-      return relations;
+      const sanitizedRelations = sanitizeUserRelations(data);
+      setUserRelations(sanitizedRelations);
+      return sanitizedRelations;
     } catch (error) {
       console.error('❌ Erro inesperado ao analisar relações:', error);
       toast({
@@ -250,23 +300,29 @@ export const useUserDeletion = () => {
   const getTotalRelationsCount = useCallback((relations: UserRelations | null): number => {
     if (!relations) return 0;
     
-    const ownership = (relations.ownership.companies?.length || 0) +
-                     (relations.ownership.strategic_projects || 0) +
-                     (relations.ownership.strategic_objectives || 0) +
-                     (relations.ownership.key_results || 0);
+    // Garantir que todos os valores sejam números válidos
+    const parseNum = (val: any): number => {
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    };
+    
+    const ownership = (relations.ownership.companies?.length ?? 0) +
+                     parseNum(relations.ownership.strategic_projects) +
+                     parseNum(relations.ownership.strategic_objectives) +
+                     parseNum(relations.ownership.key_results);
 
-    const participation = (relations.participation.company_relations?.length || 0) +
-                         (relations.participation.project_members || 0) +
-                         (relations.participation.user_modules?.length || 0);
+    const participation = (relations.participation.company_relations?.length ?? 0) +
+                         parseNum(relations.participation.project_members) +
+                         (relations.participation.user_modules?.length ?? 0);
 
-    const assignment = (relations.assignment.action_items || 0) +
-                      (relations.assignment.ai_recommendations || 0) +
-                      (relations.assignment.performance_reviews_as_reviewer || 0) +
-                      (relations.assignment.performance_reviews_as_reviewee || 0);
+    const assignment = parseNum(relations.assignment.action_items) +
+                      parseNum(relations.assignment.ai_recommendations) +
+                      parseNum(relations.assignment.performance_reviews_as_reviewer) +
+                      parseNum(relations.assignment.performance_reviews_as_reviewee);
 
-    const mentoring = (relations.mentoring.mentor_sessions_historical || 0) +
-                     (relations.mentoring.mentor_sessions_active || 0) +
-                     (relations.mentoring.startup_relations?.length || 0);
+    const mentoring = parseNum(relations.mentoring.mentor_sessions_historical) +
+                     parseNum(relations.mentoring.mentor_sessions_active) +
+                     (relations.mentoring.startup_relations?.length ?? 0);
 
     return ownership + participation + assignment + mentoring;
   }, []);
@@ -274,9 +330,15 @@ export const useUserDeletion = () => {
   const getCriticalRelationsCount = useCallback((relations: UserRelations | null): number => {
     if (!relations) return 0;
     
-    return (relations.ownership.companies?.length || 0) +
-           (relations.mentoring.mentor_sessions_active || 0) +
-           (relations.assignment.action_items || 0);
+    // Garantir que todos os valores sejam números válidos
+    const parseNum = (val: any): number => {
+      const num = Number(val);
+      return isNaN(num) ? 0 : num;
+    };
+    
+    return (relations.ownership.companies?.length ?? 0) +
+           parseNum(relations.mentoring.mentor_sessions_active) +
+           parseNum(relations.assignment.action_items);
   }, []);
 
   return {
