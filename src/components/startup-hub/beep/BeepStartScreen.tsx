@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { BeepAssessmentHistory } from './BeepAssessmentHistory';
 import { useStartupProfile } from '@/hooks/useStartupProfile';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Target } from 'lucide-react';
+import { Target, AlertTriangle } from 'lucide-react';
 
 interface BeepAssessment {
   id: string;
@@ -28,7 +29,7 @@ interface BeepAssessment {
 }
 
 interface BeepStartScreenProps {
-  onStartAssessment: (companyId: string) => void;
+  onStartAssessment: (companyId: string, forceNew?: boolean) => void;
   onContinueAssessment: (assessmentId: string) => void;
   isCreating: boolean;
   assessments: BeepAssessment[];
@@ -41,6 +42,8 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
   assessments
 }) => {
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [conflictingDraft, setConflictingDraft] = useState<BeepAssessment | null>(null);
 
   // Get startup companies available to the user
   const { data: startupCompanies = [] } = useQuery({
@@ -72,8 +75,41 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedCompanyId) {
-      onStartAssessment(selectedCompanyId);
+      // Check if there's already a draft for this company
+      const existingDraft = assessments.find(
+        assessment => assessment.company_id === selectedCompanyId && assessment.status === 'draft'
+      );
+      
+      if (existingDraft) {
+        // Show confirmation dialog
+        setConflictingDraft(existingDraft);
+        setShowConfirmDialog(true);
+      } else {
+        // No conflict, proceed with new assessment
+        onStartAssessment(selectedCompanyId);
+      }
     }
+  };
+
+  const handleContinueExistingDraft = () => {
+    if (conflictingDraft) {
+      onContinueAssessment(conflictingDraft.id);
+      setShowConfirmDialog(false);
+      setConflictingDraft(null);
+    }
+  };
+
+  const handleForceNewAssessment = () => {
+    if (selectedCompanyId) {
+      onStartAssessment(selectedCompanyId, true);
+      setShowConfirmDialog(false);
+      setConflictingDraft(null);
+    }
+  };
+
+  const handleCancelDialog = () => {
+    setShowConfirmDialog(false);
+    setConflictingDraft(null);
   };
 
   const draftAssessments = assessments.filter(assessment => assessment.status === 'draft');
@@ -228,6 +264,55 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
           <BeepAssessmentHistory assessments={completedAssessments} />
         </div>
       )}
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Rascunho Existente Encontrado
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Já existe uma avaliação em rascunho para esta startup. Você pode:
+              </p>
+              {conflictingDraft && (
+                <div className="bg-muted p-3 rounded-md">
+                  <p className="text-sm">
+                    <strong>Progresso atual:</strong> {Math.round(conflictingDraft.progress_percentage || 0)}% concluído
+                  </p>
+                  <p className="text-sm">
+                    <strong>Última atividade:</strong> {
+                      conflictingDraft.last_answer_at 
+                        ? new Date(conflictingDraft.last_answer_at).toLocaleString('pt-BR')
+                        : new Date(conflictingDraft.created_at).toLocaleString('pt-BR')
+                    }
+                  </p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel onClick={handleCancelDialog}>
+              Cancelar
+            </AlertDialogCancel>
+            <Button 
+              variant="outline" 
+              onClick={handleContinueExistingDraft}
+              className="w-full sm:w-auto"
+            >
+              Continuar Rascunho
+            </Button>
+            <AlertDialogAction 
+              onClick={handleForceNewAssessment}
+              className="w-full sm:w-auto bg-destructive hover:bg-destructive/90"
+            >
+              Começar Nova Avaliação
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

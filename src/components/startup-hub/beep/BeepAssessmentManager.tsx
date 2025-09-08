@@ -241,17 +241,53 @@ export const BeepAssessmentManager = () => {
     return 'idealizando';
   };
 
-  const handleStartAssessment = async (companyId: string) => {
+  const handleStartAssessment = async (companyId: string, forceNew: boolean = false) => {
     // Check if there's already a draft for this company
     const existingDraft = assessments.find(
       assessment => assessment.company_id === companyId && assessment.status === 'draft'
     );
     
-    if (existingDraft) {
+    if (existingDraft && !forceNew) {
       // Continue existing draft instead of creating new one
       setCurrentAssessment(existingDraft);
       toast.info('Continuando avaliação em rascunho');
       return;
+    }
+    
+    if (existingDraft && forceNew) {
+      // Delete the existing draft before creating new one
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        // Delete the existing draft assessment and its answers
+        const { error: deleteAnswersError } = await supabase
+          .from('beep_answers')
+          .delete()
+          .eq('assessment_id', existingDraft.id);
+
+        if (deleteAnswersError) {
+          console.error('Error deleting answers:', deleteAnswersError);
+        }
+
+        const { error: deleteAssessmentError } = await supabase
+          .from('beep_assessments')
+          .delete()
+          .eq('id', existingDraft.id);
+
+        if (deleteAssessmentError) {
+          console.error('Error deleting assessment:', deleteAssessmentError);
+          toast.error('Erro ao substituir rascunho anterior');
+          return;
+        }
+
+        toast.info('Rascunho anterior substituído');
+        queryClient.invalidateQueries({ queryKey: ['beep-assessments'] });
+      } catch (error) {
+        console.error('Error deleting existing draft:', error);
+        toast.error('Erro ao substituir rascunho anterior');
+        return;
+      }
     }
     
     createAssessmentMutation.mutate(companyId);
