@@ -18,7 +18,9 @@ import {
   Lock,
   Activity,
   Mail,
-  Key
+  Key,
+  MoreHorizontal,
+  ChevronDown
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +32,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -66,6 +69,10 @@ interface UserDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUserUpdated: () => void;
+  userToDelete: UserProfile | null;
+  setUserToDelete: (user: UserProfile | null) => void;
+  isDeletionModalOpen: boolean;
+  setIsDeletionModalOpen: (open: boolean) => void;
 }
 
 const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ 
@@ -74,7 +81,11 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   modules,
   open, 
   onOpenChange, 
-  onUserUpdated 
+  onUserUpdated,
+  userToDelete,
+  setUserToDelete,
+  isDeletionModalOpen,
+  setIsDeletionModalOpen
 }) => {
   const { user: currentUser, isSystemAdmin, startImpersonation, isImpersonating } = useAuth();
   const { toast } = useToast();
@@ -480,7 +491,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     { id: 'personal', label: 'Dados Pessoais', icon: UserCog },
     { id: 'companies', label: 'Empresas', icon: Building },
     { id: 'modules', label: 'Módulos e Permissões', icon: Lock },
-    { id: 'actions', label: 'Ações', icon: Activity },
+    { id: 'actions', label: 'Ações e Segurança', icon: Activity },
   ];
 
   if (!editedUser) return null;
@@ -817,6 +828,84 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                     </CardContent>
                   </Card>
 
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Confirmação de E-mail</CardTitle>
+                      <CardDescription>
+                        Confirmar o e-mail do usuário manualmente
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Status:</span>
+                            <Badge variant="secondary">
+                              Aguardando Confirmação
+                            </Badge>
+                          </div>
+                          <Button
+                            variant="outline"
+                            disabled={isLoading}
+                            onClick={async () => {
+                              if (!user || !currentUser) return;
+                              setIsLoading(true);
+                              try {
+                                const { error } = await supabase.rpc('confirm_user_email', {
+                                  _user_id: user.user_id,
+                                  _admin_id: currentUser.id
+                                });
+                                if (error) throw error;
+                                toast({
+                                  title: 'Sucesso',
+                                  description: 'E-mail confirmado com sucesso'
+                                });
+                                onUserUpdated();
+                              } catch (error) {
+                                console.error('Erro ao confirmar e-mail:', error);
+                                toast({
+                                  title: 'Erro',
+                                  description: 'Erro ao confirmar e-mail do usuário',
+                                  variant: 'destructive'
+                                });
+                              } finally {
+                                setIsLoading(false);
+                              }
+                            }}
+                          >
+                            <Mail className="h-4 w-4 mr-2" />
+                            {isLoading ? 'Confirmando...' : 'Confirmar E-mail'}
+                          </Button>
+                        </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg text-destructive">Zona de Perigo</CardTitle>
+                      <CardDescription>
+                        Ações permanentes que não podem ser desfeitas
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          onOpenChange(false);
+                          // Pequeno delay para fechar o modal atual antes de abrir o modal de exclusão
+                          setTimeout(() => {
+                            if (user) {
+                              setUserToDelete(user);
+                              setIsDeletionModalOpen(true);
+                            }
+                          }, 100);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Excluir Usuário
+                      </Button>
+                    </CardContent>
+                  </Card>
+
                   {canStartImpersonation && (
                     <Card>
                       <CardHeader>
@@ -870,6 +959,21 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
             </div>
           </div>
         </div>
+
+        {/* User Deletion Modal */}
+        <UserDeletionModal
+          user={userToDelete}
+          open={isDeletionModalOpen}
+          onClose={() => {
+            setUserToDelete(null);
+            setIsDeletionModalOpen(false);
+          }}
+          onDeleted={() => {
+            onUserUpdated();
+            setUserToDelete(null);
+            setIsDeletionModalOpen(false);
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
@@ -1118,17 +1222,15 @@ export const UserManagementPage: React.FC = () => {
               />
             </div>
 
-            <ScrollArea className="h-[600px]">
+            <div className="w-full overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nome</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Função</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead>E-mail</TableHead>
-                    <TableHead>Módulos</TableHead>
-                    <TableHead>Ações</TableHead>
+                    <TableHead className="hidden sm:table-cell">Módulos Ativos</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1136,82 +1238,76 @@ export const UserManagementPage: React.FC = () => {
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                          <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center flex-shrink-0">
                             <User className="w-4 h-4 text-muted-foreground" />
                           </div>
-                          <div>
-                            <p>{user.first_name} {user.last_name}</p>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium truncate">{user.first_name} {user.last_name}</p>
                             {user.department && (
-                              <p className="text-xs text-muted-foreground">{user.department}</p>
+                              <p className="text-xs text-muted-foreground truncate">{user.department}</p>
                             )}
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{user.email}</TableCell>
                       <TableCell>
-                        <Badge variant={user.role === 'admin' ? 'destructive' : user.role === 'manager' ? 'default' : 'secondary'}>
-                          {user.role === 'admin' ? 'Administrador' : 
-                           user.role === 'manager' ? 'Gerente' : 'Membro'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          user.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
-                          user.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
-                          'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                        }`}>
-                          {user.status === 'active' ? 'Ativo' : 
-                           user.status === 'pending' ? 'Pendente' : 'Inativo'}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
-                            Aguardando confirmação
-                          </span>
-                          {user.status === 'active' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={confirmingEmail === user.user_id}
-                              onClick={() => confirmUserEmail(user.user_id)}
-                            >
-                              {confirmingEmail === user.user_id ? 'Confirmando...' : 'Confirmar E-mail'}
-                            </Button>
-                          )}
+                        <div className="min-w-0">
+                          <p className="truncate">{user.email}</p>
+                          <Badge 
+                            variant={user.role === 'admin' ? 'destructive' : user.role === 'manager' ? 'default' : 'secondary'}
+                            className="mt-1 text-xs"
+                          >
+                            {user.role === 'admin' ? 'Admin' : 
+                             user.role === 'manager' ? 'Gerente' : 'Membro'}
+                          </Badge>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge variant="outline" className="text-xs">
                           {getUserModuleCount(user.user_id)} de {modules.length}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedUser(user)}
-                          >
-                            <Settings className="h-4 w-4 mr-2" />
-                            Gerenciar
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleOpenDeletionModal(user)}
-                            className="flex items-center gap-1"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            Excluir
-                          </Button>
-                        </div>
+                        <Badge 
+                          variant={
+                            user.status === 'active' ? 'default' :
+                            user.status === 'pending' ? 'secondary' : 
+                            'destructive'
+                          }
+                          className="text-xs"
+                        >
+                          {user.status === 'active' ? 'Ativo' : 
+                           user.status === 'pending' ? 'Pendente' : 'Inativo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <span className="sr-only">Abrir menu</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={() => setSelectedUser(user)}>
+                              <Settings className="h-4 w-4 mr-2" />
+                              Gerenciar
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => handleOpenDeletionModal(user)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </ScrollArea>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -1225,6 +1321,10 @@ export const UserManagementPage: React.FC = () => {
           if (!isOpen) setSelectedUser(null);
         }}
         onUserUpdated={loadData}
+        userToDelete={userToDelete}
+        setUserToDelete={setUserToDelete}
+        isDeletionModalOpen={isDeletionModalOpen}
+        setIsDeletionModalOpen={setIsDeletionModalOpen}
       />
 
       {/* User Deletion Modal */}
