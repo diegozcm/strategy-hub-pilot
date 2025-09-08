@@ -1119,7 +1119,7 @@ export const ObjectivesPage: React.FC = () => {
                     </div>
                     <div className="space-y-2">
                       {getObjectiveKeyResults(selectedObjective.id).map((kr) => (
-                        <ResultadoChaveMiniCard key={kr.id} resultado={kr} />
+                        <ResultadoChaveMiniCard key={kr.id} resultadoChave={kr} />
                       ))}
                       {getObjectiveKeyResults(selectedObjective.id).length === 0 && (
                         <p className="text-sm text-gray-500 text-center py-4">
@@ -1138,10 +1138,10 @@ export const ObjectivesPage: React.FC = () => {
       {/* Add Key Result Modal */}
       {selectedObjective && (
         <AddResultadoChaveModal
+          objectiveId={selectedObjective.id}
           open={isAddResultadoChaveOpen}
-          onOpenChange={setIsAddResultadoChaveOpen}
-          onAdd={createResultadoChave}
-          objectiveTitle={selectedObjective.title}
+          onClose={() => setIsAddResultadoChaveOpen(false)}
+          onSave={createResultadoChave}
         />
       )}
 
