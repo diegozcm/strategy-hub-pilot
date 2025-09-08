@@ -2,6 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { TrendingUp, Target, Calendar, BarChart3, CheckCircle, AlertCircle, Award, Users, Lightbulb, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -296,15 +297,75 @@ export const StartupDashboard: React.FC<StartupDashboardProps> = ({ onNavigateTo
                     Score: {latestAssessment.final_score?.toFixed(1)} | {new Date(latestAssessment.created_at).toLocaleDateString('pt-BR')}
                   </p>
                 </div>
-              ) : (
-                <div className="flex items-center space-x-2 text-amber-600">
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="text-sm">Nenhuma avaliação realizada</span>
+              ) : null}
+              
+              {/* Next Assessment Progress */}
+              {latestAssessment ? (() => {
+                const lastAssessmentDate = new Date(latestAssessment.created_at);
+                const nextDueDate = new Date(lastAssessmentDate);
+                nextDueDate.setMonth(nextDueDate.getMonth() + 3);
+                
+                const now = new Date();
+                const totalDays = 90; // 3 months ≈ 90 days
+                const daysSinceLastAssessment = Math.floor((now.getTime() - lastAssessmentDate.getTime()) / (1000 * 60 * 60 * 24));
+                const progressPercentage = Math.min((daysSinceLastAssessment / totalDays) * 100, 100);
+                const isOverdue = now > nextDueDate;
+                const daysUntilDue = Math.ceil((nextDueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                
+                return (
+                  <div className="space-y-3">
+                    {!isOverdue ? (
+                      <>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="font-medium">Próxima avaliação</span>
+                          <span className="text-muted-foreground">
+                            em {daysUntilDue} dias
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          <Progress value={progressPercentage} className="h-2" />
+                          <p className="text-xs text-muted-foreground text-center">
+                            Vencimento: {nextDueDate.toLocaleDateString('pt-BR')}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <div className="flex items-center space-x-2 text-red-800 mb-2">
+                            <AlertCircle className="h-4 w-4" />
+                            <span className="text-sm font-medium">Avaliação Vencida</span>
+                          </div>
+                          <p className="text-xs text-red-700 mb-3">
+                            Sua próxima avaliação BEEP está vencida há {Math.abs(daysUntilDue)} dias. 
+                            Realize uma nova avaliação para manter seus insights atualizados.
+                          </p>
+                          <Button 
+                            className="w-full" 
+                            onClick={handleStartAssessment}
+                            variant="destructive"
+                          >
+                            Realizar Nova Avaliação
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })() : (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2 text-amber-600">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="text-sm font-medium">Primeira Avaliação Pendente</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Realize sua primeira avaliação BEEP para começar a acompanhar o progresso da sua startup.
+                  </p>
+                  <Button className="w-full" onClick={handleStartAssessment}>
+                    Iniciar Primeira Avaliação
+                  </Button>
                 </div>
               )}
-              <Button className="w-full" onClick={handleStartAssessment}>
-                {latestAssessment ? 'Nova Avaliação' : 'Iniciar Primeira Avaliação'}
-              </Button>
             </div>
           </CardContent>
         </Card>
