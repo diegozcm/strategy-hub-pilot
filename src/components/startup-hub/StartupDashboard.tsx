@@ -20,9 +20,9 @@ export const StartupDashboard: React.FC<StartupDashboardProps> = ({ onNavigateTo
   const { sessions: mentoringSessions, loading: sessionsLoading } = useStartupSessions();
   const { getActiveInsights, getCriticalInsights, loading: insightsLoading } = useAIInsights();
 
-  // Fetch latest BEEP assessment
+  // Fetch latest completed BEEP assessment
   const { data: latestAssessment } = useQuery({
-    queryKey: ['latest-beep-assessment', user?.id],
+    queryKey: ['latest-completed-beep-assessment', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
 
@@ -30,6 +30,7 @@ export const StartupDashboard: React.FC<StartupDashboardProps> = ({ onNavigateTo
         .from('beep_assessments')
         .select('*')
         .eq('user_id', user.id)
+        .eq('status', 'completed')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
