@@ -30,6 +30,7 @@ interface StrategicPlan {
   period_end: string;
   vision?: string;
   mission?: string;
+  company_id: string;
   created_at: string;
 }
 
@@ -127,6 +128,7 @@ export const ObjectivesPage: React.FC = () => {
       setLoading(true);
       
       if (!user || !authCompany) {
+        console.log('🔍 No user or company found:', { user: !!user, authCompany: !!authCompany });
         setPlans([]);
         setObjectives([]);
         setKeyResults([]);
@@ -135,6 +137,11 @@ export const ObjectivesPage: React.FC = () => {
         return;
       }
       
+      console.log('🏢 Loading data for company:', { 
+        companyId: authCompany.id, 
+        companyName: authCompany.name 
+      });
+      
       // Load strategic plans with explicit company validation
       const { data: plansData, error: plansError } = await supabase
         .from('strategic_plans')
@@ -142,13 +149,27 @@ export const ObjectivesPage: React.FC = () => {
         .eq('company_id', authCompany.id)
         .order('created_at', { ascending: false });
 
+      console.log('📋 Raw plans data from DB:', plansData);
+
       if (plansError) {
         console.error('Error loading plans:', plansError);
         throw plansError;
       }
       
       // Ensure we only use plans from the current company
-      const validPlans = (plansData || []).filter(plan => plan.company_id === authCompany.id);
+      const validPlans = (plansData || []).filter(plan => {
+        const isValid = plan.company_id === authCompany.id;
+        console.log('🔍 Plan validation:', { 
+          planId: plan.id, 
+          planName: plan.name,
+          planCompanyId: plan.company_id, 
+          currentCompanyId: authCompany.id,
+          isValid 
+        });
+        return isValid;
+      });
+      
+      console.log('✅ Valid plans after filter:', validPlans);
       setPlans(validPlans);
 
       // Load strategic pillars
@@ -829,16 +850,24 @@ export const ObjectivesPage: React.FC = () => {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {plans.map((plan) => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                objectivesCount={getObjectivesCountForPlan(plan.id)}
-                onView={handlePlanView}
-                onEdit={handlePlanEdit}
-                onDelete={handlePlanDelete}
-              />
-            ))}
+            {plans.map((plan) => {
+              console.log('🎯 Rendering plan card:', { 
+                planId: plan.id, 
+                planName: plan.name, 
+                planCompanyId: plan.company_id,
+                currentCompanyId: authCompany?.id
+              });
+              return (
+                <PlanCard
+                  key={plan.id}
+                  plan={plan}
+                  objectivesCount={getObjectivesCountForPlan(plan.id)}
+                  onView={handlePlanView}
+                  onEdit={handlePlanEdit}
+                  onDelete={handlePlanDelete}
+                />
+              );
+            })}
           </div>
         )}
       </div>
