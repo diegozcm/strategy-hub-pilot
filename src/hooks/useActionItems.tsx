@@ -12,6 +12,7 @@ export interface ActionItem {
   priority: 'low' | 'medium' | 'high';
   due_date?: string;
   created_by: string;
+  creator_name?: string;
   assigned_to?: string;
   created_at: string;
   updated_at: string;
@@ -34,6 +35,7 @@ export const useActionItems = (sessionId?: string) => {
       setLoading(true);
       setError(null);
 
+      // Buscar itens de ação
       const { data, error: fetchError } = await supabase
         .from('action_items')
         .select('*')
@@ -46,7 +48,39 @@ export const useActionItems = (sessionId?: string) => {
         return;
       }
 
-      setActionItems((data || []) as ActionItem[]);
+      // Se não há itens, retornar array vazio
+      if (!data || data.length === 0) {
+        setActionItems([]);
+        return;
+      }
+
+      // Buscar perfis dos criadores
+      const creatorIds = [...new Set(data.map(item => item.created_by))];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name')
+        .in('user_id', creatorIds);
+
+      if (profilesError) {
+        console.error('Error fetching creator profiles:', profilesError);
+        // Continuar sem os nomes dos criadores
+        setActionItems(data as ActionItem[]);
+        return;
+      }
+
+      // Combinar dados dos itens com os nomes dos criadores
+      const itemsWithCreatorNames = data.map(item => ({
+        ...item,
+        creator_name: (() => {
+          const profile = profiles?.find(p => p.user_id === item.created_by);
+          if (profile?.first_name && profile?.last_name) {
+            return `${profile.first_name} ${profile.last_name}`.trim();
+          }
+          return 'Usuário';
+        })()
+      }));
+
+      setActionItems(itemsWithCreatorNames as ActionItem[]);
     } catch (err) {
       console.error('Unexpected error:', err);
       setError('Erro inesperado ao buscar itens de ação');

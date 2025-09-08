@@ -168,6 +168,11 @@ export const ActionItemCard: React.FC<ActionItemCardProps> = ({
               {isOverdue && <span className="text-destructive font-medium">(Atrasado)</span>}
             </div>
           )}
+          {item.creator_name && (
+            <div className="text-xs text-muted-foreground mt-1">
+              Criado por: {item.creator_name}
+            </div>
+          )}
         </CardContent>
       </Card>
 
