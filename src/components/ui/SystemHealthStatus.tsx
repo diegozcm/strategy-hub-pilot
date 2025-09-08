@@ -39,33 +39,6 @@ export const SystemHealthStatus: React.FC = () => {
 
   return (
     <div className="grid gap-4">
-      {/* System Health Overview Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="text-center p-4">
-          <div className="flex items-center justify-center mb-2">
-            {getHealthIcon()}
-          </div>
-          <div className="text-2xl font-bold">{healthScore}%</div>
-          <div className="text-sm text-muted-foreground">Saúde do Sistema</div>
-          <Progress value={healthScore} className="h-2 mt-2" />
-        </Card>
-
-        <Card className="text-center p-4">
-          <div className="flex items-center justify-center mb-2">
-            <Activity className="h-4 w-4 text-blue-500" />
-          </div>
-          <div className="text-2xl font-bold">{activeOperations.length}</div>
-          <div className="text-sm text-muted-foreground">Operações Ativas</div>
-        </Card>
-
-        <Card className="text-center p-4">
-          <div className="flex items-center justify-center mb-2">
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-          </div>
-          <div className="text-2xl font-bold">{failedOperations.length}</div>
-          <div className="text-sm text-muted-foreground">Operações Falharam</div>
-        </Card>
-      </div>
 
       {/* Detailed Status */}
       <Card className="border-l-4 border-l-primary">
