@@ -12,7 +12,6 @@ export interface ActionItem {
   priority: 'low' | 'medium' | 'high';
   due_date?: string;
   created_by: string;
-  creator_name?: string;
   assigned_to?: string;
   created_at: string;
   updated_at: string;
@@ -37,10 +36,7 @@ export const useActionItems = (sessionId?: string) => {
 
       const { data, error: fetchError } = await supabase
         .from('action_items')
-        .select(`
-          *,
-          creator:profiles!created_by(first_name, last_name)
-        `)
+        .select('*')
         .eq('session_id', sessionId)
         .order('created_at', { ascending: false});
 
@@ -50,11 +46,7 @@ export const useActionItems = (sessionId?: string) => {
         return;
       }
 
-      const itemsWithCreatorName = (data || []).map((item: any) => ({
-        ...item,
-        creator_name: item.creator ? `${item.creator.first_name} ${item.creator.last_name}`.trim() : 'Usuário'
-      }));
-      setActionItems(itemsWithCreatorName as ActionItem[]);
+      setActionItems((data || []) as ActionItem[]);
     } catch (err) {
       console.error('Unexpected error:', err);
       setError('Erro inesperado ao buscar itens de ação');

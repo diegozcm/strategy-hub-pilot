@@ -105,11 +105,6 @@ export const ActionItemCard: React.FC<ActionItemCardProps> = ({
               {isOverdue && <AlertCircle className="h-4 w-4 text-destructive" />}
               {item.title}
             </CardTitle>
-            {item.creator_name && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Criado por: {item.creator_name}
-              </p>
-            )}
           </div>
           <div className="flex items-center gap-2">
             <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${priorityConfig.className}`}>
