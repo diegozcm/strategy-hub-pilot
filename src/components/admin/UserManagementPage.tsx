@@ -39,6 +39,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import ModuleAccessRow from './user-modules/ModuleAccessRow';
 import type { UserRole } from '@/types/auth';
 import { useNavigate } from 'react-router-dom';
+import { UserDeletionModal } from './users/UserDeletionModal';
 
 interface SystemModule {
   id: string;
@@ -886,6 +887,8 @@ export const UserManagementPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [userModules, setUserModules] = useState<UserModuleAccess[]>([]);
   const [confirmingEmail, setConfirmingEmail] = useState<string | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
+  const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
 
   const isAdmin = profile?.role === 'admin';
 
@@ -1036,6 +1039,20 @@ export const UserManagementPage: React.FC = () => {
     user.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleOpenDeletionModal = (userToDelete: UserProfile) => {
+    setUserToDelete(userToDelete);
+    setIsDeletionModalOpen(true);
+  };
+
+  const handleCloseDeletionModal = () => {
+    setUserToDelete(null);
+    setIsDeletionModalOpen(false);
+  };
+
+  const handleUserDeleted = () => {
+    loadData();
+  };
+
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -1170,14 +1187,25 @@ export const UserManagementPage: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedUser(user)}
-                        >
-                          <Settings className="h-4 w-4 mr-2" />
-                          Gerenciar
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedUser(user)}
+                          >
+                            <Settings className="h-4 w-4 mr-2" />
+                            Gerenciar
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleOpenDeletionModal(user)}
+                            className="flex items-center gap-1"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Excluir
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -1197,6 +1225,14 @@ export const UserManagementPage: React.FC = () => {
           if (!isOpen) setSelectedUser(null);
         }}
         onUserUpdated={loadData}
+      />
+
+      {/* User Deletion Modal */}
+      <UserDeletionModal
+        user={userToDelete}
+        open={isDeletionModalOpen}
+        onClose={handleCloseDeletionModal}
+        onDeleted={handleUserDeleted}
       />
     </div>
   );
