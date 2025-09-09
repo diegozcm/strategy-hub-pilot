@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Building2, Target, Users, TrendingUp, Lightbulb, Heart, Edit, Trash2, Check, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ const defaultPillars = [
 
 export const StrategicMapPage = () => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const {
     loading,
     company,
@@ -478,10 +480,7 @@ export const StrategicMapPage = () => {
                             variant="outline" 
                             size="sm" 
                             className="mt-2"
-                            onClick={() => {
-                              setSelectedPillarId(pillar.id);
-                              setShowObjectiveForm(true);
-                            }}
+                            onClick={() => navigate('/app/objectives')}
                           >
                             <Plus className="mr-2 h-3 w-3" />
                             Adicionar Objetivo
