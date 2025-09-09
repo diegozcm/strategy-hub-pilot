@@ -35,7 +35,9 @@ import {
   Calendar,
   HardDrive,
   RotateCcw,
-  Shield
+  Shield,
+  Pause,
+  Info
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -50,8 +52,12 @@ export const BackupTab: React.FC = () => {
     executeRestore,
     downloadBackup,
     deleteBackup,
+    updateBackupSchedule,
+    deleteBackupSchedule,
     formatFileSize,
-    getStatusColor
+    getStatusColor,
+    calculateNextRun,
+    formatCronExpression
   } = useBackupSystem();
 
   const [backupType, setBackupType] = useState<'full' | 'incremental' | 'selective' | 'schema_only'>('full');
@@ -513,10 +519,10 @@ export const BackupTab: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
-                Agendamentos de Backup
+                Agendamentos de Backup Automático
               </CardTitle>
               <CardDescription>
-                Configure backups automáticos recorrentes
+                Configure backups automáticos recorrentes. Sistema mantém automaticamente os 5 backups mais recentes.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -524,34 +530,128 @@ export const BackupTab: React.FC = () => {
                 <div className="text-center py-8 text-muted-foreground">
                   <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Nenhum agendamento configurado</p>
-                  <p className="text-sm">Os agendamentos automáticos estarão disponíveis em breve</p>
+                  <p className="text-sm">Configure backups automáticos para manter seus dados sempre seguros</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {backupSchedules.map((schedule) => (
-                    <Card key={schedule.id}>
-                      <CardContent className="pt-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h4 className="font-medium">{schedule.schedule_name}</h4>
-                            <p className="text-sm text-muted-foreground">
-                              Tipo: {getBackupTypeLabel(schedule.backup_type)} • 
-                              Expressão: {schedule.cron_expression} • 
-                              Retenção: {schedule.retention_days} dias
-                            </p>
-                            {schedule.last_run && (
-                              <p className="text-sm text-muted-foreground">
-                                Última execução: {new Date(schedule.last_run).toLocaleString('pt-BR')}
-                              </p>
-                            )}
+                  {backupSchedules.map((schedule) => {
+                    const nextRun = schedule.next_run ? new Date(schedule.next_run) : calculateNextRun(schedule.cron_expression, schedule.last_run);
+                    const isOverdue = nextRun < new Date();
+                    
+                    return (
+                      <Card key={schedule.id} className={`${schedule.is_active ? 'border-primary/20' : 'border-muted'}`}>
+                        <CardContent className="pt-6">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h4 className="font-medium">{schedule.schedule_name}</h4>
+                                <Badge variant={schedule.is_active ? "default" : "secondary"}>
+                                  {schedule.is_active ? "Ativo" : "Inativo"}
+                                </Badge>
+                                {schedule.is_active && isOverdue && (
+                                  <Badge variant="destructive" className="text-xs">
+                                    Atrasado
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                                <div>
+                                  <p><strong>Tipo:</strong> {getBackupTypeLabel(schedule.backup_type)}</p>
+                                  <p><strong>Frequência:</strong> {formatCronExpression(schedule.cron_expression)}</p>
+                                  <p><strong>Retenção:</strong> {schedule.retention_days} dias (máx. 5 backups)</p>
+                                </div>
+                                
+                                <div>
+                                  {schedule.last_run ? (
+                                    <p><strong>Última execução:</strong> {new Date(schedule.last_run).toLocaleString('pt-BR')}</p>
+                                  ) : (
+                                    <p><strong>Última execução:</strong> Nunca executado</p>
+                                  )}
+                                  
+                                  {schedule.is_active && (
+                                    <p className={isOverdue ? 'text-destructive font-medium' : 'text-primary'}>
+                                      <strong>Próxima execução:</strong> {nextRun.toLocaleString('pt-BR')}
+                                    </p>
+                                  )}
+                                  
+                                  {schedule.tables_included && schedule.tables_included.length > 0 && (
+                                    <p><strong>Tabelas:</strong> {schedule.tables_included.length} selecionadas</p>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {schedule.notes && (
+                                <p className="text-sm text-muted-foreground mt-2 italic">
+                                  {schedule.notes}
+                                </p>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-2 ml-4">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => updateBackupSchedule(schedule.id, { is_active: !schedule.is_active })}
+                              >
+                                {schedule.is_active ? (
+                                  <>
+                                    <Pause className="w-4 h-4 mr-1" />
+                                    Pausar
+                                  </>
+                                ) : (
+                                  <>
+                                    <Play className="w-4 h-4 mr-1" />
+                                    Ativar
+                                  </>
+                                )}
+                              </Button>
+                              
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm" className="text-destructive">
+                                    <Trash2 className="w-4 h-4 mr-1" />
+                                    Excluir
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Tem certeza que deseja excluir o agendamento "{schedule.schedule_name}"? 
+                                      Esta ação não pode ser desfeita e os backups automáticos serão interrompidos.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => deleteBackupSchedule(schedule.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Excluir Agendamento
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </div>
-                          <Badge variant={schedule.is_active ? "default" : "secondary"}>
-                            {schedule.is_active ? "Ativo" : "Inativo"}
-                          </Badge>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                  
+                  <div className="bg-muted/30 rounded-lg p-4 mt-6">
+                    <div className="flex items-start gap-3">
+                      <Info className="w-5 h-5 text-primary mt-0.5" />
+                      <div className="text-sm">
+                        <p className="font-medium text-foreground mb-1">Sistema de Rotação Automática</p>
+                        <p className="text-muted-foreground">
+                          O sistema mantém automaticamente apenas os 5 backups mais recentes de cada agendamento. 
+                          Backups mais antigos são removidos automaticamente para economizar espaço de armazenamento.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>

@@ -2381,6 +2381,10 @@ export type Database = {
           yearly_target: number
         }[]
       }
+      get_table_names: {
+        Args: Record<PropertyKey, never>
+        Returns: string[]
+      }
       get_user_company_id: {
         Args: { _user_id: string }
         Returns: string

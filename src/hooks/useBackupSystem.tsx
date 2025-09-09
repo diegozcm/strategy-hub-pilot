@@ -44,6 +44,7 @@ export interface BackupSchedule {
   is_active: boolean;
   last_run?: string;
   next_run?: string;
+  notes?: string;
   created_at: string;
   updated_at: string;
 }
@@ -404,6 +405,77 @@ export const useBackupSystem = () => {
     }
   };
 
+  // Calculate next run time based on cron expression
+  const calculateNextRun = (cronExpression: string, lastRun?: string): Date => {
+    const now = new Date();
+    let nextRun = new Date(now);
+
+    // Parse cron expression (minute hour day month dayofweek)
+    const cronParts = cronExpression.split(' ');
+    
+    if (cronParts.length >= 5) {
+      const minute = cronParts[0];
+      const hour = cronParts[1];
+      const day = cronParts[2];
+      const month = cronParts[3];
+      const dayOfWeek = cronParts[4];
+
+      // Simple logic for common patterns
+      if (minute === '0' && hour === '0' && day === '*') {
+        // Daily at midnight
+        nextRun.setDate(nextRun.getDate() + 1);
+        nextRun.setHours(0, 0, 0, 0);
+      } else if (minute === '0' && hour === '*') {
+        // Every hour
+        nextRun.setHours(nextRun.getHours() + 1);
+        nextRun.setMinutes(0, 0, 0);
+      } else if (minute === '*') {
+        // Every minute
+        nextRun.setMinutes(nextRun.getMinutes() + 1);
+        nextRun.setSeconds(0, 0);
+      } else if (minute === '0' && hour !== '*' && day === '*') {
+        // Daily at specific hour
+        nextRun.setDate(nextRun.getDate() + 1);
+        nextRun.setHours(parseInt(hour), 0, 0, 0);
+      } else {
+        // Default: add 1 day
+        nextRun.setDate(nextRun.getDate() + 1);
+      }
+    } else {
+      // Default: add 1 day
+      nextRun.setDate(nextRun.getDate() + 1);
+    }
+
+    return nextRun;
+  };
+
+  // Format cron expression for display
+  const formatCronExpression = (cronExpression: string): string => {
+    const cronParts = cronExpression.split(' ');
+    
+    if (cronParts.length >= 5) {
+      const minute = cronParts[0];
+      const hour = cronParts[1];
+      const day = cronParts[2];
+      const month = cronParts[3];
+      const dayOfWeek = cronParts[4];
+
+      if (minute === '0' && hour === '0' && day === '*') {
+        return 'Diariamente à meia-noite';
+      } else if (minute === '0' && hour === '*') {
+        return 'A cada hora';
+      } else if (minute === '*') {
+        return 'A cada minuto';
+      } else if (minute === '0' && hour !== '*' && day === '*') {
+        return `Diariamente às ${hour}:00`;
+      } else if (minute !== '*' && hour !== '*' && day === '*') {
+        return `Diariamente às ${hour}:${minute.padStart(2, '0')}`;
+      }
+    }
+
+    return cronExpression;
+  };
+
   // Load initial data
   useEffect(() => {
     loadBackupJobs();
@@ -430,6 +502,8 @@ export const useBackupSystem = () => {
     loadBackupSchedules,
     loadRestoreLogs,
     formatFileSize,
-    getStatusColor
+    getStatusColor,
+    calculateNextRun,
+    formatCronExpression
   };
 };
