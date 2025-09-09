@@ -80,19 +80,42 @@ const handler = async (req: Request): Promise<Response> => {
     if (type === 'selective' && tables.length > 0) {
       tablesToBackup = tables;
     } else {
-      // Use predefined list of public tables
+      // Use predefined list of public tables (organized logically)
       const publicTables = [
+        // Core system tables
         'companies', 'profiles', 'user_company_relations', 'user_roles', 'user_modules',
-        'system_modules', 'system_settings', 'startup_hub_profiles', 'golden_circle',
-        'swot_analysis', 'strategic_plans', 'strategic_projects', 'strategic_objectives',
-        'key_results', 'key_result_values', 'project_members', 'project_objective_relations',
-        'project_kr_relations', 'beep_categories', 'beep_subcategories', 'beep_questions',
-        'beep_assessments', 'beep_assessment_answers', 'mentor_startup_relations',
-        'mentoring_sessions', 'action_items', 'ai_insights', 'ai_recommendations',
-        'ai_analytics', 'ai_chat_sessions', 'ai_chat_messages', 'performance_reviews',
+        'system_modules', 'system_settings', 'startup_hub_profiles',
+        
+        // Strategic planning tables
+        'golden_circle', 'golden_circle_history', 'swot_analysis', 'swot_history',
+        'strategic_plans', 'strategic_pillars', 'strategic_projects', 'strategic_objectives',
+        
+        // Key results and tracking
+        'key_results', 'key_result_values', 'key_results_history',
+        
+        // Project management
+        'project_members', 'project_objective_relations', 'project_kr_relations', 'project_tasks',
+        
+        // BEEP assessment system
+        'beep_categories', 'beep_subcategories', 'beep_maturity_levels', 'beep_questions',
+        'beep_assessments', 'beep_answers',
+        
+        // Mentoring system
+        'mentor_startup_relations', 'mentoring_sessions', 'action_items',
+        
+        // AI system
+        'ai_insights', 'ai_recommendations', 'ai_analytics', 'ai_chat_sessions', 
+        'ai_chat_messages', 'ai_user_preferences',
+        
+        // Performance and reviews
+        'performance_reviews',
+        
+        // System administration
         'backup_jobs', 'backup_files', 'backup_schedules', 'backup_restore_logs',
-        'database_cleanup_logs', 'admin_impersonation_sessions', 'user_module_profiles',
-        'user_module_roles', 'golden_circle_history', 'key_results_history', 'profile_access_logs'
+        'database_cleanup_logs', 'admin_impersonation_sessions',
+        
+        // User management
+        'user_module_profiles', 'user_module_roles', 'profile_access_logs'
       ];
       tablesToBackup = publicTables;
     }
