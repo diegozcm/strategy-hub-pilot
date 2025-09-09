@@ -181,7 +181,13 @@ export const StartTogetherAdminLayout: React.FC = () => {
     );
   }
 
-  if (!user || profile?.role !== 'admin') {
+  // Verificação de acesso admin - sincronizada com AdminProtectedRoute
+  const isSystemAdmin = (
+    (user?.email === 'admin@example.com' || user?.email === 'diego@cofound.com.br') ||
+    (profile?.role === 'admin' && profile?.status === 'active')
+  );
+  
+  if (!user || !isSystemAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-md p-6">
