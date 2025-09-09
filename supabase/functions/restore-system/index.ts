@@ -148,10 +148,23 @@ Deno.serve(async (req) => {
     await supabaseClient
       .from('backup_restore_logs')
       .update({
-        status: 'in_progress',
+        restore_type: targetTables ? 'selective' : 'full',
         tables_restored: tablesToRestore
       })
       .eq('id', restoreLog.id);
+
+    // Create admin client that bypasses RLS for restore operations
+    const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      },
+      global: {
+        headers: {
+          'x-admin-override': 'true'
+        }
+      }
+    });
 
     // Restore each table
     for (const tableName of tablesToRestore) {
@@ -163,45 +176,90 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      console.log(`Table ${tableName} has ${tableData.length} records to restore`);
+
       try {
+        let recordsProcessed = 0;
+        
         if (conflictStrategy === 'replace') {
-          // Clear existing data
-          await supabaseClient.from(tableName).delete().neq('id', '00000000-0000-0000-0000-000000000000');
-          console.log(`Cleared existing data from ${tableName}`);
+          // Clear existing data - use proper delete all syntax
+          const { error: deleteError, count: deleteCount } = await adminClient
+            .from(tableName)
+            .delete()
+            .gte('created_at', '1900-01-01');
+          
+          if (deleteError) {
+            console.error(`Error clearing table ${tableName}:`, deleteError);
+            throw deleteError;
+          }
+          console.log(`Cleared ${deleteCount || 'all'} existing records from ${tableName}`);
         }
 
         // Insert data in batches
-        const batchSize = 100;
+        const batchSize = 50; // Reduced batch size for better error handling
         for (let i = 0; i < tableData.length; i += batchSize) {
           const batch = tableData.slice(i, i + batchSize);
           
-          if (conflictStrategy === 'skip') {
-            // Use upsert with on_conflict do nothing
-            const { error: insertError } = await supabaseClient
-              .from(tableName)
-              .upsert(batch, { onConflict: 'id', ignoreDuplicates: true });
-
-            if (insertError) {
-              console.warn(`Error inserting batch to ${tableName}:`, insertError.message);
+          try {
+            let result;
+            if (conflictStrategy === 'skip') {
+              // Use upsert with on_conflict do nothing
+              result = await adminClient
+                .from(tableName)
+                .upsert(batch, { onConflict: 'id', ignoreDuplicates: true });
+            } else {
+              // Direct insert or upsert
+              result = await adminClient
+                .from(tableName)
+                .upsert(batch, { onConflict: 'id' });
             }
-          } else {
-            // Direct insert or upsert
-            const { error: insertError } = await supabaseClient
-              .from(tableName)
-              .upsert(batch, { onConflict: 'id' });
 
-            if (insertError) {
-              console.warn(`Error inserting batch to ${tableName}:`, insertError.message);
+            if (result.error) {
+              console.error(`Error inserting batch ${i}-${i + batch.length} to ${tableName}:`, result.error);
+              console.error('Failed batch data sample:', JSON.stringify(batch[0], null, 2));
+              
+              // Try individual inserts to identify problematic records
+              for (const record of batch) {
+                try {
+                  const singleResult = await adminClient
+                    .from(tableName)
+                    .upsert([record], { onConflict: 'id' });
+                  
+                  if (singleResult.error) {
+                    console.error(`Failed to insert individual record in ${tableName}:`, singleResult.error);
+                    console.error('Problematic record:', JSON.stringify(record, null, 2));
+                  } else {
+                    recordsProcessed++;
+                  }
+                } catch (singleError) {
+                  console.error(`Exception inserting single record in ${tableName}:`, singleError);
+                }
+              }
+            } else {
+              recordsProcessed += batch.length;
+              console.log(`Successfully inserted batch ${i}-${i + batch.length} to ${tableName}`);
             }
+          } catch (batchError) {
+            console.error(`Exception processing batch ${i}-${i + batch.length} for ${tableName}:`, batchError);
           }
         }
 
-        tablesRestored.push(tableName);
-        totalRecordsRestored += tableData.length;
-        console.log(`Restored ${tableData.length} records to ${tableName}`);
+        if (recordsProcessed > 0) {
+          tablesRestored.push(tableName);
+          totalRecordsRestored += recordsProcessed;
+          console.log(`Successfully restored ${recordsProcessed}/${tableData.length} records to ${tableName}`);
+        } else {
+          console.warn(`No records were restored to ${tableName} despite having ${tableData.length} records in backup`);
+        }
 
       } catch (tableError) {
         console.error(`Error restoring table ${tableName}:`, tableError);
+        console.error('Table error details:', {
+          message: tableError.message,
+          hint: tableError.hint,
+          details: tableError.details,
+          code: tableError.code
+        });
         // Continue with other tables
       }
     }
