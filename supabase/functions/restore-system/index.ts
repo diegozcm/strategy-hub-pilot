@@ -170,13 +170,14 @@ Deno.serve(async (req) => {
     for (const tableName of tablesToRestore) {
       console.log(`Restoring table: ${tableName}`);
       
-      const tableData = backupData.tables[tableName];
-      if (!tableData || !Array.isArray(tableData)) {
+      const tableInfo = backupData.tables[tableName];
+      if (!tableInfo || !tableInfo.data || !Array.isArray(tableInfo.data)) {
         console.log(`No data found for table ${tableName}, skipping`);
         continue;
       }
 
-      console.log(`Table ${tableName} has ${tableData.length} records to restore`);
+      const tableData = tableInfo.data;
+      console.log(`Table ${tableName} has ${tableData.length} records to restore (backup recorded ${tableInfo.record_count} records)`);
 
       try {
         let recordsProcessed = 0;
