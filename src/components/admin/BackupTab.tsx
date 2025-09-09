@@ -54,6 +54,7 @@ export const BackupTab: React.FC = () => {
     deleteBackup,
     updateBackupSchedule,
     deleteBackupSchedule,
+    createBackupSchedule,
     formatFileSize,
     getStatusColor,
     calculateNextRun,
@@ -72,6 +73,15 @@ export const BackupTab: React.FC = () => {
   const [restoreNotes, setRestoreNotes] = useState<string>("");
   const [isRestoring, setIsRestoring] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+
+  // Schedule creation states
+  const [scheduleName, setScheduleName] = useState<string>("");
+  const [scheduleBackupType, setScheduleBackupType] = useState<'full' | 'incremental' | 'selective' | 'schema_only'>('full');
+  const [cronExpression, setCronExpression] = useState<string>("");
+  const [cronPreset, setCronPreset] = useState<string>("");
+  const [scheduleSelectedTables, setScheduleSelectedTables] = useState<string[]>([]);
+  const [retentionDays, setRetentionDays] = useState<number>(30);
+  const [scheduleNotes, setScheduleNotes] = useState<string>("");
 
   // Available tables for selective backup
   const availableTables = [
@@ -138,6 +148,49 @@ export const BackupTab: React.FC = () => {
       case 'failed': return <XCircle className="w-4 h-4 text-red-600" />;
       case 'pending': return <Clock className="w-4 h-4 text-yellow-600" />;
       default: return <Clock className="w-4 h-4 text-gray-600" />;
+    }
+  };
+
+  const cronPresets = [
+    { label: 'Diário (12:00)', value: '0 12 * * *' },
+    { label: 'Semanal (Dom 02:00)', value: '0 2 * * 0' },
+    { label: 'Mensal (1º dia 03:00)', value: '0 3 1 * *' },
+    { label: 'Personalizado', value: 'custom' }
+  ];
+
+  const handleCronPresetChange = (preset: string) => {
+    setCronPreset(preset);
+    if (preset !== 'custom') {
+      setCronExpression(preset);
+    } else {
+      setCronExpression('');
+    }
+  };
+
+  const handleCreateSchedule = async () => {
+    if (!scheduleName || !cronExpression) return;
+
+    try {
+      await createBackupSchedule({
+        schedule_name: scheduleName,
+        backup_type: scheduleBackupType,
+        cron_expression: cronExpression,
+        tables_included: scheduleBackupType === 'selective' ? scheduleSelectedTables : undefined,
+        retention_days: retentionDays,
+        notes: scheduleNotes || undefined,
+        is_active: true
+      });
+
+      // Reset form
+      setScheduleName('');
+      setScheduleBackupType('full');
+      setCronExpression('');
+      setCronPreset('');
+      setScheduleSelectedTables([]);
+      setRetentionDays(30);
+      setScheduleNotes('');
+    } catch (error) {
+      console.error('Error creating schedule:', error);
     }
   };
 
@@ -515,14 +568,147 @@ export const BackupTab: React.FC = () => {
 
         {/* Schedules Tab */}
         <TabsContent value="schedules" className="space-y-4">
+          {/* Create Schedule Form */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
-                Agendamentos de Backup Automático
+                Criar Agendamento Automático
               </CardTitle>
               <CardDescription>
-                Configure backups automáticos recorrentes. Sistema mantém automaticamente os 5 backups mais recentes.
+                Configure backups automáticos recorrentes com rotação automática
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="schedule-name">Nome do Agendamento</Label>
+                  <Input
+                    id="schedule-name"
+                    placeholder="Ex: Backup Diário Completo"
+                    value={scheduleName}
+                    onChange={(e) => setScheduleName(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="schedule-backup-type">Tipo de Backup</Label>
+                  <Select value={scheduleBackupType} onValueChange={(value: any) => setScheduleBackupType(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo de backup" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="full">Completo - Todas as tabelas com dados</SelectItem>
+                      <SelectItem value="incremental">Incremental - Apenas dados modificados</SelectItem>
+                      <SelectItem value="selective">Seletivo - Tabelas específicas</SelectItem>
+                      <SelectItem value="schema_only">Apenas Schema - Estrutura das tabelas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {scheduleBackupType === 'selective' && (
+                  <div>
+                    <Label>Tabelas para Backup (separadas por vírgula)</Label>
+                    <Input
+                      placeholder="Ex: companies, profiles, user_roles"
+                      value={scheduleSelectedTables.join(', ')}
+                      onChange={(e) => setScheduleSelectedTables(e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
+                    />
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      Tabelas disponíveis: {availableTables.join(', ')}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <Label htmlFor="cron-preset">Frequência</Label>
+                  <Select value={cronPreset} onValueChange={handleCronPresetChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a frequência" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cronPresets.map((preset) => (
+                        <SelectItem key={preset.value} value={preset.value}>
+                          {preset.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {cronPreset === 'custom' && (
+                  <div>
+                    <Label htmlFor="cron-expression">Expressão Cron Personalizada</Label>
+                    <Input
+                      id="cron-expression"
+                      placeholder="Ex: 0 2 * * * (todo dia às 2:00)"
+                      value={cronExpression}
+                      onChange={(e) => setCronExpression(e.target.value)}
+                    />
+                    <div className="mt-2 text-sm text-muted-foreground">
+                      Formato: minuto hora dia mês dia-da-semana
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <Label htmlFor="retention-days">Retenção (dias)</Label>
+                  <Input
+                    id="retention-days"
+                    type="number"
+                    min="7"
+                    max="365"
+                    value={retentionDays}
+                    onChange={(e) => setRetentionDays(Number(e.target.value))}
+                  />
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    Sistema mantém máximo de 5 backups por agendamento
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="schedule-notes">Notas (opcional)</Label>
+                  <Textarea
+                    id="schedule-notes"
+                    placeholder="Descrição ou observações sobre este agendamento..."
+                    value={scheduleNotes}
+                    onChange={(e) => setScheduleNotes(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+
+                <Button 
+                  onClick={handleCreateSchedule} 
+                  disabled={!scheduleName || !cronExpression || loading}
+                  className="w-full"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Criando Agendamento...
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Criar Agendamento
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Separator />
+
+          {/* Existing Schedules */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Agendamentos Existentes
+              </CardTitle>
+              <CardDescription>
+                Gerencie seus agendamentos de backup automático
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -530,7 +716,7 @@ export const BackupTab: React.FC = () => {
                 <div className="text-center py-8 text-muted-foreground">
                   <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p>Nenhum agendamento configurado</p>
-                  <p className="text-sm">Configure backups automáticos para manter seus dados sempre seguros</p>
+                  <p className="text-sm">Use o formulário acima para criar seu primeiro agendamento</p>
                 </div>
               ) : (
                 <div className="space-y-4">
