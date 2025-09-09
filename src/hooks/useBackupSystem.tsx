@@ -48,11 +48,26 @@ export interface BackupSchedule {
   updated_at: string;
 }
 
+export interface RestoreLog {
+  id: string;
+  backup_job_id: string;
+  admin_user_id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'in_progress';
+  restore_type: string;
+  start_time?: string;
+  end_time?: string;
+  records_restored?: number;
+  tables_restored?: string[];
+  error_message?: string;
+  notes?: string;
+}
+
 export const useBackupSystem = () => {
   const [loading, setLoading] = useState(false);
   const [backupJobs, setBackupJobs] = useState<BackupJob[]>([]);
   const [backupFiles, setBackupFiles] = useState<BackupFile[]>([]);
   const [backupSchedules, setBackupSchedules] = useState<BackupSchedule[]>([]);
+  const [restoreLogs, setRestoreLogs] = useState<RestoreLog[]>([]);
   const { toast } = useToast();
 
   // Load backup jobs
@@ -113,6 +128,21 @@ export const useBackupSystem = () => {
     }
   };
 
+  // Load restore logs
+  const loadRestoreLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('backup_restore_logs')
+        .select('*')
+        .order('start_time', { ascending: false });
+
+      if (error) throw error;
+      setRestoreLogs(data || []);
+    } catch (error) {
+      console.error('Error loading restore logs:', error);
+    }
+  };
+
   // Execute backup
   const executeBackup = async (params: {
     type: 'full' | 'incremental' | 'selective' | 'schema_only';
@@ -148,6 +178,44 @@ export const useBackupSystem = () => {
       throw error;
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Execute restore
+  const executeRestore = async (params: {
+    backupJobId: string;
+    targetTables?: string[];
+    conflictStrategy: 'replace' | 'skip' | 'merge';
+    createBackupBeforeRestore: boolean;
+    notes?: string;
+  }) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('restore-system', {
+        body: params
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Restore executado com sucesso",
+        description: data.message || "Dados restaurados com sucesso",
+        variant: "default",
+      });
+
+      // Reload data
+      await loadBackupJobs();
+      await loadBackupFiles();
+      await loadRestoreLogs();
+
+      return data;
+    } catch (error: any) {
+      console.error('Error executing restore:', error);
+      toast({
+        title: "Erro ao executar restore",
+        description: error.message || "Falha ao executar o restore.",
+        variant: "destructive",
+      });
+      throw error;
     }
   };
 
@@ -341,6 +409,7 @@ export const useBackupSystem = () => {
     loadBackupJobs();
     loadBackupFiles();
     loadBackupSchedules();
+    loadRestoreLogs();
   }, []);
 
   return {
@@ -348,7 +417,9 @@ export const useBackupSystem = () => {
     backupJobs,
     backupFiles,
     backupSchedules,
+    restoreLogs,
     executeBackup,
+    executeRestore,
     downloadBackup,
     deleteBackup,
     createBackupSchedule,
@@ -357,6 +428,7 @@ export const useBackupSystem = () => {
     loadBackupJobs,
     loadBackupFiles,
     loadBackupSchedules,
+    loadRestoreLogs,
     formatFileSize,
     getStatusColor
   };

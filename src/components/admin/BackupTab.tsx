@@ -33,8 +33,11 @@ import {
   XCircle,
   Loader2,
   Calendar,
-  HardDrive
+  HardDrive,
+  RotateCcw,
+  Shield
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export const BackupTab: React.FC = () => {
   const {
@@ -42,7 +45,9 @@ export const BackupTab: React.FC = () => {
     backupJobs,
     backupFiles,
     backupSchedules,
+    restoreLogs,
     executeBackup,
+    executeRestore,
     downloadBackup,
     deleteBackup,
     formatFileSize,
@@ -52,6 +57,15 @@ export const BackupTab: React.FC = () => {
   const [backupType, setBackupType] = useState<'full' | 'incremental' | 'selective' | 'schema_only'>('full');
   const [backupNotes, setBackupNotes] = useState('');
   const [selectedTables, setSelectedTables] = useState<string[]>([]);
+  
+  // Restore states
+  const [selectedBackupId, setSelectedBackupId] = useState<string>("");
+  const [restoreTargetTables, setRestoreTargetTables] = useState<string[]>([]);
+  const [conflictStrategy, setConflictStrategy] = useState<"replace" | "skip" | "merge">("skip");
+  const [createSafetyBackup, setCreateSafetyBackup] = useState(true);
+  const [restoreNotes, setRestoreNotes] = useState<string>("");
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
 
   // Available tables for selective backup
   const availableTables = [
@@ -72,6 +86,32 @@ export const BackupTab: React.FC = () => {
       setBackupNotes('');
     } catch (error) {
       console.error('Error executing backup:', error);
+    }
+  };
+
+  const handleExecuteRestore = async () => {
+    if (!selectedBackupId) return;
+    
+    setIsRestoring(true);
+    try {
+      await executeRestore({
+        backupJobId: selectedBackupId,
+        targetTables: restoreTargetTables.length > 0 ? restoreTargetTables : undefined,
+        conflictStrategy,
+        createBackupBeforeRestore: createSafetyBackup,
+        notes: restoreNotes || undefined
+      });
+      
+      // Reset form
+      setSelectedBackupId("");
+      setRestoreTargetTables([]);
+      setRestoreNotes("");
+      setRestoreDialogOpen(false);
+      
+    } catch (error) {
+      console.error('Erro ao executar restore:', error);
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -107,11 +147,12 @@ export const BackupTab: React.FC = () => {
       </Alert>
 
       <Tabs defaultValue="create" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="create">Criar Backup</TabsTrigger>
-          <TabsTrigger value="history">Histórico</TabsTrigger>
-          <TabsTrigger value="schedules">Agendamentos</TabsTrigger>
-        </TabsList>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="create">Criar Backup</TabsTrigger>
+            <TabsTrigger value="restore">Restaurar</TabsTrigger>
+            <TabsTrigger value="history">Histórico</TabsTrigger>
+            <TabsTrigger value="schedules">Agendamentos</TabsTrigger>
+          </TabsList>
 
         {/* Create Backup Tab */}
         <TabsContent value="create" className="space-y-4">
@@ -187,6 +228,160 @@ export const BackupTab: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Restore Tab */}
+        <TabsContent value="restore" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RotateCcw className="w-5 h-5" />
+                Restaurar Backup
+              </CardTitle>
+              <CardDescription>
+                Restaure dados de um backup existente
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4">
+                <div>
+                  <Label htmlFor="backup-select">Selecionar Backup</Label>
+                  <Select 
+                    value={selectedBackupId} 
+                    onValueChange={setSelectedBackupId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Escolha um backup para restaurar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {backupJobs.filter(job => job.status === 'completed').map((job) => (
+                        <SelectItem key={job.id} value={job.id}>
+                          {getBackupTypeLabel(job.backup_type)} - {new Date(job.created_at).toLocaleString('pt-BR')}
+                          {job.notes && ` (${job.notes.substring(0, 30)}...)`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="conflict-strategy">Estratégia de Conflito</Label>
+                  <Select 
+                    value={conflictStrategy} 
+                    onValueChange={(value: "replace" | "skip" | "merge") => setConflictStrategy(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="skip">Pular registros existentes</SelectItem>
+                      <SelectItem value="replace">Substituir dados existentes</SelectItem>
+                      <SelectItem value="merge">Atualizar registros existentes</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="safety-backup" 
+                    checked={createSafetyBackup}
+                    onCheckedChange={(checked) => setCreateSafetyBackup(checked as boolean)}
+                  />
+                  <Label htmlFor="safety-backup" className="flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    Criar backup de segurança antes de restaurar
+                  </Label>
+                </div>
+
+                <div>
+                  <Label htmlFor="restore-tables">Tabelas Específicas (opcional)</Label>
+                  <Input
+                    placeholder="Ex: companies,profiles,users (deixe vazio para todas)"
+                    value={restoreTargetTables.join(',')}
+                    onChange={(e) => setRestoreTargetTables(
+                      e.target.value.split(',').map(t => t.trim()).filter(Boolean)
+                    )}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="restore-notes">Observações</Label>
+                  <Textarea
+                    id="restore-notes"
+                    placeholder="Descrição do motivo da restauração..."
+                    value={restoreNotes}
+                    onChange={(e) => setRestoreNotes(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+
+                <Button
+                  onClick={() => setRestoreDialogOpen(true)}
+                  disabled={!selectedBackupId || isRestoring}
+                  className="w-full"
+                  variant="destructive"
+                >
+                  {isRestoring ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Restaurando...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Restaurar Backup
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {restoreLogs && restoreLogs.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Histórico de Restaurações</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {restoreLogs.map((log) => (
+                    <Card key={log.id}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              {getStatusIcon(log.status)}
+                              <span className="font-medium">
+                                {log.restore_type === 'full' ? 'Restauração Completa' : 'Restauração Seletiva'}
+                              </span>
+                              <Badge variant="outline" className={getStatusColor(log.status)}>
+                                {log.status.toUpperCase()}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {log.start_time && new Date(log.start_time).toLocaleString('pt-BR')}
+                              {log.records_restored && ` • ${log.records_restored} registros`}
+                              {log.tables_restored && ` • ${log.tables_restored.length} tabelas`}
+                            </div>
+                            {log.notes && (
+                              <div className="text-sm text-muted-foreground">
+                                {log.notes}
+                              </div>
+                            )}
+                            {log.error_message && (
+                              <div className="text-sm text-destructive">
+                                Erro: {log.error_message}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* History Tab */}
@@ -363,6 +558,42 @@ export const BackupTab: React.FC = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Restore Confirmation Dialog */}
+      <AlertDialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Confirmar Restauração
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação irá restaurar dados do backup selecionado. 
+              {conflictStrategy === 'replace' && (
+                <span className="text-destructive font-medium">
+                  {" "}ATENÇÃO: Dados existentes serão substituídos permanentemente.
+                </span>
+              )}
+              {createSafetyBackup && (
+                <span className="text-primary">
+                  {" "}Um backup de segurança será criado automaticamente antes da restauração.
+                </span>
+              )}
+              <br /><br />
+              Tem certeza de que deseja continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleExecuteRestore}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Confirmar Restauração
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
