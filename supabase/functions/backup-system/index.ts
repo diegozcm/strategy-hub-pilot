@@ -74,17 +74,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Starting ${type} backup job ${backupJob.id}`);
 
-    // Get all public tables
-    const { data: allTables } = await supabaseClient
-      .rpc('get_public_tables')
-      .catch(() => ({ data: null }));
-
+    // Determine which tables to backup
     let tablesToBackup: string[] = [];
     
     if (type === 'selective' && tables.length > 0) {
       tablesToBackup = tables;
     } else {
-      // Get tables from information_schema
+      // Use predefined list of public tables
       const publicTables = [
         'companies', 'profiles', 'user_company_relations', 'user_roles', 'user_modules',
         'system_modules', 'system_settings', 'startup_hub_profiles', 'golden_circle',
@@ -96,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
         'ai_analytics', 'ai_chat_sessions', 'ai_chat_messages', 'performance_reviews',
         'backup_jobs', 'backup_files', 'backup_schedules', 'backup_restore_logs',
         'database_cleanup_logs', 'admin_impersonation_sessions', 'user_module_profiles',
-        'user_module_roles', 'golden_circle_history', 'key_results_history'
+        'user_module_roles', 'golden_circle_history', 'key_results_history', 'profile_access_logs'
       ];
       tablesToBackup = publicTables;
     }
