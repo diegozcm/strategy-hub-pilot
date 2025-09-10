@@ -1056,16 +1056,26 @@ export const ObjectivesPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   {!isEditing && (
-                    <>
-                      <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                        <Edit className="w-4 h-4 mr-1" />
-                        Editar
-                      </Button>
-                      <Button variant="destructive" size="sm" onClick={() => setIsDeleteConfirmOpen(true)}>
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Excluir
-                      </Button>
-                    </>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => setIsDeleteConfirmOpen(true)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
                   {isEditing && (
                     <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
