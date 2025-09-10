@@ -700,8 +700,8 @@ export const IndicatorsPage: React.FC = () => {
                       <Badge variant="outline" className="text-xs">
                         {getKeyResultPillar(keyResult).name}
                       </Badge>
-                      <Badge variant={getPriorityColor('medium')} className="text-xs">
-                        {getPriorityText('medium')}
+                      <Badge variant="secondary" className="text-xs">
+                        {getAggregationTypeText(keyResult.aggregation_type || 'sum')}
                       </Badge>
                     </div>
                     <CardTitle className="text-lg leading-tight">{keyResult.title}</CardTitle>
