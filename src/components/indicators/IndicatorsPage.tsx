@@ -424,7 +424,7 @@ export const IndicatorsPage: React.FC = () => {
     if (actualValues.length === 0 || targetValues.length === 0) {
       // Fallback para o cálculo antigo se não houver dados mensais
       if (keyResult.target_value === 0) return 0;
-      return Math.min(Math.round((keyResult.current_value / keyResult.target_value) * 100), 100);
+      return Math.round((keyResult.current_value / keyResult.target_value) * 100);
     }
     
     // Calcular valores anuais usando o tipo de agregação
@@ -453,7 +453,7 @@ export const IndicatorsPage: React.FC = () => {
     }
     
     if (yearlyTarget === 0) return 0;
-    return Math.min(Math.round((yearlyActual / yearlyTarget) * 100), 100);
+    return Math.round((yearlyActual / yearlyTarget) * 100);
   };
 
   const getProgressColor = (progress: number) => {
