@@ -688,7 +688,11 @@ export const IndicatorsPage: React.FC = () => {
           const progress = calculateProgress(keyResult);
           
           return (
-            <Card key={keyResult.id} className="h-full">
+            <Card 
+              key={keyResult.id} 
+              className="h-full cursor-pointer hover:shadow-md transition-shadow" 
+              onClick={() => openEditKeyResultModal(keyResult)}
+            >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
