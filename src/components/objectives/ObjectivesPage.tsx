@@ -77,7 +77,6 @@ export const ObjectivesPage: React.FC = () => {
   
   const [selectedPlan, setSelectedPlan] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateObjectiveOpen, setIsCreateObjectiveOpen] = useState(false);
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -421,10 +420,9 @@ export const ObjectivesPage: React.FC = () => {
   const filteredObjectives = objectives.filter(objective => {
     const matchesSearch = objective.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          objective.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || objective.status === statusFilter;
     const matchesPlan = selectedPlan === 'all' || objective.plan_id === selectedPlan;
     
-    return matchesSearch && matchesStatus && matchesPlan;
+    return matchesSearch && matchesPlan;
   });
 
   const getProgressColor = (progress: number) => {
@@ -934,20 +932,6 @@ export const ObjectivesPage: React.FC = () => {
                   className="pl-10 w-full sm:w-64"
                 />
               </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-32">
-                  <Filter className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="not_started">Não Iniciado</SelectItem>
-                  <SelectItem value="in_progress">Em Progresso</SelectItem>
-                  <SelectItem value="at_risk">Em Risco</SelectItem>
-                  <SelectItem value="delayed">Atrasado</SelectItem>
-                  <SelectItem value="completed">Concluído</SelectItem>
-                </SelectContent>
-              </Select>
               <Select value={selectedPlan} onValueChange={setSelectedPlan}>
                 <SelectTrigger className="w-full sm:w-40">
                   <SelectValue placeholder="Plano" />
