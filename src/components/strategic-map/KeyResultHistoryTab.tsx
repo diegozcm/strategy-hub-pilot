@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { KeyResult } from '@/types/strategic-map';
-import { useKeyResultHistory } from '@/hooks/useKeyResultHistory';
+import { useKeyResultHistory, KeyResultHistoryEntry } from '@/hooks/useKeyResultHistory';
 import { Clock, User, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface KeyResultHistoryTabProps {
@@ -27,14 +27,11 @@ export const KeyResultHistoryTab = ({ keyResult }: KeyResultHistoryTabProps) => 
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'not_started': return 'secondary';
-      case 'in_progress': return 'default';
-      case 'completed': return 'default';
-      case 'suspended': return 'destructive';
-      default: return 'secondary';
+  const getUserName = (entry: KeyResultHistoryEntry) => {
+    if (entry.profiles?.first_name || entry.profiles?.last_name) {
+      return `${entry.profiles.first_name || ''} ${entry.profiles.last_name || ''}`.trim();
     }
+    return 'Usuário';
   };
 
   if (loading) {
@@ -87,7 +84,7 @@ export const KeyResultHistoryTab = ({ keyResult }: KeyResultHistoryTabProps) => 
                   </Badge>
                   <Badge variant="outline" className="text-xs">
                     <User className="w-3 h-3 mr-1" />
-                    {entry.changed_by}
+                    {getUserName(entry)}
                   </Badge>
                 </div>
               </div>
