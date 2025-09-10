@@ -1308,6 +1308,18 @@ export const IndicatorsPage: React.FC = () => {
               throw error;
             }
           }}
+          onAggregationTypeChange={(keyResultId, newType) => {
+            // Atualizar o selectedKeyResult com o novo aggregation_type
+            setSelectedKeyResult(prev => prev ? {
+              ...prev,
+              aggregation_type: newType
+            } : null);
+            
+            // Atualizar também a lista de keyResults
+            setKeyResults(prev => prev.map(kr => 
+              kr.id === keyResultId ? { ...kr, aggregation_type: newType } : kr
+            ));
+          }}
         />
       )}
     </div>

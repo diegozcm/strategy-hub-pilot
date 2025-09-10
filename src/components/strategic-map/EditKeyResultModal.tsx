@@ -16,9 +16,10 @@ interface EditKeyResultModalProps {
   open: boolean;
   onClose: () => void;
   onSave: (keyResultData: Partial<KeyResult>) => Promise<any>;
+  onAggregationTypeChange?: (keyResultId: string, newType: 'sum' | 'average' | 'max' | 'min') => void;
 }
 
-export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKeyResultModalProps) => {
+export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggregationTypeChange }: EditKeyResultModalProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [savingAggregationType, setSavingAggregationType] = useState(false);
@@ -102,6 +103,14 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
         .eq('id', keyResult.id);
 
       if (error) throw error;
+
+      // Atualizar o estado local
+      setAggregationType(newType);
+      
+      // Notificar o componente pai sobre a mudança
+      if (onAggregationTypeChange) {
+        onAggregationTypeChange(keyResult.id, newType);
+      }
 
       toast({
         title: "Tipo de cálculo salvo",
