@@ -74,19 +74,19 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, onUpdate }: ResultadoCh
           </Button>
         </div>
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>
-              {currentValue.toFixed(1)} / {targetValue} {resultadoChave.unit}
-            </span>
+          <div className="flex flex-col gap-1 text-xs">
+            <div className="text-muted-foreground">
+              <span className="font-medium">Indicador atual:</span> {currentValue.toFixed(1)} {resultadoChave.unit}
+            </div>
+            <div className="text-muted-foreground">
+              <span className="font-medium">Meta:</span> {targetValue} {resultadoChave.unit}
+            </div>
             {resultadoChave.due_date && (
-              <span>até {format(new Date(resultadoChave.due_date), 'dd/MM/yyyy')}</span>
+              <div className="text-muted-foreground">até {format(new Date(resultadoChave.due_date), 'dd/MM/yyyy')}</div>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Progress value={progress} className="w-12 h-1.5" />
-            <div className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded text-nowrap">
-              {progress.toFixed(1)}%
-            </div>
+          <div className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded text-nowrap">
+            {progress.toFixed(1)}%
           </div>
         </div>
       </div>
