@@ -123,7 +123,14 @@ export const IndicatorsPage: React.FC = () => {
       if (keyResultsError) throw keyResultsError;
       
       console.log('Loaded key results:', keyResultsData);
-      setKeyResults(keyResultsData || []);
+      
+      // Cast aggregation_type to the correct union type
+      const processedKeyResults = (keyResultsData || []).map(kr => ({
+        ...kr,
+        aggregation_type: (kr.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum'
+      }));
+      
+      setKeyResults(processedKeyResults);
 
       // Load key result values
       if (keyResultsData && keyResultsData.length > 0) {
@@ -189,7 +196,13 @@ export const IndicatorsPage: React.FC = () => {
 
       if (error) throw error;
 
-      setKeyResults(prev => [data, ...prev]);
+      // Cast aggregation_type to the correct union type
+      const processedData = {
+        ...data,
+        aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum'
+      };
+
+      setKeyResults(prev => [processedData, ...prev]);
       setIsAddModalOpen(false);
       
       // Reset form
@@ -297,7 +310,13 @@ export const IndicatorsPage: React.FC = () => {
 
       if (error) throw error;
 
-      setKeyResults(prev => prev.map(kr => kr.id === selectedKeyResult.id ? data : kr));
+      // Cast aggregation_type to the correct union type
+      const processedData = {
+        ...data,
+        aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum'
+      };
+
+      setKeyResults(prev => prev.map(kr => kr.id === selectedKeyResult.id ? processedData : kr));
       setIsEditModalOpen(false);
       
       toast({

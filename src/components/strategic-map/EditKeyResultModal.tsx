@@ -9,6 +9,7 @@ import { KeyResult } from '@/types/strategic-map';
 import { KeyResultHistoryTab } from './KeyResultHistoryTab';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EditKeyResultModalProps {
   keyResult: KeyResult;
@@ -93,10 +94,15 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
   const saveAggregationType = async (newType: 'sum' | 'average' | 'max' | 'min') => {
     try {
       setSavingAggregationType(true);
-      await onSave({
-        id: keyResult.id,
-        aggregation_type: newType
-      });
+      
+      // Usar diretamente o supabase client ao invés de onSave para não fechar o modal
+      const { error } = await supabase
+        .from('key_results')
+        .update({ aggregation_type: newType })
+        .eq('id', keyResult.id);
+
+      if (error) throw error;
+
       toast({
         title: "Tipo de cálculo salvo",
         description: "A preferência foi salva com sucesso.",

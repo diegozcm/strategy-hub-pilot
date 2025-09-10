@@ -171,7 +171,13 @@ export const useStrategicMap = () => {
         return;
       }
 
-      setKeyResults(data || []);
+      // Cast aggregation_type to the correct union type
+      const processedData = (data || []).map(kr => ({
+        ...kr,
+        aggregation_type: (kr.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum'
+      }));
+
+      setKeyResults(processedData);
     } catch (error) {
       console.error('Error loading key results:', error);
     }
@@ -521,7 +527,13 @@ export const useStrategicMap = () => {
         return null;
       }
 
-      setKeyResults(prev => [...prev, data]);
+      // Cast aggregation_type to the correct union type
+      const processedData = {
+        ...data,
+        aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum'
+      };
+
+      setKeyResults(prev => [...prev, processedData]);
       toast({
         title: "Sucesso",
         description: "Resultado-chave criado com sucesso",
@@ -554,7 +566,13 @@ export const useStrategicMap = () => {
         return null;
       }
 
-      setKeyResults(prev => prev.map(kr => kr.id === keyResultId ? data : kr));
+      // Cast aggregation_type to the correct union type
+      const processedData = {
+        ...data,
+        aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum'
+      };
+
+      setKeyResults(prev => prev.map(kr => kr.id === keyResultId ? processedData : kr));
       toast({
         title: "Sucesso",
         description: "Resultado-chave atualizado com sucesso",
