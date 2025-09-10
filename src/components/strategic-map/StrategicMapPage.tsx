@@ -439,7 +439,17 @@ export const StrategicMapPage = () => {
                           <span>Progresso</span>
                           <span className="font-medium">{progress}%</span>
                         </div>
-                        <Progress value={progress} className="h-2" />
+                        <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                          <div 
+                            className={`h-full transition-all duration-300 rounded-full ${
+                              progress < 30 ? 'bg-red-500' : 
+                              progress < 60 ? 'bg-yellow-500' : 
+                              progress < 80 ? 'bg-blue-500' : 
+                              'bg-green-500'
+                            }`}
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
