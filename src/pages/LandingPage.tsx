@@ -2,75 +2,91 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Brain, 
-  BarChart3, 
-  Target as TargetIcon, 
-  FileText, 
-  Users, 
-  TrendingUp,
-  ArrowRight,
-  Play,
-  Star,
-  Shield,
-  Zap,
-  Lock,
-  Target,
-  Award,
-  ChevronLeft,
-  ChevronRight,
-  Map,
-  Lightbulb,
-  Building2,
-  Rocket,
-  CheckCircle,
-  Phone,
-  Mail,
-  MapPin,
-  Linkedin,
-  Twitter,
-  MessageSquare,
-  UserCheck,
-  TrendingDown,
-  Activity,
-  PieChart,
-  Clock
-} from 'lucide-react';
+import { Brain, BarChart3, Target as TargetIcon, FileText, Users, TrendingUp, ArrowRight, Play, Star, Shield, Zap, Lock, Target, Award, ChevronLeft, ChevronRight, Map, Lightbulb, Building2, Rocket, CheckCircle, Phone, Mail, MapPin, Linkedin, Twitter, MessageSquare, UserCheck, TrendingDown, Activity, PieChart, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
 const LandingPage = () => {
   const [currentScreenshot, setCurrentScreenshot] = React.useState(0);
-  
-  const screenshots = [
-    { title: "Dashboard Executivo COFOUND", description: "Analytics estratégicos integrados com consultoria", module: "Strategy HUB", placeholder: "strategic-dashboard.png" },
-    { title: "Mapa Estratégico Interativo", description: "Planejamento visual conectado aos serviços COFOUND", module: "Strategy HUB", placeholder: "strategic-map.png" },
-    { title: "Dashboard Startup", description: "Métricas BEEP em tempo real", module: "Startup HUB", placeholder: "startup-dashboard.png" },
-    { title: "Avaliação BEEP Completa", description: "Business Entrepreneur Evolution Phases - 5 níveis de maturidade", module: "Startup HUB", placeholder: "beep-assessment.png" },
-    { title: "Mentoria COFOUND", description: "Sessões com especialistas certificados", module: "Startup HUB", placeholder: "mentoring-sessions.png" },
-    { title: "Copiloto Estratégico IA", description: "Inteligência artificial para consultoria estratégica", module: "Strategy HUB", placeholder: "ai-copilot.png" },
-    { title: "Analytics BEEP", description: "Evolução e benchmarking das startups", module: "Startup HUB", placeholder: "startup-analytics.png" },
-    { title: "OKRs Corporativos", description: "Gestão de objetivos empresariais", module: "Strategy HUB", placeholder: "objectives-management.png" }
-  ];
+  const screenshots = [{
+    title: "Dashboard Executivo COFOUND",
+    description: "Analytics estratégicos integrados com consultoria",
+    module: "Strategy HUB",
+    placeholder: "strategic-dashboard.png"
+  }, {
+    title: "Mapa Estratégico Interativo",
+    description: "Planejamento visual conectado aos serviços COFOUND",
+    module: "Strategy HUB",
+    placeholder: "strategic-map.png"
+  }, {
+    title: "Dashboard Startup",
+    description: "Métricas BEEP em tempo real",
+    module: "Startup HUB",
+    placeholder: "startup-dashboard.png"
+  }, {
+    title: "Avaliação BEEP Completa",
+    description: "Business Entrepreneur Evolution Phases - 5 níveis de maturidade",
+    module: "Startup HUB",
+    placeholder: "beep-assessment.png"
+  }, {
+    title: "Mentoria COFOUND",
+    description: "Sessões com especialistas certificados",
+    module: "Startup HUB",
+    placeholder: "mentoring-sessions.png"
+  }, {
+    title: "Copiloto Estratégico IA",
+    description: "Inteligência artificial para consultoria estratégica",
+    module: "Strategy HUB",
+    placeholder: "ai-copilot.png"
+  }, {
+    title: "Analytics BEEP",
+    description: "Evolução e benchmarking das startups",
+    module: "Startup HUB",
+    placeholder: "startup-analytics.png"
+  }, {
+    title: "OKRs Corporativos",
+    description: "Gestão de objetivos empresariais",
+    module: "Strategy HUB",
+    placeholder: "objectives-management.png"
+  }];
 
   // BEEP Maturity Levels for visual representation
-  const beepLevels = [
-    { level: 1, name: "Idealizando", range: "1.0-1.8", color: "bg-red-500", description: "Conceituação inicial" },
-    { level: 2, name: "Validando", range: "1.9-2.6", color: "bg-orange-500", description: "Problemas e soluções" },
-    { level: 3, name: "Iniciando", range: "2.7-3.4", color: "bg-yellow-500", description: "Estruturação do negócio" },
-    { level: 4, name: "Validando Mercado", range: "3.5-4.2", color: "bg-blue-500", description: "Tração e escalabilidade" },
-    { level: 5, name: "Evoluindo", range: "4.3-5.0", color: "bg-green-500", description: "Crescimento sustentável" }
-  ];
-
+  const beepLevels = [{
+    level: 1,
+    name: "Idealizando",
+    range: "1.0-1.8",
+    color: "bg-red-500",
+    description: "Conceituação inicial"
+  }, {
+    level: 2,
+    name: "Validando",
+    range: "1.9-2.6",
+    color: "bg-orange-500",
+    description: "Problemas e soluções"
+  }, {
+    level: 3,
+    name: "Iniciando",
+    range: "2.7-3.4",
+    color: "bg-yellow-500",
+    description: "Estruturação do negócio"
+  }, {
+    level: 4,
+    name: "Validando Mercado",
+    range: "3.5-4.2",
+    color: "bg-blue-500",
+    description: "Tração e escalabilidade"
+  }, {
+    level: 5,
+    name: "Evoluindo",
+    range: "4.3-5.0",
+    color: "bg-green-500",
+    description: "Crescimento sustentável"
+  }];
   const nextScreenshot = () => {
-    setCurrentScreenshot((prev) => (prev + 1) % screenshots.length);
+    setCurrentScreenshot(prev => (prev + 1) % screenshots.length);
   };
-
   const prevScreenshot = () => {
-    setCurrentScreenshot((prev) => (prev - 1 + screenshots.length) % screenshots.length);
+    setCurrentScreenshot(prev => (prev - 1 + screenshots.length) % screenshots.length);
   };
-
-  return (
-    <div className="min-h-screen bg-strategy-gray-light">
+  return <div className="min-h-screen bg-strategy-gray-light">
       {/* Header */}
       <header className="fixed top-0 w-full bg-strategy-gray-light/95 backdrop-blur-sm border-b border-border shadow-sm z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -107,9 +123,7 @@ const LandingPage = () => {
               Start Together, <span className="text-strategy-red-dark">onde a estratégia e a aceleração se encontram</span>
             </h1>
             
-            <p className="text-xl text-strategy-blue-navy mb-8 leading-relaxed">
-              Plataforma corporativa COFOUND que integra consultoria estratégica empresarial com aceleração profissional de startups. Soluções completas para crescimento sustentável e inovação dirigida.
-            </p>
+            <p className="text-xl text-strategy-blue-navy mb-8 leading-relaxed">Plataforma de estratégia e aceleração de negócios, integrando inteligência  estratégica com aceleração profissional de negócios. Soluções completas para crescimento sustentável e inovação dirigida.</p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link to="/auth">
@@ -143,7 +157,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-{/* Main Features */}
+    {/* Main Features */}
       <section id="features" className="py-16 px-4 bg-white">
         <div className="container mx-auto">
           <div className="text-center mb-16">
@@ -243,21 +257,17 @@ const LandingPage = () => {
                   Metodologia BEEP - 5 Fases de Evolução Empresarial
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-                  {beepLevels.map((level, index) => (
-                    <div key={level.level} className="text-center">
+                  {beepLevels.map((level, index) => <div key={level.level} className="text-center">
                       <div className={`w-16 h-16 ${level.color} rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold text-lg`}>
                         {level.level}
                       </div>
                       <h5 className="font-semibold text-strategy-blue-navy mb-1">{level.name}</h5>
                       <p className="text-xs text-strategy-gray-medium mb-2">{level.range}</p>
                       <p className="text-xs text-strategy-gray-medium">{level.description}</p>
-                      {index < beepLevels.length - 1 && (
-                        <div className="hidden md:block absolute translate-x-8 translate-y-8">
+                      {index < beepLevels.length - 1 && <div className="hidden md:block absolute translate-x-8 translate-y-8">
                           <ArrowRight className="h-4 w-4 text-strategy-gray-medium" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        </div>}
+                    </div>)}
                 </div>
                 <div className="bg-accent/10 rounded-lg p-4 text-center">
                   <p className="text-strategy-blue-navy font-semibold mb-1">Avaliação Contínua BEEP</p>
@@ -342,11 +352,7 @@ const LandingPage = () => {
               <div className="aspect-video bg-white/20 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
                 <div className="text-center">
                   <div className="absolute top-4 right-4">
-                    <Badge className={`text-xs px-3 py-1 ${
-                      screenshots[currentScreenshot].module === 'Startup HUB' 
-                        ? 'bg-accent text-white' 
-                        : 'bg-primary text-white'
-                    }`}>
+                    <Badge className={`text-xs px-3 py-1 ${screenshots[currentScreenshot].module === 'Startup HUB' ? 'bg-accent text-white' : 'bg-primary text-white'}`}>
                       {screenshots[currentScreenshot].module}
                     </Badge>
                   </div>
@@ -367,15 +373,7 @@ const LandingPage = () => {
                 </Button>
                 
                 <div className="flex space-x-2">
-                  {screenshots.map((_, index) => (
-                    <button
-                      key={index}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === currentScreenshot ? 'bg-accent' : 'bg-white/30'
-                      }`}
-                      onClick={() => setCurrentScreenshot(index)}
-                    />
-                  ))}
+                  {screenshots.map((_, index) => <button key={index} className={`w-2 h-2 rounded-full transition-colors ${index === currentScreenshot ? 'bg-accent' : 'bg-white/30'}`} onClick={() => setCurrentScreenshot(index)} />)}
                 </div>
 
                 <Button variant="outline" size="sm" onClick={nextScreenshot} className="bg-white/10 border-white/30 text-white hover:bg-white/20">
@@ -519,9 +517,7 @@ const LandingPage = () => {
                   </div>
                 </div>
                 <div className="flex space-x-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-accent text-accent" />
-                  ))}
+                  {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-accent text-accent" />)}
                 </div>
               </CardHeader>
               <CardContent>
@@ -542,9 +538,7 @@ const LandingPage = () => {
                   </div>
                 </div>
                 <div className="flex space-x-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-accent text-accent" />
-                  ))}
+                  {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-accent text-accent" />)}
                 </div>
               </CardHeader>
               <CardContent>
@@ -565,9 +559,7 @@ const LandingPage = () => {
                   </div>
                 </div>
                 <div className="flex space-x-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-accent text-accent" />
-                  ))}
+                  {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-accent text-accent" />)}
                 </div>
               </CardHeader>
               <CardContent>
@@ -709,8 +701,6 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default LandingPage;
