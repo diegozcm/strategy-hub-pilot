@@ -132,10 +132,12 @@ const LandingPage = () => {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-strategy-blue-navy text-strategy-blue-navy hover:bg-strategy-blue-navy hover:text-white">
-                <Phone className="mr-2 h-5 w-5" />
-                Falar com um Consultor
-              </Button>
+              <a href="https://api.whatsapp.com/send/?phone=%2B554796342353&text=Ol%C3%A1+L%C3%A9o%2C+gostaria+de+mais+informa%C3%A7%C3%B5es+da+COFOUND%21&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer">
+                <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-strategy-blue-navy text-strategy-blue-navy hover:bg-strategy-blue-navy hover:text-white">
+                  <Phone className="mr-2 h-5 w-5" />
+                  Falar com um Consultor
+                </Button>
+              </a>
             </div>
 
             {/* Trust Badges */}
