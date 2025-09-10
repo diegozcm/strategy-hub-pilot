@@ -53,9 +53,6 @@ export const KeyResultMetrics = ({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">% Atingimento</CardTitle>
-          <Badge variant={isOverTarget ? "default" : isOnTrack ? "secondary" : "destructive"}>
-            {isOverTarget ? "Meta alcançada" : isOnTrack ? "No caminho" : "Atenção"}
-          </Badge>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
@@ -67,6 +64,11 @@ export const KeyResultMetrics = ({
               : `${(100 - achievementPercentage).toFixed(1)}% para a meta`
             }
           </p>
+          <div className="mt-2">
+            <Badge variant={isOverTarget ? "default" : isOnTrack ? "secondary" : "destructive"}>
+              {isOverTarget ? "Meta alcançada" : isOnTrack ? "No caminho" : "Atenção"}
+            </Badge>
+          </div>
         </CardContent>
       </Card>
 
