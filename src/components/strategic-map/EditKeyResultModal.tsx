@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultHistoryTab } from './KeyResultHistoryTab';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -30,6 +31,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
   const [originalMonthlyTargets, setOriginalMonthlyTargets] = useState<Record<string, number>>({});
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
+  const [editMode, setEditMode] = useState<boolean>(false);
 
   const currentYear = new Date().getFullYear();
   const months = [
@@ -209,11 +211,10 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Tabs defaultValue="targets" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs defaultValue="monthly-data" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="info">Informações</TabsTrigger>
-              <TabsTrigger value="targets">Metas Mensais</TabsTrigger>
-              <TabsTrigger value="monthly">Valores Realizados</TabsTrigger>
+              <TabsTrigger value="monthly-data">Dados Mensais</TabsTrigger>
               <TabsTrigger value="history">Histórico</TabsTrigger>
             </TabsList>
 
@@ -263,13 +264,13 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
               )}
             </TabsContent>
 
-            <TabsContent value="targets" className="space-y-4 mt-4">
+            <TabsContent value="monthly-data" className="space-y-4 mt-4">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <div className="space-y-2">
-                    <Label>Metas Mensais ({selectedYear})</Label>
+                    <Label>Dados Mensais ({selectedYear})</Label>
                     <p className="text-sm text-muted-foreground">
-                      Defina as metas planejadas para cada mês e como calcular a meta anual.
+                      Gerencie os valores previstos e realizados para cada mês.
                     </p>
                   </div>
                   
@@ -290,215 +291,172 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
                   </div>
                 </div>
 
-                <div className="p-4 border rounded-lg bg-muted/50">
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium">Como calcular a meta anual?</Label>
-                    <div className="relative">
-                      <Select 
-                        value={aggregationType} 
-                        onValueChange={handleAggregationTypeChange}
-                        disabled={savingAggregationType}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="sum">Somar todas as metas mensais</SelectItem>
-                          <SelectItem value="average">Calcular a média das metas mensais</SelectItem>
-                          <SelectItem value="max">Usar o maior valor entre as metas</SelectItem>
-                          <SelectItem value="min">Usar o menor valor entre as metas</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {savingAggregationType && (
-                        <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
-                          <LoadingSpinner size="sm" />
-                        </div>
-                      )}
+                <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="edit-mode"
+                        checked={editMode}
+                        onCheckedChange={setEditMode}
+                      />
+                      <Label htmlFor="edit-mode" className="text-sm font-medium">
+                        Modo Edição de Metas
+                      </Label>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {aggregationType === 'sum' && 'A meta anual será a soma de todas as metas mensais'}
-                      {aggregationType === 'average' && 'A meta anual será a média de todas as metas mensais'}
-                      {aggregationType === 'max' && 'A meta anual será o maior valor entre as metas mensais'}
-                      {aggregationType === 'min' && 'A meta anual será o menor valor entre as metas mensais'}
+                      Habilite para editar os valores previstos (metas)
                     </p>
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-4">
-                {months.map((month) => {
-                  const target = monthlyTargets[month.key] || 0;
+                {editMode && (
+                  <div className="p-4 border rounded-lg bg-muted/30">
+                    <div className="space-y-3">
+                      <Label className="text-sm font-medium">Como calcular a meta anual?</Label>
+                      <div className="relative">
+                        <Select 
+                          value={aggregationType} 
+                          onValueChange={handleAggregationTypeChange}
+                          disabled={savingAggregationType}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sum">Somar todas as metas mensais</SelectItem>
+                            <SelectItem value="average">Calcular a média das metas mensais</SelectItem>
+                            <SelectItem value="max">Usar o maior valor entre as metas</SelectItem>
+                            <SelectItem value="min">Usar o menor valor entre as metas</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {savingAggregationType && (
+                          <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
+                            <LoadingSpinner size="sm" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {aggregationType === 'sum' && 'A meta anual será a soma de todas as metas mensais'}
+                        {aggregationType === 'average' && 'A meta anual será a média de todas as metas mensais'}
+                        {aggregationType === 'max' && 'A meta anual será o maior valor entre as metas mensais'}
+                        {aggregationType === 'min' && 'A meta anual será o menor valor entre as metas mensais'}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <div className="grid grid-cols-5 gap-4 p-3 bg-muted/30 rounded-lg font-medium text-sm">
+                    <div>Mês</div>
+                    <div className="text-center">Previsto (Meta)</div>
+                    <div className="text-center">Realizado (Indicador Atual)</div>
+                    <div className="text-center">% Atingimento</div>
+                    <div className="text-center">Unidade</div>
+                  </div>
                   
-                  return (
-                    <div key={month.key} className="grid grid-cols-3 gap-4 items-center p-3 border rounded-lg">
-                      <div>
-                        <Label className="text-sm font-medium">{month.name}</Label>
-                      </div>
-                      <div>
-                        <Label htmlFor={`target-${month.key}`} className="text-xs text-muted-foreground">
-                          Meta
-                        </Label>
-                        <Input
-                          id={`target-${month.key}`}
-                          type="number"
-                          step="0.01"
-                          placeholder="0"
-                          value={monthlyTargets[month.key] || ''}
-                          onChange={(e) => {
-                            const value = e.target.value ? parseFloat(e.target.value) : 0;
-                            setMonthlyTargets(prev => ({
-                              ...prev,
-                              [month.key]: value
-                            }));
-                          }}
-                        />
-                      </div>
-                      <div className="text-center">
-                        <Label className="text-xs text-muted-foreground">Unidade</Label>
-                        <p className="text-sm font-medium">{keyResult.unit || ''}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                  {months.map((month) => {
+                    const target = monthlyTargets[month.key] || 0;
+                    const actual = monthlyActual[month.key] || 0;
+                    const percentage = target > 0 ? (actual / target) * 100 : 0;
 
-              <div className="p-4 bg-muted rounded-lg space-y-2">
-                <div className="flex justify-between items-center text-sm text-muted-foreground">
-                  <span>Tipo de Cálculo:</span>
-                  <span className="font-medium">
-                    {aggregationType === 'sum' && 'Soma'}
-                    {aggregationType === 'average' && 'Média'}
-                    {aggregationType === 'max' && 'Máximo'}
-                    {aggregationType === 'min' && 'Mínimo'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Meta Anual Calculada:</span>
-                  <span className="text-lg font-bold text-primary">
-                    {calculateYearlyTarget(monthlyTargets).toFixed(2)} {keyResult.unit}
-                  </span>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="monthly" className="space-y-4 mt-4">
-              <div className="flex justify-between items-center">
-                <div className="space-y-2">
-                  <Label>Valores Realizados por Mês ({selectedYear})</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Atualize os valores que foram efetivamente realizados em cada mês.
-                  </p>
-                </div>
-                
-                <div className="w-32">
-                  <Label className="text-sm font-medium">Ano</Label>
-                  <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {yearOptions.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                {months.map((month) => {
-                  const target = monthlyTargets[month.key] || 0;
-                  const actual = monthlyActual[month.key] || 0;
-                  const percentage = target > 0 ? (actual / target) * 100 : 0;
-
-                  return (
-                    <div key={month.key} className="grid grid-cols-4 gap-4 items-center p-3 border rounded-lg">
-                      <div>
-                        <Label className="text-sm font-medium">{month.name}</Label>
-                      </div>
-                      <div className="text-center">
-                        <Label className="text-xs text-muted-foreground">Meta</Label>
-                        <p className="text-sm font-medium">{target}</p>
-                      </div>
-                      <div>
-                        <Label htmlFor={`actual-${month.key}`} className="text-xs text-muted-foreground">
-                          Realizado
-                        </Label>
-                        <Input
-                          id={`actual-${month.key}`}
-                          type="number"
-                          step="0.01"
-                          placeholder="0"
-                          value={monthlyActual[month.key] || ''}
-                          onChange={(e) => {
-                            const value = e.target.value ? parseFloat(e.target.value) : 0;
-                            setMonthlyActual(prev => ({
-                              ...prev,
-                              [month.key]: value
-                            }));
-                          }}
-                        />
-                      </div>
-                      <div className="text-center">
-                        <Label className="text-xs text-muted-foreground">% Atingimento</Label>
-                        <p className={`text-sm font-medium ${
-                          percentage >= 100 ? 'text-green-600' : 
-                          percentage >= 80 ? 'text-yellow-600' : 'text-red-600'
-                        }`}>
-                          {target > 0 ? `${percentage.toFixed(1)}%` : '-'}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="p-4 bg-muted rounded-lg space-y-3">
-                <div className="flex justify-between items-center text-sm text-muted-foreground">
-                  <span>Tipo de Cálculo:</span>
-                  <span className="font-medium">
-                    {aggregationType === 'sum' && 'Soma das metas mensais'}
-                    {aggregationType === 'average' && 'Média das metas mensais'}
-                    {aggregationType === 'max' && 'Maior valor mensal'}
-                    {aggregationType === 'min' && 'Menor valor mensal'}
-                  </span>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-background rounded-lg">
-                    <div className="text-sm text-muted-foreground mb-1">Meta Anual</div>
-                    <div className="text-lg font-bold text-primary">
-                      {calculateYearlyTarget(monthlyTargets).toFixed(2)} {keyResult.unit}
-                    </div>
-                  </div>
-                  <div className="text-center p-3 bg-background rounded-lg">
-                    <div className="text-sm text-muted-foreground mb-1">Realizado no Ano</div>
-                    <div className="text-lg font-bold text-green-600">
-                      {calculateYearlyActual(monthlyActual).toFixed(2)} {keyResult.unit}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="pt-2 border-t">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Progresso Anual:</span>
-                    <span className="text-lg font-bold">
-                      {(() => {
-                        const target = calculateYearlyTarget(monthlyTargets);
-                        const actual = calculateYearlyActual(monthlyActual);
-                        const progress = target > 0 ? ((actual / target) * 100) : 0;
-                        return (
-                          <span className={`${
-                            progress >= 100 ? 'text-green-600' : 
-                            progress >= 80 ? 'text-yellow-600' : 'text-red-600'
+                    return (
+                      <div key={month.key} className="grid grid-cols-5 gap-4 items-center p-3 border rounded-lg hover:bg-muted/20">
+                        <div>
+                          <Label className="text-sm font-medium">{month.name}</Label>
+                        </div>
+                        <div>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0"
+                            value={monthlyTargets[month.key] || ''}
+                            disabled={!editMode}
+                            onChange={(e) => {
+                              const value = e.target.value ? parseFloat(e.target.value) : 0;
+                              setMonthlyTargets(prev => ({
+                                ...prev,
+                                [month.key]: value
+                              }));
+                            }}
+                            className={!editMode ? "bg-muted text-muted-foreground" : ""}
+                          />
+                        </div>
+                        <div>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0"
+                            value={monthlyActual[month.key] || ''}
+                            onChange={(e) => {
+                              const value = e.target.value ? parseFloat(e.target.value) : 0;
+                              setMonthlyActual(prev => ({
+                                ...prev,
+                                [month.key]: value
+                              }));
+                            }}
+                          />
+                        </div>
+                        <div className="text-center">
+                          <span className={`text-sm font-medium ${
+                            percentage >= 100 ? 'text-green-600' : 
+                            percentage >= 80 ? 'text-yellow-600' : 'text-red-600'
                           }`}>
-                            {progress.toFixed(1)}%
+                            {target > 0 ? `${percentage.toFixed(1)}%` : '-'}
                           </span>
-                        );
-                      })()}
+                        </div>
+                        <div className="text-center">
+                          <span className="text-sm text-muted-foreground">{keyResult.unit || ''}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="p-4 bg-muted rounded-lg space-y-3">
+                  <div className="flex justify-between items-center text-sm text-muted-foreground">
+                    <span>Tipo de Cálculo:</span>
+                    <span className="font-medium">
+                      {aggregationType === 'sum' && 'Soma das metas mensais'}
+                      {aggregationType === 'average' && 'Média das metas mensais'}
+                      {aggregationType === 'max' && 'Maior valor mensal'}
+                      {aggregationType === 'min' && 'Menor valor mensal'}
                     </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center p-3 bg-background rounded-lg">
+                      <div className="text-sm text-muted-foreground mb-1">Meta Anual</div>
+                      <div className="text-lg font-bold text-primary">
+                        {calculateYearlyTarget(monthlyTargets).toFixed(2)} {keyResult.unit}
+                      </div>
+                    </div>
+                    <div className="text-center p-3 bg-background rounded-lg">
+                      <div className="text-sm text-muted-foreground mb-1">Realizado no Ano</div>
+                      <div className="text-lg font-bold text-green-600">
+                        {calculateYearlyActual(monthlyActual).toFixed(2)} {keyResult.unit}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2 border-t">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">Progresso Anual:</span>
+                      <span className="text-lg font-bold">
+                        {(() => {
+                          const target = calculateYearlyTarget(monthlyTargets);
+                          const actual = calculateYearlyActual(monthlyActual);
+                          const progress = target > 0 ? ((actual / target) * 100) : 0;
+                          return (
+                            <span className={`${
+                              progress >= 100 ? 'text-green-600' : 
+                              progress >= 80 ? 'text-yellow-600' : 'text-red-600'
+                            }`}>
+                              {progress.toFixed(1)}%
+                            </span>
+                          );
+                        })()}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
