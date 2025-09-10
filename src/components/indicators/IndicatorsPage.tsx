@@ -754,7 +754,7 @@ export const IndicatorsPage: React.FC = () => {
                 {/* Progress */}
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Progresso</span>
+                    <span className="text-sm font-medium">Atingimento da Meta</span>
                     <span className={`text-sm font-bold ${getProgressColor(progress)}`}>
                       {progress}%
                     </span>
