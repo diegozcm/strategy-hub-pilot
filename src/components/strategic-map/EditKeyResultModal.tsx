@@ -298,10 +298,19 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
                 })}
               </div>
 
-              <div className="p-4 bg-muted rounded-lg">
+              <div className="p-4 bg-muted rounded-lg space-y-2">
+                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                  <span>Tipo de Cálculo:</span>
+                  <span className="font-medium">
+                    {aggregationType === 'sum' && 'Soma'}
+                    {aggregationType === 'average' && 'Média'}
+                    {aggregationType === 'max' && 'Máximo'}
+                    {aggregationType === 'min' && 'Mínimo'}
+                  </span>
+                </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-medium">Meta Anual Total:</span>
-                  <span className="text-lg font-bold">
+                  <span className="font-medium">Meta Anual Calculada:</span>
+                  <span className="text-lg font-bold text-primary">
                     {calculateYearlyTarget(monthlyTargets).toFixed(2)} {keyResult.unit}
                   </span>
                 </div>
@@ -382,12 +391,51 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
                 })}
               </div>
 
-              <div className="p-4 bg-muted rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Total Realizado no Ano:</span>
-                  <span className="text-lg font-bold">
-                    {calculateYearlyActual(monthlyActual).toFixed(2)} {keyResult.unit}
+              <div className="p-4 bg-muted rounded-lg space-y-3">
+                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                  <span>Tipo de Cálculo:</span>
+                  <span className="font-medium">
+                    {aggregationType === 'sum' && 'Soma das metas mensais'}
+                    {aggregationType === 'average' && 'Média das metas mensais'}
+                    {aggregationType === 'max' && 'Maior valor mensal'}
+                    {aggregationType === 'min' && 'Menor valor mensal'}
                   </span>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 bg-background rounded-lg">
+                    <div className="text-sm text-muted-foreground mb-1">Meta Anual</div>
+                    <div className="text-lg font-bold text-primary">
+                      {calculateYearlyTarget(monthlyTargets).toFixed(2)} {keyResult.unit}
+                    </div>
+                  </div>
+                  <div className="text-center p-3 bg-background rounded-lg">
+                    <div className="text-sm text-muted-foreground mb-1">Realizado no Ano</div>
+                    <div className="text-lg font-bold text-green-600">
+                      {calculateYearlyActual(monthlyActual).toFixed(2)} {keyResult.unit}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="pt-2 border-t">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Progresso Anual:</span>
+                    <span className="text-lg font-bold">
+                      {(() => {
+                        const target = calculateYearlyTarget(monthlyTargets);
+                        const actual = calculateYearlyActual(monthlyActual);
+                        const progress = target > 0 ? ((actual / target) * 100) : 0;
+                        return (
+                          <span className={`${
+                            progress >= 100 ? 'text-green-600' : 
+                            progress >= 80 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>
+                            {progress.toFixed(1)}%
+                          </span>
+                        );
+                      })()}
+                    </span>
+                  </div>
                 </div>
               </div>
             </TabsContent>
