@@ -976,6 +976,7 @@ export type Database = {
       }
       key_results: {
         Row: {
+          aggregation_type: string | null
           category: string | null
           created_at: string
           current_value: number | null
@@ -1000,6 +1001,7 @@ export type Database = {
           yearly_target: number | null
         }
         Insert: {
+          aggregation_type?: string | null
           category?: string | null
           created_at?: string
           current_value?: number | null
@@ -1024,6 +1026,7 @@ export type Database = {
           yearly_target?: number | null
         }
         Update: {
+          aggregation_type?: string | null
           category?: string | null
           created_at?: string
           current_value?: number | null
