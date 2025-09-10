@@ -63,6 +63,7 @@ export interface KeyResult {
   monthly_actual?: any;
   yearly_target?: number;
   yearly_actual?: number;
+  aggregation_type?: 'sum' | 'average' | 'max' | 'min';
   projects?: StrategicProject[];
   created_at: string;
   updated_at: string;

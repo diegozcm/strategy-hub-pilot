@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultHistoryTab } from './KeyResultHistoryTab';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { useToast } from '@/hooks/use-toast';
 
 interface EditKeyResultModalProps {
   keyResult: KeyResult;
@@ -16,7 +18,9 @@ interface EditKeyResultModalProps {
 }
 
 export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKeyResultModalProps) => {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [savingAggregationType, setSavingAggregationType] = useState(false);
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
   const [status, setStatus] = useState<string>('');
@@ -85,6 +89,35 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
     }
   };
 
+  // Função para salvar o tipo de agregação
+  const saveAggregationType = async (newType: 'sum' | 'average' | 'max' | 'min') => {
+    try {
+      setSavingAggregationType(true);
+      await onSave({
+        id: keyResult.id,
+        aggregation_type: newType
+      });
+      toast({
+        title: "Tipo de cálculo salvo",
+        description: "A preferência foi salva com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error saving aggregation type:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar o tipo de cálculo.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingAggregationType(false);
+    }
+  };
+
+  const handleAggregationTypeChange = (newType: 'sum' | 'average' | 'max' | 'min') => {
+    setAggregationType(newType);
+    saveAggregationType(newType);
+  };
+
   useEffect(() => {
     if (keyResult.monthly_actual) {
       setMonthlyActual(keyResult.monthly_actual as Record<string, number>);
@@ -93,6 +126,10 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
     if (keyResult.monthly_targets) {
       setMonthlyTargets(keyResult.monthly_targets as Record<string, number>);
       setOriginalMonthlyTargets(keyResult.monthly_targets as Record<string, number>);
+    }
+    // Carrega o tipo de agregação salvo ou usa 'sum' como padrão
+    if (keyResult.aggregation_type) {
+      setAggregationType(keyResult.aggregation_type);
     }
   }, [keyResult]);
 
@@ -130,7 +167,8 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
         yearly_actual: yearlyActual,
         yearly_target: yearlyTarget,
         target_value: yearlyTarget, // Atualizar também o target_value para compatibilidade
-        current_value: yearlyActual // Atualizar também o current_value para compatibilidade
+        current_value: yearlyActual, // Atualizar também o current_value para compatibilidade
+        aggregation_type: aggregationType
       };
       
       console.log('Data to save:', dataToSave);
@@ -240,17 +278,28 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
                 <div className="p-4 border rounded-lg bg-muted/50">
                   <div className="space-y-3">
                     <Label className="text-sm font-medium">Como calcular a meta anual?</Label>
-                    <Select value={aggregationType} onValueChange={(value: 'sum' | 'average' | 'max' | 'min') => setAggregationType(value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="sum">Somar todas as metas mensais</SelectItem>
-                        <SelectItem value="average">Calcular a média das metas mensais</SelectItem>
-                        <SelectItem value="max">Usar o maior valor entre as metas</SelectItem>
-                        <SelectItem value="min">Usar o menor valor entre as metas</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="relative">
+                      <Select 
+                        value={aggregationType} 
+                        onValueChange={handleAggregationTypeChange}
+                        disabled={savingAggregationType}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sum">Somar todas as metas mensais</SelectItem>
+                          <SelectItem value="average">Calcular a média das metas mensais</SelectItem>
+                          <SelectItem value="max">Usar o maior valor entre as metas</SelectItem>
+                          <SelectItem value="min">Usar o menor valor entre as metas</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {savingAggregationType && (
+                        <div className="absolute right-8 top-1/2 transform -translate-y-1/2">
+                          <LoadingSpinner size="sm" />
+                        </div>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {aggregationType === 'sum' && 'A meta anual será a soma de todas as metas mensais'}
                       {aggregationType === 'average' && 'A meta anual será a média de todas as metas mensais'}

@@ -90,6 +90,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
         yearly_target: yearlyTarget,
         monthly_targets: monthlyTargets,
         monthly_actual: {},
+        aggregation_type: aggregationType,
         status: 'not_started',
         due_date: formData.deadline || null
       };
