@@ -134,7 +134,7 @@ const LandingPage = () => {
               </Link>
               <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-strategy-blue-navy text-strategy-blue-navy hover:bg-strategy-blue-navy hover:text-white">
                 <Phone className="mr-2 h-5 w-5" />
-                Agendar Consultoria
+                Falar com um Consultor
               </Button>
             </div>
 
