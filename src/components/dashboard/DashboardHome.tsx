@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
@@ -23,6 +24,7 @@ interface KeyResultWithPillar {
   pillar_name: string;
   pillar_color: string;
   objective_title: string;
+  aggregation_type?: string;
 }
 
 interface DashboardStats {
@@ -152,6 +154,7 @@ export const DashboardHome: React.FC = () => {
           yearly_actual,
           monthly_targets,
           monthly_actual,
+          aggregation_type,
           objective_id,
           strategic_objectives!inner (
             id,
@@ -185,7 +188,8 @@ export const DashboardHome: React.FC = () => {
         due_date: kr.due_date,
         pillar_name: kr.strategic_objectives.strategic_pillars.name,
         pillar_color: kr.strategic_objectives.strategic_pillars.color,
-        objective_title: kr.strategic_objectives.title
+        objective_title: kr.strategic_objectives.title,
+        aggregation_type: kr.aggregation_type || 'sum'
       })) || [];
 
       // Calcular estatísticas do dashboard
@@ -300,6 +304,58 @@ export const DashboardHome: React.FC = () => {
       actual,
       percentage
     };
+  };
+
+  const calculateAggregatedValue = (values: number[], aggregationType: string) => {
+    if (!values.length) return 0;
+    
+    switch (aggregationType) {
+      case 'sum':
+        return values.reduce((sum, val) => sum + val, 0);
+      case 'average':
+        return values.reduce((sum, val) => sum + val, 0) / values.length;
+      case 'min':
+        return Math.min(...values);
+      case 'max':
+        return Math.max(...values);
+      default:
+        return values.reduce((sum, val) => sum + val, 0);
+    }
+  };
+
+  const getAggregatedTotals = (kr: KeyResultWithPillar) => {
+    const months = getMonthsOfYear();
+    const aggregationType = kr.aggregation_type || 'sum';
+    
+    // Coletar valores mensais
+    const targetValues = months.map(month => kr.monthly_targets?.[month.key] || 0);
+    const actualValues = months.map(month => kr.monthly_actual?.[month.key] || 0);
+    
+    const totalTarget = calculateAggregatedValue(targetValues, aggregationType);
+    const totalActual = calculateAggregatedValue(actualValues, aggregationType);
+    const totalPercentage = totalTarget > 0 ? Math.round(totalActual / totalTarget * 100) : 0;
+    
+    return {
+      target: totalTarget,
+      actual: totalActual,
+      percentage: totalPercentage,
+      aggregationType
+    };
+  };
+
+  const getAggregationTypeLabel = (aggregationType: string) => {
+    switch (aggregationType) {
+      case 'sum':
+        return 'Soma';
+      case 'average':
+        return 'Média';
+      case 'min':
+        return 'Mínimo';
+      case 'max':
+        return 'Máximo';
+      default:
+        return 'Soma';
+    }
   };
 
   if (!company) {
@@ -470,6 +526,14 @@ export const DashboardHome: React.FC = () => {
                         {isExpanded && (
                           <div className="border-t bg-gray-50">
                             <div className="p-4">
+                              <div className="flex justify-between items-center mb-4">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium text-gray-700">Tipo de Totalizador:</span>
+                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                    {getAggregationTypeLabel(kr.aggregation_type || 'sum')}
+                                  </Badge>
+                                </div>
+                              </div>
                               <Table>
                                 <TableHeader>
                                   <TableRow>
@@ -482,6 +546,9 @@ export const DashboardHome: React.FC = () => {
                                            )}
                                          </TableHead>
                                        ))}
+                                       <TableHead className="text-center min-w-24 bg-gray-100 font-semibold">
+                                         Total
+                                       </TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -499,6 +566,9 @@ export const DashboardHome: React.FC = () => {
                                          </TableCell>
                                       );
                                     })}
+                                    <TableCell className="text-center bg-gray-100 font-semibold">
+                                      {getAggregatedTotals(kr).target}
+                                    </TableCell>
                                   </TableRow>
                                    <TableRow>
                                      <TableCell className="font-medium bg-white">Realizado</TableCell>
@@ -514,7 +584,10 @@ export const DashboardHome: React.FC = () => {
                                          </TableCell>
                                        );
                                      })}
-                                  </TableRow>
+                                     <TableCell className="text-center bg-gray-100 font-semibold">
+                                       {getAggregatedTotals(kr).actual}
+                                     </TableCell>
+                                   </TableRow>
                                    <TableRow>
                                      <TableCell className="font-medium bg-white">% Atingimento</TableCell>
                                      {months.map(month => {
@@ -531,7 +604,12 @@ export const DashboardHome: React.FC = () => {
                                          </TableCell>
                                        );
                                      })}
-                                  </TableRow>
+                                     <TableCell className="text-center bg-gray-100 font-semibold">
+                                       <span className={getStatusColor(getAggregatedTotals(kr).percentage)}>
+                                         {getAggregatedTotals(kr).percentage}%
+                                       </span>
+                                     </TableCell>
+                                   </TableRow>
                                 </TableBody>
                               </Table>
                             </div>
