@@ -43,6 +43,7 @@ export const IndicatorsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [objectiveFilter, setObjectiveFilter] = useState('all');
+  const [pillarFilter, setPillarFilter] = useState('all');
   
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -538,7 +539,16 @@ export const IndicatorsPage: React.FC = () => {
     const matchesPriority = priorityFilter === 'all' || priorityFilter === 'medium'; // Default to medium
     const matchesObjective = objectiveFilter === 'all' || keyResult.objective_id === objectiveFilter;
     
-    return matchesSearch && matchesPriority && matchesObjective;
+    // Check pillar match
+    let matchesPillar = pillarFilter === 'all';
+    if (!matchesPillar && keyResult.objective_id) {
+      const objective = objectives.find(obj => obj.id === keyResult.objective_id);
+      if (objective) {
+        matchesPillar = objective.pillar_id === pillarFilter;
+      }
+    }
+    
+    return matchesSearch && matchesPriority && matchesObjective && matchesPillar;
   });
 
   // Calculate summary statistics
@@ -666,40 +676,52 @@ export const IndicatorsPage: React.FC = () => {
             </div>
             
             <div className="space-y-2">
+              <Label>Pilar Estratégico</Label>
+              <Select value={pillarFilter} onValueChange={setPillarFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os pilares</SelectItem>
+                  {pillars.map((pillar) => (
+                    <SelectItem key={pillar.id} value={pillar.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: pillar.color }}
+                        />
+                        {pillar.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label>Objetivo Estratégico</Label>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={objectiveFilter === 'all' ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setObjectiveFilter('all')}
-                  className="text-xs px-3 py-1"
-                >
-                  Todos
-                </Button>
-                {objectives.map((objective) => {
-                  const pillar = pillars.find(p => p.id === objective.pillar_id);
-                  return (
-                    <Button
-                      key={objective.id}
-                      variant={objectiveFilter === objective.id ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setObjectiveFilter(objective.id)}
-                      className="text-xs px-3 py-1 flex items-center gap-2"
-                      style={{
-                        borderColor: pillar?.color || '#6B7280',
-                        backgroundColor: objectiveFilter === objective.id ? pillar?.color || '#6B7280' : 'transparent',
-                        color: objectiveFilter === objective.id ? '#ffffff' : pillar?.color || '#6B7280'
-                      }}
-                    >
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: pillar?.color || '#6B7280' }}
-                      />
-                      {objective.title}
-                    </Button>
-                  );
-                })}
-              </div>
+              <Select value={objectiveFilter} onValueChange={setObjectiveFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os objetivos</SelectItem>
+                  {objectives.map((objective) => {
+                    const pillar = pillars.find(p => p.id === objective.pillar_id);
+                    return (
+                      <SelectItem key={objective.id} value={objective.id}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: pillar?.color || '#6B7280' }}
+                          />
+                          {objective.title}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">
