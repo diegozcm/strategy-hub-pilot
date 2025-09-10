@@ -513,6 +513,16 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
+  const getAggregationTypeText = (aggregationType: string) => {
+    switch (aggregationType) {
+      case 'sum': return 'Soma';
+      case 'average': return 'Média';
+      case 'max': return 'Maior valor';
+      case 'min': return 'Menor valor';
+      default: return aggregationType || 'Soma';
+    }
+  };
+
   const getKeyResultHistory = (keyResultId: string) => {
     return keyResultValues
       .filter(value => value.key_result_id === keyResultId)
@@ -692,6 +702,9 @@ export const IndicatorsPage: React.FC = () => {
                       </Badge>
                       <Badge variant={getPriorityColor('medium')} className="text-xs">
                         {getPriorityText('medium')}
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {getAggregationTypeText(keyResult.aggregation_type || 'sum')}
                       </Badge>
                     </div>
                     <CardTitle className="text-lg leading-tight">{keyResult.title}</CardTitle>
