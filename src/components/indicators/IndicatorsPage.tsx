@@ -769,7 +769,7 @@ export const IndicatorsPage: React.FC = () => {
                 {/* Current vs Target */}
                 <div className="flex justify-between items-center text-sm">
                   <div>
-                    <p className="text-muted-foreground">Atual</p>
+                    <p className="text-muted-foreground">Indicador Atual</p>
                     <p className="font-semibold">{keyResult.current_value.toLocaleString('pt-BR')} {keyResult.unit}</p>
                   </div>
                   <div className="text-right">
