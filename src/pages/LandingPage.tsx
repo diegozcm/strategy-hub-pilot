@@ -92,7 +92,10 @@ const LandingPage = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Target className="h-8 w-8 text-strategy-red-dark" />
-            <span className="text-2xl font-bold text-strategy-red-dark">Start Together</span>
+            <div className="flex flex-col">
+              <span className="text-2xl font-bold text-strategy-red-dark">Start Together</span>
+              <span className="text-xs text-strategy-gray-medium">by COFOUND</span>
+            </div>
           </div>
           
           <nav className="hidden md:flex items-center space-x-8">
