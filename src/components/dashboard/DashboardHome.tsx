@@ -437,9 +437,14 @@ export const DashboardHome: React.FC = () => {
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-2">
                                 {getStatusIcon(yearlyAchievement)}
-                                <span className={`text-sm font-medium ${getStatusColor(yearlyAchievement)}`}>
-                                  {yearlyAchievement}% no ano
-                                </span>
+                                <div className="flex flex-col items-end">
+                                  <span className={`text-sm font-medium ${getStatusColor(yearlyAchievement)}`}>
+                                    {yearlyAchievement}% no ano
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    Atual: {kr.yearly_actual || kr.current_value || 0}
+                                  </span>
+                                </div>
                               </div>
                               <Button
                                 variant="ghost"
