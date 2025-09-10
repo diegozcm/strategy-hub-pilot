@@ -427,6 +427,26 @@ export const ObjectivesPage: React.FC = () => {
     return matchesSearch && matchesStatus && matchesPlan;
   });
 
+  const getProgressColor = (progress: number) => {
+    if (progress < 30) return 'bg-red-500';
+    if (progress < 60) return 'bg-yellow-500';
+    if (progress < 80) return 'bg-blue-500';
+    return 'bg-green-500';
+  };
+
+  const calculateObjectiveProgress = (keyResults: any[]) => {
+    if (keyResults.length === 0) return 0;
+    
+    const totalProgress = keyResults.reduce((sum, kr) => {
+      const currentValue = kr.yearly_actual || kr.current_value || 0;
+      const targetValue = kr.yearly_target || kr.target_value || 1;
+      const progress = targetValue > 0 ? Math.min((currentValue / targetValue) * 100, 100) : 0;
+      return sum + progress;
+    }, 0);
+    
+    return Math.round(totalProgress / keyResults.length);
+  };
+
   const getObjectiveKeyResults = (objectiveId: string) => {
     return keyResults.filter(kr => kr.objective_id === objectiveId);
   };
@@ -995,10 +1015,6 @@ export const ObjectivesPage: React.FC = () => {
                             </Badge>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <div className={`w-2 h-2 rounded-full ${getStatusColor(objective.status)}`}></div>
-                          <span className="text-xs text-gray-500">{getStatusText(objective.status)}</span>
-                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -1022,7 +1038,18 @@ export const ObjectivesPage: React.FC = () => {
                             <span>Meta: {new Date(objective.target_date).toLocaleDateString('pt-BR')}</span>
                           </div>
                         )}
-                        <Progress value={objective.progress || 0} className="h-2" />
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium text-gray-700">Progresso</span>
+                            <span className="text-xs font-bold text-gray-900">{calculateObjectiveProgress(objectiveKeyResults)}%</span>
+                          </div>
+                          <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                            <div 
+                              className={`h-full transition-all duration-300 rounded-full ${getProgressColor(calculateObjectiveProgress(objectiveKeyResults))}`}
+                              style={{ width: `${calculateObjectiveProgress(objectiveKeyResults)}%` }}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
