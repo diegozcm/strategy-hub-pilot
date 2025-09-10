@@ -17,20 +17,29 @@ interface ObjectiveCardProps {
   onAddResultadoChave?: (resultadoChaveData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<any>;
 }
 
-const getStatusBadge = (status: string) => {
-  const statusMap = {
-    'not_started': { label: 'Não Iniciado', variant: 'secondary' as const },
-    'in_progress': { label: 'Em Progresso', variant: 'default' as const },
-    'completed': { label: 'Concluído', variant: 'default' as const },
-    'suspended': { label: 'Suspenso', variant: 'destructive' as const }
-  };
+const getProgressColor = (progress: number) => {
+  if (progress < 30) return 'bg-red-500';
+  if (progress < 60) return 'bg-yellow-500';
+  if (progress < 80) return 'bg-blue-500';
+  return 'bg-green-500';
+};
 
-  return statusMap[status as keyof typeof statusMap] || { label: status, variant: 'secondary' as const };
+const calculateObjectiveProgress = (keyResults: KeyResult[]) => {
+  if (keyResults.length === 0) return 0;
+  
+  const totalProgress = keyResults.reduce((sum, kr) => {
+    const currentValue = kr.yearly_actual || kr.current_value || 0;
+    const targetValue = kr.yearly_target || kr.target_value || 1;
+    const progress = targetValue > 0 ? Math.min((currentValue / targetValue) * 100, 100) : 0;
+    return sum + progress;
+  }, 0);
+  
+  return Math.round(totalProgress / keyResults.length);
 };
 
 export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onAddResultadoChave }: ObjectiveCardProps) => {
   const [showResultadoChaveForm, setShowResultadoChaveForm] = useState(false);
-  const statusInfo = getStatusBadge(objective.status);
+  const progressPercentage = calculateObjectiveProgress(keyResults);
   
   const handleAddResultadoChave = async (resultadoChaveData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => {
     if (onAddResultadoChave) {
@@ -46,9 +55,6 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-sm truncate">{objective.title}</h4>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant={statusInfo.variant} className="text-xs">
-                {statusInfo.label}
-              </Badge>
               {objective.responsible && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <User className="h-3 w-3" />
@@ -58,8 +64,7 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
             </div>
           </div>
           <div className="text-right ml-2">
-            <div className="text-xs font-medium">{objective.progress}%</div>
-            <Progress value={objective.progress} className="w-12 h-1 mt-1" />
+            <div className="text-xs font-medium">{progressPercentage}%</div>
           </div>
         </div>
       </div>
@@ -108,14 +113,17 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
             </p>
           )}
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <Badge variant={statusInfo.variant}>
-                {statusInfo.label}
-              </Badge>
-              <span className="font-medium">{objective.progress}%</span>
+          <div className="mt-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-gray-700">Progresso</span>
+              <span className="text-xs font-bold text-gray-900">{progressPercentage}%</span>
             </div>
-            <Progress value={objective.progress} className="h-2" />
+            <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
+              <div 
+                className={`h-full transition-all duration-300 rounded-full ${getProgressColor(progressPercentage)}`}
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
           </div>
 
           <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
