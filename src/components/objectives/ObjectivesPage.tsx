@@ -17,7 +17,7 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { useHealthMonitor } from '@/hooks/useHealthMonitor';
 import { useOperationState } from '@/hooks/useOperationState';
-import { AddResultadoChaveModal } from '@/components/strategic-map/AddResultadoChaveModal';
+
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 import { KeyResult } from '@/types/strategic-map';
@@ -83,7 +83,7 @@ export const ObjectivesPage: React.FC = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedObjective, setSelectedObjective] = useState<StrategicObjective | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isAddResultadoChaveOpen, setIsAddResultadoChaveOpen] = useState(false);
+  
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -397,44 +397,6 @@ export const ObjectivesPage: React.FC = () => {
     }
   };
 
-  const createResultadoChave = async (resultadoChaveData: any) => {
-    if (!selectedObjective || !user || isSubmitting) return;
-    setIsSubmitting(true);
-
-    try {
-      console.log('🔄 Creating key result for objective:', selectedObjective.id);
-      
-      const { data, error } = await supabase
-        .from('key_results')
-        .insert([{
-          ...resultadoChaveData,
-          objective_id: selectedObjective.id,
-          owner_id: user.id
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Optimistic update
-      setKeyResults(prev => [data as unknown as KeyResult, ...prev]);
-      
-      toast({
-        title: "Sucesso",
-        description: "Resultado-chave criado com sucesso!",
-      });
-
-      // Reload data to ensure consistency
-      await invalidateAndReload();
-      console.log('✅ Key result created successfully');
-    } catch (error) {
-      handleError(error, 'criar resultado-chave');
-      // Revert optimistic update if needed
-      await refreshData();
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -1229,16 +1191,8 @@ export const ObjectivesPage: React.FC = () => {
                     )}
 
                     <div>
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="mb-3">
                         <h3 className="font-medium">Resultados-Chave</h3>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => setIsAddResultadoChaveOpen(true)}
-                        >
-                          <Plus className="w-3 h-3 mr-1" />
-                          Adicionar
-                        </Button>
                       </div>
                       <div className="space-y-2">
                         {getObjectiveKeyResults(selectedObjective.id).map((kr) => (
@@ -1246,7 +1200,7 @@ export const ObjectivesPage: React.FC = () => {
                         ))}
                         {getObjectiveKeyResults(selectedObjective.id).length === 0 && (
                           <p className="text-sm text-gray-500 text-center py-4">
-                            Nenhum resultado-chave definido. Clique em "Adicionar" para criar o primeiro.
+                            Nenhum resultado-chave definido. Acesse a página de Resultados-Chave para criar.
                           </p>
                         )}
                       </div>
@@ -1258,15 +1212,6 @@ export const ObjectivesPage: React.FC = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Add Key Result Modal */}
-        {selectedObjective && (
-          <AddResultadoChaveModal
-            objectiveId={selectedObjective.id}
-            open={isAddResultadoChaveOpen}
-            onClose={() => setIsAddResultadoChaveOpen(false)}
-            onSave={createResultadoChave}
-          />
-        )}
 
         {/* Delete Confirmation Modal */}
         <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
