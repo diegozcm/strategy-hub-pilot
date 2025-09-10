@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultHistoryTab } from './KeyResultHistoryTab';
+import { KeyResultMetrics } from './KeyResultMetrics';
+import { KeyResultChart } from './KeyResultChart';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -202,13 +204,33 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[900px] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Atualizar Resultado-Chave</DialogTitle>
           <DialogDescription>
             Atualize os valores realizados mensalmente para "{keyResult.title}"
           </DialogDescription>
         </DialogHeader>
+        
+        {/* Indicadores e Gráfico na parte superior */}
+        <KeyResultMetrics
+          yearlyTarget={calculateYearlyTarget(monthlyTargets)}
+          yearlyActual={calculateYearlyActual(monthlyActual)}
+          unit={keyResult.unit || ''}
+          achievementPercentage={(() => {
+            const target = calculateYearlyTarget(monthlyTargets);
+            const actual = calculateYearlyActual(monthlyActual);
+            return target > 0 ? (actual / target) * 100 : 0;
+          })()}
+          currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+        />
+        
+        <KeyResultChart
+          monthlyTargets={monthlyTargets}
+          monthlyActual={monthlyActual}
+          unit={keyResult.unit || ''}
+          selectedYear={selectedYear}
+        />
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs defaultValue="monthly-data" className="w-full">
