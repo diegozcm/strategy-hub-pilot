@@ -749,7 +749,11 @@ export const IndicatorsPage: React.FC = () => {
                       {progress}%
                     </span>
                   </div>
-                  <Progress value={progress} className="h-2" />
+                  <Progress value={progress} className={`h-2 ${
+                    progress >= 90 ? '[&>div]:bg-green-600' : 
+                    progress >= 70 ? '[&>div]:bg-yellow-600' : 
+                    '[&>div]:bg-red-600'
+                  }`} />
                 </div>
 
                 {/* Current vs Target */}
@@ -762,18 +766,6 @@ export const IndicatorsPage: React.FC = () => {
                     <p className="text-muted-foreground">Meta</p>
                     <p className="font-semibold">{keyResult.target_value.toLocaleString('pt-BR')} {keyResult.unit}</p>
                   </div>
-                </div>
-
-                {/* Progress */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm font-medium">
-                      Progresso: {progress}%
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    Mensal
-                  </span>
                 </div>
 
                 {/* Last Update */}
