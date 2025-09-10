@@ -32,6 +32,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
   });
 
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
+  const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
 
   const currentYear = new Date().getFullYear();
   const months = [
@@ -49,6 +50,25 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
     { key: `${currentYear}-12`, name: 'Dezembro', short: 'Dez' },
   ];
 
+  // Função para calcular a meta anual baseada no tipo de agregação
+  const calculateYearlyTarget = (targets: Record<string, number>) => {
+    const values = Object.values(targets).filter(value => value > 0);
+    if (values.length === 0) return 0;
+
+    switch (aggregationType) {
+      case 'sum':
+        return values.reduce((sum, value) => sum + value, 0);
+      case 'average':
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+      case 'max':
+        return Math.max(...values);
+      case 'min':
+        return Math.min(...values);
+      default:
+        return values.reduce((sum, value) => sum + value, 0);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -59,8 +79,8 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
     try {
       setLoading(true);
       
-      // Calcular meta anual a partir das metas mensais (se existirem)
-      const monthlyTotal = Object.values(monthlyTargets).reduce((sum, value) => sum + (value || 0), 0);
+      // Calcular meta anual a partir das metas mensais usando o tipo de agregação
+      const monthlyTotal = calculateYearlyTarget(monthlyTargets);
       const yearlyTarget = monthlyTotal > 0 ? monthlyTotal : parseFloat(formData.target_value);
 
       const resultadoChaveData = {
@@ -242,11 +262,36 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
             </TabsContent>
 
             <TabsContent value="monthly" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label>Metas Mensais ({currentYear})</Label>
-                <p className="text-sm text-muted-foreground">
-                  Configure as metas específicas para cada mês. A soma das metas mensais será calculada automaticamente.
-                </p>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Metas Mensais ({currentYear})</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Configure as metas específicas para cada mês e como calcular a meta anual.
+                  </p>
+                </div>
+
+                <div className="p-4 border rounded-lg bg-muted/50">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Como calcular a meta anual?</Label>
+                    <Select value={aggregationType} onValueChange={(value: 'sum' | 'average' | 'max' | 'min') => setAggregationType(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sum">Somar todas as metas mensais</SelectItem>
+                        <SelectItem value="average">Calcular a média das metas mensais</SelectItem>
+                        <SelectItem value="max">Usar o maior valor entre as metas</SelectItem>
+                        <SelectItem value="min">Usar o menor valor entre as metas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {aggregationType === 'sum' && 'A meta anual será a soma de todas as metas mensais'}
+                      {aggregationType === 'average' && 'A meta anual será a média de todas as metas mensais'}
+                      {aggregationType === 'max' && 'A meta anual será o maior valor entre as metas mensais'}
+                      {aggregationType === 'min' && 'A meta anual será o menor valor entre as metas mensais'}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -277,7 +322,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Total das Metas Mensais:</span>
                   <span className="text-lg font-bold">
-                    {Object.values(monthlyTargets).reduce((sum, value) => sum + (value || 0), 0).toFixed(2)}
+                    {calculateYearlyTarget(monthlyTargets).toFixed(2)}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">

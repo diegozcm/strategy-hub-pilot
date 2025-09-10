@@ -23,6 +23,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
   const [originalMonthlyActual, setOriginalMonthlyActual] = useState<Record<string, number>>({});
   const [originalMonthlyTargets, setOriginalMonthlyTargets] = useState<Record<string, number>>({});
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
 
   const currentYear = new Date().getFullYear();
   const months = [
@@ -46,6 +47,44 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
     yearOptions.push(year);
   }
 
+  // Função para calcular a meta anual baseada no tipo de agregação
+  const calculateYearlyTarget = (targets: Record<string, number>) => {
+    const values = Object.values(targets).filter(value => value > 0);
+    if (values.length === 0) return 0;
+
+    switch (aggregationType) {
+      case 'sum':
+        return values.reduce((sum, value) => sum + value, 0);
+      case 'average':
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+      case 'max':
+        return Math.max(...values);
+      case 'min':
+        return Math.min(...values);
+      default:
+        return values.reduce((sum, value) => sum + value, 0);
+    }
+  };
+
+  // Função para calcular o valor anual realizado
+  const calculateYearlyActual = (actuals: Record<string, number>) => {
+    const values = Object.values(actuals).filter(value => value > 0);
+    if (values.length === 0) return 0;
+
+    switch (aggregationType) {
+      case 'sum':
+        return values.reduce((sum, value) => sum + value, 0);
+      case 'average':
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+      case 'max':
+        return Math.max(...values);
+      case 'min':
+        return Math.min(...values);
+      default:
+        return values.reduce((sum, value) => sum + value, 0);
+    }
+  };
+
   useEffect(() => {
     if (keyResult.monthly_actual) {
       setMonthlyActual(keyResult.monthly_actual as Record<string, number>);
@@ -66,8 +105,8 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
       console.log('Current monthlyTargets:', monthlyTargets);
       console.log('Current monthlyActual:', monthlyActual);
       
-      // Calcular valor anual atual a partir dos valores mensais
-      const yearlyActual = Object.values(monthlyActual).reduce((sum, value) => sum + (value || 0), 0);
+      // Calcular valor anual atual a partir dos valores mensais usando o tipo de agregação
+      const yearlyActual = calculateYearlyActual(monthlyActual);
 
       // Verificar se houve alteração nos valores mensais ou metas
       const valuesChanged = JSON.stringify(monthlyActual) !== JSON.stringify(originalMonthlyActual);
@@ -76,8 +115,8 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
       console.log('Values changed:', valuesChanged);
       console.log('Targets changed:', targetsChanged);
       
-      // Calcular meta anual a partir das metas mensais
-      const yearlyTarget = Object.values(monthlyTargets).reduce((sum, value) => sum + (value || 0), 0);
+      // Calcular meta anual a partir das metas mensais usando o tipo de agregação
+      const yearlyTarget = calculateYearlyTarget(monthlyTargets);
       
       // Se valores foram alterados, mostrar progresso
       if (valuesChanged && yearlyActual > 0) {
@@ -130,13 +169,13 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
                 <div>
                   <Label className="text-sm font-medium">Meta Anual</Label>
                   <p className="text-lg font-semibold">
-                    {Object.values(monthlyTargets).reduce((sum, value) => sum + (value || 0), 0).toFixed(2)} {keyResult.unit}
+                    {calculateYearlyTarget(monthlyTargets).toFixed(2)} {keyResult.unit}
                   </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Realizado no Ano</Label>
                   <p className="text-lg font-semibold">
-                    {Object.values(monthlyActual).reduce((sum, value) => sum + (value || 0), 0).toFixed(2)} {keyResult.unit}
+                    {calculateYearlyActual(monthlyActual).toFixed(2)} {keyResult.unit}
                   </p>
                 </div>
               </div>
@@ -155,8 +194,8 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
                   <span className="font-medium">% de Atingimento:</span>
                   <span className="text-lg font-bold">
                     {(() => {
-                      const totalTarget = Object.values(monthlyTargets).reduce((sum, value) => sum + (value || 0), 0);
-                      const totalActual = Object.values(monthlyActual).reduce((sum, value) => sum + (value || 0), 0);
+                      const totalTarget = calculateYearlyTarget(monthlyTargets);
+                      const totalActual = calculateYearlyActual(monthlyActual);
                       return totalTarget > 0 ? ((totalActual / totalTarget) * 100).toFixed(1) : '0.0';
                     })()}%
                   </span>
@@ -172,28 +211,53 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
             </TabsContent>
 
             <TabsContent value="targets" className="space-y-4 mt-4">
-              <div className="flex justify-between items-center">
-                <div className="space-y-2">
-                  <Label>Metas Mensais ({selectedYear})</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Defina as metas planejadas para cada mês. A soma das metas mensais será sua meta anual.
-                  </p>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-2">
+                    <Label>Metas Mensais ({selectedYear})</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Defina as metas planejadas para cada mês e como calcular a meta anual.
+                    </p>
+                  </div>
+                  
+                  <div className="w-32">
+                    <Label className="text-sm font-medium">Ano</Label>
+                    <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {yearOptions.map((year) => (
+                          <SelectItem key={year} value={year.toString()}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                
-                <div className="w-32">
-                  <Label className="text-sm font-medium">Ano</Label>
-                  <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {yearOptions.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+
+                <div className="p-4 border rounded-lg bg-muted/50">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Como calcular a meta anual?</Label>
+                    <Select value={aggregationType} onValueChange={(value: 'sum' | 'average' | 'max' | 'min') => setAggregationType(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sum">Somar todas as metas mensais</SelectItem>
+                        <SelectItem value="average">Calcular a média das metas mensais</SelectItem>
+                        <SelectItem value="max">Usar o maior valor entre as metas</SelectItem>
+                        <SelectItem value="min">Usar o menor valor entre as metas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {aggregationType === 'sum' && 'A meta anual será a soma de todas as metas mensais'}
+                      {aggregationType === 'average' && 'A meta anual será a média de todas as metas mensais'}
+                      {aggregationType === 'max' && 'A meta anual será o maior valor entre as metas mensais'}
+                      {aggregationType === 'min' && 'A meta anual será o menor valor entre as metas mensais'}
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -238,7 +302,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Meta Anual Total:</span>
                   <span className="text-lg font-bold">
-                    {Object.values(monthlyTargets).reduce((sum, value) => sum + (value || 0), 0).toFixed(2)} {keyResult.unit}
+                    {calculateYearlyTarget(monthlyTargets).toFixed(2)} {keyResult.unit}
                   </span>
                 </div>
               </div>
@@ -322,7 +386,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave }: EditKey
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Total Realizado no Ano:</span>
                   <span className="text-lg font-bold">
-                    {Object.values(monthlyActual).reduce((sum, value) => sum + (value || 0), 0).toFixed(2)} {keyResult.unit}
+                    {calculateYearlyActual(monthlyActual).toFixed(2)} {keyResult.unit}
                   </span>
                 </div>
               </div>
