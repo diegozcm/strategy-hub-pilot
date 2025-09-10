@@ -42,6 +42,7 @@ export const IndicatorsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [objectiveFilter, setObjectiveFilter] = useState('all');
   
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -535,8 +536,9 @@ export const IndicatorsPage: React.FC = () => {
     const matchesSearch = keyResult.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          keyResult.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPriority = priorityFilter === 'all' || priorityFilter === 'medium'; // Default to medium
+    const matchesObjective = objectiveFilter === 'all' || keyResult.objective_id === objectiveFilter;
     
-    return matchesSearch && matchesPriority;
+    return matchesSearch && matchesPriority && matchesObjective;
   });
 
   // Calculate summary statistics
@@ -649,7 +651,7 @@ export const IndicatorsPage: React.FC = () => {
           <CardTitle className="text-lg">Filtros</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label>Buscar</Label>
               <div className="relative">
@@ -663,6 +665,42 @@ export const IndicatorsPage: React.FC = () => {
               </div>
             </div>
             
+            <div className="space-y-2">
+              <Label>Objetivo Estratégico</Label>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={objectiveFilter === 'all' ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setObjectiveFilter('all')}
+                  className="text-xs px-3 py-1"
+                >
+                  Todos
+                </Button>
+                {objectives.map((objective) => {
+                  const pillar = pillars.find(p => p.id === objective.pillar_id);
+                  return (
+                    <Button
+                      key={objective.id}
+                      variant={objectiveFilter === objective.id ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setObjectiveFilter(objective.id)}
+                      className="text-xs px-3 py-1 flex items-center gap-2"
+                      style={{
+                        borderColor: pillar?.color || '#6B7280',
+                        backgroundColor: objectiveFilter === objective.id ? pillar?.color || '#6B7280' : 'transparent',
+                        color: objectiveFilter === objective.id ? '#ffffff' : pillar?.color || '#6B7280'
+                      }}
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: pillar?.color || '#6B7280' }}
+                      />
+                      {objective.title}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
             
             <div className="space-y-2">
               <Label>Prioridade</Label>
