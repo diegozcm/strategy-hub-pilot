@@ -414,8 +414,46 @@ export const IndicatorsPage: React.FC = () => {
   };
 
   const calculateProgress = (keyResult: KeyResult) => {
-    if (keyResult.target_value === 0) return 0;
-    return Math.min(Math.round((keyResult.current_value / keyResult.target_value) * 100), 100);
+    // Calcular progresso baseado nos valores mensais usando tipo de agregação
+    const monthlyActual = keyResult.monthly_actual as Record<string, number> || {};
+    const monthlyTargets = keyResult.monthly_targets as Record<string, number> || {};
+    
+    const actualValues = Object.values(monthlyActual).filter((value): value is number => typeof value === 'number' && value > 0);
+    const targetValues = Object.values(monthlyTargets).filter((value): value is number => typeof value === 'number' && value > 0);
+    
+    if (actualValues.length === 0 || targetValues.length === 0) {
+      // Fallback para o cálculo antigo se não houver dados mensais
+      if (keyResult.target_value === 0) return 0;
+      return Math.min(Math.round((keyResult.current_value / keyResult.target_value) * 100), 100);
+    }
+    
+    // Calcular valores anuais usando o tipo de agregação
+    const aggregationType = keyResult.aggregation_type || 'sum';
+    
+    let yearlyActual = 0;
+    let yearlyTarget = 0;
+    
+    switch (aggregationType) {
+      case 'sum':
+        yearlyActual = actualValues.reduce((sum, value) => sum + value, 0);
+        yearlyTarget = targetValues.reduce((sum, value) => sum + value, 0);
+        break;
+      case 'average':
+        yearlyActual = actualValues.reduce((sum, value) => sum + value, 0) / actualValues.length;
+        yearlyTarget = targetValues.reduce((sum, value) => sum + value, 0) / targetValues.length;
+        break;
+      case 'max':
+        yearlyActual = Math.max(...actualValues);
+        yearlyTarget = Math.max(...targetValues);
+        break;
+      case 'min':
+        yearlyActual = Math.min(...actualValues);
+        yearlyTarget = Math.min(...targetValues);
+        break;
+    }
+    
+    if (yearlyTarget === 0) return 0;
+    return Math.min(Math.round((yearlyActual / yearlyTarget) * 100), 100);
   };
 
   const getProgressColor = (progress: number) => {
