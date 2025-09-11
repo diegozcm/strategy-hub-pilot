@@ -149,7 +149,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
           return (
             <div key={group.name} className="space-y-2">
               {/* Module Title - Non-clickable with emphasis */}
-              {!collapsed && (
+              {(!collapsed || isMobile) && (
                 <div className="flex items-center px-3 py-2">
                   <group.icon className="h-5 w-5 mr-3 text-foreground" />
                   <span className="text-sm font-semibold text-foreground uppercase tracking-wider">
@@ -208,7 +208,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
         {/* System Admin Section */}
         <PermissionGate requiredRole="admin">
           <div className="pt-4 mt-4 border-t border-border space-y-2">
-            {!collapsed && (
+            {(!collapsed || isMobile) && (
               <div className="flex items-center px-3 py-1">
                 <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
