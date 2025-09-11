@@ -52,7 +52,12 @@ const systemAdminNavigation = [
   { name: 'Usuários Pendentes', href: '/app/admin/users', icon: UserCheck }
 ];
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
   const { hasModuleAccess } = useModules();
@@ -80,22 +85,29 @@ export const Sidebar: React.FC = () => {
   return (
     <>
       {/* Mobile overlay */}
-      {isMobile && !collapsed && (
+      {isMobile && isOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-30"
-          onClick={() => setCollapsed(true)}
+          onClick={onClose}
         />
       )}
       
       <div className={cn(
-        "bg-card border-r border-border flex flex-col transition-all duration-300 min-h-screen",
-        collapsed ? "w-16" : "w-64",
-        isMobile && "fixed z-40 h-full"
+        "bg-card border-r border-border flex flex-col transition-all duration-300",
+        isMobile ? (
+          // Mobile: fixed sidebar that slides in/out
+          `fixed z-40 h-full w-64 transition-transform duration-300 ${
+            isOpen ? 'translate-x-0' : '-translate-x-full'
+          }`
+        ) : (
+          // Desktop: normal collapsible sidebar
+          `min-h-screen ${collapsed ? 'w-16' : 'w-64'}`
+        )
       )}>
       {/* Header */}
       <div className="px-4 lg:px-6 py-4 border-b border-border shrink-0">
         <div className="flex items-center justify-between">
-          {!collapsed && (
+          {(!collapsed || isMobile) && (
             <div className="flex items-center space-x-2">
               <div className="bg-gradient-to-r from-primary to-primary/80 p-2 rounded-lg">
                 <Zap className="h-6 w-6 text-primary-foreground" />
@@ -106,9 +118,11 @@ export const Sidebar: React.FC = () => {
               </div>
             </div>
           )}
-          <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)} className="ml-auto">
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
+          {!isMobile && (
+            <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)} className="ml-auto">
+              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+          )}
         </div>
       </div>
 

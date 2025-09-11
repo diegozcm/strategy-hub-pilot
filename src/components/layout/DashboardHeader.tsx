@@ -1,8 +1,9 @@
 
 import React from 'react';
-import { Bell, User, Settings, LogOut, Brain } from 'lucide-react';
+import { Bell, User, Settings, LogOut, Brain, Menu } from 'lucide-react';
 import { NavLink, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,8 +14,13 @@ import {
 import { useAuth } from '@/hooks/useMultiTenant';
 import { CompanyDisplay } from '@/components/CompanyDisplay';
 
-export const DashboardHeader: React.FC = () => {
+interface DashboardHeaderProps {
+  onToggleSidebar?: () => void;
+}
+
+export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSidebar }) => {
   const { user, profile, signOut } = useAuth();
+  const isMobile = useIsMobile();
 
   const handleSignOut = async () => {
     console.log('🚪 DashboardHeader: Starting logout process');
@@ -23,7 +29,20 @@ export const DashboardHeader: React.FC = () => {
 
   return (
     <header className="bg-card border-b border-border px-4 lg:px-6 py-4">
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-between">
+        {/* Mobile hamburger menu */}
+        {isMobile && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggleSidebar}
+            className="flex items-center justify-center"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
+        
+        <div className="flex items-center justify-end flex-1">
         <div className="flex items-center space-x-3">
           {/* Company Display */}
           <CompanyDisplay />
@@ -67,6 +86,7 @@ export const DashboardHeader: React.FC = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        </div>
         </div>
       </div>
     </header>
