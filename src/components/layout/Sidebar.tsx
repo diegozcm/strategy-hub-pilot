@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { BarChart3, Target, Briefcase, Users, Settings, ChevronLeft, ChevronRight, Zap, TrendingUp, Activity, Brain, Map, Building2, UserCheck, Shield, Building, User, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { PermissionGate } from '@/components/PermissionGate';
 import { useModules } from '@/hooks/useModules';
 import { useStartupProfile } from '@/hooks/useStartupProfile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const menuStructure = [
   {
@@ -52,10 +53,16 @@ const systemAdminNavigation = [
 ];
 
 export const Sidebar: React.FC = () => {
+  const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
   const { hasModuleAccess } = useModules();
   const { isStartup, isMentor, hasProfile } = useStartupProfile();
   const location = useLocation();
+
+  // Initialize collapsed state based on mobile
+  useEffect(() => {
+    setCollapsed(isMobile);
+  }, [isMobile]);
 
   // Helper function to check if a route is active
   const isRouteActive = (href: string) => {
@@ -71,9 +78,22 @@ export const Sidebar: React.FC = () => {
   // Force cache refresh - refactored sidebar structure
 
   return (
-    <div className={cn("bg-card border-r border-border flex flex-col transition-all duration-300", collapsed ? "w-16" : "w-64")}>
+    <>
+      {/* Mobile overlay */}
+      {isMobile && !collapsed && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30"
+          onClick={() => setCollapsed(true)}
+        />
+      )}
+      
+      <div className={cn(
+        "bg-card border-r border-border flex flex-col transition-all duration-300 min-h-screen",
+        collapsed ? "w-16" : "w-64",
+        isMobile && "fixed z-40 h-full"
+      )}>
       {/* Header */}
-      <div className="px-4 lg:px-6 py-4 border-b border-border">
+      <div className="px-4 lg:px-6 py-4 border-b border-border shrink-0">
         <div className="flex items-center justify-between">
           {!collapsed && (
             <div className="flex items-center space-x-2">
@@ -93,7 +113,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-4">
+      <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
         {menuStructure.map((group) => {
           // Check if user has access to at least one item in this group
           const hasAccessToGroup = group.items.some(item => {
@@ -203,5 +223,6 @@ export const Sidebar: React.FC = () => {
         </PermissionGate>
       </nav>
     </div>
+    </>
   );
 };
