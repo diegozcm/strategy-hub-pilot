@@ -195,8 +195,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                           : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
                       )}
                     >
-                      <item.icon className={cn("h-4 w-4", !collapsed && "mr-3")} />
-                      {!collapsed && <span className="text-sm">{item.name}</span>}
+                      <item.icon className="h-4 w-4 mr-3" />
+                      <span className="text-sm">{item.name}</span>
                     </NavLink>
                   );
                 })}
@@ -228,8 +228,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                     collapsed && "justify-center"
                   )}
                 >
-                  <item.icon className={cn("h-5 w-5", !collapsed && "mr-3")} />
-                  {!collapsed && <span className="text-sm">{item.name}</span>}
+                  <item.icon className="h-5 w-5 mr-3" />
+                  <span className="text-sm">{item.name}</span>
                 </NavLink>
               ))}
             </div>
