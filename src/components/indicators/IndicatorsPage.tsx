@@ -115,11 +115,21 @@ export const IndicatorsPage: React.FC = () => {
         setPillars(pillarsData || []);
       }
 
-      // Load key results
+      // Load key results - filter by company through strategic objectives and plans
       const { data: keyResultsData, error: keyResultsError } = await supabase
         .from('key_results')
-        .select('*')
-        .eq('owner_id', user?.id)
+        .select(`
+          *,
+          strategic_objectives!inner (
+            id,
+            plan_id,
+            strategic_plans!inner (
+              id,
+              company_id
+            )
+          )
+        `)
+        .eq('strategic_objectives.strategic_plans.company_id', authCompany.id)
         .order('created_at', { ascending: false });
 
       if (keyResultsError) throw keyResultsError;
