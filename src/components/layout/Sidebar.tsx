@@ -187,8 +187,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                       to={item.href} 
                       className={cn(
                         "flex items-center py-2 rounded-lg transition-colors",
-                        // Indentation for sub-items
-                        collapsed ? "px-3 justify-center" : "px-3 ml-4",
+                        // Indentation for sub-items - always left-aligned on mobile
+                        isMobile ? "px-3 ml-4" : (collapsed ? "px-3 justify-center" : "px-3 ml-4"),
                         // Color scheme: muted by default, accent on hover/active
                         isActive 
                           ? "bg-accent text-accent-foreground font-medium" 
