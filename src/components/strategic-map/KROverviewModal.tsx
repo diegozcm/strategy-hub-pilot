@@ -87,6 +87,15 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit }: KROverview
           <Badge variant="outline">
             {getAggregationTypeText(aggregationType)}
           </Badge>
+          {keyResult.unit && (
+            <Badge variant="secondary">
+              <Target className="w-3 h-3 mr-1" />
+              {keyResult.unit}
+            </Badge>
+          )}
+          <Badge variant="secondary">
+            Mensal
+          </Badge>
           {keyResult.responsible && (
             <Badge variant="secondary">
               <User className="w-3 h-3 mr-1" />
@@ -99,6 +108,12 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit }: KROverview
               {new Date(keyResult.due_date).toLocaleDateString('pt-BR')}
             </Badge>
           )}
+          <Badge variant="secondary">
+            Atualizado: {new Date(keyResult.updated_at).toLocaleDateString('pt-BR')}
+          </Badge>
+          <Badge variant={achievementPercentage >= 100 ? "default" : achievementPercentage >= 80 ? "secondary" : "destructive"}>
+            {achievementPercentage >= 100 ? "Meta alcançada" : achievementPercentage >= 80 ? "No caminho" : "Atenção"}
+          </Badge>
         </div>
 
         {/* Description */}
@@ -129,55 +144,6 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit }: KROverview
           unit={keyResult.unit || ''}
           selectedYear={new Date().getFullYear()}
         />
-
-        {/* Additional Info */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Target className="w-5 h-5" />
-                Informações do Indicador
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Unidade:</span>
-                <span className="text-sm font-medium">{keyResult.unit}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Frequência:</span>
-                <span className="text-sm font-medium">Mensal</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Tipo de Cálculo:</span>
-                <span className="text-sm font-medium">{getAggregationTypeText(aggregationType)}</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Status Atual
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Última atualização:</span>
-                <span className="text-sm font-medium">
-                  {new Date(keyResult.updated_at).toLocaleDateString('pt-BR')}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Status:</span>
-                <Badge variant={achievementPercentage >= 100 ? "default" : achievementPercentage >= 80 ? "secondary" : "destructive"}>
-                  {achievementPercentage >= 100 ? "Meta alcançada" : achievementPercentage >= 80 ? "No caminho" : "Atenção"}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Action Buttons */}
         <div className="flex justify-between items-center pt-4 border-t">
