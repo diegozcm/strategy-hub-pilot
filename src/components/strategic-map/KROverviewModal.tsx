@@ -1,0 +1,195 @@
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { KeyResult } from '@/types/strategic-map';
+import { KeyResultMetrics } from './KeyResultMetrics';
+import { KeyResultChart } from './KeyResultChart';
+import { Edit, Calendar, User, Target, TrendingUp } from 'lucide-react';
+
+interface KROverviewModalProps {
+  keyResult: KeyResult | null;
+  open: boolean;
+  onClose: () => void;
+  onEdit: () => void;
+}
+
+export const KROverviewModal = ({ keyResult, open, onClose, onEdit }: KROverviewModalProps) => {
+  if (!keyResult) return null;
+
+  // Calculate values using the same logic as EditKeyResultModal
+  const monthlyTargets = keyResult.monthly_targets as Record<string, number> || {};
+  const monthlyActual = keyResult.monthly_actual as Record<string, number> || {};
+  const aggregationType = keyResult.aggregation_type || 'sum';
+  
+  const calculateYearlyTarget = (targets: Record<string, number>) => {
+    const values = Object.values(targets).filter(value => value > 0);
+    if (values.length === 0) return 0;
+
+    switch (aggregationType) {
+      case 'sum':
+        return values.reduce((sum, value) => sum + value, 0);
+      case 'average':
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+      case 'max':
+        return Math.max(...values);
+      case 'min':
+        return Math.min(...values);
+      default:
+        return values.reduce((sum, value) => sum + value, 0);
+    }
+  };
+
+  const calculateYearlyActual = (actuals: Record<string, number>) => {
+    const values = Object.values(actuals).filter(value => value > 0);
+    if (values.length === 0) return 0;
+
+    switch (aggregationType) {
+      case 'sum':
+        return values.reduce((sum, value) => sum + value, 0);
+      case 'average':
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+      case 'max':
+        return Math.max(...values);
+      case 'min':
+        return Math.min(...values);
+      default:
+        return values.reduce((sum, value) => sum + value, 0);
+    }
+  };
+
+  const yearlyTarget = calculateYearlyTarget(monthlyTargets);
+  const yearlyActual = calculateYearlyActual(monthlyActual);
+  const achievementPercentage = yearlyTarget > 0 ? (yearlyActual / yearlyTarget) * 100 : 0;
+
+  const getAggregationTypeText = (type: string) => {
+    switch (type) {
+      case 'sum': return 'Soma';
+      case 'average': return 'Média';
+      case 'max': return 'Maior valor';
+      case 'min': return 'Menor valor';
+      default: return 'Soma';
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[1000px] max-h-[95vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-2xl">{keyResult.title}</DialogTitle>
+          <DialogDescription>
+            Visão geral completa do resultado-chave e evolução dos indicadores
+          </DialogDescription>
+        </DialogHeader>
+        
+        {/* Header Info */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <Badge variant="outline">
+            {getAggregationTypeText(aggregationType)}
+          </Badge>
+          {keyResult.responsible && (
+            <Badge variant="secondary">
+              <User className="w-3 h-3 mr-1" />
+              {keyResult.responsible}
+            </Badge>
+          )}
+          {keyResult.due_date && (
+            <Badge variant="secondary">
+              <Calendar className="w-3 h-3 mr-1" />
+              {new Date(keyResult.due_date).toLocaleDateString('pt-BR')}
+            </Badge>
+          )}
+        </div>
+
+        {/* Description */}
+        {keyResult.description && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Descrição</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">{keyResult.description}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Key Metrics */}
+        <KeyResultMetrics
+          yearlyTarget={yearlyTarget}
+          yearlyActual={yearlyActual}
+          unit={keyResult.unit || ''}
+          achievementPercentage={achievementPercentage}
+          currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+        />
+
+        {/* Evolution Chart */}
+        <KeyResultChart
+          monthlyTargets={monthlyTargets}
+          monthlyActual={monthlyActual}
+          unit={keyResult.unit || ''}
+          selectedYear={new Date().getFullYear()}
+        />
+
+        {/* Additional Info */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Target className="w-5 h-5" />
+                Informações do Indicador
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Unidade:</span>
+                <span className="text-sm font-medium">{keyResult.unit}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Frequência:</span>
+                <span className="text-sm font-medium">Mensal</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Tipo de Cálculo:</span>
+                <span className="text-sm font-medium">{getAggregationTypeText(aggregationType)}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Status Atual
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Última atualização:</span>
+                <span className="text-sm font-medium">
+                  {new Date(keyResult.updated_at).toLocaleDateString('pt-BR')}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Status:</span>
+                <Badge variant={achievementPercentage >= 100 ? "default" : achievementPercentage >= 80 ? "secondary" : "destructive"}>
+                  {achievementPercentage >= 100 ? "Meta alcançada" : achievementPercentage >= 80 ? "No caminho" : "Atenção"}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-between items-center pt-4 border-t">
+          <Button variant="outline" onClick={onClose}>
+            Fechar
+          </Button>
+          <Button onClick={onEdit} className="flex items-center gap-2">
+            <Edit className="w-4 h-4" />
+            Editar Informações do KR
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};

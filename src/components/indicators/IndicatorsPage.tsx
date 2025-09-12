@@ -17,7 +17,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
-import { EditKeyResultModal } from '@/components/strategic-map/EditKeyResultModal';
+import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
+import { KREditModal } from '@/components/strategic-map/KREditModal';
 import { KeyResult, StrategicObjective } from '@/types/strategic-map';
 
 interface KeyResultValue {
@@ -45,12 +46,10 @@ export const IndicatorsPage: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   
-  // Modal states
+  // Modal states - Simplified to only 2 modals
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isEditKeyResultModalOpen, setIsEditKeyResultModalOpen] = useState(false);
+  const [isKROverviewModalOpen, setIsKROverviewModalOpen] = useState(false);
+  const [isKREditModalOpen, setIsKREditModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
   
@@ -61,19 +60,6 @@ export const IndicatorsPage: React.FC = () => {
     unit: '%',
     priority: 'medium',
     objective_id: 'none'
-  });
-
-  const [editData, setEditData] = useState({
-    title: '',
-    description: '',
-    unit: '',
-    priority: '',
-    objective_id: ''
-  });
-
-  const [updateData, setUpdateData] = useState({
-    current_value: '',
-    comments: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -242,111 +228,6 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
-  // Update value
-  const handleUpdateValue = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !selectedKeyResult) return;
-
-    try {
-      setIsSubmitting(true);
-      
-      const newValue = parseFloat(updateData.current_value);
-      
-      // Update key result current value
-      const updatePayload: any = {
-        current_value: newValue,
-      };
-
-      const { error: updateError } = await supabase
-        .from('key_results')
-        .update(updatePayload)
-        .eq('id', selectedKeyResult.id);
-
-      if (updateError) throw updateError;
-
-      // Create value record
-      const { error: valueError } = await supabase
-        .from('key_result_values')
-        .insert([{
-          key_result_id: selectedKeyResult.id,
-          value: newValue,
-          period_date: new Date().toISOString().split('T')[0],
-          comments: updateData.comments,
-          recorded_by: user.id
-        }]);
-
-      if (valueError) throw valueError;
-
-      // Refresh data
-      await loadData();
-      
-      setIsUpdateModalOpen(false);
-      setUpdateData({ current_value: '', comments: '' });
-      
-      toast({
-        title: "Sucesso",
-        description: "Valor atualizado com sucesso!",
-      });
-    } catch (error) {
-      console.error('Error updating value:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar valor. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Edit key result (basic info)
-  const handleEditKeyResult = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !selectedKeyResult) return;
-
-    try {
-      setIsSubmitting(true);
-      
-      const { data, error } = await supabase
-        .from('key_results')
-        .update({
-          title: editData.title,
-          description: editData.description,
-          unit: editData.unit,
-          frequency: 'monthly',
-          objective_id: editData.objective_id === 'none' ? null : editData.objective_id
-        })
-        .eq('id', selectedKeyResult.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Cast aggregation_type to the correct union type
-      const processedData = {
-        ...data,
-        aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum'
-      };
-
-      setKeyResults(prev => prev.map(kr => kr.id === selectedKeyResult.id ? processedData : kr));
-      setIsEditModalOpen(false);
-      
-      toast({
-        title: "Sucesso",
-        description: "Resultado-chave atualizado com sucesso!",
-      });
-    } catch (error) {
-      console.error('Error updating key result:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar resultado-chave. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   // Delete key result
   const handleDeleteKeyResult = async () => {
     if (!selectedKeyResult) return;
@@ -393,22 +274,21 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
-  // Modal handlers
-  const openEditModal = (keyResult: KeyResult) => {
+  // Modal handlers - Simplified to 2 modals
+  const openKROverviewModal = (keyResult: KeyResult) => {
     setSelectedKeyResult(keyResult);
-    setEditData({
-      title: keyResult.title,
-      description: keyResult.description || '',
-      unit: keyResult.unit,
-      priority: 'medium', // Default priority since not in KeyResult interface
-      objective_id: keyResult.objective_id || 'none'
-    });
-    setIsEditModalOpen(true);
+    setIsKROverviewModalOpen(true);
   };
 
-  const openEditKeyResultModal = (keyResult: KeyResult) => {
+  const openKREditModal = (keyResult: KeyResult) => {
     setSelectedKeyResult(keyResult);
-    setIsEditKeyResultModalOpen(true);
+    setIsKREditModalOpen(true);
+  };
+
+  const closeAllModals = () => {
+    setIsKROverviewModalOpen(false);
+    setIsKREditModalOpen(false);
+    setSelectedKeyResult(null);
   };
 
   // Get strategic pillar info for a key result
@@ -472,57 +352,6 @@ export const IndicatorsPage: React.FC = () => {
     if (progress >= 90) return 'text-green-600';
     if (progress >= 70) return 'text-yellow-600';
     return 'text-red-600';
-  };
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case 'financial': return '💰';
-      case 'operational': return '⚙️';
-      case 'customer': return '👥';
-      case 'people': return '👨‍💼';
-      case 'quality': return '⭐';
-      default: return '📊';
-    }
-  };
-
-  const getCategoryText = (category: string) => {
-    switch (category) {
-      case 'financial': return 'Financeiro';
-      case 'operational': return 'Operacional';
-      case 'customer': return 'Cliente';
-      case 'people': return 'Pessoas';
-      case 'quality': return 'Qualidade';
-      default: return category || 'Operacional';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'destructive';
-      case 'medium': return 'secondary';
-      case 'low': return 'outline';
-      default: return 'secondary';
-    }
-  };
-
-  const getPriorityText = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'Alta';
-      case 'medium': return 'Média';
-      case 'low': return 'Baixa';
-      default: return priority || 'Média';
-    }
-  };
-
-  const getFrequencyText = (frequency: string) => {
-    switch (frequency) {
-      case 'daily': return 'Diário';
-      case 'weekly': return 'Semanal';
-      case 'monthly': return 'Mensal';
-      case 'quarterly': return 'Trimestral';
-      case 'yearly': return 'Anual';
-      default: return frequency || 'Mensal';
-    }
   };
 
   const getAggregationTypeText = (aggregationType: string) => {
@@ -761,7 +590,7 @@ export const IndicatorsPage: React.FC = () => {
             <Card 
               key={keyResult.id} 
               className="h-full cursor-pointer hover:shadow-md transition-shadow" 
-              onClick={() => openEditKeyResultModal(keyResult)}
+              onClick={() => openKROverviewModal(keyResult)}
             >
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -786,38 +615,29 @@ export const IndicatorsPage: React.FC = () => {
                     )}
                   </div>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => openEditKeyResultModal(keyResult)}>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        openKREditModal(keyResult);
+                      }}>
                         <Edit className="w-4 h-4 mr-2" />
-                        Atualizar Valores Mensais
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => openEditModal(keyResult)}>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Editar Resultado-Chave
+                        Editar KR
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => {
-                          setSelectedKeyResult(keyResult);
-                          setIsDetailsModalOpen(true);
-                        }}
-                      >
-                        <BarChart3 className="w-4 h-4 mr-2" />
-                        Ver Detalhes
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedKeyResult(keyResult);
                           setIsDeleteConfirmOpen(true);
                         }}
                         className="text-red-600"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
-                        Excluir
+                        Excluir KR
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -927,44 +747,30 @@ export const IndicatorsPage: React.FC = () => {
                   <SelectContent>
                     <SelectItem value="%">% (Percentual)</SelectItem>
                     <SelectItem value="R$">R$ (Real)</SelectItem>
-                    <SelectItem value="number">Número</SelectItem>
+                    <SelectItem value="un">Unidades</SelectItem>
+                    <SelectItem value="h">Horas</SelectItem>
                     <SelectItem value="dias">Dias</SelectItem>
-                    <SelectItem value="score">Score</SelectItem>
+                    <SelectItem value="pontos">Pontos</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="objective">Objetivo Estratégico</Label>
-                <Select value={formData.objective_id} onValueChange={(value) => setFormData({...formData, objective_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um objetivo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum objetivo</SelectItem>
-                    {objectives.map((objective) => (
-                      <SelectItem key={objective.id} value={objective.id}>
-                        {objective.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="priority">Prioridade</Label>
-                <Select value={formData.priority} onValueChange={(value) => setFormData({...formData, priority: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Prioridade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="high">Alta</SelectItem>
-                    <SelectItem value="medium">Média</SelectItem>
-                    <SelectItem value="low">Baixa</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="objective">Objetivo Estratégico</Label>
+              <Select value={formData.objective_id} onValueChange={(value) => setFormData({...formData, objective_id: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um objetivo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum objetivo</SelectItem>
+                  {objectives.map((objective) => (
+                    <SelectItem key={objective.id} value={objective.id}>
+                      {objective.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <DialogFooter>
@@ -979,386 +785,40 @@ export const IndicatorsPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Update Value Modal */}
-      <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Atualizar Valor</DialogTitle>
-            <DialogDescription>
-              Atualize o valor atual do resultado-chave: {selectedKeyResult?.title}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleUpdateValue} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="current_value">Novo Valor *</Label>
-              <Input
-                id="current_value"
-                type="number"
-                step="0.01"
-                placeholder="Digite o novo valor"
-                value={updateData.current_value}
-                onChange={(e) => setUpdateData({...updateData, current_value: e.target.value})}
-                required
-              />
-              <p className="text-sm text-muted-foreground">
-                Meta: {selectedKeyResult?.target_value} {selectedKeyResult?.unit}
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="comments">Comentários</Label>
-              <Textarea
-                id="comments"
-                placeholder="Adicione comentários sobre esta atualização (opcional)"
-                value={updateData.comments}
-                onChange={(e) => setUpdateData({...updateData, comments: e.target.value})}
-                rows={3}
-              />
-            </div>
+      {/* KR Overview Modal - Modal 1 */}
+      <KROverviewModal
+        keyResult={selectedKeyResult}
+        open={isKROverviewModalOpen}
+        onClose={() => setIsKROverviewModalOpen(false)}
+        onEdit={() => {
+          setIsKROverviewModalOpen(false);
+          setIsKREditModalOpen(true);
+        }}
+      />
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsUpdateModalOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Atualizando...' : 'Atualizar Valor'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      {/* KR Edit Modal - Modal 2 */}
+      <KREditModal
+        keyResult={selectedKeyResult}
+        open={isKREditModalOpen}
+        onClose={() => setIsKREditModalOpen(false)}
+        onSave={async (keyResultData) => {
+          const { error } = await supabase
+            .from('key_results')
+            .update(keyResultData)
+            .eq('id', keyResultData.id);
 
-      {/* Details Modal */}
-      <Dialog open={isDetailsModalOpen} onOpenChange={setIsDetailsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div
-                className="w-4 h-4 rounded-full"
-                style={{ backgroundColor: selectedKeyResult ? getKeyResultPillar(selectedKeyResult).color : '#6B7280' }}
-              />
-              {selectedKeyResult?.title}
-            </DialogTitle>
-            <DialogDescription>
-              Histórico completo e estatísticas detalhadas do resultado-chave
-            </DialogDescription>
-          </DialogHeader>
+          if (error) throw error;
+
+          // Reload data to reflect changes
+          await loadData();
           
-          {selectedKeyResult && (
-            <div className="space-y-6">
-              {/* Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Progresso Atual</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-primary">
-                      {calculateProgress(selectedKeyResult)}%
-                    </div>
-                    <Progress value={calculateProgress(selectedKeyResult)} className="mt-2" />
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Valor Atual</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {selectedKeyResult.current_value.toLocaleString('pt-BR')} {selectedKeyResult.unit}
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Meta: {selectedKeyResult.target_value.toLocaleString('pt-BR')} {selectedKeyResult.unit}
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Progresso</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {calculateProgress(selectedKeyResult)}%
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Meta atingida
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Chart */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Evolução do Resultado-Chave</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {(() => {
-                    const history = getKeyResultHistory(selectedKeyResult.id);
-                    if (history.length === 0) {
-                      return (
-                        <div className="text-center py-8 text-muted-foreground">
-                          Nenhum histórico disponível ainda.
-                        </div>
-                      );
-                    }
-
-                    const chartData = history.map(entry => ({
-                      date: new Date(entry.period_date).toLocaleDateString('pt-BR', { month: 'short', day: 'numeric' }),
-                      value: entry.value,
-                      target: selectedKeyResult.target_value
-                    }));
-
-                    return (
-                      <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="date" />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Line type="monotone" dataKey="value" stroke="#8884d8" name="Valor Atual" />
-                          <Line type="monotone" dataKey="target" stroke="#82ca9d" strokeDasharray="5 5" name="Meta" />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    );
-                  })()}
-                </CardContent>
-              </Card>
-
-              {/* History and Statistics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Histórico de Atualizações</CardTitle>
-                  </CardHeader>
-                  <CardContent className="max-h-96 overflow-y-auto">
-                    <div className="space-y-3">
-                      {getKeyResultHistory(selectedKeyResult.id).map((update, index) => (
-                        <div key={update.id} className="flex items-start space-x-3 p-3 rounded-lg border">
-                          <div className="flex-shrink-0">
-                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                              <span className="text-xs font-medium text-primary">{index + 1}</span>
-                            </div>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <p className="font-medium">{update.value.toLocaleString('pt-BR')} {selectedKeyResult.unit}</p>
-                              <div className="flex items-center space-x-2">
-                                {update.value > (getKeyResultHistory(selectedKeyResult.id)[index + 1]?.value || 0) ? (
-                                  <TrendingUp className="w-4 h-4 text-green-600" />
-                                ) : (
-                                  <TrendingDown className="w-4 h-4 text-red-600" />
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between mt-1">
-                              <Badge variant="outline" className="text-xs">
-                                {new Date(update.period_date).toLocaleDateString('pt-BR')}
-                              </Badge>
-                              <Badge variant="outline">
-                                {update.comments && update.comments.length > 20 
-                                  ? `${update.comments.slice(0, 17)}...` 
-                                  : update.comments || 'Sem comentários'
-                                }
-                              </Badge>
-                            </div>
-                            {update.comments && (
-                              <p className="text-sm text-muted-foreground mt-1">{update.comments}</p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                      {getKeyResultHistory(selectedKeyResult.id).length === 0 && (
-                        <p className="text-center text-muted-foreground py-4">
-                          Nenhuma atualização registrada ainda.
-                        </p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Estatísticas</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {(() => {
-                        const history = getKeyResultHistory(selectedKeyResult.id);
-                        const values = history.map(h => h.value);
-                        const bestValue = values.length > 0 ? Math.max(...values) : 0;
-                        const worstValue = values.length > 0 ? Math.min(...values) : 0;
-                        const averageValue = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 0;
-                        const trend = values.length >= 2 ? 
-                          (values[values.length - 1] > values[values.length - 2] ? 'up' : 
-                           values[values.length - 1] < values[values.length - 2] ? 'down' : 'stable') : 'stable';
-                        
-                        return (
-                          <>
-                            <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">Melhor Resultado:</span>
-                              <span className="font-semibold text-green-600">
-                                {bestValue.toLocaleString('pt-BR')} {selectedKeyResult.unit}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">Pior Resultado:</span>
-                              <span className="font-semibold text-red-600">
-                                {worstValue.toLocaleString('pt-BR')} {selectedKeyResult.unit}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">Média:</span>
-                              <span className="font-semibold">
-                                {averageValue.toLocaleString('pt-BR')} {selectedKeyResult.unit}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">Tendência:</span>
-                              <Badge variant={trend === 'up' ? 'default' : trend === 'down' ? 'destructive' : 'secondary'}>
-                                {trend === 'up' ? (
-                                  <>
-                                    <TrendingUp className="w-3 h-3 mr-1" />
-                                    Crescente
-                                  </>
-                                ) : trend === 'down' ? (
-                                  <>
-                                    <TrendingDown className="w-3 h-3 mr-1" />
-                                    Decrescente
-                                  </>
-                                ) : (
-                                  <>
-                                    <Target className="w-3 h-3 mr-1" />
-                                    Estável
-                                  </>
-                                )}
-                              </Badge>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">Total de Registros:</span>
-                              <span className="font-semibold">{history.length}</span>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Modal */}
-      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Editar Resultado-Chave</DialogTitle>
-            <DialogDescription>
-              Edite as informações do resultado-chave: {selectedKeyResult?.title}
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleEditKeyResult} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit_title">Nome do Resultado-Chave *</Label>
-                <Input
-                  id="edit_title"
-                  placeholder="Ex: Taxa de Conversão"
-                  value={editData.title}
-                  onChange={(e) => setEditData({...editData, title: e.target.value})}
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="edit_description">Descrição</Label>
-              <Textarea
-                id="edit_description"
-                placeholder="Descreva o que este resultado-chave mede..."
-                value={editData.description}
-                onChange={(e) => setEditData({...editData, description: e.target.value})}
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit_target_value">Meta Anual *</Label>
-                <div className="px-3 py-2 border rounded-md bg-muted">
-                  <span className="text-sm font-medium">
-                    {selectedKeyResult?.yearly_target || selectedKeyResult?.target_value || 0} {selectedKeyResult?.unit}
-                  </span>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Calculada automaticamente a partir das metas mensais
-                  </p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit_unit">Unidade *</Label>
-                <Select value={editData.unit} onValueChange={(value) => setEditData({...editData, unit: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Unidade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="%">% (Percentual)</SelectItem>
-                    <SelectItem value="R$">R$ (Real)</SelectItem>
-                    <SelectItem value="number">Número</SelectItem>
-                    <SelectItem value="dias">Dias</SelectItem>
-                    <SelectItem value="score">Score</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit_objective">Objetivo Estratégico</Label>
-                <Select value={editData.objective_id} onValueChange={(value) => setEditData({...editData, objective_id: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um objetivo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum objetivo</SelectItem>
-                    {objectives.map((objective) => (
-                      <SelectItem key={objective.id} value={objective.id}>
-                        {objective.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit_priority">Prioridade</Label>
-                <Select value={editData.priority} onValueChange={(value) => setEditData({...editData, priority: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Prioridade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="high">Alta</SelectItem>
-                    <SelectItem value="medium">Média</SelectItem>
-                    <SelectItem value="low">Baixa</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsEditModalOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+          toast({
+            title: "Sucesso",
+            description: "Resultado-chave atualizado com sucesso!",
+          });
+        }}
+        objectives={objectives}
+      />
 
       {/* Delete Confirmation Modal */}
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
@@ -1382,60 +842,6 @@ export const IndicatorsPage: React.FC = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Edit Key Result Modal with Monthly Values */}
-      {selectedKeyResult && (
-        <EditKeyResultModal
-          keyResult={selectedKeyResult}
-          open={isEditKeyResultModalOpen}
-          onClose={() => setIsEditKeyResultModalOpen(false)}
-          onSave={async (keyResultData) => {
-            if (!user || !selectedKeyResult) return;
-
-            try {
-              console.log('Saving key result data:', keyResultData);
-              
-              const { data, error } = await supabase
-                .from('key_results')
-                .update(keyResultData)
-                .eq('id', selectedKeyResult.id)
-                .select();
-
-              if (error) throw error;
-
-              console.log('Key result updated successfully:', data);
-
-              // Refresh data
-              await loadData();
-              
-              toast({
-                title: "Sucesso",
-                description: "Resultado-chave atualizado com sucesso!",
-              });
-            } catch (error) {
-              console.error('Error updating key result:', error);
-              toast({
-                title: "Erro",
-                description: "Erro ao atualizar resultado-chave",
-                variant: "destructive",
-              });
-              throw error;
-            }
-          }}
-          onAggregationTypeChange={(keyResultId, newType) => {
-            // Atualizar o selectedKeyResult com o novo aggregation_type
-            setSelectedKeyResult(prev => prev ? {
-              ...prev,
-              aggregation_type: newType
-            } : null);
-            
-            // Atualizar também a lista de keyResults
-            setKeyResults(prev => prev.map(kr => 
-              kr.id === keyResultId ? { ...kr, aggregation_type: newType } : kr
-            ));
-          }}
-        />
-      )}
     </div>
   );
 };
