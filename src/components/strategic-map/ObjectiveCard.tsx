@@ -9,6 +9,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { StrategicObjective, KeyResult } from '@/types/strategic-map';
 import { ResultadoChaveMiniCard } from './ResultadoChaveMiniCard';
 import { AddResultadoChaveModal } from './AddResultadoChaveModal';
+import { EditKeyResultModal } from './EditKeyResultModal';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface ObjectiveCardProps {
   objective: StrategicObjective;
@@ -39,12 +42,51 @@ const calculateObjectiveProgress = (keyResults: KeyResult[]) => {
 
 export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onAddResultadoChave }: ObjectiveCardProps) => {
   const [showResultadoChaveForm, setShowResultadoChaveForm] = useState(false);
+  const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
+  const [isEditKeyResultModalOpen, setIsEditKeyResultModalOpen] = useState(false);
+  const { toast } = useToast();
   const progressPercentage = calculateObjectiveProgress(keyResults);
   
   const handleAddResultadoChave = async (resultadoChaveData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => {
     if (onAddResultadoChave) {
       await onAddResultadoChave(resultadoChaveData);
       setShowResultadoChaveForm(false);
+    }
+  };
+
+  const handleEditKeyResult = (keyResult: KeyResult) => {
+    setSelectedKeyResult(keyResult);
+    setIsEditKeyResultModalOpen(true);
+  };
+
+  const handleUpdateKeyResult = async (keyResultData: Partial<KeyResult>) => {
+    try {
+      const { error } = await supabase
+        .from('key_results')
+        .update(keyResultData)
+        .eq('id', selectedKeyResult?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Resultado-chave atualizado com sucesso!",
+      });
+
+      // Refresh parent data if callback exists
+      if (onAddResultadoChave) {
+        // We'll trigger a refresh by calling the parent's refresh mechanism
+        // This is a bit of a hack, but works for now
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Error updating key result:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar resultado-chave. Tente novamente.",
+        variant: "destructive",
+      });
+      throw error;
     }
   };
 
@@ -165,7 +207,11 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
               ) : (
                 <div className="space-y-2">
                   {keyResults.map((kr) => (
-                    <ResultadoChaveMiniCard key={kr.id} resultadoChave={kr} />
+                    <ResultadoChaveMiniCard 
+                      key={kr.id} 
+                      resultadoChave={kr} 
+                      onEdit={handleEditKeyResult}
+                    />
                   ))}
                 </div>
               )}
@@ -181,6 +227,19 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
           open={showResultadoChaveForm}
           onClose={() => setShowResultadoChaveForm(false)}
           onSave={handleAddResultadoChave}
+        />
+      )}
+
+      {/* Modal para Editar Resultado-Chave */}
+      {selectedKeyResult && (
+        <EditKeyResultModal
+          keyResult={selectedKeyResult}
+          open={isEditKeyResultModalOpen}
+          onClose={() => {
+            setIsEditKeyResultModalOpen(false);
+            setSelectedKeyResult(null);
+          }}
+          onSave={handleUpdateKeyResult}
         />
       )}
     </>

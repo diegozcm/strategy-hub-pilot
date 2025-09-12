@@ -29,6 +29,7 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { EditKeyResultModal } from '@/components/strategic-map/EditKeyResultModal';
 
 interface StrategicPlan {
   id: string;
@@ -93,6 +94,10 @@ export const ObjectivesPage: React.FC = () => {
   const [isPlanDetailOpen, setIsPlanDetailOpen] = useState(false);
   const [isPlanEditOpen, setIsPlanEditOpen] = useState(false);
   const [isPlanDeleteOpen, setIsPlanDeleteOpen] = useState(false);
+
+  // Key Result edit modal states
+  const [selectedKeyResultForEdit, setSelectedKeyResultForEdit] = useState<KeyResult | null>(null);
+  const [isKeyResultEditModalOpen, setIsKeyResultEditModalOpen] = useState(false);
 
   // Form states
   const [objectiveForm, setObjectiveForm] = useState({
@@ -504,6 +509,39 @@ export const ObjectivesPage: React.FC = () => {
         description: "Erro ao excluir plano estratégico. Tente novamente.",
         variant: "destructive",
       });
+    }
+  };
+
+  // Key Result edit functions
+  const handleEditKeyResult = (keyResult: KeyResult) => {
+    setSelectedKeyResultForEdit(keyResult);
+    setIsKeyResultEditModalOpen(true);
+  };
+
+  const handleUpdateKeyResult = async (keyResultData: Partial<KeyResult>) => {
+    try {
+      const { error } = await supabase
+        .from('key_results')
+        .update(keyResultData)
+        .eq('id', selectedKeyResultForEdit?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Resultado-chave atualizado com sucesso!",
+      });
+
+      // Refresh data
+      await invalidateAndReload();
+    } catch (error) {
+      console.error('Error updating key result:', error);
+      toast({
+        title: "Erro", 
+        description: "Erro ao atualizar resultado-chave. Tente novamente.",
+        variant: "destructive",
+      });
+      throw error;
     }
   };
 
@@ -1217,7 +1255,11 @@ export const ObjectivesPage: React.FC = () => {
                       </div>
                       <div className="space-y-2">
                         {getObjectiveKeyResults(selectedObjective.id).map((kr) => (
-                          <ResultadoChaveMiniCard key={kr.id} resultadoChave={kr} />
+                          <ResultadoChaveMiniCard 
+                            key={kr.id} 
+                            resultadoChave={kr} 
+                            onEdit={handleEditKeyResult}
+                          />
                         ))}
                         {getObjectiveKeyResults(selectedObjective.id).length === 0 && (
                           <p className="text-sm text-gray-500 text-center py-4">
@@ -1287,6 +1329,19 @@ export const ObjectivesPage: React.FC = () => {
           onDelete={deletePlan}
           objectivesCount={selectedPlanForDelete ? getObjectivesCountForPlan(selectedPlanForDelete.id) : 0}
         />
+
+        {/* Edit Key Result Modal */}
+        {selectedKeyResultForEdit && (
+          <EditKeyResultModal
+            keyResult={selectedKeyResultForEdit}
+            open={isKeyResultEditModalOpen}
+            onClose={() => {
+              setIsKeyResultEditModalOpen(false);
+              setSelectedKeyResultForEdit(null);
+            }}
+            onSave={handleUpdateKeyResult}
+          />
+        )}
       </div>
     </ErrorBoundary>
   );
