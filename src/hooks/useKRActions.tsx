@@ -162,6 +162,86 @@ export const useKRActions = (keyResultId?: string) => {
     return actions.filter(action => action.month_year === monthYear);
   };
 
+  // Obter ações órfãs (sem FCA)
+  const getOrphanActions = () => {
+    return actions.filter(action => !action.fca_id);
+  };
+
+  // Obter ações por FCA
+  const getActionsByFCA = (fcaId: string) => {
+    return actions.filter(action => action.fca_id === fcaId);
+  };
+
+  // Atribuir ação a um FCA
+  const assignActionToFCA = async (actionId: string, fcaId: string | null) => {
+    try {
+      const { data, error } = await supabase
+        .from('kr_monthly_actions')
+        .update({ fca_id: fcaId })
+        .eq('id', actionId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setActions(prev => prev.map(action => 
+        action.id === actionId ? { ...action, fca_id: fcaId } : action
+      ));
+
+      toast({
+        title: "Sucesso",
+        description: fcaId ? "Ação vinculada ao FCA" : "Ação desvinculada do FCA",
+      });
+
+      return data;
+    } catch (error) {
+      console.error('Error assigning action to FCA:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao vincular ação ao FCA",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  // Carregar ações com filtro de FCA
+  const loadActionsByFCA = async (fcaId?: string) => {
+    if (!keyResultId) return;
+    
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('kr_monthly_actions')
+        .select('*')
+        .eq('key_result_id', keyResultId);
+
+      if (fcaId) {
+        query = query.eq('fca_id', fcaId);
+      } else if (fcaId === null) {
+        query = query.is('fca_id', null);
+      }
+
+      const { data, error } = await query.order('month_year', { ascending: false });
+
+      if (error) throw error;
+      setActions((data || []).map(item => ({
+        ...item,
+        status: item.status as 'planned' | 'in_progress' | 'completed' | 'cancelled',
+        priority: item.priority as 'low' | 'medium' | 'high',
+      })));
+    } catch (error) {
+      console.error('Error loading KR actions by FCA:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar ações do KR",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Obter estatísticas
   const getActionStats = () => {
     const total = actions.length;
@@ -169,6 +249,8 @@ export const useKRActions = (keyResultId?: string) => {
     const inProgress = actions.filter(a => a.status === 'in_progress').length;
     const planned = actions.filter(a => a.status === 'planned').length;
     const cancelled = actions.filter(a => a.status === 'cancelled').length;
+    const withFCA = actions.filter(a => a.fca_id).length;
+    const orphans = actions.filter(a => !a.fca_id).length;
 
     const completionRate = total > 0 ? (completed / total) * 100 : 0;
     const avgCompletion = total > 0 
@@ -181,6 +263,8 @@ export const useKRActions = (keyResultId?: string) => {
       inProgress,
       planned,
       cancelled,
+      withFCA,
+      orphans,
       completionRate,
       avgCompletion
     };
@@ -201,8 +285,12 @@ export const useKRActions = (keyResultId?: string) => {
     updateAction,
     deleteAction,
     loadActions,
+    loadActionsByFCA,
     loadHistory,
     getActionsByMonth,
+    getActionsByFCA,
+    getOrphanActions,
+    assignActionToFCA,
     getActionStats,
   };
 };

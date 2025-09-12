@@ -120,6 +120,7 @@ export interface KRMonthlyAction {
   end_date?: string;
   evidence_links?: string[];
   notes?: string;
+  fca_id?: string; // Foreign key to KRFCA
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -136,8 +137,25 @@ export interface KRActionsHistory {
   change_reason?: string;
 }
 
+export interface KRFCA {
+  id: string;
+  key_result_id: string;
+  title: string;
+  fact: string;
+  cause: string;
+  description?: string;
+  priority: FCAPriority;
+  status: FCAStatus;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  actions?: KRMonthlyAction[]; // Related actions
+}
+
 export type MetricType = 'percentage' | 'number' | 'currency' | 'time';
 export type Frequency = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 export type ProjectStatus = 'planning' | 'in_progress' | 'completed' | 'suspended';
 export type ActionStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled';
 export type ActionPriority = 'low' | 'medium' | 'high';
+export type FCAStatus = 'active' | 'resolved' | 'cancelled';
+export type FCAPriority = 'low' | 'medium' | 'high';
