@@ -68,6 +68,7 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
     deleteFCA,
     getFCAStats,
     loadFCAs,
+    getFCAWithActions,
   } = useKRFCA(keyResult.id);
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
@@ -181,10 +182,8 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
   };
 
   const handleDeleteAction = async (actionId: string) => {
-    if (confirm('Tem certeza que deseja deletar esta ação?')) {
-      await deleteAction(actionId);
-      await loadFCAs(); // Recarregar FCAs para atualizar as ações nos cards
-    }
+    await deleteAction(actionId);
+    await loadFCAs(); // Recarregar FCAs para atualizar as ações nos cards
   };
 
   const handleSaveAction = async (actionData: Omit<KRMonthlyAction, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
@@ -693,7 +692,13 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
         }}
         fca={selectedFCA}
         onEdit={handleEditFCA}
-        onActionChange={() => {}} // Reload actions when changed
+        onActionChange={async () => {
+          await loadFCAs();
+          if (selectedFCA?.id) {
+            const updated = await getFCAWithActions(selectedFCA.id);
+            if (updated) setSelectedFCA(updated);
+          }
+        }}
       />
     </>
   );

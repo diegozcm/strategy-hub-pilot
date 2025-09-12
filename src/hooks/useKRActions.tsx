@@ -137,7 +137,8 @@ export const useKRActions = (keyResultId?: string) => {
       const { error } = await supabase
         .from('kr_monthly_actions')
         .delete()
-        .eq('id', actionId);
+        .eq('id', actionId)
+        .eq('key_result_id', keyResultId as string);
 
       if (error) throw error;
 
@@ -156,7 +157,6 @@ export const useKRActions = (keyResultId?: string) => {
       throw error;
     }
   };
-
   // Obter ações por mês
   const getActionsByMonth = (monthYear: string) => {
     return actions.filter(action => action.month_year === monthYear);

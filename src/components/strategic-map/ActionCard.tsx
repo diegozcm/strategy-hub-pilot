@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,16 @@ import {
   ExternalLink,
   AlertTriangle
 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { KRMonthlyAction } from '@/types/strategic-map';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -27,6 +37,7 @@ export const ActionCard: React.FC<ActionCardProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -116,7 +127,7 @@ export const ActionCard: React.FC<ActionCardProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onDelete(action.id)}
+              onClick={() => setConfirmOpen(true)}
               className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
             >
               <Trash2 className="h-3 w-3" />
@@ -197,6 +208,23 @@ export const ActionCard: React.FC<ActionCardProps> = ({
           )}
         </div>
       </CardContent>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover ação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação será removida definitivamente. Ela está vinculada ao KR da sua empresa e não afetará outros dados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmOpen(false); onDelete(action.id); }}>
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
