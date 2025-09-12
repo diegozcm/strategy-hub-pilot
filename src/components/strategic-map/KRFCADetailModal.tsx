@@ -40,47 +40,31 @@ export const KRFCADetailModal: React.FC<KRFCADetailModalProps> = ({
   onActionChange,
 }) => {
   const {
+    actions,
+    loadActions,
     loadActionsByFCA,
     createAction,
     updateAction,
     deleteAction,
     assignActionToFCA,
     getOrphanActions,
+    getActionsByFCA,
     loading: actionsLoading,
   } = useKRActions(fca?.key_result_id);
 
-  const [fcaActions, setFcaActions] = useState<KRMonthlyAction[]>([]);
-  const [orphanActions, setOrphanActions] = useState<KRMonthlyAction[]>([]);
+  // Get actions from the hook state instead of local state
+  const fcaActions = fca ? getActionsByFCA(fca.id) : [];
+  const orphanActions = getOrphanActions();
   const [showActionForm, setShowActionForm] = useState(false);
   const [editingAction, setEditingAction] = useState<KRMonthlyAction | undefined>();
   const [dragOverZone, setDragOverZone] = useState(false);
 
-  // Carregar ações do FCA quando modal abrir
+  // Carregar todas as ações quando modal abrir
   useEffect(() => {
     if (open && fca) {
-      loadFCAActions();
-      loadOrphanActions();
+      loadActions(); // Carrega todas as ações do KR
     }
-  }, [open, fca]);
-
-  const loadFCAActions = async () => {
-    if (!fca) return;
-    try {
-      await loadActionsByFCA(fca.id);
-      // Actions are updated in the hook's state, we need to get them differently
-    } catch (error) {
-      console.error('Error loading FCA actions:', error);
-    }
-  };
-
-  const loadOrphanActions = () => {
-    try {
-      const orphans = getOrphanActions();
-      setOrphanActions(orphans);
-    } catch (error) {
-      console.error('Error loading orphan actions:', error);
-    }
-  };
+  }, [open, fca, loadActions]);
 
   // Estatísticas do FCA
   const fcaStats = useMemo(() => {
@@ -142,7 +126,7 @@ export const KRFCADetailModal: React.FC<KRFCADetailModalProps> = ({
   const handleDeleteAction = async (actionId: string) => {
     if (confirm('Tem certeza que deseja deletar esta ação?')) {
       await deleteAction(actionId);
-      await loadFCAActions();
+      await loadActions(); // Recarrega todas as ações
       onActionChange();
     }
   };
@@ -161,7 +145,7 @@ export const KRFCADetailModal: React.FC<KRFCADetailModalProps> = ({
     
     setShowActionForm(false);
     setEditingAction(undefined);
-    await loadFCAActions();
+    await loadActions(); // Recarrega todas as ações
     onActionChange();
   };
 
@@ -181,8 +165,7 @@ export const KRFCADetailModal: React.FC<KRFCADetailModalProps> = ({
     const actionId = e.dataTransfer.getData('text/plain');
     if (actionId && fca) {
       await assignActionToFCA(actionId, fca.id);
-      await loadFCAActions();
-      await loadOrphanActions();
+      await loadActions(); // Recarrega todas as ações
       onActionChange();
     }
   };
