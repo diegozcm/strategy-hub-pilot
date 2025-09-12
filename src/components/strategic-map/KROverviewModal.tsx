@@ -6,7 +6,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultMetrics } from './KeyResultMetrics';
 import { KeyResultChart } from './KeyResultChart';
-import { Edit, Calendar, User, Target, TrendingUp, MoreVertical, Trash2, FileEdit } from 'lucide-react';
+import { KRActionsModal } from './KRActionsModal';
+import { Edit, Calendar, User, Target, TrendingUp, MoreVertical, Trash2, FileEdit, ListChecks } from 'lucide-react';
+import { useState } from 'react';
 
 interface KROverviewModalProps {
   keyResult: KeyResult | null;
@@ -18,6 +20,8 @@ interface KROverviewModalProps {
 }
 
 export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValues, onDelete }: KROverviewModalProps) => {
+  const [showActionsModal, setShowActionsModal] = useState(false);
+  
   if (!keyResult) return null;
 
   // Calculate values using the same logic as EditKeyResultModal
@@ -86,30 +90,41 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
                 Visão geral completa do resultado-chave e evolução dos indicadores
               </DialogDescription>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-background border shadow-md z-50">
-                <DropdownMenuItem onClick={onEdit} className="flex items-center gap-2">
-                  <Edit className="h-4 w-4" />
-                  Editar Informações
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={onUpdateValues} className="flex items-center gap-2">
-                  <FileEdit className="h-4 w-4" />
-                  Atualizar Valores
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={onDelete} 
-                  className="flex items-center gap-2 text-destructive focus:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Excluir KR
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowActionsModal(true)}
+                className="text-blue-600 border-blue-200 hover:bg-blue-50"
+              >
+                <ListChecks className="h-4 w-4 mr-2" />
+                Gerenciar Ações
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-background border shadow-md z-50">
+                  <DropdownMenuItem onClick={onEdit} className="flex items-center gap-2">
+                    <Edit className="h-4 w-4" />
+                    Editar Informações
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onUpdateValues} className="flex items-center gap-2">
+                    <FileEdit className="h-4 w-4" />
+                    Atualizar Valores
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={onDelete} 
+                    className="flex items-center gap-2 text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Excluir KR
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </DialogHeader>
         
@@ -177,6 +192,13 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
         />
 
       </DialogContent>
+
+      {/* Modal de Ações */}
+      <KRActionsModal
+        open={showActionsModal}
+        onClose={() => setShowActionsModal(false)}
+        keyResult={keyResult}
+      />
     </Dialog>
   );
 };

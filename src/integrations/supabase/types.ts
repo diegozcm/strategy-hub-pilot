@@ -1114,6 +1114,118 @@ export type Database = {
         }
         Relationships: []
       }
+      kr_actions_history: {
+        Row: {
+          action_id: string
+          change_reason: string | null
+          change_type: string
+          changed_at: string | null
+          changed_by: string
+          id: string
+          new_data: Json | null
+          previous_data: Json | null
+        }
+        Insert: {
+          action_id: string
+          change_reason?: string | null
+          change_type: string
+          changed_at?: string | null
+          changed_by: string
+          id?: string
+          new_data?: Json | null
+          previous_data?: Json | null
+        }
+        Update: {
+          action_id?: string
+          change_reason?: string | null
+          change_type?: string
+          changed_at?: string | null
+          changed_by?: string
+          id?: string
+          new_data?: Json | null
+          previous_data?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kr_actions_history_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "kr_monthly_actions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kr_monthly_actions: {
+        Row: {
+          action_description: string | null
+          action_title: string
+          actual_value: number | null
+          completion_percentage: number | null
+          created_at: string | null
+          created_by: string
+          end_date: string | null
+          evidence_links: string[] | null
+          id: string
+          key_result_id: string
+          month_year: string
+          notes: string | null
+          planned_value: number | null
+          priority: string | null
+          responsible: string | null
+          start_date: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          action_description?: string | null
+          action_title: string
+          actual_value?: number | null
+          completion_percentage?: number | null
+          created_at?: string | null
+          created_by: string
+          end_date?: string | null
+          evidence_links?: string[] | null
+          id?: string
+          key_result_id: string
+          month_year: string
+          notes?: string | null
+          planned_value?: number | null
+          priority?: string | null
+          responsible?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          action_description?: string | null
+          action_title?: string
+          actual_value?: number | null
+          completion_percentage?: number | null
+          created_at?: string | null
+          created_by?: string
+          end_date?: string | null
+          evidence_links?: string[] | null
+          id?: string
+          key_result_id?: string
+          month_year?: string
+          notes?: string | null
+          planned_value?: number | null
+          priority?: string | null
+          responsible?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kr_monthly_actions_key_result_id_fkey"
+            columns: ["key_result_id"]
+            isOneToOne: false
+            referencedRelation: "key_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mentor_startup_relations: {
         Row: {
           assigned_at: string

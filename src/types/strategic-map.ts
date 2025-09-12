@@ -65,6 +65,7 @@ export interface KeyResult {
   yearly_actual?: number;
   aggregation_type?: 'sum' | 'average' | 'max' | 'min';
   projects?: StrategicProject[];
+  monthly_actions?: KRMonthlyAction[];
   created_at: string;
   updated_at: string;
 }
@@ -103,6 +104,40 @@ export interface ProjectKRRelation {
   created_at: string;
 }
 
+export interface KRMonthlyAction {
+  id: string;
+  key_result_id: string;
+  month_year: string; // "2024-01"
+  action_title: string;
+  action_description?: string;
+  planned_value?: number;
+  actual_value?: number;
+  completion_percentage: number;
+  status: 'planned' | 'in_progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high';
+  responsible?: string;
+  start_date?: string;
+  end_date?: string;
+  evidence_links?: string[];
+  notes?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KRActionsHistory {
+  id: string;
+  action_id: string;
+  changed_by: string;
+  changed_at: string;
+  change_type: 'created' | 'updated' | 'status_changed' | 'completed';
+  previous_data?: any;
+  new_data?: any;
+  change_reason?: string;
+}
+
 export type MetricType = 'percentage' | 'number' | 'currency' | 'time';
 export type Frequency = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 export type ProjectStatus = 'planning' | 'in_progress' | 'completed' | 'suspended';
+export type ActionStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled';
+export type ActionPriority = 'low' | 'medium' | 'high';
