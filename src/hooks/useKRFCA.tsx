@@ -9,8 +9,8 @@ export const useKRFCA = (keyResultId?: string) => {
   const [selectedFCA, setSelectedFCA] = useState<KRFCA | null>(null);
   const { toast } = useToast();
 
-  // Carregar FCAs do KR
-  const loadFCAs = async () => {
+  // Carregar FCAs do KR com suas ações
+  const loadFCAs = async (withActions: boolean = true) => {
     if (!keyResultId) return;
     
     setLoading(true);
@@ -23,13 +23,45 @@ export const useKRFCA = (keyResultId?: string) => {
 
       if (error) throw error;
       
-      const typedFCAs = (data || []).map(item => ({
-        ...item,
-        status: item.status as 'active' | 'resolved' | 'cancelled',
-        priority: item.priority as 'low' | 'medium' | 'high',
-      })) as KRFCA[];
+      let fcasWithActions: KRFCA[] = [];
       
-      setFcas(typedFCAs);
+      if (withActions && data && data.length > 0) {
+        // Carregar FCAs com suas ações
+        fcasWithActions = await Promise.all(
+          data.map(async (fcaData) => {
+            const { data: actionsData, error: actionsError } = await supabase
+              .from('kr_monthly_actions')
+              .select('*')
+              .eq('fca_id', fcaData.id)
+              .order('month_year', { ascending: false });
+
+            if (actionsError) {
+              console.error('Error loading actions for FCA:', actionsError);
+            }
+
+            return {
+              ...fcaData,
+              status: fcaData.status as 'active' | 'resolved' | 'cancelled',
+              priority: fcaData.priority as 'low' | 'medium' | 'high',
+              actions: (actionsData || []).map(item => ({
+                ...item,
+                status: item.status as 'planned' | 'in_progress' | 'completed' | 'cancelled',
+                priority: item.priority as 'low' | 'medium' | 'high',
+              })) as KRMonthlyAction[]
+            } as KRFCA;
+          })
+        );
+      } else {
+        // Carregar FCAs sem ações
+        fcasWithActions = (data || []).map(item => ({
+          ...item,
+          status: item.status as 'active' | 'resolved' | 'cancelled',
+          priority: item.priority as 'low' | 'medium' | 'high',
+          actions: []
+        })) as KRFCA[];
+      }
+      
+      setFcas(fcasWithActions);
     } catch (error) {
       console.error('Error loading FCAs:', error);
       toast({
