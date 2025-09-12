@@ -55,7 +55,7 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
   } = useKRActions(keyResult.id);
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
-  const [selectedMonth, setSelectedMonth] = useState('');
+  const [selectedMonth, setSelectedMonth] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -69,7 +69,7 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
   const filteredActions = useMemo(() => {
     return actions.filter(action => {
       const matchesYear = action.month_year.startsWith(selectedYear);
-      const matchesMonth = !selectedMonth || action.month_year.endsWith(selectedMonth);
+      const matchesMonth = selectedMonth === 'all' || action.month_year.endsWith(selectedMonth);
       const matchesSearch = action.action_title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            action.action_description?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || action.status === statusFilter;
@@ -121,7 +121,7 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
 
   // Gerar opções de meses
   const monthOptions = [
-    { value: '', label: 'Todos os meses' },
+    { value: 'all', label: 'Todos os meses' },
     { value: '01', label: 'Janeiro' },
     { value: '02', label: 'Fevereiro' },
     { value: '03', label: 'Março' },
@@ -433,7 +433,7 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
         onSave={handleSaveAction}
         action={editingAction}
         keyResultId={keyResult.id}
-        defaultMonth={selectedMonth ? `${selectedYear}-${selectedMonth}` : undefined}
+        defaultMonth={selectedMonth !== 'all' ? `${selectedYear}-${selectedMonth}` : undefined}
       />
     </>
   );
