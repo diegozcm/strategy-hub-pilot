@@ -1093,7 +1093,13 @@ export const ObjectivesPage: React.FC = () => {
                   <DialogDescription>
                     {selectedObjective && (
                       <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="secondary">
+                        <Badge 
+                          variant="secondary" 
+                          style={{ 
+                            backgroundColor: `${pillars.find(p => p.id === selectedObjective.pillar_id)?.color}20`, 
+                            color: pillars.find(p => p.id === selectedObjective.pillar_id)?.color 
+                          }}
+                        >
                           {pillars.find(p => p.id === selectedObjective.pillar_id)?.name}
                         </Badge>
                         <Badge variant="outline">
