@@ -809,6 +809,14 @@ export const IndicatorsPage: React.FC = () => {
           setIsKROverviewModalOpen(false);
           setIsKREditModalOpen(true);
         }}
+        onUpdateValues={() => {
+          setIsKROverviewModalOpen(false);
+          setIsKRUpdateValuesModalOpen(true);
+        }}
+        onDelete={() => {
+          setIsKROverviewModalOpen(false);
+          setIsDeleteConfirmOpen(true);
+        }}
       />
 
       {/* KR Edit Modal */}

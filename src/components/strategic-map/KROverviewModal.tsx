@@ -2,19 +2,22 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultMetrics } from './KeyResultMetrics';
 import { KeyResultChart } from './KeyResultChart';
-import { Edit, Calendar, User, Target, TrendingUp } from 'lucide-react';
+import { Edit, Calendar, User, Target, TrendingUp, MoreVertical, Trash2, FileEdit } from 'lucide-react';
 
 interface KROverviewModalProps {
   keyResult: KeyResult | null;
   open: boolean;
   onClose: () => void;
   onEdit: () => void;
+  onUpdateValues: () => void;
+  onDelete: () => void;
 }
 
-export const KROverviewModal = ({ keyResult, open, onClose, onEdit }: KROverviewModalProps) => {
+export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValues, onDelete }: KROverviewModalProps) => {
   if (!keyResult) return null;
 
   // Calculate values using the same logic as EditKeyResultModal
@@ -76,10 +79,38 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit }: KROverview
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[1000px] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">{keyResult.title}</DialogTitle>
-          <DialogDescription>
-            Visão geral completa do resultado-chave e evolução dos indicadores
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-2xl">{keyResult.title}</DialogTitle>
+              <DialogDescription>
+                Visão geral completa do resultado-chave e evolução dos indicadores
+              </DialogDescription>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-background border shadow-md z-50">
+                <DropdownMenuItem onClick={onEdit} className="flex items-center gap-2">
+                  <Edit className="h-4 w-4" />
+                  Editar Informações
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onUpdateValues} className="flex items-center gap-2">
+                  <FileEdit className="h-4 w-4" />
+                  Atualizar Valores
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={onDelete} 
+                  className="flex items-center gap-2 text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Excluir KR
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </DialogHeader>
         
         {/* Header Info */}
@@ -145,16 +176,6 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit }: KROverview
           selectedYear={new Date().getFullYear()}
         />
 
-        {/* Action Buttons */}
-        <div className="flex justify-between items-center pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            Fechar
-          </Button>
-          <Button onClick={onEdit} className="flex items-center gap-2">
-            <Edit className="w-4 h-4" />
-            Editar Informações do KR
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );
