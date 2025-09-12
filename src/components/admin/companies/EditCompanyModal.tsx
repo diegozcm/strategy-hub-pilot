@@ -10,6 +10,7 @@ import { Save, X } from 'lucide-react';
 import { Company } from '@/types/admin';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { ImageCropUpload } from '@/components/ui/ImageCropUpload';
 
 interface EditCompanyModalProps {
   company: Company;
@@ -63,6 +64,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
           mission: editedCompany.mission || null,
           vision: editedCompany.vision || null,
           values: editedCompany.values || null,
+          logo_url: editedCompany.logo_url || null,
           status: editedCompany.status,
           updated_at: new Date().toISOString()
         })
@@ -109,6 +111,13 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
               onChange={(e) => setEditedCompany({ ...editedCompany, name: e.target.value })}
             />
           </div>
+
+          <ImageCropUpload
+            currentImageUrl={editedCompany.logo_url}
+            onImageUploaded={(url) => setEditedCompany({ ...editedCompany, logo_url: url })}
+            disabled={isLoading}
+            aspectRatio={1}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>

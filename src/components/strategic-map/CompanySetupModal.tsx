@@ -5,12 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus, Upload } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import { Company } from '@/types/strategic-map';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { toast } from '@/hooks/use-toast';
 import { UserRole } from '@/types/auth';
+import { ImageCropUpload } from '@/components/ui/ImageCropUpload';
 
 interface CompanySetupModalProps {
   open: boolean;
@@ -31,7 +31,6 @@ export const CompanySetupModal = ({ open, onClose, onSave, initialData, userRole
   });
   const [newValue, setNewValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -62,44 +61,6 @@ export const CompanySetupModal = ({ open, onClose, onSave, initialData, userRole
     }));
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    setUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `company-logos/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      setFormData(prev => ({ ...prev, logo_url: publicUrl }));
-      toast({
-        title: "Sucesso",
-        description: "Logo carregado com sucesso",
-      });
-    } catch (error) {
-      console.error('Error uploading logo:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar logo",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,37 +133,12 @@ export const CompanySetupModal = ({ open, onClose, onSave, initialData, userRole
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="logo">Logomarca</Label>
-            <div className="flex items-center gap-4">
-              {formData.logo_url && (
-                <img 
-                  src={formData.logo_url} 
-                  alt="Logo da empresa" 
-                  className="h-12 w-12 object-contain rounded border"
-                />
-              )}
-              <div>
-                <Input
-                  id="logo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                  disabled={uploading}
-                  className="hidden"
-                />
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={() => document.getElementById('logo')?.click()}
-                  disabled={uploading}
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  {uploading ? 'Carregando...' : 'Selecionar Logo'}
-                </Button>
-              </div>
-            </div>
-          </div>
+          <ImageCropUpload
+            currentImageUrl={formData.logo_url}
+            onImageUploaded={(url) => setFormData(prev => ({ ...prev, logo_url: url }))}
+            disabled={loading}
+            aspectRatio={1}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="mission">Missão</Label>
