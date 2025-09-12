@@ -63,18 +63,41 @@ export const useKRActions = (keyResultId?: string) => {
     }
   };
 
-  // Criar nova ação
+  // Criar nova ação (agora exige FCA)
   const createAction = async (actionData: Omit<KRMonthlyAction, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
     try {
+      if (!actionData.fca_id) {
+        throw new Error('FCA é obrigatório para criar uma ação');
+      }
+
+      // Validar se o FCA existe
+      await validateFCAExists(actionData.fca_id);
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
+      const actionToInsert = {
+        key_result_id: actionData.key_result_id,
+        fca_id: actionData.fca_id,
+        month_year: actionData.month_year,
+        action_title: actionData.action_title,
+        action_description: actionData.action_description,
+        planned_value: actionData.planned_value,
+        actual_value: actionData.actual_value,
+        completion_percentage: actionData.completion_percentage,
+        status: actionData.status,
+        priority: actionData.priority,
+        responsible: actionData.responsible,
+        start_date: actionData.start_date,
+        end_date: actionData.end_date,
+        evidence_links: actionData.evidence_links,
+        notes: actionData.notes,
+        created_by: user.id,
+      };
+
       const { data, error } = await supabase
         .from('kr_monthly_actions')
-        .insert([{
-          ...actionData,
-          created_by: user.id,
-        }])
+        .insert(actionToInsert)
         .select()
         .single();
 
@@ -91,7 +114,7 @@ export const useKRActions = (keyResultId?: string) => {
       console.error('Error creating action:', error);
       toast({
         title: "Erro",
-        description: "Erro ao criar ação",
+        description: error instanceof Error ? error.message : "Erro ao criar ação",
         variant: "destructive",
       });
       throw error;
@@ -162,9 +185,23 @@ export const useKRActions = (keyResultId?: string) => {
     return actions.filter(action => action.month_year === monthYear);
   };
 
-  // Obter ações órfãs (sem FCA)
-  const getOrphanActions = () => {
-    return actions.filter(action => !action.fca_id);
+  // Validar se FCA existe antes de criar ação
+  const validateFCAExists = async (fcaId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('kr_fca')
+        .select('id')
+        .eq('id', fcaId)
+        .single();
+
+      if (error || !data) {
+        throw new Error('FCA não encontrado');
+      }
+      return true;
+    } catch (error) {
+      console.error('Error validating FCA:', error);
+      throw error;
+    }
   };
 
   // Obter ações por FCA
@@ -249,8 +286,6 @@ export const useKRActions = (keyResultId?: string) => {
     const inProgress = actions.filter(a => a.status === 'in_progress').length;
     const planned = actions.filter(a => a.status === 'planned').length;
     const cancelled = actions.filter(a => a.status === 'cancelled').length;
-    const withFCA = actions.filter(a => a.fca_id).length;
-    const orphans = actions.filter(a => !a.fca_id).length;
 
     const completionRate = total > 0 ? (completed / total) * 100 : 0;
     const avgCompletion = total > 0 
@@ -263,8 +298,6 @@ export const useKRActions = (keyResultId?: string) => {
       inProgress,
       planned,
       cancelled,
-      withFCA,
-      orphans,
       completionRate,
       avgCompletion
     };
@@ -289,8 +322,8 @@ export const useKRActions = (keyResultId?: string) => {
     loadHistory,
     getActionsByMonth,
     getActionsByFCA,
-    getOrphanActions,
     assignActionToFCA,
     getActionStats,
+    validateFCAExists,
   };
 };

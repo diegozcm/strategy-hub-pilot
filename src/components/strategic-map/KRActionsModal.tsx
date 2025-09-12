@@ -58,7 +58,7 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
     updateAction,
     deleteAction,
     loadActions,
-    getOrphanActions,
+    
     getActionStats,
   } = useKRActions(keyResult.id);
 
@@ -113,8 +113,7 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
     });
   }, [actions, selectedYear, selectedMonth, searchTerm, statusFilter, priorityFilter, fcaFilter]);
 
-  // Ações órfãs para display
-  const orphanActions = useMemo(() => getOrphanActions(), [actions]);
+  // Ações órfãs removidas - todas ações devem ter FCA
 
   // Agrupar ações por mês
   const actionsByMonth = useMemo(() => {
@@ -388,52 +387,18 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
                 {/* Seção Ações Órfãs */}
                 {fcaFilter !== 'with_fca' && (
                   <div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <Target className="h-5 w-5" />
-                      <h3 className="text-lg font-semibold">
-                        {fcaFilter === 'orphan' ? 'Todas as Ações' : 'Ações Diretas'} ({orphanActions.length})
-                      </h3>
-                      {fcaFilter === 'all' && (
-                        <Badge variant="outline" className="text-xs">
-                          Sem FCA vinculado
-                        </Badge>
-                      )}
-                    </div>
-
-                    {loading ? (
-                      <div className="flex items-center justify-center py-8">
-                        <div className="text-muted-foreground">Carregando ações...</div>
-                      </div>
-                    ) : orphanActions.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-                        <h3 className="text-lg font-medium mb-2">Nenhuma ação encontrada</h3>
-                        <p className="text-muted-foreground mb-4">
-                          {fcaFilter === 'orphan' 
-                            ? 'Comece criando sua primeira ação para este KR'
-                            : 'Todas as ações estão vinculadas a FCAs'
-                          }
-                        </p>
-                        <Button onClick={handleCreateAction}>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Criar Primeira Ação
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        {orphanActions.map(action => (
-                          <ActionCard
-                            key={action.id}
-                            action={action}
-                            onEdit={handleEditAction}
-                            onDelete={handleDeleteAction}
-                          />
-                        ))}
-                      </div>
-                    )}
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Target className="h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Conceito Atualizado</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Todas as ações agora devem estar vinculadas a um FCA.<br/>
+                      Use o novo modal "FCA & Ações" para gerenciar suas ações.
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Acesse através do botão "FCA & Ações" na tela do KR
+                    </p>
                   </div>
-                )}
-              </div>
+              </TabsContent>
 
               {/* Lista de Ações */}
               <div className="flex-1 overflow-y-auto">
@@ -648,13 +613,13 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-yellow-600" />
-                      Ações Órfãs
+                      <Target className="h-4 w-4 text-green-600" />
+                      Vinculadas a FCAs
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-yellow-600">
-                      {stats.orphans}
+                    <div className="text-2xl font-bold text-green-600">
+                      {stats.total}
                     </div>
                   </CardContent>
                 </Card>
@@ -673,6 +638,7 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
         onSave={handleSaveAction}
         action={editingAction}
         keyResultId={keyResult.id}
+        fcaId="temp-fca-id" // Temporary fix - this modal is deprecated
         defaultMonth={selectedMonth !== 'all' ? `${selectedYear}-${selectedMonth}` : undefined}
       />
 

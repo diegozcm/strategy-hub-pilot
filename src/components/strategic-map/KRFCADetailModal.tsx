@@ -428,6 +428,7 @@ export const KRFCADetailModal: React.FC<KRFCADetailModalProps> = ({
         }}
         onSave={handleSaveAction}
         action={editingAction}
+        fcaId={fca?.id || "temp-id"}
         keyResultId={fca.key_result_id}
       />
     </>

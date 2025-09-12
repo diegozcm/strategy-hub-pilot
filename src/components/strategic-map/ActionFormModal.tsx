@@ -27,6 +27,7 @@ interface ActionFormModalProps {
   onSave: (actionData: Omit<KRMonthlyAction, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => Promise<void>;
   action?: KRMonthlyAction;
   keyResultId: string;
+  fcaId: string;
   defaultMonth?: string;
 }
 
@@ -36,6 +37,7 @@ export const ActionFormModal: React.FC<ActionFormModalProps> = ({
   onSave,
   action,
   keyResultId,
+  fcaId,
   defaultMonth,
 }) => {
   const [formData, setFormData] = useState({
@@ -105,6 +107,7 @@ export const ActionFormModal: React.FC<ActionFormModalProps> = ({
     try {
       await onSave({
         key_result_id: keyResultId,
+        fca_id: fcaId,
         action_title: formData.action_title.trim(),
         action_description: formData.action_description.trim() || undefined,
         month_year: formData.month_year,

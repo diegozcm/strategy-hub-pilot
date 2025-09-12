@@ -1215,7 +1215,7 @@ export type Database = {
           created_by: string
           end_date: string | null
           evidence_links: string[] | null
-          fca_id: string | null
+          fca_id: string
           id: string
           key_result_id: string
           month_year: string
@@ -1236,7 +1236,7 @@ export type Database = {
           created_by: string
           end_date?: string | null
           evidence_links?: string[] | null
-          fca_id?: string | null
+          fca_id: string
           id?: string
           key_result_id: string
           month_year: string
@@ -1257,7 +1257,7 @@ export type Database = {
           created_by?: string
           end_date?: string | null
           evidence_links?: string[] | null
-          fca_id?: string | null
+          fca_id?: string
           id?: string
           key_result_id?: string
           month_year?: string
@@ -1285,6 +1285,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      kr_status_reports: {
+        Row: {
+          achievements: string | null
+          challenges: string | null
+          created_at: string
+          created_by: string
+          id: string
+          key_result_id: string
+          next_steps: string | null
+          report_date: string
+          status_summary: string
+          updated_at: string
+        }
+        Insert: {
+          achievements?: string | null
+          challenges?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          key_result_id: string
+          next_steps?: string | null
+          report_date?: string
+          status_summary: string
+          updated_at?: string
+        }
+        Update: {
+          achievements?: string | null
+          challenges?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          key_result_id?: string
+          next_steps?: string | null
+          report_date?: string
+          status_summary?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       mentor_startup_relations: {
         Row: {
