@@ -35,7 +35,6 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
   });
   
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
-  const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
   const [editMode, setEditMode] = useState<boolean>(false);
@@ -143,7 +142,6 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
       });
       
       setMonthlyTargets(keyResult.monthly_targets as Record<string, number> || {});
-      setMonthlyActual(keyResult.monthly_actual as Record<string, number> || {});
       setAggregationType(keyResult.aggregation_type || 'sum');
     }
   }, [keyResult]);
@@ -155,7 +153,6 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
     try {
       setLoading(true);
       
-      const yearlyActual = calculateYearlyActual(monthlyActual);
       const yearlyTarget = calculateYearlyTarget(monthlyTargets);
 
       const dataToSave = {
@@ -165,12 +162,9 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         unit: basicInfo.unit,
         responsible: basicInfo.responsible,
         objective_id: basicInfo.objective_id === '' || basicInfo.objective_id === 'none' ? null : basicInfo.objective_id,
-        monthly_actual: monthlyActual,
         monthly_targets: monthlyTargets,
-        yearly_actual: yearlyActual,
         yearly_target: yearlyTarget,
         target_value: yearlyTarget,
-        current_value: yearlyActual,
         aggregation_type: aggregationType
       };
 
@@ -191,16 +185,15 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         <DialogHeader>
           <DialogTitle>Editar Resultado-Chave</DialogTitle>
           <DialogDescription>
-            Edite as informações básicas, metas mensais e valores atualizados do resultado-chave
+            Edite as informações básicas e metas mensais do resultado-chave
           </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs defaultValue="basic-info" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="basic-info">Informações Básicas</TabsTrigger>
               <TabsTrigger value="monthly-targets">Metas Mensais</TabsTrigger>
-              <TabsTrigger value="current-values">Valores Atuais</TabsTrigger>
             </TabsList>
 
             {/* Basic Info Tab */}
@@ -376,69 +369,6 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
               </div>
             </TabsContent>
 
-            {/* Current Values Tab */}
-            <TabsContent value="current-values" className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label>Valores Realizados ({selectedYear})</Label>
-                <p className="text-sm text-muted-foreground">
-                  Atualize os valores realizados para cada mês.
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <div className="grid grid-cols-5 gap-4 p-3 bg-muted/30 rounded-lg font-medium text-sm">
-                  <div>Mês</div>
-                  <div className="text-center">Meta</div>
-                  <div className="text-center">Realizado</div>
-                  <div className="text-center">% Atingimento</div>
-                  <div className="text-center">Unidade</div>
-                </div>
-                
-                {months.map((month) => {
-                  const target = monthlyTargets[month.key] || 0;
-                  const actual = monthlyActual[month.key] || 0;
-                  const percentage = target > 0 ? (actual / target) * 100 : 0;
-
-                  return (
-                    <div key={month.key} className="grid grid-cols-5 gap-4 items-center p-3 border rounded-lg">
-                      <div>
-                        <Label className="text-sm font-medium">{month.name}</Label>
-                      </div>
-                      <div className="text-center text-sm">
-                        {target.toFixed(2)}
-                      </div>
-                      <div>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0"
-                          value={monthlyActual[month.key] || ''}
-                          onChange={(e) => {
-                            const value = e.target.value ? parseFloat(e.target.value) : 0;
-                            setMonthlyActual(prev => ({
-                              ...prev,
-                              [month.key]: value
-                            }));
-                          }}
-                        />
-                      </div>
-                      <div className="text-center">
-                        <span className={`text-sm font-medium ${
-                          percentage >= 100 ? 'text-green-600' :
-                          percentage >= 80 ? 'text-yellow-600' :
-                          'text-red-600'
-                        }`}>
-                          {percentage.toFixed(1)}%
-                        </span>
-                      </div>
-                      <div className="text-center text-sm text-muted-foreground">
-                        {basicInfo.unit}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </TabsContent>
           </Tabs>
 
           {/* Action Buttons */}

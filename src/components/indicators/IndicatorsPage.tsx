@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 import { KREditModal } from '@/components/strategic-map/KREditModal';
+import { KRUpdateValuesModal } from '@/components/strategic-map/KRUpdateValuesModal';
 import { KeyResult, StrategicObjective } from '@/types/strategic-map';
 
 interface KeyResultValue {
@@ -46,10 +47,11 @@ export const IndicatorsPage: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   
-  // Modal states - Simplified to only 2 modals
+  // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isKROverviewModalOpen, setIsKROverviewModalOpen] = useState(false);
   const [isKREditModalOpen, setIsKREditModalOpen] = useState(false);
+  const [isKRUpdateValuesModalOpen, setIsKRUpdateValuesModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
   
@@ -274,7 +276,7 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
-  // Modal handlers - Simplified to 2 modals
+  // Modal handlers
   const openKROverviewModal = (keyResult: KeyResult) => {
     setSelectedKeyResult(keyResult);
     setIsKROverviewModalOpen(true);
@@ -285,9 +287,15 @@ export const IndicatorsPage: React.FC = () => {
     setIsKREditModalOpen(true);
   };
 
+  const openKRUpdateValuesModal = (keyResult: KeyResult) => {
+    setSelectedKeyResult(keyResult);
+    setIsKRUpdateValuesModalOpen(true);
+  };
+
   const closeAllModals = () => {
     setIsKROverviewModalOpen(false);
     setIsKREditModalOpen(false);
+    setIsKRUpdateValuesModalOpen(false);
     setSelectedKeyResult(null);
   };
 
@@ -628,6 +636,13 @@ export const IndicatorsPage: React.FC = () => {
                         <Edit className="w-4 h-4 mr-2" />
                         Editar KR
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={(e) => {
+                        e.stopPropagation();
+                        openKRUpdateValuesModal(keyResult);
+                      }}>
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        Atualizar Valores
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
@@ -785,7 +800,7 @@ export const IndicatorsPage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* KR Overview Modal - Modal 1 */}
+      {/* KR Overview Modal */}
       <KROverviewModal
         keyResult={selectedKeyResult}
         open={isKROverviewModalOpen}
@@ -796,7 +811,7 @@ export const IndicatorsPage: React.FC = () => {
         }}
       />
 
-      {/* KR Edit Modal - Modal 2 */}
+      {/* KR Edit Modal */}
       <KREditModal
         keyResult={selectedKeyResult}
         open={isKREditModalOpen}
@@ -818,6 +833,29 @@ export const IndicatorsPage: React.FC = () => {
           });
         }}
         objectives={objectives}
+      />
+
+      {/* KR Update Values Modal */}
+      <KRUpdateValuesModal
+        keyResult={selectedKeyResult}
+        open={isKRUpdateValuesModalOpen}
+        onClose={() => setIsKRUpdateValuesModalOpen(false)}
+        onSave={async (keyResultData) => {
+          const { error } = await supabase
+            .from('key_results')
+            .update(keyResultData)
+            .eq('id', keyResultData.id);
+
+          if (error) throw error;
+
+          // Reload data to reflect changes
+          await loadData();
+          
+          toast({
+            title: "Sucesso",
+            description: "Valores atualizados com sucesso!",
+          });
+        }}
       />
 
       {/* Delete Confirmation Modal */}
