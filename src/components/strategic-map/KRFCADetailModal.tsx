@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Plus,
   Target,
@@ -17,7 +18,9 @@ import {
   Clock,
   Edit,
   FileText,
-  BarChart3
+  BarChart3,
+  Info,
+  Activity
 } from 'lucide-react';
 import { KRFCA, KRMonthlyAction } from '@/types/strategic-map';
 import { useKRActions } from '@/hooks/useKRActions';
@@ -40,31 +43,15 @@ export const KRFCADetailModal: React.FC<KRFCADetailModalProps> = ({
   onActionChange,
 }) => {
   const {
-    actions,
-    loadActions,
-    loadActionsByFCA,
     createAction,
     updateAction,
     deleteAction,
-    assignActionToFCA,
-    getOrphanActions,
-    getActionsByFCA,
-    loading: actionsLoading,
   } = useKRActions(fca?.key_result_id);
 
-  // Get actions from the hook state instead of local state
-  const fcaActions = fca ? getActionsByFCA(fca.id) : [];
-  const orphanActions = getOrphanActions();
+  // Usar as ações diretamente do FCA (já carregadas no useKRFCA)
+  const fcaActions = fca?.actions || [];
   const [showActionForm, setShowActionForm] = useState(false);
   const [editingAction, setEditingAction] = useState<KRMonthlyAction | undefined>();
-  const [dragOverZone, setDragOverZone] = useState(false);
-
-  // Carregar todas as ações quando modal abrir
-  useEffect(() => {
-    if (open && fca) {
-      loadActions(); // Carrega todas as ações do KR
-    }
-  }, [open, fca, loadActions]);
 
   // Estatísticas do FCA
   const fcaStats = useMemo(() => {
@@ -126,7 +113,6 @@ export const KRFCADetailModal: React.FC<KRFCADetailModalProps> = ({
   const handleDeleteAction = async (actionId: string) => {
     if (confirm('Tem certeza que deseja deletar esta ação?')) {
       await deleteAction(actionId);
-      await loadActions(); // Recarrega todas as ações
       onActionChange();
     }
   };
@@ -145,29 +131,7 @@ export const KRFCADetailModal: React.FC<KRFCADetailModalProps> = ({
     
     setShowActionForm(false);
     setEditingAction(undefined);
-    await loadActions(); // Recarrega todas as ações
     onActionChange();
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOverZone(true);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverZone(false);
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOverZone(false);
-    
-    const actionId = e.dataTransfer.getData('text/plain');
-    if (actionId && fca) {
-      await assignActionToFCA(actionId, fca.id);
-      await loadActions(); // Recarrega todas as ações
-      onActionChange();
-    }
   };
 
   if (!fca) return null;
@@ -189,200 +153,270 @@ export const KRFCADetailModal: React.FC<KRFCADetailModalProps> = ({
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto space-y-6">
-            {/* Detalhes do FCA */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Detalhes do FCA</CardTitle>
-                  <div className="flex gap-2">
+          <Tabs defaultValue="details" className="flex-1 flex flex-col">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="details" className="flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                Detalhes
+              </TabsTrigger>
+              <TabsTrigger value="actions" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Ações ({fcaStats.total})
+              </TabsTrigger>
+              <TabsTrigger value="statistics" className="flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                Estatísticas
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="details" className="flex-1 mt-6">
+              <ScrollArea className="h-[60vh]">
+                <div className="space-y-6 pr-4">
+                  {/* Status e Prioridade */}
+                  <div className="flex gap-2 justify-center">
                     <Badge variant="outline" className={getPriorityColor(fca.priority)}>
-                      {fca.priority === 'high' ? '🔴 Alta' :
-                       fca.priority === 'medium' ? '🟡 Média' : '🟢 Baixa'}
+                      {fca.priority === 'high' ? '🔴 Alta Prioridade' :
+                       fca.priority === 'medium' ? '🟡 Média Prioridade' : '🟢 Baixa Prioridade'}
                     </Badge>
                     <Badge variant="outline" className={getStatusColor(fca.status)}>
                       {fca.status === 'resolved' ? '✅ Resolvido' :
                        fca.status === 'cancelled' ? '❌ Cancelado' : '🔵 Ativo'}
                     </Badge>
                   </div>
+
+                  {/* Fato */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        📊 Fato
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm leading-relaxed bg-muted/50 p-4 rounded-lg">
+                        {fca.fact}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Causa */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        🔍 Causa Raiz
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm leading-relaxed bg-muted/50 p-4 rounded-lg">
+                        {fca.cause}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Descrição Adicional */}
+                  {fca.description && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          📝 Descrição Adicional
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm leading-relaxed bg-muted/50 p-4 rounded-lg">
+                          {fca.description}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h4 className="font-medium text-sm text-muted-foreground mb-2">📊 Fato (O que aconteceu?)</h4>
-                  <p className="text-sm bg-muted/50 p-3 rounded-lg">{fca.fact}</p>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium text-sm text-muted-foreground mb-2">🔍 Causa (Por que aconteceu?)</h4>
-                  <p className="text-sm bg-muted/50 p-3 rounded-lg">{fca.cause}</p>
-                </div>
+              </ScrollArea>
+            </TabsContent>
 
-                {fca.description && (
-                  <div>
-                    <h4 className="font-medium text-sm text-muted-foreground mb-2">📝 Descrição Adicional</h4>
-                    <p className="text-sm bg-muted/50 p-3 rounded-lg">{fca.description}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Estatísticas das Ações */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Total de Ações
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{fcaStats.total}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    Taxa de Conclusão
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
-                    {fcaStats.completionRate.toFixed(1)}%
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-blue-600" />
-                    Progresso Médio
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {fcaStats.avgProgress.toFixed(1)}%
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-yellow-600" />
-                    Em Andamento
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">
-                    {fcaStats.inProgress}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Seção de Ações */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5" />
+            <TabsContent value="actions" className="flex-1 mt-6">
+              <div className="flex flex-col h-full">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">
                     Ações do FCA ({fcaStats.total})
-                  </CardTitle>
+                  </h3>
                   <Button onClick={handleCreateAction}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Adicionar Ação
+                    Nova Ação
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent>
-                {/* Drag & Drop Zone */}
-                <div 
-                  className={`border-2 border-dashed rounded-lg p-4 mb-4 transition-colors ${
-                    dragOverZone 
-                      ? 'border-primary bg-primary/5' 
-                      : 'border-muted-foreground/25 bg-muted/20'
-                  }`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  <div className="text-center text-sm text-muted-foreground">
-                    {dragOverZone ? (
-                      <span className="text-primary font-medium">Solte aqui para vincular ao FCA</span>
+
+                <ScrollArea className="flex-1 h-[55vh]">
+                  <div className="pr-4">
+                    {fcaActions.length === 0 ? (
+                      <div className="text-center py-12">
+                        <Target className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-xl font-medium mb-2">Nenhuma ação criada</h3>
+                        <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                          Comece criando ações para resolver este FCA e atingir seus objetivos.
+                        </p>
+                        <Button onClick={handleCreateAction} size="lg">
+                          <Plus className="h-5 w-5 mr-2" />
+                          Criar Primeira Ação
+                        </Button>
+                      </div>
                     ) : (
-                      <span>Arraste ações órfãs aqui para vinculá-las a este FCA</span>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {fcaActions.map(action => (
+                          <ActionCard
+                            key={action.id}
+                            action={action}
+                            onEdit={handleEditAction}
+                            onDelete={handleDeleteAction}
+                          />
+                        ))}
+                      </div>
                     )}
                   </div>
+                </ScrollArea>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="statistics" className="flex-1 mt-6">
+              <ScrollArea className="h-[60vh]">
+                <div className="space-y-6 pr-4">
+                  {/* Cards de Estatísticas */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <Target className="h-4 w-4" />
+                          Total de Ações
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold">{fcaStats.total}</div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          Concluídas
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold text-green-600">
+                          {fcaStats.completed}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-blue-600" />
+                          Em Andamento
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold text-blue-600">
+                          {fcaStats.inProgress}
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <Target className="h-4 w-4 text-gray-600" />
+                          Planejadas
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold text-gray-600">
+                          {fcaStats.planned}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Métricas de Performance */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5 text-green-600" />
+                          Taxa de Conclusão
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-4xl font-bold text-green-600 mb-2">
+                          {fcaStats.completionRate.toFixed(1)}%
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {fcaStats.completed} de {fcaStats.total} ações concluídas
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <BarChart3 className="h-5 w-5 text-blue-600" />
+                          Progresso Médio
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-4xl font-bold text-blue-600 mb-2">
+                          {fcaStats.avgProgress.toFixed(1)}%
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Progresso médio de todas as ações
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Resumo Visual */}
+                  {fcaStats.total > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Distribuição das Ações</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                              Concluídas
+                            </span>
+                            <span className="font-medium">{fcaStats.completed}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                              Em Andamento
+                            </span>
+                            <span className="font-medium">{fcaStats.inProgress}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                              Planejadas
+                            </span>
+                            <span className="font-medium">{fcaStats.planned}</span>
+                          </div>
+                          {fcaStats.cancelled > 0 && (
+                            <div className="flex items-center justify-between text-sm">
+                              <span className="flex items-center gap-2">
+                                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                                Canceladas
+                              </span>
+                              <span className="font-medium">{fcaStats.cancelled}</span>
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
-
-                {/* Lista de Ações */}
-                {actionsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-muted-foreground">Carregando ações...</div>
-                  </div>
-                ) : fcaActions.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Nenhuma ação vinculada</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Comece criando ações para resolver este FCA
-                    </p>
-                    <Button onClick={handleCreateAction}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Criar Primeira Ação
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {fcaActions.map(action => (
-                      <ActionCard
-                        key={action.id}
-                        action={action}
-                        onEdit={handleEditAction}
-                        onDelete={handleDeleteAction}
-                      />
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Ações Órfãs Disponíveis */}
-            {orphanActions.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg text-muted-foreground">
-                    Ações Disponíveis ({orphanActions.length})
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Arraste estas ações para a área acima para vinculá-las a este FCA
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                    {orphanActions.map(action => (
-                      <div
-                        key={action.id}
-                        draggable
-                        onDragStart={(e) => e.dataTransfer.setData('text/plain', action.id)}
-                        className="cursor-move opacity-75 hover:opacity-100 transition-opacity"
-                      >
-                        <ActionCard
-                          action={action}
-                          onEdit={handleEditAction}
-                          onDelete={handleDeleteAction}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
 
