@@ -139,7 +139,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         description: keyResult.description || '',
         unit: keyResult.unit || '',
         responsible: keyResult.responsible || '',
-        objective_id: keyResult.objective_id || ''
+        objective_id: keyResult.objective_id || 'none'
       });
       
       setMonthlyTargets(keyResult.monthly_targets as Record<string, number> || {});
@@ -164,7 +164,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         description: basicInfo.description,
         unit: basicInfo.unit,
         responsible: basicInfo.responsible,
-        objective_id: basicInfo.objective_id || null,
+        objective_id: basicInfo.objective_id === '' || basicInfo.objective_id === 'none' ? null : basicInfo.objective_id,
         monthly_actual: monthlyActual,
         monthly_targets: monthlyTargets,
         yearly_actual: yearlyActual,
@@ -267,7 +267,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                       <SelectValue placeholder="Selecione um objetivo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum objetivo</SelectItem>
+                      <SelectItem value="none">Nenhum objetivo</SelectItem>
                       {objectives.map((objective) => (
                         <SelectItem key={objective.id} value={objective.id}>
                           {objective.title}
