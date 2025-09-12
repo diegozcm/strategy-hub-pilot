@@ -10,7 +10,7 @@ import { Company } from '@/types/auth';
 export const CompanySelectionPage: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selecting, setSelecting] = useState(false);
+  const [selectingCompanyId, setSelectingCompanyId] = useState<string | null>(null);
   const [error, setError] = useState('');
   
   const { user, profile, fetchAllUserCompanies, switchCompany } = useAuth();
@@ -46,7 +46,7 @@ export const CompanySelectionPage: React.FC = () => {
 
   const handleCompanySelect = async (company: Company) => {
     try {
-      setSelecting(true);
+      setSelectingCompanyId(company.id);
       
       // Persistir a empresa selecionada
       localStorage.setItem('selectedCompanyId', company.id);
@@ -64,7 +64,7 @@ export const CompanySelectionPage: React.FC = () => {
       console.error('Error selecting company:', error);
       setError('Erro ao selecionar empresa. Tente novamente.');
     } finally {
-      setSelecting(false);
+      setSelectingCompanyId(null);
     }
   };
 
@@ -142,9 +142,9 @@ export const CompanySelectionPage: React.FC = () => {
                 <Button 
                   className="w-full" 
                   onClick={() => handleCompanySelect(company)}
-                  disabled={selecting}
+                  disabled={selectingCompanyId === company.id}
                 >
-                  {selecting ? (
+                  {selectingCompanyId === company.id ? (
                     <LoadingSpinner size="sm" />
                   ) : (
                     <>
