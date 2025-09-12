@@ -428,7 +428,6 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
                   </div>
                 )}
               </div>
-            </TabsContent>
 
               {/* Lista de Ações */}
               <div className="flex-1 overflow-y-auto">
