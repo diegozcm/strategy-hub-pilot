@@ -131,28 +131,35 @@ export const useKRFCA = (keyResultId?: string) => {
           created_by: user.id,
         }])
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
-
+ 
+      if (!data) {
+        // RLS pode impedir retorno; recarrega lista completa como fallback
+        await loadFCAs();
+        toast({ title: "Sucesso", description: "FCA criado com sucesso" });
+        return null as any;
+      }
+ 
       const newFCA: KRFCA = {
         ...data,
         status: data.status as 'active' | 'resolved' | 'cancelled',
         priority: data.priority as 'low' | 'medium' | 'high',
       };
-
+ 
       setFcas(prev => [newFCA, ...prev]);
       toast({
         title: "Sucesso",
         description: "FCA criado com sucesso",
       });
-
+ 
       return newFCA;
     } catch (error) {
       console.error('Error creating FCA:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao criar FCA",
+        title: "Erro ao criar FCA",
+        description: error instanceof Error ? error.message : 'Erro desconhecido',
         variant: "destructive",
       });
       throw error;
@@ -167,7 +174,7 @@ export const useKRFCA = (keyResultId?: string) => {
         .update(updates)
         .eq('id', fcaId)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -99,6 +100,7 @@ export const KRFCAModal: React.FC<KRFCAModalProps> = ({
           <DialogTitle>
             {fca ? 'Editar FCA' : 'Novo FCA (Fact, Cause, Action)'}
           </DialogTitle>
+          <DialogDescription className="sr-only">Preencha os campos para criar ou editar um FCA vinculado ao KR da empresa</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
