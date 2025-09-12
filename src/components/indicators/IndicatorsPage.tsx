@@ -503,91 +503,74 @@ export const IndicatorsPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="space-y-2">
-              <Label>Buscar</Label>
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Pilar Estratégico</Label>
-              <Select value={pillarFilter} onValueChange={setPillarFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os pilares</SelectItem>
-                  {pillars.map((pillar) => (
-                    <SelectItem key={pillar.id} value={pillar.id}>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: pillar.color }}
-                        />
-                        {pillar.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <div className="flex flex-col lg:flex-row gap-4 mb-6">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            placeholder="Buscar por nome..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-2 lg:gap-4">
+          <Select value={pillarFilter} onValueChange={setPillarFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Todos os pilares" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os pilares</SelectItem>
+              {pillars.map((pillar) => (
+                <SelectItem key={pillar.id} value={pillar.id}>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: pillar.color }}
+                    />
+                    {pillar.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-            <div className="space-y-2">
-              <Label>Objetivo Estratégico</Label>
-              <Select value={objectiveFilter} onValueChange={setObjectiveFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os objetivos</SelectItem>
-                  {objectives.map((objective) => {
-                    const pillar = pillars.find(p => p.id === objective.pillar_id);
-                    return (
-                      <SelectItem key={objective.id} value={objective.id}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: pillar?.color || '#6B7280' }}
-                          />
-                          {objective.title}
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Prioridade</Label>
-              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="medium">Média</SelectItem>
-                  <SelectItem value="low">Baixa</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          <Select value={objectiveFilter} onValueChange={setObjectiveFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Todos os objetivos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os objetivos</SelectItem>
+              {objectives.map((objective) => {
+                const pillar = pillars.find(p => p.id === objective.pillar_id);
+                return (
+                  <SelectItem key={objective.id} value={objective.id}>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: pillar?.color || '#6B7280' }}
+                      />
+                      {objective.title}
+                    </div>
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+          
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <SelectTrigger className="w-full sm:w-36">
+              <SelectValue placeholder="Todas" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="high">Alta</SelectItem>
+              <SelectItem value="medium">Média</SelectItem>
+              <SelectItem value="low">Baixa</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       {/* Key Results Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
