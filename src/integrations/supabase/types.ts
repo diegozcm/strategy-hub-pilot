@@ -1155,6 +1155,56 @@ export type Database = {
           },
         ]
       }
+      kr_fca: {
+        Row: {
+          cause: string
+          created_at: string
+          created_by: string
+          description: string | null
+          fact: string
+          id: string
+          key_result_id: string
+          priority: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cause: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          fact: string
+          id?: string
+          key_result_id: string
+          priority?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cause?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          fact?: string
+          id?: string
+          key_result_id?: string
+          priority?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kr_fca_key_result_id_fkey"
+            columns: ["key_result_id"]
+            isOneToOne: false
+            referencedRelation: "key_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kr_monthly_actions: {
         Row: {
           action_description: string | null
@@ -1165,6 +1215,7 @@ export type Database = {
           created_by: string
           end_date: string | null
           evidence_links: string[] | null
+          fca_id: string | null
           id: string
           key_result_id: string
           month_year: string
@@ -1185,6 +1236,7 @@ export type Database = {
           created_by: string
           end_date?: string | null
           evidence_links?: string[] | null
+          fca_id?: string | null
           id?: string
           key_result_id: string
           month_year: string
@@ -1205,6 +1257,7 @@ export type Database = {
           created_by?: string
           end_date?: string | null
           evidence_links?: string[] | null
+          fca_id?: string | null
           id?: string
           key_result_id?: string
           month_year?: string
@@ -1217,6 +1270,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "kr_monthly_actions_fca_id_fkey"
+            columns: ["fca_id"]
+            isOneToOne: false
+            referencedRelation: "kr_fca"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "kr_monthly_actions_key_result_id_fkey"
             columns: ["key_result_id"]
