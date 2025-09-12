@@ -4,13 +4,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { KeyResult } from '@/types/strategic-map';
 import { useKRFCA } from '@/hooks/useKRFCA';
 import { useKRActions } from '@/hooks/useKRActions';
 import { useState } from 'react';
 import { Plus, Edit, Trash2, AlertCircle, CheckCircle, Clock, Target } from 'lucide-react';
 import { KRFCAModal } from './KRFCAModal';
-import { ActionFormModal } from './ActionFormModal';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface KRFCAUnifiedModalProps {
@@ -22,14 +25,21 @@ interface KRFCAUnifiedModalProps {
 export const KRFCAUnifiedModal = ({ keyResult, open, onClose }: KRFCAUnifiedModalProps) => {
   const [selectedFCAId, setSelectedFCAId] = useState<string | null>(null);
   const [showFCAModal, setShowFCAModal] = useState(false);
-  const [showActionModal, setShowActionModal] = useState(false);
   const [editingFCA, setEditingFCA] = useState(null);
-  const [editingAction, setEditingAction] = useState(null);
   const [deletingFCAId, setDeletingFCAId] = useState<string | null>(null);
   const [deletingActionId, setDeletingActionId] = useState<string | null>(null);
 
+  // 5W1H inline form state
+  const [what, setWhat] = useState('');
+  const [why, setWhy] = useState('');
+  const [who, setWho] = useState('');
+  const [whenMonth, setWhenMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [where, setWhere] = useState('');
+  const [how, setHow] = useState('');
+  const [savingAction, setSavingAction] = useState(false);
+
   const { fcas, loading: fcasLoading, createFCA, updateFCA, deleteFCA } = useKRFCA(keyResult?.id);
-  const { actions, loading: actionsLoading, createAction, updateAction, deleteAction } = useKRActions();
+  const { actions, loading: actionsLoading, createAction, deleteAction } = useKRActions(keyResult?.id);
 
   if (!keyResult) return null;
 
@@ -244,16 +254,94 @@ export const KRFCAUnifiedModal = ({ keyResult, open, onClose }: KRFCAUnifiedModa
             <TabsContent value="actions" className="space-y-4">
               {selectedFCA ? (
                 <>
-                  <div className="flex justify-between items-center">
+                  <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-lg font-semibold">Ações do FCA: {selectedFCA.title}</h3>
                       <p className="text-sm text-muted-foreground">{fcaActions.length} ações encontradas</p>
                     </div>
-                    <Button onClick={handleCreateAction} size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      Nova Ação
-                    </Button>
                   </div>
+
+                  {/* Inline 5W1H form */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Nova Ação (5W1H)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="what">O quê (What) *</Label>
+                          <Input id="what" value={what} onChange={(e) => setWhat(e.target.value)} placeholder="Descreva a ação a ser realizada" />
+                        </div>
+                        <div>
+                          <Label htmlFor="who">Quem (Who)</Label>
+                          <Input id="who" value={who} onChange={(e) => setWho(e.target.value)} placeholder="Responsável pela ação" />
+                        </div>
+                        <div>
+                          <Label htmlFor="when">Quando (When) - Mês/Ano</Label>
+                          <Select value={whenMonth} onValueChange={setWhenMonth}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Array.from({ length: 18 }).map((_, i) => {
+                                const d = new Date();
+                                d.setMonth(d.getMonth() - 6 + i);
+                                const value = d.toISOString().slice(0, 7);
+                                const label = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+                                return <SelectItem key={value} value={value}>{label}</SelectItem>;
+                              })}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="where">Onde (Where)</Label>
+                          <Input id="where" value={where} onChange={(e) => setWhere(e.target.value)} placeholder="Local/contexto" />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Label htmlFor="why">Por quê (Why)</Label>
+                          <Textarea id="why" value={why} onChange={(e) => setWhy(e.target.value)} placeholder="Motivação/benefício da ação" rows={2} />
+                        </div>
+                        <div className="md:col-span-2">
+                          <Label htmlFor="how">Como (How)</Label>
+                          <Textarea id="how" value={how} onChange={(e) => setHow(e.target.value)} placeholder="Como será executada" rows={2} />
+                        </div>
+                      </div>
+                      <div className="flex justify-end">
+                        <Button
+                          disabled={!what.trim() || savingAction}
+                          onClick={async () => {
+                            try {
+                              setSavingAction(true);
+                              const descriptionParts = [] as string[];
+                              if (why.trim()) descriptionParts.push(`Por quê: ${why.trim()}`);
+                              if (how.trim()) descriptionParts.push(`Como: ${how.trim()}`);
+                              if (where.trim()) descriptionParts.push(`Onde: ${where.trim()}`);
+                              const action_description = descriptionParts.length > 0 ? descriptionParts.join(' | ') : undefined;
+                              await createAction({
+                                key_result_id: keyResult.id,
+                                fca_id: selectedFCA.id,
+                                action_title: what.trim(),
+                                action_description,
+                                month_year: whenMonth,
+                                responsible: who.trim() || undefined,
+                                status: 'planned',
+                                priority: 'medium',
+                                completion_percentage: 0,
+                              } as any);
+                              // reset
+                              setWhat(''); setWhy(''); setHow(''); setWhere(''); setWho('');
+                            } catch (e) {
+                              console.error(e);
+                            } finally {
+                              setSavingAction(false);
+                            }
+                          }}
+                        >
+                          {savingAction ? 'Salvando...' : 'Adicionar Ação'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
 
                   {actionsLoading ? (
                     <div className="text-center py-8">Carregando ações...</div>
@@ -261,7 +349,7 @@ export const KRFCAUnifiedModal = ({ keyResult, open, onClose }: KRFCAUnifiedModa
                     <Alert>
                       <AlertCircle className="h-4 w-4" />
                       <AlertDescription>
-                        Nenhuma ação encontrada para este FCA. Crie a primeira ação para começar.
+                        Nenhuma ação encontrada para este FCA. Use o formulário acima para criar a primeira ação.
                       </AlertDescription>
                     </Alert>
                   ) : (
@@ -288,13 +376,7 @@ export const KRFCAUnifiedModal = ({ keyResult, open, onClose }: KRFCAUnifiedModa
                                 )}
                               </div>
                               <div className="flex gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleEditAction(action)}
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
+                                {/* Edição futura inline - removido modal */}
                                 <Button 
                                   variant="outline" 
                                   size="sm"
@@ -344,17 +426,7 @@ export const KRFCAUnifiedModal = ({ keyResult, open, onClose }: KRFCAUnifiedModa
         keyResultId={keyResult.id}
       />
 
-      {/* Modal de Ação */}
-      <ActionFormModal
-        open={showActionModal}
-        onClose={() => {
-          setShowActionModal(false);
-          setEditingAction(null);
-        }}
-        onSave={handleSaveAction}
-        action={editingAction}
-        keyResultId={keyResult.id}
-      />
+      {/* Modal de Ação removido - criação inline 5W1H */}
 
       {/* Confirmação de exclusão de FCA */}
       <AlertDialog open={!!deletingFCAId} onOpenChange={() => setDeletingFCAId(null)}>

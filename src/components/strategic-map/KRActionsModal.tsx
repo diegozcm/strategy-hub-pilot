@@ -384,24 +384,25 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
                   </div>
                 )}
 
-                {/* Seção Ações Órfãs */}
+                {/* Seção Ações Órfãs (conceito descontinuado) */}
                 {fcaFilter !== 'with_fca' && (
                   <div>
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <Target className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Conceito Atualizado</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Todas as ações agora devem estar vinculadas a um FCA.<br/>
-                      Use o novo modal "FCA & Ações" para gerenciar suas ações.
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Acesse através do botão "FCA & Ações" na tela do KR
-                    </p>
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <Target className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Conceito Atualizado</h3>
+                      <p className="text-muted-foreground mb-4">
+                        Todas as ações agora devem estar vinculadas a um FCA.<br/>
+                        Use o novo modal "FCA & Ações" para gerenciar suas ações.
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Acesse através do botão "FCA & Ações" na tela do KR
+                      </p>
+                    </div>
                   </div>
-              </TabsContent>
+                )}
 
-              {/* Lista de Ações */}
-              <div className="flex-1 overflow-y-auto">
+                {/* Lista de Ações */}
+                <div className="flex-1 overflow-y-auto">
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="text-muted-foreground">Carregando ações...</div>
