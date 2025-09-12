@@ -6,8 +6,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultMetrics } from './KeyResultMetrics';
 import { KeyResultChart } from './KeyResultChart';
-import { KRActionsModal } from './KRActionsModal';
-import { Edit, Calendar, User, Target, TrendingUp, MoreVertical, Trash2, FileEdit, ListChecks } from 'lucide-react';
+import { KRFCAUnifiedModal } from './KRFCAUnifiedModal';
+import { KRStatusReportModal } from './KRStatusReportModal';
+import { Edit, Calendar, User, Target, TrendingUp, MoreVertical, Trash2, FileEdit, ListChecks, FileBarChart } from 'lucide-react';
 import { useState } from 'react';
 
 interface KROverviewModalProps {
@@ -20,7 +21,8 @@ interface KROverviewModalProps {
 }
 
 export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValues, onDelete }: KROverviewModalProps) => {
-  const [showActionsModal, setShowActionsModal] = useState(false);
+  const [showFCAModal, setShowFCAModal] = useState(false);
+  const [showStatusReportModal, setShowStatusReportModal] = useState(false);
   
   if (!keyResult) return null;
 
@@ -94,11 +96,20 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowActionsModal(true)}
+                onClick={() => setShowFCAModal(true)}
                 className="text-blue-600 border-blue-200 hover:bg-blue-50"
               >
                 <ListChecks className="h-4 w-4 mr-2" />
-                Gerenciar Ações
+                FCA & Ações
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowStatusReportModal(true)}
+                className="text-green-600 border-green-200 hover:bg-green-50"
+              >
+                <FileBarChart className="h-4 w-4 mr-2" />
+                Status Report
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -193,11 +204,18 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
 
       </DialogContent>
 
-      {/* Modal de Ações */}
-      <KRActionsModal
-        open={showActionsModal}
-        onClose={() => setShowActionsModal(false)}
+      {/* Modal FCA Unificado */}
+      <KRFCAUnifiedModal
         keyResult={keyResult}
+        open={showFCAModal}
+        onClose={() => setShowFCAModal(false)}
+      />
+
+      {/* Modal Status Report */}
+      <KRStatusReportModal
+        keyResult={keyResult}
+        open={showStatusReportModal}
+        onClose={() => setShowStatusReportModal(false)}
       />
     </Dialog>
   );
