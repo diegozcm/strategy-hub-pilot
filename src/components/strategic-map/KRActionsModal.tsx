@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,6 +57,7 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
     createAction,
     updateAction,
     deleteAction,
+    loadActions,
     getOrphanActions,
     getActionStats,
   } = useKRActions(keyResult.id);
@@ -245,6 +247,7 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
               <Target className="h-5 w-5" />
               Ações do KR: {keyResult.title}
             </DialogTitle>
+            <DialogDescription className="sr-only">Gerencie ações e análises do Resultado Chave</DialogDescription>
           </DialogHeader>
 
           <Tabs defaultValue="actions" className="flex-1 flex flex-col">
@@ -693,6 +696,7 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
         fca={selectedFCA}
         onEdit={handleEditFCA}
         onActionChange={async () => {
+          await loadActions();
           await loadFCAs();
           if (selectedFCA?.id) {
             const updated = await getFCAWithActions(selectedFCA.id);

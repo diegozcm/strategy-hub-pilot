@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -111,10 +112,8 @@ export const KRFCADetailModal: React.FC<KRFCADetailModalProps> = ({
   };
 
   const handleDeleteAction = async (actionId: string) => {
-    if (confirm('Tem certeza que deseja deletar esta ação?')) {
-      await deleteAction(actionId);
-      onActionChange();
-    }
+    await deleteAction(actionId);
+    await Promise.resolve(onActionChange());
   };
 
   const handleSaveAction = async (actionData: Omit<KRMonthlyAction, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
@@ -131,7 +130,7 @@ export const KRFCADetailModal: React.FC<KRFCADetailModalProps> = ({
     
     setShowActionForm(false);
     setEditingAction(undefined);
-    onActionChange();
+    await Promise.resolve(onActionChange());
   };
 
   if (!fca) return null;
@@ -151,6 +150,7 @@ export const KRFCADetailModal: React.FC<KRFCADetailModalProps> = ({
                 Editar FCA
               </Button>
             </div>
+            <DialogDescription className="sr-only">Gerencie detalhes e ações do FCA</DialogDescription>
           </DialogHeader>
 
           <Tabs defaultValue="details" className="flex-1 flex flex-col">

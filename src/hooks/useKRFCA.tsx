@@ -33,6 +33,7 @@ export const useKRFCA = (keyResultId?: string) => {
               .from('kr_monthly_actions')
               .select('*')
               .eq('fca_id', fcaData.id)
+              .eq('key_result_id', keyResultId as string)
               .order('month_year', { ascending: false });
 
             if (actionsError) {
@@ -89,6 +90,7 @@ export const useKRFCA = (keyResultId?: string) => {
         .from('kr_monthly_actions')
         .select('*')
         .eq('fca_id', fcaId)
+        .eq('key_result_id', fcaData.key_result_id)
         .order('month_year', { ascending: false });
 
       if (actionsError) throw actionsError;

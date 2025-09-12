@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -159,6 +160,7 @@ export const ActionFormModal: React.FC<ActionFormModalProps> = ({
           <DialogTitle>
             {action ? 'Editar Ação' : 'Nova Ação'}
           </DialogTitle>
+          <DialogDescription className="sr-only">Preencha os campos para criar ou editar a ação do KR</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
