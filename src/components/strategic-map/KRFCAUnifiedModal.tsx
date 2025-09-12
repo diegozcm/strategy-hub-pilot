@@ -86,13 +86,17 @@ export const KRFCAUnifiedModal = ({ keyResult, open, onClose }: KRFCAUnifiedModa
 
   const handleCreateAction = () => {
     if (!selectedFCA) return;
-    setEditingAction(null);
-    setShowActionModal(true);
+    // Reset inline form
+    setWhat('');
+    setWhy('');
+    setWho('');
+    setWhere('');
+    setHow('');
   };
 
   const handleEditAction = (action: any) => {
-    setEditingAction(action);
-    setShowActionModal(true);
+    // For future inline editing
+    console.log('Edit action:', action);
   };
 
   const handleSaveFCA = async (fcaData: any) => {
@@ -116,13 +120,14 @@ export const KRFCAUnifiedModal = ({ keyResult, open, onClose }: KRFCAUnifiedModa
         fca_id: selectedFCA?.id
       };
 
-      if (editingAction) {
-        await updateAction(editingAction.id, dataWithFCA);
-      } else {
-        await createAction(dataWithFCA);
-      }
-      setShowActionModal(false);
-      setEditingAction(null);
+      await createAction(dataWithFCA);
+      
+      // Reset inline form after save
+      setWhat('');
+      setWhy('');
+      setWho('');
+      setWhere('');
+      setHow('');
     } catch (error) {
       console.error('Error saving action:', error);
     }

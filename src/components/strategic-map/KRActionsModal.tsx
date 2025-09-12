@@ -403,51 +403,52 @@ export const KRActionsModal: React.FC<KRActionsModalProps> = ({
 
                 {/* Lista de Ações */}
                 <div className="flex-1 overflow-y-auto">
-                {loading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-muted-foreground">Carregando ações...</div>
-                  </div>
-                ) : Object.keys(actionsByMonth).length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Nenhuma ação encontrada</h3>
-                    <p className="text-muted-foreground mb-4">
-                      {filteredActions.length === 0 && actions.length > 0 
-                        ? 'Tente ajustar os filtros para ver mais ações'
-                        : 'Comece criando sua primeira ação para este KR'
-                      }
-                    </p>
-                    <Button onClick={handleCreateAction}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Criar Primeira Ação
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {Object.entries(actionsByMonth).map(([monthYear, monthActions]) => (
-                      <div key={monthYear}>
-                        <div className="flex items-center gap-3 mb-3">
-                          <h3 className="font-medium text-lg">
-                            📅 {formatMonthYear(monthYear)}
-                          </h3>
-                          <Badge variant="outline">
-                            {monthActions.length} {monthActions.length === 1 ? 'ação' : 'ações'}
-                          </Badge>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-muted-foreground">Carregando ações...</div>
+                    </div>
+                  ) : Object.keys(actionsByMonth).length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-medium mb-2">Nenhuma ação encontrada</h3>
+                      <p className="text-muted-foreground mb-4">
+                        {filteredActions.length === 0 && actions.length > 0 
+                          ? 'Tente ajustar os filtros para ver mais ações'
+                          : 'Comece criando sua primeira ação para este KR'
+                        }
+                      </p>
+                      <Button onClick={handleCreateAction}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Criar Primeira Ação
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {Object.entries(actionsByMonth).map(([monthYear, monthActions]) => (
+                        <div key={monthYear}>
+                          <div className="flex items-center gap-3 mb-3">
+                            <h3 className="font-medium text-lg">
+                              📅 {formatMonthYear(monthYear)}
+                            </h3>
+                            <Badge variant="outline">
+                              {monthActions.length} {monthActions.length === 1 ? 'ação' : 'ações'}
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                            {monthActions.map(action => (
+                              <ActionCard
+                                key={action.id}
+                                action={action}
+                                onEdit={handleEditAction}
+                                onDelete={handleDeleteAction}
+                              />
+                            ))}
+                          </div>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                          {monthActions.map(action => (
-                            <ActionCard
-                              key={action.id}
-                              action={action}
-                              onEdit={handleEditAction}
-                              onDelete={handleDeleteAction}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </TabsContent>
 
