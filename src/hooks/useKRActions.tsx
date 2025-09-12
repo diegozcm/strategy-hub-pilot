@@ -64,7 +64,7 @@ export const useKRActions = (keyResultId?: string) => {
   };
 
   // Criar nova ação
-  const createAction = async (actionData: Omit<KRMonthlyAction, 'id' | 'created_at' | 'updated_at'>) => {
+  const createAction = async (actionData: Omit<KRMonthlyAction, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
