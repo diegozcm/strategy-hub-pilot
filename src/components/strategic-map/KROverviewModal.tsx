@@ -89,7 +89,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
             <div>
               <DialogTitle className="text-2xl">{keyResult.title}</DialogTitle>
               <DialogDescription>
-                Visão geral completa do resultado-chave e evolução dos indicadores
+                {keyResult.description || "Visão geral completa do resultado-chave e evolução dos indicadores"}
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -172,18 +172,6 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
             {achievementPercentage >= 100 ? "Meta alcançada" : achievementPercentage >= 80 ? "No caminho" : "Atenção"}
           </Badge>
         </div>
-
-        {/* Description */}
-        {keyResult.description && (
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Descrição</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">{keyResult.description}</p>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Key Metrics */}
         <KeyResultMetrics
