@@ -46,6 +46,7 @@ export const IndicatorsPage: React.FC = () => {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
+  const [progressFilter, setProgressFilter] = useState('all');
   
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -395,7 +396,20 @@ export const IndicatorsPage: React.FC = () => {
       }
     }
     
-    return matchesSearch && matchesPriority && matchesObjective && matchesPillar;
+    // Check progress match
+    let matchesProgress = progressFilter === 'all';
+    if (!matchesProgress) {
+      const progress = calculateProgress(keyResult);
+      if (progressFilter === 'above') {
+        matchesProgress = progress >= 90;
+      } else if (progressFilter === 'near') {
+        matchesProgress = progress >= 70 && progress < 90;
+      } else if (progressFilter === 'below') {
+        matchesProgress = progress < 70;
+      }
+    }
+    
+    return matchesSearch && matchesPriority && matchesObjective && matchesPillar && matchesProgress;
   });
 
   // Calculate summary statistics
@@ -558,17 +572,44 @@ export const IndicatorsPage: React.FC = () => {
             </SelectContent>
           </Select>
           
-          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="w-full sm:w-36">
-              <SelectValue placeholder="Todas" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
-              <SelectItem value="high">Alta</SelectItem>
-              <SelectItem value="medium">Média</SelectItem>
-              <SelectItem value="low">Baixa</SelectItem>
-            </SelectContent>
-          </Select>
+           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+             <SelectTrigger className="w-full sm:w-36">
+               <SelectValue placeholder="Todas" />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="all">Todas</SelectItem>
+               <SelectItem value="high">Alta</SelectItem>
+               <SelectItem value="medium">Média</SelectItem>
+               <SelectItem value="low">Baixa</SelectItem>
+             </SelectContent>
+           </Select>
+
+           <Select value={progressFilter} onValueChange={setProgressFilter}>
+             <SelectTrigger className="w-full sm:w-44">
+               <SelectValue placeholder="Todos os status" />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="all">Todos os status</SelectItem>
+               <SelectItem value="above">
+                 <div className="flex items-center gap-2">
+                   <div className="w-3 h-3 rounded-full bg-green-500" />
+                   Acima da meta
+                 </div>
+               </SelectItem>
+               <SelectItem value="near">
+                 <div className="flex items-center gap-2">
+                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                   Próximo da meta
+                 </div>
+               </SelectItem>
+               <SelectItem value="below">
+                 <div className="flex items-center gap-2">
+                   <div className="w-3 h-3 rounded-full bg-red-500" />
+                   Abaixo da meta
+                 </div>
+               </SelectItem>
+             </SelectContent>
+           </Select>
         </div>
       </div>
 
