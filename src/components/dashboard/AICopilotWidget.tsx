@@ -118,7 +118,8 @@ export const AICopilotWidget: React.FC = () => {
         body: { 
           message: messageInput,
           session_id: sessionId,
-          user_id: user.id
+          user_id: user.id,
+          company_id: user.user_metadata?.company_id
         }
       });
 

@@ -3,6 +3,7 @@ import { Bot, Brain, MessageSquare, Lightbulb, TrendingUp, AlertTriangle, CheckC
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AISettingsModal } from './AISettingsModal';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
@@ -82,6 +83,7 @@ export const AICopilotPage: React.FC = () => {
   const [isInsightModalOpen, setIsInsightModalOpen] = useState(false);
   const [generatingInsights, setGeneratingInsights] = useState(false);
   const [confirmedInsights, setConfirmedInsights] = useState<AIInsight[]>([]);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   useEffect(() => {
     loadAIData();
@@ -173,7 +175,8 @@ export const AICopilotPage: React.FC = () => {
         body: { 
           message: messageInput,
           session_id: session.id,
-          user_id: user.id
+          user_id: user.id,
+          company_id: user.user_metadata?.company_id
         }
       });
 
@@ -436,7 +439,7 @@ export const AICopilotPage: React.FC = () => {
             )}
             Analisar Dados
           </Button>
-          <Button>
+          <Button onClick={() => setSettingsModalOpen(true)}>
             <Settings className="w-4 h-4 mr-2" />
             Configurações
           </Button>
@@ -969,6 +972,11 @@ export const AICopilotPage: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <AISettingsModal 
+        open={settingsModalOpen} 
+        onOpenChange={setSettingsModalOpen}
+      />
     </div>
   );
 };

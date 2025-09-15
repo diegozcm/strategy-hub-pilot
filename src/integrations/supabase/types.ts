@@ -183,6 +183,68 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_company_settings: {
+        Row: {
+          agent_profile: string
+          company_id: string
+          created_at: string
+          created_by: string
+          id: string
+          max_tokens: number
+          model: string
+          system_prompt: string | null
+          temperature: number
+          updated_at: string
+          updated_by: string
+          voice_enabled: boolean
+          voice_id: string | null
+          voice_model: string | null
+          web_search_enabled: boolean
+        }
+        Insert: {
+          agent_profile?: string
+          company_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          max_tokens?: number
+          model?: string
+          system_prompt?: string | null
+          temperature?: number
+          updated_at?: string
+          updated_by: string
+          voice_enabled?: boolean
+          voice_id?: string | null
+          voice_model?: string | null
+          web_search_enabled?: boolean
+        }
+        Update: {
+          agent_profile?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          max_tokens?: number
+          model?: string
+          system_prompt?: string | null
+          temperature?: number
+          updated_at?: string
+          updated_by?: string
+          voice_enabled?: boolean
+          voice_id?: string | null
+          voice_model?: string | null
+          web_search_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_company_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_insights: {
         Row: {
           actionable: boolean | null
