@@ -16,11 +16,11 @@ const menuStructure = [
     icon: Target,
     items: [
       { name: 'Dashboard', href: '/app/dashboard', icon: BarChart3 },
-      { name: 'Ferramentas', href: '/app/tools', icon: Circle },
       { name: 'Mapa Estratégico', href: '/app/strategic-map', icon: Map },
       { name: 'Objetivos', href: '/app/objectives', icon: Target },
       { name: 'Resultados Chave', href: '/app/indicators', icon: TrendingUp },
       { name: 'Projetos', href: '/app/projects', icon: Briefcase },
+      { name: 'Ferramentas', href: '/app/tools', icon: Circle },
       { name: 'Relatórios', href: '/app/reports', icon: Activity }
     ]
   },
