@@ -12,6 +12,7 @@ import { KeyResult } from '@/types/strategic-map';
 import { useKRFCA } from '@/hooks/useKRFCA';
 import { useKRActions } from '@/hooks/useKRActions';
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit, Trash2, AlertCircle, CheckCircle, Clock, Target } from 'lucide-react';
 import { KRFCAModal } from './KRFCAModal';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -23,6 +24,7 @@ interface KRFCAUnifiedModalProps {
 }
 
 export const KRFCAUnifiedModal = ({ keyResult, open, onClose }: KRFCAUnifiedModalProps) => {
+  const { toast } = useToast();
   const [selectedFCAId, setSelectedFCAId] = useState<string | null>(null);
   const [showFCAModal, setShowFCAModal] = useState(false);
   const [editingFCA, setEditingFCA] = useState(null);
@@ -313,15 +315,36 @@ export const KRFCAUnifiedModal = ({ keyResult, open, onClose }: KRFCAUnifiedModa
                       </div>
                       <div className="flex justify-end">
                         <Button
-                          disabled={!what.trim() || savingAction}
+                          disabled={!what.trim() || savingAction || !selectedFCA}
                           onClick={async () => {
+                            if (!selectedFCA) {
+                              toast({
+                                title: "Erro",
+                                description: "Selecione um FCA antes de criar uma ação",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+
                             try {
                               setSavingAction(true);
+                              
+                              // Validações do frontend
+                              if (!what.trim()) {
+                                throw new Error('O título da ação é obrigatório');
+                              }
+
+                              if (!whenMonth) {
+                                throw new Error('O mês/ano é obrigatório');
+                              }
+
+                              // Construir descrição estruturada 5W1H
                               const descriptionParts = [] as string[];
                               if (why.trim()) descriptionParts.push(`Por quê: ${why.trim()}`);
                               if (how.trim()) descriptionParts.push(`Como: ${how.trim()}`);
                               if (where.trim()) descriptionParts.push(`Onde: ${where.trim()}`);
                               const action_description = descriptionParts.length > 0 ? descriptionParts.join(' | ') : undefined;
+                              
                               await createAction({
                                 key_result_id: keyResult.id,
                                 fca_id: selectedFCA.id,
@@ -333,10 +356,31 @@ export const KRFCAUnifiedModal = ({ keyResult, open, onClose }: KRFCAUnifiedModa
                                 priority: 'medium',
                                 completion_percentage: 0,
                               } as any);
-                              // reset
-                              setWhat(''); setWhy(''); setHow(''); setWhere(''); setWho('');
-                            } catch (e) {
-                              console.error(e);
+                              
+                              // Reset form on success
+                              setWhat('');
+                              setWhy('');
+                              setHow('');
+                              setWhere('');
+                              setWho('');
+                              
+                              toast({
+                                title: "Sucesso",
+                                description: "Ação criada e vinculada ao FCA com sucesso!",
+                              });
+                              
+                            } catch (error) {
+                              console.error('Error creating action:', error);
+                              
+                              const errorMessage = error instanceof Error 
+                                ? error.message 
+                                : "Erro desconhecido ao criar ação";
+                              
+                              toast({
+                                title: "Erro ao Criar Ação",
+                                description: errorMessage,
+                                variant: "destructive",
+                              });
                             } finally {
                               setSavingAction(false);
                             }

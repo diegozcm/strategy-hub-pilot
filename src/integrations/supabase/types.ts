@@ -1271,6 +1271,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_kr_monthly_actions_fca_id"
+            columns: ["fca_id"]
+            isOneToOne: false
+            referencedRelation: "kr_fca"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "kr_monthly_actions_fca_id_fkey"
             columns: ["fca_id"]
             isOneToOne: false
@@ -2712,6 +2719,10 @@ export type Database = {
       }
       user_has_company_access: {
         Args: { _target_user_id: string }
+        Returns: boolean
+      }
+      validate_fca_for_action: {
+        Args: { _fca_id: string; _key_result_id: string }
         Returns: boolean
       }
     }

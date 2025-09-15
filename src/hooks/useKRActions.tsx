@@ -66,32 +66,55 @@ export const useKRActions = (keyResultId?: string) => {
   // Criar nova ação (agora exige FCA)
   const createAction = async (actionData: Omit<KRMonthlyAction, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
     try {
+      // Validação robusta
       if (!actionData.fca_id) {
         throw new Error('FCA é obrigatório para criar uma ação');
       }
 
-      // Validar se o FCA existe
-      await validateFCAExists(actionData.fca_id);
+      if (!actionData.key_result_id) {
+        throw new Error('Key Result é obrigatório');
+      }
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      if (!actionData.action_title?.trim()) {
+        throw new Error('Título da ação é obrigatório');
+      }
+
+      if (!actionData.month_year) {
+        throw new Error('Mês/ano é obrigatório');
+      }
+
+      // Validar se o usuário está autenticado
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('Usuário não autenticado');
+      }
+
+      // Usar a função de validação do banco para validar FCA + KR
+      const { error: validationError } = await supabase.rpc('validate_fca_for_action', {
+        _fca_id: actionData.fca_id,
+        _key_result_id: actionData.key_result_id
+      });
+
+      if (validationError) {
+        throw new Error(validationError.message || 'FCA inválido para este Resultado Chave');
+      }
 
       const actionToInsert = {
         key_result_id: actionData.key_result_id,
         fca_id: actionData.fca_id,
         month_year: actionData.month_year,
-        action_title: actionData.action_title,
-        action_description: actionData.action_description,
-        planned_value: actionData.planned_value,
-        actual_value: actionData.actual_value,
-        completion_percentage: actionData.completion_percentage,
-        status: actionData.status,
-        priority: actionData.priority,
-        responsible: actionData.responsible,
-        start_date: actionData.start_date,
-        end_date: actionData.end_date,
-        evidence_links: actionData.evidence_links,
-        notes: actionData.notes,
+        action_title: actionData.action_title.trim(),
+        action_description: actionData.action_description?.trim() || null,
+        planned_value: actionData.planned_value || null,
+        actual_value: actionData.actual_value || null,
+        completion_percentage: actionData.completion_percentage || 0,
+        status: actionData.status || 'planned',
+        priority: actionData.priority || 'medium',
+        responsible: actionData.responsible?.trim() || null,
+        start_date: actionData.start_date || null,
+        end_date: actionData.end_date || null,
+        evidence_links: actionData.evidence_links || null,
+        notes: actionData.notes?.trim() || null,
         created_by: user.id,
       };
 
@@ -101,9 +124,24 @@ export const useKRActions = (keyResultId?: string) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        
+        // Tratamento de erros específicos
+        if (error.code === '23503') { // Foreign key violation
+          throw new Error('FCA não encontrado ou não válido para este Resultado Chave');
+        } else if (error.code === '42501') { // Insufficient privilege
+          throw new Error('Sem permissão para criar ação neste FCA');
+        } else if (error.message?.includes('row-level security')) {
+          throw new Error('Sem permissão para criar ação para esta empresa');
+        }
+        
+        throw new Error(`Erro ao salvar no banco de dados: ${error.message}`);
+      }
 
+      // Atualizar o estado local
       setActions(prev => [data as KRMonthlyAction, ...prev]);
+      
       toast({
         title: "Sucesso",
         description: "Ação criada com sucesso",
@@ -112,11 +150,15 @@ export const useKRActions = (keyResultId?: string) => {
       return data;
     } catch (error) {
       console.error('Error creating action:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao criar ação";
+      
       toast({
-        title: "Erro",
-        description: error instanceof Error ? error.message : "Erro ao criar ação",
+        title: "Erro ao Criar Ação",
+        description: errorMessage,
         variant: "destructive",
       });
+      
       throw error;
     }
   };
@@ -185,18 +227,41 @@ export const useKRActions = (keyResultId?: string) => {
     return actions.filter(action => action.month_year === monthYear);
   };
 
-  // Validar se FCA existe antes de criar ação
-  const validateFCAExists = async (fcaId: string) => {
+  // Validar se FCA existe e pertence ao KR (versão melhorada)
+  const validateFCAExists = async (fcaId: string, keyResultId?: string) => {
     try {
+      const query = supabase
+        .from('kr_fca')
+        .select('id, key_result_id, status')
+        .eq('id', fcaId);
+
+      if (keyResultId) {
+        query.eq('key_result_id', keyResultId);
+      }
+
       const { data, error } = await supabase
         .from('kr_fca')
-        .select('id')
+        .select('id, key_result_id, status')
         .eq('id', fcaId)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        console.error('Error validating FCA:', error);
+        throw new Error(`Erro ao validar FCA: ${error.message}`);
+      }
+
+      if (!data) {
         throw new Error('FCA não encontrado');
       }
+
+      if (keyResultId && data.key_result_id !== keyResultId) {
+        throw new Error('FCA não pertence ao Resultado Chave especificado');
+      }
+
+      if (data.status !== 'active') {
+        throw new Error('FCA não está ativo');
+      }
+
       return true;
     } catch (error) {
       console.error('Error validating FCA:', error);
