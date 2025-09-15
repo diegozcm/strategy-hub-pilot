@@ -8,6 +8,7 @@ import { ptBR } from 'date-fns/locale';
 import { StrategicObjective } from '@/types/strategic-map';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { KROverviewModal } from './KROverviewModal';
+import { useNavigate } from 'react-router-dom';
 
 interface ObjectiveDetailModalProps {
   objective: StrategicObjective | null;
@@ -25,7 +26,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
   const { keyResults } = useStrategicMap();
   const [selectedKeyResult, setSelectedKeyResult] = useState(null);
   const [isKRModalOpen, setIsKRModalOpen] = useState(false);
-
+  const navigate = useNavigate();
   if (!objective) return null;
 
   // Filter key results for this objective
@@ -189,9 +190,19 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
           keyResult={selectedKeyResult}
           open={isKRModalOpen}
           onClose={handleKRModalClose}
-          onEdit={() => {}} // Empty handler - view only
-          onUpdateValues={() => {}} // Empty handler - view only
-          onDelete={() => {}} // Empty handler - view only
+          onEdit={() => {
+            const id = (selectedKeyResult as any)?.id;
+            handleKRModalClose();
+            onClose();
+            if (id) navigate(`/app/indicators?edit=${id}`);
+          }}
+          onUpdateValues={() => {
+            const id = (selectedKeyResult as any)?.id;
+            handleKRModalClose();
+            onClose();
+            if (id) navigate(`/app/indicators?update=${id}`);
+          }}
+          onDelete={() => {}}
         />
       )}
     </>
