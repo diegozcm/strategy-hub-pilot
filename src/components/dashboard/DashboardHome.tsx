@@ -883,9 +883,10 @@ export const DashboardHome: React.FC = () => {
             navigate(`/app/indicators?update=${selectedKeyResult.id}`);
           }}
           onDelete={() => {
-            // Close modal and handle delete
+            // Close modal and navigate to indicators with delete confirmation
             handleCloseKRModal();
-            // Could implement delete functionality here if needed
+            navigate(`/app/indicators`);
+            // In a real implementation, you might want to add a delete confirmation modal
           }}
         />
       )}

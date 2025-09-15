@@ -21,6 +21,7 @@ import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 import { KREditModal } from '@/components/strategic-map/KREditModal';
 import { KRUpdateValuesModal } from '@/components/strategic-map/KRUpdateValuesModal';
 import { KeyResult, StrategicObjective } from '@/types/strategic-map';
+import { useSearchParams } from 'react-router-dom';
 
 interface KeyResultValue {
   id: string;
@@ -35,6 +36,7 @@ interface KeyResultValue {
 export const IndicatorsPage: React.FC = () => {
   const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   
   // State management
   const [keyResults, setKeyResults] = useState<KeyResult[]>([]);
@@ -164,6 +166,34 @@ export const IndicatorsPage: React.FC = () => {
       loadData();
     }
   }, [user, authCompany]);
+
+  // Handle URL parameters for opening modals
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    const updateId = searchParams.get('update');
+    
+    if (editId && keyResults.length > 0) {
+      const keyResult = keyResults.find(kr => kr.id === editId);
+      if (keyResult) {
+        setSelectedKeyResult(keyResult);
+        setIsKREditModalOpen(true);
+        // Remove the parameter from URL
+        searchParams.delete('edit');
+        setSearchParams(searchParams);
+      }
+    }
+    
+    if (updateId && keyResults.length > 0) {
+      const keyResult = keyResults.find(kr => kr.id === updateId);
+      if (keyResult) {
+        setSelectedKeyResult(keyResult);
+        setIsKRUpdateValuesModalOpen(true);
+        // Remove the parameter from URL
+        searchParams.delete('update');
+        setSearchParams(searchParams);
+      }
+    }
+  }, [searchParams, keyResults, setSearchParams]);
 
   // Create key result
   const handleCreateKeyResult = async (e: React.FormEvent) => {
