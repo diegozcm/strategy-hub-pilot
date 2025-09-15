@@ -1278,11 +1278,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "kr_monthly_actions_fca_id_fkey"
-            columns: ["fca_id"]
+            foreignKeyName: "fk_kr_monthly_actions_fca_kr_composite"
+            columns: ["fca_id", "key_result_id"]
             isOneToOne: false
             referencedRelation: "kr_fca"
-            referencedColumns: ["id"]
+            referencedColumns: ["id", "key_result_id"]
           },
           {
             foreignKeyName: "kr_monthly_actions_key_result_id_fkey"

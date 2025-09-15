@@ -66,13 +66,15 @@ export const useKRActions = (keyResultId?: string) => {
   // Criar nova ação (agora exige FCA)
   const createAction = async (actionData: Omit<KRMonthlyAction, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
     try {
-      // Validação robusta
+      setLoading(true);
+
+      // Validação básica
       if (!actionData.fca_id) {
         throw new Error('FCA é obrigatório para criar uma ação');
       }
 
       if (!actionData.key_result_id) {
-        throw new Error('Key Result é obrigatório');
+        throw new Error('Resultado chave é obrigatório');
       }
 
       if (!actionData.action_title?.trim()) {
@@ -83,22 +85,13 @@ export const useKRActions = (keyResultId?: string) => {
         throw new Error('Mês/ano é obrigatório');
       }
 
-      // Validar se o usuário está autenticado
+      // Verificar se o usuário está autenticado
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         throw new Error('Usuário não autenticado');
       }
 
-      // Usar a função de validação do banco para validar FCA + KR
-      const { error: validationError } = await supabase.rpc('validate_fca_for_action', {
-        _fca_id: actionData.fca_id,
-        _key_result_id: actionData.key_result_id
-      });
-
-      if (validationError) {
-        throw new Error(validationError.message || 'FCA inválido para este Resultado Chave');
-      }
-
+      // Preparar dados para inserção
       const actionToInsert = {
         key_result_id: actionData.key_result_id,
         fca_id: actionData.fca_id,
@@ -118,6 +111,7 @@ export const useKRActions = (keyResultId?: string) => {
         created_by: user.id,
       };
 
+      // Criar a ação (o banco agora garante integridade via FK composto e trigger)
       const { data, error } = await supabase
         .from('kr_monthly_actions')
         .insert(actionToInsert)
@@ -126,33 +120,37 @@ export const useKRActions = (keyResultId?: string) => {
 
       if (error) {
         console.error('Database error:', error);
-        
-        // Tratamento de erros específicos
-        if (error.code === '23503') { // Foreign key violation
-          throw new Error('FCA não encontrado ou não válido para este Resultado Chave');
-        } else if (error.code === '42501') { // Insufficient privilege
-          throw new Error('Sem permissão para criar ação neste FCA');
-        } else if (error.message?.includes('row-level security')) {
-          throw new Error('Sem permissão para criar ação para esta empresa');
-        }
-        
-        throw new Error(`Erro ao salvar no banco de dados: ${error.message}`);
+        throw error;
       }
 
-      // Atualizar o estado local
-      setActions(prev => [data as KRMonthlyAction, ...prev]);
-      
+      // Recarregar ações para manter sincronização
+      if (keyResultId) {
+        await loadActions();
+      }
+
       toast({
         title: "Sucesso",
         description: "Ação criada com sucesso",
       });
 
       return data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating action:', error);
       
-      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido ao criar ação";
+      // Mensagens de erro mais específicas e em português
+      let errorMessage = 'Erro ao criar ação';
       
+      if (error.code === '23505') {
+        errorMessage = 'Já existe uma ação com este título neste mês para este Resultado Chave';
+      } else if (error.code === '23503') {
+        errorMessage = 'O FCA selecionado não existe ou não pertence a este Resultado Chave. Verifique se o FCA está ativo e tente novamente.';
+      } else if (error.code === '42501') {
+        errorMessage = 'Você não tem permissão para criar ações neste FCA ou empresa';
+      } else if (error.message) {
+        // Mensagens do trigger e funções personalizadas já em português
+        errorMessage = error.message;
+      }
+
       toast({
         title: "Erro ao Criar Ação",
         description: errorMessage,
@@ -160,6 +158,8 @@ export const useKRActions = (keyResultId?: string) => {
       });
       
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
