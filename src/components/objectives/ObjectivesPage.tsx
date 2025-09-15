@@ -49,9 +49,7 @@ interface StrategicObjective {
   id: string;
   title: string;
   description: string;
-  status: string;
   progress: number;
-  weight: number;
   target_date: string;
   plan_id: string;
   pillar_id: string;
@@ -109,12 +107,9 @@ export const ObjectivesPage: React.FC = () => {
   const [objectiveForm, setObjectiveForm] = useState({
     title: '',
     description: '',
-    weight: 50, // Use default value from database
     target_date: '',
     plan_id: '',
-    pillar_id: '',
-    status: 'not_started',
-    progress: 0
+    pillar_id: ''
   });
 
   const [planForm, setPlanForm] = useState({
@@ -128,9 +123,7 @@ export const ObjectivesPage: React.FC = () => {
   const [editForm, setEditForm] = useState({
     title: '',
     description: '',
-    weight: 50,
     target_date: '',
-    status: 'not_started',
     pillar_id: ''
   });
 
@@ -216,27 +209,11 @@ export const ObjectivesPage: React.FC = () => {
       return;
     }
 
-    // Validate weight
-    if (objectiveForm.weight < 1 || objectiveForm.weight > 100) {
-      toast({
-        title: "Erro",
-        description: "O peso deve ser um valor entre 1 e 100.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (isSubmitting) return;
-    setIsSubmitting(true);
-
-    try {
       const objectiveData = {
         ...objectiveForm,
         owner_id: user.id,
         target_date: objectiveForm.target_date ? objectiveForm.target_date : null,
-        status: 'not_started',
-        progress: 0,
-        weight: Math.max(1, Math.min(100, objectiveForm.weight)) // Ensure weight is in valid range
+        progress: 0
       };
 
       console.log('🔄 Creating objective with data:', objectiveData);
@@ -254,12 +231,9 @@ export const ObjectivesPage: React.FC = () => {
       setObjectiveForm({ 
         title: '', 
         description: '', 
-        weight: 50, // Use default value 
         target_date: '', 
         plan_id: '', 
-        pillar_id: '',
-        status: 'not_started',
-        progress: 0
+        pillar_id: ''
       });
       setIsCreateObjectiveOpen(false);
       
@@ -285,9 +259,7 @@ export const ObjectivesPage: React.FC = () => {
     setEditForm({
       title: objective.title,
       description: objective.description || '',
-      weight: objective.weight,
       target_date: objective.target_date || '',
-      status: objective.status,
       pillar_id: objective.pillar_id
     });
     setIsEditing(false);
@@ -310,16 +282,6 @@ export const ObjectivesPage: React.FC = () => {
       return;
     }
 
-    // Validate weight
-    if (editForm.weight < 1 || editForm.weight > 100) {
-      toast({
-        title: "Erro",
-        description: "O peso deve ser um valor entre 1 e 100.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (isSubmitting) return;
     setIsSubmitting(true);
 
@@ -329,9 +291,7 @@ export const ObjectivesPage: React.FC = () => {
       const updateData = {
         title: editForm.title,
         description: editForm.description,
-        weight: Math.max(1, Math.min(100, editForm.weight)), // Ensure valid range
         target_date: editForm.target_date || null,
-        status: editForm.status,
         pillar_id: editForm.pillar_id
       };
 
@@ -407,26 +367,6 @@ export const ObjectivesPage: React.FC = () => {
     }
   };
 
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-500';
-      case 'in_progress': return 'bg-blue-500';
-      case 'at_risk': return 'bg-yellow-500';
-      case 'delayed': return 'bg-red-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'completed': return 'Concluído';
-      case 'in_progress': return 'Em Progresso';
-      case 'at_risk': return 'Em Risco';
-      case 'delayed': return 'Atrasado';
-      default: return 'Não Iniciado';
-    }
-  };
 
   const filteredObjectives = objectives.filter(objective => {
     const matchesSearch = objective.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -794,17 +734,6 @@ export const ObjectivesPage: React.FC = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label htmlFor="objective-weight">Peso (%)</Label>
-                          <Input
-                            id="objective-weight"
-                            type="number"
-                            min="1"
-                            max="100"
-                            value={objectiveForm.weight}
-                            onChange={(e) => setObjectiveForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
-                          />
-                        </div>
-                        <div>
                           <Label htmlFor="objective-target-date">Data Meta</Label>
                           <Input
                             id="objective-target-date"
@@ -1092,10 +1021,6 @@ export const ObjectivesPage: React.FC = () => {
                             <Target className="w-3 h-3" />
                             <span>{objectiveKeyResults.length} resultados-chave</span>
                           </div>
-                          <div className="flex items-center gap-1 text-gray-500">
-                            <TrendingUp className="w-3 h-3" />
-                            <span>Peso: {objective.weight}%</span>
-                          </div>
                         </div>
                         {objective.target_date && (
                           <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -1208,17 +1133,6 @@ export const ObjectivesPage: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="edit-weight">Peso (%)</Label>
-                        <Input
-                          id="edit-weight"
-                          type="number"
-                          min="1"
-                          max="100"
-                          value={editForm.weight}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
-                        />
-                      </div>
-                      <div>
                         <Label htmlFor="edit-target-date">Data Meta</Label>
                         <Input
                           id="edit-target-date"
@@ -1226,23 +1140,6 @@ export const ObjectivesPage: React.FC = () => {
                           value={editForm.target_date}
                           onChange={(e) => setEditForm(prev => ({ ...prev, target_date: e.target.value }))}
                         />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="edit-status">Status</Label>
-                        <Select value={editForm.status} onValueChange={(value) => setEditForm(prev => ({ ...prev, status: value }))}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="not_started">Não Iniciado</SelectItem>
-                            <SelectItem value="in_progress">Em Progresso</SelectItem>
-                            <SelectItem value="at_risk">Em Risco</SelectItem>
-                            <SelectItem value="delayed">Atrasado</SelectItem>
-                            <SelectItem value="completed">Concluído</SelectItem>
-                          </SelectContent>
-                        </Select>
                       </div>
                       <div>
                         <Label htmlFor="edit-pillar">Pilar Estratégico</Label>
@@ -1271,32 +1168,18 @@ export const ObjectivesPage: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="font-medium mb-2">Descrição</h3>
-                      <p className="text-gray-600">{selectedObjective.description || 'Nenhuma descrição fornecida.'}</p>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4">
                       <div>
-                        <h4 className="font-medium text-sm text-gray-500">Peso</h4>
-                        <p className="text-lg">{selectedObjective.weight}%</p>
+                        <h3 className="font-medium mb-2">Descrição</h3>
+                        <p className="text-gray-600">{selectedObjective.description || 'Nenhuma descrição fornecida.'}</p>
                       </div>
-                      <div>
-                        <h4 className="font-medium text-sm text-gray-500">Status</h4>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${getStatusColor(selectedObjective.status)}`}></div>
-                          <span>{getStatusText(selectedObjective.status)}</span>
+                      
+                      {selectedObjective.target_date && (
+                        <div>
+                          <h4 className="font-medium text-sm text-gray-500">Data Meta</h4>
+                          <p>{new Date(selectedObjective.target_date).toLocaleDateString('pt-BR')}</p>
                         </div>
-                      </div>
-                    </div>
-
-                    {selectedObjective.target_date && (
-                      <div>
-                        <h4 className="font-medium text-sm text-gray-500">Data Meta</h4>
-                        <p>{new Date(selectedObjective.target_date).toLocaleDateString('pt-BR')}</p>
-                      </div>
-                    )}
+                      )}
 
                     <div>
                       <div className="mb-3">
