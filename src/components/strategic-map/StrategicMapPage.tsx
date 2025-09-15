@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Building2, Target, Users, TrendingUp, Lightbulb, Heart, Edit, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,16 +9,19 @@ import { Separator } from '@/components/ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { useToast } from '@/hooks/use-toast';
 import { CompanySetupModal } from './CompanySetupModal';
 import { PillarFormModal } from './PillarFormModal';
 import { ObjectiveCard } from './ObjectiveCard';
 import { ObjectiveFormModal } from './ObjectiveFormModal';
 import { PillarEditModal } from './PillarEditModal';
 import { DeletePillarModal } from './DeletePillarModal';
+import { AddResultadoChaveModal } from './AddResultadoChaveModal';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { PermissionGate } from '@/components/PermissionGate';
-import { StrategicPillar, Company } from '@/types/strategic-map';
+import { StrategicPillar, Company, KeyResult } from '@/types/strategic-map';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
+import { supabase } from '@/integrations/supabase/client';
 
 const defaultPillars = [
   { name: 'Econômico & Financeiro', color: '#22C55E', icon: TrendingUp },
@@ -29,8 +32,10 @@ const defaultPillars = [
 ];
 
 export const StrategicMapPage = () => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { toast } = useToast();
   const {
     loading,
     company,
@@ -54,6 +59,65 @@ export const StrategicMapPage = () => {
   const [selectedPillarId, setSelectedPillarId] = useState<string>('');
   const [editingPillar, setEditingPillar] = useState<StrategicPillar | null>(null);
   const [deletingPillar, setDeletingPillar] = useState<StrategicPillar | null>(null);
+  
+  // Handle KR modal from URL parameters
+  const [showAddKRModal, setShowAddKRModal] = useState(false);
+  const [targetObjectiveId, setTargetObjectiveId] = useState<string>('');
+
+  // Check URL parameters on component mount and when search params change
+  React.useEffect(() => {
+    const openCreateKR = searchParams.get('openCreateKR');
+    const objectiveId = searchParams.get('objectiveId');
+    
+    if (openCreateKR === '1' && objectiveId) {
+      setTargetObjectiveId(objectiveId);
+      setShowAddKRModal(true);
+    }
+  }, [searchParams]);
+
+  // Clear URL parameters and close modal
+  const handleCloseAddKRModal = () => {
+    setShowAddKRModal(false);
+    setTargetObjectiveId('');
+    // Remove query parameters from URL
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.delete('openCreateKR');
+    newSearchParams.delete('objectiveId');
+    setSearchParams(newSearchParams);
+  };
+
+  // Handle KR creation with toast feedback
+  const handleSaveKeyResult = async (keyResultData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const { error } = await supabase
+        .from('key_results')
+        .insert({
+          ...keyResultData,
+          objective_id: targetObjectiveId,
+          owner_id: user?.id,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Resultado-chave criado com sucesso!",
+      });
+
+      handleCloseAddKRModal();
+      
+      // Refresh the strategic map data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error creating key result:', error);
+      toast({
+        title: "Erro", 
+        description: "Erro ao criar resultado-chave. Tente novamente.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
 
   if (loading) {
     return (
@@ -391,6 +455,14 @@ export const StrategicMapPage = () => {
           objectivesCount={objectives.filter(obj => obj.pillar_id === deletingPillar.id).length}
         />
       )}
+
+      {/* Add KR Modal from URL parameters */}
+      <AddResultadoChaveModal
+        objectiveId={targetObjectiveId}
+        open={showAddKRModal}
+        onClose={handleCloseAddKRModal}
+        onSave={handleSaveKeyResult}
+      />
     </div>
   );
 };

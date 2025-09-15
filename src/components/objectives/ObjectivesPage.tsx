@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X, Trash2, Layout, MoreVertical, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,6 +68,7 @@ interface StrategicPillar {
 export const ObjectivesPage: React.FC = () => {
   const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Use our new data management hook
   const { 
@@ -1166,8 +1168,8 @@ export const ObjectivesPage: React.FC = () => {
                             </p>
                             <Button 
                               onClick={() => {
-                                // Navigate to strategic map to create KR
-                                window.location.href = '/app/strategic-map';
+                                // Navigate to strategic map to create KR with objective ID
+                                navigate(`/app/strategic-map?openCreateKR=1&objectiveId=${selectedObjective.id}`);
                               }}
                               size="sm"
                               className="gap-2"
@@ -1269,8 +1271,10 @@ export const ObjectivesPage: React.FC = () => {
             }
           }}
           onUpdateValues={() => {
-            // Navigate to strategic map page for value updates
-            window.location.href = '/app/strategic-map';
+            // Navigate to strategic map page for value updates with KR and objective ID
+            if (selectedKeyResultForOverview) {
+              navigate(`/app/strategic-map?openUpdateKR=1&krId=${selectedKeyResultForOverview.id}&objectiveId=${selectedKeyResultForOverview.objective_id}`);
+            }
           }}
           onDelete={() => {
             // Implement delete functionality if needed
