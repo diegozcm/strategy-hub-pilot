@@ -11,6 +11,7 @@ import { ResultadoChaveMiniCard } from './ResultadoChaveMiniCard';
 import { KROverviewModal } from './KROverviewModal';
 import { AddResultadoChaveModal } from './AddResultadoChaveModal';
 import { EditKeyResultModal } from './EditKeyResultModal';
+import { ObjectiveDetailModal } from './ObjectiveDetailModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -47,6 +48,7 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
   const [isEditKeyResultModalOpen, setIsEditKeyResultModalOpen] = useState(false);
   const [selectedKeyResultForOverview, setSelectedKeyResultForOverview] = useState<KeyResult | null>(null);
   const [isKROverviewModalOpen, setIsKROverviewModalOpen] = useState(false);
+  const [isObjectiveDetailModalOpen, setIsObjectiveDetailModalOpen] = useState(false);
   const { toast } = useToast();
   const progressPercentage = calculateObjectiveProgress(keyResults);
   
@@ -100,7 +102,10 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
 
   if (compact) {
     return (
-      <div className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors">
+      <div 
+        className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+        onClick={() => setIsObjectiveDetailModalOpen(true)}
+      >
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-sm truncate">{objective.title}</h4>
@@ -280,6 +285,14 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
             description: "A exclusão de Resultados-Chave será implementada em breve.",
           });
         }}
+      />
+
+      {/* Objective Detail Modal */}
+      <ObjectiveDetailModal
+        objective={objective}
+        isOpen={isObjectiveDetailModalOpen}
+        onClose={() => setIsObjectiveDetailModalOpen(false)}
+        keyResultsCount={keyResults.length}
       />
     </>
   );
