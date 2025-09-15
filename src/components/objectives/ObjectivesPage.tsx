@@ -1167,7 +1167,7 @@ export const ObjectivesPage: React.FC = () => {
                               Nenhum resultado-chave definido.
                             </p>
                             <Button 
-                              onClick={() => navigate('/app/strategic-map')}
+                              onClick={() => navigate('/app/key-results')}
                               size="sm"
                               className="gap-2"
                             >
