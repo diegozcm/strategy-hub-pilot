@@ -31,6 +31,7 @@ import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { EditKeyResultModal } from '@/components/strategic-map/EditKeyResultModal';
+import { AddResultadoChaveModal } from '@/components/strategic-map/AddResultadoChaveModal';
 
 interface StrategicPlan {
   id: string;
@@ -101,6 +102,8 @@ export const ObjectivesPage: React.FC = () => {
   const [isKeyResultEditModalOpen, setIsKeyResultEditModalOpen] = useState(false);
   const [selectedKeyResultForOverview, setSelectedKeyResultForOverview] = useState<KeyResult | null>(null);
   const [isKROverviewModalOpen, setIsKROverviewModalOpen] = useState(false);
+  const [isAddKRModalOpen, setIsAddKRModalOpen] = useState(false);
+  const [selectedObjectiveForKR, setSelectedObjectiveForKR] = useState<string>('');
 
   // Form states
   const [objectiveForm, setObjectiveForm] = useState({
@@ -547,6 +550,38 @@ export const ObjectivesPage: React.FC = () => {
       toast({
         title: "Erro", 
         description: "Erro ao atualizar resultado-chave. Tente novamente.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleSaveKeyResult = async (keyResultData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const { error } = await supabase
+        .from('key_results')
+        .insert({
+          ...keyResultData,
+          objective_id: selectedObjectiveForKR,
+          owner_id: user?.id,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Resultado-chave criado com sucesso!",
+      });
+
+      // Refresh data
+      await invalidateAndReload();
+      setIsAddKRModalOpen(false);
+      setSelectedObjectiveForKR('');
+    } catch (error) {
+      console.error('Error creating key result:', error);
+      toast({
+        title: "Erro", 
+        description: "Erro ao criar resultado-chave. Tente novamente.",
         variant: "destructive",
       });
       throw error;
@@ -1276,9 +1311,22 @@ export const ObjectivesPage: React.FC = () => {
                           />
                         ))}
                         {getObjectiveKeyResults(selectedObjective.id).length === 0 && (
-                          <p className="text-sm text-gray-500 text-center py-4">
-                            Nenhum resultado-chave definido. Acesse a página de Resultados-Chave para criar.
-                          </p>
+                          <div className="text-center py-6">
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Nenhum resultado-chave definido.
+                            </p>
+                            <Button 
+                              onClick={() => {
+                                setSelectedObjectiveForKR(selectedObjective.id);
+                                setIsAddKRModalOpen(true);
+                              }}
+                              size="sm"
+                              className="gap-2"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Criar Primeiro Resultado-Chave
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -1382,6 +1430,17 @@ export const ObjectivesPage: React.FC = () => {
               description: "A exclusão de Resultados-Chave será implementada em breve.",
             });
           }}
+        />
+
+        {/* Add KR Modal */}
+        <AddResultadoChaveModal
+          objectiveId={selectedObjectiveForKR}
+          open={isAddKRModalOpen}
+          onClose={() => {
+            setIsAddKRModalOpen(false);
+            setSelectedObjectiveForKR('');
+          }}
+          onSave={handleSaveKeyResult}
         />
       </div>
     </ErrorBoundary>
