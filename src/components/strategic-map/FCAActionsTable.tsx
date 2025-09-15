@@ -38,6 +38,21 @@ export const FCAActionsTable = ({ keyResult }: FCAActionsTableProps) => {
     how: '',
   });
 
+  // Edit action modal state
+  const [editingAction, setEditingAction] = useState<KRMonthlyAction | null>(null);
+  const [showEditActionModal, setShowEditActionModal] = useState(false);
+  const [editActionFormData, setEditActionFormData] = useState({
+    what: '',
+    why: '',
+    who: '',
+    whenMonth: '',
+    where: '',
+    how: '',
+    status: 'planned' as 'planned' | 'in_progress' | 'completed' | 'cancelled',
+    priority: 'medium' as 'low' | 'medium' | 'high',
+    completion_percentage: 0,
+  });
+
   const { fcas, loading: fcasLoading, createFCA, updateFCA, deleteFCA, setFCAStatus } = useKRFCA(keyResult.id);
   const { actions, loading: actionsLoading, createAction, deleteAction, updateAction } = useKRActions(keyResult.id);
 
@@ -189,6 +204,72 @@ export const FCAActionsTable = ({ keyResult }: FCAActionsTableProps) => {
       setDeletingActionId(null);
     } catch (error) {
       console.error('Error deleting action:', error);
+    }
+  };
+
+  const handleEditAction = (action: KRMonthlyAction) => {
+    setEditingAction(action);
+    
+    // Parse existing description to extract 5W1H data
+    const description = action.action_description || '';
+    const whyMatch = description.match(/Por quê:\s*([^|]*)/);
+    const howMatch = description.match(/Como:\s*([^|]*)/);
+    const whereMatch = description.match(/Onde:\s*([^|]*)/);
+    
+    setEditActionFormData({
+      what: action.action_title,
+      why: whyMatch ? whyMatch[1].trim() : '',
+      who: action.responsible || '',
+      whenMonth: action.month_year,
+      where: whereMatch ? whereMatch[1].trim() : '',
+      how: howMatch ? howMatch[1].trim() : '',
+      status: action.status,
+      priority: action.priority,
+      completion_percentage: action.completion_percentage,
+    });
+    
+    setShowEditActionModal(true);
+  };
+
+  const handleSaveEditAction = async () => {
+    try {
+      if (!editingAction) return;
+      
+      if (!editActionFormData.what.trim()) {
+        throw new Error('O título da ação é obrigatório');
+      }
+
+      // Build structured 5W1H description
+      const descriptionParts = [];
+      if (editActionFormData.why.trim()) descriptionParts.push(`Por quê: ${editActionFormData.why.trim()}`);
+      if (editActionFormData.how.trim()) descriptionParts.push(`Como: ${editActionFormData.how.trim()}`);
+      if (editActionFormData.where.trim()) descriptionParts.push(`Onde: ${editActionFormData.where.trim()}`);
+      const action_description = descriptionParts.length > 0 ? descriptionParts.join(' | ') : undefined;
+      
+      await updateAction(editingAction.id, {
+        action_title: editActionFormData.what.trim(),
+        action_description,
+        month_year: editActionFormData.whenMonth,
+        responsible: editActionFormData.who.trim() || null,
+        status: editActionFormData.status,
+        priority: editActionFormData.priority,
+        completion_percentage: editActionFormData.completion_percentage,
+      });
+      
+      setShowEditActionModal(false);
+      setEditingAction(null);
+      
+      toast({
+        title: "Sucesso",
+        description: "Ação atualizada com sucesso!",
+      });
+    } catch (error) {
+      console.error('Error updating action:', error);
+      toast({
+        title: "Erro ao Atualizar Ação",
+        description: error instanceof Error ? error.message : "Erro desconhecido",
+        variant: "destructive",
+      });
     }
   };
 
@@ -460,10 +541,7 @@ export const FCAActionsTable = ({ keyResult }: FCAActionsTableProps) => {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => {
-                                        // Future: implement inline editing
-                                        console.log('Edit action:', action);
-                                      }}
+                                      onClick={() => handleEditAction(action)}
                                     >
                                       <Edit className="h-3 w-3" />
                                     </Button>
@@ -501,6 +579,136 @@ export const FCAActionsTable = ({ keyResult }: FCAActionsTableProps) => {
         keyResultId={keyResult.id}
         fca={editingFCA || undefined}
       />
+
+      {/* Edit Action Modal */}
+      <AlertDialog open={showEditActionModal} onOpenChange={setShowEditActionModal}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Editar Ação</AlertDialogTitle>
+            <AlertDialogDescription>
+              Utilize a metodologia 5W1H para estruturar sua ação de forma completa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="edit-what">O quê? (Título da Ação) *</Label>
+              <Input
+                id="edit-what"
+                placeholder="Descreva a ação a ser executada"
+                value={editActionFormData.what}
+                onChange={(e) => setEditActionFormData(prev => ({ ...prev, what: e.target.value }))}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="edit-why">Por quê? (Justificativa)</Label>
+              <Textarea
+                id="edit-why"
+                placeholder="Explique o motivo e importância desta ação"
+                value={editActionFormData.why}
+                onChange={(e) => setEditActionFormData(prev => ({ ...prev, why: e.target.value }))}
+                rows={2}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-who">Quem? (Responsável)</Label>
+                <Input
+                  id="edit-who"
+                  placeholder="Nome do responsável"
+                  value={editActionFormData.who}
+                  onChange={(e) => setEditActionFormData(prev => ({ ...prev, who: e.target.value }))}
+                />
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-when">Quando? (Mês/Ano) *</Label>
+                <Input
+                  id="edit-when"
+                  type="month"
+                  value={editActionFormData.whenMonth}
+                  onChange={(e) => setEditActionFormData(prev => ({ ...prev, whenMonth: e.target.value }))}
+                />
+              </div>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="edit-where">Onde? (Local/Contexto)</Label>
+              <Input
+                id="edit-where"
+                placeholder="Local ou contexto onde a ação será executada"
+                value={editActionFormData.where}
+                onChange={(e) => setEditActionFormData(prev => ({ ...prev, where: e.target.value }))}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="edit-how">Como? (Método/Processo)</Label>
+              <Textarea
+                id="edit-how"
+                placeholder="Descreva o método ou processo para executar a ação"
+                value={editActionFormData.how}
+                onChange={(e) => setEditActionFormData(prev => ({ ...prev, how: e.target.value }))}
+                rows={2}
+              />
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select value={editActionFormData.status} onValueChange={(value: any) => setEditActionFormData(prev => ({ ...prev, status: value }))}>
+                  <SelectTrigger id="edit-status">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="planned">Planejado</SelectItem>
+                    <SelectItem value="in_progress">Em Progresso</SelectItem>
+                    <SelectItem value="completed">Concluído</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-priority">Prioridade</Label>
+                <Select value={editActionFormData.priority} onValueChange={(value: any) => setEditActionFormData(prev => ({ ...prev, priority: value }))}>
+                  <SelectTrigger id="edit-priority">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Baixa</SelectItem>
+                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="high">Alta</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid gap-2">
+                <Label htmlFor="edit-completion">% Conclusão</Label>
+                <Input
+                  id="edit-completion"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={editActionFormData.completion_percentage}
+                  onChange={(e) => setEditActionFormData(prev => ({ ...prev, completion_percentage: Number(e.target.value) }))}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowEditActionModal(false)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleSaveEditAction}>
+              Salvar Alterações
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete FCA Confirmation */}
       <AlertDialog open={!!deletingFCAId} onOpenChange={() => setDeletingFCAId(null)}>
