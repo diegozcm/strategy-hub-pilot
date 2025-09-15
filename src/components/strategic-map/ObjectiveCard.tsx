@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { StrategicObjective, KeyResult } from '@/types/strategic-map';
 import { ResultadoChaveMiniCard } from './ResultadoChaveMiniCard';
+import { KROverviewModal } from './KROverviewModal';
 import { AddResultadoChaveModal } from './AddResultadoChaveModal';
 import { EditKeyResultModal } from './EditKeyResultModal';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,6 +45,8 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
   const [showResultadoChaveForm, setShowResultadoChaveForm] = useState(false);
   const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
   const [isEditKeyResultModalOpen, setIsEditKeyResultModalOpen] = useState(false);
+  const [selectedKeyResultForOverview, setSelectedKeyResultForOverview] = useState<KeyResult | null>(null);
+  const [isKROverviewModalOpen, setIsKROverviewModalOpen] = useState(false);
   const { toast } = useToast();
   const progressPercentage = calculateObjectiveProgress(keyResults);
   
@@ -57,6 +60,11 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
   const handleEditKeyResult = (keyResult: KeyResult) => {
     setSelectedKeyResult(keyResult);
     setIsEditKeyResultModalOpen(true);
+  };
+
+  const handleOpenKeyResultDetails = (keyResult: KeyResult) => {
+    setSelectedKeyResultForOverview(keyResult);
+    setIsKROverviewModalOpen(true);
   };
 
   const handleUpdateKeyResult = async (keyResultData: Partial<KeyResult>) => {
@@ -210,7 +218,7 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
                     <ResultadoChaveMiniCard 
                       key={kr.id} 
                       resultadoChave={kr} 
-                      onEdit={handleEditKeyResult}
+                      onOpenDetails={handleOpenKeyResultDetails}
                     />
                   ))}
                 </div>
@@ -242,6 +250,37 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
           onSave={handleUpdateKeyResult}
         />
       )}
+
+      {/* KR Overview Modal */}
+      <KROverviewModal
+        keyResult={selectedKeyResultForOverview}
+        open={isKROverviewModalOpen}
+        onClose={() => {
+          setIsKROverviewModalOpen(false);
+          setSelectedKeyResultForOverview(null);
+        }}
+        onEdit={() => {
+          setIsKROverviewModalOpen(false);
+          if (selectedKeyResultForOverview) {
+            handleEditKeyResult(selectedKeyResultForOverview);
+          }
+        }}
+        onUpdateValues={() => {
+          // Close modal and show toast about navigating to strategic map
+          setIsKROverviewModalOpen(false);
+          toast({
+            title: "Atualize valores na página de Mapa Estratégico",
+            description: "Para atualizar os valores dos Resultados-Chave, acesse a página de Mapa Estratégico.",
+          });
+        }}
+        onDelete={() => {
+          // Implement delete functionality if needed
+          toast({
+            title: "Funcionalidade em desenvolvimento",
+            description: "A exclusão de Resultados-Chave será implementada em breve.",
+          });
+        }}
+      />
     </>
   );
 };

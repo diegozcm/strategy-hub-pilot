@@ -19,6 +19,7 @@ import { useHealthMonitor } from '@/hooks/useHealthMonitor';
 import { useOperationState } from '@/hooks/useOperationState';
 
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
+import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 import { KeyResult } from '@/types/strategic-map';
 import { PlanCard } from './PlanCard';
@@ -95,9 +96,11 @@ export const ObjectivesPage: React.FC = () => {
   const [isPlanEditOpen, setIsPlanEditOpen] = useState(false);
   const [isPlanDeleteOpen, setIsPlanDeleteOpen] = useState(false);
 
-  // Key Result edit modal states
+  // Key Result modal states
   const [selectedKeyResultForEdit, setSelectedKeyResultForEdit] = useState<KeyResult | null>(null);
   const [isKeyResultEditModalOpen, setIsKeyResultEditModalOpen] = useState(false);
+  const [selectedKeyResultForOverview, setSelectedKeyResultForOverview] = useState<KeyResult | null>(null);
+  const [isKROverviewModalOpen, setIsKROverviewModalOpen] = useState(false);
 
   // Form states
   const [objectiveForm, setObjectiveForm] = useState({
@@ -516,6 +519,11 @@ export const ObjectivesPage: React.FC = () => {
   const handleEditKeyResult = (keyResult: KeyResult) => {
     setSelectedKeyResultForEdit(keyResult);
     setIsKeyResultEditModalOpen(true);
+  };
+
+  const handleOpenKeyResultDetails = (keyResult: KeyResult) => {
+    setSelectedKeyResultForOverview(keyResult);
+    setIsKROverviewModalOpen(true);
   };
 
   const handleUpdateKeyResult = async (keyResultData: Partial<KeyResult>) => {
@@ -1264,7 +1272,7 @@ export const ObjectivesPage: React.FC = () => {
                           <ResultadoChaveMiniCard 
                             key={kr.id} 
                             resultadoChave={kr} 
-                            onEdit={handleEditKeyResult}
+                            onOpenDetails={handleOpenKeyResultDetails}
                           />
                         ))}
                         {getObjectiveKeyResults(selectedObjective.id).length === 0 && (
@@ -1348,6 +1356,33 @@ export const ObjectivesPage: React.FC = () => {
             onSave={handleUpdateKeyResult}
           />
         )}
+
+        {/* KR Overview Modal */}
+        <KROverviewModal
+          keyResult={selectedKeyResultForOverview}
+          open={isKROverviewModalOpen}
+          onClose={() => {
+            setIsKROverviewModalOpen(false);
+            setSelectedKeyResultForOverview(null);
+          }}
+          onEdit={() => {
+            setIsKROverviewModalOpen(false);
+            if (selectedKeyResultForOverview) {
+              handleEditKeyResult(selectedKeyResultForOverview);
+            }
+          }}
+          onUpdateValues={() => {
+            // Navigate to strategic map page for value updates
+            window.location.href = '/app/strategic-map';
+          }}
+          onDelete={() => {
+            // Implement delete functionality if needed
+            toast({
+              title: "Funcionalidade em desenvolvimento",
+              description: "A exclusão de Resultados-Chave será implementada em breve.",
+            });
+          }}
+        />
       </div>
     </ErrorBoundary>
   );

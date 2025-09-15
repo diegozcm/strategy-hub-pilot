@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 interface ResultadoChaveMiniCardProps {
   resultadoChave: KeyResult;
   onUpdate?: () => void;
-  onEdit?: (keyResult: KeyResult) => void;
+  onOpenDetails?: (keyResult: KeyResult) => void;
 }
 
 const getStatusColor = (status: string) => {
@@ -28,7 +28,7 @@ const getStatusText = (status: string) => {
   }
 };
 
-export const ResultadoChaveMiniCard = ({ resultadoChave, onUpdate, onEdit }: ResultadoChaveMiniCardProps) => {
+export const ResultadoChaveMiniCard = ({ resultadoChave, onUpdate, onOpenDetails }: ResultadoChaveMiniCardProps) => {
 
   // Calcular progresso usando yearly_actual se disponível, senão current_value
   const currentValue = resultadoChave.yearly_actual || resultadoChave.current_value || 0;
@@ -43,12 +43,12 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, onUpdate, onEdit }: Res
     <div className="flex flex-col gap-2 p-2 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
       <div className="flex items-center justify-between">
         <h4 className="font-medium text-sm truncate flex-1">{resultadoChave.title}</h4>
-        {onEdit && (
+        {onOpenDetails && (
           <Button 
             variant="ghost" 
             size="sm" 
             className="h-6 w-6 p-0 ml-2"
-            onClick={() => onEdit(resultadoChave)}
+            onClick={() => onOpenDetails(resultadoChave)}
           >
             <Edit className="h-3 w-3" />
           </Button>
