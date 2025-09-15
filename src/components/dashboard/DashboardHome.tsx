@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useNavigate } from 'react-router-dom';
+import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 
 interface KeyResultWithPillar {
   id: string;
@@ -97,6 +98,10 @@ export const DashboardHome: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
+  
+  // Modal states
+  const [isKROverviewModalOpen, setIsKROverviewModalOpen] = useState(false);
+  const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResultWithPillar | null>(null);
 
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
   const currentYear = new Date().getFullYear();
@@ -105,6 +110,43 @@ export const DashboardHome: React.FC = () => {
   const calculateProgress = (keyResult: KeyResultWithPillar): number => {
     if (!keyResult.target_value || keyResult.target_value === 0) return 0;
     return Math.min((keyResult.current_value / keyResult.target_value) * 100, 100);
+  };
+
+  // Handle KR Overview Modal
+  const handleKRClick = (keyResult: KeyResultWithPillar) => {
+    // Convert to the expected KeyResult format for the modal
+    const modalKeyResult = {
+      id: keyResult.id,
+      title: keyResult.title,
+      description: keyResult.description || '',
+      unit: '%',
+      priority: keyResult.priority || 'medium',
+      current_value: keyResult.current_value,
+      target_value: keyResult.target_value,
+      due_date: keyResult.due_date,
+      monthly_targets: keyResult.monthly_targets,
+      monthly_actual: keyResult.monthly_actual,
+      aggregation_type: keyResult.aggregation_type || 'sum',
+      objective_id: keyResult.objective_id,
+      owner_id: '',
+      created_at: '',
+      updated_at: '',
+      yearly_target: keyResult.yearly_target,
+      yearly_actual: keyResult.yearly_actual,
+      last_updated: null,
+      metric_type: 'percentage',
+      frequency: 'monthly',
+      responsible: '',
+      category: ''
+    };
+    
+    setSelectedKeyResult(keyResult);
+    setIsKROverviewModalOpen(true);
+  };
+
+  const handleCloseKRModal = () => {
+    setIsKROverviewModalOpen(false);
+    setSelectedKeyResult(null);
   };
 
   // Filter logic
@@ -684,7 +726,7 @@ export const DashboardHome: React.FC = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => navigateToKREdit(kr.id)}
+                                onClick={() => handleKRClick(kr)}
                                 className="text-gray-500 hover:text-gray-700"
                               >
                                 <Edit className="h-4 w-4" />
@@ -803,6 +845,50 @@ export const DashboardHome: React.FC = () => {
           </Card>
         </div>
       </div>
+      
+      {/* KR Overview Modal */}
+      {selectedKeyResult && (
+        <KROverviewModal
+          keyResult={{
+            id: selectedKeyResult.id,
+            title: selectedKeyResult.title,
+            description: selectedKeyResult.description || '',
+            unit: '%',
+            current_value: selectedKeyResult.current_value,
+            target_value: selectedKeyResult.target_value,
+            due_date: selectedKeyResult.due_date,
+            monthly_targets: selectedKeyResult.monthly_targets,
+            monthly_actual: selectedKeyResult.monthly_actual,
+            aggregation_type: (selectedKeyResult.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum',
+            objective_id: selectedKeyResult.objective_id,
+            owner_id: '',
+            created_at: '',
+            updated_at: '',
+            yearly_target: selectedKeyResult.yearly_target,
+            yearly_actual: selectedKeyResult.yearly_actual,
+            metric_type: 'percentage',
+            frequency: 'monthly',
+            responsible: ''
+          }}
+          open={isKROverviewModalOpen}
+          onClose={handleCloseKRModal}
+          onEdit={() => {
+            // Close modal and navigate to edit
+            handleCloseKRModal();
+            navigate(`/app/indicators?edit=${selectedKeyResult.id}`);
+          }}
+          onUpdateValues={() => {
+            // Close modal and navigate to update values
+            handleCloseKRModal();
+            navigate(`/app/indicators?update=${selectedKeyResult.id}`);
+          }}
+          onDelete={() => {
+            // Close modal and handle delete
+            handleCloseKRModal();
+            // Could implement delete functionality here if needed
+          }}
+        />
+      )}
     </div>
   );
 };
