@@ -141,7 +141,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
         
         {/* Header Info */}
         <div className="flex flex-wrap gap-2 mb-4">
-          <Badge variant="outline">
+          <Badge variant="secondary">
             {getAggregationTypeText(aggregationType)}
           </Badge>
           {keyResult.unit && (
