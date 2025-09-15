@@ -1167,10 +1167,7 @@ export const ObjectivesPage: React.FC = () => {
                               Nenhum resultado-chave definido.
                             </p>
                             <Button 
-                              onClick={() => {
-                                // Navigate to strategic map to create KR with objective ID
-                                navigate(`/app/strategic-map?openCreateKR=1&objectiveId=${selectedObjective.id}`);
-                              }}
+                              onClick={() => navigate('/app/strategic-map')}
                               size="sm"
                               className="gap-2"
                             >
