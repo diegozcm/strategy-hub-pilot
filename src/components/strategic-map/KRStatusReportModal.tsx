@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { KeyResult } from '@/types/strategic-map';
 import { useState } from 'react';
-import { Plus, Calendar, FileText, AlertCircle } from 'lucide-react';
+import { Plus, Calendar, FileText, AlertCircle, Edit, Trash2 } from 'lucide-react';
 
 interface KRStatusReportModalProps {
   keyResult: KeyResult | null;
@@ -35,6 +36,8 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
   const [loading, setLoading] = useState(false);
   const [reports, setReports] = useState<StatusReport[]>([]);
   const [showNewReportForm, setShowNewReportForm] = useState(false);
+  const [editingReport, setEditingReport] = useState<StatusReport | null>(null);
+  const [deletingReportId, setDeletingReportId] = useState<string | null>(null);
 
   if (!keyResult) return null;
 
@@ -45,20 +48,35 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
     
     // Simulate API call
     setTimeout(() => {
-      const newReport: StatusReport = {
-        id: Date.now().toString(),
-        key_result_id: keyResult.id,
-        report_date: new Date().toISOString(),
-        status_summary: statusSummary,
-        challenges,
-        achievements,
-        next_steps: nextSteps,
-        created_by: 'current-user',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      
-      setReports(prev => [newReport, ...prev]);
+      if (editingReport) {
+        // Update existing report
+        const updatedReport: StatusReport = {
+          ...editingReport,
+          status_summary: statusSummary,
+          challenges,
+          achievements,
+          next_steps: nextSteps,
+          updated_at: new Date().toISOString(),
+        };
+        
+        setReports(prev => prev.map(r => r.id === editingReport.id ? updatedReport : r));
+      } else {
+        // Create new report
+        const newReport: StatusReport = {
+          id: Date.now().toString(),
+          key_result_id: keyResult.id,
+          report_date: new Date().toISOString(),
+          status_summary: statusSummary,
+          challenges,
+          achievements,
+          next_steps: nextSteps,
+          created_by: 'current-user',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
+        setReports(prev => [newReport, ...prev]);
+      }
       
       // Reset form and close
       setStatusSummary('');
@@ -66,6 +84,7 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
       setAchievements('');
       setNextSteps('');
       setShowNewReportForm(false);
+      setEditingReport(null);
       setLoading(false);
     }, 1000);
   };
@@ -76,6 +95,26 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
     setAchievements('');
     setNextSteps('');
     setShowNewReportForm(false);
+    setEditingReport(null);
+  };
+
+  const handleEditReport = (report: StatusReport) => {
+    setEditingReport(report);
+    setStatusSummary(report.status_summary);
+    setChallenges(report.challenges);
+    setAchievements(report.achievements);
+    setNextSteps(report.next_steps);
+    setShowNewReportForm(true);
+  };
+
+  const handleDeleteReport = async () => {
+    if (!deletingReportId) return;
+    
+    // Simulate API call
+    setTimeout(() => {
+      setReports(prev => prev.filter(r => r.id !== deletingReportId));
+      setDeletingReportId(null);
+    }, 500);
   };
 
   const formatDate = (dateString: string) => {
@@ -90,7 +129,7 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[1000px] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Status Report - {keyResult.title}</DialogTitle>
+          <DialogTitle className="text-2xl">Relatórios Apontados - {keyResult.title}</DialogTitle>
           <DialogDescription>
             Documente o progresso atual e mantenha um histórico detalhado da evolução do resultado-chave
           </DialogDescription>
@@ -100,7 +139,7 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
           {/* New Report Button */}
           <div className="flex justify-between items-center">
             <div>
-              <h3 className="text-lg font-semibold">Status Reports</h3>
+              <h3 className="text-lg font-semibold">Relatórios Apontados</h3>
               <p className="text-sm text-muted-foreground">
                 Documente o progresso e mantenha um histórico detalhado
               </p>
@@ -108,7 +147,7 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
             {!showNewReportForm && (
               <Button onClick={() => setShowNewReportForm(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Novo Relatório
+                {editingReport ? 'Cancelar Edição' : 'Novo Relatório'}
               </Button>
             )}
           </div>
@@ -119,7 +158,7 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <FileText className="h-4 w-4" />
-                  Novo Relatório de Status
+                  {editingReport ? 'Editar Relatório' : 'Novo Relatório de Status'}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -183,7 +222,7 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
                       onClick={handleSaveReport}
                       disabled={!statusSummary.trim() || loading}
                     >
-                      {loading ? 'Salvando...' : 'Salvar Relatório'}
+                      {loading ? 'Salvando...' : editingReport ? 'Atualizar Relatório' : 'Salvar Relatório'}
                     </Button>
                   </div>
                 </div>
@@ -217,8 +256,29 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
                           <Calendar className="h-4 w-4" />
                           Relatório de {formatDate(report.report_date)}
                         </CardTitle>
-                        <div className="text-sm text-muted-foreground">
-                          {formatDate(report.created_at)}
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm text-muted-foreground">
+                            {formatDate(report.created_at)}
+                            {report.updated_at !== report.created_at && ' (editado)'}
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditReport(report)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeletingReportId(report.id)}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardHeader>
@@ -252,6 +312,24 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
             )}
           </div>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!deletingReportId} onOpenChange={() => setDeletingReportId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir este relatório? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteReport} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
