@@ -205,16 +205,9 @@ export const useKRFCA = (keyResultId?: string) => {
     }
   };
 
-  // Deletar FCA
+  // Deletar FCA (agora com CASCADE automático)
   const deleteFCA = async (fcaId: string) => {
     try {
-      // First, remove fca_id from related actions
-      await supabase
-        .from('kr_monthly_actions')
-        .update({ fca_id: null })
-        .eq('fca_id', fcaId);
-
-      // Then delete the FCA
       const { error } = await supabase
         .from('kr_fca')
         .delete()
@@ -232,6 +225,32 @@ export const useKRFCA = (keyResultId?: string) => {
       toast({
         title: "Erro",
         description: "Erro ao deletar FCA",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  // Alterar status do FCA
+  const setFCAStatus = async (fcaId: string, status: 'active' | 'resolved' | 'cancelled') => {
+    try {
+      const { error } = await supabase
+        .from('kr_fca')
+        .update({ status })
+        .eq('id', fcaId);
+
+      if (error) throw error;
+
+      setFcas(prev => prev.map(fca => 
+        fca.id === fcaId ? { ...fca, status } : fca
+      ));
+
+      return true;
+    } catch (error) {
+      console.error('Error updating FCA status:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar status do FCA",
         variant: "destructive",
       });
       throw error;
@@ -276,6 +295,7 @@ export const useKRFCA = (keyResultId?: string) => {
     createFCA,
     updateFCA,
     deleteFCA,
+    setFCAStatus,
     loadFCAs,
     getFCAWithActions,
     getFCAStats,
