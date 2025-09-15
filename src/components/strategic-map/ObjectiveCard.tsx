@@ -102,27 +102,36 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
 
   if (compact) {
     return (
-      <div 
-        className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors cursor-pointer"
-        onClick={() => setIsObjectiveDetailModalOpen(true)}
-      >
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-sm truncate">{objective.title}</h4>
-            <div className="flex items-center gap-2 mt-1">
-              {objective.responsible && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <User className="h-3 w-3" />
-                  <span className="truncate max-w-20">{objective.responsible}</span>
-                </div>
-              )}
+      <>
+        <div 
+          className="p-3 border rounded-lg bg-card hover:bg-accent/50 transition-colors cursor-pointer"
+          onClick={() => setIsObjectiveDetailModalOpen(true)}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <h4 className="font-medium text-sm truncate">{objective.title}</h4>
+              <div className="flex items-center gap-2 mt-1">
+                {objective.responsible && (
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <User className="h-3 w-3" />
+                    <span className="truncate max-w-20">{objective.responsible}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="text-right ml-2">
+              <div className="text-xs font-medium">{progressPercentage}%</div>
             </div>
           </div>
-          <div className="text-right ml-2">
-            <div className="text-xs font-medium">{progressPercentage}%</div>
-          </div>
         </div>
-      </div>
+
+        <ObjectiveDetailModal
+          objective={objective}
+          isOpen={isObjectiveDetailModalOpen}
+          onClose={() => setIsObjectiveDetailModalOpen(false)}
+          keyResultsCount={keyResults.length}
+        />
+      </>
     );
   }
 
