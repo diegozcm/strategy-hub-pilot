@@ -35,11 +35,6 @@ export const KeyResultChart = ({
     realizado: monthlyActual[month.key] || 0,
   }));
 
-  // Calcular totais acumulados
-  const totalPrevisto = chartData.reduce((sum, item) => sum + item.previsto, 0);
-  const totalRealizado = chartData.reduce((sum, item) => sum + item.realizado, 0);
-  const percentualRealizacao = totalPrevisto > 0 ? (totalRealizado / totalPrevisto) * 100 : 0;
-
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -99,35 +94,6 @@ export const KeyResultChart = ({
               />
             </LineChart>
           </ResponsiveContainer>
-        </div>
-
-        {/* Totalizador */}
-        <div className="mt-4 pt-4 border-t border-border">
-          <h4 className="text-sm font-semibold mb-3 text-foreground">Acumulado Anual</h4>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-muted/30 rounded-lg">
-              <p className="text-sm text-muted-foreground">Total Previsto</p>
-              <p className="text-lg font-semibold text-muted-foreground">
-                {totalPrevisto.toLocaleString('pt-BR')} {unit}
-              </p>
-            </div>
-            <div className="text-center p-3 bg-primary/10 rounded-lg">
-              <p className="text-sm text-muted-foreground">Total Realizado</p>
-              <p className="text-lg font-semibold text-primary">
-                {totalRealizado.toLocaleString('pt-BR')} {unit}
-              </p>
-            </div>
-            <div className="text-center p-3 bg-secondary/50 rounded-lg">
-              <p className="text-sm text-muted-foreground">% de Realização</p>
-              <p className={`text-lg font-semibold ${
-                percentualRealizacao >= 100 ? 'text-green-600' : 
-                percentualRealizacao >= 80 ? 'text-yellow-600' : 
-                'text-red-600'
-              }`}>
-                {percentualRealizacao.toFixed(1)}%
-              </p>
-            </div>
-          </div>
         </div>
       </CardContent>
     </Card>
