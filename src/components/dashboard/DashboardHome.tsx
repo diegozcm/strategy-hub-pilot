@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, ChevronDown, ChevronUp, Edit, Settings } from 'lucide-react';
+import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, ChevronDown, ChevronUp, Edit, Settings, Search } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useNavigate } from 'react-router-dom';
@@ -24,7 +25,10 @@ interface KeyResultWithPillar {
   pillar_name: string;
   pillar_color: string;
   objective_title: string;
+  objective_id: string;
+  pillar_id: string;
   aggregation_type?: string;
+  priority?: string;
 }
 
 interface DashboardStats {
@@ -73,6 +77,9 @@ export const DashboardHome: React.FC = () => {
   const { company } = useAuth();
   const navigate = useNavigate();
   const [keyResults, setKeyResults] = useState<KeyResultWithPillar[]>([]);
+  const [filteredKeyResults, setFilteredKeyResults] = useState<KeyResultWithPillar[]>([]);
+  const [objectives, setObjectives] = useState<any[]>([]);
+  const [pillars, setPillars] = useState<any[]>([]);
   const [expandedKRs, setExpandedKRs] = useState<Set<string>>(new Set());
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
     totalObjectives: 0,
@@ -83,9 +90,50 @@ export const DashboardHome: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [objectiveFilter, setObjectiveFilter] = useState('all');
+  const [pillarFilter, setPillarFilter] = useState('all');
+  const [progressFilter, setProgressFilter] = useState('all');
 
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
   const currentYear = new Date().getFullYear();
+
+  // Calculate progress function
+  const calculateProgress = (keyResult: KeyResultWithPillar): number => {
+    if (!keyResult.target_value || keyResult.target_value === 0) return 0;
+    return Math.min((keyResult.current_value / keyResult.target_value) * 100, 100);
+  };
+
+  // Filter logic
+  useEffect(() => {
+    const filtered = keyResults.filter(keyResult => {
+      const matchesSearch = keyResult.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           keyResult.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesPriority = priorityFilter === 'all' || keyResult.priority === priorityFilter;
+      const matchesObjective = objectiveFilter === 'all' || keyResult.objective_id === objectiveFilter;
+      const matchesPillar = pillarFilter === 'all' || keyResult.pillar_id === pillarFilter;
+      
+      // Check progress match
+      let matchesProgress = progressFilter === 'all';
+      if (!matchesProgress) {
+        const progress = calculateProgress(keyResult);
+        if (progressFilter === 'above') {
+          matchesProgress = progress >= 90;
+        } else if (progressFilter === 'near') {
+          matchesProgress = progress >= 70 && progress < 90;
+        } else if (progressFilter === 'below') {
+          matchesProgress = progress < 70;
+        }
+      }
+      
+      return matchesSearch && matchesPriority && matchesObjective && matchesPillar && matchesProgress;
+    });
+    
+    setFilteredKeyResults(filtered);
+  }, [keyResults, searchTerm, priorityFilter, objectiveFilter, pillarFilter, progressFilter]);
 
   useEffect(() => {
     if (company?.id) {
@@ -108,6 +156,9 @@ export const DashboardHome: React.FC = () => {
       
       if (planIds.length === 0) {
         setKeyResults([]);
+        setObjectives([]);
+        setPillars([]);
+        setFilteredKeyResults([]);
         setDashboardStats({
           totalObjectives: 0,
           totalKRs: 0,
@@ -122,13 +173,38 @@ export const DashboardHome: React.FC = () => {
       // Buscar objetivos primeiro para obter os IDs
       const { data: objectivesData } = await supabase
         .from('strategic_objectives')
-        .select('id')
+        .select(`
+          id,
+          title,
+          pillar_id,
+          strategic_pillars!inner (
+            id,
+            name,
+            color
+          )
+        `)
         .in('plan_id', planIds);
+      
+      // Buscar pilares únicos
+      const uniquePillars = objectivesData?.reduce((acc: any[], obj: any) => {
+        const existingPillar = acc.find(p => p.id === obj.strategic_pillars.id);
+        if (!existingPillar) {
+          acc.push({
+            id: obj.strategic_pillars.id,
+            name: obj.strategic_pillars.name,
+            color: obj.strategic_pillars.color
+          });
+        }
+        return acc;
+      }, []) || [];
       
       const objectiveIds = objectivesData?.map(obj => obj.id) || [];
       
       if (objectiveIds.length === 0) {
         setKeyResults([]);
+        setObjectives([]);
+        setPillars([]);
+        setFilteredKeyResults([]);
         setDashboardStats({
           totalObjectives: 0,
           totalKRs: 0,
@@ -189,7 +265,10 @@ export const DashboardHome: React.FC = () => {
         pillar_name: kr.strategic_objectives.strategic_pillars.name,
         pillar_color: kr.strategic_objectives.strategic_pillars.color,
         objective_title: kr.strategic_objectives.title,
-        aggregation_type: kr.aggregation_type || 'sum'
+        objective_id: kr.objective_id,
+        pillar_id: kr.strategic_objectives.pillar_id,
+        aggregation_type: kr.aggregation_type || 'sum',
+        priority: 'medium'
       })) || [];
 
       // Calcular estatísticas do dashboard
@@ -233,6 +312,9 @@ export const DashboardHome: React.FC = () => {
       const filledTools = toolsResults.filter(result => result.status === 'fulfilled' && result.value.data).length;
 
       setKeyResults(keyResultsWithPillars);
+      setObjectives(objectivesData || []);
+      setPillars(uniquePillars);
+      setFilteredKeyResults(keyResultsWithPillars);
       setDashboardStats({
         totalObjectives,
         totalKRs,
@@ -454,21 +536,118 @@ export const DashboardHome: React.FC = () => {
               <CardDescription>Resultados Chave individuais - Previsto vs Realizado ({selectedYear})</CardDescription>
             </CardHeader>
             <CardContent>
+              {/* Filters */}
+              <div className="flex flex-col lg:flex-row gap-4 mb-6">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    placeholder="Buscar por nome..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-2 lg:gap-4">
+                  <Select value={pillarFilter} onValueChange={setPillarFilter}>
+                    <SelectTrigger className="w-full sm:w-48">
+                      <SelectValue placeholder="Todos os pilares" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os pilares</SelectItem>
+                      {pillars.map((pillar) => (
+                        <SelectItem key={pillar.id} value={pillar.id}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: pillar.color }}
+                            />
+                            {pillar.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={objectiveFilter} onValueChange={setObjectiveFilter}>
+                    <SelectTrigger className="w-full sm:w-48">
+                      <SelectValue placeholder="Todos os objetivos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os objetivos</SelectItem>
+                      {objectives.map((objective) => {
+                        const pillar = pillars.find(p => p.id === objective.pillar_id);
+                        return (
+                          <SelectItem key={objective.id} value={objective.id}>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: pillar?.color || '#6B7280' }}
+                              />
+                              {objective.title}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                    <SelectTrigger className="w-full sm:w-36">
+                      <SelectValue placeholder="Todas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="high">Alta</SelectItem>
+                      <SelectItem value="medium">Média</SelectItem>
+                      <SelectItem value="low">Baixa</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={progressFilter} onValueChange={setProgressFilter}>
+                    <SelectTrigger className="w-full sm:w-44">
+                      <SelectValue placeholder="Todos os status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os status</SelectItem>
+                      <SelectItem value="above">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-green-500" />
+                          Acima da meta
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="near">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                          Próximo da meta
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="below">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-500" />
+                          Abaixo da meta
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               {loading ? (
                 <div className="text-center py-4">Carregando Key Results...</div>
-              ) : keyResults.length === 0 ? (
+              ) : filteredKeyResults.length === 0 ? (
                 <div className="text-center py-8">
                   <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Nenhum Key Result encontrado
+                    {keyResults.length === 0 ? 'Nenhum Key Result encontrado' : 'Nenhum resultado encontrado para os filtros aplicados'}
                   </h3>
                   <p className="text-gray-600">
-                    Crie Key Results para acompanhar a performance da empresa.
+                    {keyResults.length === 0 ? 'Crie Key Results para acompanhar a performance da empresa.' : 'Tente ajustar os filtros para ver mais resultados.'}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {keyResults.map(kr => {
+                  {filteredKeyResults.map(kr => {
                     const months = getMonthsOfYear();
                     const yearlyAchievement = getYearlyAchievement(kr);
                     const isExpanded = expandedKRs.has(kr.id);
