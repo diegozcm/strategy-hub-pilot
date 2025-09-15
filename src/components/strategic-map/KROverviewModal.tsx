@@ -117,7 +117,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-background border shadow-md z-50">
+                <DropdownMenuContent align="end" className="w-48 bg-background border shadow-md z-[9999]">
                   <DropdownMenuItem onClick={onEdit} className="flex items-center gap-2">
                     <Edit className="h-4 w-4" />
                     Editar Informações
