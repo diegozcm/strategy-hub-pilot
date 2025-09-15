@@ -31,7 +31,7 @@ interface ChatMessage {
 }
 
 export const AICopilotWidget: React.FC = () => {
-  const { user } = useAuth();
+  const { user, company } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -47,9 +47,11 @@ export const AICopilotWidget: React.FC = () => {
   }, []);
 
   const loadData = async () => {
+    if (!company?.id) return;
+    
     try {
       const [insightsRes] = await Promise.all([
-        supabase.from('ai_insights').select('*').order('created_at', { ascending: false }).limit(3)
+        supabase.from('ai_insights').select('*').eq('company_id', company.id).order('created_at', { ascending: false }).limit(3)
       ]);
 
       if (insightsRes.data) setInsights(insightsRes.data);
@@ -61,13 +63,14 @@ export const AICopilotWidget: React.FC = () => {
   };
 
   const createChatSession = async () => {
-    if (!user) return null;
+    if (!user || !company?.id) return null;
 
     try {
       const { data, error } = await supabase
         .from('ai_chat_sessions')
         .insert([{
           user_id: user.id,
+          company_id: company.id,
           session_title: `Chat ${new Date().toLocaleDateString('pt-BR')}`
         }])
         .select()
@@ -119,7 +122,7 @@ export const AICopilotWidget: React.FC = () => {
           message: messageInput,
           session_id: sessionId,
           user_id: user.id,
-          company_id: user.user_metadata?.company_id
+          company_id: company?.id
         }
       });
 
@@ -192,7 +195,8 @@ export const AICopilotWidget: React.FC = () => {
       for (const insight of sampleInsights) {
         await supabase.from('ai_insights').insert([{
           ...insight,
-          user_id: user.id
+          user_id: user.id,
+          company_id: company?.id
         }]);
       }
       

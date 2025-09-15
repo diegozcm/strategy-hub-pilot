@@ -68,7 +68,7 @@ interface ChatSession {
 }
 
 export const AICopilotPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, company } = useAuth();
   const { toast } = useToast();
   
   const [insights, setInsights] = useState<AIInsight[]>([]);
@@ -90,14 +90,16 @@ export const AICopilotPage: React.FC = () => {
   }, []);
 
   const loadAIData = async () => {
+    if (!company?.id) return;
+    
     try {
       setLoading(true);
       
       const [insightsRes, recommendationsRes, chatSessionsRes, confirmedInsightsRes] = await Promise.all([
-        supabase.from('ai_insights').select('*').eq('status', 'active').order('created_at', { ascending: false }),
+        supabase.from('ai_insights').select('*').eq('company_id', company.id).eq('status', 'active').order('created_at', { ascending: false }),
         supabase.from('ai_recommendations').select('*').order('created_at', { ascending: false }),
-        supabase.from('ai_chat_sessions').select('*').order('updated_at', { ascending: false }).limit(10),
-        supabase.from('ai_insights').select('*').neq('status', 'active').order('confirmed_at', { ascending: false }).limit(50)
+        supabase.from('ai_chat_sessions').select('*').eq('user_id', user?.id).eq('company_id', company.id).order('updated_at', { ascending: false }).limit(10),
+        supabase.from('ai_insights').select('*').eq('company_id', company.id).neq('status', 'active').order('confirmed_at', { ascending: false }).limit(50)
       ]);
 
       if (insightsRes.data) setInsights(insightsRes.data);
@@ -118,13 +120,14 @@ export const AICopilotPage: React.FC = () => {
   };
 
   const createChatSession = async () => {
-    if (!user) return null;
+    if (!user || !company?.id) return null;
 
     try {
       const { data, error } = await supabase
         .from('ai_chat_sessions')
         .insert([{
           user_id: user.id,
+          company_id: company.id,
           session_title: `Chat ${new Date().toLocaleDateString('pt-BR')}`
         }])
         .select()
@@ -176,7 +179,7 @@ export const AICopilotPage: React.FC = () => {
           message: messageInput,
           session_id: session.id,
           user_id: user.id,
-          company_id: user.user_metadata?.company_id
+          company_id: company?.id
         }
       });
 
@@ -233,14 +236,17 @@ export const AICopilotPage: React.FC = () => {
   };
 
   const generateRealInsights = async () => {
-    if (!user) return;
+    if (!user || !company?.id) return;
 
     try {
       setGeneratingInsights(true);
-      console.log('Starting insights generation for user:', user.id);
+      console.log('Starting insights generation for user:', user.id, 'company:', company.id);
       
       const response = await supabase.functions.invoke('generate-insights', {
-        body: { user_id: user.id }
+        body: { 
+          user_id: user.id,
+          company_id: company.id
+        }
       });
 
       console.log('Edge function response:', response);

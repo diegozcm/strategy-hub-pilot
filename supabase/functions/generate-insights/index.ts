@@ -26,10 +26,10 @@ serve(async (req) => {
 
     const openAIKey = Deno.env.get('OPENAI_API_KEY');
 
-    const { user_id } = await req.json();
+    const { user_id, company_id } = await req.json();
 
-    if (!user_id) {
-      throw new Error('User ID is required');
+    if (!user_id || !company_id) {
+      throw new Error('User ID and Company ID are required');
     }
 
     console.log(`Generating insights for user: ${user_id}`);
@@ -481,6 +481,7 @@ Foque em:
           .insert([{
             ...insight,
             user_id: user_id,
+            company_id: company_id,
             status: 'active'
           }]);
         

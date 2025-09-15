@@ -161,6 +161,7 @@ export type Database = {
       }
       ai_chat_sessions: {
         Row: {
+          company_id: string | null
           created_at: string | null
           id: string
           session_title: string | null
@@ -168,6 +169,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string | null
           id?: string
           session_title?: string | null
@@ -175,6 +177,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string | null
           id?: string
           session_title?: string | null
@@ -249,6 +252,7 @@ export type Database = {
         Row: {
           actionable: boolean | null
           category: string
+          company_id: string | null
           confidence_score: number | null
           confirmed_at: string | null
           confirmed_by: string | null
@@ -268,6 +272,7 @@ export type Database = {
         Insert: {
           actionable?: boolean | null
           category: string
+          company_id?: string | null
           confidence_score?: number | null
           confirmed_at?: string | null
           confirmed_by?: string | null
@@ -287,6 +292,7 @@ export type Database = {
         Update: {
           actionable?: boolean | null
           category?: string
+          company_id?: string | null
           confidence_score?: number | null
           confirmed_at?: string | null
           confirmed_by?: string | null

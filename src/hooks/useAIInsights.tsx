@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useMultiTenant';
 
 export interface AIInsight {
   id: string;
@@ -45,15 +46,19 @@ export const useAIInsights = () => {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const { toast } = useToast();
+  const { company } = useAuth();
 
   // Load insights from database
   const loadInsights = useCallback(async () => {
+    if (!company?.id) return;
+    
     try {
       setLoading(true);
       
       const { data: insightsData, error: insightsError } = await supabase
         .from('ai_insights')
         .select('*')
+        .eq('company_id', company.id)
         .order('created_at', { ascending: false });
 
       if (insightsError) throw insightsError;
@@ -77,10 +82,12 @@ export const useAIInsights = () => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, company?.id]);
 
   // Generate new insights using the edge function
   const generateInsights = useCallback(async () => {
+    if (!company?.id) return;
+    
     try {
       setGenerating(true);
       
@@ -89,10 +96,13 @@ export const useAIInsights = () => {
         throw new Error('Usuário não autenticado');
       }
 
-      console.log('Generating insights for user:', userData.user.id);
+      console.log('Generating insights for user:', userData.user.id, 'company:', company.id);
       
       const { data, error } = await supabase.functions.invoke('generate-insights', {
-        body: { user_id: userData.user.id }
+        body: { 
+          user_id: userData.user.id,
+          company_id: company.id
+        }
       });
 
       if (error) {
@@ -123,7 +133,7 @@ export const useAIInsights = () => {
     } finally {
       setGenerating(false);
     }
-  }, [toast, loadInsights]);
+  }, [toast, loadInsights, company?.id]);
 
   // Update insight status
   const updateInsightStatus = useCallback(async (insightId: string, status: 'dismissed' | 'resolved') => {
