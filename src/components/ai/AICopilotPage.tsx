@@ -234,23 +234,31 @@ export const AICopilotPage: React.FC = () => {
 
     try {
       setGeneratingInsights(true);
+      console.log('Starting insights generation for user:', user.id);
       
       const response = await supabase.functions.invoke('generate-insights', {
         body: { user_id: user.id }
       });
 
-      if (response.error) throw response.error;
+      console.log('Edge function response:', response);
 
+      if (response.error) {
+        console.error('Edge function error:', response.error);
+        throw response.error;
+      }
+
+      console.log('Insights generated successfully:', response.data);
+      
       await loadAIData();
       toast({
         title: "Sucesso",
-        description: `${response.data.insights_generated} insights gerados baseados nos seus dados!`,
+        description: `${response.data.insights_generated || 0} insights gerados baseados nos seus dados!`,
       });
     } catch (error) {
       console.error('Error generating insights:', error);
       toast({
         title: "Erro",
-        description: "Erro ao gerar insights reais.",
+        description: `Erro ao gerar insights: ${error.message || 'Erro desconhecido'}`,
         variant: "destructive",
       });
     } finally {

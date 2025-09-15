@@ -122,8 +122,7 @@ Foque em:
                 content: prompt
               }
             ],
-            temperature: 0.3,
-            max_tokens: 2000
+            max_completion_tokens: 2000
           }),
         });
 
@@ -178,12 +177,18 @@ Foque em:
     }
 
     // Enhanced rule-based analysis (improved from original)
+    console.log('Starting rule-based analysis...');
+    console.log(`Projects: ${analysis.projects?.length || 0}, Indicators: ${analysis.indicators?.length || 0}, Objectives: ${analysis.objectives?.length || 0}`);
+    
     if (analysis.projects && analysis.projects.length > 0) {
+      console.log('Analyzing projects...');
       for (const project of analysis.projects) {
         const progress = project.progress || 0;
         const startDate = project.start_date ? new Date(project.start_date) : null;
         const endDate = project.end_date ? new Date(project.end_date) : null;
         const now = new Date();
+        
+        console.log(`Project: ${project.name}, Progress: ${progress}%, Status: ${project.status}`);
 
         // Critical: Overdue projects
         if (endDate && endDate < now && project.status !== 'completed') {
@@ -260,10 +265,13 @@ Foque em:
 
     // Enhanced Key Results analysis
     if (analysis.indicators && analysis.indicators.length > 0) {
+      console.log('Analyzing indicators...');
       for (const indicator of analysis.indicators) {
         const currentValue = indicator.current_value || 0;
         const targetValue = indicator.target_value || 0;
         const achievement = targetValue > 0 ? (currentValue / targetValue) * 100 : 0;
+        
+        console.log(`Indicator: ${indicator.name}, Current: ${currentValue}, Target: ${targetValue}, Achievement: ${achievement.toFixed(1)}%`);
 
         // Critical underperformance
         if (achievement < 50) {
@@ -333,10 +341,13 @@ Foque em:
 
     // Enhanced Objectives analysis
     if (analysis.objectives && analysis.objectives.length > 0) {
+      console.log('Analyzing objectives...');
       for (const objective of analysis.objectives) {
         const progress = objective.progress || 0;
         const targetDate = objective.target_date ? new Date(objective.target_date) : null;
         const now = new Date();
+        
+        console.log(`Objective: ${objective.title}, Progress: ${progress}%, Status: ${objective.status}`);
 
         if (targetDate) {
           const daysUntilTarget = Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -359,8 +370,105 @@ Foque em:
                 required_velocity: Math.ceil((100 - progress) / (daysUntilTarget / 7))
               }
             });
+      }
+    }
+
+    // Always generate at least some basic insights about the data state
+    if (insights.length === 0) {
+      console.log('No specific insights generated, creating general overview...');
+      
+      // Generate overview insights
+      if (analysis.projects && analysis.projects.length > 0) {
+        const totalProjects = analysis.projects.length;
+        const activeProjects = analysis.projects.filter(p => p.status !== 'completed').length;
+        const completedProjects = totalProjects - activeProjects;
+        
+        insights.push({
+          insight_type: 'info',
+          category: 'projects',
+          title: 'Visão Geral dos Projetos',
+          description: `Você possui ${totalProjects} projetos no total: ${activeProjects} em andamento e ${completedProjects} concluídos. Continue acompanhando o progresso para manter o controle estratégico.`,
+          severity: 'low',
+          confidence_score: 1.0,
+          related_entity_type: 'project',
+          actionable: true,
+          metadata: {
+            total_projects: totalProjects,
+            active_projects: activeProjects,
+            completed_projects: completedProjects,
+            source: 'overview_analysis'
           }
-        }
+        });
+      }
+
+      if (analysis.indicators && analysis.indicators.length > 0) {
+        const totalIndicators = analysis.indicators.length;
+        const averageAchievement = analysis.indicators.reduce((acc, ind) => {
+          const achievement = ind.target_value > 0 ? (ind.current_value / ind.target_value) * 100 : 0;
+          return acc + achievement;
+        }, 0) / totalIndicators;
+
+        insights.push({
+          insight_type: 'info',
+          category: 'indicators',
+          title: 'Performance dos Indicadores',
+          description: `Você está monitorando ${totalIndicators} indicadores-chave com uma média de ${averageAchievement.toFixed(1)}% de atingimento das metas. Continue acompanhando para identificar oportunidades de melhoria.`,
+          severity: 'low',
+          confidence_score: 0.85,
+          related_entity_type: 'key_result',
+          actionable: true,
+          metadata: {
+            total_indicators: totalIndicators,
+            average_achievement: averageAchievement,
+            source: 'overview_analysis'
+          }
+        });
+      }
+
+      if (analysis.objectives && analysis.objectives.length > 0) {
+        const totalObjectives = analysis.objectives.length;
+        const inProgressObjectives = analysis.objectives.filter(o => o.status === 'in_progress').length;
+        const averageProgress = analysis.objectives.reduce((acc, obj) => acc + (obj.progress || 0), 0) / totalObjectives;
+
+        insights.push({
+          insight_type: 'info',
+          category: 'objectives',
+          title: 'Status dos Objetivos Estratégicos',
+          description: `Você possui ${totalObjectives} objetivos estratégicos, sendo ${inProgressObjectives} em progresso ativo. O progresso médio é de ${averageProgress.toFixed(1)}%. Mantenha o foco na execução.`,
+          severity: 'low',
+          confidence_score: 0.90,
+          related_entity_type: 'objective',
+          actionable: true,
+          metadata: {
+            total_objectives: totalObjectives,
+            in_progress_objectives: inProgressObjectives,
+            average_progress: averageProgress,
+            source: 'overview_analysis'
+          }
+        });
+      }
+
+      // If no data at all, provide guidance
+      if ((!analysis.projects || analysis.projects.length === 0) && 
+          (!analysis.indicators || analysis.indicators.length === 0) && 
+          (!analysis.objectives || analysis.objectives.length === 0)) {
+        insights.push({
+          insight_type: 'info',
+          category: 'strategic',
+          title: 'Começando sua Jornada Estratégica',
+          description: 'Para gerar insights mais específicos, comece adicionando projetos, objetivos estratégicos e indicadores-chave. O sistema analisará automaticamente seu progresso e identificará oportunidades de melhoria.',
+          severity: 'low',
+          confidence_score: 1.0,
+          actionable: true,
+          metadata: {
+            recommendation: 'setup_data',
+            source: 'onboarding_guidance'
+          }
+        });
+      }
+    }
+
+    console.log(`Total insights generated: ${insights.length}`);
       }
     }
 
