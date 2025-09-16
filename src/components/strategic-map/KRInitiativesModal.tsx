@@ -9,11 +9,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { KeyResult, KRInitiative, InitiativeStatus, InitiativePriority } from '@/types/strategic-map';
 import { useState } from 'react';
-import { Plus, Calendar, Target, AlertCircle, Edit, Trash2, User, DollarSign, Clock, Eye, TrendingUp } from 'lucide-react';
+import { Plus, Calendar, Target, AlertCircle, Edit, Trash2, User, DollarSign, Clock } from 'lucide-react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -53,7 +51,6 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
   
   const [showNewForm, setShowNewForm] = useState(false);
   const [editingInitiative, setEditingInitiative] = useState<KRInitiative | null>(null);
-  const [viewingInitiative, setViewingInitiative] = useState<KRInitiative | null>(null);
   const [deletingInitiativeId, setDeletingInitiativeId] = useState<string | null>(null);
   
   // Form state
@@ -382,79 +379,87 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                 </AlertDescription>
               </Alert>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-4">
                 {initiatives.map((initiative) => (
-                  <Card key={initiative.id} className="relative hover:shadow-md transition-shadow">
+                  <Card key={initiative.id}>
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="text-sm font-medium truncate">{initiative.title}</CardTitle>
-                          <div className="flex items-center gap-1 mt-1">
-                            {getStatusBadge(initiative.status)}
-                            <Badge variant="outline" className="text-xs">
-                              {priorityLabels[initiative.priority]}
-                            </Badge>
+                        <div className="space-y-1">
+                          <CardTitle className="text-base">{initiative.title}</CardTitle>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(initiative.start_date)} - {formatDate(initiative.end_date)}
+                            {initiative.responsible && (
+                              <>
+                                <User className="h-3 w-3 ml-2" />
+                                {initiative.responsible}
+                              </>
+                            )}
+                            {initiative.budget && (
+                              <>
+                                <DollarSign className="h-3 w-3 ml-2" />
+                                R$ {initiative.budget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 ml-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setViewingInitiative(initiative)}
-                            className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                            title="Visualizar detalhes"
-                          >
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditInitiative(initiative)}
-                            className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
-                            title="Editar iniciativa"
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeletingInitiativeId(initiative.id)}
-                            className="h-7 w-7 p-0 text-destructive hover:text-destructive/80 hover:bg-destructive/10"
-                            title="Excluir iniciativa"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(initiative.status)}
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditInitiative(initiative)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeletingInitiativeId(initiative.id)}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardHeader>
-                    
-                    <CardContent className="pt-0 space-y-3">
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        <span>{formatDate(initiative.start_date)} - {formatDate(initiative.end_date)}</span>
-                      </div>
-                      
-                      {initiative.responsible && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <User className="h-3 w-3" />
-                          <span className="truncate">{initiative.responsible}</span>
+                    <CardContent className="space-y-3">
+                      {initiative.description && (
+                        <div>
+                          <h4 className="font-medium text-sm mb-1">Descrição</h4>
+                          <p className="text-sm text-muted-foreground">{initiative.description}</p>
                         </div>
                       )}
                       
-                      {initiative.budget && (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <DollarSign className="h-3 w-3" />
-                          <span>R$ {initiative.budget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-medium text-sm">Progresso</h4>
+                          <span className="text-sm text-muted-foreground">{initiative.progress_percentage}%</span>
+                        </div>
+                        <div className="group relative">
+                          <Progress value={initiative.progress_percentage} className="w-full cursor-pointer hover:opacity-80 transition-opacity" />
+                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                            <Slider
+                              value={[initiative.progress_percentage]}
+                              onValueChange={(value) => handleUpdateProgress(initiative.id, value[0])}
+                              max={100}
+                              min={0}
+                              step={5}
+                              className="w-full h-full"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {initiative.completion_notes && (
+                        <div>
+                          <h4 className="font-medium text-sm mb-1">Notas de Acompanhamento</h4>
+                          <p className="text-sm text-muted-foreground">{initiative.completion_notes}</p>
                         </div>
                       )}
-                      
-                      <div className="space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs font-medium text-muted-foreground">Progresso</span>
-                          <span className="text-xs font-medium">{initiative.progress_percentage}%</span>
-                        </div>
-                        <Progress value={initiative.progress_percentage} className="h-2" />
-                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -462,121 +467,6 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
             )}
           </div>
         </div>
-
-        {/* Initiative Details Modal */}
-        {viewingInitiative && (
-          <Dialog open={!!viewingInitiative} onOpenChange={() => setViewingInitiative(null)}>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  {viewingInitiative.title}
-                </DialogTitle>
-                <div className="flex items-center gap-2 mt-2">
-                  {getStatusBadge(viewingInitiative.status)}
-                  <Badge variant="outline">
-                    {priorityLabels[viewingInitiative.priority]}
-                  </Badge>
-                </div>
-              </DialogHeader>
-              
-              <ScrollArea className="max-h-[60vh] pr-4">
-                <div className="space-y-4">
-                  {/* Basic Info */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="font-medium text-sm mb-1 text-muted-foreground">Período</h4>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-3 w-3" />
-                        {formatDate(viewingInitiative.start_date)} - {formatDate(viewingInitiative.end_date)}
-                      </div>
-                    </div>
-                    
-                    {viewingInitiative.responsible && (
-                      <div>
-                        <h4 className="font-medium text-sm mb-1 text-muted-foreground">Responsável</h4>
-                        <div className="flex items-center gap-2 text-sm">
-                          <User className="h-3 w-3" />
-                          {viewingInitiative.responsible}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {viewingInitiative.budget && (
-                    <div>
-                      <h4 className="font-medium text-sm mb-1 text-muted-foreground">Orçamento</h4>
-                      <div className="flex items-center gap-2 text-sm">
-                        <DollarSign className="h-3 w-3" />
-                        R$ {viewingInitiative.budget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Progress */}
-                  <div>
-                    <h4 className="font-medium text-sm mb-2 text-muted-foreground">Progresso</h4>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">Conclusão</span>
-                        <span className="text-sm font-medium">{viewingInitiative.progress_percentage}%</span>
-                      </div>
-                      <div className="group relative">
-                        <Progress value={viewingInitiative.progress_percentage} className="w-full cursor-pointer hover:opacity-80 transition-opacity" />
-                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
-                          <Slider
-                            value={[viewingInitiative.progress_percentage]}
-                            onValueChange={(value) => handleUpdateProgress(viewingInitiative.id, value[0])}
-                            max={100}
-                            min={0}
-                            step={5}
-                            className="w-full h-full"
-                          />
-                        </div>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        Passe o mouse sobre a barra para ajustar o progresso
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Description */}
-                  {viewingInitiative.description && (
-                    <div>
-                      <h4 className="font-medium text-sm mb-2 text-muted-foreground">Descrição</h4>
-                      <p className="text-sm leading-relaxed">{viewingInitiative.description}</p>
-                    </div>
-                  )}
-
-                  {/* Completion Notes */}
-                  {viewingInitiative.completion_notes && (
-                    <div>
-                      <h4 className="font-medium text-sm mb-2 text-muted-foreground">Notas de Acompanhamento</h4>
-                      <p className="text-sm leading-relaxed">{viewingInitiative.completion_notes}</p>
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setViewingInitiative(null);
-                    handleEditInitiative(viewingInitiative);
-                  }}
-                  className="text-green-600 border-green-200 hover:bg-green-50"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Editar Iniciativa
-                </Button>
-                <Button variant="outline" onClick={() => setViewingInitiative(null)}>
-                  Fechar
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={!!deletingInitiativeId} onOpenChange={() => setDeletingInitiativeId(null)}>
