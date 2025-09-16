@@ -125,113 +125,117 @@ export const KeyResultChart = ({
           </TabsContent>
           
           <TabsContent value="table" className="space-y-4">
-            <div className="rounded-md border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-32 sticky left-0 bg-background z-10">Indicador</TableHead>
+            <div className="rounded-md border">
+              {/* Fixed Header */}
+              <div className="border-b bg-muted/50">
+                <div className="flex">
+                  <div className="w-32 p-4 font-medium bg-background border-r">Indicador</div>
+                  {months.map(month => {
+                    const isCurrentMonth = month.key === currentMonth;
+                    return (
+                      <div key={month.key} className="min-w-20 p-4 text-center font-medium text-muted-foreground">
+                        {month.name}
+                        {isCurrentMonth && (
+                          <div className="text-xs text-primary">(atual)</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  <div className="min-w-24 p-4 text-center font-semibold bg-muted">
+                    Total
+                  </div>
+                </div>
+              </div>
+              
+              {/* Scrollable Body */}
+              <ScrollArea className="max-h-[300px]">
+                <div className="divide-y">
+                  {/* Previsto Row */}
+                  <div className="flex hover:bg-muted/50">
+                    <div className="w-32 p-4 font-medium bg-background border-r">Previsto</div>
                     {months.map(month => {
                       const isCurrentMonth = month.key === currentMonth;
+                      const value = monthlyTargets[month.key] || 0;
                       return (
-                        <TableHead key={month.key} className="text-center min-w-20">
-                          {month.name}
-                          {isCurrentMonth && (
-                            <span className="block text-xs text-primary">(atual)</span>
-                          )}
-                        </TableHead>
+                        <div 
+                          key={month.key} 
+                          className={`min-w-20 p-4 text-center ${isCurrentMonth ? "bg-blue-50" : ""}`}
+                        >
+                          {value > 0 ? `${value.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
+                        </div>
                       );
                     })}
-                    <TableHead className="text-center min-w-24 bg-muted font-semibold">
-                      Total
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-              </Table>
-              <ScrollArea className="max-h-[300px] overflow-x-auto">
-                <Table>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Previsto</TableCell>
-                      {months.map(month => {
-                        const isCurrentMonth = month.key === currentMonth;
-                        const value = monthlyTargets[month.key] || 0;
-                        return (
-                          <TableCell 
-                            key={month.key} 
-                            className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
-                          >
-                            {value > 0 ? `${value.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
-                          </TableCell>
-                        );
-                      })}
-                      <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
-                        {targetTotal > 0 ? `${targetTotal.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Realizado</TableCell>
-                      {months.map(month => {
-                        const isCurrentMonth = month.key === currentMonth;
-                        const value = monthlyActual[month.key] || 0;
-                        
-                        return (
-                          <TableCell 
-                            key={month.key} 
-                            className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
-                          >
-                            {value > 0 ? `${value.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
-                          </TableCell>
-                        );
-                      })}
-                      <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
-                        {actualTotal > 0 ? `${actualTotal.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">% Atingimento</TableCell>
-                      {months.map(month => {
-                        const isCurrentMonth = month.key === currentMonth;
-                        const value = monthlyActual[month.key] || 0;
-                        const target = monthlyTargets[month.key] || 0;
-                        const achievement = target > 0 ? (value / target) * 100 : 0;
-                        
-                        const getAchievementColor = (percentage: number) => {
-                          if (percentage >= 100) return "text-green-600 font-semibold";
-                          if (percentage >= 80) return "text-yellow-600 font-semibold";
-                          return "text-red-600 font-semibold";
-                        };
-                        
-                        return (
-                          <TableCell 
-                            key={month.key} 
-                            className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
-                          >
-                            {target > 0 ? (
-                              <span className={getAchievementColor(achievement)}>
-                                {achievement.toFixed(0)}%
-                              </span>
-                            ) : (
-                              <span className="text-gray-400">-</span>
-                            )}
-                          </TableCell>
-                        );
-                      })}
-                      <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
-                        {targetTotal > 0 && actualTotal > 0 ? (
-                          <span className={
-                            ((actualTotal / targetTotal) * 100) >= 100 ? "text-green-600 font-semibold" :
-                            ((actualTotal / targetTotal) * 100) >= 80 ? "text-yellow-600 font-semibold" :
-                            "text-red-600 font-semibold"
-                          }>
-                            {((actualTotal / targetTotal) * 100).toFixed(0)}%
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+                    <div className="min-w-24 p-4 text-center bg-gray-100 font-semibold">
+                      {targetTotal > 0 ? `${targetTotal.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
+                    </div>
+                  </div>
+                  
+                  {/* Realizado Row */}
+                  <div className="flex hover:bg-muted/50">
+                    <div className="w-32 p-4 font-medium bg-background border-r">Realizado</div>
+                    {months.map(month => {
+                      const isCurrentMonth = month.key === currentMonth;
+                      const value = monthlyActual[month.key] || 0;
+                      
+                      return (
+                        <div 
+                          key={month.key} 
+                          className={`min-w-20 p-4 text-center ${isCurrentMonth ? "bg-blue-50" : ""}`}
+                        >
+                          {value > 0 ? `${value.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
+                        </div>
+                      );
+                    })}
+                    <div className="min-w-24 p-4 text-center bg-gray-100 font-semibold">
+                      {actualTotal > 0 ? `${actualTotal.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
+                    </div>
+                  </div>
+                  
+                  {/* % Atingimento Row */}
+                  <div className="flex hover:bg-muted/50">
+                    <div className="w-32 p-4 font-medium bg-background border-r">% Atingimento</div>
+                    {months.map(month => {
+                      const isCurrentMonth = month.key === currentMonth;
+                      const value = monthlyActual[month.key] || 0;
+                      const target = monthlyTargets[month.key] || 0;
+                      const achievement = target > 0 ? (value / target) * 100 : 0;
+                      
+                      const getAchievementColor = (percentage: number) => {
+                        if (percentage >= 100) return "text-green-600 font-semibold";
+                        if (percentage >= 80) return "text-yellow-600 font-semibold";
+                        return "text-red-600 font-semibold";
+                      };
+                      
+                      return (
+                        <div 
+                          key={month.key} 
+                          className={`min-w-20 p-4 text-center ${isCurrentMonth ? "bg-blue-50" : ""}`}
+                        >
+                          {target > 0 ? (
+                            <span className={getAchievementColor(achievement)}>
+                              {achievement.toFixed(0)}%
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <div className="min-w-24 p-4 text-center bg-gray-100 font-semibold">
+                      {targetTotal > 0 && actualTotal > 0 ? (
+                        <span className={
+                          ((actualTotal / targetTotal) * 100) >= 100 ? "text-green-600 font-semibold" :
+                          ((actualTotal / targetTotal) * 100) >= 80 ? "text-yellow-600 font-semibold" :
+                          "text-red-600 font-semibold"
+                        }>
+                          {((actualTotal / targetTotal) * 100).toFixed(0)}%
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </ScrollArea>
             </div>
           </TabsContent>
