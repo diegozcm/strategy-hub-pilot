@@ -9,7 +9,7 @@ import { KeyResultChart } from './KeyResultChart';
 import { KRFCAUnifiedModal } from './KRFCAUnifiedModal';
 import { KRStatusReportModal } from './KRStatusReportModal';
 import { KRInitiativesModal } from './KRInitiativesModal';
-import { KRInitiativesTimeline } from './KRInitiativesTimeline';
+
 import { Edit, Calendar, User, Target, TrendingUp, MoreVertical, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
 import { useState } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
@@ -205,13 +205,6 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
           selectedYear={new Date().getFullYear()}
         />
 
-        {/* Initiatives Timeline */}
-        {initiatives.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Cronograma de Iniciativas</h3>
-            <KRInitiativesTimeline initiatives={initiatives} />
-          </div>
-        )}
 
       </DialogContent>
 
