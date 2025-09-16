@@ -154,7 +154,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1200px] max-h-[95vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[1000px] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">Iniciativas - {keyResult.title}</DialogTitle>
           <DialogDescription>
