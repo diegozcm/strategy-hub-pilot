@@ -15,6 +15,7 @@ import { Plus, Calendar, Target, AlertCircle, Edit, Trash2, User, DollarSign, Cl
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useAuth } from '@/hooks/useMultiTenant';
 
 interface KRInitiativesModalProps {
   keyResult: KeyResult | null;
@@ -45,6 +46,7 @@ const statusColors: Record<InitiativeStatus, string> = {
 };
 
 export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesModalProps) => {
+  const { company } = useAuth();
   const { initiatives, loading, createInitiative, updateInitiative, deleteInitiative, getInitiativeStats } = useKRInitiatives(keyResult?.id);
   
   const [showNewForm, setShowNewForm] = useState(false);
@@ -87,7 +89,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
 
     const initiativeData = {
       key_result_id: keyResult.id,
-      company_id: keyResult.id, // Will be set by the hook
+      company_id: company?.id, // Usar o company_id correto
       title: title.trim(),
       description: description.trim() || undefined,
       start_date: startDate,
