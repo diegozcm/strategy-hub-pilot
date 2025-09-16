@@ -125,12 +125,12 @@ export const KeyResultChart = ({
           </TabsContent>
           
           <TabsContent value="table" className="space-y-4">
-            <ScrollArea className="w-full">
-              <div className="rounded-md border min-w-max">
+            <div className="rounded-md border overflow-hidden">
+              <div className="overflow-x-auto max-h-[400px]">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-32">Indicador</TableHead>
+                      <TableHead className="w-32 sticky left-0 bg-background z-10">Indicador</TableHead>
                       {months.map(month => {
                         const isCurrentMonth = month.key === currentMonth;
                         return (
@@ -149,72 +149,89 @@ export const KeyResultChart = ({
                   </TableHeader>
                   <TableBody>
                     <TableRow>
-                      <TableCell className="font-medium bg-background">Previsto</TableCell>
+                      <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Previsto</TableCell>
                       {months.map(month => {
                         const isCurrentMonth = month.key === currentMonth;
                         const value = monthlyTargets[month.key] || 0;
                         return (
                           <TableCell 
                             key={month.key} 
-                            className={`text-center ${isCurrentMonth ? "bg-primary/5" : "bg-background"}`}
+                            className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
                           >
-                            {value > 0 ? `${value.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
+                            {value > 0 ? `${value.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
                           </TableCell>
                         );
                       })}
-                      <TableCell className="text-center bg-muted font-semibold">
-                        {targetTotal > 0 ? `${targetTotal.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
+                      <TableCell className="text-center bg-gray-100 font-semibold">
+                        {targetTotal > 0 ? `${targetTotal.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
                       </TableCell>
                     </TableRow>
                     <TableRow>
-                      <TableCell className="font-medium bg-background">Realizado</TableCell>
+                      <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Realizado</TableCell>
+                      {months.map(month => {
+                        const isCurrentMonth = month.key === currentMonth;
+                        const value = monthlyActual[month.key] || 0;
+                        
+                        return (
+                          <TableCell 
+                            key={month.key} 
+                            className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
+                          >
+                            {value > 0 ? `${value.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
+                          </TableCell>
+                        );
+                      })}
+                      <TableCell className="text-center bg-gray-100 font-semibold">
+                        {actualTotal > 0 ? `${actualTotal.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">% Atingimento</TableCell>
                       {months.map(month => {
                         const isCurrentMonth = month.key === currentMonth;
                         const value = monthlyActual[month.key] || 0;
                         const target = monthlyTargets[month.key] || 0;
                         const achievement = target > 0 ? (value / target) * 100 : 0;
                         
+                        const getAchievementColor = (percentage: number) => {
+                          if (percentage >= 100) return "text-green-600 font-semibold";
+                          if (percentage >= 80) return "text-yellow-600 font-semibold";
+                          return "text-red-600 font-semibold";
+                        };
+                        
                         return (
                           <TableCell 
                             key={month.key} 
-                            className={`text-center ${isCurrentMonth ? "bg-primary/5" : "bg-background"}`}
+                            className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
                           >
-                            <div className="flex flex-col gap-1">
-                              <span>
-                                {value > 0 ? `${value.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
+                            {target > 0 ? (
+                              <span className={getAchievementColor(achievement)}>
+                                {achievement.toFixed(0)}%
                               </span>
-                              {value > 0 && target > 0 && (
-                                <Badge 
-                                  variant={achievement >= 100 ? "default" : achievement >= 80 ? "secondary" : "destructive"}
-                                  className="text-xs"
-                                >
-                                  {achievement.toFixed(0)}%
-                                </Badge>
-                              )}
-                            </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
                           </TableCell>
                         );
                       })}
-                      <TableCell className="text-center bg-muted font-semibold">
-                        <div className="flex flex-col gap-1">
-                          <span>
-                            {actualTotal > 0 ? `${actualTotal.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
+                      <TableCell className="text-center bg-gray-100 font-semibold">
+                        {targetTotal > 0 && actualTotal > 0 ? (
+                          <span className={
+                            ((actualTotal / targetTotal) * 100) >= 100 ? "text-green-600 font-semibold" :
+                            ((actualTotal / targetTotal) * 100) >= 80 ? "text-yellow-600 font-semibold" :
+                            "text-red-600 font-semibold"
+                          }>
+                            {((actualTotal / targetTotal) * 100).toFixed(0)}%
                           </span>
-                          {actualTotal > 0 && targetTotal > 0 && (
-                            <Badge 
-                              variant={((actualTotal / targetTotal) * 100) >= 100 ? "default" : ((actualTotal / targetTotal) * 100) >= 80 ? "secondary" : "destructive"}
-                              className="text-xs"
-                            >
-                              {((actualTotal / targetTotal) * 100).toFixed(0)}%
-                            </Badge>
-                          )}
-                        </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
               </div>
-            </ScrollArea>
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>
