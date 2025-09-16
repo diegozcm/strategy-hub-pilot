@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { BarChart3, TableIcon } from 'lucide-react';
 
 interface KeyResultChartProps {
@@ -124,94 +125,96 @@ export const KeyResultChart = ({
           </TabsContent>
           
           <TabsContent value="table" className="space-y-4">
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-32">Indicador</TableHead>
-                    {months.map(month => {
-                      const isCurrentMonth = month.key === currentMonth;
-                      return (
-                        <TableHead key={month.key} className="text-center min-w-20">
-                          {month.name}
-                          {isCurrentMonth && (
-                            <span className="block text-xs text-primary">(atual)</span>
-                          )}
-                        </TableHead>
-                      );
-                    })}
-                    <TableHead className="text-center min-w-24 bg-muted font-semibold">
-                      Total
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium bg-background">Previsto</TableCell>
-                    {months.map(month => {
-                      const isCurrentMonth = month.key === currentMonth;
-                      const value = monthlyTargets[month.key] || 0;
-                      return (
-                        <TableCell 
-                          key={month.key} 
-                          className={`text-center ${isCurrentMonth ? "bg-primary/5" : "bg-background"}`}
-                        >
-                          {value > 0 ? `${value.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
-                        </TableCell>
-                      );
-                    })}
-                    <TableCell className="text-center bg-muted font-semibold">
-                      {targetTotal > 0 ? `${targetTotal.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium bg-background">Realizado</TableCell>
-                    {months.map(month => {
-                      const isCurrentMonth = month.key === currentMonth;
-                      const value = monthlyActual[month.key] || 0;
-                      const target = monthlyTargets[month.key] || 0;
-                      const achievement = target > 0 ? (value / target) * 100 : 0;
-                      
-                      return (
-                        <TableCell 
-                          key={month.key} 
-                          className={`text-center ${isCurrentMonth ? "bg-primary/5" : "bg-background"}`}
-                        >
-                          <div className="flex flex-col gap-1">
-                            <span>
-                              {value > 0 ? `${value.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
-                            </span>
-                            {value > 0 && target > 0 && (
-                              <Badge 
-                                variant={achievement >= 100 ? "default" : achievement >= 80 ? "secondary" : "destructive"}
-                                className="text-xs"
-                              >
-                                {achievement.toFixed(0)}%
-                              </Badge>
+            <ScrollArea className="w-full">
+              <div className="rounded-md border min-w-max">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-32">Indicador</TableHead>
+                      {months.map(month => {
+                        const isCurrentMonth = month.key === currentMonth;
+                        return (
+                          <TableHead key={month.key} className="text-center min-w-20">
+                            {month.name}
+                            {isCurrentMonth && (
+                              <span className="block text-xs text-primary">(atual)</span>
                             )}
-                          </div>
-                        </TableCell>
-                      );
-                    })}
-                    <TableCell className="text-center bg-muted font-semibold">
-                      <div className="flex flex-col gap-1">
-                        <span>
-                          {actualTotal > 0 ? `${actualTotal.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
-                        </span>
-                        {actualTotal > 0 && targetTotal > 0 && (
-                          <Badge 
-                            variant={((actualTotal / targetTotal) * 100) >= 100 ? "default" : ((actualTotal / targetTotal) * 100) >= 80 ? "secondary" : "destructive"}
-                            className="text-xs"
+                          </TableHead>
+                        );
+                      })}
+                      <TableHead className="text-center min-w-24 bg-muted font-semibold">
+                        Total
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium bg-background">Previsto</TableCell>
+                      {months.map(month => {
+                        const isCurrentMonth = month.key === currentMonth;
+                        const value = monthlyTargets[month.key] || 0;
+                        return (
+                          <TableCell 
+                            key={month.key} 
+                            className={`text-center ${isCurrentMonth ? "bg-primary/5" : "bg-background"}`}
                           >
-                            {((actualTotal / targetTotal) * 100).toFixed(0)}%
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
+                            {value > 0 ? `${value.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
+                          </TableCell>
+                        );
+                      })}
+                      <TableCell className="text-center bg-muted font-semibold">
+                        {targetTotal > 0 ? `${targetTotal.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium bg-background">Realizado</TableCell>
+                      {months.map(month => {
+                        const isCurrentMonth = month.key === currentMonth;
+                        const value = monthlyActual[month.key] || 0;
+                        const target = monthlyTargets[month.key] || 0;
+                        const achievement = target > 0 ? (value / target) * 100 : 0;
+                        
+                        return (
+                          <TableCell 
+                            key={month.key} 
+                            className={`text-center ${isCurrentMonth ? "bg-primary/5" : "bg-background"}`}
+                          >
+                            <div className="flex flex-col gap-1">
+                              <span>
+                                {value > 0 ? `${value.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
+                              </span>
+                              {value > 0 && target > 0 && (
+                                <Badge 
+                                  variant={achievement >= 100 ? "default" : achievement >= 80 ? "secondary" : "destructive"}
+                                  className="text-xs"
+                                >
+                                  {achievement.toFixed(0)}%
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                        );
+                      })}
+                      <TableCell className="text-center bg-muted font-semibold">
+                        <div className="flex flex-col gap-1">
+                          <span>
+                            {actualTotal > 0 ? `${actualTotal.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
+                          </span>
+                          {actualTotal > 0 && targetTotal > 0 && (
+                            <Badge 
+                              variant={((actualTotal / targetTotal) * 100) >= 100 ? "default" : ((actualTotal / targetTotal) * 100) >= 80 ? "secondary" : "destructive"}
+                              className="text-xs"
+                            >
+                              {((actualTotal / targetTotal) * 100).toFixed(0)}%
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </ScrollArea>
           </TabsContent>
         </Tabs>
       </CardContent>
