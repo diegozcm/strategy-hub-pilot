@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
+import { Slider } from '@/components/ui/slider';
 import { KeyResult, KRInitiative, InitiativeStatus, InitiativePriority } from '@/types/strategic-map';
 import { useState } from 'react';
 import { Plus, Calendar, Target, AlertCircle, Edit, Trash2, User, DollarSign, Clock } from 'lucide-react';
@@ -133,6 +134,10 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
     if (success) {
       setDeletingInitiativeId(null);
     }
+  };
+
+  const handleUpdateProgress = async (initiativeId: string, newProgress: number) => {
+    await updateInitiative(initiativeId, { progress_percentage: newProgress });
   };
 
   const formatDate = (dateString: string) => {
@@ -299,15 +304,22 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="progress">Progresso (%)</Label>
-                    <Input
-                      id="progress"
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={progressPercentage}
-                      onChange={(e) => setProgressPercentage(parseInt(e.target.value) || 0)}
-                    />
+                    <Label htmlFor="progress">Progresso</Label>
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>0%</span>
+                        <span className="font-medium text-foreground">{progressPercentage}%</span>
+                        <span>100%</span>
+                      </div>
+                      <Slider
+                        value={[progressPercentage]}
+                        onValueChange={(value) => setProgressPercentage(value[0])}
+                        max={100}
+                        min={0}
+                        step={5}
+                        className="w-full"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -425,7 +437,19 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                           <h4 className="font-medium text-sm">Progresso</h4>
                           <span className="text-sm text-muted-foreground">{initiative.progress_percentage}%</span>
                         </div>
-                        <Progress value={initiative.progress_percentage} className="w-full" />
+                        <div className="group relative">
+                          <Progress value={initiative.progress_percentage} className="w-full cursor-pointer hover:opacity-80 transition-opacity" />
+                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
+                            <Slider
+                              value={[initiative.progress_percentage]}
+                              onValueChange={(value) => handleUpdateProgress(initiative.id, value[0])}
+                              max={100}
+                              min={0}
+                              step={5}
+                              className="w-full h-full"
+                            />
+                          </div>
+                        </div>
                       </div>
 
                       {initiative.completion_notes && (
