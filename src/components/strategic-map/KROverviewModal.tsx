@@ -8,8 +8,11 @@ import { KeyResultMetrics } from './KeyResultMetrics';
 import { KeyResultChart } from './KeyResultChart';
 import { KRFCAUnifiedModal } from './KRFCAUnifiedModal';
 import { KRStatusReportModal } from './KRStatusReportModal';
-import { Edit, Calendar, User, Target, TrendingUp, MoreVertical, Trash2, FileEdit, ListChecks, FileBarChart } from 'lucide-react';
+import { KRInitiativesModal } from './KRInitiativesModal';
+import { KRInitiativesTimeline } from './KRInitiativesTimeline';
+import { Edit, Calendar, User, Target, TrendingUp, MoreVertical, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
 import { useState } from 'react';
+import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 
 interface KROverviewModalProps {
   keyResult: KeyResult | null;
@@ -23,6 +26,9 @@ interface KROverviewModalProps {
 export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValues, onDelete }: KROverviewModalProps) => {
   const [showFCAModal, setShowFCAModal] = useState(false);
   const [showStatusReportModal, setShowStatusReportModal] = useState(false);
+  const [showInitiativesModal, setShowInitiativesModal] = useState(false);
+  
+  const { initiatives } = useKRInitiatives(keyResult?.id);
   
   if (!keyResult) return null;
 
@@ -111,6 +117,15 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
                 <FileBarChart className="h-4 w-4 mr-2" />
                 Status Report
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowInitiativesModal(true)}
+                className="text-purple-600 border-purple-200 hover:bg-purple-50"
+              >
+                <Rocket className="h-4 w-4 mr-2" />
+                Iniciativas
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -190,6 +205,14 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
           selectedYear={new Date().getFullYear()}
         />
 
+        {/* Initiatives Timeline */}
+        {initiatives.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">Cronograma de Iniciativas</h3>
+            <KRInitiativesTimeline initiatives={initiatives} />
+          </div>
+        )}
+
       </DialogContent>
 
       {/* Modal FCA Unificado */}
@@ -204,6 +227,13 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
         keyResult={keyResult}
         open={showStatusReportModal}
         onClose={() => setShowStatusReportModal(false)}
+      />
+
+      {/* Modal Initiatives */}
+      <KRInitiativesModal
+        keyResult={keyResult}
+        open={showInitiativesModal}
+        onClose={() => setShowInitiativesModal(false)}
       />
     </Dialog>
   );

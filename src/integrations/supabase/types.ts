@@ -1273,6 +1273,63 @@ export type Database = {
           },
         ]
       }
+      kr_initiatives: {
+        Row: {
+          budget: number | null
+          company_id: string
+          completion_notes: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          end_date: string
+          id: string
+          key_result_id: string
+          priority: string
+          progress_percentage: number | null
+          responsible: string | null
+          start_date: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          budget?: number | null
+          company_id: string
+          completion_notes?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_date: string
+          id?: string
+          key_result_id: string
+          priority?: string
+          progress_percentage?: number | null
+          responsible?: string | null
+          start_date: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          budget?: number | null
+          company_id?: string
+          completion_notes?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_date?: string
+          id?: string
+          key_result_id?: string
+          priority?: string
+          progress_percentage?: number | null
+          responsible?: string | null
+          start_date?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       kr_monthly_actions: {
         Row: {
           action_description: string | null

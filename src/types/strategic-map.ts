@@ -157,5 +157,26 @@ export type Frequency = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 export type ProjectStatus = 'planning' | 'in_progress' | 'completed' | 'suspended';
 export type ActionStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled';
 export type ActionPriority = 'low' | 'medium' | 'high';
+export interface KRInitiative {
+  id: string;
+  key_result_id: string;
+  company_id: string;
+  title: string;
+  description?: string;
+  start_date: string;
+  end_date: string;
+  status: InitiativeStatus;
+  priority: InitiativePriority;
+  responsible?: string;
+  budget?: number;
+  progress_percentage: number;
+  completion_notes?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export type FCAStatus = 'active' | 'resolved' | 'cancelled';
 export type FCAPriority = 'low' | 'medium' | 'high';
+export type InitiativeStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'on_hold';
+export type InitiativePriority = 'low' | 'medium' | 'high';
