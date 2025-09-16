@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultMetrics } from './KeyResultMetrics';
 import { KeyResultChart } from './KeyResultChart';
@@ -89,8 +90,8 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1000px] max-h-[95vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[1000px] max-h-[95vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle className="text-2xl">{keyResult.title}</DialogTitle>
@@ -132,7 +133,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-background border shadow-md z-[9999]">
+                <DropdownMenuContent align="end" className="w-48 bg-background border shadow-lg z-[60]">
                   <DropdownMenuItem onClick={onEdit} className="flex items-center gap-2">
                     <Edit className="h-4 w-4" />
                     Editar Informações
@@ -154,58 +155,60 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
           </div>
         </DialogHeader>
         
-        {/* Header Info */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <Badge variant="secondary">
-            {getAggregationTypeText(aggregationType)}
-          </Badge>
-          {keyResult.unit && (
-            <Badge variant="secondary">
-              <Target className="w-3 h-3 mr-1" />
-              {keyResult.unit}
-            </Badge>
-          )}
-          <Badge variant="secondary">
-            Mensal
-          </Badge>
-          {keyResult.responsible && (
-            <Badge variant="secondary">
-              <User className="w-3 h-3 mr-1" />
-              {keyResult.responsible}
-            </Badge>
-          )}
-          {keyResult.due_date && (
-            <Badge variant="secondary">
-              <Calendar className="w-3 h-3 mr-1" />
-              {new Date(keyResult.due_date).toLocaleDateString('pt-BR')}
-            </Badge>
-          )}
-          <Badge variant="secondary">
-            Atualizado: {new Date(keyResult.updated_at).toLocaleDateString('pt-BR')}
-          </Badge>
-          <Badge variant={achievementPercentage >= 100 ? "default" : achievementPercentage >= 80 ? "secondary" : "destructive"}>
-            {achievementPercentage >= 100 ? "Meta alcançada" : achievementPercentage >= 80 ? "No caminho" : "Atenção"}
-          </Badge>
-        </div>
+        <ScrollArea className="flex-1 pr-6">
+          <div className="space-y-6">
+            {/* Header Info */}
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary">
+                {getAggregationTypeText(aggregationType)}
+              </Badge>
+              {keyResult.unit && (
+                <Badge variant="secondary">
+                  <Target className="w-3 h-3 mr-1" />
+                  {keyResult.unit}
+                </Badge>
+              )}
+              <Badge variant="secondary">
+                Mensal
+              </Badge>
+              {keyResult.responsible && (
+                <Badge variant="secondary">
+                  <User className="w-3 h-3 mr-1" />
+                  {keyResult.responsible}
+                </Badge>
+              )}
+              {keyResult.due_date && (
+                <Badge variant="secondary">
+                  <Calendar className="w-3 h-3 mr-1" />
+                  {new Date(keyResult.due_date).toLocaleDateString('pt-BR')}
+                </Badge>
+              )}
+              <Badge variant="secondary">
+                Atualizado: {new Date(keyResult.updated_at).toLocaleDateString('pt-BR')}
+              </Badge>
+              <Badge variant={achievementPercentage >= 100 ? "default" : achievementPercentage >= 80 ? "secondary" : "destructive"}>
+                {achievementPercentage >= 100 ? "Meta alcançada" : achievementPercentage >= 80 ? "No caminho" : "Atenção"}
+              </Badge>
+            </div>
 
-        {/* Key Metrics */}
-        <KeyResultMetrics
-          yearlyTarget={yearlyTarget}
-          yearlyActual={yearlyActual}
-          unit={keyResult.unit || ''}
-          achievementPercentage={achievementPercentage}
-          currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-        />
+            {/* Key Metrics */}
+            <KeyResultMetrics
+              yearlyTarget={yearlyTarget}
+              yearlyActual={yearlyActual}
+              unit={keyResult.unit || ''}
+              achievementPercentage={achievementPercentage}
+              currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+            />
 
-        {/* Evolution Chart */}
-        <KeyResultChart
-          monthlyTargets={monthlyTargets}
-          monthlyActual={monthlyActual}
-          unit={keyResult.unit || ''}
-          selectedYear={new Date().getFullYear()}
-        />
-
-
+            {/* Evolution Chart */}
+            <KeyResultChart
+              monthlyTargets={monthlyTargets}
+              monthlyActual={monthlyActual}
+              unit={keyResult.unit || ''}
+              selectedYear={new Date().getFullYear()}
+            />
+          </div>
+        </ScrollArea>
       </DialogContent>
 
       {/* Modal FCA Unificado */}
