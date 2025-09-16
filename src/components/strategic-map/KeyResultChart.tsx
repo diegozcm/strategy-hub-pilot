@@ -1,5 +1,9 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { BarChart3, TableIcon } from 'lucide-react';
 
 interface KeyResultChartProps {
   monthlyTargets: Record<string, number>;
@@ -35,6 +39,15 @@ export const KeyResultChart = ({
     realizado: monthlyActual[month.key] || 0,
   }));
 
+  // Calcular totais para a tabela
+  const calculateTotal = (data: Record<string, number>) => {
+    return Object.values(data).reduce((sum, value) => sum + (value || 0), 0);
+  };
+
+  const targetTotal = calculateTotal(monthlyTargets);
+  const actualTotal = calculateTotal(monthlyActual);
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -44,57 +57,163 @@ export const KeyResultChart = ({
         </p>
       </CardHeader>
       <CardContent>
-        <div className="h-[270px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis 
-                dataKey="month" 
-                className="text-xs fill-muted-foreground"
-              />
-              <YAxis 
-                className="text-xs fill-muted-foreground"
-                tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
-              />
-              <Tooltip 
-                formatter={(value: number, name: string) => [
-                  `${value.toLocaleString('pt-BR')} ${unit}`, 
-                  name === 'previsto' ? 'Previsto' : 'Realizado'
-                ]}
-                labelFormatter={(label) => `Mês: ${label}`}
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                }}
-              />
-              <Legend 
-                formatter={(value) => (
-                  <span className="text-sm">
-                    {value === 'previsto' ? 'Previsto (Meta)' : 'Realizado'}
-                  </span>
-                )}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="previsto" 
-                stroke="hsl(var(--muted-foreground))" 
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={{ fill: 'hsl(var(--muted-foreground))', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, fill: 'hsl(var(--muted-foreground))' }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="realizado" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={3}
-                dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <Tabs defaultValue="chart" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="chart" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Gráfico
+            </TabsTrigger>
+            <TabsTrigger value="table" className="flex items-center gap-2">
+              <TableIcon className="h-4 w-4" />
+              Tabela
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="chart" className="space-y-4">
+            <div className="h-[270px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis 
+                    dataKey="month" 
+                    className="text-xs fill-muted-foreground"
+                  />
+                  <YAxis 
+                    className="text-xs fill-muted-foreground"
+                    tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
+                  />
+                  <Tooltip 
+                    formatter={(value: number, name: string) => [
+                      `${value.toLocaleString('pt-BR')} ${unit}`, 
+                      name === 'previsto' ? 'Previsto' : 'Realizado'
+                    ]}
+                    labelFormatter={(label) => `Mês: ${label}`}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px',
+                    }}
+                  />
+                  <Legend 
+                    formatter={(value) => (
+                      <span className="text-sm">
+                        {value === 'previsto' ? 'Previsto (Meta)' : 'Realizado'}
+                      </span>
+                    )}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="previsto" 
+                    stroke="hsl(var(--muted-foreground))" 
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={{ fill: 'hsl(var(--muted-foreground))', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: 'hsl(var(--muted-foreground))' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="realizado" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={3}
+                    dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="table" className="space-y-4">
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-32">Indicador</TableHead>
+                    {months.map(month => {
+                      const isCurrentMonth = month.key === currentMonth;
+                      return (
+                        <TableHead key={month.key} className="text-center min-w-20">
+                          {month.name}
+                          {isCurrentMonth && (
+                            <span className="block text-xs text-primary">(atual)</span>
+                          )}
+                        </TableHead>
+                      );
+                    })}
+                    <TableHead className="text-center min-w-24 bg-muted font-semibold">
+                      Total
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium bg-background">Previsto</TableCell>
+                    {months.map(month => {
+                      const isCurrentMonth = month.key === currentMonth;
+                      const value = monthlyTargets[month.key] || 0;
+                      return (
+                        <TableCell 
+                          key={month.key} 
+                          className={`text-center ${isCurrentMonth ? "bg-primary/5" : "bg-background"}`}
+                        >
+                          {value > 0 ? `${value.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
+                        </TableCell>
+                      );
+                    })}
+                    <TableCell className="text-center bg-muted font-semibold">
+                      {targetTotal > 0 ? `${targetTotal.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium bg-background">Realizado</TableCell>
+                    {months.map(month => {
+                      const isCurrentMonth = month.key === currentMonth;
+                      const value = monthlyActual[month.key] || 0;
+                      const target = monthlyTargets[month.key] || 0;
+                      const achievement = target > 0 ? (value / target) * 100 : 0;
+                      
+                      return (
+                        <TableCell 
+                          key={month.key} 
+                          className={`text-center ${isCurrentMonth ? "bg-primary/5" : "bg-background"}`}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <span>
+                              {value > 0 ? `${value.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
+                            </span>
+                            {value > 0 && target > 0 && (
+                              <Badge 
+                                variant={achievement >= 100 ? "default" : achievement >= 80 ? "secondary" : "destructive"}
+                                className="text-xs"
+                              >
+                                {achievement.toFixed(0)}%
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                      );
+                    })}
+                    <TableCell className="text-center bg-muted font-semibold">
+                      <div className="flex flex-col gap-1">
+                        <span>
+                          {actualTotal > 0 ? `${actualTotal.toLocaleString('pt-BR')} ${unit}`.trim() : '-'}
+                        </span>
+                        {actualTotal > 0 && targetTotal > 0 && (
+                          <Badge 
+                            variant={((actualTotal / targetTotal) * 100) >= 100 ? "default" : ((actualTotal / targetTotal) * 100) >= 80 ? "secondary" : "destructive"}
+                            className="text-xs"
+                          >
+                            {((actualTotal / targetTotal) * 100).toFixed(0)}%
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
