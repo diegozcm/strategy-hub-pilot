@@ -126,27 +126,29 @@ export const KeyResultChart = ({
           
           <TabsContent value="table" className="space-y-4">
             <div className="rounded-md border overflow-hidden">
-              <div className="overflow-x-auto max-h-[400px]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-32 sticky left-0 bg-background z-10">Indicador</TableHead>
+                    {months.map(month => {
+                      const isCurrentMonth = month.key === currentMonth;
+                      return (
+                        <TableHead key={month.key} className="text-center min-w-20">
+                          {month.name}
+                          {isCurrentMonth && (
+                            <span className="block text-xs text-primary">(atual)</span>
+                          )}
+                        </TableHead>
+                      );
+                    })}
+                    <TableHead className="text-center min-w-24 bg-muted font-semibold">
+                      Total
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+              </Table>
+              <ScrollArea className="max-h-[300px] overflow-x-auto">
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-32 sticky left-0 bg-background z-10">Indicador</TableHead>
-                      {months.map(month => {
-                        const isCurrentMonth = month.key === currentMonth;
-                        return (
-                          <TableHead key={month.key} className="text-center min-w-20">
-                            {month.name}
-                            {isCurrentMonth && (
-                              <span className="block text-xs text-primary">(atual)</span>
-                            )}
-                          </TableHead>
-                        );
-                      })}
-                      <TableHead className="text-center min-w-24 bg-muted font-semibold">
-                        Total
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
                   <TableBody>
                     <TableRow>
                       <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Previsto</TableCell>
@@ -156,13 +158,13 @@ export const KeyResultChart = ({
                         return (
                           <TableCell 
                             key={month.key} 
-                            className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
+                            className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
                           >
                             {value > 0 ? `${value.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
                           </TableCell>
                         );
                       })}
-                      <TableCell className="text-center bg-gray-100 font-semibold">
+                      <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
                         {targetTotal > 0 ? `${targetTotal.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
                       </TableCell>
                     </TableRow>
@@ -175,13 +177,13 @@ export const KeyResultChart = ({
                         return (
                           <TableCell 
                             key={month.key} 
-                            className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
+                            className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
                           >
                             {value > 0 ? `${value.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
                           </TableCell>
                         );
                       })}
-                      <TableCell className="text-center bg-gray-100 font-semibold">
+                      <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
                         {actualTotal > 0 ? `${actualTotal.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
                       </TableCell>
                     </TableRow>
@@ -202,7 +204,7 @@ export const KeyResultChart = ({
                         return (
                           <TableCell 
                             key={month.key} 
-                            className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
+                            className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
                           >
                             {target > 0 ? (
                               <span className={getAchievementColor(achievement)}>
@@ -214,7 +216,7 @@ export const KeyResultChart = ({
                           </TableCell>
                         );
                       })}
-                      <TableCell className="text-center bg-gray-100 font-semibold">
+                      <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
                         {targetTotal > 0 && actualTotal > 0 ? (
                           <span className={
                             ((actualTotal / targetTotal) * 100) >= 100 ? "text-green-600 font-semibold" :
@@ -230,7 +232,7 @@ export const KeyResultChart = ({
                     </TableRow>
                   </TableBody>
                 </Table>
-              </div>
+              </ScrollArea>
             </div>
           </TabsContent>
         </Tabs>
