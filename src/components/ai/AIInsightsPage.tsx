@@ -133,7 +133,7 @@ export const AIInsightsPage: React.FC = () => {
             
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                <h3 className="font-semibold text-foreground">
                   {insight.title}
                 </h3>
                 {insight.confirmed_at && (
@@ -151,12 +151,12 @@ export const AIInsightsPage: React.FC = () => {
                   {insight.severity === 'low' && 'Baixo'}
                 </Badge>
                 
-                <div className="flex items-center gap-1 text-xs text-gray-500">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   {getCategoryIcon(insight.category)}
                   <span className="capitalize">{insight.category}</span>
                 </div>
                 
-                <div className="flex items-center gap-1 text-xs text-gray-500">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   {getStatusIcon(insight.status)}
                   <span className="capitalize">{insight.status === 'active' ? 'Ativo' : insight.status}</span>
                 </div>
@@ -165,7 +165,7 @@ export const AIInsightsPage: React.FC = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-muted-foreground">
               Confiança: {Math.round((insight.confidence_score || 0.5) * 100)}%
             </span>
           </div>
@@ -173,16 +173,16 @@ export const AIInsightsPage: React.FC = () => {
       </CardHeader>
       
       <CardContent className="pt-0">
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <p className="text-sm text-muted-foreground mb-4">
           {insight.description}
         </p>
         
         {insight.metadata && (
           <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-            <h4 className="text-xs font-medium text-gray-900 dark:text-gray-100 mb-2">
+            <h4 className="text-xs font-medium text-foreground mb-2">
               Detalhes Adicionais
             </h4>
-            <pre className="text-xs text-gray-600 dark:text-gray-400 overflow-x-auto">
+            <pre className="text-xs text-muted-foreground overflow-x-auto">
               {JSON.stringify(insight.metadata, null, 2)}
             </pre>
           </div>
@@ -216,7 +216,7 @@ export const AIInsightsPage: React.FC = () => {
               size="sm"
               variant="ghost"
               onClick={() => updateInsightStatus(insight.id, 'dismissed')}
-              className="text-xs text-gray-500 hover:text-gray-600"
+              className="text-xs text-muted-foreground hover:text-foreground"
             >
               <XCircle className="h-3 w-3 mr-1" />
               Descartar
@@ -225,7 +225,7 @@ export const AIInsightsPage: React.FC = () => {
         )}
         
         <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-muted-foreground">
             {new Date(insight.created_at).toLocaleDateString('pt-BR', {
               day: '2-digit',
               month: '2-digit',
@@ -254,7 +254,7 @@ export const AIInsightsPage: React.FC = () => {
             </div>
             
             <div className="flex-1">
-              <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
+              <h4 className="font-medium text-foreground mb-1">
                 {recommendation.title}
               </h4>
               
@@ -279,22 +279,22 @@ export const AIInsightsPage: React.FC = () => {
       </CardHeader>
       
       <CardContent className="pt-0">
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           {recommendation.description}
         </p>
         
         <div className="grid grid-cols-2 gap-4 mb-4 text-xs">
           <div>
-            <span className="font-medium text-gray-900 dark:text-gray-100">Esforço: </span>
-            <span className="text-gray-600 dark:text-gray-400">
+            <span className="font-medium text-foreground">Esforço: </span>
+            <span className="text-muted-foreground">
               {recommendation.effort_required === 'high' ? 'Alto' :
                recommendation.effort_required === 'medium' ? 'Médio' : 'Baixo'}
             </span>
           </div>
           
           <div>
-            <span className="font-medium text-gray-900 dark:text-gray-100">Tipo: </span>
-            <span className="text-gray-600 dark:text-gray-400 capitalize">
+            <span className="font-medium text-foreground">Tipo: </span>
+            <span className="text-muted-foreground capitalize">
               {recommendation.action_type}
             </span>
           </div>
@@ -333,10 +333,10 @@ export const AIInsightsPage: React.FC = () => {
         <div className="flex items-center gap-3">
           <Brain className="h-8 w-8 text-purple-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-2xl font-bold text-foreground">
               Insights de IA
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-muted-foreground">
               Análise inteligente dos seus dados estratégicos
             </p>
           </div>
@@ -363,7 +363,7 @@ export const AIInsightsPage: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Ativo</p>
+                <p className="text-sm text-muted-foreground">Total Ativo</p>
                 <p className="text-2xl font-bold">{stats.active}</p>
               </div>
               <Brain className="h-8 w-8 text-purple-600" />
@@ -375,7 +375,7 @@ export const AIInsightsPage: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Críticos</p>
+                <p className="text-sm text-muted-foreground">Críticos</p>
                 <p className="text-2xl font-bold text-red-600">{stats.critical}</p>
               </div>
               <AlertTriangle className="h-8 w-8 text-red-600" />
@@ -387,7 +387,7 @@ export const AIInsightsPage: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Riscos</p>
+                <p className="text-sm text-muted-foreground">Riscos</p>
                 <p className="text-2xl font-bold text-red-500">{stats.risks}</p>
               </div>
               <AlertTriangle className="h-8 w-8 text-red-500" />
@@ -399,7 +399,7 @@ export const AIInsightsPage: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Oportunidades</p>
+                <p className="text-sm text-muted-foreground">Oportunidades</p>
                 <p className="text-2xl font-bold text-green-600">{stats.opportunities}</p>
               </div>
               <TrendingUp className="h-8 w-8 text-green-600" />
@@ -483,13 +483,13 @@ export const AIInsightsPage: React.FC = () => {
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
-              <span className="ml-3 text-gray-500">Carregando insights...</span>
+              <span className="ml-3 text-muted-foreground">Carregando insights...</span>
             </div>
           ) : filteredInsights.length === 0 ? (
             <Card>
               <CardContent className="text-center py-12">
                 <Brain className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Nenhum insight encontrado com os filtros aplicados
                 </p>
                 <Button onClick={generateInsights} disabled={generating}>
@@ -512,7 +512,7 @@ export const AIInsightsPage: React.FC = () => {
             <Card>
               <CardContent className="text-center py-12">
                 <Lightbulb className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">
+                <p className="text-muted-foreground">
                   Nenhuma recomendação disponível
                 </p>
               </CardContent>

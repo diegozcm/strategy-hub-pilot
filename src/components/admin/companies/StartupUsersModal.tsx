@@ -313,13 +313,13 @@ export const StartupUsersModal: React.FC<StartupUsersModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto bg-slate-800 border-slate-700 text-white">
+      <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto bg-card border-border text-card-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Rocket className="w-5 h-5 text-blue-400" />
             Gerenciar Usuários Startup - {company.name}
           </DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-muted-foreground">
             Gerencie usuários desta startup e seus perfis no Startup HUB
           </DialogDescription>
         </DialogHeader>
@@ -337,23 +337,23 @@ export const StartupUsersModal: React.FC<StartupUsersModalProps> = ({
           )}
 
           {/* Adicionar usuário */}
-          <Card className="bg-slate-700 border-slate-600">
+          <Card className="bg-muted border-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-white text-sm flex items-center gap-2">
+              <CardTitle className="text-card-foreground text-sm flex items-center gap-2">
                 <Plus className="w-4 h-4" />
                 Adicionar Usuário à Startup
               </CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardDescription className="text-muted-foreground">
                 Selecione um usuário para adicionar à startup (perfil Startup HUB será criado automaticamente se necessário)
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-3">
                 <Select value={selectedUser} onValueChange={setSelectedUser}>
-                  <SelectTrigger className="flex-1 bg-slate-600 border-slate-500 text-white">
+                  <SelectTrigger className="flex-1 bg-input border-border text-foreground">
                     <SelectValue placeholder="Selecione um usuário" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-700 border-slate-600 text-white max-h-48">
+                  <SelectContent className="bg-popover border-border text-popover-foreground max-h-48">
                     {availableUsers.map((user) => (
                       <SelectItem key={user.user_id} value={user.user_id}>
                         <div className="flex items-center justify-between w-full">
@@ -368,10 +368,10 @@ export const StartupUsersModal: React.FC<StartupUsersModalProps> = ({
                 </Select>
 
                 <Select value={selectedRole} onValueChange={(value: 'admin' | 'manager' | 'member') => setSelectedRole(value)}>
-                  <SelectTrigger className="w-40 bg-slate-600 border-slate-500 text-white">
+                  <SelectTrigger className="w-40 bg-input border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-700 border-slate-600 text-white">
+                  <SelectContent className="bg-popover border-border text-popover-foreground">
                     <SelectItem value="member">Membro</SelectItem>
                     <SelectItem value="manager">Gerente</SelectItem>  
                     <SelectItem value="admin">Administrador</SelectItem>
@@ -397,9 +397,9 @@ export const StartupUsersModal: React.FC<StartupUsersModalProps> = ({
           </Card>
 
           {/* Usuários da startup */}
-          <Card className="bg-slate-700 border-slate-600">
+          <Card className="bg-muted border-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-white text-sm flex items-center gap-2">
+              <CardTitle className="text-card-foreground text-sm flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 Usuários da Startup ({companyUsers.length})
               </CardTitle>

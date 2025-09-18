@@ -223,33 +223,33 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-slate-800 border-slate-700 text-white">
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-card border-border text-card-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
             Gerenciar Usuários - {company.name}
           </DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-muted-foreground">
             Adicione ou remova usuários desta empresa
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Adicionar usuário */}
-          <Card className="bg-slate-700 border-slate-600">
+          <Card className="bg-muted border-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-white text-sm">Adicionar Usuário</CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardTitle className="text-card-foreground text-sm">Adicionar Usuário</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 Selecione um usuário para adicionar à empresa
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-3">
                 <Select value={selectedUser} onValueChange={setSelectedUser}>
-                  <SelectTrigger className="flex-1 bg-slate-600 border-slate-500 text-white">
+                  <SelectTrigger className="flex-1 bg-input border-border text-foreground">
                     <SelectValue placeholder="Selecione um usuário" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-700 border-slate-600 text-white">
+                  <SelectContent className="bg-popover border-border text-popover-foreground">
                     {filteredAvailableUsers.map((user) => (
                       <SelectItem key={user.user_id} value={user.user_id}>
                         {user.first_name} {user.last_name} ({user.email})
@@ -259,10 +259,10 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
                 </Select>
 
                 <Select value={selectedRole} onValueChange={(value: 'admin' | 'manager' | 'member') => setSelectedRole(value)}>
-                  <SelectTrigger className="w-40 bg-slate-600 border-slate-500 text-white">
+                  <SelectTrigger className="w-40 bg-input border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-700 border-slate-600 text-white">
+                  <SelectContent className="bg-popover border-border text-popover-foreground">
                     <SelectItem value="member">Membro</SelectItem>
                     <SelectItem value="manager">Gerente</SelectItem>
                     <SelectItem value="admin">Administrador</SelectItem>
@@ -288,9 +288,9 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
           </Card>
 
           {/* Usuários da empresa */}
-          <Card className="bg-slate-700 border-slate-600">
+          <Card className="bg-muted border-border">
             <CardHeader className="pb-3">
-              <CardTitle className="text-white text-sm">
+              <CardTitle className="text-card-foreground text-sm">
                 Usuários da Empresa ({companyUsers.length})
               </CardTitle>
             </CardHeader>
