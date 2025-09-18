@@ -262,29 +262,111 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Validate session token
+  const validateSession = async (session: any): Promise<boolean> => {
+    try {
+      if (!session?.access_token) return false;
+      
+      // Check if token is expired
+      const tokenExpiry = session.expires_at * 1000;
+      const now = Date.now();
+      const bufferTime = 60 * 1000; // 1 minute buffer
+      
+      if (now >= (tokenExpiry - bufferTime)) {
+        console.log('🔄 Token expiring soon, refreshing...');
+        const { data: { session: newSession }, error } = await supabase.auth.refreshSession();
+        
+        if (error || !newSession) {
+          console.error('❌ Session refresh failed:', error?.message);
+          return false;
+        }
+        
+        setSession(newSession);
+        setUser(newSession.user);
+        return true;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('❌ Session validation error:', error);
+      return false;
+    }
+  };
+
+  // Clear company selection without logout
+  const clearCompanySelection = () => {
+    console.log('🏢 Clearing company selection');
+    setCompany(null);
+    setSelectedCompanyId(null);
+    localStorage.removeItem('selectedCompanyId');
+    
+    if (profile) {
+      setProfile({
+        ...profile,
+        company_id: undefined,
+        company: undefined
+      });
+    }
+  };
+
   // Switch company (for system admins and users with multiple companies)
   const switchCompany = async (companyId: string) => {
-    if (isSystemAdmin) {
-      await loadCompanyById(companyId);
-      setSelectedCompanyId(companyId);
-      localStorage.setItem('selectedCompanyId', companyId);
-      return;
-    }
+    try {
+      console.log('🏢 Switching to company:', companyId);
+      setLoading(true);
+      
+      // Update the user's current company in the profile
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ company_id: companyId })
+        .eq('id', profile?.id);
 
-    // Para usuários não-admin, verificar se têm acesso à empresa
-    if (profile?.user_id) {
-      const { data: hasAccess } = await supabase
-        .from('user_company_relations')
-        .select('company_id')
-        .eq('user_id', profile.user_id)
-        .eq('company_id', companyId)
-        .maybeSingle();
-
-      if (hasAccess) {
-        await loadCompanyById(companyId);
-        setSelectedCompanyId(companyId);
-        localStorage.setItem('selectedCompanyId', companyId);
+      if (updateError) {
+        console.error('❌ Error updating profile company:', updateError);
+        throw updateError;
       }
+
+      // Fetch the company data
+      const { data: companyData, error: companyError } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', companyId)
+        .single();
+
+      if (companyError) {
+        console.error('❌ Error fetching company:', companyError);
+        throw companyError;
+      }
+
+      // Update states
+      setCompany({
+        ...companyData,
+        active: companyData.status === 'active'
+      } as Company);
+      setSelectedCompanyId(companyId);
+      
+      // Update profile with new company
+      if (profile) {
+        setProfile({
+          ...profile,
+          company_id: companyId,
+          company: {
+            ...companyData,
+            active: companyData.status === 'active'
+          } as Company
+        });
+      }
+
+      // Update localStorage
+      localStorage.setItem('selectedCompanyId', companyId);
+
+      console.log('✅ Successfully switched to company:', companyData.name);
+      
+    } catch (error) {
+      console.error('❌ Error switching company:', error);
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -292,22 +374,30 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     console.log('📊 MultiTenantAuthProvider: Initializing...');
     
-    // Auth state listener - simplified to avoid conflicts
+    // Auth state listener - improved with validation
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('🔐 Auth state change:', event, !!session);
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
+        if (event === 'SIGNED_IN' && session) {
           console.log('👤 User found, loading profile for:', session.user.email);
-          // Use timeout to avoid potential auth state conflicts
-          setTimeout(() => {
-            loadUserProfile(session.user.id);
-          }, 100);
-        } else {
+          const isValid = await validateSession(session);
+          
+          if (isValid) {
+            setSession(session);
+            setUser(session.user);
+            setTimeout(() => {
+              loadUserProfile(session.user.id);
+            }, 100);
+          } else {
+            console.warn('⚠️ Invalid session on SIGNED_IN, signing out');
+            await signOut();
+            return;
+          }
+        } else if (event === 'SIGNED_OUT' || !session) {
           console.log('❌ No user session, clearing state');
+          setUser(null);
+          setSession(null);
           setProfile(null);
           setCompany(null);
           setSelectedCompanyId(null);
@@ -316,33 +406,62 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           setImpersonationSession(null);
           setShowFirstLoginModal(false);
           localStorage.removeItem('selectedCompanyId');
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          console.log('🔄 Token refreshed');
+          setSession(session);
+          setUser(session.user);
+        } else if (event === 'INITIAL_SESSION' && session) {
+          console.log('👤 User found, loading profile for:', session.user.email);
+          const isValid = await validateSession(session);
+          
+          if (isValid) {
+            setSession(session);
+            setUser(session.user);
+            setTimeout(() => {
+              loadUserProfile(session.user.id);
+            }, 100);
+          } else {
+            console.warn('⚠️ Invalid initial session, signing out');
+            await signOut();
+            return;
+          }
         }
         
         setLoading(false);
       }
     );
 
-    // Check existing session with error handling
+    // Check existing session with validation
     console.log('🔍 Checking existing session...');
     supabase.auth.getSession()
-      .then(({ data: { session }, error }) => {
+      .then(async ({ data: { session }, error }) => {
         console.log('🔍 Existing session check result:', !!session);
         if (error) {
           console.error('❌ Session check error:', error);
-          // Clear potentially corrupted session
           localStorage.removeItem('sb-pdpzxjlnaqwlyqoyoyhr-auth-token');
           localStorage.removeItem('selectedCompanyId');
+          setLoading(false);
+          return;
         }
-        if (!session) {
+        
+        if (session) {
+          const isValid = await validateSession(session);
+          if (!isValid) {
+            console.warn('⚠️ Invalid existing session, clearing');
+            localStorage.removeItem('sb-pdpzxjlnaqwlyqoyoyhr-auth-token');
+            localStorage.removeItem('selectedCompanyId');
+            setLoading(false);
+            return;
+          }
+        } else {
           console.log('❌ No existing session found');
           setLoading(false);
         }
-        // If session exists, the auth state listener above will handle it
+        // If session exists and is valid, the auth state listener will handle it
       })
       .catch((error) => {
         console.error('❌ Critical session check error:', error);
         setLoading(false);
-        // Clear potentially corrupted data
         localStorage.removeItem('sb-pdpzxjlnaqwlyqoyoyhr-auth-token');
         localStorage.removeItem('selectedCompanyId');
       });

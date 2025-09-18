@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Building2, ArrowRight, Users, Calendar } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Building2, ArrowRight, Users, Calendar, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -15,6 +15,10 @@ export const CompanySelectionPage: React.FC = () => {
   
   const { user, profile, fetchAllUserCompanies, switchCompany } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if user came from company switching
+  const fromSwitching = location.state?.fromSwitching;
 
   useEffect(() => {
     loadUserCompanies();
@@ -102,10 +106,24 @@ export const CompanySelectionPage: React.FC = () => {
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="text-center mb-8">
+          {fromSwitching && (
+            <div className="flex justify-start mb-4">
+              <Button
+                variant="ghost"
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Voltar
+              </Button>
+            </div>
+          )}
           <div className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 p-3 rounded-2xl mb-4">
             <Building2 className="h-8 w-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Selecione sua Empresa</h1>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {fromSwitching ? 'Trocar de Empresa' : 'Selecione sua Empresa'}
+          </h1>
           <p className="text-gray-600 mt-2">
             Olá {profile?.first_name}! Escolha a empresa em que deseja trabalhar.
           </p>
@@ -159,9 +177,11 @@ export const CompanySelectionPage: React.FC = () => {
         </div>
 
         {/* Help Text */}
-        <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>Para trocar de empresa, você precisa fazer logout e login novamente.</p>
-        </div>
+        {!fromSwitching && (
+          <div className="mt-8 text-center text-sm text-muted-foreground">
+            <p>Você pode trocar de empresa a qualquer momento através do menu do usuário.</p>
+          </div>
+        )}
       </div>
     </div>
   );

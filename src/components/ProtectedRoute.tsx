@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { user, profile, company, loading } = useAuth();
+  const { user, profile, company, loading, session } = useAuth();
 
   if (loading) {
     return (
@@ -20,11 +20,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     );
   }
 
-  if (!user) {
+  if (!user || !session) {
     return <Navigate to="/auth" replace />;
   }
 
   if (!profile) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Additional session validation
+  if (session && session.expires_at && session.expires_at * 1000 < Date.now()) {
+    console.warn('⚠️ Expired session detected in ProtectedRoute');
     return <Navigate to="/auth" replace />;
   }
 

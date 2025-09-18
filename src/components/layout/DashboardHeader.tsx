@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Bell, User, Settings, LogOut, Brain, Menu } from 'lucide-react';
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -19,8 +19,9 @@ interface DashboardHeaderProps {
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSidebar }) => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, clearCompanySelection } = useAuth();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     console.log('🚪 DashboardHeader: Starting logout process');
@@ -80,7 +81,20 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+              <DropdownMenuItem 
+                onClick={() => {
+                  clearCompanySelection?.();
+                  navigate('/company-selection', { state: { fromSwitching: true } });
+                }}
+                className="focus:bg-accent"
+              >
+                Trocar de Empresa
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={handleSignOut}
+                className="text-destructive focus:text-destructive"
+              >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sair
               </DropdownMenuItem>
