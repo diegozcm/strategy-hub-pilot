@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bell, User, Settings, LogOut, Brain, Menu } from 'lucide-react';
+import { Bell, User, Settings, LogOut, Brain, Menu, Building2 } from 'lucide-react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -88,6 +88,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
                 }}
                 className="focus:bg-accent"
               >
+                <Building2 className="mr-2 h-4 w-4" />
                 Trocar de Empresa
               </DropdownMenuItem>
               <DropdownMenuSeparator />
