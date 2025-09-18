@@ -322,16 +322,30 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       }
     );
 
-    // Check existing session
+    // Check existing session with error handling
     console.log('🔍 Checking existing session...');
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('🔍 Existing session check result:', !!session);
-      if (!session) {
-        console.log('❌ No existing session found');
+    supabase.auth.getSession()
+      .then(({ data: { session }, error }) => {
+        console.log('🔍 Existing session check result:', !!session);
+        if (error) {
+          console.error('❌ Session check error:', error);
+          // Clear potentially corrupted session
+          localStorage.removeItem('sb-pdpzxjlnaqwlyqoyoyhr-auth-token');
+          localStorage.removeItem('selectedCompanyId');
+        }
+        if (!session) {
+          console.log('❌ No existing session found');
+          setLoading(false);
+        }
+        // If session exists, the auth state listener above will handle it
+      })
+      .catch((error) => {
+        console.error('❌ Critical session check error:', error);
         setLoading(false);
-      }
-      // If session exists, the auth state listener above will handle it
-    });
+        // Clear potentially corrupted data
+        localStorage.removeItem('sb-pdpzxjlnaqwlyqoyoyhr-auth-token');
+        localStorage.removeItem('selectedCompanyId');
+      });
 
     return () => subscription.unsubscribe();
   }, [navigate]);

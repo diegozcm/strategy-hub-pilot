@@ -44,6 +44,45 @@ export const useHealthMonitor = () => {
       }, 10000); // Check after 10 seconds
     }
 
+    // Check for authentication errors in console
+    const authErrors = [];
+    try {
+      // Check localStorage for auth errors
+      const supabaseSession = localStorage.getItem('sb-pdpzxjlnaqwlyqoyoyhr-auth-token');
+      if (!supabaseSession || supabaseSession === 'null') {
+        authErrors.push('Token de autenticação não encontrado');
+      } else {
+        try {
+          const parsedSession = JSON.parse(supabaseSession);
+          if (!parsedSession.access_token) {
+            authErrors.push('Access token inválido ou ausente');
+          }
+          if (parsedSession.expires_at && Date.now() > parsedSession.expires_at * 1000) {
+            authErrors.push('Token de autenticação expirado');
+          }
+        } catch {
+          authErrors.push('Token de autenticação corrompido');
+        }
+      }
+    } catch (error) {
+      console.warn('Health Monitor: Erro ao verificar auth:', error);
+    }
+
+    // Check for React rendering issues
+    const reactRoot = document.getElementById('root');
+    if (reactRoot && reactRoot.children.length === 0) {
+      issues.push('Aplicação React não renderizou');
+    }
+
+    // Check for stuck loading in specific auth states
+    const authProviderElements = document.querySelectorAll('[data-testid*="loading"], [data-loading="true"]');
+    if (authProviderElements.length > 3) {
+      issues.push('Múltiplos elementos de loading detectados - possível loop');
+    }
+
+    // Add auth issues to main issues array
+    issues.push(...authErrors);
+
     const isHealthy = issues.length === 0;
     const renderingStatus: 'healthy' | 'blank' | 'error' = 
       issues.some(i => i.includes('sem conteúdo')) ? 'blank' :
@@ -57,18 +96,41 @@ export const useHealthMonitor = () => {
     });
 
     // Alert user if critical issues
-    if (!isHealthy && issues.some(i => i.includes('sem conteúdo'))) {
-      console.error('🚨 Health Monitor: Página em branco detectada!', issues);
-      toast({
-        title: "⚠️ Problema Detectado",
-        description: "Sistema detectou possível página em branco. Recarregando...",
-        variant: "destructive",
-      });
+    if (!isHealthy) {
+      const hasCriticalIssues = issues.some(i => 
+        i.includes('sem conteúdo') || 
+        i.includes('não renderizou') ||
+        i.includes('Token') ||
+        i.includes('loop')
+      );
       
-      // Auto-reload on blank page
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      if (hasCriticalIssues) {
+        console.error('🚨 Health Monitor: Problemas críticos detectados!', issues);
+        
+        // Log specific auth errors for debugging
+        const authIssues = issues.filter(i => i.includes('Token') || i.includes('autenticação'));
+        if (authIssues.length > 0) {
+          console.error('🔐 Auth Issues:', authIssues);
+        }
+
+        toast({
+          title: "⚠️ Problema Detectado",
+          description: `Sistema detectou: ${issues[0]}. ${authIssues.length > 0 ? 'Problemas de autenticação detectados.' : 'Recarregando...'}`,
+          variant: "destructive",
+        });
+        
+        // Auto-reload on critical issues, but with delay for auth issues
+        const reloadDelay = authIssues.length > 0 ? 3000 : 2000;
+        setTimeout(() => {
+          // Clear auth storage if there are auth issues
+          if (authIssues.length > 0) {
+            console.log('🧹 Limpando storage de autenticação devido a problemas...');
+            localStorage.removeItem('sb-pdpzxjlnaqwlyqoyoyhr-auth-token');
+            localStorage.removeItem('selectedCompanyId');
+          }
+          window.location.reload();
+        }, reloadDelay);
+      }
     }
 
     return { isHealthy, issues };
@@ -96,12 +158,18 @@ export const useHealthMonitor = () => {
     console.log(`🔄 Render: ${component} - ${phase} at ${new Date().toISOString()}`);
   }, []);
 
-  // Auto health checks every 30 seconds
+  // Auto health checks every 15 seconds (more frequent for better detection)
   useEffect(() => {
-    const interval = setInterval(checkPageHealth, 30000);
+    const interval = setInterval(checkPageHealth, 15000);
     
-    // Initial check
-    setTimeout(checkPageHealth, 1000);
+    // Initial check after a short delay
+    setTimeout(checkPageHealth, 2000);
+    
+    // Additional check for auth issues after page load
+    setTimeout(() => {
+      console.log('🔍 Health Monitor: Verificação específica de autenticação...');
+      checkPageHealth();
+    }, 5000);
     
     return () => clearInterval(interval);
   }, [checkPageHealth]);

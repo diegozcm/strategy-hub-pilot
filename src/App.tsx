@@ -6,6 +6,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { MultiTenantAuthProvider } from "@/hooks/useMultiTenant";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { ModulesProvider } from "@/hooks/useModules";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { AuthStateDebugger } from "@/components/ui/AuthStateDebugger";
+import { LoadingStateMonitor } from "@/components/ui/LoadingStateMonitor";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { AdminLoginPage } from "@/components/admin/AdminLoginPage";
 import { CompanyInactivePage } from "@/pages/CompanyInactivePage";
@@ -39,82 +42,88 @@ import { StartupHubPage } from "@/components/startup-hub/StartupHubPage";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <MultiTenantAuthProvider>
-          <ThemeProvider>
-            <ModulesProvider>
-            <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/company-selection" element={<CompanySelectionPage />} />
-            <Route path="/company-inactive" element={<CompanyInactivePage />} />
-            <Route path="/admin-login" element={<AdminLoginPage />} />
-            
-            {/* Redirects for direct page access */}
-            <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
-            <Route path="/strategic-map" element={<Navigate to="/app/strategic-map" replace />} />
-            <Route path="/objectives" element={<Navigate to="/app/objectives" replace />} />
-            <Route path="/projects" element={<Navigate to="/app/projects" replace />} />
-            <Route path="/indicators" element={<Navigate to="/app/indicators" replace />} />
-            <Route path="/reports" element={<Navigate to="/app/reports" replace />} />
-            <Route path="/golden-circle" element={<Navigate to="/app/tools" replace />} />
-            <Route path="/ai-copilot" element={<Navigate to="/app/ai-copilot" replace />} />
-            
-            <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
-            <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
-            
-            {/* Protected app routes */}
-            <Route path="/app" element={
-              <ProtectedRoute>
-                <AppLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<Navigate to="/app/dashboard" replace />} />
-              <Route path="dashboard" element={<DashboardHome />} />
-              <Route path="strategic-map" element={<StrategicMapPageWrapper />} />
-              <Route path="objectives" element={<ObjectivesPageWrapper />} />
-              <Route path="projects" element={<ProjectsPage />} />
-              <Route path="indicators" element={<IndicatorsPage />} />
-              <Route path="reports" element={<ReportsPage />} />
-              <Route path="ai-copilot" element={<AICopilotPage />} />
-              
-              <Route path="profile" element={<ProfilePage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            <Route path="golden-circle" element={<Navigate to="/app/tools" replace />} />
-            <Route path="tools" element={<ToolsPage />} />
-              <Route path="startup-hub" element={<StartupHubPage />} />
-            </Route>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <MultiTenantAuthProvider>
+            <LoadingStateMonitor>
+              <AuthStateDebugger>
+                <ThemeProvider>
+                  <ModulesProvider>
+                <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/company-selection" element={<CompanySelectionPage />} />
+                <Route path="/company-inactive" element={<CompanyInactivePage />} />
+                <Route path="/admin-login" element={<AdminLoginPage />} />
+                
+                {/* Redirects for direct page access */}
+                <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
+                <Route path="/strategic-map" element={<Navigate to="/app/strategic-map" replace />} />
+                <Route path="/objectives" element={<Navigate to="/app/objectives" replace />} />
+                <Route path="/projects" element={<Navigate to="/app/projects" replace />} />
+                <Route path="/indicators" element={<Navigate to="/app/indicators" replace />} />
+                <Route path="/reports" element={<Navigate to="/app/reports" replace />} />
+                <Route path="/golden-circle" element={<Navigate to="/app/tools" replace />} />
+                <Route path="/ai-copilot" element={<Navigate to="/app/ai-copilot" replace />} />
+                
+                <Route path="/profile" element={<Navigate to="/app/profile" replace />} />
+                <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
+                
+                {/* Protected app routes */}
+                <Route path="/app" element={
+                  <ProtectedRoute>
+                    <AppLayout />
+                  </ProtectedRoute>
+                }>
+                  <Route index element={<Navigate to="/app/dashboard" replace />} />
+                  <Route path="dashboard" element={<DashboardHome />} />
+                  <Route path="strategic-map" element={<StrategicMapPageWrapper />} />
+                  <Route path="objectives" element={<ObjectivesPageWrapper />} />
+                  <Route path="projects" element={<ProjectsPage />} />
+                  <Route path="indicators" element={<IndicatorsPage />} />
+                  <Route path="reports" element={<ReportsPage />} />
+                  <Route path="ai-copilot" element={<AICopilotPage />} />
+                  
+                  <Route path="profile" element={<ProfilePage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                <Route path="golden-circle" element={<Navigate to="/app/tools" replace />} />
+                <Route path="tools" element={<ToolsPage />} />
+                  <Route path="startup-hub" element={<StartupHubPage />} />
+                </Route>
 
-            {/* Admin routes - Start Together Admin */}
-            <Route path="/app/admin" element={
-              <AdminProtectedRoute>
-                <StartTogetherAdminLayout />
-              </AdminProtectedRoute>
-            }>
-              <Route index element={<AdminDashboard />} />
-              <Route path="companies" element={<CompaniesPage />} />
-              <Route path="users" element={<UserManagementPage />} />
-              <Route path="users/create" element={<CreateUserPage />} />
-              <Route path="modules" element={<ModulesManagementPage />} />
-              <Route path="settings" element={<SystemSettingsPage />} />
-              <Route path="monitoring" element={<MonitoringPage />} />
-            </Route>
+                {/* Admin routes - Start Together Admin */}
+                <Route path="/app/admin" element={
+                  <AdminProtectedRoute>
+                    <StartTogetherAdminLayout />
+                  </AdminProtectedRoute>
+                }>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="companies" element={<CompaniesPage />} />
+                  <Route path="users" element={<UserManagementPage />} />
+                  <Route path="users/create" element={<CreateUserPage />} />
+                  <Route path="modules" element={<ModulesManagementPage />} />
+                  <Route path="settings" element={<SystemSettingsPage />} />
+                  <Route path="monitoring" element={<MonitoringPage />} />
+                </Route>
 
-          {/* Redirect /admin to /app/admin */}
-          <Route path="/admin" element={<Navigate to="/app/admin" replace />} />
-          <Route path="/admin/*" element={<Navigate to="/app/admin" replace />} />
-            <Route path="*" element={<NotFound />} />
-            </Routes>
-            </ModulesProvider>
-          </ThemeProvider>
-        </MultiTenantAuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+              {/* Redirect /admin to /app/admin */}
+              <Route path="/admin" element={<Navigate to="/app/admin" replace />} />
+              <Route path="/admin/*" element={<Navigate to="/app/admin" replace />} />
+                <Route path="*" element={<NotFound />} />
+                </Routes>
+                  </ModulesProvider>
+                </ThemeProvider>
+              </AuthStateDebugger>
+            </LoadingStateMonitor>
+          </MultiTenantAuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

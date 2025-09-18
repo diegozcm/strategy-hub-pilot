@@ -64,6 +64,12 @@ export const SystemHealthStatus: React.FC = () => {
                 </Badge>
               </div>
               <div className="flex items-center justify-between text-xs">
+                <span>Autenticação</span>
+                <Badge variant={healthStatus.issues.some(i => i.includes('Token') || i.includes('autenticação')) ? 'destructive' : 'default'} className="text-xs">
+                  {healthStatus.issues.some(i => i.includes('Token') || i.includes('autenticação')) ? 'Problema' : 'OK'}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between text-xs">
                 <span>Operações Ativas</span>
                 <Badge variant={activeOperations.length === 0 ? 'default' : 'secondary'} className="text-xs">
                   {activeOperations.length}
@@ -73,6 +79,12 @@ export const SystemHealthStatus: React.FC = () => {
                 <span>Operações Falharam</span>
                 <Badge variant={failedOperations.length === 0 ? 'default' : 'destructive'} className="text-xs">
                   {failedOperations.length}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span>React App</span>
+                <Badge variant={healthStatus.issues.some(i => i.includes('React') || i.includes('não renderizou')) ? 'destructive' : 'default'} className="text-xs">
+                  {healthStatus.issues.some(i => i.includes('React') || i.includes('não renderizou')) ? 'Problema' : 'OK'}
                 </Badge>
               </div>
             </div>
@@ -97,7 +109,15 @@ export const SystemHealthStatus: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <CheckCircle className="h-3 w-3 text-green-500" />
-                <span>Validação de dados automática</span>
+                <span>Detecção de problemas de autenticação</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <CheckCircle className="h-3 w-3 text-green-500" />
+                <span>Monitoramento de loading states</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <CheckCircle className="h-3 w-3 text-green-500" />
+                <span>Logs detalhados de debug</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <CheckCircle className="h-3 w-3 text-green-500" />
