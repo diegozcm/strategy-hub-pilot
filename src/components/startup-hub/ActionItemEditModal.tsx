@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { ActionItem } from '@/hooks/useActionItems';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useStartupHubUserType } from '@/hooks/useStartupHubUserType';
 
 interface ActionItemEditModalProps {
   item: ActionItem;
@@ -16,6 +17,7 @@ interface ActionItemEditModalProps {
   onDelete: (id: string) => Promise<void>;
   canEdit?: boolean;
   canDelete?: boolean;
+  isViewOnly?: boolean;
 }
 
 export const ActionItemEditModal = ({
@@ -25,8 +27,10 @@ export const ActionItemEditModal = ({
   onUpdate,
   onDelete,
   canEdit = true,
-  canDelete = true
+  canDelete = true,
+  isViewOnly = false
 }: ActionItemEditModalProps) => {
+  const { userType } = useStartupHubUserType();
   const [formData, setFormData] = useState({
     title: item.title,
     description: item.description || '',
@@ -43,7 +47,12 @@ export const ActionItemEditModal = ({
     
     setIsUpdating(true);
     try {
-      await onUpdate(item.id, formData);
+      // Se for usuário startup, só permite alterar status
+      const updatesToSend = userType === 'startup' 
+        ? { status: formData.status }
+        : formData;
+      
+      await onUpdate(item.id, updatesToSend);
       onClose();
     } finally {
       setIsUpdating(false);
@@ -83,7 +92,10 @@ export const ActionItemEditModal = ({
       <Dialog open={isOpen} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Editar Item de Ação</DialogTitle>
+            <DialogTitle>
+              {isViewOnly ? 'Detalhes do Item de Ação' : 
+               userType === 'startup' ? 'Atualizar Status' : 'Editar Item de Ação'}
+            </DialogTitle>
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
@@ -93,7 +105,7 @@ export const ActionItemEditModal = ({
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                disabled={!canEdit}
+                disabled={!canEdit || userType === 'startup'}
               />
             </div>
             
@@ -103,7 +115,7 @@ export const ActionItemEditModal = ({
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                disabled={!canEdit}
+                disabled={!canEdit || userType === 'startup'}
                 rows={3}
               />
             </div>
@@ -114,7 +126,7 @@ export const ActionItemEditModal = ({
                 <Select
                   value={formData.priority}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as ActionItem['priority'] }))}
-                  disabled={!canEdit}
+                  disabled={!canEdit || userType === 'startup'}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -182,7 +194,7 @@ export const ActionItemEditModal = ({
                 type="date"
                 value={formData.due_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, due_date: e.target.value }))}
-                disabled={!canEdit}
+                disabled={!canEdit || userType === 'startup'}
               />
             </div>
           </div>
@@ -203,9 +215,10 @@ export const ActionItemEditModal = ({
               <Button variant="outline" onClick={handleClose}>
                 Cancelar
               </Button>
-              {canEdit && (
+              {canEdit && !isViewOnly && (
                 <Button onClick={handleUpdate} disabled={isUpdating}>
-                  {isUpdating ? 'Salvando...' : 'Salvar'}
+                  {isUpdating ? 'Salvando...' : 
+                   userType === 'startup' ? 'Atualizar Status' : 'Salvar'}
                 </Button>
               )}
             </div>

@@ -4,11 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Target } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Target, History, Clock } from 'lucide-react';
 import { ActionItemCard } from './ActionItemCard';
 import { useActionItems, ActionItem } from '@/hooks/useActionItems';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { useStartupHubUserType } from '@/hooks/useStartupHubUserType';
 
 interface ActionItemsManagerProps {
   sessionId: string;
@@ -20,7 +22,8 @@ export const ActionItemsManager: React.FC<ActionItemsManagerProps> = ({
   canEdit = false 
 }) => {
   const { user } = useAuth();
-  const { actionItems, loading, createActionItem, updateActionItem, deleteActionItem } = useActionItems(sessionId);
+  const { userType } = useStartupHubUserType();
+  const { actionItems, activeItems, completedItems, loading, createActionItem, updateActionItem, deleteActionItem } = useActionItems(sessionId);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -65,6 +68,34 @@ export const ActionItemsManager: React.FC<ActionItemsManagerProps> = ({
     );
   }
 
+  const renderActionItems = (items: ActionItem[], showEmptyMessage: string) => {
+    if (items.length === 0) {
+      return (
+        <div className="text-center py-6 text-sm text-muted-foreground">
+          {showEmptyMessage}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        {items.map((item) => {
+          const isCreator = user?.id === item.created_by;
+          return (
+            <ActionItemCard
+              key={item.id}
+              item={item}
+              onUpdate={handleUpdate}
+              onDelete={handleDelete}
+              canEdit={canEdit || isCreator}
+              canDelete={isCreator && userType !== 'startup'}
+            />
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -72,7 +103,7 @@ export const ActionItemsManager: React.FC<ActionItemsManagerProps> = ({
           <Target className="h-4 w-4" />
           Itens de Ação ({actionItems.length})
         </h4>
-        {canEdit && (
+        {canEdit && userType !== 'startup' && (
           <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
@@ -147,30 +178,34 @@ export const ActionItemsManager: React.FC<ActionItemsManagerProps> = ({
         )}
       </div>
 
-      {actionItems.length === 0 ? (
-        <div className="text-center py-6 text-sm text-muted-foreground">
-          {canEdit 
-            ? 'Nenhum item de ação criado. Adicione itens para acompanhar o progresso.'
-            : 'Nenhum item de ação foi definido para esta sessão.'
-          }
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {actionItems.map((item) => {
-            const isCreator = user?.id === item.created_by;
-            return (
-              <ActionItemCard
-                key={item.id}
-                item={item}
-                onUpdate={handleUpdate}
-                onDelete={handleDelete}
-                canEdit={canEdit || isCreator}
-                canDelete={isCreator}
-              />
-            );
-          })}
-        </div>
-      )}
+      <Tabs defaultValue="active" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="active" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Ativos ({activeItems.length})
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            Histórico ({completedItems.length})
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="active" className="mt-4">
+          {renderActionItems(
+            activeItems,
+            canEdit && userType !== 'startup'
+              ? 'Nenhum item de ação ativo. Adicione itens para acompanhar o progresso.'
+              : 'Nenhum item de ação ativo para esta sessão.'
+          )}
+        </TabsContent>
+        
+        <TabsContent value="completed" className="mt-4">
+          {renderActionItems(
+            completedItems,
+            'Nenhum item de ação foi concluído ainda.'
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

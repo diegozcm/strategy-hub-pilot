@@ -218,8 +218,14 @@ export const useActionItems = (sessionId?: string) => {
     }
   }, [user, sessionId]);
 
+  // Separar itens ativos e concluídos
+  const activeItems = actionItems.filter(item => item.status !== 'completed');
+  const completedItems = actionItems.filter(item => item.status === 'completed');
+
   return {
     actionItems,
+    activeItems,
+    completedItems,
     loading,
     error,
     refetch: fetchActionItems,

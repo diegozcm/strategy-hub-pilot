@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Calendar, AlertCircle, MoreVertical, Edit, Trash2, Eye } from 'lucide-react';
+import { Calendar, AlertCircle, MoreVertical, Edit, Trash2, Eye, CheckCircle } from 'lucide-react';
 import { ActionItem } from '@/hooks/useActionItems';
 import { ActionItemEditModal } from './ActionItemEditModal';
+import { useStartupHubUserType } from '@/hooks/useStartupHubUserType';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -91,6 +92,7 @@ export const ActionItemCard: React.FC<ActionItemCardProps> = ({
   canDelete = false 
 }) => {
   const [showEditModal, setShowEditModal] = useState(false);
+  const { userType } = useStartupHubUserType();
 
   const isOverdue = item.due_date && new Date(item.due_date) < new Date() && item.status !== 'completed';
   const statusConfig = getStatusConfig(item.status);
@@ -99,6 +101,12 @@ export const ActionItemCard: React.FC<ActionItemCardProps> = ({
   const handleDelete = async () => {
     if (onDelete) {
       await onDelete(item.id);
+    }
+  };
+
+  const handleStatusToggle = async () => {
+    if (userType === 'startup' && item.status !== 'completed') {
+      await onUpdate(item.id, { status: 'completed' });
     }
   };
 
@@ -122,6 +130,19 @@ export const ActionItemCard: React.FC<ActionItemCardProps> = ({
                 <span>{statusConfig.icon}</span>
                 {statusConfig.label}
               </div>
+
+              {/* Botão de marcar como concluído para startups */}
+              {userType === 'startup' && item.status !== 'completed' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStatusToggle}
+                  className="h-8 px-2 text-xs"
+                >
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Concluir
+                </Button>
+              )}
               
               {/* Menu dropdown para ações */}
               <DropdownMenu>
@@ -135,13 +156,19 @@ export const ActionItemCard: React.FC<ActionItemCardProps> = ({
                     <Eye className="h-4 w-4 mr-2" />
                     Ver Detalhes
                   </DropdownMenuItem>
-                  {canEdit && (
+                  {canEdit && userType !== 'startup' && (
                     <DropdownMenuItem onClick={() => setShowEditModal(true)}>
                       <Edit className="h-4 w-4 mr-2" />
                       Editar
                     </DropdownMenuItem>
                   )}
-                  {canDelete && onDelete && (
+                  {userType === 'startup' && item.status !== 'completed' && (
+                    <DropdownMenuItem onClick={() => setShowEditModal(true)}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Atualizar Status
+                    </DropdownMenuItem>
+                  )}
+                  {canDelete && onDelete && userType !== 'startup' && (
                     <DropdownMenuItem 
                       onClick={handleDelete}
                       className="text-destructive focus:text-destructive"
@@ -185,6 +212,7 @@ export const ActionItemCard: React.FC<ActionItemCardProps> = ({
         onDelete={handleDelete}
         canEdit={canEdit}
         canDelete={canDelete}
+        isViewOnly={userType === 'startup' && item.status === 'completed'}
       />
     </>
   );
