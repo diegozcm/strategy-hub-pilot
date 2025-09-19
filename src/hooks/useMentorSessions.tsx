@@ -99,9 +99,15 @@ export const useMentorSessions = () => {
 
   const updateSession = async (id: string, updates: Partial<MentoringSession>) => {
     try {
+      // Handle empty date fields by converting them to null
+      const processedUpdates = {
+        ...updates,
+        follow_up_date: updates.follow_up_date || null
+      };
+
       const { data, error: updateError } = await supabase
         .from('mentoring_sessions')
-        .update(updates)
+        .update(processedUpdates)
         .eq('id', id)
         .eq('mentor_id', user?.id)
         .select()
