@@ -79,10 +79,10 @@ export const useStartupSessions = () => {
       console.log('👥 [useStartupSessions] Mentor profiles:', mentorProfiles);
       console.log('❌ [useStartupSessions] Mentor error:', mentorError);
 
-      // Create mentor map using only first name
+      // Create mentor map with full name (first + last name)
       const mentorMap = new Map(mentorProfiles?.map(p => [
         p.user_id, 
-        p.first_name || 'Mentor'
+        `${p.first_name || 'Mentor'}${p.last_name ? ' ' + p.last_name : ''}`.trim()
       ]) || []);
 
       console.log('🗺️ [useStartupSessions] Mentor map:', Object.fromEntries(mentorMap));
