@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { BarChart3, Target, Briefcase, Users, Settings, ChevronLeft, ChevronRight, Zap, TrendingUp, Activity, Brain, Map, Building2, UserCheck, Shield, Building, User, Circle } from 'lucide-react';
+import { BarChart3, Target, Briefcase, Users, Settings, ChevronLeft, ChevronRight, Zap, TrendingUp, Activity, Brain, Map, Building2, UserCheck, Shield, Building, User, Circle, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useMultiTenant';
@@ -34,7 +34,7 @@ const menuStructure = [
       { name: 'Avaliações BEEP', href: '/app/startup-hub?tab=beep-analytics', icon: Activity, requiresMentor: true },
       { name: 'Sessões de Mentoria', href: '/app/startup-hub?tab=sessions', icon: Users, requiresMentor: true },
       { name: 'Mentorias', href: '/app/startup-hub?tab=mentoring', icon: Users, requiresStartup: true },
-      { name: 'Perfil', href: '/app/startup-hub?tab=profile', icon: User, requiresStartup: true }
+      { name: 'Perfil Startup', href: '/app/startup-hub?tab=profile', icon: Rocket, requiresStartup: true }
     ]
   },
   {
