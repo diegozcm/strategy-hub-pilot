@@ -19,14 +19,14 @@ export interface MentoringSessionWithMentor {
 }
 
 export const useStartupSessions = () => {
-  const { user } = useAuth();
+  const { user, company } = useAuth();
   const [sessions, setSessions] = useState<MentoringSessionWithMentor[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStartupSessions = useCallback(async () => {
-    if (!user) {
-      console.log('🚫 [useStartupSessions] No user found');
+    if (!user || !company) {
+      console.log('🚫 [useStartupSessions] Missing user or company', { hasUser: !!user, companyId: company?.id });
       setLoading(false);
       return;
     }
@@ -37,33 +37,15 @@ export const useStartupSessions = () => {
       setLoading(true);
       setError(null);
 
-      // Get user startup company using direct query first
-      const { data: userCompanyRelations, error: relationError } = await supabase
-        .from('user_company_relations')
-        .select(`
-          company_id,
-          companies!inner(id, name, company_type)
-        `)
-        .eq('user_id', user.id)
-        .eq('companies.company_type', 'startup');
-
-      console.log('🏢 [useStartupSessions] User company relations:', userCompanyRelations);
-      console.log('❌ [useStartupSessions] Relation error:', relationError);
-
-      if (relationError) {
-        console.error('Error fetching company relations:', relationError);
-        setError(`Erro ao buscar empresa: ${relationError.message}`);
-        return;
-      }
-
-      if (!userCompanyRelations || userCompanyRelations.length === 0) {
+      // Use selected company from auth context
+      const companyId = company?.id;
+      if (!companyId) {
+        console.log('🚫 [useStartupSessions] No selected company');
         setSessions([]);
         return;
       }
 
-      const companyId = userCompanyRelations[0].company_id;
-
-      console.log('🎯 [useStartupSessions] Searching sessions for company:', companyId);
+      console.log('🎯 [useStartupSessions] Searching sessions for selected company:', companyId);
 
       // Get sessions for this startup
       const { data: sessionsData, error: sessionsError } = await supabase
@@ -123,7 +105,7 @@ export const useStartupSessions = () => {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id, company?.id]);
 
   useEffect(() => {
     fetchStartupSessions();
