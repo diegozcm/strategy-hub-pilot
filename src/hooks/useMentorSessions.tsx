@@ -21,15 +21,16 @@ export interface MentoringSession {
 }
 
 export const useMentorSessions = () => {
-  const { user } = useAuth();
+  const { user, company } = useAuth();
   const { toast } = useToast();
   const [sessions, setSessions] = useState<MentoringSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchSessions = async () => {
-    if (!user?.id) {
+    if (!user?.id || !company?.id) {
       setLoading(false);
+      setSessions([]);
       return;
     }
 
@@ -37,56 +38,23 @@ export const useMentorSessions = () => {
       setLoading(true);
       setError(null);
 
-      // First get user's companies to filter sessions
-      const { data: userCompanies, error: companiesError } = await supabase
-        .from('user_company_relations')
-        .select('company_id')
-        .eq('user_id', user.id);
-
-      if (companiesError) throw companiesError;
-
-      if (!userCompanies || userCompanies.length === 0) {
-        setSessions([]);
-        return;
-      }
-
-      const userCompanyIds = userCompanies.map(uc => uc.company_id);
-
-      // Get sessions filtering by mentor_id AND startup companies the user has access to
+      // Fetch only sessions for the selected company and current mentor
       const { data: sessionsData, error: sessionsError } = await supabase
         .from('mentoring_sessions')
         .select('*')
         .eq('mentor_id', user.id)
-        .in('startup_company_id', userCompanyIds)
+        .eq('startup_company_id', company.id)
         .order('session_date', { ascending: false });
 
       if (sessionsError) throw sessionsError;
 
-      if (!sessionsData || sessionsData.length === 0) {
-        setSessions([]);
-        return;
-      }
-
-      // Get company IDs from sessions
-      const companyIds = [...new Set(sessionsData.map(s => s.startup_company_id))];
-
-      // Get company names
-      const { data: companies, error: companyNamesError } = await supabase
-        .from('companies')
-        .select('id, name')
-        .in('id', companyIds);
-
-      if (companyNamesError) throw companyNamesError;
-
-      // Create company map
-      const companyMap = new Map(companies?.map(c => [c.id, c.name]) || []);
-
-      const sessionsWithCompanies = sessionsData.map(session => ({
+      // Map company name directly from selected company to avoid extra query
+      const sessionsWithCompany = (sessionsData || []).map(session => ({
         ...session,
-        startup_name: companyMap.get(session.startup_company_id) || 'Startup Desconhecida'
+        startup_name: company.name || 'Startup'
       }));
 
-      setSessions(sessionsWithCompanies);
+      setSessions(sessionsWithCompany);
     } catch (err: any) {
       console.error('Error fetching sessions:', err);
       setError(err.message || 'Erro inesperado ao buscar sessões');
@@ -188,13 +156,13 @@ export const useMentorSessions = () => {
   };
 
   useEffect(() => {
-    if (user) {
+    if (user && company?.id) {
       fetchSessions();
     } else {
       setSessions([]);
       setLoading(false);
     }
-  }, [user]);
+  }, [user, company?.id]);
 
   return {
     sessions,
