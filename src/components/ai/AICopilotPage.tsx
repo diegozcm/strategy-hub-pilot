@@ -100,11 +100,13 @@ export const AICopilotPage: React.FC = () => {
           .from('ai_insights')
           .select('*')
           .eq('company_id', company.id)
+          .eq('user_id', user?.id)
           .eq('status', 'active')
           .order('created_at', { ascending: false }),
         supabase
           .from('ai_recommendations')
           .select('*')
+          .eq('insight_id', null) // Filter only general recommendations for now
           .order('created_at', { ascending: false }),
         supabase
           .from('ai_chat_sessions')
@@ -117,6 +119,7 @@ export const AICopilotPage: React.FC = () => {
           .from('ai_insights')
           .select('*')
           .eq('company_id', company.id)
+          .eq('user_id', user?.id)
           .neq('status', 'active')
           .order('confirmed_at', { ascending: false })
           .limit(50)
