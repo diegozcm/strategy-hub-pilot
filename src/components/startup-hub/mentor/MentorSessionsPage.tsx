@@ -35,6 +35,7 @@ export const MentorSessionsPage: React.FC = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [startupFilter, setStartupFilter] = useState('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<MentoringSession | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<MentoringSession | null>(null);
@@ -102,8 +103,20 @@ export const MentorSessionsPage: React.FC = () => {
     const matchesSearch = session.startup_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          session.notes?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === 'all' || session.session_type === typeFilter;
-    return matchesSearch && matchesType;
+    const matchesStartup = startupFilter === 'all' || session.startup_company_id === startupFilter;
+    return matchesSearch && matchesType && matchesStartup;
   }) || [];
+
+  // Get unique startups from sessions for filter
+  const availableStartups = sessions?.reduce((acc, session) => {
+    if (!acc.find(s => s.id === session.startup_company_id)) {
+      acc.push({
+        id: session.startup_company_id,
+        name: session.startup_name || 'Startup'
+      });
+    }
+    return acc;
+  }, [] as Array<{id: string, name: string}>) || [];
 
   if (loading) {
     return (
@@ -241,6 +254,19 @@ export const MentorSessionsPage: React.FC = () => {
             className="pl-10"
           />
         </div>
+        <Select value={startupFilter} onValueChange={setStartupFilter}>
+          <SelectTrigger className="w-full md:w-48">
+            <SelectValue placeholder="Filtrar por startup" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as startups</SelectItem>
+            {availableStartups.map(startup => (
+              <SelectItem key={startup.id} value={startup.id}>
+                {startup.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-full md:w-48">
             <SelectValue placeholder="Filtrar por tipo" />
@@ -269,15 +295,15 @@ export const MentorSessionsPage: React.FC = () => {
           <CardContent className="p-8 text-center">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-medium mb-2">
-              {searchTerm || typeFilter !== 'all' ? 'Nenhuma sessão encontrada' : 'Nenhuma sessão registrada'}
+              {searchTerm || typeFilter !== 'all' || startupFilter !== 'all' ? 'Nenhuma sessão encontrada' : 'Nenhuma sessão registrada'}
             </h3>
             <p className="text-muted-foreground mb-4">
-              {searchTerm || typeFilter !== 'all' 
+              {searchTerm || typeFilter !== 'all' || startupFilter !== 'all'
                 ? 'Tente ajustar os filtros de busca'
                 : 'Comece registrando sua primeira sessão de mentoria'
               }
             </p>
-            {!searchTerm && typeFilter === 'all' && (
+            {!searchTerm && typeFilter === 'all' && startupFilter === 'all' && (
               <Button onClick={() => setIsCreateModalOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Registrar primeira sessão

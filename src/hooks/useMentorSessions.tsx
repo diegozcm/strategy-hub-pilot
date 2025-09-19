@@ -28,7 +28,7 @@ export const useMentorSessions = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchSessions = async () => {
-    if (!user?.id || !company?.id) {
+    if (!user?.id) {
       setLoading(false);
       setSessions([]);
       return;
@@ -38,20 +38,25 @@ export const useMentorSessions = () => {
       setLoading(true);
       setError(null);
 
-      // Fetch only sessions for the selected company and current mentor
+      // Fetch sessions for all startups where the user is a mentor
       const { data: sessionsData, error: sessionsError } = await supabase
         .from('mentoring_sessions')
-        .select('*')
+        .select(`
+          *,
+          companies!startup_company_id (
+            id,
+            name
+          )
+        `)
         .eq('mentor_id', user.id)
-        .eq('startup_company_id', company.id)
         .order('session_date', { ascending: false });
 
       if (sessionsError) throw sessionsError;
 
-      // Map company name directly from selected company to avoid extra query
+      // Map company name from the joined companies table
       const sessionsWithCompany = (sessionsData || []).map(session => ({
         ...session,
-        startup_name: company.name || 'Startup'
+        startup_name: session.companies?.name || 'Startup'
       }));
 
       setSessions(sessionsWithCompany);
@@ -162,13 +167,13 @@ export const useMentorSessions = () => {
   };
 
   useEffect(() => {
-    if (user && company?.id) {
+    if (user) {
       fetchSessions();
     } else {
       setSessions([]);
       setLoading(false);
     }
-  }, [user, company?.id]);
+  }, [user]);
 
   return {
     sessions,
