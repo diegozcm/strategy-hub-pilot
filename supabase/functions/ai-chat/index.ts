@@ -17,6 +17,7 @@ serve(async (req) => {
 
   try {
     const { message, session_id, user_id, company_id } = await req.json();
+    const startTime = Date.now();
     console.log('Request params:', { message: message?.substring(0, 100), session_id, user_id, company_id });
 
     // Initialize Supabase client
@@ -45,52 +46,99 @@ serve(async (req) => {
 
     console.log('Fetching context data...');
     
-    // Fetch context data from Supabase - FILTERED BY COMPANY_ID
-    const [keyResultsResponse, projectsResponse, objectivesResponse, startupProfilesResponse, mentorSessionsResponse] = await Promise.all([
-      supabase.from('key_results').select('title, description, current_value, target_value').eq('company_id', company_id).limit(10),
+    // Strategy Hub context (best effort)
+    const [keyResultsResponse, projectsResponse, objectivesResponse] = await Promise.all([
+      supabase.from('key_results').select('title, description, current_value, target_value').limit(10),
       supabase.from('strategic_projects').select('name, description, status, progress').eq('company_id', company_id).limit(10),
       supabase.from('strategic_objectives').select('title, description').eq('company_id', company_id).limit(10),
-      supabase.from('startup_profiles').select('startup_name, business_description, stage').eq('company_id', company_id).limit(5),
-      supabase.from('mentor_sessions').select('session_title, session_date, session_summary').eq('company_id', company_id).order('session_date', { ascending: false }).limit(10)
     ]);
+
+    // Startup HUB: mentoring sessions for the selected startup company
+    const { data: mentoringSessions, error: sessionsError } = await supabase
+      .from('mentoring_sessions')
+      .select('id, mentor_id, startup_company_id, session_date, duration, session_type, notes, follow_up_date, status')
+      .eq('startup_company_id', company_id)
+      .order('session_date', { ascending: false })
+      .limit(10);
+
+    if (sessionsError) {
+      console.error('Error fetching mentoring sessions:', sessionsError);
+    }
+
+    // Fetch action items linked to those sessions
+    const sessionIds = (mentoringSessions || []).map(s => s.id);
+    let actionItems: any[] = [];
+    if (sessionIds.length > 0) {
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('action_items')
+        .select('id, session_id, title, status, priority, due_date')
+        .in('session_id', sessionIds)
+        .order('due_date', { ascending: true });
+      if (itemsError) {
+        console.error('Error fetching action items:', itemsError);
+      } else {
+        actionItems = itemsData || [];
+      }
+    }
+
+    // Fetch mentor names
+    const mentorIds = Array.from(new Set((mentoringSessions || []).map(s => s.mentor_id)));
+    let mentorNames: Record<string, string> = {};
+    if (mentorIds.length > 0) {
+      const { data: mentorsData, error: mentorsError } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name')
+        .in('user_id', mentorIds);
+      if (mentorsError) {
+        console.error('Error fetching mentor profiles:', mentorsError);
+      } else {
+        mentorNames = (mentorsData || []).reduce((acc: Record<string, string>, m: any) => {
+          acc[m.user_id] = [m.first_name, m.last_name].filter(Boolean).join(' ') || 'Mentor';
+          return acc;
+        }, {});
+      }
+    }
 
     console.log('Context data fetched:', {
       keyResults: keyResultsResponse.data?.length || 0,
       projects: projectsResponse.data?.length || 0,
       objectives: objectivesResponse.data?.length || 0,
-      startupProfiles: startupProfilesResponse.data?.length || 0,
-      mentorSessions: mentorSessionsResponse.data?.length || 0
+      mentoringSessions: mentoringSessions?.length || 0,
+      actionItems: actionItems.length || 0,
     });
 
     const contextData = {
       keyResults: keyResultsResponse.data || [],
       projects: projectsResponse.data || [],
       objectives: objectivesResponse.data || [],
-      startupProfiles: startupProfilesResponse.data || [],
-      mentorSessions: mentorSessionsResponse.data || []
+      mentoringSessions: mentoringSessions || [],
+      actionItems,
+      mentorNames,
     };
-
     // Create a comprehensive prompt with context
     const contextPrompt = `${systemPrompt}
 
-Use os seguintes dados da empresa para fornecer insights precisos e acionáveis:
+Use os seguintes dados da empresa para fornecer respostas específicas e acionáveis. Se o usuário pedir um resumo das últimas sessões de mentoria, gere um resumo objetivo com datas, mentores, principais decisões e próximos passos com base nos itens de ação.
 
 STRATEGY HUB - RESULTADOS CHAVE:
-${contextData.keyResults.map(kr => `- ${kr.title}: ${kr.current_value}/${kr.target_value} (${kr.description})`).join('\n')}
+${contextData.keyResults.map(kr => `- ${kr.title}: ${kr.current_value}/${kr.target_value} (${kr.description || ''})`).join('\n')}
 
 STRATEGY HUB - PROJETOS ESTRATÉGICOS:
-${contextData.projects.map(p => `- ${p.name}: ${p.status} - Progress: ${p.progress}% (${p.description})`).join('\n')}
+${contextData.projects.map(p => `- ${p.name}: ${p.status} - Progresso: ${p.progress}% (${p.description || ''})`).join('\n')}
 
 STRATEGY HUB - OBJETIVOS ESTRATÉGICOS:
-${contextData.objectives.map(o => `- ${o.title}: ${o.description}`).join('\n')}
+${contextData.objectives.map(o => `- ${o.title}: ${o.description || ''}`).join('\n')}
 
-STARTUP HUB - PERFIS DE STARTUPS:
-${contextData.startupProfiles.map(sp => `- ${sp.startup_name}: ${sp.business_description} (Estágio: ${sp.stage})`).join('\n')}
-
-STARTUP HUB - SESSÕES DE MENTORIA RECENTES:
-${contextData.mentorSessions.map(ms => `- ${ms.session_title} (${new Date(ms.session_date).toLocaleDateString('pt-BR')}): ${ms.session_summary || 'Sem resumo'}`).join('\n')}
-
-Você tem acesso completo aos dados dos módulos Strategy Hub e Startup Hub da empresa. Forneça respostas específicas baseadas nestes dados. Se não houver dados relevantes, sugira ações para melhorar a gestão estratégica ou o programa de mentoria de startups.`;
+STARTUP HUB - SESSÕES DE MENTORIA RECENTES (com itens de ação):
+${contextData.mentoringSessions.map((s: any) => {
+  const items = contextData.actionItems.filter((i: any) => i.session_id === s.id);
+  const mentorName = contextData.mentorNames[s.mentor_id] || 'Mentor';
+  const itemsStr = items.length > 0
+    ? items.map((i: any) => `${i.title} [${i.status}] (prioridade: ${i.priority}${i.due_date ? `, vence: ${new Date(i.due_date).toLocaleDateString('pt-BR')}` : ''})`).join('; ')
+    : 'Nenhum';
+  return `- ${new Date(s.session_date).toLocaleDateString('pt-BR')} • ${mentorName} • ${s.session_type} • Status: ${s.status}\n  Notas: ${s.notes || '—'}\n  Itens de ação: ${itemsStr}`;
+}).join('\n\n')}
+`;
 
     // Try different models if the configured one fails
     const modelsToTry = [
@@ -197,18 +245,13 @@ Você tem acesso completo aos dados dos módulos Strategy Hub e Startup Hub da e
         contextSummary += "\n";
       }
 
-      if (contextData.startupProfiles.length > 0) {
-        contextSummary += "🚀 **Startup Hub - Startups:**\n";
-        contextData.startupProfiles.slice(0, 2).forEach(sp => {
-          contextSummary += `• ${sp.startup_name}: ${sp.stage}\n`;
-        });
-        contextSummary += "\n";
-      }
-
-      if (contextData.mentorSessions.length > 0) {
+      if (contextData.mentoringSessions.length > 0) {
         contextSummary += "💬 **Startup Hub - Mentorias Recentes:**\n";
-        contextData.mentorSessions.slice(0, 2).forEach(ms => {
-          contextSummary += `• ${ms.session_title} (${new Date(ms.session_date).toLocaleDateString('pt-BR')})\n`;
+        contextData.mentoringSessions.slice(0, 2).forEach((s: any) => {
+          const mentorName = contextData.mentorNames[s.mentor_id] || 'Mentor';
+          const items = contextData.actionItems.filter((i: any) => i.session_id === s.id);
+          const itemsShort = items.slice(0, 3).map((i: any) => i.title).join(', ');
+          contextSummary += `• ${new Date(s.session_date).toLocaleDateString('pt-BR')} • ${mentorName} • ${s.session_type}${itemsShort ? ` — Itens: ${itemsShort}` : ''}\n`;
         });
         contextSummary += "\n";
       }
@@ -236,7 +279,7 @@ Você tem acesso completo aos dados dos módulos Strategy Hub e Startup Hub da e
         response: aiResponse,
         model_used: modelUsed,
         tokens_used: tokensUsed,
-        response_time_ms: Date.now() - Date.now(), // This should be calculated properly
+        response_time_ms: Date.now() - startTime,
         success: true
       });
       console.log('Analytics logged successfully');
