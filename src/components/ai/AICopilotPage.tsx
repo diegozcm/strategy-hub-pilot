@@ -96,10 +96,30 @@ export const AICopilotPage: React.FC = () => {
       setLoading(true);
       
       const [insightsRes, recommendationsRes, chatSessionsRes, confirmedInsightsRes] = await Promise.all([
-        supabase.from('ai_insights').select('*').eq('company_id', company.id).eq('status', 'active').order('created_at', { ascending: false }),
-        supabase.from('ai_recommendations').select('*').order('created_at', { ascending: false }),
-        supabase.from('ai_chat_sessions').select('*').eq('user_id', user?.id).eq('company_id', company.id).order('updated_at', { ascending: false }).limit(10),
-        supabase.from('ai_insights').select('*').eq('company_id', company.id).neq('status', 'active').order('confirmed_at', { ascending: false }).limit(50)
+        supabase
+          .from('ai_insights')
+          .select('*')
+          .eq('company_id', company.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('ai_recommendations')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('ai_chat_sessions')
+          .select('*')
+          .eq('user_id', user?.id)
+          .eq('company_id', company.id)
+          .order('updated_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('ai_insights')
+          .select('*')
+          .eq('company_id', company.id)
+          .neq('status', 'active')
+          .order('confirmed_at', { ascending: false })
+          .limit(50)
       ]);
 
       if (insightsRes.data) setInsights(insightsRes.data);
@@ -390,8 +410,8 @@ export const AICopilotPage: React.FC = () => {
   const quickActions = [
     { label: "Como estão meus KPIs?", action: () => setMessageInput("Como estão meus KPIs principais?") },
     { label: "Status dos projetos", action: () => setMessageInput("Qual é o status atual dos meus projetos?") },
-    { label: "Resumo da semana", action: () => setMessageInput("Me dê um resumo do progresso desta semana") },
-    { label: "Próximos vencimentos", action: () => setMessageInput("Quais são os próximos prazos importantes?") }
+    { label: "Resumo das mentorias", action: () => setMessageInput("Me dê um resumo das últimas sessões de mentoria") },
+    { label: "Status das startups", action: () => setMessageInput("Como estão as startups no programa de aceleração?") }
   ];
 
   if (loading) {
@@ -516,11 +536,11 @@ export const AICopilotPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="insights" className="space-y-6">
+      <Tabs defaultValue="chat" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="chat">Chat Assistente</TabsTrigger>
           <TabsTrigger value="insights">Insights Ativos</TabsTrigger>
           <TabsTrigger value="history">Histórico</TabsTrigger>
-          <TabsTrigger value="chat">Chat Assistente</TabsTrigger>
           <TabsTrigger value="recommendations">Recomendações</TabsTrigger>
         </TabsList>
 
