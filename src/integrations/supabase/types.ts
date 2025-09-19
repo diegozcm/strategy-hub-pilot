@@ -2480,6 +2480,81 @@ export type Database = {
         }
         Relationships: []
       }
+      vision_alignment: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          id: string
+          shared_commitments: string | null
+          shared_objectives: string | null
+          shared_resources: string | null
+          shared_risks: string | null
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          shared_commitments?: string | null
+          shared_objectives?: string | null
+          shared_resources?: string | null
+          shared_risks?: string | null
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          shared_commitments?: string | null
+          shared_objectives?: string | null
+          shared_resources?: string | null
+          shared_risks?: string | null
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: []
+      }
+      vision_alignment_history: {
+        Row: {
+          change_reason: string | null
+          changed_at: string
+          changed_by: string
+          id: string
+          previous_shared_commitments: string | null
+          previous_shared_objectives: string | null
+          previous_shared_resources: string | null
+          previous_shared_risks: string | null
+          vision_alignment_id: string
+        }
+        Insert: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by: string
+          id?: string
+          previous_shared_commitments?: string | null
+          previous_shared_objectives?: string | null
+          previous_shared_resources?: string | null
+          previous_shared_risks?: string | null
+          vision_alignment_id: string
+        }
+        Update: {
+          change_reason?: string | null
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          previous_shared_commitments?: string | null
+          previous_shared_objectives?: string | null
+          previous_shared_resources?: string | null
+          previous_shared_risks?: string | null
+          vision_alignment_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

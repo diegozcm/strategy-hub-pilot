@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GoldenCircleTab } from './GoldenCircleTab';
 import { SwotAnalysisTab } from './SwotAnalysisTab';
+import { VisionAlignmentTab } from './VisionAlignmentTab';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -33,9 +34,10 @@ export const ToolsPage: React.FC = () => {
       </div>
 
       <Tabs defaultValue="golden-circle" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="golden-circle">Golden Circle</TabsTrigger>
           <TabsTrigger value="swot">Análise SWOT</TabsTrigger>
+          <TabsTrigger value="vision-alignment">Alinhamento de Visão</TabsTrigger>
         </TabsList>
         
         <TabsContent value="golden-circle" className="mt-6">
@@ -44,6 +46,10 @@ export const ToolsPage: React.FC = () => {
         
         <TabsContent value="swot" className="mt-6">
           <SwotAnalysisTab />
+        </TabsContent>
+        
+        <TabsContent value="vision-alignment" className="mt-6">
+          <VisionAlignmentTab />
         </TabsContent>
       </Tabs>
     </div>
