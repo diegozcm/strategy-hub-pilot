@@ -278,10 +278,12 @@ export const AICopilotPage: React.FC = () => {
 
       console.log('Insights generated successfully:', response.data);
       
+      // Reload data but keep current tab
       await loadAIData();
+      
       toast({
         title: "Sucesso",
-        description: `${response.data.insights_generated || 0} insights gerados baseados nos seus dados!`,
+        description: `${response.data.insights_generated || 0} insights gerados baseados nos dados do Strategy Hub e Startup Hub!`,
       });
     } catch (error) {
       console.error('Error generating insights:', error);
@@ -403,6 +405,9 @@ export const AICopilotPage: React.FC = () => {
       case 'indicators': return BarChart3;
       case 'people': return Users;
       case 'objectives': return CheckCircle;
+      case 'startups': return Users;
+      case 'mentoring': return MessageSquare;
+      case 'strategic': return Brain;
       default: return Brain;
     }
   };

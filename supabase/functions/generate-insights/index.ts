@@ -34,25 +34,35 @@ serve(async (req) => {
 
     console.log(`Generating insights for user: ${user_id}`);
 
-    // Get user data using the database function
-    const { data: analysisData, error: analysisError } = await supabaseClient
-      .rpc('analyze_user_data', { target_user_id: user_id });
+    // Get user data using the database function and Startup Hub data
+    const [analysisResponse, startupProfilesResponse, mentorSessionsResponse] = await Promise.all([
+      supabaseClient.rpc('analyze_user_data', { target_user_id: user_id }),
+      supabaseClient.from('startup_profiles').select('*').eq('company_id', company_id),
+      supabaseClient.from('mentor_sessions').select('*').eq('company_id', company_id).order('session_date', { ascending: false }).limit(20)
+    ]);
 
-    if (analysisError) {
-      console.error('Analysis error:', analysisError);
-      throw analysisError;
+    if (analysisResponse.error) {
+      console.error('Analysis error:', analysisResponse.error);
+      throw analysisResponse.error;
     }
 
-    const analysis: AnalysisResult = analysisData;
-    console.log('Analysis data:', analysis);
+    const analysis: AnalysisResult = analysisResponse.data;
+    const startupProfiles = startupProfilesResponse.data || [];
+    const mentorSessions = mentorSessionsResponse.data || [];
+    
+    console.log('Analysis data:', { 
+      ...analysis, 
+      startupProfiles: startupProfiles.length, 
+      mentorSessions: mentorSessions.length 
+    });
 
     const insights = [];
     const aiRecommendations = [];
 
-    // Enhanced analysis with AI integration
-    if (openAIKey && (analysis.projects?.length > 0 || analysis.indicators?.length > 0 || analysis.objectives?.length > 0)) {
+    // Enhanced analysis with AI integration including Startup Hub data
+    if (openAIKey && (analysis.projects?.length > 0 || analysis.indicators?.length > 0 || analysis.objectives?.length > 0 || startupProfiles.length > 0 || mentorSessions.length > 0)) {
       try {
-        // Prepare data for OpenAI analysis
+        // Prepare data for OpenAI analysis including Startup Hub
         const contextData = {
           projects: analysis.projects?.map(p => ({
             name: p.name,
@@ -76,18 +86,38 @@ serve(async (req) => {
             progress: o.progress,
             status: o.status,
             target_date: o.target_date
-          })) || []
+          })) || [],
+          startupProfiles: startupProfiles.map(sp => ({
+            name: sp.startup_name,
+            stage: sp.stage,
+            description: sp.business_description,
+            industry: sp.industry,
+            employees: sp.employee_count,
+            revenue: sp.annual_revenue
+          })),
+          mentoringSessions: mentorSessions.map(ms => ({
+            title: ms.session_title,
+            date: ms.session_date,
+            summary: ms.session_summary,
+            type: ms.session_type,
+            participants: ms.participants_count
+          }))
         };
 
-        const prompt = `Analise os seguintes dados de uma empresa e gere insights estratégicos em português:
+        const prompt = `Analise os seguintes dados de uma empresa e gere insights estratégicos em português considerando TODOS os módulos disponíveis:
 
+STRATEGY HUB:
 PROJETOS: ${JSON.stringify(contextData.projects, null, 2)}
 RESULTADOS-CHAVE: ${JSON.stringify(contextData.keyResults, null, 2)}
 OBJETIVOS: ${JSON.stringify(contextData.objectives, null, 2)}
 
+STARTUP HUB:
+STARTUPS CADASTRADAS: ${JSON.stringify(contextData.startupProfiles, null, 2)}
+SESSÕES DE MENTORIA: ${JSON.stringify(contextData.mentoringSessions, null, 2)}
+
 Para cada insight, forneça:
 1. Tipo (risk/opportunity/info)
-2. Categoria (projects/indicators/objectives/strategic)
+2. Categoria (projects/indicators/objectives/startups/mentoring/strategic)
 3. Título conciso
 4. Descrição detalhada
 5. Severidade (low/medium/high/critical)
@@ -98,11 +128,19 @@ Para cada insight, forneça:
 Formato JSON: {"insights": [{"type": "", "category": "", "title": "", "description": "", "severity": "", "recommendations": []}]}
 
 Foque em:
+STRATEGY HUB:
 - Projetos atrasados ou em risco
 - Metas não atingidas ou super executadas  
 - Tendências preocupantes ou positivas
 - Oportunidades de melhoria
-- Gargalos e dependências críticas`;
+
+STARTUP HUB:
+- Qualidade do programa de aceleração baseado nas sessões
+- Diversidade e potencial das startups cadastradas
+- Efetividade das mentorias (frequência, qualidade, resultados)
+- Padrões de sucesso/insucesso nas startups
+- Gaps no programa de mentoria
+- Oportunidades de crescimento do ecossistema`;
 
         const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -373,6 +411,175 @@ Foque em:
       }
     }
 
+    // STARTUP HUB: Analysis for startup profiles
+    if (startupProfiles && startupProfiles.length > 0) {
+      console.log('Analyzing startup profiles...');
+      
+      const stageDistribution = {};
+      const industries = {};
+      
+      for (const startup of startupProfiles) {
+        // Count stages
+        const stage = startup.stage || 'unknown';
+        stageDistribution[stage] = (stageDistribution[stage] || 0) + 1;
+        
+        // Count industries
+        const industry = startup.industry || 'não definida';
+        industries[industry] = (industries[industry] || 0) + 1;
+        
+        // Individual startup analysis
+        if (!startup.business_description || startup.business_description.length < 50) {
+          insights.push({
+            insight_type: 'risk',
+            category: 'startups',
+            title: `Perfil Incompleto: "${startup.startup_name}"`,
+            description: `A startup "${startup.startup_name}" possui descrição do negócio incompleta ou muito superficial. Isso pode prejudicar a qualidade do processo de mentoria e avaliação de progresso.`,
+            severity: 'medium',
+            confidence_score: 0.90,
+            related_entity_type: 'startup',
+            related_entity_id: startup.id,
+            actionable: true,
+            metadata: {
+              startup_name: startup.startup_name,
+              missing_data: 'business_description',
+              stage: startup.stage
+            }
+          });
+        }
+      }
+      
+      // Portfolio analysis
+      const totalStartups = startupProfiles.length;
+      const earlyStageCount = (stageDistribution['ideation'] || 0) + (stageDistribution['validation'] || 0);
+      const matureStageCount = (stageDistribution['growth'] || 0) + (stageDistribution['scale'] || 0);
+      
+      if (totalStartups >= 3) {
+        if (earlyStageCount > totalStartups * 0.8) {
+          insights.push({
+            insight_type: 'opportunity',
+            category: 'startups',
+            title: 'Portfolio Focado em Early Stage',
+            description: `${earlyStageCount} de ${totalStartups} startups estão em estágios iniciais. Considere desenvolver programas específicos para validação de produto e tração inicial para maximizar o sucesso das startups.`,
+            severity: 'low',
+            confidence_score: 0.85,
+            related_entity_type: 'startup',
+            actionable: true,
+            metadata: {
+              total_startups: totalStartups,
+              early_stage_count: earlyStageCount,
+              portfolio_composition: stageDistribution
+            }
+          });
+        }
+        
+        if (matureStageCount > totalStartups * 0.6) {
+          insights.push({
+            insight_type: 'opportunity',
+            category: 'startups',
+            title: 'Portfolio com Startups Maduras',
+            description: `${matureStageCount} de ${totalStartups} startups estão em estágios avançados. Considere programas de scale-up e conexões com investidores para acelerar o crescimento.`,
+            severity: 'low',
+            confidence_score: 0.85,
+            related_entity_type: 'startup',
+            actionable: true,
+            metadata: {
+              total_startups: totalStartups,
+              mature_stage_count: matureStageCount,
+              portfolio_composition: stageDistribution
+            }
+          });
+        }
+      }
+    }
+
+    // STARTUP HUB: Analysis for mentoring sessions
+    if (mentorSessions && mentorSessions.length > 0) {
+      console.log('Analyzing mentoring sessions...');
+      
+      const now = new Date();
+      const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+      const recentSessions = mentorSessions.filter(session => 
+        new Date(session.session_date) >= thirtyDaysAgo
+      );
+      
+      const sessionsWithoutSummary = mentorSessions.filter(session => 
+        !session.session_summary || session.session_summary.trim().length < 20
+      );
+      
+      // Session frequency analysis
+      if (recentSessions.length === 0 && mentorSessions.length > 0) {
+        insights.push({
+          insight_type: 'risk',
+          category: 'mentoring',
+          title: 'Atividade de Mentoria em Declínio',
+          description: `Não foram realizadas sessões de mentoria nos últimos 30 dias, apesar do histórico de ${mentorSessions.length} sessões. Isso pode indicar redução no engajamento ou problemas na programação.`,
+          severity: 'high',
+          confidence_score: 0.90,
+          related_entity_type: 'mentoring_session',
+          actionable: true,
+          metadata: {
+            total_sessions: mentorSessions.length,
+            recent_sessions: recentSessions.length,
+            last_session_date: mentorSessions[0]?.session_date
+          }
+        });
+      } else if (recentSessions.length < 3 && mentorSessions.length >= 10) {
+        insights.push({
+          insight_type: 'risk',
+          category: 'mentoring',
+          title: 'Baixa Frequência de Mentorias',
+          description: `Apenas ${recentSessions.length} sessões realizadas nos últimos 30 dias, comparado ao histórico de ${mentorSessions.length} sessões. Considere aumentar a frequência para manter o momentum das startups.`,
+          severity: 'medium',
+          confidence_score: 0.80,
+          related_entity_type: 'mentoring_session',
+          actionable: true,
+          metadata: {
+            total_sessions: mentorSessions.length,
+            recent_sessions: recentSessions.length,
+            recommended_frequency: 'weekly'
+          }
+        });
+      }
+      
+      // Session quality analysis
+      if (sessionsWithoutSummary.length > mentorSessions.length * 0.3) {
+        insights.push({
+          insight_type: 'risk',
+          category: 'mentoring',
+          title: 'Documentação Inadequada das Mentorias',
+          description: `${sessionsWithoutSummary.length} de ${mentorSessions.length} sessões não possuem resumos adequados. Isso prejudica o acompanhamento do progresso e a continuidade do processo de mentoria.`,
+          severity: 'medium',
+          confidence_score: 0.85,
+          related_entity_type: 'mentoring_session',
+          actionable: true,
+          metadata: {
+            total_sessions: mentorSessions.length,
+            sessions_without_summary: sessionsWithoutSummary.length,
+            documentation_rate: ((mentorSessions.length - sessionsWithoutSummary.length) / mentorSessions.length * 100).toFixed(1)
+          }
+        });
+      }
+      
+      // Positive mentoring patterns
+      if (recentSessions.length >= 4) {
+        insights.push({
+          insight_type: 'opportunity',
+          category: 'mentoring',
+          title: 'Programa de Mentoria Ativo',
+          description: `Excelente! ${recentSessions.length} sessões realizadas nos últimos 30 dias demonstram um programa de mentoria engajado. Continue mantendo essa frequência para maximizar o impacto nas startups.`,
+          severity: 'low',
+          confidence_score: 0.90,
+          related_entity_type: 'mentoring_session',
+          actionable: true,
+          metadata: {
+            recent_sessions: recentSessions.length,
+            engagement_level: 'high',
+            program_health: 'excellent'
+          }
+        });
+      }
+    }
+
     // Always generate at least some basic insights about the data state
     if (insights.length === 0) {
       console.log('No specific insights generated, creating general overview...');
@@ -448,20 +655,65 @@ Foque em:
         });
       }
 
+      // STARTUP HUB overview insights
+      if (startupProfiles && startupProfiles.length > 0) {
+        insights.push({
+          insight_type: 'info',
+          category: 'startups',
+          title: 'Portfolio de Startups',
+          description: `Seu programa possui ${startupProfiles.length} startups cadastradas. Continue acompanhando o desenvolvimento de cada uma através das sessões de mentoria para maximizar o sucesso do portfólio.`,
+          severity: 'low',
+          confidence_score: 1.0,
+          related_entity_type: 'startup',
+          actionable: true,
+          metadata: {
+            total_startups: startupProfiles.length,
+            source: 'overview_analysis'
+          }
+        });
+      }
+
+      if (mentorSessions && mentorSessions.length > 0) {
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+        const recentSessions = mentorSessions.filter(session => 
+          new Date(session.session_date) >= thirtyDaysAgo
+        );
+
+        insights.push({
+          insight_type: 'info',
+          category: 'mentoring',
+          title: 'Atividade de Mentoria',
+          description: `Total de ${mentorSessions.length} sessões de mentoria realizadas, sendo ${recentSessions.length} nos últimos 30 dias. O acompanhamento contínuo é essencial para o sucesso das startups.`,
+          severity: 'low',
+          confidence_score: 0.90,
+          related_entity_type: 'mentoring_session',
+          actionable: true,
+          metadata: {
+            total_sessions: mentorSessions.length,
+            recent_sessions: recentSessions.length,
+            source: 'overview_analysis'
+          }
+        });
+      }
+
       // If no data at all, provide guidance
       if ((!analysis.projects || analysis.projects.length === 0) && 
           (!analysis.indicators || analysis.indicators.length === 0) && 
-          (!analysis.objectives || analysis.objectives.length === 0)) {
+          (!analysis.objectives || analysis.objectives.length === 0) &&
+          (!startupProfiles || startupProfiles.length === 0) &&
+          (!mentorSessions || mentorSessions.length === 0)) {
         insights.push({
           insight_type: 'info',
           category: 'strategic',
-          title: 'Começando sua Jornada Estratégica',
-          description: 'Para gerar insights mais específicos, comece adicionando projetos, objetivos estratégicos e indicadores-chave. O sistema analisará automaticamente seu progresso e identificará oportunidades de melhoria.',
+          title: 'Começando sua Jornada Estratégica e de Startups',
+          description: 'Para gerar insights mais específicos, comece adicionando projetos, objetivos estratégicos e indicadores-chave no Strategy Hub, e cadastre startups e sessões de mentoria no Startup Hub. O sistema analisará automaticamente seu progresso e identificará oportunidades de melhoria.',
           severity: 'low',
           confidence_score: 1.0,
           actionable: true,
           metadata: {
             recommendation: 'setup_data',
+            modules: ['strategy_hub', 'startup_hub'],
             source: 'onboarding_guidance'
           }
         });
