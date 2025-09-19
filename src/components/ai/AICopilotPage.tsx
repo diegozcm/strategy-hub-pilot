@@ -779,18 +779,6 @@ export const AICopilotPage: React.FC = () => {
                       <div className="text-center text-muted-foreground">
                         <Bot className="w-12 h-12 mx-auto mb-2 opacity-50" />
                         <p>Olá! Sou seu assistente de IA. Como posso ajudá-lo hoje?</p>
-                        <div className="flex flex-wrap gap-2 mt-4 justify-center">
-                          {quickActions.map((action, index) => (
-                            <Button
-                              key={index}
-                              variant="outline"
-                              size="sm"
-                              onClick={action.action}
-                            >
-                              {action.label}
-                            </Button>
-                          ))}
-                        </div>
                       </div>
                     )}
                     {messages.map((message) => (
