@@ -1,11 +1,23 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { Building2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { useStartupHubUserType } from '@/hooks/useStartupHubUserType';
 
 export const CompanyDisplay: React.FC = () => {
   const { company } = useAuth();
+  const { userType } = useStartupHubUserType();
+  const location = useLocation();
 
   if (!company) {
+    return null;
+  }
+
+  // Hide company display for mentors when in Startup HUB
+  const isInStartupHub = location.pathname.includes('/startup-hub');
+  const shouldHideForMentor = userType === 'mentor' && isInStartupHub;
+  
+  if (shouldHideForMentor) {
     return null;
   }
 
