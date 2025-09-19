@@ -800,7 +800,18 @@ export const AICopilotPage: React.FC = () => {
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted'
                         }`}>
-                          <p className="text-sm">{message.content}</p>
+                          <div className="text-sm whitespace-pre-wrap">
+                            {message.content.split('\n').map((line, index) => (
+                              <div key={index} className={line.trim().startsWith('•') || line.trim().startsWith('*') ? 'ml-2' : ''}>
+                                {line.trim().startsWith('•') || line.trim().startsWith('*') 
+                                  ? <span>• {line.replace(/^[•*]\s*/, '').trim()}</span>
+                                  : line.trim().startsWith('**') && line.trim().endsWith('**')
+                                  ? <strong>{line.replace(/^\*\*|\*\*$/g, '')}</strong>
+                                  : line
+                                }
+                              </div>
+                            ))}
+                          </div>
                           <p className="text-xs opacity-70 mt-1">
                             {new Date(message.created_at).toLocaleTimeString('pt-BR', { 
                               hour: '2-digit', 
