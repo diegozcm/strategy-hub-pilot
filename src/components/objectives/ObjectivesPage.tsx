@@ -522,8 +522,8 @@ export const ObjectivesPage: React.FC = () => {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Objetivos Estratégicos</h1>
-              <p className="text-gray-600 mt-2">Gerencie seus objetivos e resultados-chave (OKRs)</p>
+            <h1 className="text-3xl font-bold text-foreground">Objetivos Estratégicos</h1>
+            <p className="text-muted-foreground mt-2">Gerencie seus objetivos e resultados-chave (OKRs)</p>
             </div>
           </div>
           <Card className="p-6 text-center">
@@ -548,20 +548,20 @@ export const ObjectivesPage: React.FC = () => {
         <div className="space-y-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Objetivos Estratégicos</h1>
-              <p className="text-gray-600 mt-2">Gerencie seus objetivos e resultados-chave (OKRs)</p>
+              <h1 className="text-3xl font-bold text-foreground">Objetivos Estratégicos</h1>
+              <p className="text-muted-foreground mt-2">Gerencie seus objetivos e resultados-chave (OKRs)</p>
             </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
               <Card key={i} className="animate-pulse">
                 <CardHeader>
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-16 bg-gray-200 rounded mb-4"></div>
-                  <div className="h-2 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-muted rounded w-3/4"></div>
+                <div className="h-3 bg-muted rounded w-1/2"></div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-16 bg-muted rounded mb-4"></div>
+                <div className="h-2 bg-muted rounded w-full"></div>
                 </CardContent>
               </Card>
             ))}
@@ -582,8 +582,8 @@ export const ObjectivesPage: React.FC = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Objetivos Estratégicos</h1>
-            <p className="text-gray-600 mt-2">Gerencie seus planos estratégicos e objetivos</p>
+            <h1 className="text-3xl font-bold text-foreground">Objetivos Estratégicos</h1>
+            <p className="text-muted-foreground mt-2">Gerencie seus planos estratégicos e objetivos</p>
           </div>
           <div className="flex space-x-3">
             <Dialog open={isCreatePlanOpen} onOpenChange={setIsCreatePlanOpen}>
@@ -902,7 +902,7 @@ export const ObjectivesPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-between">
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
                   placeholder="Buscar objetivos..."
                   value={searchTerm}
@@ -982,26 +982,26 @@ export const ObjectivesPage: React.FC = () => {
                     <CardContent>
                       <div className="space-y-3">
                         {objective.description && (
-                          <p className="text-sm text-gray-600 line-clamp-2">{objective.description}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-2">{objective.description}</p>
                         )}
                         <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-1 text-gray-500">
+                          <div className="flex items-center gap-1 text-muted-foreground">
                             <Target className="w-3 h-3" />
                             <span>{objectiveKeyResults.length} resultados-chave</span>
                           </div>
                         </div>
                         {objective.target_date && (
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="w-3 h-3" />
                             <span>Meta: {new Date(objective.target_date).toLocaleDateString('pt-BR')}</span>
                           </div>
                         )}
                         <div className="mt-3">
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-medium text-gray-700">Progresso</span>
-                            <span className="text-xs font-bold text-gray-900">{calculateObjectiveProgress(objectiveKeyResults)}%</span>
+                            <span className="text-xs font-medium text-muted-foreground">Progresso</span>
+                            <span className="text-xs font-bold text-foreground">{calculateObjectiveProgress(objectiveKeyResults)}%</span>
                           </div>
-                          <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                          <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
                             <div 
                               className={`h-full transition-all duration-300 rounded-full ${getProgressColor(calculateObjectiveProgress(objectiveKeyResults))}`}
                               style={{ width: `${calculateObjectiveProgress(objectiveKeyResults)}%` }}
@@ -1139,12 +1139,12 @@ export const ObjectivesPage: React.FC = () => {
                     <div className="space-y-4">
                       <div>
                         <h3 className="font-medium mb-2">Descrição</h3>
-                        <p className="text-gray-600">{selectedObjective.description || 'Nenhuma descrição fornecida.'}</p>
+                        <p className="text-muted-foreground">{selectedObjective.description || 'Nenhuma descrição fornecida.'}</p>
                       </div>
                       
                       {selectedObjective.target_date && (
                         <div>
-                          <h4 className="font-medium text-sm text-gray-500">Data Meta</h4>
+                          <h4 className="font-medium text-sm text-muted-foreground">Data Meta</h4>
                           <p>{new Date(selectedObjective.target_date).toLocaleDateString('pt-BR')}</p>
                         </div>
                       )}

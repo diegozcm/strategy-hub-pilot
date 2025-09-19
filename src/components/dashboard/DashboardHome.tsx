@@ -487,11 +487,11 @@ export const DashboardHome: React.FC = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">
               Nenhuma empresa selecionada
             </h3>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               Selecione uma empresa no menu superior para visualizar o dashboard.
             </p>
           </div>
@@ -505,13 +505,13 @@ export const DashboardHome: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Strategy HUB</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-3xl font-bold text-foreground">Strategy HUB</h1>
+          <p className="text-muted-foreground mt-1">
             Visão geral estratégica da empresa - {company.name}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600">Ano:</span>
+          <span className="text-sm text-muted-foreground">Ano:</span>
           <Select
             value={selectedYear.toString()}
             onValueChange={(value) => {
@@ -540,8 +540,8 @@ export const DashboardHome: React.FC = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                  <p className="text-2xl font-bold text-foreground mt-1">{stat.value}</p>
                    <div className="flex items-center mt-2">
                      {stat.changeType === 'positive' ? (
                        <ArrowUp className="h-3 w-3 text-green-500 mr-1" />
@@ -552,7 +552,7 @@ export const DashboardHome: React.FC = () => {
                        className={`text-xs font-medium ${
                          stat.changeType === 'positive' 
                            ? 'text-green-600' 
-                           : 'text-gray-600'
+                           : 'text-muted-foreground'
                        }`}
                      >
                        {stat.change}
@@ -679,11 +679,11 @@ export const DashboardHome: React.FC = () => {
                 <div className="text-center py-4">Carregando Key Results...</div>
               ) : filteredKeyResults.length === 0 ? (
                 <div className="text-center py-8">
-                  <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  <Target className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">
                     {keyResults.length === 0 ? 'Nenhum Key Result encontrado' : 'Nenhum resultado encontrado para os filtros aplicados'}
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-muted-foreground">
                     {keyResults.length === 0 ? 'Crie Key Results para acompanhar a performance da empresa.' : 'Tente ajustar os filtros para ver mais resultados.'}
                   </p>
                 </div>
@@ -697,59 +697,59 @@ export const DashboardHome: React.FC = () => {
                     return (
                       <div key={kr.id} className="border rounded-lg">
                         {/* Collapsed State - Always Visible */}
-                        <div className="p-4 hover:bg-gray-50 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3">
-                                <div 
-                                  className="w-3 h-3 rounded-full" 
-                                  style={{ backgroundColor: kr.pillar_color }}
-                                />
-                                <div>
-                                  <h4 className="font-medium text-gray-900">{kr.title}</h4>
-                                  <p className="text-sm text-gray-600">{kr.pillar_name} • {kr.objective_title}</p>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-2">
-                                {getStatusIcon(yearlyAchievement)}
-                                <div className="flex flex-col items-end">
-                                  <span className={`text-sm font-medium ${getStatusColor(yearlyAchievement)}`}>
-                                    {yearlyAchievement}% no ano
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    Atual: {kr.yearly_actual || kr.current_value || 0}
-                                  </span>
-                                </div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleKRClick(kr)}
-                                className="text-gray-500 hover:text-gray-700"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => toggleKRExpansion(kr.id)}
-                                className="text-gray-500 hover:text-gray-700"
-                              >
-                                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                              </Button>
-                            </div>
-                          </div>
+                         <div className="p-4 hover:bg-muted/50 transition-colors">
+                           <div className="flex items-center justify-between">
+                             <div className="flex-1">
+                               <div className="flex items-center gap-3">
+                                 <div 
+                                   className="w-3 h-3 rounded-full" 
+                                   style={{ backgroundColor: kr.pillar_color }}
+                                 />
+                                 <div>
+                                   <h4 className="font-medium text-foreground">{kr.title}</h4>
+                                   <p className="text-sm text-muted-foreground">{kr.pillar_name} • {kr.objective_title}</p>
+                                 </div>
+                               </div>
+                             </div>
+                             <div className="flex items-center gap-3">
+                               <div className="flex items-center gap-2">
+                                 {getStatusIcon(yearlyAchievement)}
+                                 <div className="flex flex-col items-end">
+                                   <span className={`text-sm font-medium ${getStatusColor(yearlyAchievement)}`}>
+                                     {yearlyAchievement}% no ano
+                                   </span>
+                                   <span className="text-xs text-muted-foreground">
+                                     Atual: {kr.yearly_actual || kr.current_value || 0}
+                                   </span>
+                                 </div>
+                               </div>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={() => handleKRClick(kr)}
+                                 className="text-muted-foreground hover:text-foreground"
+                               >
+                                 <Edit className="h-4 w-4" />
+                               </Button>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 onClick={() => toggleKRExpansion(kr.id)}
+                                 className="text-muted-foreground hover:text-foreground"
+                               >
+                                 {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                               </Button>
+                             </div>
+                           </div>
                         </div>
 
                         {/* Expanded State - Monthly Details */}
                         {isExpanded && (
-                          <div className="border-t bg-gray-50">
+                          <div className="border-t bg-muted/50">
                             <div className="p-4">
                               <div className="flex justify-between items-center mb-4">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium text-gray-700">Tipo de Totalizador:</span>
+                                  <span className="text-sm font-medium text-muted-foreground">Tipo de Totalizador:</span>
                                   <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                                     {getAggregationTypeLabel(kr.aggregation_type || 'sum')}
                                   </Badge>
@@ -767,9 +767,9 @@ export const DashboardHome: React.FC = () => {
                                            )}
                                          </TableHead>
                                        ))}
-                                       <TableHead className="text-center min-w-24 bg-gray-100 font-semibold">
-                                         Total
-                                       </TableHead>
+                                        <TableHead className="text-center min-w-24 bg-muted/50 font-semibold">
+                                          Total
+                                        </TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -787,9 +787,9 @@ export const DashboardHome: React.FC = () => {
                                          </TableCell>
                                       );
                                     })}
-                                    <TableCell className="text-center bg-gray-100 font-semibold">
-                                      {getAggregatedTotals(kr).target}
-                                    </TableCell>
+                                     <TableCell className="text-center bg-muted/50 font-semibold">
+                                       {getAggregatedTotals(kr).target}
+                                     </TableCell>
                                   </TableRow>
                                    <TableRow>
                                      <TableCell className="font-medium bg-white">Realizado</TableCell>
@@ -805,9 +805,9 @@ export const DashboardHome: React.FC = () => {
                                          </TableCell>
                                        );
                                      })}
-                                     <TableCell className="text-center bg-gray-100 font-semibold">
-                                       {getAggregatedTotals(kr).actual}
-                                     </TableCell>
+                                      <TableCell className="text-center bg-muted/50 font-semibold">
+                                        {getAggregatedTotals(kr).actual}
+                                      </TableCell>
                                    </TableRow>
                                    <TableRow>
                                      <TableCell className="font-medium bg-white">% Atingimento</TableCell>
@@ -825,7 +825,7 @@ export const DashboardHome: React.FC = () => {
                                          </TableCell>
                                        );
                                      })}
-                                     <TableCell className="text-center bg-gray-100 font-semibold">
+                                     <TableCell className="text-center bg-muted/50 font-semibold">
                                        <span className={getStatusColor(getAggregatedTotals(kr).percentage)}>
                                          {getAggregatedTotals(kr).percentage}%
                                        </span>

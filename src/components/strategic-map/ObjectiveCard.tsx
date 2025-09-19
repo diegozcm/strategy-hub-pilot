@@ -179,10 +179,10 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
 
           <div className="mt-3">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium text-gray-700">Progresso</span>
-              <span className="text-xs font-bold text-gray-900">{progressPercentage}%</span>
+              <span className="text-xs font-medium text-muted-foreground">Progresso</span>
+              <span className="text-xs font-bold text-foreground">{progressPercentage}%</span>
             </div>
-            <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
+            <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
               <div 
                 className={`h-full transition-all duration-300 rounded-full ${getProgressColor(progressPercentage)}`}
                 style={{ width: `${progressPercentage}%` }}
