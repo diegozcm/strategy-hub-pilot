@@ -152,10 +152,6 @@ export const ActionItemCard: React.FC<ActionItemCardProps> = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setShowEditModal(true)}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    Ver Detalhes
-                  </DropdownMenuItem>
                   {canEdit && userType !== 'startup' && (
                     <DropdownMenuItem onClick={() => setShowEditModal(true)}>
                       <Edit className="h-4 w-4 mr-2" />
