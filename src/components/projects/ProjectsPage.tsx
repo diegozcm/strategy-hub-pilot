@@ -474,21 +474,21 @@ export const ProjectsPage: React.FC = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Projetos Estratégicos</h1>
-            <p className="text-gray-600 mt-2">Gerencie seus projetos e tarefas estratégicas</p>
+            <h1 className="text-3xl font-bold text-foreground">Projetos Estratégicos</h1>
+            <p className="text-muted-foreground mt-2">Gerencie seus projetos e tarefas estratégicas</p>
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-4 bg-muted rounded w-3/4"></div>
+                <div className="h-3 bg-muted rounded w-1/2"></div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="h-3 bg-gray-200 rounded"></div>
-                  <div className="h-2 bg-gray-200 rounded w-full"></div>
+                  <div className="h-3 bg-muted rounded"></div>
+                  <div className="h-2 bg-muted rounded w-full"></div>
                 </div>
               </CardContent>
             </Card>
@@ -508,8 +508,8 @@ export const ProjectsPage: React.FC = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Projetos Estratégicos</h1>
-          <p className="text-gray-600 mt-2">Gerencie seus projetos e tarefas estratégicas</p>
+          <h1 className="text-3xl font-bold text-foreground">Projetos Estratégicos</h1>
+          <p className="text-muted-foreground mt-2">Gerencie seus projetos e tarefas estratégicas</p>
         </div>
         <div className="flex space-x-3">
           <Dialog open={isCreateTaskOpen} onOpenChange={setIsCreateTaskOpen}>
@@ -763,7 +763,7 @@ export const ProjectsPage: React.FC = () => {
                           onChange={(e) => setEditProjectForm(prev => ({ ...prev, name: e.target.value }))}
                         />
                       ) : (
-                        <p className="mt-1 text-sm text-gray-900">{selectedProjectForDetail.name}</p>
+                        <p className="mt-1 text-sm text-foreground">{selectedProjectForDetail.name}</p>
                       )}
                     </div>
 
@@ -777,7 +777,7 @@ export const ProjectsPage: React.FC = () => {
                           rows={3}
                         />
                       ) : (
-                        <p className="mt-1 text-sm text-gray-900">{selectedProjectForDetail.description || 'Sem descrição'}</p>
+                        <p className="mt-1 text-sm text-foreground">{selectedProjectForDetail.description || 'Sem descrição'}</p>
                       )}
                     </div>
 
@@ -801,7 +801,7 @@ export const ProjectsPage: React.FC = () => {
                             </SelectContent>
                           </Select>
                         ) : (
-                          <p className="mt-1 text-sm text-gray-900">
+                          <p className="mt-1 text-sm text-foreground">
                             {plans.find(p => p.id === selectedProjectForDetail.plan_id)?.name || 'Sem plano'}
                           </p>
                         )}
@@ -873,7 +873,7 @@ export const ProjectsPage: React.FC = () => {
                             onChange={(e) => setEditProjectForm(prev => ({ ...prev, budget: e.target.value }))}
                           />
                         ) : (
-                          <p className="mt-1 text-sm text-gray-900">
+                          <p className="mt-1 text-sm text-foreground">
                             {selectedProjectForDetail.budget 
                               ? `R$ ${selectedProjectForDetail.budget.toLocaleString('pt-BR')}`
                               : 'Não definido'
@@ -894,7 +894,7 @@ export const ProjectsPage: React.FC = () => {
                             onChange={(e) => setEditProjectForm(prev => ({ ...prev, start_date: e.target.value }))}
                           />
                         ) : (
-                          <p className="mt-1 text-sm text-gray-900">
+                          <p className="mt-1 text-sm text-foreground">
                             {selectedProjectForDetail.start_date 
                               ? new Date(selectedProjectForDetail.start_date).toLocaleDateString('pt-BR')
                               : 'Não definida'
@@ -913,7 +913,7 @@ export const ProjectsPage: React.FC = () => {
                             onChange={(e) => setEditProjectForm(prev => ({ ...prev, end_date: e.target.value }))}
                           />
                         ) : (
-                          <p className="mt-1 text-sm text-gray-900">
+                          <p className="mt-1 text-sm text-foreground">
                             {selectedProjectForDetail.end_date 
                               ? new Date(selectedProjectForDetail.end_date).toLocaleDateString('pt-BR')
                               : 'Não definida'
@@ -926,10 +926,10 @@ export const ProjectsPage: React.FC = () => {
 
                   {/* Project Tasks Summary */}
                   <div className="border-t pt-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Tarefas do Projeto</h3>
+                    <h3 className="text-lg font-medium text-foreground mb-4">Tarefas do Projeto</h3>
                     <div className="space-y-4">
                       {getProjectTasks(selectedProjectForDetail.id).length === 0 ? (
-                        <p className="text-sm text-gray-500">Nenhuma tarefa encontrada para este projeto.</p>
+                        <p className="text-sm text-muted-foreground">Nenhuma tarefa encontrada para este projeto.</p>
                       ) : (
                         <div className="grid grid-cols-1 gap-3">
                           {getProjectTasks(selectedProjectForDetail.id).map((task) => (
@@ -943,10 +943,10 @@ export const ProjectsPage: React.FC = () => {
                                   </Badge>
                                 </div>
                                 {task.description && (
-                                  <p className="text-xs text-gray-600 mt-1 ml-6">{task.description}</p>
+                                  <p className="text-xs text-muted-foreground mt-1 ml-6">{task.description}</p>
                                 )}
                               </div>
-                              <div className="flex items-center space-x-4 text-xs text-gray-500">
+                              <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                                 {task.estimated_hours && (
                                   <div className="flex items-center">
                                     <Clock className="w-3 h-3 mr-1" />
@@ -1043,8 +1043,8 @@ export const ProjectsPage: React.FC = () => {
             <Card className="text-center py-12">
               <CardContent>
                 <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum plano estratégico encontrado</h3>
-                <p className="text-gray-600 mb-4">Crie um plano estratégico primeiro para poder criar projetos.</p>
+                <h3 className="text-lg font-medium text-foreground mb-2">Nenhum plano estratégico encontrado</h3>
+                <p className="text-muted-foreground mb-4">Crie um plano estratégico primeiro para poder criar projetos.</p>
                 <Button variant="outline">
                   Ir para Objetivos
                 </Button>
@@ -1054,8 +1054,8 @@ export const ProjectsPage: React.FC = () => {
             <Card className="text-center py-12">
               <CardContent>
                 <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum projeto encontrado</h3>
-                <p className="text-gray-600 mb-4">Comece criando seu primeiro projeto estratégico.</p>
+                <h3 className="text-lg font-medium text-foreground mb-2">Nenhum projeto encontrado</h3>
+                <p className="text-muted-foreground mb-4">Comece criando seu primeiro projeto estratégico.</p>
                 <Button onClick={() => setIsCreateProjectOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Criar Primeiro Projeto
@@ -1109,7 +1109,7 @@ export const ProjectsPage: React.FC = () => {
                         {/* Progress */}
                         <div>
                           <div className="flex justify-between text-sm mb-2">
-                            <span className="text-gray-600">Progresso das Tarefas</span>
+                            <span className="text-muted-foreground">Progresso das Tarefas</span>
                             <span className="font-medium">{Math.round(taskProgress)}%</span>
                           </div>
                           <Progress value={taskProgress} className="h-2" />
@@ -1117,7 +1117,7 @@ export const ProjectsPage: React.FC = () => {
 
                         {/* Tasks Summary */}
                         <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center text-gray-600">
+                          <div className="flex items-center text-muted-foreground">
                             <Users className="w-4 h-4 mr-1" />
                             Tarefas
                           </div>
@@ -1127,7 +1127,7 @@ export const ProjectsPage: React.FC = () => {
                         </div>
 
                         {/* Budget and Timeline */}
-                        <div className="flex items-center justify-between text-sm text-gray-600">
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
                           {project.budget && (
                             <div className="flex items-center">
                               <DollarSign className="w-4 h-4 mr-1" />
@@ -1173,7 +1173,7 @@ export const ProjectsPage: React.FC = () => {
             {/* To Do */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">A Fazer</h3>
+                <h3 className="font-semibold text-foreground">A Fazer</h3>
                 <Badge variant="secondary">{tasksByStatus.todo.length}</Badge>
               </div>
               <div className="space-y-3">
@@ -1190,7 +1190,7 @@ export const ProjectsPage: React.FC = () => {
                               className="h-6 w-6 p-0 hover:bg-gray-100"
                               onClick={(e) => handleStatusChange(task.id, getPreviousStatus(task.status)!, e)}
                             >
-                              <ChevronLeft className="w-3 h-3 text-gray-400" />
+                               <ChevronLeft className="w-3 h-3 text-muted-foreground" />
                             </Button>
                           )}
                           {getNextStatus(task.status) && (
@@ -1200,7 +1200,7 @@ export const ProjectsPage: React.FC = () => {
                               className="h-6 w-6 p-0 hover:bg-gray-100"
                               onClick={(e) => handleStatusChange(task.id, getNextStatus(task.status)!, e)}
                             >
-                              <ChevronRight className="w-3 h-3 text-gray-400" />
+                               <ChevronRight className="w-3 h-3 text-muted-foreground" />
                             </Button>
                           )}
                           <Badge variant="outline" className={`${getPriorityColor(task.priority)} text-white border-0 text-xs`}>
@@ -1209,9 +1209,9 @@ export const ProjectsPage: React.FC = () => {
                         </div>
                       </div>
                       {task.description && (
-                        <p className="text-xs text-gray-600 line-clamp-2">{task.description}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
                       )}
-                      <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
                         {task.estimated_hours && (
                           <div className="flex items-center">
                             <Clock className="w-3 h-3 mr-1" />
@@ -1234,7 +1234,7 @@ export const ProjectsPage: React.FC = () => {
             {/* In Progress */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Em Progresso</h3>
+                <h3 className="font-semibold text-foreground">Em Progresso</h3>
                 <Badge variant="secondary">{tasksByStatus.in_progress.length}</Badge>
               </div>
               <div className="space-y-3">
@@ -1251,7 +1251,7 @@ export const ProjectsPage: React.FC = () => {
                               className="h-6 w-6 p-0 hover:bg-gray-100"
                               onClick={(e) => handleStatusChange(task.id, getPreviousStatus(task.status)!, e)}
                             >
-                              <ChevronLeft className="w-3 h-3 text-gray-400" />
+                               <ChevronLeft className="w-3 h-3 text-muted-foreground" />
                             </Button>
                           )}
                           {getNextStatus(task.status) && (
@@ -1261,7 +1261,7 @@ export const ProjectsPage: React.FC = () => {
                               className="h-6 w-6 p-0 hover:bg-gray-100"
                               onClick={(e) => handleStatusChange(task.id, getNextStatus(task.status)!, e)}
                             >
-                              <ChevronRight className="w-3 h-3 text-gray-400" />
+                               <ChevronRight className="w-3 h-3 text-muted-foreground" />
                             </Button>
                           )}
                           <Badge variant="outline" className={`${getPriorityColor(task.priority)} text-white border-0 text-xs`}>
@@ -1270,9 +1270,9 @@ export const ProjectsPage: React.FC = () => {
                         </div>
                       </div>
                       {task.description && (
-                        <p className="text-xs text-gray-600 line-clamp-2">{task.description}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
                       )}
-                      <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
                         {task.estimated_hours && (
                           <div className="flex items-center">
                             <Clock className="w-3 h-3 mr-1" />
@@ -1295,7 +1295,7 @@ export const ProjectsPage: React.FC = () => {
             {/* Review */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Em Revisão</h3>
+                <h3 className="font-semibold text-foreground">Em Revisão</h3>
                 <Badge variant="secondary">{tasksByStatus.review.length}</Badge>
               </div>
               <div className="space-y-3">
@@ -1312,7 +1312,7 @@ export const ProjectsPage: React.FC = () => {
                               className="h-6 w-6 p-0 hover:bg-gray-100"
                               onClick={(e) => handleStatusChange(task.id, getPreviousStatus(task.status)!, e)}
                             >
-                              <ChevronLeft className="w-3 h-3 text-gray-400" />
+                               <ChevronLeft className="w-3 h-3 text-muted-foreground" />
                             </Button>
                           )}
                           {getNextStatus(task.status) && (
@@ -1322,7 +1322,7 @@ export const ProjectsPage: React.FC = () => {
                               className="h-6 w-6 p-0 hover:bg-gray-100"
                               onClick={(e) => handleStatusChange(task.id, getNextStatus(task.status)!, e)}
                             >
-                              <ChevronRight className="w-3 h-3 text-gray-400" />
+                               <ChevronRight className="w-3 h-3 text-muted-foreground" />
                             </Button>
                           )}
                           <Badge variant="outline" className={`${getPriorityColor(task.priority)} text-white border-0 text-xs`}>
@@ -1331,9 +1331,9 @@ export const ProjectsPage: React.FC = () => {
                         </div>
                       </div>
                       {task.description && (
-                        <p className="text-xs text-gray-600 line-clamp-2">{task.description}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
                       )}
-                      <div className="flex items-center justify-between text-xs text-gray-500">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
                         {task.estimated_hours && (
                           <div className="flex items-center">
                             <Clock className="w-3 h-3 mr-1" />
@@ -1356,7 +1356,7 @@ export const ProjectsPage: React.FC = () => {
             {/* Done */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Concluído</h3>
+                <h3 className="font-semibold text-foreground">Concluído</h3>
                 <Badge variant="secondary">{tasksByStatus.done.length}</Badge>
               </div>
               <div className="space-y-3">
@@ -1373,7 +1373,7 @@ export const ProjectsPage: React.FC = () => {
                                 className="h-6 w-6 p-0 hover:bg-gray-100"
                                 onClick={(e) => handleStatusChange(task.id, getPreviousStatus(task.status)!, e)}
                               >
-                                <ChevronLeft className="w-3 h-3 text-gray-400" />
+                                <ChevronLeft className="w-3 h-3 text-muted-foreground" />
                               </Button>
                             )}
                             {getNextStatus(task.status) && (
@@ -1383,16 +1383,16 @@ export const ProjectsPage: React.FC = () => {
                                 className="h-6 w-6 p-0 hover:bg-gray-100"
                                 onClick={(e) => handleStatusChange(task.id, getNextStatus(task.status)!, e)}
                               >
-                                <ChevronRight className="w-3 h-3 text-gray-400" />
+                                <ChevronRight className="w-3 h-3 text-muted-foreground" />
                               </Button>
                             )}
                             <CheckCircle className="w-4 h-4 text-green-500" />
                           </div>
                         </div>
-                      {task.description && (
-                        <p className="text-xs text-gray-600 line-clamp-2">{task.description}</p>
-                      )}
-                      <div className="flex items-center justify-between text-xs text-gray-500">
+                       {task.description && (
+                         <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
+                       )}
+                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         {task.estimated_hours && (
                           <div className="flex items-center">
                             <Clock className="w-3 h-3 mr-1" />
