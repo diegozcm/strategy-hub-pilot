@@ -2,13 +2,9 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { BeepAssessmentHistory } from './BeepAssessmentHistory';
-import { useStartupProfile } from '@/hooks/useStartupProfile';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useMultiTenant';
 import { Target, AlertTriangle, TrendingUp } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
@@ -43,43 +39,16 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
   isCreating,
   assessments
 }) => {
-  const [selectedCompanyId, setSelectedCompanyId] = useState('');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [conflictingDraft, setConflictingDraft] = useState<BeepAssessment | null>(null);
-
-  // Get startup companies available to the user
-  const { data: startupCompanies = [] } = useQuery({
-    queryKey: ['user-startup-companies'],
-    queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      const { data, error } = await supabase
-        .from('user_company_relations')
-        .select(`
-          company_id,
-          companies!inner (
-            id,
-            name,
-            company_type,
-            status
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('companies.company_type', 'startup')
-        .eq('companies.status', 'active');
-
-      if (error) throw error;
-      return data?.map(relation => relation.companies).filter(Boolean) || [];
-    }
-  });
+  const { company } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedCompanyId) {
+    if (company?.id) {
       // Check if there's already a draft for this company
-      const existingDraft = assessments.find(
-        assessment => assessment.company_id === selectedCompanyId && assessment.status === 'draft'
+      const existingDraft = currentCompanyAssessments.find(
+        assessment => assessment.status === 'draft'
       );
       
       if (existingDraft) {
@@ -88,7 +57,7 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
         setShowConfirmDialog(true);
       } else {
         // No conflict, proceed with new assessment
-        onStartAssessment(selectedCompanyId);
+        onStartAssessment(company.id);
       }
     }
   };
@@ -102,8 +71,8 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
   };
 
   const handleForceNewAssessment = () => {
-    if (selectedCompanyId) {
-      onStartAssessment(selectedCompanyId, true);
+    if (company?.id) {
+      onStartAssessment(company.id, true);
       setShowConfirmDialog(false);
       setConflictingDraft(null);
     }
@@ -114,8 +83,12 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
     setConflictingDraft(null);
   };
 
-  const draftAssessments = assessments.filter(assessment => assessment.status === 'draft');
-  const completedAssessments = assessments.filter(assessment => assessment.status === 'completed');
+  // Filter assessments for current company only
+  const currentCompanyAssessments = assessments.filter(
+    assessment => assessment.company_id === company?.id
+  );
+  const draftAssessments = currentCompanyAssessments.filter(assessment => assessment.status === 'draft');
+  const completedAssessments = currentCompanyAssessments.filter(assessment => assessment.status === 'completed');
 
   // Prepare chart data for score evolution
   const chartData = completedAssessments
@@ -258,30 +231,21 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
             </p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Select value={selectedCompanyId} onValueChange={setSelectedCompanyId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma startup" />
-                </SelectTrigger>
-                <SelectContent className="bg-background border z-50">
-                  {startupCompanies.map((company: any) => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-4">
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm font-medium">Startup: {company?.name || 'Empresa não selecionada'}</p>
+              </div>
               <Button 
-                type="submit"
-                disabled={!selectedCompanyId || isCreating || startupCompanies.length === 0}
+                onClick={handleSubmit}
+                disabled={!company?.id || isCreating}
                 className="w-full"
               >
                 {isCreating ? 'Iniciando...' : 'Iniciar Nova Avaliação'}
               </Button>
-            </form>
-            {startupCompanies.length === 0 && (
+            </div>
+            {!company && (
               <p className="text-sm text-muted-foreground mt-4">
-                Nenhuma startup encontrada. Entre em contato com o administrador.
+                Nenhuma empresa selecionada. Selecione uma empresa primeiro.
               </p>
             )}
           </CardContent>
@@ -298,20 +262,19 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
           <CardContent>
             {draftAssessments.length > 0 ? (
               <div className="space-y-4">
-                {draftAssessments.slice(0, 3).map((assessment) => {
-                  const company = startupCompanies.find((c: any) => c.id === assessment.company_id);
-                  const progress = assessment.progress_percentage || 0;
-                  const answeredQuestions = assessment.answered_questions || 0;
-                  const totalQuestions = assessment.total_questions || 100;
-                  const lastAnswerDate = assessment.last_answer_at 
-                    ? new Date(assessment.last_answer_at).toLocaleDateString('pt-BR')
-                    : new Date(assessment.created_at).toLocaleDateString('pt-BR');
-                  
-                  return (
-                    <div key={assessment.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{company?.name || 'Startup'}</h4>
+                 {draftAssessments.slice(0, 3).map((assessment) => {
+                   const progress = assessment.progress_percentage || 0;
+                   const answeredQuestions = assessment.answered_questions || 0;
+                   const totalQuestions = assessment.total_questions || 100;
+                   const lastAnswerDate = assessment.last_answer_at 
+                     ? new Date(assessment.last_answer_at).toLocaleDateString('pt-BR')
+                     : new Date(assessment.created_at).toLocaleDateString('pt-BR');
+                   
+                   return (
+                     <div key={assessment.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                       <div className="flex items-start justify-between mb-3">
+                         <div className="flex-1">
+                           <h4 className="font-medium text-gray-900">{company?.name || 'Startup'}</h4>
                           <p className="text-sm text-gray-600">
                             {answeredQuestions > 0 
                               ? `Última resposta em ${lastAnswerDate}`
