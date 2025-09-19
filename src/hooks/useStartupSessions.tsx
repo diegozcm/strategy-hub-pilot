@@ -63,12 +63,17 @@ export const useStartupSessions = () => {
 
       const companyId = userCompanyRelations[0].company_id;
 
+      console.log('🎯 [useStartupSessions] Searching sessions for company:', companyId);
+
       // Get sessions for this startup
       const { data: sessionsData, error: sessionsError } = await supabase
         .from('mentoring_sessions')
         .select('*')
         .eq('startup_company_id', companyId)
         .order('session_date', { ascending: false });
+
+      console.log('📊 [useStartupSessions] Sessions data:', sessionsData);
+      console.log('❌ [useStartupSessions] Sessions error:', sessionsError);
 
       if (sessionsError) {
         setError(`Erro ao buscar sessões: ${sessionsError.message}`);
