@@ -37,11 +37,27 @@ export const useMentorSessions = () => {
       setLoading(true);
       setError(null);
 
-      // First get sessions
+      // First get user's companies to filter sessions
+      const { data: userCompanies, error: companiesError } = await supabase
+        .from('user_company_relations')
+        .select('company_id')
+        .eq('user_id', user.id);
+
+      if (companiesError) throw companiesError;
+
+      if (!userCompanies || userCompanies.length === 0) {
+        setSessions([]);
+        return;
+      }
+
+      const userCompanyIds = userCompanies.map(uc => uc.company_id);
+
+      // Get sessions filtering by mentor_id AND startup companies the user has access to
       const { data: sessionsData, error: sessionsError } = await supabase
         .from('mentoring_sessions')
         .select('*')
         .eq('mentor_id', user.id)
+        .in('startup_company_id', userCompanyIds)
         .order('session_date', { ascending: false });
 
       if (sessionsError) throw sessionsError;
@@ -51,16 +67,16 @@ export const useMentorSessions = () => {
         return;
       }
 
-      // Get company IDs
+      // Get company IDs from sessions
       const companyIds = [...new Set(sessionsData.map(s => s.startup_company_id))];
 
       // Get company names
-      const { data: companies, error: companiesError } = await supabase
+      const { data: companies, error: companyNamesError } = await supabase
         .from('companies')
         .select('id, name')
         .in('id', companyIds);
 
-      if (companiesError) throw companiesError;
+      if (companyNamesError) throw companyNamesError;
 
       // Create company map
       const companyMap = new Map(companies?.map(c => [c.id, c.name]) || []);
