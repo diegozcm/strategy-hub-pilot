@@ -26,9 +26,12 @@ export const useStartupSessions = () => {
 
   const fetchStartupSessions = useCallback(async () => {
     if (!user) {
+      console.log('🚫 [useStartupSessions] No user found');
       setLoading(false);
       return;
     }
+    
+    console.log('👤 [useStartupSessions] User ID:', user.id);
     
     try {
       setLoading(true);
@@ -43,6 +46,9 @@ export const useStartupSessions = () => {
         `)
         .eq('user_id', user.id)
         .eq('companies.company_type', 'startup');
+
+      console.log('🏢 [useStartupSessions] User company relations:', userCompanyRelations);
+      console.log('❌ [useStartupSessions] Relation error:', relationError);
 
       if (relationError) {
         console.error('Error fetching company relations:', relationError);
