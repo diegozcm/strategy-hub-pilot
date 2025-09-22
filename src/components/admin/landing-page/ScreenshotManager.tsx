@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { ImageUploader } from './ImageUploader';
+import { DemoImageCropUpload } from './DemoImageCropUpload';
 
 interface ScreenshotManagerProps {
   screenshotNumber: number;
@@ -71,11 +71,9 @@ export const ScreenshotManager: React.FC<ScreenshotManagerProps> = ({
 
         <div>
           <Label>Imagem do Screenshot</Label>
-          <ImageUploader
-            section="demo"
-            contentKey={`screenshot_${screenshotNumber}_image`}
+          <DemoImageCropUpload
             currentValue={imageUrl}
-            onSuccess={onImageChange}
+            onImageChange={onImageChange}
             className="mt-2"
           />
         </div>

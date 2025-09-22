@@ -345,7 +345,7 @@ const LandingPage = () => {
                     <img 
                       src={screenshots[currentScreenshot].image} 
                       alt={screenshots[currentScreenshot].title}
-                      className="w-full h-full object-cover rounded-lg"
+                      className="w-full h-full object-contain rounded-lg bg-white/10"
                     />
                   ) : (
                     <div className="text-center">
