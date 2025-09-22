@@ -11,6 +11,7 @@ interface VisionObjectiveCardProps {
   isDragging?: boolean;
   onDragStart?: (objective: VisionAlignmentObjective) => void;
   onDragEnd?: () => void;
+  isEditing?: boolean;
 }
 
 export const VisionObjectiveCard: React.FC<VisionObjectiveCardProps> = ({
@@ -20,6 +21,7 @@ export const VisionObjectiveCard: React.FC<VisionObjectiveCardProps> = ({
   isDragging = false,
   onDragStart,
   onDragEnd,
+  isEditing = false,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -64,29 +66,31 @@ export const VisionObjectiveCard: React.FC<VisionObjectiveCardProps> = ({
           <GripVertical className="w-4 h-4 text-muted-foreground" />
         </div>
 
-        {/* Action Buttons - Always visible on mobile, hover on desktop */}
-        <div className={`
-          absolute top-2 right-2 flex gap-1 transition-opacity duration-200
-          ${isHovered ? 'opacity-100' : 'opacity-0 md:opacity-0'} 
-          opacity-100 md:opacity-0 group-hover:opacity-100
-        `}>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 hover:bg-white/80 backdrop-blur-sm"
-            onClick={() => onEdit(objective)}
-          >
-            <Edit className="w-3 h-3" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground backdrop-blur-sm"
-            onClick={handleDelete}
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </div>
+        {/* Action Buttons - Only visible when editing */}
+        {isEditing && (
+          <div className={`
+            absolute top-2 right-2 flex gap-1 transition-opacity duration-200
+            ${isHovered ? 'opacity-100' : 'opacity-0 md:opacity-0'} 
+            opacity-100 md:opacity-0 group-hover:opacity-100
+          `}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 hover:bg-white/80 backdrop-blur-sm"
+              onClick={() => onEdit(objective)}
+            >
+              <Edit className="w-3 h-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground backdrop-blur-sm"
+              onClick={handleDelete}
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          </div>
+        )}
 
         {/* Content */}
         <div className="mt-6">

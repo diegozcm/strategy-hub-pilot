@@ -3,16 +3,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useVisionAlignment } from '@/hooks/useVisionAlignment';
 import { useVisionAlignmentObjectives } from '@/hooks/useVisionAlignmentObjectives';
-import { VisionAlignmentForm } from './VisionAlignmentForm';
 import { VisionAlignmentHistory } from './VisionAlignmentHistory';
 import { VisionDimensionSection } from './VisionDimensionSection';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { History, Edit, Trash2, Plus, Target, Handshake, FolderOpen, AlertTriangle } from 'lucide-react';
+import { History, Edit, Trash2, Target, Handshake, FolderOpen, AlertTriangle, Save, X } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 
 export const VisionAlignmentTab: React.FC = () => {
-  const [showForm, setShowForm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const { loading, visionAlignment, loadVisionAlignment, deleteVisionAlignment, ensureVisionAlignment } = useVisionAlignment();
   const { loadObjectives } = useVisionAlignmentObjectives(visionAlignment?.id);
 
@@ -32,9 +31,12 @@ export const VisionAlignmentTab: React.FC = () => {
     }
   };
 
-  const handleFormSuccess = () => {
-    setShowForm(false);
-    loadVisionAlignment();
+  const handleEdit = () => {
+    setIsEditing(!isEditing);
+  };
+
+  const handleSave = () => {
+    setIsEditing(false);
   };
 
   if (loading) {
@@ -59,14 +61,29 @@ export const VisionAlignmentTab: React.FC = () => {
             <History className="w-4 h-4 mr-2" />
             Histórico
           </Button>
-          <Button variant="outline" onClick={() => setShowForm(true)}>
-            <Edit className="w-4 h-4 mr-2" />
-            Editar
-          </Button>
-          <Button variant="destructive" onClick={handleDelete}>
-            <Trash2 className="w-4 h-4 mr-2" />
-            Excluir
-          </Button>
+          {isEditing ? (
+            <>
+              <Button onClick={handleSave}>
+                <Save className="w-4 h-4 mr-2" />
+                Salvar
+              </Button>
+              <Button variant="outline" onClick={() => setIsEditing(false)}>
+                <X className="w-4 h-4 mr-2" />
+                Cancelar
+              </Button>
+            </>
+          ) : (
+            <Button variant="outline" onClick={handleEdit}>
+              <Edit className="w-4 h-4 mr-2" />
+              Editar
+            </Button>
+          )}
+          {!isEditing && (
+            <Button variant="destructive" onClick={handleDelete}>
+              <Trash2 className="w-4 h-4 mr-2" />
+              Excluir
+            </Button>
+          )}
         </div>
       </div>
 
@@ -82,6 +99,7 @@ export const VisionAlignmentTab: React.FC = () => {
             borderColor="border-blue-200"
             bgColor="bg-blue-50 dark:bg-blue-950/20"
             textColor="text-blue-700 dark:text-blue-400"
+            isEditing={isEditing}
           />
 
           {/* Comprometimentos Conjuntos */}
@@ -94,6 +112,7 @@ export const VisionAlignmentTab: React.FC = () => {
             borderColor="border-yellow-200"
             bgColor="bg-yellow-50 dark:bg-yellow-950/20"
             textColor="text-yellow-700 dark:text-yellow-400"
+            isEditing={isEditing}
           />
 
           {/* Recursos Conjuntos */}
@@ -106,6 +125,7 @@ export const VisionAlignmentTab: React.FC = () => {
             borderColor="border-orange-200"
             bgColor="bg-orange-50 dark:bg-orange-950/20"
             textColor="text-orange-700 dark:text-orange-400"
+            isEditing={isEditing}
           />
 
           {/* Riscos Conjuntos */}
@@ -118,6 +138,7 @@ export const VisionAlignmentTab: React.FC = () => {
             borderColor="border-pink-200"
             bgColor="bg-pink-50 dark:bg-pink-950/20"
             textColor="text-pink-700 dark:text-pink-400"
+            isEditing={isEditing}
           />
         </div>
 
@@ -127,13 +148,6 @@ export const VisionAlignmentTab: React.FC = () => {
           </div>
         )}
       </div>
-
-      <VisionAlignmentForm
-        open={showForm}
-        onOpenChange={setShowForm}
-        onSuccess={handleFormSuccess}
-        visionAlignment={visionAlignment}
-      />
 
       <VisionAlignmentHistory
         open={showHistory}

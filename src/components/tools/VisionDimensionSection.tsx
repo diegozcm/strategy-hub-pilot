@@ -16,6 +16,7 @@ interface VisionDimensionSectionProps {
   borderColor: string;
   bgColor: string;
   textColor: string;
+  isEditing?: boolean;
 }
 
 export const VisionDimensionSection: React.FC<VisionDimensionSectionProps> = ({
@@ -27,6 +28,7 @@ export const VisionDimensionSection: React.FC<VisionDimensionSectionProps> = ({
   borderColor,
   bgColor,
   textColor,
+  isEditing = false,
 }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingObjective, setEditingObjective] = useState<VisionAlignmentObjective | null>(null);
@@ -176,16 +178,18 @@ export const VisionDimensionSection: React.FC<VisionDimensionSectionProps> = ({
               {icon}
               {title}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleAddObjective}
-              className={`${textColor} hover:bg-white/20`}
-              disabled={loading}
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Adicionar
-            </Button>
+            {isEditing && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleAddObjective}
+                className={`${textColor} hover:bg-white/20`}
+                disabled={loading}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Adicionar
+              </Button>
+            )}
           </CardTitle>
           <p className={`text-sm ${textColor.replace('text-', 'text-').replace('-700', '-600').replace('-400', '-300')}`}>
             {description}
@@ -198,15 +202,17 @@ export const VisionDimensionSection: React.FC<VisionDimensionSectionProps> = ({
               <p className="text-muted-foreground text-sm mb-3">
                 Nenhum objetivo adicionado ainda
               </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAddObjective}
-                disabled={loading}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar primeiro objetivo
-              </Button>
+              {isEditing && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddObjective}
+                  disabled={loading}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar primeiro objetivo
+                </Button>
+              )}
             </div>
           ) : (
             <div className="grid gap-3">
@@ -222,6 +228,7 @@ export const VisionDimensionSection: React.FC<VisionDimensionSectionProps> = ({
                     isDragging={draggedObjective?.id === objective.id}
                     onDragStart={handleDragStart}
                     onDragEnd={handleDragEnd}
+                    isEditing={isEditing}
                   />
                 </div>
               ))}
