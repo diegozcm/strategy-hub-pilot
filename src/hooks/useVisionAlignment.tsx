@@ -171,11 +171,11 @@ export const useVisionAlignment = () => {
         if (error) throw error;
         setVisionAlignment(data);
       } else {
-        console.log('✨ Creating new vision alignment');
-        // Create new vision alignment
+        console.log('✨ Creating or upserting vision alignment');
+        // Create or update vision alignment in an idempotent way
         const { data, error } = await supabase
           .from('vision_alignment')
-          .insert({
+          .upsert({
             company_id: selectedCompany.id,
             shared_objectives: formData.shared_objectives,
             shared_commitments: formData.shared_commitments,
@@ -183,11 +183,11 @@ export const useVisionAlignment = () => {
             shared_risks: formData.shared_risks,
             created_by: user.id,
             updated_by: user.id,
-          })
+          }, { onConflict: 'company_id' })
           .select()
           .single();
 
-        console.log('📡 Insert result:', { data, error });
+        console.log('📡 Upsert result:', { data, error });
         if (error) throw error;
         setVisionAlignment(data);
       }
