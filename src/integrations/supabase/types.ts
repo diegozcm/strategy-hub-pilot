@@ -1457,6 +1457,48 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_page_content: {
+        Row: {
+          content_key: string
+          content_type: string
+          content_value: string | null
+          created_at: string
+          created_by: string
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          section_name: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          content_key: string
+          content_type: string
+          content_value?: string | null
+          created_at?: string
+          created_by: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          section_name: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          content_key?: string
+          content_type?: string
+          content_value?: string | null
+          created_at?: string
+          created_by?: string
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          section_name?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: []
+      }
       mentor_startup_relations: {
         Row: {
           assigned_at: string

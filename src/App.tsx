@@ -30,6 +30,7 @@ import { UserManagementPage } from "@/components/admin/UserManagementPage";
 import { ModulesManagementPage } from "@/components/admin/ModulesManagementPage";
 import { SystemSettingsPage } from "@/components/admin/SystemSettingsPage";
 import { CreateUserPage } from "@/components/admin/CreateUserPage";
+import { LandingPageEditorPage } from "@/components/admin/LandingPageEditorPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 import { CompanySelectionPage } from "@/pages/CompanySelectionPage";
@@ -108,6 +109,7 @@ const App = () => (
                   <Route path="modules" element={<ModulesManagementPage />} />
                   <Route path="settings" element={<SystemSettingsPage />} />
                   <Route path="monitoring" element={<MonitoringPage />} />
+                  <Route path="landing-page" element={<LandingPageEditorPage />} />
                 </Route>
 
               {/* Redirect /admin to /app/admin */}

@@ -4,7 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Brain, BarChart3, Target as TargetIcon, FileText, Users, TrendingUp, ArrowRight, Play, Star, Shield, Zap, Lock, Target, Award, ChevronLeft, ChevronRight, Map, Lightbulb, Building2, Rocket, CheckCircle, Phone, Mail, MapPin, Linkedin, Twitter, MessageSquare, UserCheck, TrendingDown, Activity, PieChart, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useLandingPageContent } from '@/hooks/useLandingPageContent';
+import * as Icons from 'lucide-react';
 const LandingPage = () => {
+  const { getContent } = useLandingPageContent();
   const [currentScreenshot, setCurrentScreenshot] = React.useState(0);
   const screenshots = [{
     title: "Dashboard Executivo COFOUND",
@@ -123,37 +126,41 @@ const LandingPage = () => {
         <div className="container mx-auto text-center">
           <div className="max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-6xl font-bold text-strategy-red-dark mb-6 leading-tight">
-              Start Together, <span className="text-strategy-red-dark">onde a estratégia e a aceleração se encontram</span>
+              {getContent('hero', 'title', 'A primeira plataforma que unifica Strategy HUB e Startup HUB')}
             </h1>
             
-            <p className="text-xl text-strategy-blue-navy mb-8 leading-relaxed">Plataforma de estratégia e aceleração de negócios, integrando inteligência  estratégica com aceleração profissional de negócios. Soluções completas para crescimento sustentável e inovação dirigida.</p>
+            <p className="text-xl text-strategy-blue-navy mb-8 leading-relaxed">
+              {getContent('hero', 'subtitle', 'Transforme sua visão em resultados concretos com uma plataforma que acelera o crescimento do seu negócio e conecta startups aos melhores mentores do mercado.')}
+            </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link to="/auth">
-                
+                <Button size="lg" className="text-lg px-8 py-6 bg-strategy-red-dark hover:bg-strategy-red-dark/90 text-white">
+                  <ArrowRight className="mr-2 h-5 w-5" />
+                  {getContent('hero', 'primary_button', 'Começar Gratuitamente')}
+                </Button>
               </Link>
               <a href="https://wa.me//554796342353?text=Tenho%20interesse%20em%20saber%20mais%20sobre%20o%20Start%20Together%20by%20COFOUND" target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-strategy-blue-navy text-strategy-blue-navy hover:bg-strategy-blue-navy hover:text-white">
                   <Phone className="mr-2 h-5 w-5" />
-                  Falar com um Consultor
+                  {getContent('hero', 'secondary_button', 'Ver Demo')}
                 </Button>
               </a>
             </div>
 
             {/* Trust Badges */}
             <div className="flex flex-wrap justify-center gap-6">
-              <Badge className="bg-accent text-white px-4 py-2">
-                <Target className="h-4 w-4 mr-2" />
-                Estratégia
-              </Badge>
-              <Badge className="bg-accent text-white px-4 py-2">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Crescimento
-              </Badge>
-              <Badge className="bg-accent text-white px-4 py-2">
-                <Rocket className="h-4 w-4 mr-2" />
-                Aceleração
-              </Badge>
+              {[1, 2, 3].map((num) => {
+                const iconName = getContent('hero', `badge_${num}_icon`, num === 1 ? 'Target' : num === 2 ? 'TrendingUp' : 'Rocket');
+                const IconComponent = Icons[iconName as keyof typeof Icons] as React.ComponentType<any>;
+                
+                return (
+                  <Badge key={num} className="bg-accent text-white px-4 py-2">
+                    {IconComponent && <IconComponent className="h-4 w-4 mr-2" />}
+                    {getContent('hero', `badge_${num}_text`, num === 1 ? 'Estratégia' : num === 2 ? 'Crescimento' : 'Aceleração')}
+                  </Badge>
+                );
+              })}
             </div>
           </div>
         </div>

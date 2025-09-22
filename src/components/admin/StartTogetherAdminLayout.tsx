@@ -7,7 +7,8 @@ import {
   Settings, 
   LogOut,
   User,
-  Monitor
+  Monitor,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -64,6 +65,12 @@ const adminMenuItems = [
     path: '/app/admin/monitoring',
     icon: Monitor,
     description: 'Monitoramento e saúde do sistema'
+  },
+  {
+    name: 'Landing Page',
+    path: '/app/admin/landing-page',
+    icon: FileText,
+    description: 'Editar conteúdo da página inicial'
   }
 ];
 
