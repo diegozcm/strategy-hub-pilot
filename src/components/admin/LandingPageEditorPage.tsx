@@ -115,6 +115,52 @@ export const LandingPageEditorPage: React.FC = () => {
                   />
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="primary-button-link">Link do Botão Primário</Label>
+                  <Input
+                    id="primary-button-link"
+                    defaultValue={getContent('hero', 'primary_button_link')}
+                    onBlur={(e) => handleSave('hero', 'primary_button_link', e.target.value)}
+                    placeholder="/auth ou URL externa"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="secondary-button-link">Link do Botão Secundário</Label>
+                  <Input
+                    id="secondary-button-link"
+                    defaultValue={getContent('hero', 'secondary_button_link')}
+                    onBlur={(e) => handleSave('hero', 'secondary_button_link', e.target.value)}
+                    placeholder="URL externa ou rota interna"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="primary-button-active"
+                    defaultChecked={getContent('hero', 'primary_button_active', 'true') === 'true'}
+                    onChange={(e) => handleSave('hero', 'primary_button_active', e.target.checked.toString())}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor="primary-button-active">Mostrar Botão Primário</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="secondary-button-active"
+                    defaultChecked={getContent('hero', 'secondary_button_active', 'true') === 'true'}
+                    onChange={(e) => handleSave('hero', 'secondary_button_active', e.target.checked.toString())}
+                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  />
+                  <Label htmlFor="secondary-button-active">Mostrar Botão Secundário</Label>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
