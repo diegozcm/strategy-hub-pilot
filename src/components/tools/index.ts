@@ -6,3 +6,6 @@ export { SwotHistory } from './SwotHistory';
 export { VisionAlignmentTab } from './VisionAlignmentTab';
 export { VisionAlignmentForm } from './VisionAlignmentForm';
 export { VisionAlignmentHistory } from './VisionAlignmentHistory';
+export { VisionObjectiveCard } from './VisionObjectiveCard';
+export { VisionObjectiveForm } from './VisionObjectiveForm';
+export { VisionDimensionSection } from './VisionDimensionSection';

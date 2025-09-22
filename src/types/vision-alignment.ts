@@ -28,6 +28,26 @@ export interface VisionAlignmentHistory {
   } | null;
 }
 
+export interface VisionAlignmentObjective {
+  id: string;
+  vision_alignment_id: string;
+  dimension: 'objectives' | 'commitments' | 'resources' | 'risks';
+  title: string;
+  description?: string;
+  order_index: number;
+  color: string;
+  created_by: string;
+  updated_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VisionAlignmentObjectiveFormData {
+  title: string;
+  description?: string;
+  color: string;
+}
+
 export interface VisionAlignmentFormData {
   shared_objectives?: string;
   shared_commitments?: string;

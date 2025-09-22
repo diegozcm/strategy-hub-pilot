@@ -2555,6 +2555,56 @@ export type Database = {
         }
         Relationships: []
       }
+      vision_alignment_objectives: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          dimension: string
+          id: string
+          order_index: number
+          title: string
+          updated_at: string
+          updated_by: string
+          vision_alignment_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          dimension: string
+          id?: string
+          order_index?: number
+          title: string
+          updated_at?: string
+          updated_by: string
+          vision_alignment_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          dimension?: string
+          id?: string
+          order_index?: number
+          title?: string
+          updated_at?: string
+          updated_by?: string
+          vision_alignment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_vision_alignment_objectives_vision_alignment"
+            columns: ["vision_alignment_id"]
+            isOneToOne: false
+            referencedRelation: "vision_alignment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
