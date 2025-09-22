@@ -143,16 +143,16 @@ const LandingPage = () => {
             {/* Trust Badges */}
             <div className="flex flex-wrap justify-center gap-6">
               <Badge className="bg-accent text-white px-4 py-2">
-                <Shield className="h-4 w-4 mr-2" />
-                Certificação ISO 27001
+                <Target className="h-4 w-4 mr-2" />
+                Estratégia
               </Badge>
               <Badge className="bg-accent text-white px-4 py-2">
-                <Lock className="h-4 w-4 mr-2" />
-                LGPD Compliance
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Crescimento
               </Badge>
               <Badge className="bg-accent text-white px-4 py-2">
-                <Building2 className="h-4 w-4 mr-2" />
-                Produto COFOUND
+                <Rocket className="h-4 w-4 mr-2" />
+                Aceleração
               </Badge>
             </div>
           </div>
