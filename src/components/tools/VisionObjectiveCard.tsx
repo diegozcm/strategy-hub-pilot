@@ -32,6 +32,10 @@ export const VisionObjectiveCard: React.FC<VisionObjectiveCardProps> = ({
   };
 
   const handleDragStart = (e: React.DragEvent) => {
+    if (!isEditing) {
+      e.preventDefault();
+      return;
+    }
     e.dataTransfer.setData('text/plain', objective.id);
     e.dataTransfer.effectAllowed = 'move';
     onDragStart?.(objective);
@@ -43,28 +47,31 @@ export const VisionObjectiveCard: React.FC<VisionObjectiveCardProps> = ({
 
   return (
     <Card 
-      draggable
+      draggable={isEditing}
       className={`
-        group relative transition-all duration-200 cursor-grab active:cursor-grabbing
-        ${isDragging ? 'opacity-50 rotate-2 shadow-lg' : 'hover:shadow-md hover:-translate-y-1'}
-        border-l-4 min-h-[120px] shadow-sm hover:shadow-lg
+        group relative transition-all duration-200 
+        ${isEditing ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
+        ${isDragging ? 'opacity-50 rotate-2 shadow-lg' : isEditing ? 'hover:shadow-md hover:-translate-y-1' : 'hover:shadow-sm'}
+        border-l-4 min-h-[120px] shadow-sm
         bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900
       `}
       style={{ 
         borderLeftColor: objective.color,
         backgroundColor: `${objective.color}08`,
-        boxShadow: isHovered ? `0 8px 25px ${objective.color}20` : undefined,
+        boxShadow: isHovered && isEditing ? `0 8px 25px ${objective.color}20` : undefined,
       }}
-      onMouseEnter={() => setIsHovered(true)}
+      onMouseEnter={() => isEditing && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
       <CardContent className="p-4 relative">
-        {/* Drag Handle */}
-        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-50 transition-opacity">
-          <GripVertical className="w-4 h-4 text-muted-foreground" />
-        </div>
+        {/* Drag Handle - Only visible when editing */}
+        {isEditing && (
+          <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-50 transition-opacity">
+            <GripVertical className="w-4 h-4 text-muted-foreground" />
+          </div>
+        )}
 
         {/* Action Buttons - Only visible when editing */}
         {isEditing && (
@@ -93,9 +100,9 @@ export const VisionObjectiveCard: React.FC<VisionObjectiveCardProps> = ({
         )}
 
         {/* Content */}
-        <div className="mt-6">
+        <div className={isEditing ? "mt-6" : "mt-2"}>
           <h4 
-            className="font-semibold text-sm mb-2 pr-16 leading-tight"
+            className="font-semibold text-sm mb-2 leading-tight"
             style={{ color: objective.color }}
           >
             {objective.title}
@@ -107,19 +114,24 @@ export const VisionObjectiveCard: React.FC<VisionObjectiveCardProps> = ({
           )}
         </div>
 
-        {/* Post-it Corner Fold Effect */}
-        <div 
-          className="absolute top-0 right-0 w-4 h-4 transform rotate-45 translate-x-2 -translate-y-2 opacity-30 shadow-sm"
-          style={{ backgroundColor: objective.color }}
-        />
-        
-        {/* Subtle inner shadow for post-it effect */}
-        <div 
-          className="absolute inset-0 rounded-lg pointer-events-none"
-          style={{ 
-            boxShadow: `inset 2px 2px 8px ${objective.color}10`,
-          }}
-        />
+        {/* Post-it effects - Only in editing mode for better performance */}
+        {isEditing && (
+          <>
+            {/* Post-it Corner Fold Effect */}
+            <div 
+              className="absolute top-0 right-0 w-4 h-4 transform rotate-45 translate-x-2 -translate-y-2 opacity-30 shadow-sm"
+              style={{ backgroundColor: objective.color }}
+            />
+            
+            {/* Subtle inner shadow for post-it effect */}
+            <div 
+              className="absolute inset-0 rounded-lg pointer-events-none"
+              style={{ 
+                boxShadow: `inset 2px 2px 8px ${objective.color}10`,
+              }}
+            />
+          </>
+        )}
       </CardContent>
     </Card>
   );
