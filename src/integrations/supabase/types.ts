@@ -2605,6 +2605,45 @@ export type Database = {
           },
         ]
       }
+      vision_alignment_removed_dupes: {
+        Row: {
+          company_id: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string | null
+          shared_commitments: string | null
+          shared_objectives: string | null
+          shared_resources: string | null
+          shared_risks: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          shared_commitments?: string | null
+          shared_objectives?: string | null
+          shared_resources?: string | null
+          shared_risks?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string | null
+          shared_commitments?: string | null
+          shared_objectives?: string | null
+          shared_resources?: string | null
+          shared_risks?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
