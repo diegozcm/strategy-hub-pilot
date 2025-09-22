@@ -138,7 +138,7 @@ export const useVisionAlignmentObjectives = (visionAlignmentId?: string) => {
 
       if (error) throw error;
 
-      setObjectives(prev => [...prev, data as VisionAlignmentObjective]);
+      await loadObjectives();
       toast({
         title: 'Sucesso',
         description: 'Objetivo criado com sucesso!',
@@ -156,7 +156,7 @@ export const useVisionAlignmentObjectives = (visionAlignmentId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [visionAlignmentId, user?.id, toast]);
+  }, [visionAlignmentId, user?.id, toast, loadObjectives]);
 
   const updateObjective = useCallback(async (
     objectiveId: string, 

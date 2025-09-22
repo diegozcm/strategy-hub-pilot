@@ -8,12 +8,14 @@ import { VisionDimensionSection } from './VisionDimensionSection';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { History, Edit, Trash2, Target, Handshake, FolderOpen, AlertTriangle, Save, X } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export const VisionAlignmentTab: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const { loading, visionAlignment, loadVisionAlignment, deleteVisionAlignment, ensureVisionAlignment } = useVisionAlignment();
   const { loadObjectives } = useVisionAlignmentObjectives(visionAlignment?.id);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadVisionAlignment();
@@ -31,8 +33,19 @@ export const VisionAlignmentTab: React.FC = () => {
     }
   };
 
-  const handleEdit = () => {
-    setIsEditing(!isEditing);
+  const handleEdit = async () => {
+    // Ensure vision alignment exists before enabling edit mode
+    const va = await ensureVisionAlignment();
+    if (!va?.id) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível iniciar a edição. Tente novamente.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    await loadObjectives();
+    setIsEditing((prev) => !prev);
   };
 
   const handleSave = () => {
