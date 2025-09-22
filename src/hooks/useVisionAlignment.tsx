@@ -11,6 +11,58 @@ export const useVisionAlignment = () => {
   const { company: selectedCompany, user, profile } = useAuth();
   const { toast } = useToast();
 
+  const ensureVisionAlignment = useCallback(async () => {
+    if (!selectedCompany?.id || !user?.id) {
+      console.log('❌ No selectedCompany ID or user ID, aborting ensure');
+      return null;
+    }
+
+    console.log('🔍 VisionAlignment: Ensuring vision alignment exists');
+    
+    try {
+      // First try to get existing vision alignment
+      const { data: existing, error: fetchError } = await supabase
+        .from('vision_alignment')
+        .select('*')
+        .eq('company_id', selectedCompany.id)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      if (existing) {
+        console.log('✅ Vision alignment already exists:', existing);
+        setVisionAlignment(existing);
+        return existing;
+      }
+
+      // Create empty vision alignment if none exists
+      console.log('✨ Creating empty vision alignment');
+      const { data: newVisionAlignment, error: createError } = await supabase
+        .from('vision_alignment')
+        .insert({
+          company_id: selectedCompany.id,
+          created_by: user.id,
+          updated_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      console.log('✅ Empty vision alignment created:', newVisionAlignment);
+      setVisionAlignment(newVisionAlignment);
+      return newVisionAlignment;
+    } catch (error) {
+      console.error('❌ Error ensuring vision alignment:', error);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao inicializar Alinhamento de Visão',
+        variant: 'destructive',
+      });
+      return null;
+    }
+  }, [selectedCompany?.id, user?.id, toast]);
+
   const loadVisionAlignment = useCallback(async () => {
     console.log('🔍 VisionAlignment: Starting loadVisionAlignment');
     console.log('🏢 selectedCompany:', selectedCompany);
@@ -22,40 +74,15 @@ export const useVisionAlignment = () => {
       return;
     }
 
-    // Debug auth context
-    try {
-      const { data: debugData, error: debugError } = await supabase.rpc('debug_auth_context');
-      console.log('🔍 Auth Debug:', debugData);
-      if (debugError) console.error('Debug error:', debugError);
-    } catch (debugError) {
-      console.error('Debug function error:', debugError);
-    }
-
     setLoading(true);
     try {
-      console.log('📡 Fetching vision_alignment for company:', selectedCompany.id);
-      const { data, error } = await supabase
-        .from('vision_alignment')
-        .select('*')
-        .eq('company_id', selectedCompany.id)
-        .maybeSingle();
-
-      console.log('📡 Vision alignment query result:', { data, error });
-
-      if (error) throw error;
-      setVisionAlignment(data);
-      console.log('✅ Vision alignment loaded successfully:', data);
+      await ensureVisionAlignment();
     } catch (error) {
-      console.error('❌ Error loading vision alignment:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao carregar Alinhamento de Visão',
-        variant: 'destructive',
-      });
+      console.error('❌ Error in loadVisionAlignment:', error);
     } finally {
       setLoading(false);
     }
-  }, [selectedCompany?.id, user?.id, profile?.company_id, toast]);
+  }, [selectedCompany?.id, user?.id, profile?.company_id, ensureVisionAlignment]);
 
   const loadHistory = useCallback(async () => {
     if (!selectedCompany?.id) return;
@@ -252,5 +279,6 @@ export const useVisionAlignment = () => {
     loadHistory,
     saveVisionAlignment,
     deleteVisionAlignment,
+    ensureVisionAlignment,
   };
 };
