@@ -64,17 +64,44 @@ export const useLandingPageContent = () => {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error('User not authenticated');
 
-      const { error } = await supabase
+      // First, try to update existing record
+      const { data: existingData, error: selectError } = await supabase
         .from('landing_page_content')
-        .upsert({
-          section_name: section,
-          content_key: key,
-          content_value: value,
-          content_type: type,
-          created_by: user.id,
-          updated_by: user.id,
-          is_active: true,
-        });
+        .select('id')
+        .eq('section_name', section)
+        .eq('content_key', key)
+        .maybeSingle();
+
+      if (selectError) throw selectError;
+
+      let error;
+      if (existingData) {
+        // Update existing record
+        const { error: updateError } = await supabase
+          .from('landing_page_content')
+          .update({
+            content_value: value,
+            content_type: type,
+            updated_by: user.id,
+            is_active: true,
+          })
+          .eq('id', existingData.id);
+        error = updateError;
+      } else {
+        // Insert new record
+        const { error: insertError } = await supabase
+          .from('landing_page_content')
+          .insert({
+            section_name: section,
+            content_key: key,
+            content_value: value,
+            content_type: type,
+            created_by: user.id,
+            updated_by: user.id,
+            is_active: true,
+          });
+        error = insertError;
+      }
 
       if (error) throw error;
 
