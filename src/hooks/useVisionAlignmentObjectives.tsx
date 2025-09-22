@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
@@ -69,6 +69,14 @@ export const useVisionAlignmentObjectives = (visionAlignmentId?: string) => {
       setLoading(false);
     }
   }, [visionAlignmentId, user?.id, toast]);
+
+  // Auto-load objectives when visionAlignmentId and user are available
+  useEffect(() => {
+    if (visionAlignmentId && user?.id) {
+      console.log('🔄 Auto-loading objectives for:', visionAlignmentId);
+      loadObjectives();
+    }
+  }, [visionAlignmentId, user?.id, loadObjectives]);
 
   const createObjective = useCallback(async (
     dimension: VisionAlignmentObjective['dimension'], 

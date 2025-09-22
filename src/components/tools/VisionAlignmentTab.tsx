@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useVisionAlignment } from '@/hooks/useVisionAlignment';
-import { useVisionAlignmentObjectives } from '@/hooks/useVisionAlignmentObjectives';
 import { VisionAlignmentHistory } from './VisionAlignmentHistory';
 import { VisionDimensionSection } from './VisionDimensionSection';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -14,18 +13,11 @@ export const VisionAlignmentTab: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const { loading, visionAlignment, loadVisionAlignment, deleteVisionAlignment, ensureVisionAlignment } = useVisionAlignment();
-  const { loadObjectives } = useVisionAlignmentObjectives(visionAlignment?.id);
   const { toast } = useToast();
 
   useEffect(() => {
     loadVisionAlignment();
   }, [loadVisionAlignment]);
-
-  useEffect(() => {
-    if (visionAlignment?.id) {
-      loadObjectives();
-    }
-  }, [visionAlignment?.id, loadObjectives]);
 
   const handleDelete = async () => {
     if (window.confirm('Tem certeza que deseja excluir este Alinhamento de Visão?')) {
@@ -44,7 +36,6 @@ export const VisionAlignmentTab: React.FC = () => {
       });
       return;
     }
-    await loadObjectives();
     setIsEditing((prev) => !prev);
   };
 

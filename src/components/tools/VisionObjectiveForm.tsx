@@ -5,6 +5,7 @@ import * as z from 'zod';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -105,9 +106,9 @@ export const VisionObjectiveForm: React.FC<VisionObjectiveFormProps> = ({
           <DialogTitle>
             {objective ? 'Editar Objetivo' : 'Adicionar Objetivo'}
           </DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <DialogDescription>
             {dimensionLabels[dimension]}
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
