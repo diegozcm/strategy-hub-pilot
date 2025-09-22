@@ -268,15 +268,71 @@ export const LandingPageEditorPage: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="benefits">
-          <Card>
-            <CardHeader>
-              <CardTitle>Seção Benefits</CardTitle>
-              <CardDescription>Em desenvolvimento - configure benefícios e ROI</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Esta seção será implementada em breve.</p>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Seção Benefits - Configurações Gerais</CardTitle>
+                <CardDescription>Configure o título e subtítulo da seção "Resultados Comprovados"</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="benefits_title">Título da Seção</Label>
+                  <Input
+                    id="benefits_title"
+                    value={getContent('benefits', 'title', '')}
+                    onChange={(e) => handleSave('benefits', 'title', e.target.value)}
+                    placeholder="Título principal da seção benefits"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="benefits_subtitle">Subtítulo da Seção</Label>
+                  <Input
+                    id="benefits_subtitle"
+                    value={getContent('benefits', 'subtitle', '')}
+                    onChange={(e) => handleSave('benefits', 'subtitle', e.target.value)}
+                    placeholder="Subtítulo da seção benefits"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Métricas de Resultados</CardTitle>
+                <CardDescription>Configure as 4 métricas principais que demonstram os resultados da plataforma</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-6 md:grid-cols-2">
+                  {[1, 2, 3, 4].map((num) => (
+                    <Card key={num} className="p-4">
+                      <div className="space-y-4">
+                        <h4 className="font-semibold">Métrica {num}</h4>
+                        <div>
+                          <Label htmlFor={`metric_${num}_value`}>Valor da Métrica</Label>
+                          <Input
+                            id={`metric_${num}_value`}
+                            value={getContent('benefits', `metric_${num}_value`, '')}
+                            onChange={(e) => handleSave('benefits', `metric_${num}_value`, e.target.value)}
+                            placeholder="90%, 75%, 200+, 300%"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`metric_${num}_description`}>Descrição da Métrica</Label>
+                          <Textarea
+                            id={`metric_${num}_description`}
+                            value={getContent('benefits', `metric_${num}_description`, '')}
+                            onChange={(e) => handleSave('benefits', `metric_${num}_description`, e.target.value)}
+                            placeholder="Descrição do resultado alcançado"
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="testimonials">

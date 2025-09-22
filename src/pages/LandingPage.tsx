@@ -418,30 +418,28 @@ const LandingPage = () => {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-strategy-red-dark mb-4">
-              Resultados Comprovados
+              {getContent('benefits', 'title', 'Resultados Comprovados')}
             </h2>
             <p className="text-xl text-strategy-gray-medium">
-              Transformação real no planejamento estratégico e aceleração de startups
+              {getContent('benefits', 'subtitle', 'Transformação real no planejamento estratégico e aceleração de startups')}
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">90%</div>
-              <p className="text-strategy-gray-medium">Das startups melhoram seu score BEEP em 6 meses</p>
-            </div>
-            <div className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">75%</div>
-              <p className="text-strategy-gray-medium">Redução no tempo de planejamento estratégico</p>
-            </div>
-            <div className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">200+</div>
-              <p className="text-strategy-gray-medium">Sessões de mentoria realizadas mensalmente</p>
-            </div>
-            <div className="text-center">
-              <div className="text-5xl font-bold text-primary mb-2">300%</div>
-              <p className="text-strategy-gray-medium">ROI médio para empresas em planejamento estratégico</p>
-            </div>
+            {[1, 2, 3, 4].map((num) => {
+              const value = getContent('benefits', `metric_${num}_value`, '');
+              const description = getContent('benefits', `metric_${num}_description`, '');
+              
+              // Only show metrics that have both value and description
+              if (!value || !description) return null;
+              
+              return (
+                <div key={num} className="text-center">
+                  <div className="text-5xl font-bold text-primary mb-2">{value}</div>
+                  <p className="text-strategy-gray-medium">{description}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
