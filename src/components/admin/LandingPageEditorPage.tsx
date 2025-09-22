@@ -13,12 +13,19 @@ import { ImageUploader } from './landing-page/ImageUploader';
 import { Badge } from '@/components/ui/badge';
 import { Save, Eye, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useTabEditor } from '@/hooks/useTabEditor';
+import { TabControls } from './landing-page/TabControls';
+import { EditableField } from './landing-page/EditableField';
 
 export const LandingPageEditorPage: React.FC = () => {
   const { content, loading, updateContent, getContent, refetch } = useLandingPageContent();
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
+  // Tab editors for each section
+  const heroEditor = useTabEditor('hero');
+
+  // Legacy save function for sections not yet updated to tab editor
   const handleSave = async (section: string, key: string, value: string, type: 'text' | 'icon' | 'image' = 'text') => {
     setSaving(true);
     const success = await updateContent(section, key, value, type);
@@ -69,128 +76,166 @@ export const LandingPageEditorPage: React.FC = () => {
 
         <TabsContent value="hero" className="space-y-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Seção Hero</CardTitle>
-              <CardDescription>Edite o cabeçalho principal da página</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Seção Hero</CardTitle>
+                <CardDescription>Edite o cabeçalho principal da página</CardDescription>
+              </div>
+              <TabControls
+                isEditing={heroEditor.isEditing}
+                hasChanges={heroEditor.hasChanges}
+                isSaving={heroEditor.isSaving}
+                onStartEdit={heroEditor.startEdit}
+                onSave={heroEditor.saveChanges}
+                onCancel={heroEditor.cancelEdit}
+              />
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="hero-title">Título Principal</Label>
-                <Input
-                  id="hero-title"
-                  defaultValue={getContent('hero', 'title')}
-                  onBlur={(e) => handleSave('hero', 'title', e.target.value)}
-                  placeholder="Título principal da hero section"
+              <EditableField
+                id="hero-title"
+                label="Título Principal"
+                value={heroEditor.getFieldValue('title')}
+                isEditing={heroEditor.isEditing}
+                placeholder="Título principal da hero section"
+                onChange={(value) => heroEditor.updateLocalField('title', value)}
+              />
+
+              <EditableField
+                id="hero-subtitle"
+                label="Subtítulo"
+                value={heroEditor.getFieldValue('subtitle')}
+                isEditing={heroEditor.isEditing}
+                placeholder="Descrição da hero section"
+                type="textarea"
+                onChange={(value) => heroEditor.updateLocalField('subtitle', value)}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <EditableField
+                  id="primary-button"
+                  label="Botão Primário"
+                  value={heroEditor.getFieldValue('primary_button')}
+                  isEditing={heroEditor.isEditing}
+                  placeholder="Texto do botão primário"
+                  onChange={(value) => heroEditor.updateLocalField('primary_button', value)}
+                />
+
+                <EditableField
+                  id="secondary-button"
+                  label="Botão Secundário"
+                  value={heroEditor.getFieldValue('secondary_button')}
+                  isEditing={heroEditor.isEditing}
+                  placeholder="Texto do botão secundário"
+                  onChange={(value) => heroEditor.updateLocalField('secondary_button', value)}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="hero-subtitle">Subtítulo</Label>
-                <Textarea
-                  id="hero-subtitle"
-                  defaultValue={getContent('hero', 'subtitle')}
-                  onBlur={(e) => handleSave('hero', 'subtitle', e.target.value)}
-                  placeholder="Descrição da hero section"
-                  rows={3}
+              <div className="grid grid-cols-2 gap-4">
+                <EditableField
+                  id="primary-button-link"
+                  label="Link do Botão Primário"
+                  value={heroEditor.getFieldValue('primary_button_link')}
+                  isEditing={heroEditor.isEditing}
+                  placeholder="/auth ou URL externa"
+                  onChange={(value) => heroEditor.updateLocalField('primary_button_link', value)}
+                />
+
+                <EditableField
+                  id="secondary-button-link"
+                  label="Link do Botão Secundário"
+                  value={heroEditor.getFieldValue('secondary_button_link')}
+                  isEditing={heroEditor.isEditing}
+                  placeholder="URL externa ou rota interna"
+                  onChange={(value) => heroEditor.updateLocalField('secondary_button_link', value)}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="primary-button">Botão Primário</Label>
-                  <Input
-                    id="primary-button"
-                    defaultValue={getContent('hero', 'primary_button')}
-                    onBlur={(e) => handleSave('hero', 'primary_button', e.target.value)}
-                    placeholder="Texto do botão primário"
-                  />
-                </div>
+              {heroEditor.isEditing ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="primary-button-active"
+                      checked={heroEditor.getFieldValue('primary_button_active', 'true') === 'true'}
+                      onChange={(e) => heroEditor.updateLocalField('primary_button_active', e.target.checked.toString())}
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                    />
+                    <Label htmlFor="primary-button-active">Mostrar Botão Primário</Label>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="secondary-button">Botão Secundário</Label>
-                  <Input
-                    id="secondary-button"
-                    defaultValue={getContent('hero', 'secondary_button')}
-                    onBlur={(e) => handleSave('hero', 'secondary_button', e.target.value)}
-                    placeholder="Texto do botão secundário"
-                  />
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="secondary-button-active"
+                      checked={heroEditor.getFieldValue('secondary_button_active', 'true') === 'true'}
+                      onChange={(e) => heroEditor.updateLocalField('secondary_button_active', e.target.checked.toString())}
+                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                    />
+                    <Label htmlFor="secondary-button-active">Mostrar Botão Secundário</Label>
+                  </div>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="primary-button-link">Link do Botão Primário</Label>
-                  <Input
-                    id="primary-button-link"
-                    defaultValue={getContent('hero', 'primary_button_link')}
-                    onBlur={(e) => handleSave('hero', 'primary_button_link', e.target.value)}
-                    placeholder="/auth ou URL externa"
-                  />
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Botão Primário</Label>
+                    <div className="p-3 border rounded-md bg-muted/50 text-sm">
+                      {heroEditor.getFieldValue('primary_button_active', 'true') === 'true' ? 'Ativo' : 'Inativo'}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Botão Secundário</Label>
+                    <div className="p-3 border rounded-md bg-muted/50 text-sm">
+                      {heroEditor.getFieldValue('secondary_button_active', 'true') === 'true' ? 'Ativo' : 'Inativo'}
+                    </div>
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="secondary-button-link">Link do Botão Secundário</Label>
-                  <Input
-                    id="secondary-button-link"
-                    defaultValue={getContent('hero', 'secondary_button_link')}
-                    onBlur={(e) => handleSave('hero', 'secondary_button_link', e.target.value)}
-                    placeholder="URL externa ou rota interna"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="primary-button-active"
-                    defaultChecked={getContent('hero', 'primary_button_active', 'true') === 'true'}
-                    onChange={(e) => handleSave('hero', 'primary_button_active', e.target.checked.toString())}
-                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                  />
-                  <Label htmlFor="primary-button-active">Mostrar Botão Primário</Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="secondary-button-active"
-                    defaultChecked={getContent('hero', 'secondary_button_active', 'true') === 'true'}
-                    onChange={(e) => handleSave('hero', 'secondary_button_active', e.target.checked.toString())}
-                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                  />
-                  <Label htmlFor="secondary-button-active">Mostrar Botão Secundário</Label>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Badges de Confiança</CardTitle>
-              <CardDescription>Configure os badges abaixo do hero</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Badges de Confiança</CardTitle>
+                <CardDescription>Configure os badges abaixo do hero</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                {heroEditor.isEditing && (
+                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                    Mesma sessão de edição
+                  </Badge>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               {[1, 2, 3].map((num) => (
                 <div key={num} className="flex items-center gap-4 p-4 border rounded-lg">
                   <div className="flex-1 space-y-2">
-                    <Label>Badge {num} - Texto</Label>
-                    <Input
-                      defaultValue={getContent('hero', `badge_${num}_text`)}
-                      onBlur={(e) => handleSave('hero', `badge_${num}_text`, e.target.value)}
+                    <EditableField
+                      id={`badge_${num}_text`}
+                      label={`Badge ${num} - Texto`}
+                      value={heroEditor.getFieldValue(`badge_${num}_text`)}
+                      isEditing={heroEditor.isEditing}
                       placeholder={`Texto do badge ${num}`}
+                      onChange={(value) => heroEditor.updateLocalField(`badge_${num}_text`, value)}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Ícone</Label>
-                    <IconPicker
-                      value={getContent('hero', `badge_${num}_icon`)}
-                      onChange={(icon) => handleSave('hero', `badge_${num}_icon`, icon, 'icon')}
-                    />
+                    {heroEditor.isEditing ? (
+                      <IconPicker
+                        value={heroEditor.getFieldValue(`badge_${num}_icon`)}
+                        onChange={(icon) => heroEditor.updateLocalField(`badge_${num}_icon`, icon)}
+                      />
+                    ) : (
+                      <div className="p-3 border rounded-md bg-muted/50 text-sm text-center">
+                        {heroEditor.getFieldValue(`badge_${num}_icon`) || 'Nenhum ícone'}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center">
                     <Badge className="bg-accent text-white px-4 py-2">
-                      {getContent('hero', `badge_${num}_text`, `Badge ${num}`)}
+                      {heroEditor.getFieldValue(`badge_${num}_text`, `Badge ${num}`)}
                     </Badge>
                   </div>
                 </div>
