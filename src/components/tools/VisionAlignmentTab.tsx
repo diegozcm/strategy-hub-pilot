@@ -78,7 +78,7 @@ export const VisionAlignmentTab: React.FC = () => {
             title="Objetivos Conjuntos"
             description="O que pretendemos atingir juntos?"
             icon={<Target className="w-5 h-5 mr-2" />}
-            visionAlignmentId={visionAlignment?.id}
+            visionAlignmentId={visionAlignment?.id || ''}
             borderColor="border-blue-200"
             bgColor="bg-blue-50 dark:bg-blue-950/20"
             textColor="text-blue-700 dark:text-blue-400"
@@ -90,7 +90,7 @@ export const VisionAlignmentTab: React.FC = () => {
             title="Comprometimentos Conjuntos"
             description="Quem vai fazer o quê?"
             icon={<Handshake className="w-5 h-5 mr-2" />}
-            visionAlignmentId={visionAlignment?.id}
+            visionAlignmentId={visionAlignment?.id || ''}
             borderColor="border-yellow-200"
             bgColor="bg-yellow-50 dark:bg-yellow-950/20"
             textColor="text-yellow-700 dark:text-yellow-400"
@@ -102,7 +102,7 @@ export const VisionAlignmentTab: React.FC = () => {
             title="Recursos Conjuntos"
             description="De que recursos precisamos?"
             icon={<FolderOpen className="w-5 h-5 mr-2" />}
-            visionAlignmentId={visionAlignment?.id}
+            visionAlignmentId={visionAlignment?.id || ''}
             borderColor="border-orange-200"
             bgColor="bg-orange-50 dark:bg-orange-950/20"
             textColor="text-orange-700 dark:text-orange-400"
@@ -114,7 +114,7 @@ export const VisionAlignmentTab: React.FC = () => {
             title="Riscos Conjuntos"
             description="O que pode nos impedir de ter êxito?"
             icon={<AlertTriangle className="w-5 h-5 mr-2" />}
-            visionAlignmentId={visionAlignment?.id}
+            visionAlignmentId={visionAlignment?.id || ''}
             borderColor="border-pink-200"
             bgColor="bg-pink-50 dark:bg-pink-950/20"
             textColor="text-pink-700 dark:text-pink-400"

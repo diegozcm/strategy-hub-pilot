@@ -74,15 +74,34 @@ export const useVisionAlignment = () => {
       return;
     }
 
+    if (!user?.id) {
+      console.log('❌ No user ID, aborting load');
+      return;
+    }
+
     setLoading(true);
     try {
+      // Check if user session is properly set in Supabase
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      console.log('🔍 Supabase user session:', supabaseUser?.id);
+      
+      if (!supabaseUser) {
+        console.error('❌ No Supabase user session found');
+        toast({
+          title: 'Erro de Autenticação',
+          description: 'Sessão de usuário não encontrada. Faça login novamente.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       await ensureVisionAlignment();
     } catch (error) {
       console.error('❌ Error in loadVisionAlignment:', error);
     } finally {
       setLoading(false);
     }
-  }, [selectedCompany?.id, user?.id, profile?.company_id, ensureVisionAlignment]);
+  }, [selectedCompany?.id, user?.id, profile?.company_id, ensureVisionAlignment, toast]);
 
   const loadHistory = useCallback(async () => {
     if (!selectedCompany?.id) return;

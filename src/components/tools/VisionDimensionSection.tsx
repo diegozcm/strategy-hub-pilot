@@ -33,6 +33,33 @@ export const VisionDimensionSection: React.FC<VisionDimensionSectionProps> = ({
   const [draggedObjective, setDraggedObjective] = useState<VisionAlignmentObjective | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   
+  // Early return if no valid visionAlignmentId to prevent unnecessary hook calls
+  if (!visionAlignmentId || visionAlignmentId === '') {
+    return (
+      <Card className={`${borderColor} ${bgColor} min-h-[400px]`}>
+        <CardHeader className="pb-4">
+          <CardTitle className={`text-xl ${textColor} flex items-center justify-between`}>
+            <div className="flex items-center">
+              {icon}
+              {title}
+            </div>
+          </CardTitle>
+          <p className={`text-sm ${textColor.replace('text-', 'text-').replace('-700', '-600').replace('-400', '-300')}`}>
+            {description}
+          </p>
+        </CardHeader>
+        
+        <CardContent className="space-y-3">
+          <div className="text-center py-8">
+            <p className="text-muted-foreground text-sm mb-3">
+              Carregando alinhamento de visão...
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
   const {
     loading,
     getObjectivesByDimension,
@@ -43,6 +70,8 @@ export const VisionDimensionSection: React.FC<VisionDimensionSectionProps> = ({
   } = useVisionAlignmentObjectives(visionAlignmentId);
 
   const objectives = getObjectivesByDimension(dimension);
+  
+  console.log('🎯 Objectives for dimension', dimension, ':', objectives.length);
 
   const handleAddObjective = () => {
     setEditingObjective(null);

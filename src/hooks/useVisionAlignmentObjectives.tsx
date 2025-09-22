@@ -21,6 +21,20 @@ export const useVisionAlignmentObjectives = (visionAlignmentId?: string) => {
       return;
     }
 
+    if (!user?.id) {
+      console.log('❌ No user ID, aborting load objectives');
+      return;
+    }
+
+    // Check if user session is properly set in Supabase
+    const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+    console.log('🔍 Supabase user session in objectives:', supabaseUser?.id);
+    
+    if (!supabaseUser) {
+      console.error('❌ No Supabase user session found in objectives');
+      return;
+    }
+
     // Debug auth context
     try {
       const { data: debugData } = await supabase.rpc('debug_auth_context');

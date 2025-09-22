@@ -64,10 +64,11 @@ export const VisionObjectiveCard: React.FC<VisionObjectiveCardProps> = ({
           <GripVertical className="w-4 h-4 text-muted-foreground" />
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Always visible on mobile, hover on desktop */}
         <div className={`
           absolute top-2 right-2 flex gap-1 transition-opacity duration-200
-          ${isHovered ? 'opacity-100' : 'opacity-0'}
+          ${isHovered ? 'opacity-100' : 'opacity-0 md:opacity-0'} 
+          opacity-100 md:opacity-0 group-hover:opacity-100
         `}>
           <Button
             variant="ghost"
