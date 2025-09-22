@@ -2820,6 +2820,16 @@ export type Database = {
         Args: { _admin_id: string; _user_id: string }
         Returns: boolean
       }
+      debug_auth_context: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          current_user_id: string
+          profile_company_id: string
+          profile_exists: boolean
+          session_exists: boolean
+          user_company_relations_count: number
+        }[]
+      }
       end_impersonation: {
         Args: { _admin_id: string }
         Returns: boolean

@@ -7,14 +7,31 @@ import type { VisionAlignmentObjective, VisionAlignmentObjectiveFormData } from 
 export const useVisionAlignmentObjectives = (visionAlignmentId?: string) => {
   const [loading, setLoading] = useState(false);
   const [objectives, setObjectives] = useState<VisionAlignmentObjective[]>([]);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
 
   const loadObjectives = useCallback(async () => {
-    if (!visionAlignmentId) return;
+    console.log('🎯 VisionAlignmentObjectives: Starting loadObjectives');
+    console.log('🆔 visionAlignmentId:', visionAlignmentId);
+    console.log('👤 user:', user?.id);
+
+    if (!visionAlignmentId) {
+      console.log('❌ No visionAlignmentId, clearing objectives');
+      setObjectives([]);
+      return;
+    }
+
+    // Debug auth context
+    try {
+      const { data: debugData } = await supabase.rpc('debug_auth_context');
+      console.log('🔍 Objectives Auth Debug:', debugData);
+    } catch (debugError) {
+      console.error('Debug function error:', debugError);
+    }
 
     setLoading(true);
     try {
+      console.log('📡 Fetching objectives for vision alignment:', visionAlignmentId);
       const { data, error } = await supabase
         .from('vision_alignment_objectives')
         .select('*')
@@ -22,10 +39,13 @@ export const useVisionAlignmentObjectives = (visionAlignmentId?: string) => {
         .order('dimension')
         .order('order_index');
 
+      console.log('📡 Objectives query result:', { data, error });
+
       if (error) throw error;
       setObjectives((data || []) as VisionAlignmentObjective[]);
+      console.log('✅ Objectives loaded successfully:', data?.length, 'items');
     } catch (error) {
-      console.error('Error loading vision alignment objectives:', error);
+      console.error('❌ Error loading vision alignment objectives:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao carregar objetivos do Alinhamento de Visão',
@@ -34,16 +54,39 @@ export const useVisionAlignmentObjectives = (visionAlignmentId?: string) => {
     } finally {
       setLoading(false);
     }
-  }, [visionAlignmentId, toast]);
+  }, [visionAlignmentId, user?.id, toast]);
 
   const createObjective = useCallback(async (
     dimension: VisionAlignmentObjective['dimension'], 
     formData: VisionAlignmentObjectiveFormData
   ) => {
-    if (!visionAlignmentId || !user?.id) return false;
+    console.log('✨ VisionAlignmentObjectives: Creating objective');
+    console.log('📊 dimension:', dimension);
+    console.log('📝 formData:', formData);
+    console.log('🆔 visionAlignmentId:', visionAlignmentId);
+    console.log('👤 user:', user?.id);
+
+    if (!visionAlignmentId || !user?.id) {
+      console.log('❌ Missing visionAlignmentId or user, aborting create');
+      toast({
+        title: 'Erro',
+        description: 'Informações necessárias não disponíveis',
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    // Debug auth context before creating
+    try {
+      const { data: debugData } = await supabase.rpc('debug_auth_context');
+      console.log('🔍 Create Auth Debug:', debugData);
+    } catch (debugError) {
+      console.error('Debug function error:', debugError);
+    }
 
     setLoading(true);
     try {
+      console.log('📈 Getting next order index for dimension:', dimension);
       // Get the next order index for this dimension
       const { data: existingObjectives } = await supabase
         .from('vision_alignment_objectives')
@@ -57,20 +100,27 @@ export const useVisionAlignmentObjectives = (visionAlignmentId?: string) => {
         ? existingObjectives[0].order_index + 1 
         : 0;
 
+      console.log('📈 Next order index:', nextOrderIndex);
+
+      const insertData = {
+        vision_alignment_id: visionAlignmentId,
+        dimension,
+        title: formData.title,
+        description: formData.description,
+        color: formData.color,
+        order_index: nextOrderIndex,
+        created_by: user.id,
+        updated_by: user.id,
+      };
+      console.log('📝 Insert data:', insertData);
+
       const { data, error } = await supabase
         .from('vision_alignment_objectives')
-        .insert({
-          vision_alignment_id: visionAlignmentId,
-          dimension,
-          title: formData.title,
-          description: formData.description,
-          color: formData.color,
-          order_index: nextOrderIndex,
-          created_by: user.id,
-          updated_by: user.id,
-        })
+        .insert(insertData)
         .select()
         .single();
+
+      console.log('📡 Insert result:', { data, error });
 
       if (error) throw error;
 
@@ -79,9 +129,10 @@ export const useVisionAlignmentObjectives = (visionAlignmentId?: string) => {
         title: 'Sucesso',
         description: 'Objetivo criado com sucesso!',
       });
+      console.log('✅ Objective created successfully:', data);
       return true;
     } catch (error) {
-      console.error('Error creating vision alignment objective:', error);
+      console.error('❌ Error creating vision alignment objective:', error);
       toast({
         title: 'Erro',
         description: 'Erro ao criar objetivo',
