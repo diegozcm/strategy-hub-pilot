@@ -30,6 +30,8 @@ export const VisionDimensionSection: React.FC<VisionDimensionSectionProps> = ({
 }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingObjective, setEditingObjective] = useState<VisionAlignmentObjective | null>(null);
+  const [draggedObjective, setDraggedObjective] = useState<VisionAlignmentObjective | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   
   const {
     loading,
@@ -37,6 +39,7 @@ export const VisionDimensionSection: React.FC<VisionDimensionSectionProps> = ({
     createObjective,
     updateObjective,
     deleteObjective,
+    reorderObjectives,
   } = useVisionAlignmentObjectives(visionAlignmentId);
 
   const objectives = getObjectivesByDimension(dimension);
@@ -70,9 +73,74 @@ export const VisionDimensionSection: React.FC<VisionDimensionSectionProps> = ({
     await deleteObjective(objectiveId);
   };
 
+  const handleDragStart = (objective: VisionAlignmentObjective) => {
+    setDraggedObjective(objective);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedObjective(null);
+    setIsDragOver(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Only set isDragOver to false if we're leaving the container
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const draggedId = e.dataTransfer.getData('text/plain');
+    if (!draggedObjective || draggedId !== draggedObjective.id) return;
+
+    // Get the drop target element
+    const dropTarget = e.target as HTMLElement;
+    const cardElement = dropTarget.closest('[data-objective-id]') as HTMLElement;
+    
+    if (!cardElement) return;
+    
+    const targetId = cardElement.getAttribute('data-objective-id');
+    if (!targetId || targetId === draggedId) return;
+
+    const objectivesInDimension = getObjectivesByDimension(dimension);
+    const draggedIndex = objectivesInDimension.findIndex(obj => obj.id === draggedId);
+    const targetIndex = objectivesInDimension.findIndex(obj => obj.id === targetId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    // Create reordered array
+    const reorderedObjectives = [...objectivesInDimension];
+    const [draggedItem] = reorderedObjectives.splice(draggedIndex, 1);
+    reorderedObjectives.splice(targetIndex, 0, draggedItem);
+
+    // Update order_index for each item
+    const updatedObjectives = reorderedObjectives.map((obj, index) => ({
+      ...obj,
+      order_index: index
+    }));
+
+    await reorderObjectives(dimension, updatedObjectives);
+  };
+
   return (
     <>
-      <Card className={`${borderColor} ${bgColor} min-h-[400px]`}>
+      <Card 
+        className={`${borderColor} ${bgColor} min-h-[400px] transition-all duration-200 ${
+          isDragOver ? 'ring-2 ring-blue-400 ring-opacity-50 bg-blue-50/50' : ''
+        }`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         <CardHeader className="pb-4">
           <CardTitle className={`text-xl ${textColor} flex items-center justify-between`}>
             <div className="flex items-center">
@@ -114,12 +182,19 @@ export const VisionDimensionSection: React.FC<VisionDimensionSectionProps> = ({
           ) : (
             <div className="grid gap-3">
               {objectives.map((objective) => (
-                <VisionObjectiveCard
+                <div
                   key={objective.id}
-                  objective={objective}
-                  onEdit={handleEditObjective}
-                  onDelete={handleDeleteObjective}
-                />
+                  data-objective-id={objective.id}
+                >
+                  <VisionObjectiveCard
+                    objective={objective}
+                    onEdit={handleEditObjective}
+                    onDelete={handleDeleteObjective}
+                    isDragging={draggedObjective?.id === objective.id}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
+                  />
+                </div>
               ))}
             </div>
           )}

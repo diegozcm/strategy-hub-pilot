@@ -9,6 +9,8 @@ interface VisionObjectiveCardProps {
   onEdit: (objective: VisionAlignmentObjective) => void;
   onDelete: (objectiveId: string) => void;
   isDragging?: boolean;
+  onDragStart?: (objective: VisionAlignmentObjective) => void;
+  onDragEnd?: () => void;
 }
 
 export const VisionObjectiveCard: React.FC<VisionObjectiveCardProps> = ({
@@ -16,6 +18,8 @@ export const VisionObjectiveCard: React.FC<VisionObjectiveCardProps> = ({
   onEdit,
   onDelete,
   isDragging = false,
+  onDragStart,
+  onDragEnd,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -25,8 +29,19 @@ export const VisionObjectiveCard: React.FC<VisionObjectiveCardProps> = ({
     }
   };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('text/plain', objective.id);
+    e.dataTransfer.effectAllowed = 'move';
+    onDragStart?.(objective);
+  };
+
+  const handleDragEnd = () => {
+    onDragEnd?.();
+  };
+
   return (
     <Card 
+      draggable
       className={`
         group relative transition-all duration-200 cursor-grab active:cursor-grabbing
         ${isDragging ? 'opacity-50 rotate-2 shadow-lg' : 'hover:shadow-md hover:-translate-y-1'}
@@ -40,6 +55,8 @@ export const VisionObjectiveCard: React.FC<VisionObjectiveCardProps> = ({
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
       <CardContent className="p-4 relative">
         {/* Drag Handle */}
