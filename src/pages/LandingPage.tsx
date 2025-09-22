@@ -9,47 +9,20 @@ import * as Icons from 'lucide-react';
 const LandingPage = () => {
   const { getContent } = useLandingPageContent();
   const [currentScreenshot, setCurrentScreenshot] = React.useState(0);
-  const screenshots = [{
-    title: "Dashboard Executivo COFOUND",
-    description: "Analytics estratégicos integrados com consultoria",
-    module: "Strategy HUB",
-    placeholder: "strategic-dashboard.png"
-  }, {
-    title: "Mapa Estratégico Interativo",
-    description: "Planejamento visual conectado aos serviços COFOUND",
-    module: "Strategy HUB",
-    placeholder: "strategic-map.png"
-  }, {
-    title: "Dashboard Startup",
-    description: "Métricas BEEP em tempo real",
-    module: "Startup HUB",
-    placeholder: "startup-dashboard.png"
-  }, {
-    title: "Avaliação BEEP Completa",
-    description: "Business Entrepreneur Evolution Phases - 5 níveis de maturidade",
-    module: "Startup HUB",
-    placeholder: "beep-assessment.png"
-  }, {
-    title: "Mentoria COFOUND",
-    description: "Sessões com especialistas certificados",
-    module: "Startup HUB",
-    placeholder: "mentoring-sessions.png"
-  }, {
-    title: "Copiloto Estratégico IA",
-    description: "Inteligência artificial para consultoria estratégica",
-    module: "Strategy HUB",
-    placeholder: "ai-copilot.png"
-  }, {
-    title: "Analytics BEEP",
-    description: "Evolução e benchmarking das startups",
-    module: "Startup HUB",
-    placeholder: "startup-analytics.png"
-  }, {
-    title: "OKRs Corporativos",
-    description: "Gestão de objetivos empresariais",
-    module: "Strategy HUB",
-    placeholder: "objectives-management.png"
-  }];
+  
+  // Generate screenshots array from dynamic content
+  const screenshots = React.useMemo(() => {
+    return Array.from({ length: 8 }, (_, index) => {
+      const num = index + 1;
+      return {
+        title: getContent('demo', `screenshot_${num}_title`, `Screenshot ${num}`),
+        description: getContent('demo', `screenshot_${num}_description`, 'Descrição do screenshot'),
+        module: getContent('demo', `screenshot_${num}_module`, 'Strategy HUB'),
+        image: getContent('demo', `screenshot_${num}_image`, ''),
+        placeholder: `screenshot-${num}.png`
+      };
+    }).filter(screenshot => screenshot.title && screenshot.description); // Only show screenshots with content
+  }, [getContent]);
 
   // BEEP Maturity Levels for visual representation
   const beepLevels = [{
@@ -357,48 +330,85 @@ const LandingPage = () => {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">
-              Veja o Start Together em Ação
+              {getContent('demo', 'title', 'Veja o Start Together em Ação')}
             </h2>
             <p className="text-xl text-strategy-gray-light">
-              Explore as principais funcionalidades da plataforma
+              {getContent('demo', 'subtitle', 'Explore as principais funcionalidades da plataforma')}
             </p>
           </div>
 
-          <div className="max-w-4xl mx-auto">
-            <div className="relative bg-white/10 backdrop-blur-sm rounded-2xl p-8 mb-8">
-              <div className="aspect-video bg-white/20 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
-                <div className="text-center">
+          {screenshots.length > 0 && (
+            <div className="max-w-4xl mx-auto">
+              <div className="relative bg-white/10 backdrop-blur-sm rounded-2xl p-8 mb-8">
+                <div className="aspect-video bg-white/20 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
+                  {screenshots[currentScreenshot]?.image ? (
+                    <img 
+                      src={screenshots[currentScreenshot].image} 
+                      alt={screenshots[currentScreenshot].title}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-accent/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <BarChart3 className="h-8 w-8 text-accent" />
+                      </div>
+                      <h3 className="text-xl font-semibold mb-2 text-white">{screenshots[currentScreenshot]?.title}</h3>
+                      <p className="text-strategy-gray-light mb-4">{screenshots[currentScreenshot]?.description}</p>
+                      <p className="text-xs text-white/60">
+                        📸 Faça upload da imagem no painel administrativo
+                      </p>
+                    </div>
+                  )}
                   <div className="absolute top-4 right-4">
-                    <Badge className={`text-xs px-3 py-1 ${screenshots[currentScreenshot].module === 'Startup HUB' ? 'bg-accent text-white' : 'bg-primary text-white'}`}>
-                      {screenshots[currentScreenshot].module}
+                    <Badge className={`text-xs px-3 py-1 ${screenshots[currentScreenshot]?.module === 'Startup HUB' ? 'bg-accent text-white' : 'bg-primary text-white'}`}>
+                      {screenshots[currentScreenshot]?.module}
                     </Badge>
                   </div>
-                  <div className="w-16 h-16 bg-accent/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <BarChart3 className="h-8 w-8 text-accent" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-2 text-white">{screenshots[currentScreenshot].title}</h3>
-                  <p className="text-strategy-gray-light mb-4">{screenshots[currentScreenshot].description}</p>
-                  <p className="text-xs text-white/60">
-                    📸 Substitua por: {screenshots[currentScreenshot].placeholder}
-                  </p>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Button variant="outline" size="sm" onClick={prevScreenshot} className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
                 
-                <div className="flex space-x-2">
-                  {screenshots.map((_, index) => <button key={index} className={`w-2 h-2 rounded-full transition-colors ${index === currentScreenshot ? 'bg-accent' : 'bg-white/30'}`} onClick={() => setCurrentScreenshot(index)} />)}
-                </div>
+                {screenshots[currentScreenshot]?.image && (
+                  <div className="text-center">
+                    <h3 className="text-xl font-semibold mb-2 text-white">{screenshots[currentScreenshot].title}</h3>
+                    <p className="text-strategy-gray-light">{screenshots[currentScreenshot].description}</p>
+                  </div>
+                )}
 
-                <Button variant="outline" size="sm" onClick={nextScreenshot} className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center justify-between">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={prevScreenshot} 
+                    className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+                    disabled={screenshots.length === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <div className="flex space-x-2">
+                    {screenshots.map((_, index) => (
+                      <button 
+                        key={index} 
+                        className={`w-2 h-2 rounded-full transition-colors ${
+                          index === currentScreenshot ? 'bg-accent' : 'bg-white/30'
+                        }`} 
+                        onClick={() => setCurrentScreenshot(index)} 
+                      />
+                    ))}
+                  </div>
+
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={nextScreenshot} 
+                    className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+                    disabled={screenshots.length === 0}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 

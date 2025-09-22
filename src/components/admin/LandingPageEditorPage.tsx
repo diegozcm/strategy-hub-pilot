@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useLandingPageContent } from '@/hooks/useLandingPageContent';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { IconPicker } from './landing-page/IconPicker';
+import { ScreenshotManager } from './landing-page/ScreenshotManager';
 import { ImageUploader } from './landing-page/ImageUploader';
 import { Badge } from '@/components/ui/badge';
 import { Save, Eye, RefreshCw } from 'lucide-react';
@@ -211,15 +212,59 @@ export const LandingPageEditorPage: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="demo">
-          <Card>
-            <CardHeader>
-              <CardTitle>Seção Demo</CardTitle>
-              <CardDescription>Em desenvolvimento - gerencie imagens e textos do demo</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Esta seção será implementada em breve.</p>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Seção Demo - Configurações Gerais</CardTitle>
+                <CardDescription>Configure o título e subtítulo da seção "Veja o Start Together em Ação"</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="demo_title">Título da Seção</Label>
+                  <Input
+                    id="demo_title"
+                    value={getContent('demo', 'title', '')}
+                    onChange={(e) => handleSave('demo', 'title', e.target.value)}
+                    placeholder="Título principal da seção demo"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="demo_subtitle">Subtítulo da Seção</Label>
+                  <Input
+                    id="demo_subtitle"
+                    value={getContent('demo', 'subtitle', '')}
+                    onChange={(e) => handleSave('demo', 'subtitle', e.target.value)}
+                    placeholder="Subtítulo da seção demo"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Screenshots do Carousel</CardTitle>
+                <CardDescription>Gerencie as imagens e informações dos 8 screenshots do carousel</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-6">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                    <ScreenshotManager
+                      key={num}
+                      screenshotNumber={num}
+                      title={getContent('demo', `screenshot_${num}_title`, '')}
+                      description={getContent('demo', `screenshot_${num}_description`, '')}
+                      module={getContent('demo', `screenshot_${num}_module`, 'Strategy HUB')}
+                      imageUrl={getContent('demo', `screenshot_${num}_image`, '')}
+                      onTitleChange={(value) => handleSave('demo', `screenshot_${num}_title`, value)}
+                      onDescriptionChange={(value) => handleSave('demo', `screenshot_${num}_description`, value)}
+                      onModuleChange={(value) => handleSave('demo', `screenshot_${num}_module`, value)}
+                      onImageChange={(url) => handleSave('demo', `screenshot_${num}_image`, url)}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="benefits">
