@@ -130,10 +130,7 @@ const LandingPage = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link to="/auth">
-                <Button size="lg" className="text-lg px-8 py-6 bg-primary hover:bg-strategy-red-light text-white">
-                  Acessar Plataforma
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
+                
               </Link>
               <a href="https://wa.me//554796342353?text=Tenho%20interesse%20em%20saber%20mais%20sobre%20o%20Start%20Together%20by%20COFOUND" target="_blank" rel="noopener noreferrer">
                 <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-strategy-blue-navy text-strategy-blue-navy hover:bg-strategy-blue-navy hover:text-white">
@@ -147,15 +144,15 @@ const LandingPage = () => {
             <div className="flex flex-wrap justify-center gap-6">
               <Badge className="bg-accent text-white px-4 py-2">
                 <Shield className="h-4 w-4 mr-2" />
-                Estratégia
+                Certificação ISO 27001
               </Badge>
               <Badge className="bg-accent text-white px-4 py-2">
                 <Lock className="h-4 w-4 mr-2" />
-                Crescimento
+                LGPD Compliance
               </Badge>
               <Badge className="bg-accent text-white px-4 py-2">
                 <Building2 className="h-4 w-4 mr-2" />
-                Aceleração
+                Produto COFOUND
               </Badge>
             </div>
           </div>
