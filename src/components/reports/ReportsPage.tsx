@@ -1,219 +1,62 @@
-import React, { useState, useEffect } from 'react';
-import { FileBarChart, Download, Filter, Calendar, TrendingUp, TrendingDown, Target, Users, Briefcase, BarChart3, PieChart, Activity, Award, CheckCircle, AlertTriangle } from 'lucide-react';
+import React, { useState } from 'react';
+import { FileBarChart, Download, Target, Briefcase, BarChart3, Activity, Award, CheckCircle, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useMultiTenant';
-import { useToast } from '@/hooks/use-toast';
-
-interface DashboardData {
-  keyResults: any[];
-  projects: any[];
-  objectives: any[];
-  keyResultValues: any[];
-  projectTasks: any[];
-}
-
-interface ChartData {
-  name: string;
-  value: number;
-  color?: string;
-}
+import { BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useReportsData } from '@/hooks/useReportsData';
 
 export const ReportsPage: React.FC = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const { 
+    loading, 
+    company, 
+    hasData,
+    keyResults, 
+    objectives, 
+    projects,
+    kpis,
+    chartData 
+  } = useReportsData();
   
-  const [data, setData] = useState<DashboardData>({
-    keyResults: [],
-    projects: [],
-    objectives: [],
-    keyResultValues: [],
-    projectTasks: []
-  });
-  const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('current_month');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
-  useEffect(() => {
-    loadAllData();
-  }, []);
-
-  const loadAllData = async () => {
-    try {
-      setLoading(true);
-      
-      const [
-        keyResultsRes,
-        projectsRes,
-        objectivesRes,
-        keyResultValuesRes,
-        projectTasksRes
-      ] = await Promise.all([
-        supabase.from('key_results').select('*').not('category', 'is', null),
-        supabase.from('strategic_projects').select('*'),
-        supabase.from('strategic_objectives').select('*'),
-        supabase.from('key_result_values').select('*').order('period_date', { ascending: false }),
-        supabase.from('project_tasks').select('*')
-      ]);
-
-      setData({
-        keyResults: keyResultsRes.data || [],
-        projects: projectsRes.data || [],
-        objectives: objectivesRes.data || [],
-        keyResultValues: keyResultValuesRes.data || [],
-        projectTasks: projectTasksRes.data || []
-      });
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar dados dos relatórios.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Calculate KPIs
-  const calculateKPIs = () => {
-    const totalKeyResults = data.keyResults.length;
-    const onTargetKeyResults = data.keyResults.filter(kr => {
-      const progress = kr.target_value > 0 ? (kr.current_value / kr.target_value) * 100 : 0;
-      return progress >= 90;
-    }).length;
-    
-    const totalProjects = data.projects.length;
-    const activeProjects = data.projects.filter(p => p.status === 'in_progress' || p.status === 'planning').length;
-    const completedProjects = data.projects.filter(p => p.status === 'completed').length;
-    
-    const totalObjectives = data.objectives.length;
-    const completedObjectives = data.objectives.filter(o => o.status === 'completed').length;
-    
-    const totalTasks = data.projectTasks.length;
-    const completedTasks = data.projectTasks.filter(t => t.status === 'done').length;
-
-    return {
-      totalKeyResults,
-      onTargetKeyResults,
-      keyResultsSuccessRate: totalKeyResults > 0 ? (onTargetKeyResults / totalKeyResults) * 100 : 0,
-      totalProjects,
-      activeProjects,
-      completedProjects,
-      projectsCompletionRate: totalProjects > 0 ? (completedProjects / totalProjects) * 100 : 0,
-      totalObjectives,
-      completedObjectives,
-      objectivesCompletionRate: totalObjectives > 0 ? (completedObjectives / totalObjectives) * 100 : 0,
-      totalTasks,
-      completedTasks,
-      tasksCompletionRate: totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0
-    };
-  };
-
-  // Chart data generators
-  const getKeyResultsByCategory = (): ChartData[] => {
-    const categories = data.keyResults.reduce((acc, keyResult) => {
-      const category = keyResult.category || 'outros';
-      acc[category] = (acc[category] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const categoryNames = {
-      financial: 'Financeiro',
-      operational: 'Operacional',
-      customer: 'Cliente',
-      people: 'Pessoas',
-      quality: 'Qualidade',
-      outros: 'Outros'
-    };
-
-    return Object.entries(categories).map(([key, value]) => ({
-      name: categoryNames[key as keyof typeof categoryNames] || key,
-      value: value as number,
-      color: getColorForCategory(key)
-    }));
-  };
-
-  const getProjectsByStatus = (): ChartData[] => {
-    const statuses = data.projects.reduce((acc, project) => {
-      const status = project.status || 'planning';
-      acc[status] = (acc[status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const statusNames = {
-      planning: 'Planejamento',
-      in_progress: 'Em Andamento',
-      completed: 'Concluído',
-      suspended: 'Suspenso'
-    };
-
-    return Object.entries(statuses).map(([key, value]) => ({
-      name: statusNames[key as keyof typeof statusNames] || key,
-      value: value as number,
-      color: getColorForStatus(key)
-    }));
-  };
-
-  const getKeyResultTrends = () => {
-    const last6Months = Array.from({ length: 6 }, (_, i) => {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      return {
-        month: date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
-        date: date.toISOString().slice(0, 7)
-      };
-    }).reverse();
-
-    return last6Months.map(month => {
-      const monthValues = data.keyResultValues.filter(v => 
-        v.period_date.startsWith(month.date)
-      );
-      
-      const avgValue = monthValues.length > 0 
-        ? monthValues.reduce((sum, v) => sum + (v.value || 0), 0) / monthValues.length
-        : 0;
-
-      return {
-        month: month.month,
-        value: Math.round(avgValue * 100) / 100,
-        count: monthValues.length
-      };
-    });
-  };
-
-  const getColorForCategory = (category: string) => {
-    const colors = {
-      financial: '#10b981',
-      operational: '#3b82f6',
-      customer: '#f59e0b',
-      people: '#8b5cf6',
-      quality: '#ef4444',
-      outros: '#6b7280'
-    };
-    return colors[category as keyof typeof colors] || '#6b7280';
-  };
-
-  const getColorForStatus = (status: string) => {
-    const colors = {
-      planning: '#f59e0b',
-      in_progress: '#3b82f6',
-      completed: '#10b981',
-      suspended: '#6b7280'
-    };
-    return colors[status as keyof typeof colors] || '#6b7280';
-  };
-
-  const kpis = calculateKPIs();
-  const keyResultsByCategory = getKeyResultsByCategory();
-  const projectsByStatus = getProjectsByStatus();
-  const keyResultTrends = getKeyResultTrends();
+  // Show message if no company or data
+  if (!loading && (!company || !hasData)) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Relatórios Executivos</h1>
+            <p className="text-muted-foreground mt-2">
+              {!company ? 'Selecione uma empresa para visualizar relatórios' : 'Nenhum dado encontrado para esta empresa'}
+            </p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <div className="space-y-4">
+              <FileBarChart className="w-16 h-16 mx-auto text-muted-foreground" />
+              <div>
+                <h3 className="text-lg font-semibold">
+                  {!company ? 'Empresa Não Selecionada' : 'Nenhum Dado Disponível'}
+                </h3>
+                <p className="text-muted-foreground">
+                  {!company 
+                    ? 'Para visualizar relatórios, primeiro selecione uma empresa no painel superior.'
+                    : 'Comece criando pilares estratégicos, objetivos e resultados-chave para ver relatórios detalhados aqui.'
+                  }
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -243,11 +86,13 @@ export const ReportsPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Relatórios Executivos</h1>
-          <p className="text-muted-foreground mt-2">Análise completa do desempenho estratégico</p>
-        </div>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Relatórios Executivos</h1>
+            <p className="text-muted-foreground mt-2">
+              Análise completa do desempenho estratégico - {company?.name}
+            </p>
+          </div>
         <div className="flex gap-3">
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
             <SelectTrigger className="w-[180px]">
@@ -329,25 +174,6 @@ export const ReportsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Tarefas Executadas</p>
-                <div className="flex items-center space-x-2">
-                  <p className="text-2xl font-bold text-orange-600">{Math.round(kpis.tasksCompletionRate)}%</p>
-                  <BarChart3 className="w-4 h-4 text-orange-600" />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {kpis.completedTasks} de {kpis.totalTasks} tarefas
-                </p>
-              </div>
-              <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                <Activity className="w-4 h-4 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Reports Tabs */}
@@ -364,15 +190,15 @@ export const ReportsPage: React.FC = () => {
             {/* Key Results by Category */}
             <Card>
               <CardHeader>
-                <CardTitle>Resultados-Chave por Categoria</CardTitle>
-                <CardDescription>Distribuição dos KRs cadastrados</CardDescription>
+                <CardTitle>Resultados-Chave por Tipo</CardTitle>
+                <CardDescription>Distribuição dos KRs por tipo de métrica</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <RechartsPieChart>
                       <Pie
-                        data={keyResultsByCategory}
+                        data={chartData.keyResultsByCategory}
                         dataKey="value"
                         nameKey="name"
                         cx="50%"
@@ -380,7 +206,7 @@ export const ReportsPage: React.FC = () => {
                         outerRadius={80}
                         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                       >
-                        {keyResultsByCategory.map((entry, index) => (
+                        {chartData.keyResultsByCategory.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -400,13 +226,13 @@ export const ReportsPage: React.FC = () => {
               <CardContent>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={projectsByStatus}>
+                    <BarChart data={chartData.projectsByStatus}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis />
                       <Tooltip />
                       <Bar dataKey="value" name="Projetos">
-                        {projectsByStatus.map((entry, index) => (
+                        {chartData.projectsByStatus.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Bar>
@@ -417,29 +243,26 @@ export const ReportsPage: React.FC = () => {
             </Card>
           </div>
 
-          {/* Key Result Trends */}
+          {/* Progress by Pillar */}
           <Card>
             <CardHeader>
-              <CardTitle>Evolução dos Resultados-Chave</CardTitle>
-              <CardDescription>Tendência dos valores dos KRs nos últimos 6 meses</CardDescription>
+              <CardTitle>Progresso por Pilar Estratégico</CardTitle>
+              <CardDescription>Progresso médio dos objetivos em cada pilar</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={keyResultTrends}>
+                  <BarChart data={chartData.progressByPillar} layout="horizontal">
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Area 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke="hsl(var(--primary))" 
-                      fill="hsl(var(--primary))" 
-                      fillOpacity={0.3}
-                      name="Valor Médio"
-                    />
-                  </AreaChart>
+                    <XAxis type="number" domain={[0, 100]} />
+                    <YAxis dataKey="pillar" type="category" width={120} />
+                    <Tooltip formatter={(value) => [`${value}%`, 'Progresso']} />
+                    <Bar dataKey="progress" name="Progresso (%)">
+                      {chartData.progressByPillar.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
             </CardContent>
@@ -448,7 +271,7 @@ export const ReportsPage: React.FC = () => {
 
         <TabsContent value="key-results" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {data.keyResults.map((keyResult) => {
+            {keyResults.map((keyResult) => {
               const progress = keyResult.target_value > 0 ? (keyResult.current_value / keyResult.target_value) * 100 : 0;
               return (
                 <Card key={keyResult.id}>
@@ -478,7 +301,7 @@ export const ReportsPage: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex justify-between items-center">
-                        <Badge variant="outline">{keyResult.category}</Badge>
+                        <Badge variant="outline">{keyResult.metric_type || 'Numérico'}</Badge>
                         <Badge variant={progress >= 90 ? 'default' : progress >= 70 ? 'secondary' : 'destructive'}>
                           {progress >= 90 ? 'No Alvo' : progress >= 70 ? 'Atenção' : 'Crítico'}
                         </Badge>
@@ -493,7 +316,7 @@ export const ReportsPage: React.FC = () => {
 
         <TabsContent value="projects" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {data.projects.map((project) => (
+            {projects.map((project) => (
               <Card key={project.id}>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg">{project.name}</CardTitle>
@@ -552,7 +375,7 @@ export const ReportsPage: React.FC = () => {
 
         <TabsContent value="objectives" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {data.objectives.map((objective) => (
+            {objectives.map((objective) => (
               <Card key={objective.id}>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg">{objective.title}</CardTitle>
