@@ -10,6 +10,13 @@ const LandingPage = () => {
   const { getContent } = useLandingPageContent();
   const [currentScreenshot, setCurrentScreenshot] = React.useState(0);
   
+  // Helper function to parse boolean values from content (force buttons to always show)
+  const parseBoolean = (value: string, defaultValue: boolean = true) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return defaultValue;
+  };
+  
   // Generate screenshots array from dynamic content
   const screenshots = React.useMemo(() => {
     return Array.from({ length: 8 }, (_, index) => {
@@ -107,7 +114,7 @@ const LandingPage = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              {getContent('hero', 'primary_button_active', 'false') === 'true' && (
+              {parseBoolean(getContent('hero', 'primary_button_active', 'true')) && (
                 <Link to={getContent('hero', 'primary_button_link', '/auth')}>
                   <Button size="lg" className="text-lg px-8 py-6 bg-strategy-red-dark hover:bg-strategy-red-dark/90 text-white">
                     <ArrowRight className="mr-2 h-5 w-5" />
@@ -115,7 +122,7 @@ const LandingPage = () => {
                   </Button>
                 </Link>
               )}
-              {getContent('hero', 'secondary_button_active', 'false') === 'true' && (
+              {parseBoolean(getContent('hero', 'secondary_button_active', 'true')) && (
                 <a 
                   href={getContent('hero', 'secondary_button_link', 'https://wa.me//554796342353?text=Tenho%20interesse%20em%20saber%20mais%20sobre%20o%20Start%20Together%20by%20COFOUND')} 
                   target="_blank" 
@@ -123,7 +130,7 @@ const LandingPage = () => {
                 >
                   <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-strategy-blue-navy text-strategy-blue-navy hover:bg-strategy-blue-navy hover:text-white">
                     <Phone className="mr-2 h-5 w-5" />
-                    {getContent('hero', 'secondary_button', 'Ver Demo')}
+                    {getContent('hero', 'secondary_button', 'Fale com um consultor!')}
                   </Button>
                 </a>
               )}
