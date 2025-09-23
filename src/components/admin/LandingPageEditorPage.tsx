@@ -17,6 +17,7 @@ import { useTabEditor } from '@/hooks/useTabEditor';
 import { TabControls } from './landing-page/TabControls';
 import { EditableField } from './landing-page/EditableField';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
 
 export const LandingPageEditorPage: React.FC = () => {
   const { content, loading, updateContent, getContent, refetch, forceRefresh, lastFetch } = useLandingPageContent();
@@ -179,27 +180,37 @@ export const LandingPageEditorPage: React.FC = () => {
               </div>
 
               {heroEditor.isEditing ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                    <div className="space-y-1">
+                      <Label htmlFor="primary-button-active" className="text-sm font-medium">
+                        Botão Primário Ativo
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Mostrar o botão primário na página
+                      </p>
+                    </div>
+                    <Switch
                       id="primary-button-active"
                       checked={heroEditor.getFieldValue('primary_button_active', 'false') === 'true'}
-                      onChange={(e) => heroEditor.updateLocalField('primary_button_active', e.target.checked.toString())}
-                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                      onCheckedChange={(checked) => heroEditor.updateLocalField('primary_button_active', checked.toString())}
                     />
-                    <Label htmlFor="primary-button-active">Mostrar Botão Primário</Label>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                    <div className="space-y-1">
+                      <Label htmlFor="secondary-button-active" className="text-sm font-medium">
+                        Botão Secundário Ativo
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Mostrar o botão secundário na página
+                      </p>
+                    </div>
+                    <Switch
                       id="secondary-button-active"
                       checked={heroEditor.getFieldValue('secondary_button_active', 'false') === 'true'}
-                      onChange={(e) => heroEditor.updateLocalField('secondary_button_active', e.target.checked.toString())}
-                      className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                      onCheckedChange={(checked) => heroEditor.updateLocalField('secondary_button_active', checked.toString())}
                     />
-                    <Label htmlFor="secondary-button-active">Mostrar Botão Secundário</Label>
                   </div>
                 </div>
               ) : (
@@ -242,14 +253,24 @@ export const LandingPageEditorPage: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              <EditableField
-                id="trust_badges_active"
-                label="Ativar Trust Badges"
-                value={heroEditor.getFieldValue('trust_badges_active')}
-                isEditing={heroEditor.isEditing}
-                placeholder="true/false"
-                onChange={(value) => heroEditor.updateLocalField('trust_badges_active', value)}
-              />
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+                <div className="space-y-1">
+                  <Label className="text-sm font-medium">Trust Badges Ativos</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Ativar/desativar toda a seção de badges de confiança
+                  </p>
+                </div>
+                {heroEditor.isEditing ? (
+                  <Switch
+                    checked={heroEditor.getFieldValue('trust_badges_active', 'false') === 'true'}
+                    onCheckedChange={(checked) => heroEditor.updateLocalField('trust_badges_active', checked.toString())}
+                  />
+                ) : (
+                  <div className="px-3 py-1 rounded-md bg-muted text-sm">
+                    {heroEditor.getFieldValue('trust_badges_active', 'false') === 'true' ? 'Ativo' : 'Inativo'}
+                  </div>
+                )}
+              </div>
 
               {[1, 2, 3].map((num) => (
                 <div key={num} className="flex items-center gap-4 p-4 border rounded-lg">
@@ -262,14 +283,24 @@ export const LandingPageEditorPage: React.FC = () => {
                       placeholder={`Texto do badge ${num}`}
                       onChange={(value) => heroEditor.updateLocalField(`badge_${num}_text`, value)}
                     />
-                    <EditableField
-                      id={`badge_${num}_active`}
-                      label={`Badge ${num} - Ativo`}
-                      value={heroEditor.getFieldValue(`badge_${num}_active`)}
-                      isEditing={heroEditor.isEditing}
-                      placeholder="true/false"
-                      onChange={(value) => heroEditor.updateLocalField(`badge_${num}_active`, value)}
-                    />
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">{`Badge ${num === 1 ? 'Estratégia' : num === 2 ? 'Crescimento' : 'Aceleração'}`}</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Ativar/desativar este badge específico
+                        </p>
+                      </div>
+                      {heroEditor.isEditing ? (
+                        <Switch
+                          checked={heroEditor.getFieldValue(`badge_${num}_active`, 'false') === 'true'}
+                          onCheckedChange={(checked) => heroEditor.updateLocalField(`badge_${num}_active`, checked.toString())}
+                        />
+                      ) : (
+                        <div className="px-3 py-1 rounded-md bg-muted text-sm">
+                          {heroEditor.getFieldValue(`badge_${num}_active`, 'false') === 'true' ? 'Ativo' : 'Inativo'}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Ícone</Label>
