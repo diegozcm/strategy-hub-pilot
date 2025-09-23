@@ -198,6 +198,12 @@ export const LandingPageEditorPage: React.FC = () => {
               <div>
                 <CardTitle>Badges de Confiança</CardTitle>
                 <CardDescription>Configure os badges abaixo do hero</CardDescription>
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <p className="text-sm text-blue-800">
+                    <strong>Diferença importante:</strong> Estes badges ("Estratégia", "Crescimento", "Aceleração") são diferentes dos botões de ação. 
+                    Os botões de ação ficam logo acima e podem ser o botão primário (verde) ou secundário (azul).
+                  </p>
+                </div>
               </div>
               <div className="flex items-center gap-2">
                 {heroEditor.isEditing && (
@@ -208,6 +214,15 @@ export const LandingPageEditorPage: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
+              <EditableField
+                id="trust_badges_active"
+                label="Ativar Trust Badges"
+                value={heroEditor.getFieldValue('trust_badges_active')}
+                isEditing={heroEditor.isEditing}
+                placeholder="true/false"
+                onChange={(value) => heroEditor.updateLocalField('trust_badges_active', value)}
+              />
+
               {[1, 2, 3].map((num) => (
                 <div key={num} className="flex items-center gap-4 p-4 border rounded-lg">
                   <div className="flex-1 space-y-2">
@@ -218,6 +233,14 @@ export const LandingPageEditorPage: React.FC = () => {
                       isEditing={heroEditor.isEditing}
                       placeholder={`Texto do badge ${num}`}
                       onChange={(value) => heroEditor.updateLocalField(`badge_${num}_text`, value)}
+                    />
+                    <EditableField
+                      id={`badge_${num}_active`}
+                      label={`Badge ${num} - Ativo`}
+                      value={heroEditor.getFieldValue(`badge_${num}_active`)}
+                      isEditing={heroEditor.isEditing}
+                      placeholder="true/false"
+                      onChange={(value) => heroEditor.updateLocalField(`badge_${num}_active`, value)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -234,7 +257,7 @@ export const LandingPageEditorPage: React.FC = () => {
                     )}
                   </div>
                   <div className="flex items-center">
-                    <Badge className="bg-accent text-white px-4 py-2">
+                    <Badge className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 font-medium">
                       {heroEditor.getFieldValue(`badge_${num}_text`, `Badge ${num}`)}
                     </Badge>
                   </div>

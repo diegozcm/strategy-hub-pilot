@@ -129,20 +129,25 @@ const LandingPage = () => {
               )}
             </div>
 
-            {/* Trust Badges */}
-            <div className="flex flex-wrap justify-center gap-6">
-              {[1, 2, 3].map((num) => {
-                const iconName = getContent('hero', `badge_${num}_icon`, num === 1 ? 'Target' : num === 2 ? 'TrendingUp' : 'Rocket');
-                const IconComponent = Icons[iconName as keyof typeof Icons] as React.ComponentType<any>;
-                
-                return (
-                  <Badge key={num} className="bg-accent text-white px-4 py-2">
-                    {IconComponent && <IconComponent className="h-4 w-4 mr-2" />}
-                    {getContent('hero', `badge_${num}_text`, num === 1 ? 'Estratégia' : num === 2 ? 'Crescimento' : 'Aceleração')}
-                  </Badge>
-                );
-              })}
-            </div>
+            {/* Trust Badges - Configurable by Admin (NOT action buttons) */}
+            {getContent('hero', 'trust_badges_active', 'true') === 'true' && (
+              <div className="flex flex-wrap justify-center gap-6">
+                {[1, 2, 3].map((num) => {
+                  const badgeActive = getContent('hero', `badge_${num}_active`, 'true') === 'true';
+                  if (!badgeActive) return null;
+                  
+                  const iconName = getContent('hero', `badge_${num}_icon`, num === 1 ? 'Target' : num === 2 ? 'TrendingUp' : 'Rocket');
+                  const IconComponent = Icons[iconName as keyof typeof Icons] as React.ComponentType<any>;
+                  
+                  return (
+                    <Badge key={num} className="bg-primary/10 text-primary border border-primary/20 px-4 py-2 font-medium">
+                      {IconComponent && <IconComponent className="h-4 w-4 mr-2" />}
+                      {getContent('hero', `badge_${num}_text`, num === 1 ? 'Estratégia' : num === 2 ? 'Crescimento' : 'Aceleração')}
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </section>
