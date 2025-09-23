@@ -11,19 +11,33 @@ import { IconPicker } from './landing-page/IconPicker';
 import { ScreenshotManager } from './landing-page/ScreenshotManager';
 import { ImageUploader } from './landing-page/ImageUploader';
 import { Badge } from '@/components/ui/badge';
-import { Save, Eye, RefreshCw } from 'lucide-react';
+import { Save, Eye, RefreshCw, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTabEditor } from '@/hooks/useTabEditor';
 import { TabControls } from './landing-page/TabControls';
 import { EditableField } from './landing-page/EditableField';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export const LandingPageEditorPage: React.FC = () => {
-  const { content, loading, updateContent, getContent, refetch } = useLandingPageContent();
+  const { content, loading, updateContent, getContent, refetch, forceRefresh, lastFetch } = useLandingPageContent();
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
   // Tab editors for each section
   const heroEditor = useTabEditor('hero');
+
+  const handleRefresh = () => {
+    forceRefresh();
+  };
+
+  const formatLastUpdate = (timestamp: number) => {
+    if (!timestamp) return 'Nunca';
+    const diff = Date.now() - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'Agora mesmo';
+    if (minutes < 60) return `${minutes}min atrás`;
+    return new Date(timestamp).toLocaleTimeString('pt-BR');
+  };
 
   // Legacy save function for sections not yet updated to tab editor
   const handleSave = async (section: string, key: string, value: string, type: 'text' | 'icon' | 'image' = 'text') => {
@@ -50,9 +64,15 @@ export const LandingPageEditorPage: React.FC = () => {
           <h1 className="text-3xl font-bold">Editor da Landing Page</h1>
           <p className="text-muted-foreground">Edite todos os textos, imagens e ícones da página inicial</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={refetch} disabled={saving}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className="text-sm font-medium">Última atualização</div>
+            <div className="text-xs text-muted-foreground">
+              {formatLastUpdate(lastFetch)}
+            </div>
+          </div>
+          <Button variant="outline" onClick={handleRefresh} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Atualizar
           </Button>
           <Button asChild>
@@ -63,6 +83,14 @@ export const LandingPageEditorPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Diferença entre elementos:</strong> Os <strong>botões de ação</strong> (Primário/Secundário) são controláveis aqui e aparecem na seção principal. 
+          Os <strong>badges de confiança</strong> ("Estratégia", "Crescimento", "Aceleração") são elementos visuais separados que podem ser ativados/desativados independentemente.
+        </AlertDescription>
+      </Alert>
 
       <Tabs defaultValue="hero" className="w-full">
         <TabsList className="grid w-full grid-cols-6">

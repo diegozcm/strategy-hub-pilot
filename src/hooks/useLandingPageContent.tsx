@@ -19,11 +19,19 @@ export interface LandingPageContent {
 export const useLandingPageContent = () => {
   const [content, setContent] = useState<Record<string, Record<string, string>>>({});
   const [loading, setLoading] = useState(true);
+  const [lastFetch, setLastFetch] = useState<number>(0);
   const { toast } = useToast();
 
-  const fetchContent = async () => {
+  const fetchContent = async (forceRefresh = false) => {
     try {
       setLoading(true);
+      
+      // Add timestamp to force cache refresh
+      const now = Date.now();
+      if (forceRefresh) {
+        console.log('🔄 Force refreshing landing page content');
+      }
+      
       const { data, error } = await supabase
         .from('landing_page_content')
         .select('*')
@@ -42,6 +50,11 @@ export const useLandingPageContent = () => {
       });
 
       setContent(organized);
+      setLastFetch(now);
+      
+      if (forceRefresh) {
+        console.log('✅ Content refreshed:', organized);
+      }
     } catch (error) {
       console.error('Error fetching landing page content:', error);
       toast({
@@ -63,6 +76,8 @@ export const useLandingPageContent = () => {
     try {
       const user = (await supabase.auth.getUser()).data.user;
       if (!user) throw new Error('User not authenticated');
+
+      console.log(`📝 Updating content: ${section}.${key} = "${value}"`);
 
       // First, try to update existing record
       const { data: existingData, error: selectError } = await supabase
@@ -105,7 +120,7 @@ export const useLandingPageContent = () => {
 
       if (error) throw error;
 
-      // Update local state
+      // Update local state immediately
       setContent(prev => ({
         ...prev,
         [section]: {
@@ -113,6 +128,11 @@ export const useLandingPageContent = () => {
           [key]: value
         }
       }));
+
+      // Force refresh to ensure sync
+      setTimeout(() => {
+        fetchContent(true);
+      }, 100);
 
       toast({
         title: "Conteúdo atualizado",
@@ -162,8 +182,36 @@ export const useLandingPageContent = () => {
     }
   };
 
+  const forceRefresh = () => {
+    fetchContent(true);
+  };
+
   useEffect(() => {
     fetchContent();
+
+    // Set up real-time listener for content changes
+    const channel = supabase
+      .channel('landing_page_content_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'landing_page_content',
+        },
+        (payload) => {
+          console.log('📡 Landing page content changed, refreshing...', payload);
+          // Small delay to ensure database consistency
+          setTimeout(() => {
+            fetchContent(true);
+          }, 100);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return {
@@ -173,5 +221,7 @@ export const useLandingPageContent = () => {
     getContent,
     uploadImage,
     refetch: fetchContent,
+    forceRefresh,
+    lastFetch,
   };
 };
