@@ -107,7 +107,7 @@ const LandingPage = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              {getContent('hero', 'primary_button_active', 'true') === 'true' && (
+              {getContent('hero', 'primary_button_active', 'false') === 'true' && (
                 <Link to={getContent('hero', 'primary_button_link', '/auth')}>
                   <Button size="lg" className="text-lg px-8 py-6 bg-strategy-red-dark hover:bg-strategy-red-dark/90 text-white">
                     <ArrowRight className="mr-2 h-5 w-5" />
@@ -115,7 +115,7 @@ const LandingPage = () => {
                   </Button>
                 </Link>
               )}
-              {getContent('hero', 'secondary_button_active', 'true') === 'true' && (
+              {getContent('hero', 'secondary_button_active', 'false') === 'true' && (
                 <a 
                   href={getContent('hero', 'secondary_button_link', 'https://wa.me//554796342353?text=Tenho%20interesse%20em%20saber%20mais%20sobre%20o%20Start%20Together%20by%20COFOUND')} 
                   target="_blank" 

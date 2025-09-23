@@ -156,7 +156,7 @@ export const LandingPageEditorPage: React.FC = () => {
                     <input
                       type="checkbox"
                       id="primary-button-active"
-                      checked={heroEditor.getFieldValue('primary_button_active', 'true') === 'true'}
+                      checked={heroEditor.getFieldValue('primary_button_active', 'false') === 'true'}
                       onChange={(e) => heroEditor.updateLocalField('primary_button_active', e.target.checked.toString())}
                       className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                     />
@@ -167,7 +167,7 @@ export const LandingPageEditorPage: React.FC = () => {
                     <input
                       type="checkbox"
                       id="secondary-button-active"
-                      checked={heroEditor.getFieldValue('secondary_button_active', 'true') === 'true'}
+                      checked={heroEditor.getFieldValue('secondary_button_active', 'false') === 'true'}
                       onChange={(e) => heroEditor.updateLocalField('secondary_button_active', e.target.checked.toString())}
                       className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                     />
@@ -179,13 +179,13 @@ export const LandingPageEditorPage: React.FC = () => {
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Botão Primário</Label>
                     <div className="p-3 border rounded-md bg-muted/50 text-sm">
-                      {heroEditor.getFieldValue('primary_button_active', 'true') === 'true' ? 'Ativo' : 'Inativo'}
+                      {heroEditor.getFieldValue('primary_button_active', 'false') === 'true' ? 'Ativo' : 'Inativo'}
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Botão Secundário</Label>
                     <div className="p-3 border rounded-md bg-muted/50 text-sm">
-                      {heroEditor.getFieldValue('secondary_button_active', 'true') === 'true' ? 'Ativo' : 'Inativo'}
+                      {heroEditor.getFieldValue('secondary_button_active', 'false') === 'true' ? 'Ativo' : 'Inativo'}
                     </div>
                   </div>
                 </div>
