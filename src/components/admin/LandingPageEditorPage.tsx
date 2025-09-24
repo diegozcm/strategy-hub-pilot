@@ -330,25 +330,200 @@ export const LandingPageEditorPage: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="features">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Seção Features</CardTitle>
-                <CardDescription>Em desenvolvimento - adicione conteúdo das features</CardDescription>
-              </div>
-              <TabControls
-                isEditing={featuresEditor.isEditing}
-                hasChanges={featuresEditor.hasChanges}
-                isSaving={featuresEditor.isSaving}
-                onStartEdit={featuresEditor.startEdit}
-                onSave={featuresEditor.saveChanges}
-                onCancel={featuresEditor.cancelEdit}
-              />
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Esta seção será implementada em breve.</p>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            {/* General Settings */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div>
+                  <CardTitle>Configurações Gerais</CardTitle>
+                  <CardDescription>Títulos principais da seção</CardDescription>
+                </div>
+                <TabControls
+                  isEditing={featuresEditor.isEditing}
+                  hasChanges={featuresEditor.hasChanges}
+                  isSaving={featuresEditor.isSaving}
+                  onStartEdit={featuresEditor.startEdit}
+                  onSave={featuresEditor.saveChanges}
+                  onCancel={featuresEditor.cancelEdit}
+                />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <EditableField
+                  id="features-title"
+                  label="Título da Seção"
+                  value={featuresEditor.getFieldValue('title')}
+                  isEditing={featuresEditor.isEditing}
+                  onChange={(value) => featuresEditor.updateLocalField('title', value)}
+                  placeholder="Ex: Soluções Corporativas COFOUND"
+                />
+                <EditableField
+                  id="features-subtitle"
+                  label="Subtítulo da Seção"
+                  value={featuresEditor.getFieldValue('subtitle')}
+                  isEditing={featuresEditor.isEditing}
+                  onChange={(value) => featuresEditor.updateLocalField('subtitle', value)}
+                  type="textarea"
+                  placeholder="Ex: Impulsione o crescimento da sua empresa..."
+                />
+              </CardContent>
+            </Card>
+
+            {/* Strategy HUB Section */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div>
+                  <CardTitle>Strategy HUB</CardTitle>
+                  <CardDescription>Funcionalidades estratégicas empresariais</CardDescription>
+                </div>
+                {featuresEditor.isEditing && (
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                    Mesma sessão de edição
+                  </Badge>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <EditableField
+                    id="strategy-hub-title"
+                    label="Título do Strategy HUB"
+                    value={featuresEditor.getFieldValue('strategy_hub_title')}
+                    isEditing={featuresEditor.isEditing}
+                    onChange={(value) => featuresEditor.updateLocalField('strategy_hub_title', value)}
+                    placeholder="Ex: Strategy HUB"
+                  />
+                  <EditableField
+                    id="strategy-hub-description"
+                    label="Descrição do Strategy HUB"
+                    value={featuresEditor.getFieldValue('strategy_hub_description')}
+                    isEditing={featuresEditor.isEditing}
+                    onChange={(value) => featuresEditor.updateLocalField('strategy_hub_description', value)}
+                    type="textarea"
+                    placeholder="Ex: Ferramentas avançadas para..."
+                  />
+                </div>
+
+                {/* Strategy Features */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-sm">Features do Strategy HUB</h4>
+                  {[1, 2, 3].map((num) => (
+                    <div key={num} className="p-4 border rounded-lg space-y-4">
+                      <h5 className="font-medium text-sm">Feature {num}</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <EditableField
+                          id={`strategy-feature-${num}-title`}
+                          label="Título"
+                          value={featuresEditor.getFieldValue(`strategy_feature_${num}_title`)}
+                          isEditing={featuresEditor.isEditing}
+                          onChange={(value) => featuresEditor.updateLocalField(`strategy_feature_${num}_title`, value)}
+                          placeholder="Ex: Dashboard Executivo"
+                        />
+                        <EditableField
+                          id={`strategy-feature-${num}-description`}
+                          label="Descrição"
+                          value={featuresEditor.getFieldValue(`strategy_feature_${num}_description`)}
+                          isEditing={featuresEditor.isEditing}
+                          onChange={(value) => featuresEditor.updateLocalField(`strategy_feature_${num}_description`, value)}
+                          type="textarea"
+                          placeholder="Ex: Visão centralizada..."
+                        />
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Ícone</Label>
+                          {featuresEditor.isEditing ? (
+                            <IconPicker
+                              value={featuresEditor.getFieldValue(`strategy_feature_${num}_icon`)}
+                              onChange={(icon) => featuresEditor.updateLocalField(`strategy_feature_${num}_icon`, icon)}
+                            />
+                          ) : (
+                            <div className="p-3 border rounded-md bg-muted/50 text-sm text-muted-foreground">
+                              {featuresEditor.getFieldValue(`strategy_feature_${num}_icon`) || '(Ícone não definido)'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Startup HUB Section */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div>
+                  <CardTitle>Startup HUB</CardTitle>
+                  <CardDescription>Funcionalidades para startups em crescimento</CardDescription>
+                </div>
+                {featuresEditor.isEditing && (
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                    Mesma sessão de edição
+                  </Badge>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <EditableField
+                    id="startup-hub-title"
+                    label="Título do Startup HUB"
+                    value={featuresEditor.getFieldValue('startup_hub_title')}
+                    isEditing={featuresEditor.isEditing}
+                    onChange={(value) => featuresEditor.updateLocalField('startup_hub_title', value)}
+                    placeholder="Ex: Startup HUB"
+                  />
+                  <EditableField
+                    id="startup-hub-description"
+                    label="Descrição do Startup HUB"
+                    value={featuresEditor.getFieldValue('startup_hub_description')}
+                    isEditing={featuresEditor.isEditing}
+                    onChange={(value) => featuresEditor.updateLocalField('startup_hub_description', value)}
+                    type="textarea"
+                    placeholder="Ex: Ecossistema completo para..."
+                  />
+                </div>
+
+                {/* Startup Features */}
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-sm">Features do Startup HUB</h4>
+                  {[1, 2, 3].map((num) => (
+                    <div key={num} className="p-4 border rounded-lg space-y-4">
+                      <h5 className="font-medium text-sm">Feature {num}</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <EditableField
+                          id={`startup-feature-${num}-title`}
+                          label="Título"
+                          value={featuresEditor.getFieldValue(`startup_feature_${num}_title`)}
+                          isEditing={featuresEditor.isEditing}
+                          onChange={(value) => featuresEditor.updateLocalField(`startup_feature_${num}_title`, value)}
+                          placeholder="Ex: Analytics BEEP"
+                        />
+                        <EditableField
+                          id={`startup-feature-${num}-description`}
+                          label="Descrição"
+                          value={featuresEditor.getFieldValue(`startup_feature_${num}_description`)}
+                          isEditing={featuresEditor.isEditing}
+                          onChange={(value) => featuresEditor.updateLocalField(`startup_feature_${num}_description`, value)}
+                          type="textarea"
+                          placeholder="Ex: Análise avançada..."
+                        />
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Ícone</Label>
+                          {featuresEditor.isEditing ? (
+                            <IconPicker
+                              value={featuresEditor.getFieldValue(`startup_feature_${num}_icon`)}
+                              onChange={(icon) => featuresEditor.updateLocalField(`startup_feature_${num}_icon`, icon)}
+                            />
+                          ) : (
+                            <div className="p-3 border rounded-md bg-muted/50 text-sm text-muted-foreground">
+                              {featuresEditor.getFieldValue(`startup_feature_${num}_icon`) || '(Ícone não definido)'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="demo">
@@ -531,47 +706,293 @@ export const LandingPageEditorPage: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="testimonials">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Seção Testimonials</CardTitle>
-                <CardDescription>Em desenvolvimento - gerencie depoimentos</CardDescription>
-              </div>
-              <TabControls
-                isEditing={testimonialsEditor.isEditing}
-                hasChanges={testimonialsEditor.hasChanges}
-                isSaving={testimonialsEditor.isSaving}
-                onStartEdit={testimonialsEditor.startEdit}
-                onSave={testimonialsEditor.saveChanges}
-                onCancel={testimonialsEditor.cancelEdit}
-              />
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Esta seção será implementada em breve.</p>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            {/* General Settings */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div>
+                  <CardTitle>Configurações Gerais</CardTitle>
+                  <CardDescription>Títulos principais da seção de depoimentos</CardDescription>
+                </div>
+                <TabControls
+                  isEditing={testimonialsEditor.isEditing}
+                  hasChanges={testimonialsEditor.hasChanges}
+                  isSaving={testimonialsEditor.isSaving}
+                  onStartEdit={testimonialsEditor.startEdit}
+                  onSave={testimonialsEditor.saveChanges}
+                  onCancel={testimonialsEditor.cancelEdit}
+                />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <EditableField
+                  id="testimonials-title"
+                  label="Título da Seção"
+                  value={testimonialsEditor.getFieldValue('title')}
+                  isEditing={testimonialsEditor.isEditing}
+                  onChange={(value) => testimonialsEditor.updateLocalField('title', value)}
+                  placeholder="Ex: Depoimentos de Clientes"
+                />
+                <EditableField
+                  id="testimonials-subtitle"
+                  label="Subtítulo da Seção"
+                  value={testimonialsEditor.getFieldValue('subtitle')}
+                  isEditing={testimonialsEditor.isEditing}
+                  onChange={(value) => testimonialsEditor.updateLocalField('subtitle', value)}
+                  type="textarea"
+                  placeholder="Ex: Veja o que nossos clientes falam..."
+                />
+              </CardContent>
+            </Card>
+
+            {/* Testimonials */}
+            {[1, 2, 3].map((num) => (
+              <Card key={num}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                  <div>
+                    <CardTitle>Depoimento {num}</CardTitle>
+                    <CardDescription>Cliente {testimonialsEditor.getFieldValue(`testimonial_${num}_name`) || `#${num}`}</CardDescription>
+                  </div>
+                  {testimonialsEditor.isEditing && (
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                      Mesma sessão de edição
+                    </Badge>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <EditableField
+                      id={`testimonial-${num}-name`}
+                      label="Nome do Cliente"
+                      value={testimonialsEditor.getFieldValue(`testimonial_${num}_name`)}
+                      isEditing={testimonialsEditor.isEditing}
+                      onChange={(value) => testimonialsEditor.updateLocalField(`testimonial_${num}_name`, value)}
+                      placeholder="Ex: Carolina Mendes"
+                    />
+                    <EditableField
+                      id={`testimonial-${num}-position`}
+                      label="Cargo"
+                      value={testimonialsEditor.getFieldValue(`testimonial_${num}_position`)}
+                      isEditing={testimonialsEditor.isEditing}
+                      onChange={(value) => testimonialsEditor.updateLocalField(`testimonial_${num}_position`, value)}
+                      placeholder="Ex: CEO"
+                    />
+                    <EditableField
+                      id={`testimonial-${num}-company`}
+                      label="Empresa"
+                      value={testimonialsEditor.getFieldValue(`testimonial_${num}_company`)}
+                      isEditing={testimonialsEditor.isEditing}
+                      onChange={(value) => testimonialsEditor.updateLocalField(`testimonial_${num}_company`, value)}
+                      placeholder="Ex: TechStart Brasil"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <EditableField
+                      id={`testimonial-${num}-badge-type`}
+                      label="Tipo do Badge"
+                      value={testimonialsEditor.getFieldValue(`testimonial_${num}_badge_type`)}
+                      isEditing={testimonialsEditor.isEditing}
+                      onChange={(value) => testimonialsEditor.updateLocalField(`testimonial_${num}_badge_type`, value)}
+                      placeholder="Ex: Startup HUB"
+                    />
+                    <EditableField
+                      id={`testimonial-${num}-badge-color`}
+                      label="Cor do Badge"
+                      value={testimonialsEditor.getFieldValue(`testimonial_${num}_badge_color`)}
+                      isEditing={testimonialsEditor.isEditing}
+                      onChange={(value) => testimonialsEditor.updateLocalField(`testimonial_${num}_badge_color`, value)}
+                      placeholder="Ex: accent, primary"
+                    />
+                    <EditableField
+                      id={`testimonial-${num}-rating`}
+                      label="Avaliação (1-5)"
+                      value={testimonialsEditor.getFieldValue(`testimonial_${num}_rating`)}
+                      isEditing={testimonialsEditor.isEditing}
+                      onChange={(value) => testimonialsEditor.updateLocalField(`testimonial_${num}_rating`, value)}
+                      placeholder="Ex: 5"
+                    />
+                  </div>
+
+                  <EditableField
+                    id={`testimonial-${num}-testimonial`}
+                    label="Depoimento"
+                    value={testimonialsEditor.getFieldValue(`testimonial_${num}_testimonial`)}
+                    isEditing={testimonialsEditor.isEditing}
+                    onChange={(value) => testimonialsEditor.updateLocalField(`testimonial_${num}_testimonial`, value)}
+                    type="textarea"
+                    rows={4}
+                    placeholder="Ex: O Startup HUB foi fundamental para..."
+                  />
+
+                  <EditableField
+                    id={`testimonial-${num}-avatar-url`}
+                    label="URL do Avatar (opcional)"
+                    value={testimonialsEditor.getFieldValue(`testimonial_${num}_avatar_url`)}
+                    isEditing={testimonialsEditor.isEditing}
+                    onChange={(value) => testimonialsEditor.updateLocalField(`testimonial_${num}_avatar_url`, value)}
+                    placeholder="Ex: https://example.com/avatar.jpg"
+                  />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </TabsContent>
 
         <TabsContent value="footer">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Footer</CardTitle>
-                <CardDescription>Em desenvolvimento - edite links e textos do rodapé</CardDescription>
-              </div>
-              <TabControls
-                isEditing={footerEditor.isEditing}
-                hasChanges={footerEditor.hasChanges}
-                isSaving={footerEditor.isSaving}
-                onStartEdit={footerEditor.startEdit}
-                onSave={footerEditor.saveChanges}
-                onCancel={footerEditor.cancelEdit}
-              />
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Esta seção será implementada em breve.</p>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            {/* Company Information */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div>
+                  <CardTitle>Informações da Empresa</CardTitle>
+                  <CardDescription>Nome e descrição principal no rodapé</CardDescription>
+                </div>
+                <TabControls
+                  isEditing={footerEditor.isEditing}
+                  hasChanges={footerEditor.hasChanges}
+                  isSaving={footerEditor.isSaving}
+                  onStartEdit={footerEditor.startEdit}
+                  onSave={footerEditor.saveChanges}
+                  onCancel={footerEditor.cancelEdit}
+                />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <EditableField
+                  id="footer-company-name"
+                  label="Nome da Empresa"
+                  value={footerEditor.getFieldValue('company_name')}
+                  isEditing={footerEditor.isEditing}
+                  onChange={(value) => footerEditor.updateLocalField('company_name', value)}
+                  placeholder="Ex: Start Together"
+                />
+                <EditableField
+                  id="footer-company-description"
+                  label="Descrição da Empresa"
+                  value={footerEditor.getFieldValue('company_description')}
+                  isEditing={footerEditor.isEditing}
+                  onChange={(value) => footerEditor.updateLocalField('company_description', value)}
+                  type="textarea"
+                  rows={4}
+                  placeholder="Ex: Plataforma completa de gestão estratégica..."
+                />
+              </CardContent>
+            </Card>
+
+            {/* Footer Links Columns */}
+            {[1, 2, 3].map((columnNum) => (
+              <Card key={columnNum}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                  <div>
+                    <CardTitle>Coluna {columnNum}</CardTitle>
+                    <CardDescription>{footerEditor.getFieldValue(`column_${columnNum}_title`) || `Coluna de links ${columnNum}`}</CardDescription>
+                  </div>
+                  {footerEditor.isEditing && (
+                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                      Mesma sessão de edição
+                    </Badge>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <EditableField
+                    id={`footer-column-${columnNum}-title`}
+                    label="Título da Coluna"
+                    value={footerEditor.getFieldValue(`column_${columnNum}_title`)}
+                    isEditing={footerEditor.isEditing}
+                    onChange={(value) => footerEditor.updateLocalField(`column_${columnNum}_title`, value)}
+                    placeholder={`Ex: ${columnNum === 1 ? 'Funcionalidades' : columnNum === 2 ? 'Empresa' : 'Suporte'}`}
+                  />
+
+                  <div className="space-y-4">
+                    <h4 className="font-semibold text-sm">Links da Coluna {columnNum}</h4>
+                    {[1, 2, 3, 4].map((linkNum) => (
+                      <div key={linkNum} className="p-4 border rounded-lg">
+                        <h5 className="font-medium text-sm mb-4">Link {linkNum}</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <EditableField
+                            id={`footer-column-${columnNum}-link-${linkNum}-text`}
+                            label="Texto do Link"
+                            value={footerEditor.getFieldValue(`column_${columnNum}_link_${linkNum}_text`)}
+                            isEditing={footerEditor.isEditing}
+                            onChange={(value) => footerEditor.updateLocalField(`column_${columnNum}_link_${linkNum}_text`, value)}
+                            placeholder="Ex: Strategy HUB"
+                          />
+                          <EditableField
+                            id={`footer-column-${columnNum}-link-${linkNum}-url`}
+                            label="URL do Link"
+                            value={footerEditor.getFieldValue(`column_${columnNum}_link_${linkNum}_url`)}
+                            isEditing={footerEditor.isEditing}
+                            onChange={(value) => footerEditor.updateLocalField(`column_${columnNum}_link_${linkNum}_url`, value)}
+                            placeholder="Ex: /strategy"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+
+            {/* Legal Links & Copyright */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <div>
+                  <CardTitle>Links Legais & Copyright</CardTitle>
+                  <CardDescription>Rodapé inferior com links legais</CardDescription>
+                </div>
+                {footerEditor.isEditing && (
+                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                    Mesma sessão de edição
+                  </Badge>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <EditableField
+                  id="footer-copyright-text"
+                  label="Texto de Copyright"
+                  value={footerEditor.getFieldValue('copyright_text')}
+                  isEditing={footerEditor.isEditing}
+                  onChange={(value) => footerEditor.updateLocalField('copyright_text', value)}
+                  placeholder="Ex: © 2024 Start Together. Todos os direitos reservados."
+                />
+
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-sm">Links Legais</h4>
+                  {[1, 2, 3].map((linkNum) => (
+                    <div key={linkNum} className="p-4 border rounded-lg">
+                      <h5 className="font-medium text-sm mb-4">Link Legal {linkNum}</h5>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <EditableField
+                          id={`footer-legal-link-${linkNum}-text`}
+                          label="Texto do Link"
+                          value={footerEditor.getFieldValue(`legal_link_${linkNum}_text`)}
+                          isEditing={footerEditor.isEditing}
+                          onChange={(value) => footerEditor.updateLocalField(`legal_link_${linkNum}_text`, value)}
+                          placeholder={`Ex: ${linkNum === 1 ? 'Termos de Uso' : linkNum === 2 ? 'Política de Privacidade' : 'Cookies'}`}
+                        />
+                        <EditableField
+                          id={`footer-legal-link-${linkNum}-url`}
+                          label="URL do Link"
+                          value={footerEditor.getFieldValue(`legal_link_${linkNum}_url`)}
+                          isEditing={footerEditor.isEditing}
+                          onChange={(value) => footerEditor.updateLocalField(`legal_link_${linkNum}_url`, value)}
+                          placeholder={`Ex: /${linkNum === 1 ? 'terms' : linkNum === 2 ? 'privacy' : 'cookies'}`}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <EditableField
+                  id="footer-cofound-text"
+                  label="Texto COFOUND"
+                  value={footerEditor.getFieldValue('cofound_text')}
+                  isEditing={footerEditor.isEditing}
+                  onChange={(value) => footerEditor.updateLocalField('cofound_text', value)}
+                  placeholder="Ex: Desenvolvido por COFOUND"
+                />
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
 
