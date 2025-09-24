@@ -88,13 +88,6 @@ export const LandingPageEditorPage: React.FC = () => {
         </div>
       </div>
 
-      <Alert>
-        <Info className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Diferença entre elementos:</strong> Os <strong>botões de ação</strong> (Primário/Secundário) são controláveis aqui e aparecem na seção principal. 
-          Os <strong>badges de confiança</strong> ("Estratégia", "Crescimento", "Aceleração") são elementos visuais separados que podem ser ativados/desativados independentemente.
-        </AlertDescription>
-      </Alert>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-6">
