@@ -313,16 +313,6 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-                  Aceleração COFOUND Personalizada
-                </p>
-                <p className="text-strategy-gray-medium">
-                  Combine avaliação BEEP científica com mentoria especializada COFOUND para acelerar o crescimento da sua startup com metodologia comprovada e acompanhamento profissional.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Demo Section */}
       <section className="py-16 px-4 bg-strategy-blue-navy">
