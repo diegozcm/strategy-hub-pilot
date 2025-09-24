@@ -2,16 +2,13 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useLandingPageContent } from '@/hooks/useLandingPageContent';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { IconPicker } from './landing-page/IconPicker';
 import { ScreenshotManager } from './landing-page/ScreenshotManager';
-import { ImageUploader } from './landing-page/ImageUploader';
 import { Badge } from '@/components/ui/badge';
-import { Save, Eye, RefreshCw, Info } from 'lucide-react';
+import { Eye, RefreshCw, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTabEditor } from '@/hooks/useTabEditor';
 import { TabControls } from './landing-page/TabControls';
@@ -22,10 +19,16 @@ import { Switch } from '@/components/ui/switch';
 export const LandingPageEditorPage: React.FC = () => {
   const { content, loading, updateContent, getContent, refetch, forceRefresh, lastFetch } = useLandingPageContent();
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('hero');
   const { toast } = useToast();
 
   // Tab editors for each section
   const heroEditor = useTabEditor('hero');
+  const demoEditor = useTabEditor('demo');
+  const benefitsEditor = useTabEditor('benefits');
+  const featuresEditor = useTabEditor('features');
+  const testimonialsEditor = useTabEditor('testimonials');
+  const footerEditor = useTabEditor('footer');
 
   const handleRefresh = () => {
     forceRefresh();
@@ -93,7 +96,7 @@ export const LandingPageEditorPage: React.FC = () => {
         </AlertDescription>
       </Alert>
 
-      <Tabs defaultValue="hero" className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="hero">Hero</TabsTrigger>
           <TabsTrigger value="features">Features</TabsTrigger>
@@ -328,9 +331,19 @@ export const LandingPageEditorPage: React.FC = () => {
 
         <TabsContent value="features">
           <Card>
-            <CardHeader>
-              <CardTitle>Seção Features</CardTitle>
-              <CardDescription>Em desenvolvimento - adicione conteúdo das features</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Seção Features</CardTitle>
+                <CardDescription>Em desenvolvimento - adicione conteúdo das features</CardDescription>
+              </div>
+              <TabControls
+                isEditing={featuresEditor.isEditing}
+                hasChanges={featuresEditor.hasChanges}
+                isSaving={featuresEditor.isSaving}
+                onStartEdit={featuresEditor.startEdit}
+                onSave={featuresEditor.saveChanges}
+                onCancel={featuresEditor.cancelEdit}
+              />
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">Esta seção será implementada em breve.</p>
@@ -341,36 +354,54 @@ export const LandingPageEditorPage: React.FC = () => {
         <TabsContent value="demo">
           <div className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Seção Demo - Configurações Gerais</CardTitle>
-                <CardDescription>Configure o título e subtítulo da seção "Veja o Start Together em Ação"</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Seção Demo - Configurações Gerais</CardTitle>
+                  <CardDescription>Configure o título e subtítulo da seção "Veja o Start Together em Ação"</CardDescription>
+                </div>
+                <TabControls
+                  isEditing={demoEditor.isEditing}
+                  hasChanges={demoEditor.hasChanges}
+                  isSaving={demoEditor.isSaving}
+                  onStartEdit={demoEditor.startEdit}
+                  onSave={demoEditor.saveChanges}
+                  onCancel={demoEditor.cancelEdit}
+                />
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="demo_title">Título da Seção</Label>
-                  <Input
-                    id="demo_title"
-                    value={getContent('demo', 'title', '')}
-                    onChange={(e) => handleSave('demo', 'title', e.target.value)}
-                    placeholder="Título principal da seção demo"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="demo_subtitle">Subtítulo da Seção</Label>
-                  <Input
-                    id="demo_subtitle"
-                    value={getContent('demo', 'subtitle', '')}
-                    onChange={(e) => handleSave('demo', 'subtitle', e.target.value)}
-                    placeholder="Subtítulo da seção demo"
-                  />
-                </div>
+                <EditableField
+                  id="demo-title"
+                  label="Título da Seção"
+                  value={demoEditor.getFieldValue('title')}
+                  isEditing={demoEditor.isEditing}
+                  placeholder="Título principal da seção demo"
+                  onChange={(value) => demoEditor.updateLocalField('title', value)}
+                />
+
+                <EditableField
+                  id="demo-subtitle"
+                  label="Subtítulo da Seção"
+                  value={demoEditor.getFieldValue('subtitle')}
+                  isEditing={demoEditor.isEditing}
+                  placeholder="Subtítulo da seção demo"
+                  onChange={(value) => demoEditor.updateLocalField('subtitle', value)}
+                />
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Screenshots do Carousel</CardTitle>
-                <CardDescription>Gerencie as imagens e informações dos 8 screenshots do carousel</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Screenshots do Carousel</CardTitle>
+                  <CardDescription>Gerencie as imagens e informações dos 8 screenshots do carousel</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  {demoEditor.isEditing && (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                      Mesma sessão de edição
+                    </Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6">
@@ -378,14 +409,32 @@ export const LandingPageEditorPage: React.FC = () => {
                     <ScreenshotManager
                       key={num}
                       screenshotNumber={num}
-                      title={getContent('demo', `screenshot_${num}_title`, '')}
-                      description={getContent('demo', `screenshot_${num}_description`, '')}
-                      module={getContent('demo', `screenshot_${num}_module`, 'Strategy HUB')}
+                      title={demoEditor.isEditing ? 
+                        demoEditor.getFieldValue(`screenshot_${num}_title`, '') : 
+                        getContent('demo', `screenshot_${num}_title`, '')}
+                      description={demoEditor.isEditing ? 
+                        demoEditor.getFieldValue(`screenshot_${num}_description`, '') : 
+                        getContent('demo', `screenshot_${num}_description`, '')}
+                      module={demoEditor.isEditing ? 
+                        demoEditor.getFieldValue(`screenshot_${num}_module`, 'Strategy HUB') : 
+                        getContent('demo', `screenshot_${num}_module`, 'Strategy HUB')}
                       imageUrl={getContent('demo', `screenshot_${num}_image`, '')}
-                      onTitleChange={(value) => handleSave('demo', `screenshot_${num}_title`, value)}
-                      onDescriptionChange={(value) => handleSave('demo', `screenshot_${num}_description`, value)}
-                      onModuleChange={(value) => handleSave('demo', `screenshot_${num}_module`, value)}
-                      onImageChange={(url) => handleSave('demo', `screenshot_${num}_image`, url)}
+                      isEditing={demoEditor.isEditing}
+                      onTitleChange={(value) => demoEditor.isEditing ? 
+                        demoEditor.updateLocalField(`screenshot_${num}_title`, value) : 
+                        handleSave('demo', `screenshot_${num}_title`, value)}
+                      onDescriptionChange={(value) => demoEditor.isEditing ? 
+                        demoEditor.updateLocalField(`screenshot_${num}_description`, value) : 
+                        handleSave('demo', `screenshot_${num}_description`, value)}
+                      onModuleChange={(value) => demoEditor.isEditing ? 
+                        demoEditor.updateLocalField(`screenshot_${num}_module`, value) : 
+                        handleSave('demo', `screenshot_${num}_module`, value)}
+                      onImageChange={(url) => {
+                        if (demoEditor.isEditing) {
+                          demoEditor.updateLocalField(`screenshot_${num}_image`, url);
+                        }
+                        handleSave('demo', `screenshot_${num}_image`, url);
+                      }}
                     />
                   ))}
                 </div>
@@ -397,36 +446,54 @@ export const LandingPageEditorPage: React.FC = () => {
         <TabsContent value="benefits">
           <div className="space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Seção Benefits - Configurações Gerais</CardTitle>
-                <CardDescription>Configure o título e subtítulo da seção "Resultados Comprovados"</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Seção Benefits - Configurações Gerais</CardTitle>
+                  <CardDescription>Configure o título e subtítulo da seção "Resultados Comprovados"</CardDescription>
+                </div>
+                <TabControls
+                  isEditing={benefitsEditor.isEditing}
+                  hasChanges={benefitsEditor.hasChanges}
+                  isSaving={benefitsEditor.isSaving}
+                  onStartEdit={benefitsEditor.startEdit}
+                  onSave={benefitsEditor.saveChanges}
+                  onCancel={benefitsEditor.cancelEdit}
+                />
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="benefits_title">Título da Seção</Label>
-                  <Input
-                    id="benefits_title"
-                    value={getContent('benefits', 'title', '')}
-                    onChange={(e) => handleSave('benefits', 'title', e.target.value)}
-                    placeholder="Título principal da seção benefits"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="benefits_subtitle">Subtítulo da Seção</Label>
-                  <Input
-                    id="benefits_subtitle"
-                    value={getContent('benefits', 'subtitle', '')}
-                    onChange={(e) => handleSave('benefits', 'subtitle', e.target.value)}
-                    placeholder="Subtítulo da seção benefits"
-                  />
-                </div>
+                <EditableField
+                  id="benefits-title"
+                  label="Título da Seção"
+                  value={benefitsEditor.getFieldValue('title')}
+                  isEditing={benefitsEditor.isEditing}
+                  placeholder="Título principal da seção benefits"
+                  onChange={(value) => benefitsEditor.updateLocalField('title', value)}
+                />
+
+                <EditableField
+                  id="benefits-subtitle"
+                  label="Subtítulo da Seção"
+                  value={benefitsEditor.getFieldValue('subtitle')}
+                  isEditing={benefitsEditor.isEditing}
+                  placeholder="Subtítulo da seção benefits"
+                  onChange={(value) => benefitsEditor.updateLocalField('subtitle', value)}
+                />
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle>Métricas de Resultados</CardTitle>
-                <CardDescription>Configure as 4 métricas principais que demonstram os resultados da plataforma</CardDescription>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Métricas de Resultados</CardTitle>
+                  <CardDescription>Configure as 4 métricas principais que demonstram os resultados da plataforma</CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                  {benefitsEditor.isEditing && (
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                      Mesma sessão de edição
+                    </Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 md:grid-cols-2">
@@ -434,25 +501,26 @@ export const LandingPageEditorPage: React.FC = () => {
                     <Card key={num} className="p-4">
                       <div className="space-y-4">
                         <h4 className="font-semibold">Métrica {num}</h4>
-                        <div>
-                          <Label htmlFor={`metric_${num}_value`}>Valor da Métrica</Label>
-                          <Input
-                            id={`metric_${num}_value`}
-                            value={getContent('benefits', `metric_${num}_value`, '')}
-                            onChange={(e) => handleSave('benefits', `metric_${num}_value`, e.target.value)}
-                            placeholder="90%, 75%, 200+, 300%"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor={`metric_${num}_description`}>Descrição da Métrica</Label>
-                          <Textarea
-                            id={`metric_${num}_description`}
-                            value={getContent('benefits', `metric_${num}_description`, '')}
-                            onChange={(e) => handleSave('benefits', `metric_${num}_description`, e.target.value)}
-                            placeholder="Descrição do resultado alcançado"
-                            rows={2}
-                          />
-                        </div>
+                        
+                        <EditableField
+                          id={`metric_${num}_value`}
+                          label="Valor da Métrica"
+                          value={benefitsEditor.getFieldValue(`metric_${num}_value`)}
+                          isEditing={benefitsEditor.isEditing}
+                          placeholder="90%, 75%, 200+, 300%"
+                          onChange={(value) => benefitsEditor.updateLocalField(`metric_${num}_value`, value)}
+                        />
+
+                        <EditableField
+                          id={`metric_${num}_description`}
+                          label="Descrição da Métrica"
+                          value={benefitsEditor.getFieldValue(`metric_${num}_description`)}
+                          isEditing={benefitsEditor.isEditing}
+                          placeholder="Descrição do resultado alcançado"
+                          type="textarea"
+                          rows={2}
+                          onChange={(value) => benefitsEditor.updateLocalField(`metric_${num}_description`, value)}
+                        />
                       </div>
                     </Card>
                   ))}
@@ -464,9 +532,19 @@ export const LandingPageEditorPage: React.FC = () => {
 
         <TabsContent value="testimonials">
           <Card>
-            <CardHeader>
-              <CardTitle>Seção Testimonials</CardTitle>
-              <CardDescription>Em desenvolvimento - gerencie depoimentos</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Seção Testimonials</CardTitle>
+                <CardDescription>Em desenvolvimento - gerencie depoimentos</CardDescription>
+              </div>
+              <TabControls
+                isEditing={testimonialsEditor.isEditing}
+                hasChanges={testimonialsEditor.hasChanges}
+                isSaving={testimonialsEditor.isSaving}
+                onStartEdit={testimonialsEditor.startEdit}
+                onSave={testimonialsEditor.saveChanges}
+                onCancel={testimonialsEditor.cancelEdit}
+              />
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">Esta seção será implementada em breve.</p>
@@ -476,9 +554,19 @@ export const LandingPageEditorPage: React.FC = () => {
 
         <TabsContent value="footer">
           <Card>
-            <CardHeader>
-              <CardTitle>Footer</CardTitle>
-              <CardDescription>Em desenvolvimento - edite links e textos do rodapé</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Footer</CardTitle>
+                <CardDescription>Em desenvolvimento - edite links e textos do rodapé</CardDescription>
+              </div>
+              <TabControls
+                isEditing={footerEditor.isEditing}
+                hasChanges={footerEditor.hasChanges}
+                isSaving={footerEditor.isSaving}
+                onStartEdit={footerEditor.startEdit}
+                onSave={footerEditor.saveChanges}
+                onCancel={footerEditor.cancelEdit}
+              />
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">Esta seção será implementada em breve.</p>

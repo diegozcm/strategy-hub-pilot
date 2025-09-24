@@ -1,10 +1,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { DemoImageCropUpload } from './DemoImageCropUpload';
+import { EditableField } from './EditableField';
+import { cn } from '@/lib/utils';
 
 interface ScreenshotManagerProps {
   screenshotNumber: number;
@@ -12,6 +12,7 @@ interface ScreenshotManagerProps {
   description: string;
   module: string;
   imageUrl: string;
+  isEditing?: boolean;
   onTitleChange: (value: string) => void;
   onDescriptionChange: (value: string) => void;
   onModuleChange: (value: string) => void;
@@ -24,6 +25,7 @@ export const ScreenshotManager: React.FC<ScreenshotManagerProps> = ({
   description,
   module,
   imageUrl,
+  isEditing = false,
   onTitleChange,
   onDescriptionChange,
   onModuleChange,
@@ -35,39 +37,51 @@ export const ScreenshotManager: React.FC<ScreenshotManagerProps> = ({
         <CardTitle>Screenshot {screenshotNumber}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div>
-          <Label htmlFor={`screenshot_${screenshotNumber}_title`}>Título</Label>
-          <Input
-            id={`screenshot_${screenshotNumber}_title`}
-            value={title}
-            onChange={(e) => onTitleChange(e.target.value)}
-            placeholder="Título do screenshot"
-          />
-        </div>
+        <EditableField
+          id={`screenshot_${screenshotNumber}_title`}
+          label="Título"
+          value={title}
+          isEditing={isEditing}
+          placeholder="Título do screenshot"
+          onChange={onTitleChange}
+        />
 
-        <div>
-          <Label htmlFor={`screenshot_${screenshotNumber}_description`}>Descrição</Label>
-          <Textarea
-            id={`screenshot_${screenshotNumber}_description`}
-            value={description}
-            onChange={(e) => onDescriptionChange(e.target.value)}
-            placeholder="Descrição do screenshot"
-            rows={2}
-          />
-        </div>
+        <EditableField
+          id={`screenshot_${screenshotNumber}_description`}
+          label="Descrição"
+          value={description}
+          isEditing={isEditing}
+          placeholder="Descrição do screenshot"
+          type="textarea"
+          rows={2}
+          onChange={onDescriptionChange}
+        />
 
-        <div>
-          <Label htmlFor={`screenshot_${screenshotNumber}_module`}>Módulo</Label>
-          <Select value={module} onValueChange={onModuleChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o módulo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Strategy HUB">Strategy HUB</SelectItem>
-              <SelectItem value="Startup HUB">Startup HUB</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {isEditing ? (
+          <div className="space-y-2">
+            <Label htmlFor={`screenshot_${screenshotNumber}_module`}>Módulo</Label>
+            <Select value={module} onValueChange={onModuleChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o módulo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Strategy HUB">Strategy HUB</SelectItem>
+                <SelectItem value="Startup HUB">Startup HUB</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Módulo</Label>
+            <div className={cn(
+              "p-3 border rounded-md bg-muted/50",
+              "text-sm text-muted-foreground",
+              module ? "text-foreground" : "italic"
+            )}>
+              {module || "(Módulo não definido)"}
+            </div>
+          </div>
+        )}
 
         <div>
           <Label>Imagem do Screenshot</Label>
