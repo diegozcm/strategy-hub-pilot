@@ -438,70 +438,56 @@ const LandingPage = () => {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-strategy-red-dark mb-4">
-              Para Quem É o Start Together
+              {getContent('use_cases', 'title', 'Para Quem É o Start Together')}
             </h2>
             <p className="text-xl text-strategy-gray-medium">
-              Soluções específicas para cada tipo de organização
+              {getContent('use_cases', 'subtitle', 'Soluções específicas para cada tipo de organização')}
             </p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            <Card className="hover:shadow-lg transition-all duration-300 bg-white border">
-              <CardHeader>
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                  <Lightbulb className="h-6 w-6 text-accent" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Startups e Empreendedores</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-strategy-gray-medium mb-3">Módulo: Startup HUB</p>
-                <ul className="text-strategy-gray-medium space-y-2">
-                  <li>• Dashboard de métricas essenciais</li>
-                  <li>• Avaliação BEEP para evolução</li>
-                  <li>• Mentoria especializada</li>
-                  <li>• Gestão de sessões e feedback</li>
-                  <li>• Analytics de performance</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-all duration-300 bg-white border">
-              <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                  <Award className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Empresas em Crescimento</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-strategy-gray-medium mb-3">Módulos: Ambos disponíveis</p>
-                <ul className="text-strategy-gray-medium space-y-2">
-                  <li>• Planejamento estratégico completo</li>
-                  <li>• Gestão de objetivos e OKRs</li>
-                  <li>• Aceleração de projetos internos</li>
-                  <li>• Dashboard executivo com IA</li>
-                  <li>• Mentoria para inovação</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-all duration-300 bg-white border">
-              <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                  <Target className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle className="text-strategy-blue-navy">Corporações</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-strategy-gray-medium mb-3">Módulo: Planejamento Estratégico</p>
-                <ul className="text-strategy-gray-medium space-y-2">
-                  <li>• Governança estratégica corporativa</li>
-                  <li>• Mapas estratégicos complexos</li>
-                  <li>• Análise preditiva avançada</li>
-                  <li>• Integração multi-unidades</li>
-                  <li>• Copiloto de IA estratégico</li>
-                </ul>
-              </CardContent>
-            </Card>
+            {[1, 2, 3].map((num) => {
+              const title = getContent('use_cases', `case_${num}_title`, '');
+              const module = getContent('use_cases', `case_${num}_module`, '');
+              const iconName = getContent('use_cases', `case_${num}_icon`, num === 1 ? 'Lightbulb' : num === 2 ? 'Award' : 'Target');
+              const IconComponent = Icons[iconName as keyof typeof Icons] as React.ComponentType<any>;
+              
+              // Only show use cases with content
+              if (!title) return null;
+              
+              const features = [];
+              for (let i = 1; i <= 5; i++) {
+                const feature = getContent('use_cases', `case_${num}_feature_${i}`, '');
+                if (feature) features.push(feature);
+              }
+              
+              return (
+                <Card key={num} className="hover:shadow-lg transition-all duration-300 bg-white border">
+                  <CardHeader>
+                    <div className={`w-12 h-12 ${num === 1 ? 'bg-accent/10' : 'bg-primary/10'} rounded-lg flex items-center justify-center mb-4`}>
+                      {IconComponent ? (
+                        <IconComponent className={`h-6 w-6 ${num === 1 ? 'text-accent' : 'text-primary'}`} />
+                      ) : (
+                        <Target className={`h-6 w-6 ${num === 1 ? 'text-accent' : 'text-primary'}`} />
+                      )}
+                    </div>
+                    <CardTitle className="text-strategy-blue-navy">{title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {module && (
+                      <p className="text-sm text-strategy-gray-medium mb-3">{module}</p>
+                    )}
+                    {features.length > 0 && (
+                      <ul className="text-strategy-gray-medium space-y-2">
+                        {features.map((feature, index) => (
+                          <li key={index}>• {feature}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -512,76 +498,56 @@ const LandingPage = () => {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">
-              Depoimentos de Clientes
+              {getContent('testimonials', 'title', 'Depoimentos de Clientes')}
             </h2>
             <p className="text-xl text-strategy-gray-light">
-              Veja o que nossos clientes dizem sobre o Start Together
+              {getContent('testimonials', 'subtitle', 'Veja o que nossos clientes dizem sobre o Start Together')}
             </p>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
-            <Card className="hover:shadow-lg transition-all duration-300 bg-white border">
-              <CardHeader>
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-strategy-gray-light rounded-full"></div>
-                  <div>
-                    <h4 className="font-semibold text-strategy-red-dark">Carolina Mendes</h4>
-                    <p className="text-sm text-strategy-blue-navy">Co-founder, FintechBR</p>
-                    <Badge className="mt-1 text-xs bg-accent text-white">Startup HUB</Badge>
-                  </div>
-                </div>
-                <div className="flex space-x-1">
-                  {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-accent text-accent" />)}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-strategy-gray-medium italic">
-                  "O BEEP nos ajudou a identificar pontos fracos que não víamos. Evoluímos 65% no score em 4 meses com as mentorias."
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-all duration-300 bg-white border">
-              <CardHeader>
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-strategy-gray-light rounded-full"></div>
-                  <div>
-                    <h4 className="font-semibold text-strategy-red-dark">Ricardo Almeida</h4>
-                    <p className="text-sm text-strategy-blue-navy">CEO, TechGrow</p>
-                    <Badge className="mt-1 text-xs bg-primary text-white">Ambos Módulos</Badge>
-                  </div>
-                </div>
-                <div className="flex space-x-1">
-                  {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-accent text-accent" />)}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-strategy-gray-medium italic">
-                  "Usamos o planejamento estratégico para a empresa e o Startup HUB para nossos projetos internos. Transformação completa!"
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="hover:shadow-lg transition-all duration-300 bg-white border">
-              <CardHeader>
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-strategy-gray-light rounded-full"></div>
-                  <div>
-                    <h4 className="font-semibold text-strategy-red-dark">Ana Paula Costa</h4>
-                    <p className="text-sm text-strategy-blue-navy">VP Estratégia, MegaCorp</p>
-                    <Badge className="mt-1 text-xs bg-primary text-white">Planejamento Estratégico</Badge>
-                  </div>
-                </div>
-                <div className="flex space-x-1">
-                  {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-accent text-accent" />)}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-strategy-gray-medium italic">
-                  "O Copiloto de IA nos poupar 12 horas semanais no planejamento. Relatórios que eram manuais agora são automáticos."
-                </p>
-              </CardContent>
-            </Card>
+            {[1, 2, 3].map((num) => {
+              const name = getContent('testimonials', `testimonial_${num}_name`, '');
+              const role = getContent('testimonials', `testimonial_${num}_role`, '');
+              const company = getContent('testimonials', `testimonial_${num}_company`, '');
+              const badge = getContent('testimonials', `testimonial_${num}_badge`, '');
+              const text = getContent('testimonials', `testimonial_${num}_text`, '');
+              const avatar = getContent('testimonials', `testimonial_${num}_avatar`, '');
+              
+              // Only show testimonials with content
+              if (!name || !text) return null;
+              
+              return (
+                <Card key={num} className="hover:shadow-lg transition-all duration-300 bg-white border">
+                  <CardHeader>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-strategy-gray-light rounded-full overflow-hidden">
+                        {avatar ? (
+                          <img src={avatar} alt={name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20"></div>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-strategy-red-dark">{name}</h4>
+                        <p className="text-sm text-strategy-blue-navy">{role}{company ? `, ${company}` : ''}</p>
+                        {badge && (
+                          <Badge className={`mt-1 text-xs ${badge.includes('Startup') ? 'bg-accent text-white' : 'bg-primary text-white'}`}>
+                            {badge}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex space-x-1">
+                      {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-accent text-accent" />)}
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-strategy-gray-medium italic">"{text}"</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -590,33 +556,32 @@ const LandingPage = () => {
       <section className="py-16 px-4 bg-strategy-gray-light">
         <div className="container mx-auto text-center">
           <h2 className="text-4xl font-bold text-strategy-red-dark mb-4">
-            Segurança e Conformidade de Nível Empresarial
+            {getContent('security', 'title', 'Segurança e Conformidade de Nível Empresarial')}
           </h2>
           <p className="text-xl text-strategy-blue-navy mb-12">
-            Seus dados protegidos com os mais altos padrões de segurança
+            {getContent('security', 'subtitle', 'Seus dados protegidos com os mais altos padrões de segurança')}
           </p>
 
           <div className="flex flex-wrap justify-center gap-8 mb-8">
-            <Badge className="bg-white border-accent text-accent px-6 py-3 text-lg">
-              <Shield className="h-5 w-5 mr-2" />
-              SSL
-            </Badge>
-            <Badge className="bg-white border-accent text-accent px-6 py-3 text-lg">
-              <Lock className="h-5 w-5 mr-2" />
-              LGPD
-            </Badge>
-            <Badge className="bg-white border-accent text-accent px-6 py-3 text-lg">
-              <Shield className="h-5 w-5 mr-2" />
-              ISO 27001
-            </Badge>
-            <Badge className="bg-white border-accent text-accent px-6 py-3 text-lg">
-              <Zap className="h-5 w-5 mr-2" />
-              SOC 2
-            </Badge>
+            {[1, 2, 3, 4].map((num) => {
+              const badgeText = getContent('security', `badge_${num}_text`, '');
+              const badgeIcon = getContent('security', `badge_${num}_icon`, num === 1 ? 'Shield' : num === 2 ? 'Lock' : num === 3 ? 'Shield' : 'Zap');
+              const IconComponent = Icons[badgeIcon as keyof typeof Icons] as React.ComponentType<any>;
+              
+              // Only show badges with content
+              if (!badgeText) return null;
+              
+              return (
+                <Badge key={num} className="bg-white border-accent text-accent px-6 py-3 text-lg">
+                  {IconComponent && <IconComponent className="h-5 w-5 mr-2" />}
+                  {badgeText}
+                </Badge>
+              );
+            })}
           </div>
 
           <p className="text-strategy-blue-navy max-w-2xl mx-auto">
-            Criptografia end-to-end, backup automático em múltiplas regiões e 99.9% de uptime garantido.
+            {getContent('security', 'description', 'Criptografia end-to-end, backup automático em múltiplas regiões e 99.9% de uptime garantido.')}
           </p>
         </div>
       </section>
@@ -626,26 +591,32 @@ const LandingPage = () => {
       <section className="py-16 px-4 bg-gradient-to-r from-strategy-red-dark to-strategy-blue-navy">
         <div className="container mx-auto text-center">
           <h2 className="text-4xl font-bold text-white mb-4">
-            Acelere seu Crescimento Estratégico
+            {getContent('final_cta', 'title', 'Acelere seu Crescimento Estratégico')}
           </h2>
           <p className="text-xl text-strategy-gray-light mb-8">
-            Planejamento estratégico para empresas e aceleração completa para startups em uma única plataforma
+            {getContent('final_cta', 'subtitle', 'Planejamento estratégico para empresas e aceleração completa para startups em uma única plataforma')}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <Link to="/auth">
+            <Link to={getContent('final_cta', 'primary_button_link', '/auth')}>
               <Button size="lg" className="text-lg px-8 py-6 bg-accent hover:bg-strategy-blue-bright-hover text-white">
-                Acessar Plataforma
+                {getContent('final_cta', 'primary_button', 'Acessar Plataforma')}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-white text-white hover:bg-white hover:text-strategy-red-dark">
-              Agendar Demonstração
-            </Button>
+            <a 
+              href={getContent('final_cta', 'secondary_button_link', 'https://wa.me//554796342353?text=Gostaria%20de%20agendar%20uma%20demonstração%20do%20Start%20Together')} 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-white text-white hover:bg-white hover:text-strategy-red-dark">
+                {getContent('final_cta', 'secondary_button', 'Agendar Demonstração')}
+              </Button>
+            </a>
           </div>
 
           <p className="text-sm text-strategy-gray-light/80">
-            Dois módulos especializados: Planejamento Estratégico e Startup HUB
+            {getContent('final_cta', 'bottom_text', 'Dois módulos especializados: Planejamento Estratégico e Startup HUB')}
           </p>
         </div>
       </section>
