@@ -657,40 +657,96 @@ const LandingPage = () => {
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <Target className="h-6 w-6 text-white" />
-                <span className="text-xl font-bold text-white">Start Together</span>
+                <span className="text-xl font-bold text-white">
+                  {getContent('footer', 'company_name', 'Start Together')}
+                </span>
               </div>
               <p className="text-strategy-gray-light">
-                Planejamento estratégico inteligente com IA para empresas modernas
+                {getContent('footer', 'company_description', 'Planejamento estratégico inteligente com IA para empresas modernas')}
               </p>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4 text-white">Funcionalidades</h4>
+              <h4 className="font-semibold mb-4 text-white">
+                {getContent('footer', 'column_1_title', 'Funcionalidades')}
+              </h4>
               <ul className="space-y-2 text-strategy-gray-light">
-                <li><a href="#features" className="hover:text-accent transition-colors">Dashboard Executivo</a></li>
-                <li><a href="#features" className="hover:text-accent transition-colors">Mapa Estratégico</a></li>
-                <li><a href="#features" className="hover:text-accent transition-colors">Copiloto de IA</a></li>
-                <li><a href="#features" className="hover:text-accent transition-colors">Gestão de Objetivos</a></li>
+                <li>
+                  <a href="#features" className="hover:text-accent transition-colors">
+                    {getContent('footer', 'column_1_link_1_text', 'Dashboard Executivo')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#features" className="hover:text-accent transition-colors">
+                    {getContent('footer', 'column_1_link_2_text', 'Mapa Estratégico')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#features" className="hover:text-accent transition-colors">
+                    {getContent('footer', 'column_1_link_3_text', 'Copiloto de IA')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#features" className="hover:text-accent transition-colors">
+                    {getContent('footer', 'column_1_link_4_text', 'Gestão de Objetivos')}
+                  </a>
+                </li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4 text-white">Empresa</h4>
+              <h4 className="font-semibold mb-4 text-white">
+                {getContent('footer', 'column_2_title', 'Empresa')}
+              </h4>
               <ul className="space-y-2 text-strategy-gray-light">
-                <li><a href="#cases" className="hover:text-accent transition-colors">Casos de Uso</a></li>
-                <li><a href="#" className="hover:text-accent transition-colors">Sobre</a></li>
-                <li><a href="#" className="hover:text-accent transition-colors">Blog</a></li>
-                <li><a href="#contact" className="hover:text-accent transition-colors">Contato</a></li>
+                <li>
+                  <a href="#cases" className="hover:text-accent transition-colors">
+                    {getContent('footer', 'column_2_link_1_text', 'Casos de Uso')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-accent transition-colors">
+                    {getContent('footer', 'column_2_link_2_text', 'Sobre')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-accent transition-colors">
+                    {getContent('footer', 'column_2_link_3_text', 'Blog')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#contact" className="hover:text-accent transition-colors">
+                    {getContent('footer', 'column_2_link_4_text', 'Contato')}
+                  </a>
+                </li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-semibold mb-4 text-white">Suporte</h4>
+              <h4 className="font-semibold mb-4 text-white">
+                {getContent('footer', 'column_3_title', 'Suporte')}
+              </h4>
               <ul className="space-y-2 text-strategy-gray-light">
-                <li><a href="#" className="hover:text-accent transition-colors">Central de Ajuda</a></li>
-                <li><a href="#" className="hover:text-accent transition-colors">Documentação</a></li>
-                <li><a href="#" className="hover:text-accent transition-colors">Treinamentos</a></li>
-                <li><a href="#" className="hover:text-accent transition-colors">API</a></li>
+                <li>
+                  <a href="#" className="hover:text-accent transition-colors">
+                    {getContent('footer', 'column_3_link_1_text', 'Central de Ajuda')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-accent transition-colors">
+                    {getContent('footer', 'column_3_link_2_text', 'Documentação')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-accent transition-colors">
+                    {getContent('footer', 'column_3_link_3_text', 'Treinamentos')}
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-accent transition-colors">
+                    {getContent('footer', 'column_3_link_4_text', 'API')}
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
@@ -698,18 +754,24 @@ const LandingPage = () => {
           <div className="border-t border-white/20 pt-8">
             <div className="flex flex-col md:flex-row justify-between items-center mb-4">
               <p className="text-strategy-gray-light/60 mb-4 md:mb-0">
-                © 2024 Start Together. Todos os direitos reservados.
+                {getContent('footer', 'copyright_text', '© 2024 Start Together. Todos os direitos reservados.')}
               </p>
               <div className="flex space-x-6 text-strategy-gray-light">
-                <a href="#" className="hover:text-accent transition-colors">Termos</a>
-                <a href="#" className="hover:text-accent transition-colors">Privacidade</a>
-                <a href="#" className="hover:text-accent transition-colors">Cookies</a>
+                <a href="#" className="hover:text-accent transition-colors">
+                  {getContent('footer', 'legal_link_1_text', 'Termos')}
+                </a>
+                <a href="#" className="hover:text-accent transition-colors">
+                  {getContent('footer', 'legal_link_2_text', 'Privacidade')}
+                </a>
+                <a href="#" className="hover:text-accent transition-colors">
+                  {getContent('footer', 'legal_link_3_text', 'Cookies')}
+                </a>
               </div>
             </div>
             
             <div className="text-center pt-4 border-t border-white/10">
               <p className="text-strategy-gray-light/80 text-sm">
-                <span className="font-semibold text-white">Start Together</span>, um produto <span className="font-semibold text-accent">COFOUND</span> - Aceleradora de Negócios
+                {getContent('footer', 'cofound_text', 'Start Together, um produto COFOUND - Aceleradora de Negócios')}
               </p>
             </div>
           </div>
