@@ -100,12 +100,16 @@ export const useActionItems = (sessionId?: string) => {
     }
 
     try {
+      // Processar due_date para converter string vazia em null
+      const processedData = {
+        ...itemData,
+        due_date: itemData.due_date?.trim() === '' ? null : itemData.due_date,
+        created_by: user.id
+      };
+
       const { data, error: insertError } = await supabase
         .from('action_items')
-        .insert([{
-          ...itemData,
-          created_by: user.id
-        }])
+        .insert([processedData])
         .select()
         .single();
 
@@ -140,9 +144,15 @@ export const useActionItems = (sessionId?: string) => {
 
   const updateActionItem = async (id: string, updates: Partial<ActionItem>) => {
     try {
+      // Processar due_date para converter string vazia em null
+      const processedUpdates = {
+        ...updates,
+        due_date: updates.due_date?.trim() === '' ? null : updates.due_date
+      };
+
       const { data, error: updateError } = await supabase
         .from('action_items')
-        .update(updates)
+        .update(processedUpdates)
         .eq('id', id)
         .select()
         .maybeSingle();
