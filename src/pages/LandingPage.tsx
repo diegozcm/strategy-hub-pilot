@@ -552,39 +552,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Security */}
-      <section className="py-16 px-4 bg-strategy-gray-light">
-        <div className="container mx-auto text-center">
-          <h2 className="text-4xl font-bold text-strategy-red-dark mb-4">
-            {getContent('security', 'title', 'Segurança e Conformidade de Nível Empresarial')}
-          </h2>
-          <p className="text-xl text-strategy-blue-navy mb-12">
-            {getContent('security', 'subtitle', 'Seus dados protegidos com os mais altos padrões de segurança')}
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-8 mb-8">
-            {[1, 2, 3, 4].map((num) => {
-              const badgeText = getContent('security', `badge_${num}_text`, '');
-              const badgeIcon = getContent('security', `badge_${num}_icon`, num === 1 ? 'Shield' : num === 2 ? 'Lock' : num === 3 ? 'Shield' : 'Zap');
-              const IconComponent = Icons[badgeIcon as keyof typeof Icons] as React.ComponentType<any>;
-              
-              // Only show badges with content
-              if (!badgeText) return null;
-              
-              return (
-                <Badge key={num} className="bg-white border-accent text-accent px-6 py-3 text-lg">
-                  {IconComponent && <IconComponent className="h-5 w-5 mr-2" />}
-                  {badgeText}
-                </Badge>
-              );
-            })}
-          </div>
-
-          <p className="text-strategy-blue-navy max-w-2xl mx-auto">
-            {getContent('security', 'description', 'Criptografia end-to-end, backup automático em múltiplas regiões e 99.9% de uptime garantido.')}
-          </p>
-        </div>
-      </section>
 
 
       {/* Final CTA */}
