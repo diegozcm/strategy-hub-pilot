@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 interface HealthStatus {
@@ -16,15 +16,34 @@ export const useHealthMonitor = () => {
     issues: [],
     renderingStatus: 'healthy'
   });
+  
+  const blankPageCount = useRef(0);
+  const visibilityTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Monitor for blank page issues
   const checkPageHealth = useCallback(() => {
+    // Skip checks if page is hidden (user switched tabs)
+    if (document.hidden) {
+      return { isHealthy: true, issues: [] };
+    }
+
     const issues: string[] = [];
     
-    // Check if main content exists
+    // More relaxed check for blank page - only flag if both conditions are met
     const mainContent = document.querySelector('main, [role="main"], .container');
-    if (!mainContent || mainContent.children.length === 0) {
-      issues.push('Página principal sem conteúdo detectada');
+    const reactRoot = document.getElementById('root');
+    const hasNoMainContent = !mainContent || mainContent.children.length === 0;
+    const hasNoRootContent = !reactRoot || reactRoot.children.length === 0;
+    
+    if (hasNoMainContent && hasNoRootContent) {
+      blankPageCount.current += 1;
+      // Only consider it a real issue after multiple consecutive checks (20+ seconds)
+      if (blankPageCount.current >= 4) {
+        issues.push('Página principal sem conteúdo detectada (persistente)');
+      }
+    } else {
+      // Reset counter if content is found
+      blankPageCount.current = 0;
     }
 
     // Check for error boundaries triggered
@@ -68,11 +87,7 @@ export const useHealthMonitor = () => {
       console.warn('Health Monitor: Erro ao verificar auth:', error);
     }
 
-    // Check for React rendering issues
-    const reactRoot = document.getElementById('root');
-    if (reactRoot && reactRoot.children.length === 0) {
-      issues.push('Aplicação React não renderizou');
-    }
+    // React rendering check is now part of the combined blank page check above
 
     // Check for stuck loading in specific auth states
     const authProviderElements = document.querySelectorAll('[data-testid*="loading"], [data-loading="true"]');
@@ -95,17 +110,17 @@ export const useHealthMonitor = () => {
       renderingStatus
     });
 
-    // Alert user if critical issues
+    // Alert user if critical issues but NEVER auto-reload
     if (!isHealthy) {
       const hasCriticalIssues = issues.some(i => 
         i.includes('sem conteúdo') || 
-        i.includes('não renderizou') ||
+        i.includes('Error') ||
         i.includes('Token') ||
         i.includes('loop')
       );
       
       if (hasCriticalIssues) {
-        console.error('🚨 Health Monitor: Problemas críticos detectados!', issues);
+        console.error('🚨 Health Monitor: Problemas detectados!', issues);
         
         // Log specific auth errors for debugging
         const authIssues = issues.filter(i => i.includes('Token') || i.includes('autenticação'));
@@ -113,25 +128,16 @@ export const useHealthMonitor = () => {
           console.error('🔐 Auth Issues:', authIssues);
         }
 
-        toast({
-          title: "⚠️ Problema Detectado",
-          description: `Sistema detectou: ${issues[0]}. ${authIssues.length > 0 ? 'Problemas de autenticação detectados.' : ''}`,
-          variant: "destructive",
-        });
-        
-        // Only auto-reload for very specific critical cases, not for general auth issues
-        const shouldAutoReload = issues.some(i => 
-          i.includes('sem conteúdo') || 
-          i.includes('não renderizou') ||
-          i.includes('loop')
-        ) && !authIssues.length; // Don't auto-reload for auth issues as they often resolve on their own
-        
-        if (shouldAutoReload) {
-          const reloadDelay = 5000; // Increased delay to give time for self-recovery
-          setTimeout(() => {
-            window.location.reload();
-          }, reloadDelay);
+        // Only show toast for persistent blank page issues
+        if (issues.some(i => i.includes('persistente'))) {
+          toast({
+            title: "⚠️ Problema Detectado",
+            description: "Página sem conteúdo detectada. Verifique a conectividade.",
+            variant: "destructive",
+          });
         }
+        
+        // REMOVED: No more automatic reloads - let the user decide
       }
     }
 
@@ -160,18 +166,42 @@ export const useHealthMonitor = () => {
     console.log(`🔄 Render: ${component} - ${phase} at ${new Date().toISOString()}`);
   }, []);
 
-  // Auto health checks every 15 seconds (more frequent for better detection)
+  // Handle visibility changes (tab switching)
   useEffect(() => {
-    const interval = setInterval(checkPageHealth, 15000);
+    const handleVisibilityChange = () => {
+      if (visibilityTimeoutRef.current) {
+        clearTimeout(visibilityTimeoutRef.current);
+      }
+      
+      if (!document.hidden) {
+        // When tab becomes visible, wait a bit before checking (debounce)
+        visibilityTimeoutRef.current = setTimeout(() => {
+          console.log('🔍 Health Monitor: Verificação após retornar à aba...');
+          checkPageHealth();
+        }, 1500);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (visibilityTimeoutRef.current) {
+        clearTimeout(visibilityTimeoutRef.current);
+      }
+    };
+  }, [checkPageHealth]);
+
+  // Auto health checks every 30 seconds (less frequent, only when visible)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        checkPageHealth();
+      }
+    }, 30000);
     
     // Initial check after a short delay
     setTimeout(checkPageHealth, 2000);
-    
-    // Additional check for auth issues after page load
-    setTimeout(() => {
-      console.log('🔍 Health Monitor: Verificação específica de autenticação...');
-      checkPageHealth();
-    }, 5000);
     
     return () => clearInterval(interval);
   }, [checkPageHealth]);
