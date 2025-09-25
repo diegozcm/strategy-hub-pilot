@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Camera, Crop as CropIcon, X } from 'lucide-react';
+import { Camera, Crop as CropIcon, X, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { toast } from '@/hooks/use-toast';
@@ -15,6 +15,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 interface AvatarCropUploadProps {
   currentImageUrl?: string;
   onImageUploaded: (url: string) => void;
+  onImageDeleted?: () => void;
   disabled?: boolean;
   userInitials?: string;
 }
@@ -22,6 +23,7 @@ interface AvatarCropUploadProps {
 export const AvatarCropUpload: React.FC<AvatarCropUploadProps> = ({
   currentImageUrl,
   onImageUploaded,
+  onImageDeleted,
   disabled = false,
   userInitials = 'U',
 }) => {
@@ -175,12 +177,14 @@ export const AvatarCropUpload: React.FC<AvatarCropUploadProps> = ({
 
       if (thumbnailError) throw thumbnailError;
 
-      // Get public URL
+      // Get public URL with cache busting
+      const timestamp = Date.now();
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(avatarFileName);
 
-      onImageUploaded(publicUrl);
+      const urlWithCacheBust = `${publicUrl}?t=${timestamp}`;
+      onImageUploaded(urlWithCacheBust);
       setIsOpen(false);
       setImageSrc('');
 
@@ -207,27 +211,80 @@ export const AvatarCropUpload: React.FC<AvatarCropUploadProps> = ({
     setCompletedCrop(undefined);
   };
 
+  const handleDeleteImage = async () => {
+    if (!currentImageUrl || !user) return;
+
+    setUploading(true);
+    try {
+      // Delete both avatar and thumbnail files
+      const basePath = `${user.id}/avatar.webp`;
+      const thumbnailPath = `${user.id}/thumbnail.webp`;
+      
+      const { error: deleteError } = await supabase.storage
+        .from('avatars')
+        .remove([basePath, thumbnailPath]);
+
+      if (deleteError) {
+        console.error('Error deleting avatar files:', deleteError);
+      }
+
+      if (onImageDeleted) {
+        onImageDeleted();
+      }
+
+      toast({
+        title: "Foto removida",
+        description: "Sua foto de perfil foi removida com sucesso.",
+      });
+    } catch (error) {
+      console.error('Error deleting avatar:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao remover foto de perfil.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <>
-      <div className="relative inline-block">
-        <Avatar className="h-32 w-32">
-          <AvatarImage src={currentImageUrl || undefined} />
-          <AvatarFallback className="text-2xl">{userInitials}</AvatarFallback>
-        </Avatar>
-        <label className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full cursor-pointer hover:bg-primary/90 transition-colors">
-          <Camera className="h-4 w-4" />
-          <Input
-            type="file"
-            accept="image/*"
-            onChange={onSelectFile}
-            className="hidden"
-            disabled={disabled || uploading}
-          />
-        </label>
-        {uploading && (
-          <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-            <LoadingSpinner size="sm" />
-          </div>
+      <div className="flex flex-col items-center space-y-3">
+        <div className="relative inline-block">
+          <Avatar className="h-32 w-32">
+            <AvatarImage src={currentImageUrl || undefined} />
+            <AvatarFallback className="text-2xl">{userInitials}</AvatarFallback>
+          </Avatar>
+          <label className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full cursor-pointer hover:bg-primary/90 transition-colors">
+            <Camera className="h-4 w-4" />
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={onSelectFile}
+              className="hidden"
+              disabled={disabled || uploading}
+            />
+          </label>
+          {uploading && (
+            <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
+              <LoadingSpinner size="sm" />
+            </div>
+          )}
+        </div>
+        
+        {/* Delete button - only show if there's an image */}
+        {currentImageUrl && onImageDeleted && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleDeleteImage}
+            disabled={uploading}
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Remover Foto
+          </Button>
         )}
       </div>
 

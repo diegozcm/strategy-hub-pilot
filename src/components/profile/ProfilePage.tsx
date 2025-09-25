@@ -125,12 +125,62 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleAvatarUploaded = (url: string) => {
+  const handleAvatarUploaded = async (url: string) => {
     if (profile) {
-      setProfile({
+      // Remove cache-busting parameter for clean storage
+      const cleanUrl = url.split('?')[0];
+      
+      const updatedProfile = {
         ...profile,
-        avatar_url: url
-      });
+        avatar_url: cleanUrl
+      };
+      
+      setProfile(updatedProfile);
+      
+      // Auto-save the avatar to database immediately
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ avatar_url: cleanUrl })
+          .eq('user_id', user?.id);
+
+        if (error) throw error;
+
+        toast({
+          title: "Sucesso",
+          description: "Foto de perfil atualizada e salva automaticamente!",
+        });
+      } catch (error) {
+        console.error('Error auto-saving avatar:', error);
+        toast({
+          title: "Atenção",
+          description: "Foto enviada, mas não foi salva. Clique em 'Salvar Alterações'.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleAvatarDeleted = async () => {
+    if (profile) {
+      const updatedProfile = {
+        ...profile,
+        avatar_url: null
+      };
+      
+      setProfile(updatedProfile);
+      
+      // Auto-save the deletion to database
+      try {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ avatar_url: null })
+          .eq('user_id', user?.id);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error auto-deleting avatar:', error);
+      }
     }
   };
 
@@ -223,6 +273,7 @@ export const ProfilePage: React.FC = () => {
             <AvatarCropUpload
               currentImageUrl={profile.avatar_url || undefined}
               onImageUploaded={handleAvatarUploaded}
+              onImageDeleted={handleAvatarDeleted}
               userInitials={getInitials()}
               disabled={saving}
             />
