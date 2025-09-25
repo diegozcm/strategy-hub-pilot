@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Bell, User, Settings, LogOut, Brain, Menu, Building2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -26,6 +27,19 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
   const handleSignOut = async () => {
     console.log('🚪 DashboardHeader: Starting logout process');
     await signOut();
+  };
+
+  const getInitials = () => {
+    const firstName = profile?.first_name || '';
+    const lastName = profile?.last_name || '';
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 'U';
+  };
+
+  const getThumbnailUrl = () => {
+    if (!profile?.avatar_url) return undefined;
+    // Try to get thumbnail version if it exists
+    const thumbnailUrl = profile.avatar_url.replace('/avatar.webp', '/thumbnail.webp');
+    return thumbnailUrl !== profile.avatar_url ? thumbnailUrl : profile.avatar_url;
   };
 
   return (
@@ -59,12 +73,15 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-               <div className="bg-primary text-primary-foreground rounded-full h-8 w-8 flex items-center justify-center">
-                  <User className="h-4 w-4" />
-                </div>
-                 <span className="hidden sm:block text-sm font-medium">
-                   {profile?.first_name || 'Usuário'}
-                 </span>
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={getThumbnailUrl()} />
+                  <AvatarFallback className="text-xs font-medium bg-primary text-primary-foreground">
+                    {getInitials()}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="hidden sm:block text-sm font-medium">
+                  {profile?.first_name || 'Usuário'}
+                </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

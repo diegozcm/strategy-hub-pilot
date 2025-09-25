@@ -10,8 +10,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { Camera, Save, User, Mail, Phone, MapPin, Calendar, Briefcase, FileText, Plus, X } from 'lucide-react';
+import { Save, User, Mail, Phone, MapPin, Calendar, Briefcase, FileText, Plus, X } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { AvatarCropUpload } from '@/components/ui/AvatarCropUpload';
 
 interface Profile {
   id: string;
@@ -124,51 +125,12 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !user || !profile) return;
-
-    setUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
-
-      // Delete old avatar if exists
-      if (profile.avatar_url) {
-        const oldPath = profile.avatar_url.split('/').pop();
-        if (oldPath) {
-          await supabase.storage.from('avatars').remove([`${user.id}/${oldPath}`]);
-        }
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
+  const handleAvatarUploaded = (url: string) => {
+    if (profile) {
       setProfile({
         ...profile,
-        avatar_url: publicUrl
+        avatar_url: url
       });
-
-      toast({
-        title: "Sucesso",
-        description: "Foto de perfil atualizada!",
-      });
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao fazer upload da foto.",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -258,27 +220,12 @@ export const ProfilePage: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <div className="relative inline-block">
-              <Avatar className="h-32 w-32">
-                <AvatarImage src={profile.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl">{getInitials()}</AvatarFallback>
-              </Avatar>
-              <label className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full cursor-pointer hover:bg-primary/90">
-                <Camera className="h-4 w-4" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                  disabled={uploading}
-                />
-              </label>
-              {uploading && (
-                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                  <LoadingSpinner size="sm" />
-                </div>
-              )}
-            </div>
+            <AvatarCropUpload
+              currentImageUrl={profile.avatar_url || undefined}
+              onImageUploaded={handleAvatarUploaded}
+              userInitials={getInitials()}
+              disabled={saving}
+            />
             <div>
               <h3 className="font-semibold text-lg">
                 {profile.first_name || profile.last_name 
