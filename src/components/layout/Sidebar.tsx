@@ -110,7 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
           {(!collapsed || isMobile) && (
             <div className="flex items-center space-x-2">
               <div className="bg-gradient-to-r from-primary to-primary/80 p-2 rounded-lg">
-                <Zap className="h-6 w-6 text-primary-foreground" />
+                <Target className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
                 <h1 className="text-lg font-bold text-foreground">Start Together</h1>
