@@ -20,6 +20,7 @@ interface ObjectiveCardProps {
   compact?: boolean;
   keyResults?: KeyResult[];
   onAddResultadoChave?: (resultadoChaveData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<any>;
+  onRefreshData?: () => void;
 }
 
 const getProgressColor = (progress: number) => {
@@ -42,7 +43,7 @@ const calculateObjectiveProgress = (keyResults: KeyResult[]) => {
   return Math.round(totalProgress / keyResults.length);
 };
 
-export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onAddResultadoChave }: ObjectiveCardProps) => {
+export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onAddResultadoChave, onRefreshData }: ObjectiveCardProps) => {
   const [showResultadoChaveForm, setShowResultadoChaveForm] = useState(false);
   const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
   const [isEditKeyResultModalOpen, setIsEditKeyResultModalOpen] = useState(false);
@@ -84,10 +85,8 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
       });
 
       // Refresh parent data if callback exists
-      if (onAddResultadoChave) {
-        // We'll trigger a refresh by calling the parent's refresh mechanism
-        // This is a bit of a hack, but works for now
-        window.location.reload();
+      if (onRefreshData) {
+        onRefreshData();
       }
     } catch (error) {
       console.error('Error updating key result:', error);

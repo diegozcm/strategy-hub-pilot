@@ -50,7 +50,8 @@ export const StrategicMapPage = () => {
     deletePillar,
     createObjective,
     createKeyResult,
-    calculatePillarProgress
+    calculatePillarProgress,
+    refreshData
   } = useStrategicMap();
 
   const [showCompanySetup, setShowCompanySetup] = useState(false);
@@ -107,7 +108,7 @@ export const StrategicMapPage = () => {
       handleCloseAddKRModal();
       
       // Refresh the strategic map data
-      window.location.reload();
+      refreshData();
     } catch (error) {
       console.error('Error creating key result:', error);
       toast({
@@ -336,6 +337,7 @@ export const StrategicMapPage = () => {
                                 compact
                                 keyResults={objectiveKRs}
                                 onAddResultadoChave={createKeyResult}
+                                onRefreshData={refreshData}
                               />
                             );
                           })}

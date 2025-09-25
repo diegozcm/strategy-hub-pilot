@@ -13,23 +13,24 @@ export const LoadingStateMonitor: React.FC<{ children: React.ReactNode }> = ({ c
       console.log('⏳ Loading state started');
       loadingStartTime.current = Date.now();
       
-      // Set a timeout to detect stuck loading states
+      // Set a timeout to detect stuck loading states (increased from 10s to 30s)
       loadingTimeoutRef.current = setTimeout(() => {
         const duration = Date.now() - loadingStartTime.current;
         console.error('🚨 Loading state stuck for:', duration, 'ms');
         
+        // Only show toast, don't force reload unless it's really stuck (60+ seconds)
         toast({
           title: "⚠️ Carregamento Lento",
           description: "O sistema está demorando para carregar. Isso pode indicar um problema de conectividade.",
           variant: "destructive",
         });
 
-        // If loading is stuck for more than 15 seconds, force reload
-        if (duration > 15000) {
-          console.error('🚨 Forcing reload due to stuck loading state');
+        // Only force reload if loading is stuck for more than 60 seconds (increased from 15s)
+        if (duration > 60000) {
+          console.error('🚨 Forcing reload due to critically stuck loading state');
           window.location.reload();
         }
-      }, 10000); // 10 seconds timeout
+      }, 30000); // Increased timeout from 10 seconds to 30 seconds
     } else {
       const duration = Date.now() - loadingStartTime.current;
       if (duration > 1000) {

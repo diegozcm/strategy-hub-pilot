@@ -115,21 +115,23 @@ export const useHealthMonitor = () => {
 
         toast({
           title: "⚠️ Problema Detectado",
-          description: `Sistema detectou: ${issues[0]}. ${authIssues.length > 0 ? 'Problemas de autenticação detectados.' : 'Recarregando...'}`,
+          description: `Sistema detectou: ${issues[0]}. ${authIssues.length > 0 ? 'Problemas de autenticação detectados.' : ''}`,
           variant: "destructive",
         });
         
-        // Auto-reload on critical issues, but with delay for auth issues
-        const reloadDelay = authIssues.length > 0 ? 3000 : 2000;
-        setTimeout(() => {
-          // Clear auth storage if there are auth issues
-          if (authIssues.length > 0) {
-            console.log('🧹 Limpando storage de autenticação devido a problemas...');
-            localStorage.removeItem('sb-pdpzxjlnaqwlyqoyoyhr-auth-token');
-            localStorage.removeItem('selectedCompanyId');
-          }
-          window.location.reload();
-        }, reloadDelay);
+        // Only auto-reload for very specific critical cases, not for general auth issues
+        const shouldAutoReload = issues.some(i => 
+          i.includes('sem conteúdo') || 
+          i.includes('não renderizou') ||
+          i.includes('loop')
+        ) && !authIssues.length; // Don't auto-reload for auth issues as they often resolve on their own
+        
+        if (shouldAutoReload) {
+          const reloadDelay = 5000; // Increased delay to give time for self-recovery
+          setTimeout(() => {
+            window.location.reload();
+          }, reloadDelay);
+        }
       }
     }
 
