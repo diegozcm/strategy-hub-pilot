@@ -34,6 +34,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Get the authorization header to identify the logged-in user
     const authorization = req.headers.get('Authorization');
     if (!authorization) {
+      console.log('❌ Authorization header missing');
       return new Response(
         JSON.stringify({
           success: false,
@@ -46,25 +47,37 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Initialize client with user's token to verify session
-    const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || '', {
-      global: {
-        headers: {
-          Authorization: authorization,
-        },
-      },
-    });
-
-    // Verify user session
-    console.log('Verifying user session...');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    
-    if (userError) {
-      console.error('User session error:', userError);
+    // Extract JWT token from Authorization header (remove "Bearer " prefix)
+    const jwtToken = authorization.replace('Bearer ', '').trim();
+    if (!jwtToken) {
+      console.log('❌ No JWT token found in Authorization header');
       return new Response(
         JSON.stringify({
           success: false,
-          message: `Erro na sessão: ${userError.message}`
+          message: 'Token inválido no cabeçalho de autorização'
+        }),
+        {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
+
+    console.log('🔍 Extracted JWT token length:', jwtToken.length);
+    console.log('🔍 JWT token starts with:', jwtToken.substring(0, 20) + '...');
+
+    // Verify user session using service role client with extracted token
+    console.log('🔐 Verifying user session with service role client...');
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(jwtToken);
+    
+    if (userError) {
+      console.error('❌ User session validation error:', userError);
+      console.error('❌ Error code:', userError.name);
+      console.error('❌ Error message:', userError.message);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: `Erro na validação da sessão: ${userError.message}`
         }),
         {
           status: 401,
@@ -74,11 +87,11 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     if (!user) {
-      console.log('No user found in session');
+      console.log('❌ No user found in session after token validation');
       return new Response(
         JSON.stringify({
           success: false,
-          message: 'Sessão inválida - faça login novamente'
+          message: 'Sessão inválida - usuário não encontrado'
         }),
         {
           status: 401,
@@ -87,7 +100,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
     
-    console.log('User session verified for:', user.email);
+    console.log('✅ User session verified for:', user.email);
+    console.log('✅ User ID:', user.id);
 
     // Parse request body
     const { token, newPassword, confirmPassword }: ChangePasswordRequest = await req.json();
