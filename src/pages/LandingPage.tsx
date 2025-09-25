@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Brain, BarChart3, Target as TargetIcon, FileText, Users, TrendingUp, ArrowRight, Play, Star, Shield, Zap, Lock, Target, Award, ChevronLeft, ChevronRight, Map, Lightbulb, Building2, Rocket, CheckCircle, Phone, Mail, MapPin, Linkedin, Twitter, MessageSquare, UserCheck, TrendingDown, Activity, PieChart, Clock } from 'lucide-react';
-import { TargetLogo } from '@/components/ui/TargetLogo';
 import { Link } from 'react-router-dom';
 import { useLandingPageContent } from '@/hooks/useLandingPageContent';
 import * as Icons from 'lucide-react';
@@ -76,7 +75,7 @@ const LandingPage = () => {
       <header className="fixed top-0 w-full bg-strategy-gray-light/95 backdrop-blur-sm border-b border-border shadow-sm z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <TargetLogo className="h-8 w-8 text-strategy-red-dark" />
+            <Target className="h-8 w-8 text-strategy-red-dark" />
             <div className="flex flex-col">
               <span className="text-2xl font-bold text-strategy-red-dark">Start Together</span>
               <span className="text-xs text-strategy-gray-medium">by COFOUND</span>

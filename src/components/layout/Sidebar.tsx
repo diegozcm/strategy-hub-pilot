@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { BarChart3, Target, Briefcase, Users, Settings, ChevronLeft, ChevronRight, Zap, TrendingUp, Activity, Brain, Map, Building2, UserCheck, Shield, Building, User, Circle, Rocket } from 'lucide-react';
-import { TargetLogo } from '@/components/ui/TargetLogo';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useMultiTenant';
@@ -111,7 +110,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
           {(!collapsed || isMobile) && (
             <div className="flex items-center space-x-2">
               <div className="bg-gradient-to-r from-primary to-primary/80 p-2 rounded-lg">
-                <TargetLogo className="h-6 w-6 text-primary-foreground" />
+                <Zap className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
                 <h1 className="text-lg font-bold text-foreground">Start Together</h1>
