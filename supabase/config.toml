@@ -14,3 +14,12 @@ verify_jwt = true
 
 [functions.scheduled-backup]
 verify_jwt = false
+
+[functions.send-user-credentials]
+verify_jwt = false
+
+[functions.reset-user-password]
+verify_jwt = true
+
+[functions.login-with-reset]
+verify_jwt = false

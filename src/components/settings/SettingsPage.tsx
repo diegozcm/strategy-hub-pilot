@@ -56,36 +56,32 @@ export const SettingsPage: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(
-        resetEmail.trim(),
-        {
-          redirectTo: `${window.location.origin}/auth?mode=reset`,
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('reset-user-password', {
+        body: { email: resetEmail.trim() }
+      });
 
       if (error) {
-        console.error('Password reset error:', error);
-        
-        // Handle specific error cases
-        if (error.message.includes('rate limit')) {
-          toast({
-            title: 'Muitas tentativas',
-            description: 'Aguarde alguns minutos antes de tentar novamente',
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: 'Erro',
-            description: 'Erro ao enviar email de reset. Tente novamente.',
-            variant: 'destructive',
-          });
-        }
+        console.error('Reset password function error:', error);
+        toast({
+          title: 'Erro',
+          description: 'Erro ao processar solicitação. Tente novamente.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!data?.success) {
+        toast({
+          title: 'Erro',
+          description: data?.message || 'Erro ao processar solicitação.',
+          variant: 'destructive',
+        });
         return;
       }
 
       toast({
-        title: 'Email enviado!',
-        description: `Email de reset de senha enviado para ${resetEmail}. Verifique a caixa de entrada.`,
+        title: 'Token enviado!',
+        description: `${data.message} O usuário receberá um token temporário por email.`,
       });
       
       setResetEmail('');
@@ -172,7 +168,7 @@ export const SettingsPage: React.FC = () => {
                   <span>Reset de Senha</span>
                 </CardTitle>
                 <CardDescription>
-                  Envie um email de reset de senha para qualquer usuário
+                  Envie um token temporário por email para redefinir a senha de qualquer usuário
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -188,7 +184,7 @@ export const SettingsPage: React.FC = () => {
                     disabled={!resetEmail.trim() || isLoading}
                   >
                     <Mail className="h-4 w-4 mr-2" />
-                    {isLoading ? 'Enviando...' : 'Enviar Reset'}
+                    {isLoading ? 'Enviando...' : 'Enviar Token'}
                   </Button>
                 </div>
               </CardContent>
