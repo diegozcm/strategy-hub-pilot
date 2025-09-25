@@ -20,6 +20,9 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   const [showFirstLoginModal, setShowFirstLoginModal] = useState(false);
   
+  // Logout state to prevent automatic re-login
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  
   // Impersonation state
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [originalAdmin, setOriginalAdmin] = useState<UserProfile | null>(null);
@@ -374,10 +377,16 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     console.log('📊 MultiTenantAuthProvider: Initializing...');
     
-    // Auth state listener - improved with validation
+    // Auth state listener - improved with validation and logout prevention
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('🔐 Auth state change:', event, !!session);
+        
+        // Prevent automatic re-login during logout process
+        if (isLoggingOut && event === 'INITIAL_SESSION') {
+          console.log('🚪 Ignoring INITIAL_SESSION during logout process');
+          return;
+        }
         
         if (event === 'SIGNED_IN' && session) {
           console.log('👤 User found, loading profile for:', session.user.email);
@@ -503,6 +512,9 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     try {
       console.log('🚪 Starting sign out process...');
       
+      // Set logout flag to prevent automatic re-login
+      setIsLoggingOut(true);
+      
       // Determine user type for appropriate redirect
       const isAdmin = profile?.role === 'admin';
       const redirectPath = isAdmin ? '/admin-login' : '/auth';
@@ -517,10 +529,22 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       setOriginalAdmin(null);
       setImpersonationSession(null);
       setShowFirstLoginModal(false);
-      localStorage.removeItem('selectedCompanyId');
       
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
+      // Clear ALL Supabase-related localStorage keys
+      const keysToRemove = [
+        'selectedCompanyId',
+        'sb-pdpzxjlnaqwlyqoyoyhr-auth-token',
+        'supabase.auth.token',
+        'sb-auth-token'
+      ];
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        console.log(`🧹 Cleared localStorage key: ${key}`);
+      });
+      
+      // Sign out from Supabase with local scope to force complete logout
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
       
       if (error) {
         console.warn('⚠️ Supabase sign out error (continuing anyway):', error);
@@ -528,13 +552,19 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         console.log('✅ Supabase sign out successful');
       }
       
+      // Reset logout flag after a delay to allow for navigation
+      setTimeout(() => {
+        setIsLoggingOut(false);
+      }, 1000);
+      
       // Always navigate regardless of errors
       console.log(`🔄 Redirecting to ${redirectPath}`);
       navigate(redirectPath);
       
     } catch (error) {
       console.error('❌ Unexpected sign out error:', error);
-      // Force navigation even on unexpected errors
+      // Reset logout flag and force navigation even on unexpected errors
+      setIsLoggingOut(false);
       const redirectPath = profile?.role === 'admin' ? '/admin-login' : '/auth';
       navigate(redirectPath);
     }
