@@ -138,7 +138,7 @@ export const AvatarCropUpload: React.FC<AvatarCropUploadProps> = ({
     try {
       // Delete old avatar files if they exist
       if (currentImageUrl) {
-        const oldPath = currentImageUrl.split('/storage/v1/object/public/avatars/')[1];
+        const oldPath = currentImageUrl.split('/storage/v1/object/public/avatars/')[1]?.split('?')[0];
         if (oldPath) {
           await supabase.storage.from('avatars').remove([oldPath]);
         }
@@ -184,6 +184,10 @@ export const AvatarCropUpload: React.FC<AvatarCropUploadProps> = ({
         .getPublicUrl(avatarFileName);
 
       const urlWithCacheBust = `${publicUrl}?t=${timestamp}`;
+      
+      // Save timestamp to localStorage for cache busting across the app
+      localStorage.setItem('avatarUpdatedAt', String(timestamp));
+      
       onImageUploaded(urlWithCacheBust);
       setIsOpen(false);
       setImageSrc('');
@@ -227,6 +231,9 @@ export const AvatarCropUpload: React.FC<AvatarCropUploadProps> = ({
       if (deleteError) {
         console.error('Error deleting avatar files:', deleteError);
       }
+
+      // Clear avatar timestamp from localStorage
+      localStorage.removeItem('avatarUpdatedAt');
 
       if (onImageDeleted) {
         onImageDeleted();

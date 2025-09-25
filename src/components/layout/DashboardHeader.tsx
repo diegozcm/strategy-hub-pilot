@@ -44,14 +44,17 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
     // Try to use thumbnail version if available
     const thumbnailUrl = baseUrl.replace('/avatar.webp', '/thumbnail.webp');
     
-    // If it's the same (no replacement happened), use original
-    if (thumbnailUrl === baseUrl) {
-      return profile.avatar_url;
+    // Use original if no replacement happened
+    const finalUrl = thumbnailUrl === baseUrl ? profile.avatar_url : thumbnailUrl;
+    
+    // Add cache busting from localStorage if available
+    const timestamp = localStorage.getItem('avatarUpdatedAt');
+    if (timestamp) {
+      const separator = finalUrl.includes('?') ? '&' : '?';
+      return `${finalUrl}${separator}t=${timestamp}`;
     }
     
-    // For thumbnail, preserve any existing cache busting from the original URL
-    const urlParams = profile.avatar_url.split('?')[1];
-    return urlParams ? `${thumbnailUrl}?${urlParams}` : thumbnailUrl;
+    return finalUrl;
   };
 
   return (

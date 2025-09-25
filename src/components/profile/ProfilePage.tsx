@@ -31,7 +31,7 @@ interface Profile {
 }
 
 export const ProfilePage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, updateProfile } = useAuth();
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -130,6 +130,10 @@ export const ProfilePage: React.FC = () => {
       // Remove cache-busting parameter for clean storage
       const cleanUrl = url.split('?')[0];
       
+      // Extract timestamp for localStorage
+      const timestamp = url.includes('?t=') ? url.split('?t=')[1] : String(Date.now());
+      localStorage.setItem('avatarUpdatedAt', timestamp);
+      
       const updatedProfile = {
         ...profile,
         avatar_url: cleanUrl
@@ -137,12 +141,9 @@ export const ProfilePage: React.FC = () => {
       
       setProfile(updatedProfile);
       
-      // Auto-save the avatar to database immediately
+      // Use updateProfile to update global context immediately
       try {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ avatar_url: cleanUrl })
-          .eq('user_id', user?.id);
+        const { error } = await updateProfile({ avatar_url: cleanUrl });
 
         if (error) throw error;
 
@@ -163,6 +164,9 @@ export const ProfilePage: React.FC = () => {
 
   const handleAvatarDeleted = async () => {
     if (profile) {
+      // Clear avatar timestamp from localStorage
+      localStorage.removeItem('avatarUpdatedAt');
+      
       const updatedProfile = {
         ...profile,
         avatar_url: null
@@ -170,12 +174,9 @@ export const ProfilePage: React.FC = () => {
       
       setProfile(updatedProfile);
       
-      // Auto-save the deletion to database
+      // Use updateProfile to update global context immediately
       try {
-        const { error } = await supabase
-          .from('profiles')
-          .update({ avatar_url: null })
-          .eq('user_id', user?.id);
+        const { error } = await updateProfile({ avatar_url: null });
 
         if (error) throw error;
       } catch (error) {
@@ -247,6 +248,18 @@ export const ProfilePage: React.FC = () => {
     return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase() || 'U';
   };
 
+  // Get current image URL with cache busting for immediate display
+  const getCurrentImageUrl = () => {
+    if (!profile.avatar_url) return undefined;
+    
+    const timestamp = localStorage.getItem('avatarUpdatedAt');
+    if (timestamp) {
+      return `${profile.avatar_url}?t=${timestamp}`;
+    }
+    
+    return profile.avatar_url;
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -271,7 +284,7 @@ export const ProfilePage: React.FC = () => {
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <AvatarCropUpload
-              currentImageUrl={profile.avatar_url || undefined}
+              currentImageUrl={getCurrentImageUrl()}
               onImageUploaded={handleAvatarUploaded}
               onImageDeleted={handleAvatarDeleted}
               userInitials={getInitials()}
