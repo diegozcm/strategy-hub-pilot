@@ -13,7 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const menuStructure = [
   {
     name: 'STRATEGY HUB',
-    icon: Target,
+    icon: Search,
     items: [
       { name: 'Dashboard', href: '/app/dashboard', icon: BarChart3 },
       { name: 'Mapa Estratégico', href: '/app/strategic-map', icon: Map },
@@ -26,7 +26,7 @@ const menuStructure = [
   },
   {
     name: 'STARTUP HUB',
-    icon: Brain,
+    icon: Rocket,
     items: [
       { name: 'Dashboard', href: '/app/startup-hub?tab=dashboard', icon: BarChart3 },
       { name: 'Avaliação BEEP', href: '/app/startup-hub?tab=beep', icon: TrendingUp, requiresStartup: true },
