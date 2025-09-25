@@ -56,12 +56,15 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     // Verify user session
+    console.log('Verifying user session...');
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
+    
+    if (userError) {
+      console.error('User session error:', userError);
       return new Response(
         JSON.stringify({
           success: false,
-          message: 'Invalid session - please login again'
+          message: `Erro na sessão: ${userError.message}`
         }),
         {
           status: 401,
@@ -69,6 +72,22 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     }
+    
+    if (!user) {
+      console.log('No user found in session');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Sessão inválida - faça login novamente'
+        }),
+        {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        }
+      );
+    }
+    
+    console.log('User session verified for:', user.email);
 
     // Parse request body
     const { token, newPassword, confirmPassword }: ChangePasswordRequest = await req.json();
