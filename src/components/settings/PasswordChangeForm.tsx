@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff, Key, Mail, Lock } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Eye, EyeOff, Key, Mail, Lock, Check, X } from 'lucide-react';
 import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +42,30 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ isAdmin 
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+
+  // Password validation
+  const passwordValidation = useMemo(() => {
+    return {
+      hasMinLength: newPassword.length >= 8,
+      hasUpperCase: /[A-Z]/.test(newPassword),
+      hasLowerCase: /[a-z]/.test(newPassword),
+      hasNumber: /[0-9]/.test(newPassword),
+      hasSpecialChar: /[^A-Za-z0-9]/.test(newPassword),
+    };
+  }, [newPassword]);
+
+  const passwordStrength = useMemo(() => {
+    const validations = Object.values(passwordValidation);
+    const validCount = validations.filter(Boolean).length;
+    
+    if (validCount === 0) return { level: 0, text: '', color: 'bg-gray-200' };
+    if (validCount <= 2) return { level: 1, text: 'Muito fraca', color: 'bg-red-500' };
+    if (validCount === 3) return { level: 2, text: 'Fraca', color: 'bg-orange-500' };
+    if (validCount === 4) return { level: 3, text: 'Média', color: 'bg-yellow-500' };
+    if (validCount === 5) return { level: 4, text: 'Forte', color: 'bg-green-500' };
+    
+    return { level: 0, text: '', color: 'bg-gray-200' };
+  }, [passwordValidation]);
 
   const handleRequestToken = async () => {
     if (!email.trim()) {
@@ -301,14 +325,83 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ isAdmin 
                 </div>
               </div>
 
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>A senha deve conter:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Pelo menos 8 caracteres</li>
-                  <li>Uma letra maiúscula</li>
-                  <li>Uma letra minúscula</li>
-                  <li>Um número</li>
-                  <li>Um caractere especial</li>
+              {/* Password Strength Indicator */}
+              {newPassword && (
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">Força da senha</span>
+                      <span className="text-sm text-muted-foreground">{passwordStrength.text}</span>
+                    </div>
+                    <div className="flex space-x-1 h-2">
+                      {[1, 2, 3, 4].map((level) => (
+                        <div
+                          key={level}
+                          className={`flex-1 rounded-full ${
+                            level <= passwordStrength.level 
+                              ? passwordStrength.color 
+                              : 'bg-gray-200'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="text-xs space-y-2">
+                <p className="font-medium text-muted-foreground">A senha deve conter:</p>
+                <ul className="space-y-2">
+                  <li className="flex items-center space-x-2">
+                    {passwordValidation.hasMinLength ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <X className="h-4 w-4 text-gray-400" />
+                    )}
+                    <span className={passwordValidation.hasMinLength ? 'text-green-600' : 'text-muted-foreground'}>
+                      Pelo menos 8 caracteres
+                    </span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    {passwordValidation.hasUpperCase ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <X className="h-4 w-4 text-gray-400" />
+                    )}
+                    <span className={passwordValidation.hasUpperCase ? 'text-green-600' : 'text-muted-foreground'}>
+                      Uma letra maiúscula
+                    </span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    {passwordValidation.hasLowerCase ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <X className="h-4 w-4 text-gray-400" />
+                    )}
+                    <span className={passwordValidation.hasLowerCase ? 'text-green-600' : 'text-muted-foreground'}>
+                      Uma letra minúscula
+                    </span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    {passwordValidation.hasNumber ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <X className="h-4 w-4 text-gray-400" />
+                    )}
+                    <span className={passwordValidation.hasNumber ? 'text-green-600' : 'text-muted-foreground'}>
+                      Um número
+                    </span>
+                  </li>
+                  <li className="flex items-center space-x-2">
+                    {passwordValidation.hasSpecialChar ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <X className="h-4 w-4 text-gray-400" />
+                    )}
+                    <span className={passwordValidation.hasSpecialChar ? 'text-green-600' : 'text-muted-foreground'}>
+                      Um caractere especial
+                    </span>
+                  </li>
                 </ul>
               </div>
 
