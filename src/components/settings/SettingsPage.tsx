@@ -3,11 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Settings, 
   Users, 
-  Shield, 
   Key, 
   Mail, 
-  Chrome,
-  AlertTriangle,
   Palette
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,23 +45,6 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleGoogleConnect = async () => {
-    try {
-      // Note: Google OAuth functionality would need to be implemented separately
-      toast({
-        title: 'Funcionalidade não disponível',
-        description: 'OAuth Google não implementado no novo sistema',
-        variant: 'destructive',
-      });
-    } catch (error) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao conectar com Google',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'admin': return 'Administrador';
@@ -85,7 +65,6 @@ export const SettingsPage: React.FC = () => {
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="security">Segurança</TabsTrigger>
           {isAdmin && <TabsTrigger value="users">Usuários</TabsTrigger>}
-          <TabsTrigger value="oauth">OAuth & SSO</TabsTrigger>
         </TabsList>
 
         {/* General Settings */}
@@ -164,52 +143,6 @@ export const SettingsPage: React.FC = () => {
             <UserManagementPage />
           </TabsContent>
         )}
-
-        {/* OAuth Settings */}
-        <TabsContent value="oauth">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Shield className="h-5 w-5" />
-                <span>OAuth & SSO</span>
-              </CardTitle>
-              <CardDescription>
-                Configure provedores de autenticação externa
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Chrome className="h-8 w-8 text-blue-600" />
-                    <div>
-                      <p className="font-medium">Google OAuth</p>
-                      <p className="text-sm text-gray-500">
-                        Faça login com sua conta Google
-                      </p>
-                    </div>
-                  </div>
-                  <Button onClick={handleGoogleConnect} variant="outline">
-                    Conectar Google
-                  </Button>
-                </div>
-              </div>
-
-              <div className="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
-                <div className="flex items-start space-x-3">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-yellow-800">Configuração Necessária</p>
-                    <p className="text-sm text-yellow-700">
-                      Para usar OAuth do Google, configure as credenciais no painel do Supabase.
-                      Visite Authentication → Providers no dashboard do Supabase.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
     </div>
   );
