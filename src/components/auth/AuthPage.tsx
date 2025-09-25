@@ -62,8 +62,8 @@ export const AuthPage: React.FC = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 p-3 rounded-2xl mb-4">
-            <Target className="h-8 w-8 text-white" />
+          <div className="mb-4">
+            <Target className="h-8 w-8 text-primary mx-auto" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">Start Together</h1>
           <p className="text-muted-foreground mt-2">Gestão Estratégica Inteligente</p>

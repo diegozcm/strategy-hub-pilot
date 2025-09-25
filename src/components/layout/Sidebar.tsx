@@ -109,9 +109,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
         <div className="flex items-center justify-between">
           {(!collapsed || isMobile) && (
             <div className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-primary to-primary/80 p-2 rounded-lg">
-                <Target className="h-6 w-6 text-primary-foreground" />
-              </div>
+              <Target className="h-6 w-6 text-primary" />
               <div>
                 <h1 className="text-lg font-bold text-foreground">Start Together</h1>
                 <p className="text-xs text-muted-foreground">By COFOUND</p>
