@@ -74,7 +74,10 @@ export const IndicatorsPage: React.FC = () => {
     if (!authCompany?.id) return;
 
     try {
-      setLoading(true);
+      // Only show loading spinner if we don't have any data yet (initial load)
+      if (keyResults.length === 0) {
+        setLoading(true);
+      }
       
       // Load strategic plans and objectives
       const { data: plansData, error: plansError } = await supabase
@@ -162,10 +165,10 @@ export const IndicatorsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (user && authCompany) {
+    if (user?.id && authCompany?.id) {
       loadData();
     }
-  }, [user, authCompany]);
+  }, [user?.id, authCompany?.id]);
 
   // Handle URL parameters for opening modals
   useEffect(() => {
