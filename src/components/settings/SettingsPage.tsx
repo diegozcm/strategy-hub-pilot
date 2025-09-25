@@ -7,6 +7,7 @@ import {
   Mail, 
   Palette
 } from 'lucide-react';
+import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,34 +15,89 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { UserManagementPage } from '@/components/admin/UserManagementPage';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+
+// Email validation schema
+const emailSchema = z.string()
+  .trim()
+  .email({ message: "Email inválido" })
+  .max(255, { message: "Email deve ter menos de 255 caracteres" });
 
 export const SettingsPage: React.FC = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   const [resetEmail, setResetEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const isAdmin = profile?.role === 'admin';
 
   const handlePasswordReset = async () => {
-    if (!resetEmail) return;
-
-    try {
-      // Note: Password reset functionality would need to be implemented separately
+    if (!resetEmail.trim()) {
       toast({
-        title: 'Funcionalidade não disponível',
-        description: 'Reset de senha não implementado no novo sistema',
+        title: 'Erro',
+        description: 'Por favor, insira um email válido',
         variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate email format
+    const emailValidation = emailSchema.safeParse(resetEmail);
+    if (!emailValidation.success) {
+      toast({
+        title: 'Erro',
+        description: emailValidation.error.errors[0].message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        resetEmail.trim(),
+        {
+          redirectTo: `${window.location.origin}/auth?mode=reset`,
+        }
+      );
+
+      if (error) {
+        console.error('Password reset error:', error);
+        
+        // Handle specific error cases
+        if (error.message.includes('rate limit')) {
+          toast({
+            title: 'Muitas tentativas',
+            description: 'Aguarde alguns minutos antes de tentar novamente',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Erro',
+            description: 'Erro ao enviar email de reset. Tente novamente.',
+            variant: 'destructive',
+          });
+        }
+        return;
+      }
+
+      toast({
+        title: 'Email enviado!',
+        description: `Email de reset de senha enviado para ${resetEmail}. Verifique a caixa de entrada.`,
       });
       
       setResetEmail('');
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Unexpected error:', error);
       toast({
-        title: 'Erro',
-        description: 'Erro ao enviar email de reset',
+        title: 'Erro inesperado',
+        description: 'Algo deu errado. Tente novamente mais tarde.',
         variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -127,9 +183,12 @@ export const SettingsPage: React.FC = () => {
                     onChange={(e) => setResetEmail(e.target.value)}
                     type="email"
                   />
-                  <Button onClick={handlePasswordReset} disabled={!resetEmail}>
+                  <Button 
+                    onClick={handlePasswordReset} 
+                    disabled={!resetEmail.trim() || isLoading}
+                  >
                     <Mail className="h-4 w-4 mr-2" />
-                    Enviar Reset
+                    {isLoading ? 'Enviando...' : 'Enviar Reset'}
                   </Button>
                 </div>
               </CardContent>
