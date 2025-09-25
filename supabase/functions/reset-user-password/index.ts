@@ -104,10 +104,18 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Update profile to require password change
+    // Update profile to require password change AND store reset token
+    const expirationTime = new Date();
+    expirationTime.setMinutes(expirationTime.getMinutes() + 15); // 15 minutes validity
+
     const { error: updateProfileError } = await supabaseAdmin
       .from('profiles')
-      .update({ must_change_password: true })
+      .update({ 
+        must_change_password: true,
+        temp_reset_token: tempPassword,
+        temp_reset_expires: expirationTime.toISOString(),
+        updated_at: new Date().toISOString()
+      })
       .eq('user_id', targetUser.id);
 
     if (updateProfileError) {

@@ -1702,6 +1702,8 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"] | null
           skills: string[] | null
           status: string | null
+          temp_reset_expires: string | null
+          temp_reset_token: string | null
           theme_preference: string | null
           updated_at: string | null
           user_id: string
@@ -1727,6 +1729,8 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"] | null
           skills?: string[] | null
           status?: string | null
+          temp_reset_expires?: string | null
+          temp_reset_token?: string | null
           theme_preference?: string | null
           updated_at?: string | null
           user_id: string
@@ -1752,6 +1756,8 @@ export type Database = {
           role?: Database["public"]["Enums"]["app_role"] | null
           skills?: string[] | null
           status?: string | null
+          temp_reset_expires?: string | null
+          temp_reset_token?: string | null
           theme_preference?: string | null
           updated_at?: string | null
           user_id?: string

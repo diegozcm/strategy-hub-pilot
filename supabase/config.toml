@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.login-with-reset]
 verify_jwt = false
+
+[functions.change-password-logged-in]
+verify_jwt = true
