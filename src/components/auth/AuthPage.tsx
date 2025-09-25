@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Zap, Eye, EyeOff, Mail, Lock, Target, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TargetLogo } from '@/components/ui/TargetLogo';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useMultiTenant';
@@ -63,7 +64,7 @@ export const AuthPage: React.FC = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 p-3 rounded-2xl mb-4">
-            <Zap className="h-8 w-8 text-white" />
+            <TargetLogo className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-foreground">Start Together</h1>
           <p className="text-muted-foreground mt-2">Gestão Estratégica Inteligente</p>
