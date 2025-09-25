@@ -10,6 +10,7 @@ const corsHeaders = {
 
 interface ResetPasswordRequest {
   email: string;
+  source?: string; // "settings" for logged-in users, "login" for non-logged users
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -20,7 +21,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email }: ResetPasswordRequest = await req.json();
+    const { email, source = "login" }: ResetPasswordRequest = await req.json();
 
     if (!email?.trim()) {
       return new Response(JSON.stringify({
@@ -108,14 +109,21 @@ const handler = async (req: Request): Promise<Response> => {
     const expirationTime = new Date();
     expirationTime.setMinutes(expirationTime.getMinutes() + 15); // 15 minutes validity
 
+    // Only set must_change_password for non-logged users (login flow)
+    const profileUpdate: any = {
+      temp_reset_token: tempPassword,
+      temp_reset_expires: expirationTime.toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // For non-logged users (login flow), force password change
+    if (source !== "settings") {
+      profileUpdate.must_change_password = true;
+    }
+
     const { error: updateProfileError } = await supabaseAdmin
       .from('profiles')
-      .update({ 
-        must_change_password: true,
-        temp_reset_token: tempPassword,
-        temp_reset_expires: expirationTime.toISOString(),
-        updated_at: new Date().toISOString()
-      })
+      .update(profileUpdate)
       .eq('user_id', targetUser.id);
 
     if (updateProfileError) {

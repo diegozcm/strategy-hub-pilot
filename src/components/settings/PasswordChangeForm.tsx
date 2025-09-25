@@ -66,7 +66,10 @@ export const PasswordChangeForm: React.FC<PasswordChangeFormProps> = ({ isAdmin 
     setIsRequestingToken(true);
     try {
       const { data, error } = await supabase.functions.invoke('reset-user-password', {
-        body: { email: email.trim() }
+        body: { 
+          email: email.trim(),
+          source: "settings" // Indicate this is from settings page (logged-in user)
+        }
       });
 
       if (error) {
