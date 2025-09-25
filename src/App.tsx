@@ -40,7 +40,17 @@ import { GoldenCirclePage } from "@/components/golden-circle/GoldenCirclePage";
 import { ToolsPage } from "@/components/tools/ToolsPage";
 import { StartupHubPage } from "@/components/startup-hub/StartupHubPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      staleTime: 1000 * 60 * 3, // 3 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <ErrorBoundary>
