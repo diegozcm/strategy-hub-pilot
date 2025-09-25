@@ -508,11 +508,11 @@ const LandingPage = () => {
           <div className="grid lg:grid-cols-3 gap-8">
             {[1, 2, 3].map((num) => {
               const name = getContent('testimonials', `testimonial_${num}_name`, '');
-              const role = getContent('testimonials', `testimonial_${num}_role`, '');
+              const role = getContent('testimonials', `testimonial_${num}_position`, '');
               const company = getContent('testimonials', `testimonial_${num}_company`, '');
-              const badge = getContent('testimonials', `testimonial_${num}_badge`, '');
-              const text = getContent('testimonials', `testimonial_${num}_text`, '');
-              const avatar = getContent('testimonials', `testimonial_${num}_avatar`, '');
+              const badge = getContent('testimonials', `testimonial_${num}_badge_type`, '');
+              const text = getContent('testimonials', `testimonial_${num}_testimonial`, '');
+              const avatar = getContent('testimonials', `testimonial_${num}_avatar_url`, '');
               
               // Only show testimonials with content
               if (!name || !text) return null;
