@@ -26,10 +26,13 @@ export const useMentorStartups = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchMentorStartups = async () => {
-    if (!user) return;
+    if (!user?.id) return;
     
     try {
-      setLoading(true);
+      // Only show loading if we don't have startups data yet
+      if (startups.length === 0) {
+        setLoading(true);
+      }
       setError(null);
       
       const { data, error: fetchError } = await supabase
@@ -69,7 +72,7 @@ export const useMentorStartups = () => {
 
   useEffect(() => {
     fetchMentorStartups();
-  }, [user]);
+  }, [user?.id]);
 
   return {
     startups,

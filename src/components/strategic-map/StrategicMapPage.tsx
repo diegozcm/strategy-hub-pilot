@@ -120,13 +120,8 @@ export const StrategicMapPage = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <LoadingSpinner />
-      </div>
-    );
-  }
+  // Show skeleton instead of full-page loader to avoid unmounting modals
+  const isInitialLoading = loading && !company;
 
   // Show company setup if no company exists
   if (!company) {
@@ -146,7 +141,36 @@ export const StrategicMapPage = () => {
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
       {/* Company Header */}
-      <Card>
+      {isInitialLoading ? (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+                <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+              </div>
+              <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                <div className="h-12 w-full bg-muted animate-pulse rounded" />
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                <div className="h-12 w-full bg-muted animate-pulse rounded" />
+              </div>
+              <div className="space-y-2">
+                <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                <div className="h-6 w-full bg-muted animate-pulse rounded" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -208,213 +232,247 @@ export const StrategicMapPage = () => {
           </div>
         </CardContent>
       </Card>
+      )}
 
       <Separator />
 
       {/* Strategic Pillars */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Pilares Estratégicos</h2>
-          <Button onClick={() => setShowPillarForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar Pilar
-          </Button>
-        </div>
-
-        {pillars.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Target className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhum pilar estratégico</h3>
-                <p className="text-muted-foreground mb-4">
-                  Comece criando os pilares estratégicos da sua empresa para organizar seus objetivos.
-                </p>
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Sugestões de pilares:</p>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {defaultPillars.map((pillar, index) => (
-                      <Badge
-                        key={index}
-                        variant="outline"
-                        className="cursor-pointer hover:bg-secondary"
-                        onClick={() => {
-                          createPillar({ 
-                            name: pillar.name, 
-                            color: pillar.color,
-                            description: `Pilar focado em ${pillar.name.toLowerCase()}`
-                          });
-                        }}
-                      >
-                        <pillar.icon className="mr-1 h-3 w-3" />
-                        {pillar.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {/* Pilares Existentes */}
+        {isInitialLoading ? (
+          <>
+            <div className="flex items-center justify-between">
+              <div className="h-6 w-40 bg-muted animate-pulse rounded" />
+              <div className="h-10 w-32 bg-muted animate-pulse rounded" />
+            </div>
             <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {pillars.map((pillar) => {
-                const progress = calculatePillarProgress(pillar.id);
-                const pillarObjectives = objectives.filter(obj => obj.pillar_id === pillar.id);
-
-                return (
-                  <Card key={pillar.id} className="relative overflow-hidden">
-                    <div
-                      className="absolute top-0 left-0 w-full h-1"
-                      style={{ backgroundColor: pillar.color }}
-                    />
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg">{pillar.name}</CardTitle>
-                          {pillar.description && (
-                            <p className="text-sm text-muted-foreground">
-                              {pillar.description}
-                            </p>
-                          )}
-                        </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setEditingPillar(pillar)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-destructive"
-                              onClick={() => setDeletingPillar(pillar)}
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+              {[1, 2, 3].map((i) => (
+                <Card key={i}>
+                  <div className="absolute top-0 left-0 w-full h-1 bg-muted animate-pulse" />
+                  <CardHeader className="pb-3">
+                    <div className="space-y-2">
+                      <div className="h-5 w-32 bg-muted animate-pulse rounded" />
+                      <div className="h-4 w-full bg-muted animate-pulse rounded" />
+                      <div className="h-2 w-full bg-muted animate-pulse rounded" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+                      <div className="space-y-2">
+                        <div className="h-16 w-full bg-muted animate-pulse rounded" />
                       </div>
-                      <div className="space-y-2 mt-3">
-                        <div className="flex items-center justify-between text-sm">
-                          <span>Progresso</span>
-                          <span className="font-medium">{progress}%</span>
-                        </div>
-                        <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
-                          <div 
-                            className={`h-full transition-all duration-300 rounded-full ${
-                              progress < 30 ? 'bg-red-500' : 
-                              progress < 60 ? 'bg-yellow-500' : 
-                              progress < 80 ? 'bg-blue-500' : 
-                              'bg-green-500'
-                            }`}
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <span>Objetivos</span>
-                        <Badge variant="secondary">
-                          {pillarObjectives.length}
-                        </Badge>
-                      </div>
-                      
-                      {pillarObjectives.length > 0 ? (
-                        <div className="space-y-2">
-                          {pillarObjectives.slice(0, 3).map((objective) => {
-                            const objectiveKRs = keyResults.filter(kr => kr.objective_id === objective.id);
-                            return (
-                              <ObjectiveCard
-                                key={objective.id}
-                                objective={objective}
-                                compact
-                                keyResults={objectiveKRs}
-                                onAddResultadoChave={createKeyResult}
-                                onRefreshData={refreshData}
-                              />
-                            );
-                          })}
-                          {pillarObjectives.length > 3 && (
-                            <p className="text-xs text-muted-foreground text-center">
-                              +{pillarObjectives.length - 3} objetivos adicionais
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center py-4">
-                          <Target className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-                          <p className="text-sm text-muted-foreground">
-                            Nenhum objetivo definido
-                          </p>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="mt-2"
-                            onClick={() => navigate('/app/objectives')}
-                          >
-                            <Plus className="mr-2 h-3 w-3" />
-                            Adicionar Objetivo
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Pilares Estratégicos</h2>
+              <Button onClick={() => setShowPillarForm(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Adicionar Pilar
+              </Button>
             </div>
 
-            {/* Sugestões de Pilares Restantes */}
-            {(() => {
-              const existingPillarNames = pillars.map(p => p.name);
-              const remainingSuggestions = defaultPillars.filter(
-                suggestion => !existingPillarNames.includes(suggestion.name)
-              );
-              
-              if (remainingSuggestions.length > 0) {
-                return (
-                  <Card className="bg-muted/30">
-                    <CardContent className="pt-6">
-                      <div className="text-center">
-                        <h3 className="text-sm font-medium mb-3">Adicionar mais pilares estratégicos:</h3>
-                        <div className="flex flex-wrap gap-2 justify-center">
-                          {remainingSuggestions.map((pillar, index) => (
-                            <Badge
-                              key={index}
-                              variant="outline"
-                              className="cursor-pointer hover:bg-secondary"
-                              onClick={() => {
-                                createPillar({ 
-                                  name: pillar.name, 
-                                  color: pillar.color,
-                                  description: `Pilar focado em ${pillar.name.toLowerCase()}`
-                                });
-                              }}
-                            >
-                              <pillar.icon className="mr-1 h-3 w-3" />
-                              {pillar.name}
-                            </Badge>
-                          ))}
-                        </div>
+            {pillars.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center">
+                    <Target className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Nenhum pilar estratégico</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Comece criando os pilares estratégicos da sua empresa para organizar seus objetivos.
+                    </p>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Sugestões de pilares:</p>
+                      <div className="flex flex-wrap gap-2 justify-center">
+                        {defaultPillars.map((pillar, index) => (
+                          <Badge
+                            key={index}
+                            variant="outline"
+                            className="cursor-pointer hover:bg-secondary"
+                            onClick={() => {
+                              createPillar({ 
+                                name: pillar.name, 
+                                color: pillar.color,
+                                description: `Pilar focado em ${pillar.name.toLowerCase()}`
+                              });
+                            }}
+                          >
+                            <pillar.icon className="mr-1 h-3 w-3" />
+                            {pillar.name}
+                          </Badge>
+                        ))}
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              }
-              return null;
-            })()}
-          </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {/* Pilares Existentes */}
+                <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {pillars.map((pillar) => {
+                    const progress = calculatePillarProgress(pillar.id);
+                    const pillarObjectives = objectives.filter(obj => obj.pillar_id === pillar.id);
+
+                    return (
+                      <Card key={pillar.id} className="relative overflow-hidden">
+                        <div
+                          className="absolute top-0 left-0 w-full h-1"
+                          style={{ backgroundColor: pillar.color }}
+                        />
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <CardTitle className="text-lg">{pillar.name}</CardTitle>
+                              {pillar.description && (
+                                <p className="text-sm text-muted-foreground">
+                                  {pillar.description}
+                                </p>
+                              )}
+                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setEditingPillar(pillar)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="text-destructive"
+                                  onClick={() => setDeletingPillar(pillar)}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                          <div className="space-y-2 mt-3">
+                            <div className="flex items-center justify-between text-sm">
+                              <span>Progresso</span>
+                              <span className="font-medium">{progress}%</span>
+                            </div>
+                            <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                              <div 
+                                className={`h-full transition-all duration-300 rounded-full ${
+                                  progress < 30 ? 'bg-red-500' : 
+                                  progress < 60 ? 'bg-yellow-500' : 
+                                  progress < 80 ? 'bg-blue-500' : 
+                                  'bg-green-500'
+                                }`}
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="flex items-center justify-between text-sm">
+                            <span>Objetivos</span>
+                            <Badge variant="secondary">
+                              {pillarObjectives.length}
+                            </Badge>
+                          </div>
+                          
+                          {pillarObjectives.length > 0 ? (
+                            <div className="space-y-2">
+                              {pillarObjectives.slice(0, 3).map((objective) => {
+                                const objectiveKRs = keyResults.filter(kr => kr.objective_id === objective.id);
+                                return (
+                                  <ObjectiveCard
+                                    key={objective.id}
+                                    objective={objective}
+                                    compact
+                                    keyResults={objectiveKRs}
+                                    onAddResultadoChave={createKeyResult}
+                                    onRefreshData={refreshData}
+                                  />
+                                );
+                              })}
+                              {pillarObjectives.length > 3 && (
+                                <p className="text-xs text-muted-foreground text-center">
+                                  +{pillarObjectives.length - 3} objetivos adicionais
+                                </p>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="text-center py-4">
+                              <Target className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                              <p className="text-sm text-muted-foreground">
+                                Nenhum objetivo definido
+                              </p>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="mt-2"
+                                onClick={() => navigate('/app/objectives')}
+                              >
+                                <Plus className="mr-2 h-3 w-3" />
+                                Adicionar Objetivo
+                              </Button>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                {/* Sugestões de Pilares Restantes */}
+                {(() => {
+                  const existingPillarNames = pillars.map(p => p.name);
+                  const remainingSuggestions = defaultPillars.filter(
+                    suggestion => !existingPillarNames.includes(suggestion.name)
+                  );
+                  
+                  if (remainingSuggestions.length > 0) {
+                    return (
+                      <Card className="bg-muted/30">
+                        <CardContent className="pt-6">
+                          <div className="text-center">
+                            <h3 className="text-sm font-medium mb-3">Adicionar mais pilares estratégicos:</h3>
+                            <div className="flex flex-wrap gap-2 justify-center">
+                              {remainingSuggestions.map((pillar, index) => (
+                                <Badge
+                                  key={index}
+                                  variant="outline"
+                                  className="cursor-pointer hover:bg-secondary"
+                                  onClick={() => {
+                                    createPillar({ 
+                                      name: pillar.name, 
+                                      color: pillar.color,
+                                      description: `Pilar focado em ${pillar.name.toLowerCase()}`
+                                    });
+                                  }}
+                                >
+                                  <pillar.icon className="mr-1 h-3 w-3" />
+                                  {pillar.name}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* Modals */}
-        <CompanySetupModal
+      {/* Modals - Always render to avoid unmounting */}
+      <CompanySetupModal
           open={showCompanySetup}
           onClose={() => setShowCompanySetup(false)}
           onSave={company 

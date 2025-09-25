@@ -336,29 +336,31 @@ export const useStrategicMap = () => {
   // Initialize data
   useEffect(() => {
     const initialize = async () => {
-      setLoading(true);
+      // Only show loading if we don't have company data yet
+      if (!company) {
+        setLoading(true);
+      }
       await loadCompany();
       setLoading(false);
     };
 
-    if (user) {
+    if (user?.id) {
       initialize();
     }
-  }, [user]);
+  }, [user?.id]);
 
   // React to company changes from auth context
   useEffect(() => {
     const reloadCompany = async () => {
       // Only reload if company actually changed (different ID)
-      if (user && authCompany && company?.id !== authCompany.id) {
-        setLoading(true);
+      if (user?.id && authCompany && company?.id !== authCompany.id) {
+        // Don't show loading spinner for company changes - let components handle it gracefully
         await loadCompany();
-        setLoading(false);
       }
     };
 
     reloadCompany();
-  }, [authCompany?.id, company?.id, user]);
+  }, [authCompany?.id, company?.id, user?.id]);
 
   // Create objective
   const createObjective = async (objectiveData: Omit<StrategicObjective, 'id' | 'created_at' | 'updated_at'>) => {

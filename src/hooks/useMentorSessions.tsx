@@ -35,7 +35,10 @@ export const useMentorSessions = () => {
     }
 
     try {
-      setLoading(true);
+      // Only show loading if we don't have sessions data yet
+      if (sessions.length === 0) {
+        setLoading(true);
+      }
       setError(null);
 
       // Fetch sessions for all startups where the user is a mentor
@@ -167,13 +170,13 @@ export const useMentorSessions = () => {
   };
 
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       fetchSessions();
     } else {
       setSessions([]);
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
 
   return {
     sessions,

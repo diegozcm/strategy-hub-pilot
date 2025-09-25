@@ -92,7 +92,7 @@ export const useObjectivesData = () => {
     const operationId = `loadData-${Date.now()}`;
     const startTime = Date.now();
     
-    if (!user || !authCompany) {
+    if (!user?.id || !authCompany?.id) {
       setLoading(false);
       logRenderCycle('ObjectivesData', 'mount');
       return;
@@ -109,20 +109,20 @@ export const useObjectivesData = () => {
     logRenderCycle('ObjectivesData', 'update');
 
     try {
-      console.log('🔄 Loading objectives data for company:', authCompany.id);
+      console.log('🔄 Loading objectives data for company:', authCompany?.id);
 
       // Load all data in parallel with performance tracking
       const [plansResponse, pillarsResponse] = await Promise.all([
         supabase
           .from('strategic_plans')
           .select('*')
-          .eq('company_id', authCompany.id)
+          .eq('company_id', authCompany?.id)
           .order('created_at', { ascending: false }),
         
         supabase
           .from('strategic_pillars')
           .select('*')
-          .eq('company_id', authCompany.id)
+          .eq('company_id', authCompany?.id)
           .order('created_at', { ascending: true })
       ]);
 
@@ -195,7 +195,7 @@ export const useObjectivesData = () => {
       setLoading(false);
     }
   }, [
-    user, authCompany, handleError, objectives.length,
+    user?.id, authCompany?.id, handleError, objectives.length,
     startOperation, completeOperation, failOperation,
     logPerformance, logRenderCycle
   ]);
@@ -208,7 +208,7 @@ export const useObjectivesData = () => {
   // Auto-reload data when user or company changes
   useEffect(() => {
     loadData();
-  }, [user, authCompany]);
+  }, [user?.id, authCompany?.id]);
 
   // Invalidate and reload data after mutations
   const invalidateAndReload = useCallback(async () => {
