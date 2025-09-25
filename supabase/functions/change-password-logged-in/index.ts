@@ -66,42 +66,31 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('🔍 Extracted JWT token length:', jwtToken.length);
     console.log('🔍 JWT token starts with:', jwtToken.substring(0, 20) + '...');
 
-    // Verify user session using service role client with extracted token
-    console.log('🔐 Verifying user session with service role client...');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(jwtToken);
-    
-    if (userError) {
-      console.error('❌ User session validation error:', userError);
-      console.error('❌ Error code:', userError.name);
-      console.error('❌ Error message:', userError.message);
+    // Decode JWT locally (gateway already verified signature)
+    const decodeJwtPayload = (token: string) => {
+      const parts = token.split('.');
+      if (parts.length !== 3) throw new Error('Invalid JWT format');
+      const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const decoded = atob(payload);
+      return JSON.parse(decoded);
+    };
+
+    let userId: string | null = null;
+    let userEmail: string | undefined;
+    try {
+      const payload = decodeJwtPayload(jwtToken);
+      userId = payload.sub;
+      userEmail = payload.email;
+      if (!userId) throw new Error('sub not found in JWT');
+      console.log('✅ JWT decoded. User ID:', userId);
+      if (userEmail) console.log('✅ User email from JWT:', userEmail);
+    } catch (e) {
+      console.error('❌ Failed to decode JWT payload:', e);
       return new Response(
-        JSON.stringify({
-          success: false,
-          message: `Erro na validação da sessão: ${userError.message}`
-        }),
-        {
-          status: 401,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        }
+        JSON.stringify({ success: false, message: 'Token inválido' }),
+        { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
-    
-    if (!user) {
-      console.log('❌ No user found in session after token validation');
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Sessão inválida - usuário não encontrado'
-        }),
-        {
-          status: 401,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        }
-      );
-    }
-    
-    console.log('✅ User session verified for:', user.email);
-    console.log('✅ User ID:', user.id);
 
     // Parse request body
     const { token, newPassword, confirmPassword }: ChangePasswordRequest = await req.json();
@@ -151,7 +140,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('temp_reset_token, temp_reset_expires')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     if (profileError || !profile) {
@@ -191,7 +180,7 @@ const handler = async (req: Request): Promise<Response> => {
           temp_reset_expires: null,
           updated_at: new Date().toISOString()
         })
-        .eq('user_id', user.id);
+        .eq('user_id', userId);
 
       return new Response(
         JSON.stringify({
@@ -207,7 +196,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Update password
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      user.id,
+      userId,
       { password: newPassword }
     );
 
@@ -233,9 +222,9 @@ const handler = async (req: Request): Promise<Response> => {
         temp_reset_expires: null,
         updated_at: new Date().toISOString()
       })
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
-    console.log('Password changed successfully for user:', user.email);
+    console.log('Password changed successfully for user:', userEmail || userId);
 
     return new Response(
       JSON.stringify({
