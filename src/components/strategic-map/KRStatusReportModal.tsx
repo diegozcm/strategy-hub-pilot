@@ -5,9 +5,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { KeyResult } from '@/types/strategic-map';
 import { useState } from 'react';
-import { Plus, Calendar, FileText, AlertCircle, Edit, Trash2 } from 'lucide-react';
+import { Plus, Calendar, FileText, AlertCircle, Edit, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface KRStatusReportModalProps {
   keyResult: KeyResult | null;
@@ -38,6 +39,7 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
   const [showNewReportForm, setShowNewReportForm] = useState(false);
   const [editingReport, setEditingReport] = useState<StatusReport | null>(null);
   const [deletingReportId, setDeletingReportId] = useState<string | null>(null);
+  const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
 
   if (!keyResult) return null;
 
@@ -231,86 +233,93 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
           )}
 
           {/* Reports History */}
-          <div className="space-y-4">
+          <Collapsible open={isHistoryExpanded} onOpenChange={setIsHistoryExpanded}>
             <div className="flex justify-between items-center">
-              <h4 className="text-base font-semibold">Histórico de Relatórios</h4>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 p-0 h-auto font-semibold text-base">
+                  {isHistoryExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                  Histórico de Relatórios
+                </Button>
+              </CollapsibleTrigger>
               <div className="text-sm text-muted-foreground">
                 {reports.length} relatórios encontrados
               </div>
             </div>
 
-            {reports.length === 0 ? (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Nenhum relatório encontrado. Crie o primeiro relatório usando o botão "Novo Relatório" acima.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <div className="space-y-4">
-                {reports.map((report) => (
-                  <Card key={report.id}>
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-center">
-                        <CardTitle className="text-base flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          Relatório de {formatDate(report.report_date)}
-                        </CardTitle>
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm text-muted-foreground">
-                            {formatDate(report.created_at)}
-                            {report.updated_at !== report.created_at && ' (editado)'}
+            <CollapsibleContent className="space-y-4 mt-4">
+              {reports.length === 0 ? (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Nenhum relatório encontrado. Crie o primeiro relatório usando o botão "Novo Relatório" acima.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="space-y-4">
+                  {reports.map((report) => (
+                    <Card key={report.id}>
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-center">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            Relatório de {formatDate(report.report_date)}
+                          </CardTitle>
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm text-muted-foreground">
+                              {formatDate(report.created_at)}
+                              {report.updated_at !== report.created_at && ' (editado)'}
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditReport(report)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setDeletingReportId(report.id)}
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditReport(report)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeletingReportId(report.id)}
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div>
+                          <h4 className="font-medium text-sm mb-1">Situação Atual</h4>
+                          <p className="text-sm text-muted-foreground">{report.status_summary}</p>
+                        </div>
+                        {report.achievements && (
+                          <div>
+                            <h4 className="font-medium text-sm mb-1">Conquistas</h4>
+                            <p className="text-sm text-muted-foreground">{report.achievements}</p>
                           </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <h4 className="font-medium text-sm mb-1">Situação Atual</h4>
-                        <p className="text-sm text-muted-foreground">{report.status_summary}</p>
-                      </div>
-                      {report.achievements && (
-                        <div>
-                          <h4 className="font-medium text-sm mb-1">Conquistas</h4>
-                          <p className="text-sm text-muted-foreground">{report.achievements}</p>
-                        </div>
-                      )}
-                      {report.challenges && (
-                        <div>
-                          <h4 className="font-medium text-sm mb-1">Desafios</h4>
-                          <p className="text-sm text-muted-foreground">{report.challenges}</p>
-                        </div>
-                      )}
-                      {report.next_steps && (
-                        <div>
-                          <h4 className="font-medium text-sm mb-1">Próximos Passos</h4>
-                          <p className="text-sm text-muted-foreground">{report.next_steps}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
+                        )}
+                        {report.challenges && (
+                          <div>
+                            <h4 className="font-medium text-sm mb-1">Desafios</h4>
+                            <p className="text-sm text-muted-foreground">{report.challenges}</p>
+                          </div>
+                        )}
+                        {report.next_steps && (
+                          <div>
+                            <h4 className="font-medium text-sm mb-1">Próximos Passos</h4>
+                            <p className="text-sm text-muted-foreground">{report.next_steps}</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         {/* Delete Confirmation Dialog */}
