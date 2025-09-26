@@ -125,30 +125,28 @@ export const KeyResultChart = ({
           </TabsContent>
           
           <TabsContent value="table" className="space-y-4">
-            <div className="rounded-md border overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-32 sticky left-0 bg-background z-10">Indicador</TableHead>
-                    {months.map(month => {
-                      const isCurrentMonth = month.key === currentMonth;
-                      return (
-                        <TableHead key={month.key} className="text-center min-w-20">
-                          {month.name}
-                          {isCurrentMonth && (
-                            <span className="block text-xs text-primary">(atual)</span>
-                          )}
-                        </TableHead>
-                      );
-                    })}
-                    <TableHead className="text-center min-w-24 bg-muted font-semibold">
-                      Total
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-              </Table>
-              <ScrollArea className="max-h-[300px] overflow-x-auto">
-                <Table>
+            <div className="rounded-md border">
+              <ScrollArea className="w-full overflow-x-auto">
+                <Table className="relative">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-32 sticky left-0 bg-background z-10 border-r">Indicador</TableHead>
+                      {months.map(month => {
+                        const isCurrentMonth = month.key === currentMonth;
+                        return (
+                          <TableHead key={month.key} className="text-center min-w-20">
+                            {month.name}
+                            {isCurrentMonth && (
+                              <span className="block text-xs text-primary">(atual)</span>
+                            )}
+                          </TableHead>
+                        );
+                      })}
+                      <TableHead className="text-center min-w-24 bg-muted font-semibold">
+                        Total
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
                   <TableBody>
                     <TableRow>
                       <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Previsto</TableCell>
