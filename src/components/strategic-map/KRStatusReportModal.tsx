@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { KeyResult } from '@/types/strategic-map';
 import { useState } from 'react';
 import { Plus, FileText, AlertCircle, Edit, Trash2, Eye, X } from 'lucide-react';
+import { useKRStatusReports } from '@/hooks/useKRStatusReports';
 
 interface KRStatusReportModalProps {
   keyResult: KeyResult | null;
@@ -16,79 +17,50 @@ interface KRStatusReportModalProps {
   onClose: () => void;
 }
 
-interface StatusReport {
-  id: string;
-  key_result_id: string;
-  report_date: string;
-  status_summary: string;
-  challenges: string;
-  achievements: string;
-  next_steps: string;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-}
 
 export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReportModalProps) => {
   const [statusSummary, setStatusSummary] = useState('');
   const [challenges, setChallenges] = useState('');
   const [achievements, setAchievements] = useState('');
   const [nextSteps, setNextSteps] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [reports, setReports] = useState<StatusReport[]>([]);
   const [showNewReportForm, setShowNewReportForm] = useState(false);
-  const [editingReport, setEditingReport] = useState<StatusReport | null>(null);
+  const [editingReport, setEditingReport] = useState<any>(null);
   const [deletingReportId, setDeletingReportId] = useState<string | null>(null);
   const [viewingReportId, setViewingReportId] = useState<string | null>(null);
 
-  if (!keyResult) return null;
+  // Usar o hook real conectado ao banco
+  const {
+    reports,
+    loading,
+    createReport,
+    updateReport,
+    deleteReport,
+  } = useKRStatusReports(keyResult?.id);
 
+  // Salvar relatório usando o hook real
   const handleSaveReport = async () => {
     if (!statusSummary.trim()) return;
     
-    setLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const reportData = {
+        key_result_id: keyResult!.id,
+        report_date: new Date().toISOString().split('T')[0],
+        status_summary: statusSummary,
+        challenges,
+        achievements,
+        next_steps: nextSteps,
+      };
+
       if (editingReport) {
-        // Update existing report
-        const updatedReport: StatusReport = {
-          ...editingReport,
-          status_summary: statusSummary,
-          challenges,
-          achievements,
-          next_steps: nextSteps,
-          updated_at: new Date().toISOString(),
-        };
-        
-        setReports(prev => prev.map(r => r.id === editingReport.id ? updatedReport : r));
+        await updateReport(editingReport.id, reportData);
       } else {
-        // Create new report
-        const newReport: StatusReport = {
-          id: Date.now().toString(),
-          key_result_id: keyResult.id,
-          report_date: new Date().toISOString(),
-          status_summary: statusSummary,
-          challenges,
-          achievements,
-          next_steps: nextSteps,
-          created_by: 'current-user',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        
-        setReports(prev => [newReport, ...prev]);
+        await createReport(reportData);
       }
       
-      // Reset form and close
-      setStatusSummary('');
-      setChallenges('');
-      setAchievements('');
-      setNextSteps('');
-      setShowNewReportForm(false);
-      setEditingReport(null);
-      setLoading(false);
-    }, 1000);
+      handleCancelNewReport();
+    } catch (error) {
+      console.error('Error saving report:', error);
+    }
   };
 
   const handleCancelNewReport = () => {
@@ -100,23 +72,24 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
     setEditingReport(null);
   };
 
-  const handleEditReport = (report: StatusReport) => {
+  const handleEditReport = (report: any) => {
     setEditingReport(report);
     setStatusSummary(report.status_summary);
-    setChallenges(report.challenges);
-    setAchievements(report.achievements);
-    setNextSteps(report.next_steps);
+    setChallenges(report.challenges || '');
+    setAchievements(report.achievements || '');
+    setNextSteps(report.next_steps || '');
     setShowNewReportForm(true);
   };
 
   const handleDeleteReport = async () => {
     if (!deletingReportId) return;
     
-    // Simulate API call
-    setTimeout(() => {
-      setReports(prev => prev.filter(r => r.id !== deletingReportId));
+    try {
+      await deleteReport(deletingReportId);
       setDeletingReportId(null);
-    }, 500);
+    } catch (error) {
+      console.error('Error deleting report:', error);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -144,6 +117,8 @@ export const KRStatusReportModal = ({ keyResult, open, onClose }: KRStatusReport
   const handleViewReport = (reportId: string) => {
     setViewingReportId(viewingReportId === reportId ? null : reportId);
   };
+
+  if (!keyResult) return null;
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
