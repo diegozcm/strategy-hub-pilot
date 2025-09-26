@@ -111,13 +111,83 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         if (hasAccess) {
           await loadCompanyById(persistedCompanyId);
         } else {
-          console.log('❌ User no longer has access to persisted company');
+          console.log('❌ User no longer has access to persisted company, removing from storage');
           localStorage.removeItem('selectedCompanyId');
+          // Try to auto-recover with available companies
+          await autoRecoverCompany(userId);
         }
+      } else {
+        // No persisted company, try to auto-recover
+        await autoRecoverCompany(userId);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
       setProfile(null);
+    }
+  };
+
+  // Auto-recover company if user has access to only one company
+  const autoRecoverCompany = async (userId: string) => {
+    try {
+      console.log('🔄 Attempting auto-recovery of company for user:', userId);
+      
+      const { data: userCompanies, error } = await supabase
+        .from('user_company_relations')
+        .select(`
+          company_id,
+          companies!inner (
+            id,
+            name,
+            status,
+            company_type,
+            owner_id,
+            mission,
+            vision,
+            values,
+            logo_url,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('companies.status', 'active');
+
+      if (error) {
+        console.error('❌ Error fetching user companies for auto-recovery:', error);
+        return;
+      }
+
+      const activeCompanies = userCompanies?.map(relation => relation.companies).filter(Boolean) || [];
+      
+      if (activeCompanies.length === 1) {
+        const company = activeCompanies[0];
+        console.log('✅ Auto-recovering single company:', company.name);
+        
+        setCompany({
+          ...company,
+          active: company.status === 'active'
+        } as Company);
+        setSelectedCompanyId(company.id);
+        localStorage.setItem('selectedCompanyId', company.id);
+        
+        // Update profile with recovered company
+        if (profile) {
+          setProfile({
+            ...profile,
+            company_id: company.id,
+            company: {
+              ...company,
+              active: company.status === 'active'
+            } as Company
+          });
+        }
+      } else if (activeCompanies.length > 1) {
+        console.log(`🏢 User has ${activeCompanies.length} companies, requires manual selection`);
+      } else {
+        console.log('⚠️ User has no active company associations');
+      }
+    } catch (error) {
+      console.error('❌ Error during auto-recovery:', error);
     }
   };
 
@@ -281,9 +351,12 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         
         if (error || !newSession) {
           console.error('❌ Session refresh failed:', error?.message);
+          // Don't immediately return false - this could be a temporary network issue
+          // Let the auth state handler deal with it more gracefully
           return false;
         }
         
+        console.log('✅ Session refreshed successfully');
         setSession(newSession);
         setUser(newSession.user);
         return true;
@@ -296,9 +369,9 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Clear company selection without logout
-  const clearCompanySelection = () => {
-    console.log('🏢 Clearing company selection');
+  // Clear company selection with reason logging
+  const clearCompanySelection = (reason: string = 'manual') => {
+    console.log(`🏢 Clearing company selection - Reason: ${reason}`);
     setCompany(null);
     setSelectedCompanyId(null);
     localStorage.removeItem('selectedCompanyId');
@@ -432,7 +505,13 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           setOriginalAdmin(null);
           setImpersonationSession(null);
           setShowFirstLoginModal(false);
-          localStorage.removeItem('selectedCompanyId');
+          // Only clear selectedCompanyId if this is an intentional logout (not just token issues)
+          if (event === 'SIGNED_OUT') {
+            console.log('🏢 Clearing company selection due to explicit sign out');
+            localStorage.removeItem('selectedCompanyId');
+          } else {
+            console.log('🔄 Preserving company selection for potential recovery');
+          }
         } else if (event === 'TOKEN_REFRESHED' && session) {
           console.log('🔄 Token refreshed');
           setSession(session);
@@ -466,7 +545,8 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         if (error) {
           console.error('❌ Session check error:', error);
           localStorage.removeItem('sb-pdpzxjlnaqwlyqoyoyhr-auth-token');
-          localStorage.removeItem('selectedCompanyId');
+          // Don't clear selectedCompanyId here - might be temporary error
+          console.log('⚠️ Session error, but preserving company selection for recovery');
           setLoading(false);
           return;
         }
@@ -474,9 +554,9 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         if (session) {
           const isValid = await validateSession(session);
           if (!isValid) {
-            console.warn('⚠️ Invalid existing session, clearing');
+            console.warn('⚠️ Invalid existing session, clearing auth but preserving company for recovery');
             localStorage.removeItem('sb-pdpzxjlnaqwlyqoyoyhr-auth-token');
-            localStorage.removeItem('selectedCompanyId');
+            // Don't clear selectedCompanyId - user might still have access
             setLoading(false);
             return;
           }
@@ -490,7 +570,8 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         console.error('❌ Critical session check error:', error);
         setLoading(false);
         localStorage.removeItem('sb-pdpzxjlnaqwlyqoyoyhr-auth-token');
-        localStorage.removeItem('selectedCompanyId');
+        // Don't clear selectedCompanyId - might be network issue
+        console.log('⚠️ Critical error, but preserving company selection for recovery');
       });
 
     return () => subscription.unsubscribe();
@@ -696,6 +777,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       isSystemAdmin,
       isCompanyAdmin,
       switchCompany,
+      clearCompanySelection,
       fetchCompaniesByType,
       fetchAllUserCompanies,
       // Impersonation properties
