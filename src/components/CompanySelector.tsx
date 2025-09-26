@@ -18,10 +18,11 @@ export const CompanySelector: React.FC = () => {
   const [availableCompanies, setAvailableCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastLoadedModule, setLastLoadedModule] = useState<string | null>(null);
+  const [isComponentMounted, setIsComponentMounted] = useState(true);
 
   // Memoized load function to prevent unnecessary calls
   const loadCompaniesForCurrentModule = useCallback(async () => {
-    if (!currentModule) return;
+    if (!currentModule || !isComponentMounted) return;
     
     setLoading(true);
     try {
@@ -39,14 +40,19 @@ export const CompanySelector: React.FC = () => {
         companies = await fetchCompaniesByType?.('regular') || [];
       }
       
-      setAvailableCompanies(companies as Company[]);
-      setLastLoadedModule(currentModule.slug);
+      // Only update state if component is still mounted
+      if (isComponentMounted) {
+        setAvailableCompanies(companies as Company[]);
+        setLastLoadedModule(currentModule.slug);
+      }
     } catch (error) {
       console.error('Erro ao carregar empresas:', error);
     } finally {
-      setLoading(false);
+      if (isComponentMounted) {
+        setLoading(false);
+      }
     }
-  }, [currentModule, isSystemAdmin, profile?.role, fetchCompaniesByType, fetchAllUserCompanies]);
+  }, [currentModule, isSystemAdmin, profile?.role, fetchCompaniesByType, fetchAllUserCompanies, isComponentMounted]);
 
   // Load companies only when module actually changes
   useEffect(() => {
@@ -56,10 +62,27 @@ export const CompanySelector: React.FC = () => {
   }, [currentModule?.slug, loadCompaniesForCurrentModule, lastLoadedModule]);
 
   const handleCompanyChange = async (selectedCompany: Company) => {
-    if (switchCompany) {
-      await switchCompany(selectedCompany.id);
+    if (switchCompany && isComponentMounted) {
+      try {
+        setLoading(true);
+        await switchCompany(selectedCompany.id);
+      } catch (error) {
+        console.error('Erro ao trocar empresa:', error);
+      } finally {
+        if (isComponentMounted) {
+          setLoading(false);
+        }
+      }
     }
   };
+
+  // Component lifecycle management
+  React.useEffect(() => {
+    setIsComponentMounted(true);
+    return () => {
+      setIsComponentMounted(false);
+    };
+  }, []);
 
   // Se não há módulo ativo, não mostrar o seletor
   if (!currentModule) {
@@ -73,7 +96,10 @@ export const CompanySelector: React.FC = () => {
     // Se a empresa já está selecionada, mostrar apenas o nome
     if (company?.id === singleCompany.id) {
       return (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div 
+          key={`selected-${company.id}`}
+          className="flex items-center gap-2 text-sm text-muted-foreground"
+        >
           <Building2 className="h-4 w-4" />
           <span>{company.name}</span>
         </div>
@@ -83,10 +109,12 @@ export const CompanySelector: React.FC = () => {
     // Se não está selecionada, mostrar botão para selecionar
     return (
       <Button 
+        key={`select-${singleCompany.id}`}
         variant="outline" 
         size="sm" 
         className="flex items-center gap-2"
         onClick={() => handleCompanyChange(singleCompany)}
+        disabled={loading}
       >
         <Building2 className="h-4 w-4" />
         <span>Selecionar {singleCompany.name}</span>
@@ -97,7 +125,10 @@ export const CompanySelector: React.FC = () => {
   // Se não há empresas disponíveis
   if (availableCompanies.length === 0) {
     return (
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <div 
+        key="no-companies"
+        className="flex items-center gap-2 text-sm text-muted-foreground"
+      >
         <Building2 className="h-4 w-4" />
         <span>Nenhuma empresa disponível</span>
       </div>
@@ -106,27 +137,35 @@ export const CompanySelector: React.FC = () => {
 
   // Para admins ou usuários com múltiplas empresas
   return (
-    <DropdownMenu>
+    <DropdownMenu key={`dropdown-${currentModule?.slug}-${company?.id}`}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="flex items-center gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex items-center gap-2"
+          disabled={loading}
+        >
           <Building2 className="h-4 w-4" />
           <span>{company?.name || 'Selecionar empresa'}</span>
           <ChevronDown className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent 
+        align="end" 
+        className="w-56 bg-popover border shadow-md z-50"
+      >
         {loading ? (
-          <DropdownMenuItem disabled>
+          <DropdownMenuItem disabled key="loading">
             Carregando empresas...
           </DropdownMenuItem>
         ) : availableCompanies.length === 0 ? (
-          <DropdownMenuItem disabled>
+          <DropdownMenuItem disabled key="no-companies-dropdown">
             Nenhuma empresa disponível
           </DropdownMenuItem>
         ) : (
           availableCompanies.map((availableCompany) => (
             <DropdownMenuItem
-              key={availableCompany.id}
+              key={`company-${availableCompany.id}`}
               onClick={() => handleCompanyChange(availableCompany)}
               className={company?.id === availableCompany.id ? 'bg-accent' : ''}
             >

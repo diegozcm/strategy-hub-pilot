@@ -314,9 +314,18 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
 
   // Switch company (for system admins and users with multiple companies)
   const switchCompany = async (companyId: string) => {
+    if (!user || companyId === company?.id || loading) return;
+    
+    console.log('🔄 Switching company to:', companyId);
+    
     try {
-      console.log('🏢 Switching to company:', companyId);
       setLoading(true);
+      
+      // Add small delay to prevent rapid switching
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Clear current company state first
+      setCompany(null);
       
       // Update the user's current company in the profile
       const { error: updateError } = await supabase
@@ -340,6 +349,9 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         console.error('❌ Error fetching company:', companyError);
         throw companyError;
       }
+
+      // Add another small delay before setting state
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       // Update states
       setCompany({
@@ -367,9 +379,15 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       
     } catch (error) {
       console.error('❌ Error switching company:', error);
+      // Restore previous company if switch fails
+      if (company) {
+        setCompany(company);
+        setSelectedCompanyId(company.id);
+      }
       throw error;
     } finally {
-      setLoading(false);
+      // Ensure loading is reset after a minimum delay
+      setTimeout(() => setLoading(false), 200);
     }
   };
 

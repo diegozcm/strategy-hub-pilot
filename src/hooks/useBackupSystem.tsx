@@ -229,15 +229,39 @@ export const useBackupSystem = () => {
 
       if (error) throw error;
 
-      // Create download link
+      // Create download link with DOM safety
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
       a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      a.style.display = 'none';
+      
+      try {
+        // Safe DOM manipulation with error handling
+        if (document.body) {
+          document.body.appendChild(a);
+          a.click();
+          
+          // Safe removal with timeout to prevent race conditions
+          setTimeout(() => {
+            try {
+              if (document.body.contains(a)) {
+                document.body.removeChild(a);
+              }
+            } catch (removeError) {
+              console.warn('Safe DOM cleanup - element already removed:', removeError);
+            }
+          }, 100);
+        }
+      } catch (domError) {
+        console.error('DOM manipulation error during download:', domError);
+        // Fallback: direct download without DOM manipulation
+        const downloadUrl = URL.createObjectURL(data);
+        window.open(downloadUrl, '_blank');
+      } finally {
+        // Always clean up URL
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
 
       toast({
         title: "Download iniciado",

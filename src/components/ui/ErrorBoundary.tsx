@@ -27,11 +27,27 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary details:', error, errorInfo);
     
+    // Check for specific DOM errors
+    const isDOMError = error.message.includes('removeChild') || 
+                      error.message.includes('appendChild') ||
+                      error.message.includes('Node');
+    
+    if (isDOMError) {
+      console.warn('DOM manipulation error detected - attempting recovery');
+      // For DOM errors, try automatic recovery after a short delay
+      setTimeout(() => {
+        if (this.state.hasError) {
+          this.handleRetry();
+        }
+      }, 2000);
+    }
+    
     // Log to monitoring service if available
     if (typeof window !== 'undefined' && (window as any).gtag) {
       (window as any).gtag('event', 'exception', {
         description: error.toString(),
         fatal: false,
+        error_type: isDOMError ? 'dom_error' : 'general_error'
       });
     }
   }
