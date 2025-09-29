@@ -5,13 +5,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, List } from 'lucide-react';
+import { Calendar, List, StickyNote } from 'lucide-react';
 import { useMentorSessions, MentoringSession } from '@/hooks/useMentorSessions';
 import { useMentorStartupDetails } from '@/hooks/useMentorStartupDetails';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { CalendarGrid } from './CalendarGrid';
 import { SessionsStatsCard } from './SessionsStatsCard';
 import { MentorSessionsPage } from '../mentor/MentorSessionsPage';
+import { MentorTodosList } from './MentorTodosList';
+import { MentorTodoModal } from './MentorTodoModal';
+import { useMentorTodos, type MentorTodo } from '@/hooks/useMentorTodos';
 import { format } from 'date-fns';
 
 const sessionTypes = [
@@ -27,12 +30,16 @@ const sessionTypes = [
 export const MentorCalendarPage: React.FC = () => {
   const { sessions, loading, createSession, updateSession } = useMentorSessions();
   const { data: startups } = useMentorStartupDetails();
+  const { createTodo, updateTodo } = useMentorTodos();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [activeTab, setActiveTab] = useState('calendar');
   
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<MentoringSession | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  
+  const [isTodoModalOpen, setIsTodoModalOpen] = useState(false);
+  const [editingTodo, setEditingTodo] = useState<MentorTodo | null>(null);
 
   const [formData, setFormData] = useState({
     startup_company_id: '',
@@ -114,6 +121,21 @@ export const MentorCalendarPage: React.FC = () => {
     });
   };
 
+  const handleTodoSubmit = async (data: any) => {
+    if (editingTodo) {
+      await updateTodo(editingTodo.id, data);
+    } else {
+      await createTodo(data);
+    }
+    setIsTodoModalOpen(false);
+    setEditingTodo(null);
+  };
+
+  const handleEditTodo = (todo: MentorTodo) => {
+    setEditingTodo(todo);
+    setIsTodoModalOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -141,6 +163,10 @@ export const MentorCalendarPage: React.FC = () => {
             <List className="h-4 w-4" />
             Lista
           </TabsTrigger>
+          <TabsTrigger value="todos" className="flex items-center gap-2">
+            <StickyNote className="h-4 w-4" />
+            TO DO
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar" className="space-y-6">
@@ -157,6 +183,16 @@ export const MentorCalendarPage: React.FC = () => {
 
         <TabsContent value="list">
           <MentorSessionsPage />
+        </TabsContent>
+
+        <TabsContent value="todos">
+          <MentorTodosList
+            onCreateClick={() => {
+              setEditingTodo(null);
+              setIsTodoModalOpen(true);
+            }}
+            onEditClick={handleEditTodo}
+          />
         </TabsContent>
       </Tabs>
 
@@ -261,6 +297,18 @@ export const MentorCalendarPage: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* TODO Modal */}
+      <MentorTodoModal
+        open={isTodoModalOpen}
+        onClose={() => {
+          setIsTodoModalOpen(false);
+          setEditingTodo(null);
+        }}
+        onSubmit={handleTodoSubmit}
+        editingTodo={editingTodo}
+        startups={startups?.map(s => ({ id: s.id, name: s.name })) || []}
+      />
     </div>
   );
 };

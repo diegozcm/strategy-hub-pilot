@@ -1540,6 +1540,53 @@ export type Database = {
           },
         ]
       }
+      mentor_todos: {
+        Row: {
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          mentor_id: string
+          priority: Database["public"]["Enums"]["mentor_todo_priority"]
+          startup_company_id: string
+          status: Database["public"]["Enums"]["mentor_todo_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          mentor_id: string
+          priority?: Database["public"]["Enums"]["mentor_todo_priority"]
+          startup_company_id: string
+          status?: Database["public"]["Enums"]["mentor_todo_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          mentor_id?: string
+          priority?: Database["public"]["Enums"]["mentor_todo_priority"]
+          startup_company_id?: string
+          status?: Database["public"]["Enums"]["mentor_todo_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_todos_startup_company_id_fkey"
+            columns: ["startup_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mentoring_sessions: {
         Row: {
           beep_related_items: Json | null
@@ -3089,6 +3136,8 @@ export type Database = {
         | "validando_mercado"
         | "evoluindo"
       company_type: "regular" | "startup"
+      mentor_todo_priority: "low" | "medium" | "high"
+      mentor_todo_status: "pending" | "in_progress" | "completed"
       restore_status:
         | "pending"
         | "running"
@@ -3234,6 +3283,8 @@ export const Constants = {
         "evoluindo",
       ],
       company_type: ["regular", "startup"],
+      mentor_todo_priority: ["low", "medium", "high"],
+      mentor_todo_status: ["pending", "in_progress", "completed"],
       restore_status: [
         "pending",
         "running",
