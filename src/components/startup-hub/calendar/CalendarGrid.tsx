@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, MoreVertical, Plus, Eye, Edit, Calendar, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MoreVertical, Plus, Eye, Edit, Calendar, Clock, ArrowLeft } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MentoringSession } from '@/hooks/useMentorSessions';
+import { ActionItemsManager } from '@/components/startup-hub/ActionItemsManager';
 
 // Unified session type for calendar display
 type CalendarSession = MentoringSession & {
@@ -35,6 +36,8 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDayModalOpen, setIsDayModalOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<CalendarSession | null>(null);
+  const [isSessionDetailOpen, setIsSessionDetailOpen] = useState(false);
 
   // Get days in the month
   const monthStart = startOfMonth(selectedMonth);
@@ -52,6 +55,28 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   const handleDayClick = (date: Date) => {
     setSelectedDate(date);
     setIsDayModalOpen(true);
+  };
+
+  // Handle session click for detailed view
+  const handleSessionClick = (session: CalendarSession) => {
+    setSelectedSession(session);
+    setIsSessionDetailOpen(true);
+    setIsDayModalOpen(false);
+  };
+
+  // Get session types for display
+  const getSessionTypeLabel = (type: string) => {
+    const sessionTypes = [
+      { value: 'general', label: 'Geral' },
+      { value: 'strategy', label: 'Estratégia' },
+      { value: 'technical', label: 'Técnica' },
+      { value: 'pitch', label: 'Pitch' },
+      { value: 'financial', label: 'Financeiro' },
+      { value: 'legal', label: 'Jurídico' },
+      { value: 'marketing', label: 'Marketing' },
+      { value: 'follow_up', label: 'Follow-up' }
+    ];
+    return sessionTypes.find(t => t.value === type)?.label || type;
   };
 
   // Navigation handlers
@@ -152,11 +177,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                         className="p-1 rounded text-xs bg-primary/10 text-primary truncate"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (isMentor && onEditSession) {
-                            onEditSession(session);
-                          } else {
-                            handleDayClick(date);
-                          }
+                          handleSessionClick(session);
                         }}
                       >
                         {isMentor ? session.startup_name : session.mentor_name || 'Mentor'}
@@ -210,36 +231,47 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h4 className="font-medium">
-                                {isMentor ? session.startup_name : session.mentor_name || 'Mentor'}
-                              </h4>
-                              <Badge variant="outline">
-                                {session.session_type}
-                              </Badge>
-                              <div className="flex items-center text-sm text-muted-foreground">
-                                <Clock className="h-4 w-4 mr-1" />
-                                {session.duration}min
-                              </div>
-                            </div>
-                          {session.notes && (
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {session.notes}
-                            </p>
-                          )}
-                        </div>
-                        {isMentor && onEditSession && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              onEditSession(session);
-                              setIsDayModalOpen(false);
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
+                             <div className="flex items-center gap-3 mb-2">
+                               <h4 className="font-medium">
+                                 {isMentor ? session.startup_name : session.mentor_name || 'Mentor'}
+                               </h4>
+                               <Badge variant="outline">
+                                 {getSessionTypeLabel(session.session_type)}
+                               </Badge>
+                               <div className="flex items-center text-sm text-muted-foreground">
+                                 <Clock className="h-4 w-4 mr-1" />
+                                 {session.duration}min
+                               </div>
+                             </div>
+                           {session.notes && (
+                             <p className="text-sm text-muted-foreground line-clamp-2">
+                               {session.notes}
+                             </p>
+                           )}
+                         </div>
+                         <div className="flex gap-2">
+                           <Button 
+                             variant="outline" 
+                             size="sm"
+                             onClick={() => {
+                               handleSessionClick(session);
+                             }}
+                           >
+                             <Eye className="h-4 w-4" />
+                           </Button>
+                           {isMentor && onEditSession && (
+                             <Button 
+                               variant="outline" 
+                               size="sm"
+                               onClick={() => {
+                                 onEditSession(session);
+                                 setIsDayModalOpen(false);
+                               }}
+                             >
+                               <Edit className="h-4 w-4" />
+                             </Button>
+                           )}
+                         </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -247,6 +279,92 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Session Detail Modal */}
+      <Dialog open={isSessionDetailOpen} onOpenChange={setIsSessionDetailOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  setIsSessionDetailOpen(false);
+                  setIsDayModalOpen(true);
+                }}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <DialogTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Detalhes da Sessão de Mentoria
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+          
+          {selectedSession && (
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <CardTitle className="text-lg">
+                          {isMentor ? selectedSession.startup_name : selectedSession.mentor_name || 'Mentor'}
+                        </CardTitle>
+                        <Badge variant="outline">
+                          {getSessionTypeLabel(selectedSession.session_type)}
+                        </Badge>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {format(new Date(selectedSession.session_date), 'dd/MM/yyyy', { locale: ptBR })}
+                        </div>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4 mr-1" />
+                          {selectedSession.duration}min
+                        </div>
+                      </div>
+                    </div>
+                    {isMentor && onEditSession && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          onEditSession(selectedSession);
+                          setIsSessionDetailOpen(false);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {selectedSession.notes && (
+                    <div className="mb-4">
+                      <h4 className="font-medium text-sm mb-2 text-muted-foreground">Notas da Sessão</h4>
+                      <p className="text-sm whitespace-pre-wrap border-l-4 border-primary/20 pl-4 py-2">
+                        {selectedSession.notes}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Action Items Manager */}
+                  <div className="mt-4">
+                    <ActionItemsManager sessionId={selectedSession.id} canEdit={isMentor} />
+                  </div>
+                  
+                  {selectedSession.follow_up_date && (
+                    <div className="text-sm text-muted-foreground mt-4 p-3 bg-muted/50 rounded-lg">
+                      <strong>Follow-up agendado:</strong> {format(new Date(selectedSession.follow_up_date), 'dd/MM/yyyy', { locale: ptBR })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
