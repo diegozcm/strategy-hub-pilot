@@ -107,10 +107,11 @@ export const useMentorSessions = () => {
 
   const updateSession = async (id: string, updates: Partial<MentoringSession>) => {
     try {
-      // Handle empty date fields by converting them to null
+      // Handle empty date fields by converting them to null and ensure proper date formatting
       const processedUpdates = {
         ...updates,
-        follow_up_date: updates.follow_up_date || null
+        session_date: updates.session_date ? new Date(updates.session_date + 'T00:00:00').toISOString() : updates.session_date,
+        follow_up_date: updates.follow_up_date ? new Date(updates.follow_up_date + 'T00:00:00').toISOString() : null
       };
 
       const { data, error: updateError } = await supabase

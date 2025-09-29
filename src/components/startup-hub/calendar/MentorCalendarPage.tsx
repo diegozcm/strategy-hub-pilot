@@ -79,9 +79,20 @@ export const MentorCalendarPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prepare the data for submission, ensuring proper field mapping
+    const submissionData = {
+      startup_company_id: formData.startup_company_id,
+      session_date: formData.session_date,
+      duration: formData.duration,
+      session_type: formData.session_type,
+      notes: formData.notes,
+      follow_up_date: formData.follow_up_date || null,
+      status: formData.status
+    };
+    
     const result = editingSession 
-      ? await updateSession(editingSession.id, formData)
-      : await createSession(formData);
+      ? await updateSession(editingSession.id, submissionData)
+      : await createSession(submissionData);
 
     if (!result.error) {
       handleCloseModal();
