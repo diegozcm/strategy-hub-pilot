@@ -13,6 +13,7 @@ import { MentorSessionsPage } from './mentor/MentorSessionsPage';
 import { StartupSessionsPage } from './StartupSessionsPage';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { MentorBeepResultsPage } from './mentor/MentorBeepResultsPage';
+import { MentorCalendarPage, StartupCalendarPage } from './calendar';
 
 export const StartupHubRouter: React.FC = () => {
   const { profile, company, isLoading, hasProfile, isStartup, isMentor, hasStartupCompany } = useStartupProfile();
@@ -92,6 +93,15 @@ export const StartupHubRouter: React.FC = () => {
         }
         if (isStartup) {
           return <StartupSessionsPage />;
+        }
+        return <div className="text-center py-12">Acesso não autorizado</div>;
+
+      case 'calendar':
+        if (isMentor) {
+          return <MentorCalendarPage />;
+        }
+        if (isStartup) {
+          return <StartupCalendarPage />;
         }
         return <div className="text-center py-12">Acesso não autorizado</div>;
 
