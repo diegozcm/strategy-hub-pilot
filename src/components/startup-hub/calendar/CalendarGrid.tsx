@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, MoreVertical, Plus, Eye, Edit, Calendar, Clock, ArrowLeft } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, startOfWeek, endOfWeek } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MentoringSession } from '@/hooks/useMentorSessions';
 import { ActionItemsManager } from '@/components/startup-hub/ActionItemsManager';
@@ -39,10 +39,16 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   const [selectedSession, setSelectedSession] = useState<CalendarSession | null>(null);
   const [isSessionDetailOpen, setIsSessionDetailOpen] = useState(false);
 
-  // Get days in the month
+  // Get calendar grid with proper Monday start
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  // Start calendar from Monday of the week containing the first day of month
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  // End calendar on Sunday of the week containing the last day of month  
+  const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
   // Get sessions for a specific day
   const getSessionsForDay = (date: Date) => {
@@ -116,7 +122,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
         <CardContent className="p-0">
           {/* Days of week header */}
           <div className="grid grid-cols-7 border-b">
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((day) => (
+            {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day) => (
               <div key={day} className="p-3 text-center text-sm font-medium text-muted-foreground border-r last:border-r-0">
                 {day}
               </div>
@@ -125,20 +131,25 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 
           {/* Calendar Days */}
           <div className="grid grid-cols-7">
-            {daysInMonth.map((date) => {
+            {calendarDays.map((date) => {
               const daySessions = getSessionsForDay(date);
               const isCurrentDay = isToday(date);
+              const isCurrentMonth = date.getMonth() === selectedMonth.getMonth();
               
               return (
                 <div
                   key={date.toISOString()}
-                  className="min-h-[100px] border-r border-b last:border-r-0 p-2 hover:bg-muted/50 cursor-pointer group"
+                  className={cn(
+                    "min-h-[100px] border-r border-b last:border-r-0 p-2 hover:bg-muted/50 cursor-pointer group",
+                    !isCurrentMonth && "text-muted-foreground bg-muted/20"
+                  )}
                   onClick={() => handleDayClick(date)}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className={cn(
                       "text-sm font-medium",
-                      isCurrentDay && "text-primary font-bold"
+                      isCurrentDay && "text-primary font-bold",
+                      !isCurrentMonth && "text-muted-foreground"
                     )}>
                       {format(date, 'd')}
                     </span>
