@@ -4,21 +4,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, Pencil, Trash2, Calendar } from 'lucide-react';
-import { useMentorTodos, type MentorTodo } from '@/hooks/useMentorTodos';
+import { type MentorTodo } from '@/hooks/useMentorTodos';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface MentorTodosListProps {
+  mentorTodosHook: ReturnType<typeof import('@/hooks/useMentorTodos')['useMentorTodos']>;
   onCreateClick: () => void;
   onEditClick: (todo: MentorTodo) => void;
 }
 
 export const MentorTodosList: React.FC<MentorTodosListProps> = ({
+  mentorTodosHook,
   onCreateClick,
   onEditClick
 }) => {
-  const { todos, loading, updateTodo, deleteTodo } = useMentorTodos();
+  const { todos, loading, updateTodo, deleteTodo } = mentorTodosHook;
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

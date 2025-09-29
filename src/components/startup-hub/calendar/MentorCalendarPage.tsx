@@ -30,7 +30,7 @@ const sessionTypes = [
 export const MentorCalendarPage: React.FC = () => {
   const { sessions, loading, createSession, updateSession } = useMentorSessions();
   const { data: startups } = useMentorStartupDetails();
-  const { createTodo, updateTodo } = useMentorTodos();
+  const mentorTodosHook = useMentorTodos();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
   const [activeTab, setActiveTab] = useState('calendar');
   
@@ -123,9 +123,9 @@ export const MentorCalendarPage: React.FC = () => {
 
   const handleTodoSubmit = async (data: any) => {
     if (editingTodo) {
-      await updateTodo(editingTodo.id, data);
+      await mentorTodosHook.updateTodo(editingTodo.id, data);
     } else {
-      await createTodo(data);
+      await mentorTodosHook.createTodo(data);
     }
     setIsTodoModalOpen(false);
     setEditingTodo(null);
@@ -187,6 +187,7 @@ export const MentorCalendarPage: React.FC = () => {
 
         <TabsContent value="todos">
           <MentorTodosList
+            mentorTodosHook={mentorTodosHook}
             onCreateClick={() => {
               setEditingTodo(null);
               setIsTodoModalOpen(true);
