@@ -32,9 +32,7 @@ const menuStructure = [
       { name: 'Avaliação BEEP', href: '/app/startup-hub?tab=beep', icon: TrendingUp, requiresStartup: true },
       { name: 'Startups', href: '/app/startup-hub?tab=startups', icon: Building, requiresMentor: true },
       { name: 'Avaliações BEEP', href: '/app/startup-hub?tab=beep-analytics', icon: Activity, requiresMentor: true },
-      { name: 'Sessões de Mentoria', href: '/app/startup-hub?tab=sessions', icon: Users, requiresMentor: true },
       { name: 'Calendário', href: '/app/startup-hub?tab=calendar', icon: Calendar },
-      { name: 'Mentorias', href: '/app/startup-hub?tab=mentoring', icon: Users, requiresStartup: true },
       { name: 'Perfil Startup', href: '/app/startup-hub?tab=profile', icon: Rocket, requiresStartup: true }
     ]
   },
@@ -179,6 +177,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                   }
 
                   const isActive = isRouteActive(item.href);
+
+                  // Special handling for calendar with conditional naming
+                  if (item.href.includes('tab=calendar')) {
+                    const calendarName = isStartup ? 'Mentorias' : 'Calendário de Mentorias';
+                    return (
+                      <NavLink 
+                        key="calendar" 
+                        to={item.href} 
+                        className={cn(
+                          "flex items-center py-2 rounded-lg transition-colors",
+                          // Indentation for sub-items - always left-aligned on mobile
+                          isMobile ? "px-3 ml-4" : (collapsed ? "px-3 justify-center" : "px-3 ml-4"),
+                          // Color scheme: muted by default, accent on hover/active
+                          isActive 
+                            ? "bg-accent text-accent-foreground font-medium" 
+                            : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+                        )}
+                      >
+                        <Calendar className={cn("h-4 w-4", (!collapsed || isMobile) && "mr-3")} />
+                        {(!collapsed || isMobile) && <span className="text-sm">{calendarName}</span>}
+                      </NavLink>
+                    );
+                  }
 
                   return (
                     <NavLink 
