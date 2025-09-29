@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, Clock, Users, TrendingUp } from 'lucide-react';
 import { MentoringSession } from '@/hooks/useMentorSessions';
+import { useStartupHubUserType } from '@/hooks/useStartupHubUserType';
 
 // Unified session type for calendar display
 type CalendarSession = MentoringSession & {
@@ -14,6 +15,13 @@ interface SessionsStatsCardProps {
 }
 
 export const SessionsStatsCard: React.FC<SessionsStatsCardProps> = ({ sessions, selectedMonth }) => {
+  const { userType } = useStartupHubUserType();
+  
+  // Don't show stats for startup users - these are mentor-specific metrics
+  if (userType === 'startup') {
+    return null;
+  }
+  
   // Filter sessions for the selected month
   const monthSessions = sessions.filter(session => {
     const sessionDate = new Date(session.session_date);
