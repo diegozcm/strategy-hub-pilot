@@ -433,65 +433,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Use Cases */}
-      <section id="cases" className="py-16 px-4 bg-strategy-gray-light">
-        <div className="container mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-strategy-red-dark mb-4">
-              {getContent('use_cases', 'title', 'Para Quem É o Start Together')}
-            </h2>
-            <p className="text-xl text-strategy-gray-medium">
-              {getContent('use_cases', 'subtitle', 'Soluções específicas para cada tipo de organização')}
-            </p>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            {[1, 2, 3].map((num) => {
-              const title = getContent('use_cases', `case_${num}_title`, '');
-              const module = getContent('use_cases', `case_${num}_module`, '');
-              const iconName = getContent('use_cases', `case_${num}_icon`, num === 1 ? 'Lightbulb' : num === 2 ? 'Award' : 'Target');
-              const IconComponent = Icons[iconName as keyof typeof Icons] as React.ComponentType<any>;
-              
-              // Only show use cases with content
-              if (!title) return null;
-              
-              const features = [];
-              for (let i = 1; i <= 5; i++) {
-                const feature = getContent('use_cases', `case_${num}_feature_${i}`, '');
-                if (feature) features.push(feature);
-              }
-              
-              return (
-                <Card key={num} className="hover:shadow-lg transition-all duration-300 bg-white border">
-                  <CardHeader>
-                    <div className={`w-12 h-12 ${num === 1 ? 'bg-accent/10' : 'bg-primary/10'} rounded-lg flex items-center justify-center mb-4`}>
-                      {IconComponent ? (
-                        <IconComponent className={`h-6 w-6 ${num === 1 ? 'text-accent' : 'text-primary'}`} />
-                      ) : (
-                        <Target className={`h-6 w-6 ${num === 1 ? 'text-accent' : 'text-primary'}`} />
-                      )}
-                    </div>
-                    <CardTitle className="text-strategy-blue-navy">{title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {module && (
-                      <p className="text-sm text-strategy-gray-medium mb-3">{module}</p>
-                    )}
-                    {features.length > 0 && (
-                      <ul className="text-strategy-gray-medium space-y-2">
-                        {features.map((feature, index) => (
-                          <li key={index}>• {feature}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
 
       {/* Testimonials */}
       <section className="py-16 px-4 bg-strategy-blue-navy">
