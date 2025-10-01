@@ -15,11 +15,9 @@ export const FloatingAIButton: React.FC<FloatingAIButtonProps> = ({
   unreadCount = 0,
   className
 }) => {
-  console.log('🤖 FloatingAIButton rendered');
-  
   return (
     <div className={cn(
-      "fixed bottom-6 left-6 z-[100] animate-fade-in block",
+      "fixed bottom-6 right-6 z-[100] animate-fade-in block",
       className
     )}>
       <Button
@@ -27,7 +25,7 @@ export const FloatingAIButton: React.FC<FloatingAIButtonProps> = ({
         size="icon"
         className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 bg-primary hover:bg-primary/90 hover:scale-110"
       >
-        <Bot className="h-6 w-6" />
+        <Bot className="h-8 w-8" />
         {unreadCount > 0 && (
           <Badge 
             variant="destructive" 
