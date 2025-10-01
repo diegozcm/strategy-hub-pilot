@@ -15,9 +15,11 @@ export const FloatingAIButton: React.FC<FloatingAIButtonProps> = ({
   unreadCount = 0,
   className
 }) => {
+  console.log('🤖 FloatingAIButton rendered');
+  
   return (
     <div className={cn(
-      "fixed bottom-6 left-6 z-50 animate-fade-in hidden lg:block",
+      "fixed bottom-6 left-6 z-[100] animate-fade-in block",
       className
     )}>
       <Button

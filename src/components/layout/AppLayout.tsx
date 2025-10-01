@@ -17,6 +17,9 @@ export const AppLayout: React.FC = () => {
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const closeSidebar = () => setSidebarOpen(false);
 
+  // Debug logs
+  console.log('🤖 AppLayout - isMobile:', isMobile, 'window.innerWidth:', window.innerWidth);
+
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <ImpersonationBanner />
