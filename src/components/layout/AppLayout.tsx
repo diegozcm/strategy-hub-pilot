@@ -39,10 +39,12 @@ export const AppLayout: React.FC = () => {
       {/* Floating AI Copilot - Desktop Only */}
       {!isMobile && (
         <>
-          <FloatingAIButton 
-            onClick={floatingAI.openChat}
-            unreadCount={floatingAI.unreadCount}
-          />
+          {!floatingAI.isOpen && (
+            <FloatingAIButton
+              onClick={floatingAI.openChat}
+              unreadCount={floatingAI.unreadCount}
+            />
+          )}
           <FloatingAIChat
             isOpen={floatingAI.isOpen}
             isMinimized={floatingAI.isMinimized}

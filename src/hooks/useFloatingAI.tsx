@@ -4,7 +4,10 @@ import { ChatMessage } from '@/utils/aiChatHelpers';
 export const useFloatingAI = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [position, setPosition] = useState({ x: 20, y: window.innerHeight - 500 });
+  const [position, setPosition] = useState({ 
+    x: window.innerWidth - 420, // 400px width + 20px margin from right
+    y: Math.max(20, window.innerHeight - 620) // 600px height + 20px margin
+  });
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 

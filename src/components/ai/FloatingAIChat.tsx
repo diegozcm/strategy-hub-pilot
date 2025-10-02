@@ -7,9 +7,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ChatMessage, createChatSession, sendChatMessage } from '@/utils/aiChatHelpers';
+import { useAuth } from '@/hooks/useMultiTenant';
 import { cn } from '@/lib/utils';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
 
 interface FloatingAIChatProps {
   isOpen: boolean;
@@ -32,6 +38,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
   onPositionChange,
   onMessagesChange
 }) => {
+  const { user, company } = useAuth();
   const [chatInput, setChatInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -89,20 +96,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
 
   const handleSendMessage = async (messageText?: string) => {
     const textToSend = messageText || chatInput.trim();
-    if (!textToSend || isLoading) return;
-
-    const { data: { user } } = await supabase.auth.getUser();
-    const { data: { session } } = await supabase.auth.getSession();
-    const companyId = session?.user?.user_metadata?.current_company_id;
-
-    if (!user || !companyId) {
-      toast({
-        title: 'Erro',
-        description: 'Usuário ou empresa não encontrados',
-        variant: 'destructive'
-      });
-      return;
-    }
+    if (!textToSend || isLoading || !user || !company?.id) return;
 
     const userMessage: ChatMessage = {
       role: 'user',
@@ -115,23 +109,63 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
     setIsLoading(true);
 
     try {
+      // Create session if doesn't exist
       let currentSessionId = sessionId;
       if (!currentSessionId) {
-        const session = await createChatSession(user.id, companyId);
-        currentSessionId = session.id;
+        const { data: newSession, error: sessionError } = await supabase
+          .from('ai_chat_sessions')
+          .insert([{
+            user_id: user.id,
+            company_id: company.id,
+            session_title: `Chat ${new Date().toLocaleDateString('pt-BR')}`
+          }])
+          .select()
+          .single();
+
+        if (sessionError) throw sessionError;
+        currentSessionId = newSession.id;
         setSessionId(currentSessionId);
       }
 
-      const response = await sendChatMessage(
-        currentSessionId,
-        user.id,
-        companyId,
-        textToSend
-      );
+      // Save user message
+      const { error: userMsgError } = await supabase
+        .from('ai_chat_messages')
+        .insert([{
+          session_id: currentSessionId,
+          role: 'user',
+          content: textToSend,
+          message_type: 'text'
+        }]);
+
+      if (userMsgError) throw userMsgError;
+
+      // Call AI chat function (same as AICopilotPage)
+      const response = await supabase.functions.invoke('ai-chat', {
+        body: { 
+          message: textToSend,
+          session_id: currentSessionId,
+          user_id: user.id,
+          company_id: company.id
+        }
+      });
+
+      if (response.error) throw response.error;
+
+      // Save assistant response
+      const { error: assistantMsgError } = await supabase
+        .from('ai_chat_messages')
+        .insert([{
+          session_id: currentSessionId,
+          role: 'assistant',
+          content: response.data.response,
+          message_type: 'text'
+        }]);
+
+      if (assistantMsgError) throw assistantMsgError;
 
       const assistantMessage: ChatMessage = {
         role: 'assistant',
-        content: response,
+        content: response.data.response,
         timestamp: new Date()
       };
 
@@ -254,7 +288,12 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
             <Input
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
               placeholder="Digite sua mensagem..."
               disabled={isLoading}
               className="flex-1"
