@@ -157,7 +157,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
             variant="outline"
             size="sm"
             onClick={() => setShowUpdateValuesModal(true)}
-            className="text-cyan-600 border-cyan-200 hover:bg-cyan-50"
+            className="text-cyan-600 border-cyan-200 hover:bg-cyan-100 hover:border-cyan-300"
           >
             <FileEdit className="h-4 w-4 mr-2" />
             Atualizar Valores
@@ -166,7 +166,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
             variant="outline"
             size="sm"
             onClick={() => setShowFCAModal(true)}
-            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+            className="text-blue-600 border-blue-200 hover:bg-blue-100 hover:border-blue-300"
           >
             <ListChecks className="h-4 w-4 mr-2" />
             FCA & Ações
@@ -175,7 +175,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
             variant="outline"
             size="sm"
             onClick={() => setShowStatusReportModal(true)}
-            className="text-green-600 border-green-200 hover:bg-green-50"
+            className="text-green-600 border-green-200 hover:bg-green-100 hover:border-green-300"
           >
             <FileBarChart className="h-4 w-4 mr-2" />
             Status Report
@@ -184,7 +184,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
             variant="outline"
             size="sm"
             onClick={() => setShowInitiativesModal(true)}
-            className="text-purple-600 border-purple-200 hover:bg-purple-50"
+            className="text-purple-600 border-purple-200 hover:bg-purple-100 hover:border-purple-300"
           >
             <Rocket className="h-4 w-4 mr-2" />
             Iniciativas
