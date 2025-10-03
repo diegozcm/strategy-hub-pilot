@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, ChevronDown, ChevronUp, Edit, Settings, Search } from 'lucide-react';
+import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, ChevronDown, ChevronUp, Settings, Search } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,8 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
-import { useNavigate } from 'react-router-dom';
-import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 
 interface KeyResultWithPillar {
   id: string;
@@ -76,7 +74,6 @@ const getDynamicStats = (stats: DashboardStats) => [{
 
 export const DashboardHome: React.FC = () => {
   const { company } = useAuth();
-  const navigate = useNavigate();
   const [keyResults, setKeyResults] = useState<KeyResultWithPillar[]>([]);
   const [filteredKeyResults, setFilteredKeyResults] = useState<KeyResultWithPillar[]>([]);
   const [objectives, setObjectives] = useState<any[]>([]);
@@ -98,10 +95,6 @@ export const DashboardHome: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
-  
-  // Modal states
-  const [isKROverviewModalOpen, setIsKROverviewModalOpen] = useState(false);
-  const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResultWithPillar | null>(null);
 
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
   const currentYear = new Date().getFullYear();
@@ -110,43 +103,6 @@ export const DashboardHome: React.FC = () => {
   const calculateProgress = (keyResult: KeyResultWithPillar): number => {
     if (!keyResult.target_value || keyResult.target_value === 0) return 0;
     return Math.min((keyResult.current_value / keyResult.target_value) * 100, 100);
-  };
-
-  // Handle KR Overview Modal
-  const handleKRClick = (keyResult: KeyResultWithPillar) => {
-    // Convert to the expected KeyResult format for the modal
-    const modalKeyResult = {
-      id: keyResult.id,
-      title: keyResult.title,
-      description: keyResult.description || '',
-      unit: '%',
-      priority: keyResult.priority || 'medium',
-      current_value: keyResult.current_value,
-      target_value: keyResult.target_value,
-      due_date: keyResult.due_date,
-      monthly_targets: keyResult.monthly_targets,
-      monthly_actual: keyResult.monthly_actual,
-      aggregation_type: keyResult.aggregation_type || 'sum',
-      objective_id: keyResult.objective_id,
-      owner_id: '',
-      created_at: '',
-      updated_at: '',
-      yearly_target: keyResult.yearly_target,
-      yearly_actual: keyResult.yearly_actual,
-      last_updated: null,
-      metric_type: 'percentage',
-      frequency: 'monthly',
-      responsible: '',
-      category: ''
-    };
-    
-    setSelectedKeyResult(keyResult);
-    setIsKROverviewModalOpen(true);
-  };
-
-  const handleCloseKRModal = () => {
-    setIsKROverviewModalOpen(false);
-    setSelectedKeyResult(null);
   };
 
   // Filter logic
@@ -383,12 +339,6 @@ export const DashboardHome: React.FC = () => {
       newExpanded.add(krId);
     }
     setExpandedKRs(newExpanded);
-  };
-
-  const navigateToKREdit = (krId: string) => {
-    navigate('/app/indicators');
-    // You could add a query parameter or hash to focus on specific KR
-    // navigate(`/app/indicators#${krId}`);
   };
 
   const getStatusColor = (percentage: number) => {
@@ -711,35 +661,27 @@ export const DashboardHome: React.FC = () => {
                                  </div>
                                </div>
                              </div>
-                             <div className="flex items-center gap-3">
-                               <div className="flex items-center gap-2">
-                                 {getStatusIcon(yearlyAchievement)}
-                                 <div className="flex flex-col items-end">
-                                   <span className={`text-sm font-medium ${getStatusColor(yearlyAchievement)}`}>
-                                     {yearlyAchievement}% no ano
-                                   </span>
-                                   <span className="text-xs text-muted-foreground">
-                                     Atual: {kr.yearly_actual || kr.current_value || 0}
-                                   </span>
-                                 </div>
-                               </div>
-                               <Button
-                                 variant="ghost"
-                                 size="sm"
-                                 onClick={() => handleKRClick(kr)}
-                                 className="text-muted-foreground hover:text-foreground"
-                               >
-                                 <Edit className="h-4 w-4" />
-                               </Button>
-                               <Button
-                                 variant="ghost"
-                                 size="sm"
-                                 onClick={() => toggleKRExpansion(kr.id)}
-                                 className="text-muted-foreground hover:text-foreground"
-                               >
-                                 {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                               </Button>
-                             </div>
+                              <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2">
+                                  {getStatusIcon(yearlyAchievement)}
+                                  <div className="flex flex-col items-end">
+                                    <span className={`text-sm font-medium ${getStatusColor(yearlyAchievement)}`}>
+                                      {yearlyAchievement}% no ano
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      Atual: {kr.yearly_actual || kr.current_value || 0}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => toggleKRExpansion(kr.id)}
+                                  className="text-muted-foreground hover:text-foreground"
+                                >
+                                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                </Button>
+                              </div>
                            </div>
                         </div>
 
@@ -845,51 +787,6 @@ export const DashboardHome: React.FC = () => {
           </Card>
         </div>
       </div>
-      
-      {/* KR Overview Modal */}
-      {selectedKeyResult && (
-        <KROverviewModal
-          keyResult={{
-            id: selectedKeyResult.id,
-            title: selectedKeyResult.title,
-            description: selectedKeyResult.description || '',
-            unit: '%',
-            current_value: selectedKeyResult.current_value,
-            target_value: selectedKeyResult.target_value,
-            due_date: selectedKeyResult.due_date,
-            monthly_targets: selectedKeyResult.monthly_targets,
-            monthly_actual: selectedKeyResult.monthly_actual,
-            aggregation_type: (selectedKeyResult.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum',
-            objective_id: selectedKeyResult.objective_id,
-            owner_id: '',
-            created_at: '',
-            updated_at: '',
-            yearly_target: selectedKeyResult.yearly_target,
-            yearly_actual: selectedKeyResult.yearly_actual,
-            metric_type: 'percentage',
-            frequency: 'monthly',
-            responsible: ''
-          }}
-          open={isKROverviewModalOpen}
-          onClose={handleCloseKRModal}
-          onEdit={() => {
-            // Close modal and navigate to edit
-            handleCloseKRModal();
-            navigate(`/app/indicators?edit=${selectedKeyResult.id}`);
-          }}
-          onUpdateValues={() => {
-            // Close modal and navigate to update values
-            handleCloseKRModal();
-            navigate(`/app/indicators?update=${selectedKeyResult.id}`);
-          }}
-          onDelete={() => {
-            // Close modal and navigate to indicators with delete confirmation
-            handleCloseKRModal();
-            navigate(`/app/indicators`);
-            // In a real implementation, you might want to add a delete confirmation modal
-          }}
-        />
-      )}
     </div>
   );
 };
