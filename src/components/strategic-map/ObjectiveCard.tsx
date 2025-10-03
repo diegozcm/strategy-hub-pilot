@@ -214,6 +214,27 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], pil
           pillars={pillars}
           progressPercentage={progressPercentage}
         />
+
+        {/* KR Overview Modal (compact mode) */}
+        <KROverviewModal
+          keyResult={selectedKeyResultForOverview}
+          pillar={pillar}
+          open={isKROverviewModalOpen}
+          onClose={() => {
+            setIsKROverviewModalOpen(false);
+            setSelectedKeyResultForOverview(null);
+          }}
+          onDelete={() => {
+            toast({
+              title: "Funcionalidade em desenvolvimento",
+              description: "A exclusão de Resultados-Chave será implementada em breve.",
+            });
+          }}
+          onSave={async () => {
+            if (onRefreshData) await onRefreshData();
+          }}
+          objectives={[{ id: objective.id, title: objective.title }]}
+        />
       </>
     );
   }
