@@ -704,10 +704,6 @@ export const IndicatorsPage: React.FC = () => {
               pillar={pillar}
               progress={progress}
               onClick={() => openKROverviewModal(keyResult)}
-              onDelete={() => {
-                setSelectedKeyResult(keyResult);
-                setIsDeleteConfirmOpen(true);
-              }}
             />
           );
         })}
