@@ -26,9 +26,10 @@ interface KROverviewModalProps {
   onDelete: () => void;
   onSave: () => void;
   objectives: Array<{ id: string; title: string }>;
+  showDeleteButton?: boolean;
 }
 
-export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, onSave, objectives }: KROverviewModalProps) => {
+export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, onSave, objectives, showDeleteButton = true }: KROverviewModalProps) => {
   const [showFCAModal, setShowFCAModal] = useState(false);
   const [showStatusReportModal, setShowStatusReportModal] = useState(false);
   const [showInitiativesModal, setShowInitiativesModal] = useState(false);
@@ -147,14 +148,16 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onDelete}
-                  className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {showDeleteButton && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onDelete}
+                    className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>

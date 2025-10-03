@@ -234,6 +234,7 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], pil
             if (onRefreshData) await onRefreshData();
           }}
           objectives={[{ id: objective.id, title: objective.title }]}
+          showDeleteButton={false}
         />
       </>
     );
@@ -389,6 +390,7 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], pil
           if (onRefreshData) await onRefreshData();
         }}
         objectives={[{ id: objective.id, title: objective.title }]}
+        showDeleteButton={false}
       />
 
       {/* Objective Detail Modal */}

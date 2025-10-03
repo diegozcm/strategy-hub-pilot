@@ -1171,6 +1171,7 @@ export const ObjectivesPage: React.FC = () => {
               await refreshData();
             }}
             objectives={objectives.map(obj => ({ id: obj.id, title: obj.title }))}
+            showDeleteButton={false}
           />
         )}
       </div>
