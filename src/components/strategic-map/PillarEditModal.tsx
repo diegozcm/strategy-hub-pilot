@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +22,15 @@ export const PillarEditModal = ({ pillar, open, onClose, onSave }: PillarEditMod
   });
   const [loading, setLoading] = useState(false);
 
+  // Keep form in sync when switching pillars
+  useEffect(() => {
+    setFormData({
+      name: pillar.name,
+      description: pillar.description || '',
+      color: pillar.color,
+    });
+  }, [pillar]);
+
   const handleSave = async () => {
     if (!formData.name.trim()) {
       toast({
@@ -33,16 +42,15 @@ export const PillarEditModal = ({ pillar, open, onClose, onSave }: PillarEditMod
     }
 
     setLoading(true);
-    const result = await onSave(pillar.id, formData);
-    setLoading(false);
-
-    if (result) {
-      onClose();
+    try {
+      await onSave(pillar.id, formData);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog open={open} modal={false} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Editar Pilar Estratégico</DialogTitle>
