@@ -129,16 +129,14 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
           style={{ backgroundColor: pillar.color }}
           className="p-3 rounded-t-lg"
         >
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex-1 space-y-2">
-                <h2 className="text-white font-semibold text-xl leading-tight">
-                  {currentKeyResult.title}
-                </h2>
-                <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
-                  {pillar.name}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0 pr-8">
+            <div className="grid grid-cols-[1fr_auto] grid-rows-[auto_auto] gap-x-4">
+              <h2 className="col-[1] row-[1] text-white font-semibold text-xl leading-tight">
+                {currentKeyResult.title}
+              </h2>
+              <Badge className="col-[1] row-[2] bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+                {pillar.name}
+              </Badge>
+              <div className="col-[2] row-[2] flex items-center gap-2 pr-12">
                 <Button
                   variant="ghost"
                   size="icon"
