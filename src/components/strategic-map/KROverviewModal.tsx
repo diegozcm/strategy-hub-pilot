@@ -103,69 +103,66 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
                 {keyResult.description || "Visão geral completa do resultado-chave e evolução dos indicadores"}
               </DialogDescription>
             </div>
-            <div className="flex flex-col items-end gap-2 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowEditModal(true)}
-                  className="text-orange-600 border-orange-200 hover:bg-orange-50"
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Editar Info
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowUpdateValuesModal(true)}
-                  className="text-cyan-600 border-cyan-200 hover:bg-cyan-50"
-                >
-                  <FileEdit className="h-4 w-4 mr-2" />
-                  Atualizar Valores
-                </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowFCAModal(true)}
-                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                >
-                  <ListChecks className="h-4 w-4 mr-2" />
-                  FCA & Ações
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowStatusReportModal(true)}
-                  className="text-green-600 border-green-200 hover:bg-green-50"
-                >
-                  <FileBarChart className="h-4 w-4 mr-2" />
-                  Status Report
-                </Button>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowInitiativesModal(true)}
-                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
-                >
-                  <Rocket className="h-4 w-4 mr-2" />
-                  Iniciativas
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onDelete}
-                  className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowEditModal(true)}
+                className="h-8 w-8 text-orange-600 hover:bg-orange-50"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onDelete}
+                className="h-8 w-8 text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </DialogHeader>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2 pb-4 border-b flex-shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowUpdateValuesModal(true)}
+            className="text-cyan-600 border-cyan-200 hover:bg-cyan-50"
+          >
+            <FileEdit className="h-4 w-4 mr-2" />
+            Atualizar Valores
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFCAModal(true)}
+            className="text-blue-600 border-blue-200 hover:bg-blue-50"
+          >
+            <ListChecks className="h-4 w-4 mr-2" />
+            FCA & Ações
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowStatusReportModal(true)}
+            className="text-green-600 border-green-200 hover:bg-green-50"
+          >
+            <FileBarChart className="h-4 w-4 mr-2" />
+            Status Report
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowInitiativesModal(true)}
+            className="text-purple-600 border-purple-200 hover:bg-purple-50"
+          >
+            <Rocket className="h-4 w-4 mr-2" />
+            Iniciativas
+          </Button>
+        </div>
         
         <ScrollArea className="flex-1 pr-6">
           <div className="space-y-6">
