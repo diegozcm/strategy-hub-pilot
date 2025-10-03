@@ -105,7 +105,7 @@ export const DashboardHome: React.FC = () => {
     return Math.min((keyResult.current_value / keyResult.target_value) * 100, 100);
   };
 
-  // Filter logic
+  // Filter and sort logic
   useEffect(() => {
     const filtered = keyResults.filter(keyResult => {
       const matchesSearch = keyResult.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -130,8 +130,23 @@ export const DashboardHome: React.FC = () => {
       return matchesSearch && matchesPriority && matchesObjective && matchesPillar && matchesProgress;
     });
     
-    setFilteredKeyResults(filtered);
-  }, [keyResults, searchTerm, priorityFilter, objectiveFilter, pillarFilter, progressFilter]);
+    // Sort by pillar order (as they appear in filter) and then alphabetically
+    const sorted = filtered.sort((a, b) => {
+      // Find pillar indices
+      const pillarIndexA = pillars.findIndex(p => p.id === a.pillar_id);
+      const pillarIndexB = pillars.findIndex(p => p.id === b.pillar_id);
+      
+      // Sort by pillar order first
+      if (pillarIndexA !== pillarIndexB) {
+        return pillarIndexA - pillarIndexB;
+      }
+      
+      // Then sort alphabetically by title within the same pillar
+      return a.title.localeCompare(b.title, 'pt-BR');
+    });
+    
+    setFilteredKeyResults(sorted);
+  }, [keyResults, searchTerm, priorityFilter, objectiveFilter, pillarFilter, progressFilter, pillars]);
 
   useEffect(() => {
     if (company?.id) {
