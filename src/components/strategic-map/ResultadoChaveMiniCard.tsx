@@ -25,7 +25,8 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, pillar, onUpdate, onOpe
     return 'text-red-600';
   };
 
-  const handleCardClick = () => {
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (onOpenDetails) {
       onOpenDetails(resultadoChave);
     }
