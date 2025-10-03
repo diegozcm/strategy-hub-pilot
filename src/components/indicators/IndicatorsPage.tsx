@@ -68,7 +68,6 @@ export const IndicatorsPage: React.FC = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isUpdatingKR, setIsUpdatingKR] = useState(false);
 
   // Load data
   const loadData = async () => {
@@ -129,8 +128,6 @@ export const IndicatorsPage: React.FC = () => {
 
       if (keyResultsError) throw keyResultsError;
       
-      console.log('Loaded key results:', keyResultsData);
-      
       // Cast aggregation_type to the correct union type
       const processedKeyResults = (keyResultsData || []).map(kr => ({
         ...kr,
@@ -165,27 +162,6 @@ export const IndicatorsPage: React.FC = () => {
     }
   };
 
-  const updateKRWithTimeout = async (updateFn: () => Promise<void>) => {
-    const timeoutPromise = new Promise<void>((_, reject) => 
-      setTimeout(() => reject(new Error('TIMEOUT')), 10000)
-    );
-    
-    try {
-      await Promise.race([updateFn(), timeoutPromise]);
-    } catch (error: any) {
-      if (error.message === 'TIMEOUT') {
-        toast({
-          title: "⏱️ Operação Lenta Detectada",
-          description: "A operação está demorando muito. Recarregando a página...",
-          variant: "destructive",
-        });
-        
-        setTimeout(() => window.location.reload(), 2000);
-        throw error;
-      }
-      throw error;
-    }
-  };
 
   useEffect(() => {
     if (user?.id && authCompany?.id) {
@@ -335,58 +311,25 @@ export const IndicatorsPage: React.FC = () => {
 
   // Modal handlers
   const openKROverviewModal = (keyResult: KeyResult) => {
-    console.log('openKROverviewModal', keyResult.id);
     setSelectedKeyResult(keyResult);
     setIsKROverviewModalOpen(true);
   };
 
   const openKREditModal = (keyResult: KeyResult) => {
-    console.log('openKREditModal', keyResult.id);
     setSelectedKeyResult(keyResult);
     setIsKREditModalOpen(true);
   };
 
   const openKRUpdateValuesModal = (keyResult: KeyResult) => {
-    console.log('openKRUpdateValuesModal', keyResult.id);
     setSelectedKeyResult(keyResult);
     setIsKRUpdateValuesModalOpen(true);
   };
 
   const closeAllModals = () => {
-    console.log('closeAllModals called');
     setIsKROverviewModalOpen(false);
     setIsKREditModalOpen(false);
     setIsKRUpdateValuesModalOpen(false);
     setSelectedKeyResult(null);
-  };
-
-  const forceCloseAllModals = () => {
-    console.log('forceCloseAllModals called');
-    setIsKROverviewModalOpen(false);
-    setIsKREditModalOpen(false);
-    setIsKRUpdateValuesModalOpen(false);
-  };
-
-  const unfreezeUI = () => {
-    try {
-      console.log('unfreezeUI: start');
-      document.body.style.overflow = '';
-      document.body.removeAttribute('data-scroll-locked');
-
-      document.documentElement.style.removeProperty('padding-right');
-      document.body.style.removeProperty('padding-right');
-
-      document
-        .querySelectorAll('.react-remove-scroll-bar,[data-scroll-locked],[data-radix-scroll-lock]')
-        .forEach((el) => {
-          el.removeAttribute('data-scroll-locked');
-          el.removeAttribute('data-radix-scroll-lock');
-        });
-
-      console.log('unfreezeUI: done');
-    } catch (e) {
-      console.error('unfreezeUI error', e);
-    }
   };
 
   // Get strategic pillar info for a key result
@@ -546,22 +489,6 @@ export const IndicatorsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Loading Overlay */}
-      {isUpdatingKR && (
-        <div className="fixed inset-0 z-[9999] bg-background/60 backdrop-blur-sm flex items-center justify-center">
-          <div className="flex flex-col items-center gap-4 rounded-lg border bg-card p-6 shadow-lg">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-primary" />
-            <div className="text-center">
-              <p className="text-sm font-medium">Processando...</p>
-              <p className="text-xs text-muted-foreground">Não feche a janela, isso pode levar alguns segundos.</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => { console.log('Manual unfreeze invoked'); unfreezeUI(); }}>
-              Destravar a tela
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -930,47 +857,40 @@ export const IndicatorsPage: React.FC = () => {
       </Dialog>
 
       {/* KR Overview Modal */}
-      <KROverviewModal
-        keyResult={selectedKeyResult}
-        open={isKROverviewModalOpen}
-        onClose={() => { console.log('KROverviewModal onClose'); setIsKROverviewModalOpen(false); }}
-        onEdit={() => {
-          console.log('KROverviewModal onEdit -> open KREditModal');
-          setIsKROverviewModalOpen(false);
-          setIsKREditModalOpen(true);
-        }}
-        onUpdateValues={() => {
-          console.log('KROverviewModal onUpdateValues -> open KRUpdateValuesModal');
-          setIsKROverviewModalOpen(false);
-          setIsKRUpdateValuesModalOpen(true);
-        }}
-        onDelete={() => {
-          console.log('KROverviewModal onDelete -> open DeleteConfirm');
-          setIsKROverviewModalOpen(false);
-          setIsDeleteConfirmOpen(true);
-        }}
-      />
+      {selectedKeyResult && isKROverviewModalOpen && (
+        <KROverviewModal
+          keyResult={selectedKeyResult}
+          open={isKROverviewModalOpen}
+          onClose={() => {
+            setIsKROverviewModalOpen(false);
+            setSelectedKeyResult(null);
+          }}
+          onEdit={() => {
+            setIsKROverviewModalOpen(false);
+            setIsKREditModalOpen(true);
+          }}
+          onUpdateValues={() => {
+            setIsKROverviewModalOpen(false);
+            setIsKRUpdateValuesModalOpen(true);
+          }}
+          onDelete={() => {
+            setIsKROverviewModalOpen(false);
+            setIsDeleteConfirmOpen(true);
+          }}
+        />
+      )}
 
       {/* KR Edit Modal */}
-      <KREditModal
-        key={selectedKeyResult?.id || 'empty'}
-        keyResult={selectedKeyResult}
-        open={isKREditModalOpen}
-        onClose={() => {
-          console.log('KREditModal onClose');
-          setIsKREditModalOpen(false);
-          setSelectedKeyResult(null);
-          unfreezeUI();
-        }}
-        onSave={async (keyResultData) => {
-          const t0 = performance.now?.() || Date.now();
-          try {
-            console.log('KREditModal onSave: start');
-            setIsUpdatingKR(true);
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            forceCloseAllModals();
-
-            await updateKRWithTimeout(async () => {
+      {selectedKeyResult && isKREditModalOpen && (
+        <KREditModal
+          keyResult={selectedKeyResult}
+          open={isKREditModalOpen}
+          onClose={() => {
+            setIsKREditModalOpen(false);
+            setSelectedKeyResult(null);
+          }}
+          onSave={async (keyResultData) => {
+            try {
               const { data, error } = await supabase
                 .from('key_results')
                 .update(keyResultData)
@@ -984,53 +904,38 @@ export const IndicatorsPage: React.FC = () => {
               setKeyResults((prev) =>
                 prev.map((kr) => (kr.id === data.id ? ({ ...kr, ...data } as KeyResult) : kr))
               );
-            });
 
-            setSelectedKeyResult(null);
+              setIsKREditModalOpen(false);
+              setSelectedKeyResult(null);
 
-            toast({
-              title: "✅ Sucesso",
-              description: "Resultado-chave atualizado!",
-            });
-          } catch (error) {
-            console.error('Error updating key result:', error);
-            setSelectedKeyResult(null);
-            toast({
-              title: "❌ Erro",
-              description: "Erro ao atualizar. Tente novamente.",
-              variant: "destructive",
-            });
-          } finally {
-            unfreezeUI();
-            setTimeout(unfreezeUI, 400);
-            setIsUpdatingKR(false);
-            const t1 = performance.now?.() || Date.now();
-            console.log('KREditModal onSave: end in', Math.round(t1 - t0), 'ms');
-          }
-        }}
-        objectives={objectives}
-      />
+              toast({
+                title: "Sucesso",
+                description: "Resultado-chave atualizado!",
+              });
+            } catch (error) {
+              console.error('Error updating key result:', error);
+              toast({
+                title: "Erro",
+                description: "Erro ao atualizar. Tente novamente.",
+                variant: "destructive",
+              });
+            }
+          }}
+          objectives={objectives}
+        />
+      )}
 
       {/* KR Update Values Modal */}
-      <KRUpdateValuesModal
-        key={selectedKeyResult?.id || 'empty'}
-        keyResult={selectedKeyResult}
-        open={isKRUpdateValuesModalOpen}
-        onClose={() => {
-          console.log('KRUpdateValuesModal onClose');
-          setIsKRUpdateValuesModalOpen(false);
-          setSelectedKeyResult(null);
-          unfreezeUI();
-        }}
-        onSave={async (keyResultData) => {
-          const t0 = performance.now?.() || Date.now();
-          try {
-            console.log('KRUpdateValuesModal onSave: start');
-            setIsUpdatingKR(true);
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            forceCloseAllModals();
-
-            await updateKRWithTimeout(async () => {
+      {selectedKeyResult && isKRUpdateValuesModalOpen && (
+        <KRUpdateValuesModal
+          keyResult={selectedKeyResult}
+          open={isKRUpdateValuesModalOpen}
+          onClose={() => {
+            setIsKRUpdateValuesModalOpen(false);
+            setSelectedKeyResult(null);
+          }}
+          onSave={async (keyResultData) => {
+            try {
               const { data, error } = await supabase
                 .from('key_results')
                 .update(keyResultData)
@@ -1044,31 +949,25 @@ export const IndicatorsPage: React.FC = () => {
               setKeyResults((prev) =>
                 prev.map((kr) => (kr.id === data.id ? ({ ...kr, ...data } as KeyResult) : kr))
               );
-            });
 
-            setSelectedKeyResult(null);
+              setIsKRUpdateValuesModalOpen(false);
+              setSelectedKeyResult(null);
 
-            toast({
-              title: "✅ Sucesso",
-              description: "Valores atualizados!",
-            });
-          } catch (error) {
-            console.error('Error updating values:', error);
-            setSelectedKeyResult(null);
-            toast({
-              title: "❌ Erro",
-              description: "Erro ao atualizar valores. Tente novamente.",
-              variant: "destructive",
-            });
-          } finally {
-            unfreezeUI();
-            setTimeout(unfreezeUI, 400);
-            setIsUpdatingKR(false);
-            const t1 = performance.now?.() || Date.now();
-            console.log('KRUpdateValuesModal onSave: end in', Math.round(t1 - t0), 'ms');
-          }
-        }}
-      />
+              toast({
+                title: "Sucesso",
+                description: "Valores atualizados!",
+              });
+            } catch (error) {
+              console.error('Error updating values:', error);
+              toast({
+                title: "Erro",
+                description: "Erro ao atualizar valores. Tente novamente.",
+                variant: "destructive",
+              });
+            }
+          }}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>

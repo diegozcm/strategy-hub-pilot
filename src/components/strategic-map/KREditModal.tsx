@@ -23,6 +23,7 @@ interface KREditModalProps {
 export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] }: KREditModalProps) => {
   const { toast } = useToast();
   const [savingAggregationType, setSavingAggregationType] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Form states
   const [basicInfo, setBasicInfo] = useState({
@@ -145,29 +146,35 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
     }
   }, [keyResult]);
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keyResult) return;
+    if (!keyResult || isSaving) return;
     
-    const yearlyTarget = calculateYearlyTarget(monthlyTargets);
+    setIsSaving(true);
+    
+    try {
+      const yearlyTarget = calculateYearlyTarget(monthlyTargets);
 
-    const cleanMonthlyTargets = Object.fromEntries(
-      Object.entries(monthlyTargets)
-        .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
-    );
+      const cleanMonthlyTargets = Object.fromEntries(
+        Object.entries(monthlyTargets)
+          .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
+      );
 
-    onSave({
-      id: keyResult.id,
-      title: basicInfo.title,
-      description: basicInfo.description,
-      unit: basicInfo.unit,
-      responsible: basicInfo.responsible,
-      objective_id: basicInfo.objective_id === '' || basicInfo.objective_id === 'none' ? null : basicInfo.objective_id,
-      monthly_targets: cleanMonthlyTargets,
-      yearly_target: yearlyTarget,
-      target_value: yearlyTarget,
-      aggregation_type: aggregationType
-    });
+      await onSave({
+        id: keyResult.id,
+        title: basicInfo.title,
+        description: basicInfo.description,
+        unit: basicInfo.unit,
+        responsible: basicInfo.responsible,
+        objective_id: basicInfo.objective_id === '' || basicInfo.objective_id === 'none' ? null : basicInfo.objective_id,
+        monthly_targets: cleanMonthlyTargets,
+        yearly_target: yearlyTarget,
+        target_value: yearlyTarget,
+        aggregation_type: aggregationType
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!keyResult) return null;
@@ -366,11 +373,11 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
 
           {/* Action Buttons */}
           <div className="flex justify-between items-center pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
               Cancelar
             </Button>
-            <Button type="submit">
-              Salvar Atualizações
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? 'Salvando...' : 'Salvar Atualizações'}
             </Button>
           </div>
         </form>
