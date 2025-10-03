@@ -25,16 +25,11 @@ export const KRCard: React.FC<KRCardProps> = ({
   onClick,
   onDelete,
 }) => {
-  const getProgressColor = (value: number): string => {
-    if (value >= 90) return 'text-green-600';
-    if (value >= 70) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
   const getProgressBarColor = (value: number): string => {
-    if (value >= 90) return '[&>div]:bg-green-600';
-    if (value >= 70) return '[&>div]:bg-yellow-600';
-    return '[&>div]:bg-red-600';
+    if (value < 30) return 'bg-red-500';
+    if (value < 60) return 'bg-yellow-500';
+    if (value < 80) return 'bg-blue-500';
+    return 'bg-green-500';
   };
 
   return (
@@ -85,18 +80,18 @@ export const KRCard: React.FC<KRCardProps> = ({
       {/* Body */}
       <div className="p-4 space-y-3">
         {/* Atingimento da Meta */}
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Atingimento da Meta</span>
-          <span className={`text-2xl font-bold ${getProgressColor(progress)}`}>
-            {progress}%
-          </span>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs font-medium text-muted-foreground">Atingimento da Meta</span>
+          <span className="text-xs font-bold text-foreground">{progress}%</span>
         </div>
 
         {/* Barra de progresso */}
-        <Progress 
-          value={progress} 
-          className={`h-3 ${getProgressBarColor(progress)}`}
-        />
+        <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div 
+            className={`h-full transition-all duration-300 rounded-full ${getProgressBarColor(progress)}`}
+            style={{ width: `${progress}%` }}
+          />
+        </div>
 
         {/* Valores lado a lado */}
         <div className="flex justify-between pt-2">
