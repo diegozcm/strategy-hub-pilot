@@ -1025,12 +1025,12 @@ export const ObjectivesPage: React.FC = () => {
 
         {/* Objective Detail Modal */}
         <Dialog open={isDetailModalOpen} onOpenChange={closeDetailModal}>
-          <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <DialogTitle className="text-xl">
-                    {isEditing ? 'Editar Objetivo' : 'Detalhes do Objetivo'}
+                    {selectedObjective?.title}
                   </DialogTitle>
                   <DialogDescription>
                     {selectedObjective && (
