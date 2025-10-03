@@ -1,6 +1,4 @@
 import React from 'react';
-import { Edit } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { KeyResult } from '@/types/strategic-map';
 
 interface ResultadoChaveMiniCardProps {
@@ -58,23 +56,10 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, pillar, onUpdate, onOpe
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="flex flex-col items-end">
-                <span className={`text-sm font-medium ${getProgressColor(progress)}`}>
-                  {progress.toFixed(1)}%
-                </span>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-7 w-7 p-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCardClick();
-                }}
-              >
-                <Edit className="h-3.5 w-3.5" />
-              </Button>
+            <div className="flex flex-col items-end flex-shrink-0">
+              <span className={`text-sm font-medium ${getProgressColor(progress)}`}>
+                {progress.toFixed(1)}%
+              </span>
             </div>
           </div>
         </div>
