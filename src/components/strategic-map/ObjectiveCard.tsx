@@ -277,8 +277,16 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
           if (selectedKeyResultForOverview) {
             handleEditKeyResult(selectedKeyResultForOverview);
           }
-          }}
-          onDelete={() => {
+        }}
+        onUpdateValues={() => {
+          // Close modal and show toast about navigating to strategic map
+          setIsKROverviewModalOpen(false);
+          toast({
+            title: "Atualize valores na página de Mapa Estratégico",
+            description: "Para atualizar os valores dos Resultados-Chave, acesse a página de Mapa Estratégico.",
+          });
+        }}
+        onDelete={() => {
           // Implement delete functionality if needed
           toast({
             title: "Funcionalidade em desenvolvimento",

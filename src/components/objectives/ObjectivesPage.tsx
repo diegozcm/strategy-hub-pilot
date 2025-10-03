@@ -1267,6 +1267,12 @@ export const ObjectivesPage: React.FC = () => {
               handleEditKeyResult(selectedKeyResultForOverview);
             }
           }}
+          onUpdateValues={() => {
+            // Navigate to strategic map page for value updates with KR and objective ID
+            if (selectedKeyResultForOverview) {
+              navigate(`/app/strategic-map?openUpdateKR=1&krId=${selectedKeyResultForOverview.id}&objectiveId=${selectedKeyResultForOverview.objective_id}`);
+            }
+          }}
           onDelete={() => {
             // Implement delete functionality if needed
             toast({

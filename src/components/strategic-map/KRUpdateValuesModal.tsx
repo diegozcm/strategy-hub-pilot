@@ -16,7 +16,6 @@ interface KRUpdateValuesModalProps {
 export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpdateValuesModalProps) => {
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [isSaving, setIsSaving] = useState(false);
 
   const currentYear = new Date().getFullYear();
   const months = [
@@ -68,28 +67,23 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
     }
   }, [keyResult]);
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keyResult || isSaving) return;
+    if (!keyResult) return;
     
-    setIsSaving(true);
-    try {
-      const yearlyActual = calculateYearlyActual(monthlyActual);
-      
-      const cleanMonthlyActual = Object.fromEntries(
-        Object.entries(monthlyActual)
-          .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
-      );
+    const yearlyActual = calculateYearlyActual(monthlyActual);
+    
+    const cleanMonthlyActual = Object.fromEntries(
+      Object.entries(monthlyActual)
+        .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
+    );
 
-      await onSave({
-        id: keyResult.id,
-        monthly_actual: cleanMonthlyActual,
-        yearly_actual: yearlyActual,
-        current_value: yearlyActual,
-      });
-    } finally {
-      setIsSaving(false);
-    }
+    onSave({
+      id: keyResult.id,
+      monthly_actual: cleanMonthlyActual,
+      yearly_actual: yearlyActual,
+      current_value: yearlyActual,
+    });
   };
 
   if (!keyResult) return null;
@@ -187,11 +181,11 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? "Salvando..." : "Salvar Valores"}
+            <Button type="submit">
+              Salvar Valores
             </Button>
           </div>
         </form>

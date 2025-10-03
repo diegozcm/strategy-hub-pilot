@@ -196,6 +196,12 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
             onClose();
             if (id) navigate(`/app/indicators?edit=${id}`);
           }}
+          onUpdateValues={() => {
+            const id = (selectedKeyResult as any)?.id;
+            handleKRModalClose();
+            onClose();
+            if (id) navigate(`/app/indicators?update=${id}`);
+          }}
           onDelete={() => {}}
         />
       )}

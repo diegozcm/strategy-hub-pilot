@@ -20,10 +20,11 @@ interface KROverviewModalProps {
   open: boolean;
   onClose: () => void;
   onEdit: () => void;
+  onUpdateValues: () => void;
   onDelete: () => void;
 }
 
-export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onDelete }: KROverviewModalProps) => {
+export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValues, onDelete }: KROverviewModalProps) => {
   const [showFCAModal, setShowFCAModal] = useState(false);
   const [showStatusReportModal, setShowStatusReportModal] = useState(false);
   const [showInitiativesModal, setShowInitiativesModal] = useState(false);
@@ -136,6 +137,10 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onDelete }: 
                   <DropdownMenuItem onClick={onEdit} className="flex items-center gap-2">
                     <Edit className="h-4 w-4" />
                     Editar Informações
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onUpdateValues} className="flex items-center gap-2">
+                    <FileEdit className="h-4 w-4" />
+                    Atualizar Valores
                   </DropdownMenuItem>
                   <DropdownMenuItem 
                     onClick={onDelete} 
