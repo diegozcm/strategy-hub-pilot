@@ -44,13 +44,14 @@ export const PillarEditModal = ({ pillar, open, onClose, onSave }: PillarEditMod
     setLoading(true);
     try {
       await onSave(pillar.id, formData);
+      onClose(); // Close modal after successful save
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} modal={false} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Dialog open={open} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Editar Pilar Estratégico</DialogTitle>
