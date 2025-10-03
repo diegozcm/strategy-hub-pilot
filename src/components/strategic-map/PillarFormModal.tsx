@@ -63,7 +63,7 @@ export const PillarFormModal = ({ open, onClose, onSave, initialData }: PillarFo
 
   return (
     <Dialog open={open} onOpenChange={(open) => { if (!open) handleClose(); }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>
             {initialData ? 'Editar Pilar Estratégico' : 'Novo Pilar Estratégico'}

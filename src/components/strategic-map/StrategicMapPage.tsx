@@ -51,7 +51,8 @@ export const StrategicMapPage = () => {
     createObjective,
     createKeyResult,
     calculatePillarProgress,
-    refreshData
+    refreshData,
+    softRefresh
   } = useStrategicMap();
 
   const [showCompanySetup, setShowCompanySetup] = useState(false);
@@ -484,11 +485,20 @@ export const StrategicMapPage = () => {
           userRole={profile?.role || 'member'}
         />
 
-      <PillarFormModal
-        open={showPillarForm}
-        onClose={() => setShowPillarForm(false)}
-        onSave={createPillar}
-      />
+        <PillarFormModal
+          open={showPillarForm}
+          onClose={() => setShowPillarForm(false)}
+          onSave={async (data) => {
+            console.log('💾 [StrategicMap] Creating new pillar...');
+            const result = await createPillar(data);
+            if (result) {
+              console.log('✅ [StrategicMap] Pillar created, triggering soft refresh');
+              setShowPillarForm(false);
+              void softRefresh();
+            }
+            return result;
+          }}
+        />
 
       <ObjectiveFormModal
         open={showObjectiveForm}
@@ -503,7 +513,16 @@ export const StrategicMapPage = () => {
           pillar={editingPillar}
           open={!!editingPillar}
           onClose={() => setEditingPillar(null)}
-          onSave={updatePillar}
+          onSave={async (id, data) => {
+            console.log('💾 [StrategicMap] Saving pillar edit...');
+            const result = await updatePillar(id, data);
+            if (result) {
+              console.log('✅ [StrategicMap] Pillar updated, triggering soft refresh');
+              setEditingPillar(null);
+              void softRefresh();
+            }
+            return result;
+          }}
         />
       )}
 
@@ -512,7 +531,16 @@ export const StrategicMapPage = () => {
           pillar={deletingPillar}
           open={!!deletingPillar}
           onClose={() => setDeletingPillar(null)}
-          onConfirm={deletePillar}
+          onConfirm={async (id) => {
+            console.log('🗑️ [StrategicMap] Deleting pillar...');
+            const success = await deletePillar(id);
+            if (success) {
+              console.log('✅ [StrategicMap] Pillar deleted, triggering soft refresh');
+              setDeletingPillar(null);
+              void softRefresh();
+            }
+            return success;
+          }}
           objectivesCount={objectives.filter(obj => obj.pillar_id === deletingPillar.id).length}
         />
       )}

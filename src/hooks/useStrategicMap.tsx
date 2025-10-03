@@ -349,6 +349,22 @@ export const useStrategicMap = () => {
     }
   }, [user?.id]);
 
+  // Soft refresh - reload data in background without global loading state
+  const softRefresh = async () => {
+    if (!company?.id) return;
+    
+    console.log('🔄 [StrategicMap] Soft refresh started - background data reload');
+    try {
+      // Reload pillars (which cascades to objectives and key results)
+      await loadPillars(company.id);
+      // Reload projects if needed
+      await loadProjects(company.id);
+      console.log('✅ [StrategicMap] Soft refresh completed successfully');
+    } catch (error) {
+      console.error('❌ [StrategicMap] Error during soft refresh:', error);
+    }
+  };
+
   // React to company changes from auth context
   useEffect(() => {
     const reloadCompany = async () => {
@@ -604,6 +620,7 @@ export const useStrategicMap = () => {
     updateKeyResult,
     calculateObjectiveProgress,
     calculatePillarProgress,
-    refreshData: loadCompany
+    refreshData: loadCompany,
+    softRefresh
   };
 };

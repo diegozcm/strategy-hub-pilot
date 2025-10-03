@@ -26,7 +26,7 @@ export const DeletePillarModal = ({ pillar, open, onClose, onConfirm, objectives
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onClose}>
+    <AlertDialog open={open} onOpenChange={(open) => { if (!open) onClose(); }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <div className="flex items-center gap-3">
