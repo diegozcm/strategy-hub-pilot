@@ -80,15 +80,20 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
       
       const yearlyActual = calculateYearlyActual(monthlyActual);
 
+      // Validar e limpar dados JSON antes de salvar
+      const cleanMonthlyActual = Object.fromEntries(
+        Object.entries(monthlyActual)
+          .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
+      );
+
       const dataToSave = {
         id: keyResult.id,
-        monthly_actual: monthlyActual,
+        monthly_actual: cleanMonthlyActual,
         yearly_actual: yearlyActual,
         current_value: yearlyActual,
       };
 
       await onSave(dataToSave);
-      onClose();
       
       toast({
         title: "Sucesso",

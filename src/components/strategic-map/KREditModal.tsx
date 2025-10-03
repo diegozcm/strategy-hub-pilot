@@ -155,6 +155,12 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
       
       const yearlyTarget = calculateYearlyTarget(monthlyTargets);
 
+      // Validar e limpar dados JSON antes de salvar
+      const cleanMonthlyTargets = Object.fromEntries(
+        Object.entries(monthlyTargets)
+          .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
+      );
+
       const dataToSave = {
         id: keyResult.id,
         title: basicInfo.title,
@@ -162,16 +168,25 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         unit: basicInfo.unit,
         responsible: basicInfo.responsible,
         objective_id: basicInfo.objective_id === '' || basicInfo.objective_id === 'none' ? null : basicInfo.objective_id,
-        monthly_targets: monthlyTargets,
+        monthly_targets: cleanMonthlyTargets,
         yearly_target: yearlyTarget,
         target_value: yearlyTarget,
         aggregation_type: aggregationType
       };
 
       await onSave(dataToSave);
-      onClose();
+      
+      toast({
+        title: "Sucesso",
+        description: "Resultado-chave atualizado com sucesso!",
+      });
     } catch (error) {
       console.error('Error updating key result:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar. Tente novamente.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

@@ -880,22 +880,28 @@ export const IndicatorsPage: React.FC = () => {
       <KREditModal
         keyResult={selectedKeyResult}
         open={isKREditModalOpen}
-        onClose={() => setIsKREditModalOpen(false)}
+        onClose={() => {
+          setIsKREditModalOpen(false);
+          setSelectedKeyResult(null);
+        }}
         onSave={async (keyResultData) => {
-          const { error } = await supabase
+          const { data, error } = await supabase
             .from('key_results')
             .update(keyResultData)
-            .eq('id', keyResultData.id);
+            .eq('id', keyResultData.id)
+            .select()
+            .single();
 
           if (error) throw error;
 
-          // Reload data to reflect changes
-          await loadData();
+          // Atualizar apenas o KR específico no estado local
+          setKeyResults(prev => prev.map(kr => 
+            kr.id === data.id ? { ...kr, ...data } as KeyResult : kr
+          ));
           
-          toast({
-            title: "Sucesso",
-            description: "Resultado-chave atualizado com sucesso!",
-          });
+          // Fechar modal antes do toast
+          setIsKREditModalOpen(false);
+          setSelectedKeyResult(null);
         }}
         objectives={objectives}
       />
@@ -904,22 +910,28 @@ export const IndicatorsPage: React.FC = () => {
       <KRUpdateValuesModal
         keyResult={selectedKeyResult}
         open={isKRUpdateValuesModalOpen}
-        onClose={() => setIsKRUpdateValuesModalOpen(false)}
+        onClose={() => {
+          setIsKRUpdateValuesModalOpen(false);
+          setSelectedKeyResult(null);
+        }}
         onSave={async (keyResultData) => {
-          const { error } = await supabase
+          const { data, error } = await supabase
             .from('key_results')
             .update(keyResultData)
-            .eq('id', keyResultData.id);
+            .eq('id', keyResultData.id)
+            .select()
+            .single();
 
           if (error) throw error;
 
-          // Reload data to reflect changes
-          await loadData();
+          // Atualizar apenas o KR específico no estado local
+          setKeyResults(prev => prev.map(kr => 
+            kr.id === data.id ? { ...kr, ...data } as KeyResult : kr
+          ));
           
-          toast({
-            title: "Sucesso",
-            description: "Valores atualizados com sucesso!",
-          });
+          // Fechar modal antes do toast
+          setIsKRUpdateValuesModalOpen(false);
+          setSelectedKeyResult(null);
         }}
       />
 
