@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit, Save, X, Trash2, MoreVertical } from 'lucide-react';
+import { Plus, Edit, Save, X, Trash2, MoreVertical, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -78,6 +79,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
 }) => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editForm, setEditForm] = useState({
     title: '',
     description: '',
@@ -104,6 +106,14 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
   const handleClose = () => {
     setIsEditing(false);
     onClose();
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (onDelete) {
+      await onDelete();
+      setShowDeleteConfirm(false);
+      onClose();
+    }
   };
 
   if (!objective) return null;
@@ -163,7 +173,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                     </DropdownMenuItem>
                     {onDelete && (
                       <DropdownMenuItem 
-                        onClick={onDelete}
+                        onClick={() => setShowDeleteConfirm(true)}
                         className="text-destructive"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
@@ -287,6 +297,37 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
           )}
         </div>
       </DialogContent>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Confirmar Exclusão
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o objetivo <strong>"{objective.title}"</strong>?
+              {keyResults.length > 0 && (
+                <span className="block mt-2 text-destructive">
+                  Atenção: Este objetivo possui {keyResults.length} resultado(s)-chave associado(s) que também serão excluídos.
+                </span>
+              )}
+              <span className="block mt-2">
+                Esta ação não pode ser desfeita.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir Objetivo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
