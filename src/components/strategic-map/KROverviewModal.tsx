@@ -14,7 +14,7 @@ import { KREditModal } from './KREditModal';
 import { KRUpdateValuesModal } from './KRUpdateValuesModal';
 
 import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -33,15 +33,41 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
   const [showInitiativesModal, setShowInitiativesModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUpdateValuesModal, setShowUpdateValuesModal] = useState(false);
+  const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
+
+  // Update local state when keyResult prop changes
+  useEffect(() => {
+    setCurrentKeyResult(keyResult);
+  }, [keyResult]);
+
+  // Function to refresh key result data from database
+  const refreshKeyResult = async () => {
+    if (!keyResult?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('key_results')
+        .select('*')
+        .eq('id', keyResult.id)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setCurrentKeyResult(data as KeyResult);
+      }
+    } catch (error) {
+      console.error('Erro ao recarregar resultado-chave:', error);
+    }
+  };
   
-  if (!keyResult) return null;
+  if (!currentKeyResult) return null;
 
   // Calculate values using the same logic as EditKeyResultModal
-  const monthlyTargets = keyResult.monthly_targets as Record<string, number> || {};
-  const monthlyActual = keyResult.monthly_actual as Record<string, number> || {};
-  const aggregationType = keyResult.aggregation_type || 'sum';
+  const monthlyTargets = currentKeyResult.monthly_targets as Record<string, number> || {};
+  const monthlyActual = currentKeyResult.monthly_actual as Record<string, number> || {};
+  const aggregationType = currentKeyResult.aggregation_type || 'sum';
   
   const calculateYearlyTarget = (targets: Record<string, number>) => {
     const values = Object.values(targets).filter(value => value > 0);
@@ -99,9 +125,9 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <DialogTitle className="text-2xl">{keyResult.title}</DialogTitle>
+              <DialogTitle className="text-2xl">{currentKeyResult.title}</DialogTitle>
               <DialogDescription>
-                {keyResult.description || "Visão geral completa do resultado-chave e evolução dos indicadores"}
+                {currentKeyResult.description || "Visão geral completa do resultado-chave e evolução dos indicadores"}
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -172,29 +198,29 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
               <Badge variant="secondary">
                 {getAggregationTypeText(aggregationType)}
               </Badge>
-              {keyResult.unit && (
+              {currentKeyResult.unit && (
                 <Badge variant="secondary">
                   <Target className="w-3 h-3 mr-1" />
-                  {keyResult.unit}
+                  {currentKeyResult.unit}
                 </Badge>
               )}
               <Badge variant="secondary">
                 Mensal
               </Badge>
-              {keyResult.responsible && (
+              {currentKeyResult.responsible && (
                 <Badge variant="secondary">
                   <User className="w-3 h-3 mr-1" />
-                  {keyResult.responsible}
+                  {currentKeyResult.responsible}
                 </Badge>
               )}
-              {keyResult.due_date && (
+              {currentKeyResult.due_date && (
                 <Badge variant="secondary">
                   <Calendar className="w-3 h-3 mr-1" />
-                  {new Date(keyResult.due_date).toLocaleDateString('pt-BR')}
+                  {new Date(currentKeyResult.due_date).toLocaleDateString('pt-BR')}
                 </Badge>
               )}
               <Badge variant="secondary">
-                Atualizado: {new Date(keyResult.updated_at).toLocaleDateString('pt-BR')}
+                Atualizado: {new Date(currentKeyResult.updated_at).toLocaleDateString('pt-BR')}
               </Badge>
               <Badge variant={achievementPercentage >= 100 ? "default" : achievementPercentage >= 80 ? "secondary" : "destructive"}>
                 {achievementPercentage >= 100 ? "Meta alcançada" : achievementPercentage >= 80 ? "No caminho" : "Atenção"}
@@ -205,7 +231,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
             <KeyResultMetrics
               yearlyTarget={yearlyTarget}
               yearlyActual={yearlyActual}
-              unit={keyResult.unit || ''}
+              unit={currentKeyResult.unit || ''}
               achievementPercentage={achievementPercentage}
               currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
             />
@@ -214,7 +240,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
             <KeyResultChart
               monthlyTargets={monthlyTargets}
               monthlyActual={monthlyActual}
-              unit={keyResult.unit || ''}
+              unit={currentKeyResult.unit || ''}
               selectedYear={new Date().getFullYear()}
             />
           </div>
@@ -223,29 +249,29 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
 
       {/* Modal FCA Unificado */}
       <KRFCAUnifiedModal
-        keyResult={keyResult}
+        keyResult={currentKeyResult}
         open={showFCAModal}
         onClose={() => setShowFCAModal(false)}
       />
 
       {/* Modal Status Report */}
       <KRStatusReportModal
-        keyResult={keyResult}
+        keyResult={currentKeyResult}
         open={showStatusReportModal}
         onClose={() => setShowStatusReportModal(false)}
       />
 
       {/* Modal Initiatives */}
       <KRInitiativesModal
-        keyResult={keyResult}
+        keyResult={currentKeyResult}
         open={showInitiativesModal}
         onClose={() => setShowInitiativesModal(false)}
       />
 
       {/* Modal Edit */}
-      {keyResult && (
+      {currentKeyResult && (
         <KREditModal
-          keyResult={keyResult}
+          keyResult={currentKeyResult}
           open={showEditModal}
           onClose={() => setShowEditModal(false)}
           onSave={async (updates) => {
@@ -254,10 +280,13 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
               const { error } = await supabase
                 .from('key_results')
                 .update(updates)
-                .eq('id', keyResult.id);
+                .eq('id', currentKeyResult.id);
 
               if (error) throw error;
 
+              // Refresh local key result data
+              await refreshKeyResult();
+              
               // Recarregar dados da página pai
               await onSave();
               setShowEditModal(false);
@@ -271,9 +300,9 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
       )}
 
       {/* Modal Update Values */}
-      {keyResult && (
+      {currentKeyResult && (
         <KRUpdateValuesModal
-          keyResult={keyResult}
+          keyResult={currentKeyResult}
           open={showUpdateValuesModal}
           onClose={() => setShowUpdateValuesModal(false)}
           onSave={async (updates) => {
@@ -282,10 +311,13 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
               const { error } = await supabase
                 .from('key_results')
                 .update(updates)
-                .eq('id', keyResult.id);
+                .eq('id', currentKeyResult.id);
 
               if (error) throw error;
 
+              // Refresh local key result data
+              await refreshKeyResult();
+              
               // Recarregar dados da página pai
               await onSave();
               setShowUpdateValuesModal(false);
