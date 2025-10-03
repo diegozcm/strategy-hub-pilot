@@ -62,7 +62,7 @@ export const PillarFormModal = ({ open, onClose, onSave, initialData }: PillarFo
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>

@@ -205,6 +205,11 @@ export const useObjectivesData = () => {
     return loadData(true);
   }, [loadData]);
 
+  const softReload = useCallback(() => {
+    console.log('🔄 Soft reloading data in background...');
+    return loadData(false);
+  }, [loadData]);
+
   // Auto-reload data when user or company changes
   useEffect(() => {
     loadData();
@@ -234,6 +239,7 @@ export const useObjectivesData = () => {
     // Actions
     loadData,
     refreshData,
+    softReload,
     invalidateAndReload,
     handleError,
     

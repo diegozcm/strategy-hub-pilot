@@ -74,7 +74,7 @@ export const ObjectivesPage: React.FC = () => {
   const { 
     objectives, plans, pillars, keyResults, loading, error,
     setObjectives, setPlans, setPillars, setKeyResults,
-    refreshData, invalidateAndReload, handleError, clearError
+    refreshData, softReload, invalidateAndReload, handleError, clearError
   } = useObjectivesData();
   
   const [selectedPlan, setSelectedPlan] = useState<string>('all');
@@ -317,8 +317,8 @@ export const ObjectivesPage: React.FC = () => {
         description: "Objetivo atualizado com sucesso!",
       });
 
-      // Reload data to ensure consistency
-      await invalidateAndReload();
+      // Soft reload in background without blocking UI
+      void softReload();
       console.log('✅ Objective updated successfully');
     } catch (error) {
       handleError(error, 'atualizar objetivo');
@@ -1024,7 +1024,7 @@ export const ObjectivesPage: React.FC = () => {
         </div>
 
         {/* Objective Detail Modal */}
-        <Dialog open={isDetailModalOpen} onOpenChange={closeDetailModal}>
+        <Dialog open={isDetailModalOpen} onOpenChange={(open) => { if (!open) closeDetailModal(); }}>
           <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <div className="flex items-center justify-between">

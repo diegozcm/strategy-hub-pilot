@@ -42,7 +42,7 @@ export const PillarEditModal = ({ pillar, open, onClose, onSave }: PillarEditMod
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Editar Pilar Estratégico</DialogTitle>
