@@ -660,23 +660,36 @@ export const DashboardHome: React.FC = () => {
                     const isExpanded = expandedKRs.has(kr.id);
                     
                     return (
-                      <div key={kr.id} className="border rounded-lg">
+                      <div key={kr.id} className="border rounded-lg overflow-hidden group">
                         {/* Collapsed State - Always Visible */}
-                         <div className="p-4 hover:bg-muted/50 transition-colors">
-                           <div className="flex items-center justify-between">
-                             <div className="flex-1">
-                               <div className="flex items-center gap-3">
-                                 <div 
-                                   className="w-3 h-3 rounded-full" 
-                                   style={{ backgroundColor: kr.pillar_color }}
-                                 />
-                                 <div>
-                                   <h4 className="font-medium text-foreground">{kr.title}</h4>
-                                   <p className="text-sm text-muted-foreground">{kr.pillar_name} • {kr.objective_title}</p>
-                                 </div>
-                               </div>
-                             </div>
-                              <div className="flex items-center gap-3">
+                        <div className="flex">
+                          {/* Barra lateral colorida com a cor do pilar */}
+                          <div 
+                            className="w-1.5 flex-shrink-0 transition-all duration-300 group-hover:w-2" 
+                            style={{ backgroundColor: kr.pillar_color }}
+                          />
+                          <div className="flex-1 p-4 hover:bg-muted/50 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="space-y-1">
+                                  <h4 className="font-medium text-foreground">{kr.title}</h4>
+                                  <div className="flex items-center gap-2">
+                                    <Badge 
+                                      variant="secondary" 
+                                      className="text-xs"
+                                      style={{ 
+                                        backgroundColor: `${kr.pillar_color}15`, 
+                                        color: kr.pillar_color,
+                                        borderColor: `${kr.pillar_color}30`
+                                      }}
+                                    >
+                                      {kr.pillar_name}
+                                    </Badge>
+                                    <span className="text-sm text-muted-foreground">• {kr.objective_title}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3 ml-4">
                                 <div className="flex items-center gap-2">
                                   {getStatusIcon(yearlyAchievement)}
                                   <div className="flex flex-col items-end">
@@ -697,7 +710,8 @@ export const DashboardHome: React.FC = () => {
                                   {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                                 </Button>
                               </div>
-                           </div>
+                            </div>
+                          </div>
                         </div>
 
                         {/* Expanded State - Monthly Details */}
