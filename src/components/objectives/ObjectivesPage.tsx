@@ -956,30 +956,31 @@ export const ObjectivesPage: React.FC = () => {
                 return (
                   <Card 
                     key={objective.id} 
-                    className="hover:shadow-lg transition-all cursor-pointer group"
+                    className="hover:shadow-lg transition-all cursor-pointer group overflow-hidden"
                     onClick={() => openDetailModal(objective)}
                   >
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
+                    {/* Header colorido com pilar */}
+                    {pillar && (
+                      <div 
+                        style={{ backgroundColor: pillar.color }}
+                        className="p-3"
+                      >
+                        <div className="space-y-2">
+                          <h3 className="text-white font-semibold text-lg leading-tight line-clamp-2">
                             {objective.title}
-                          </CardTitle>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge 
-                              variant="secondary" 
-                              style={{ backgroundColor: `${pillar?.color}20`, color: pillar?.color }}
-                            >
-                              {pillar?.name}
+                          </h3>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+                              {pillar.name}
                             </Badge>
-                            <Badge variant="outline">
+                            <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
                               {plan?.name}
                             </Badge>
                           </div>
                         </div>
                       </div>
-                    </CardHeader>
-                    <CardContent>
+                    )}
+                    <CardContent className="pt-4">
                       <div className="space-y-3">
                         {objective.description && (
                           <p className="text-sm text-muted-foreground line-clamp-2">{objective.description}</p>
