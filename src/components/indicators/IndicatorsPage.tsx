@@ -428,6 +428,25 @@ export const IndicatorsPage: React.FC = () => {
     }
     
     return matchesSearch && matchesPriority && matchesObjective && matchesPillar && matchesProgress;
+  }).sort((a, b) => {
+    // Ordenar primeiro por pilar (seguindo a ordem do filtro)
+    const objectiveA = objectives.find(obj => obj.id === a.objective_id);
+    const objectiveB = objectives.find(obj => obj.id === b.objective_id);
+    
+    const pillarA = pillars.find(p => p.id === objectiveA?.pillar_id);
+    const pillarB = pillars.find(p => p.id === objectiveB?.pillar_id);
+    
+    // Se não tiver pilar, coloca no final
+    if (!pillarA && pillarB) return 1;
+    if (pillarA && !pillarB) return -1;
+    if (!pillarA && !pillarB) return a.title.localeCompare(b.title, 'pt-BR');
+    
+    // Ordenar por order_index do pilar
+    const orderDiff = (pillarA?.order_index || 999) - (pillarB?.order_index || 999);
+    if (orderDiff !== 0) return orderDiff;
+    
+    // Dentro do mesmo pilar, ordenar alfabeticamente
+    return a.title.localeCompare(b.title, 'pt-BR');
   });
 
   // Calculate summary statistics
