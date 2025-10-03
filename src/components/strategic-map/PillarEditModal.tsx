@@ -20,7 +20,6 @@ export const PillarEditModal = ({ pillar, open, onClose, onSave }: PillarEditMod
     description: pillar.description || '',
     color: pillar.color
   });
-  const [loading, setLoading] = useState(false);
 
   // Keep form in sync when switching pillars
   useEffect(() => {
@@ -31,7 +30,7 @@ export const PillarEditModal = ({ pillar, open, onClose, onSave }: PillarEditMod
     });
   }, [pillar]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!formData.name.trim()) {
       toast({
         title: "Erro",
@@ -41,13 +40,7 @@ export const PillarEditModal = ({ pillar, open, onClose, onSave }: PillarEditMod
       return;
     }
 
-    setLoading(true);
-    try {
-      await onSave(pillar.id, formData);
-      onClose(); // Close modal after successful save
-    } finally {
-      setLoading(false);
-    }
+    void onSave(pillar.id, formData);
   };
 
   return (
@@ -100,11 +93,11 @@ export const PillarEditModal = ({ pillar, open, onClose, onSave }: PillarEditMod
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={loading}>
+          <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={handleSave} disabled={loading}>
-            {loading ? "Salvando..." : "Salvar Alterações"}
+          <Button onClick={handleSave}>
+            Salvar Alterações
           </Button>
         </DialogFooter>
       </DialogContent>

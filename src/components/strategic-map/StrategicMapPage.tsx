@@ -489,13 +489,31 @@ export const StrategicMapPage = () => {
           open={showPillarForm}
           onClose={() => setShowPillarForm(false)}
           onSave={async (data) => {
-            console.log('💾 [StrategicMap] Creating new pillar...');
-            const result = await createPillar(data);
-            if (result) {
-              console.log('✅ [StrategicMap] Pillar created, triggering soft refresh');
-              void softRefresh();
+            setShowPillarForm(false); // Close modal immediately
+            try {
+              console.log('💾 [StrategicMap] Creating new pillar...');
+              const result = await createPillar(data);
+              if (result) {
+                console.log('✅ [StrategicMap] Pillar created, triggering soft refresh');
+                void softRefresh();
+              } else {
+                toast({
+                  title: "Erro",
+                  description: "Não foi possível criar o pilar. Tente novamente.",
+                  variant: "destructive",
+                });
+                setShowPillarForm(true);
+              }
+              return result;
+            } catch (e) {
+              toast({
+                title: "Erro",
+                description: "Falha ao criar o pilar. Tente novamente.",
+                variant: "destructive",
+              });
+              setShowPillarForm(true);
+              return null;
             }
-            return result;
           }}
         />
 
@@ -513,13 +531,32 @@ export const StrategicMapPage = () => {
           open={!!editingPillar}
           onClose={() => setEditingPillar(null)}
           onSave={async (id, data) => {
-            console.log('💾 [StrategicMap] Saving pillar edit...');
-            const result = await updatePillar(id, data);
-            if (result) {
-              console.log('✅ [StrategicMap] Pillar updated, triggering soft refresh');
-              void softRefresh();
+            const previous = editingPillar;
+            setEditingPillar(null); // Close modal immediately
+            try {
+              console.log('💾 [StrategicMap] Saving pillar edit...');
+              const result = await updatePillar(id, data);
+              if (result) {
+                console.log('✅ [StrategicMap] Pillar updated, triggering soft refresh');
+                void softRefresh();
+              } else {
+                toast({
+                  title: "Erro",
+                  description: "Não foi possível salvar o pilar. Tente novamente.",
+                  variant: "destructive",
+                });
+                if (previous) setEditingPillar(previous);
+              }
+              return result;
+            } catch (e) {
+              toast({
+                title: "Erro",
+                description: "Falha ao salvar o pilar. Tente novamente.",
+                variant: "destructive",
+              });
+              if (previous) setEditingPillar(previous);
+              return null;
             }
-            return result;
           }}
         />
       )}
