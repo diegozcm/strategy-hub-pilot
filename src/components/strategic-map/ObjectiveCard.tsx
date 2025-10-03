@@ -210,7 +210,6 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], pil
           pillar={pillar}
           plan={currentPlan}
           onUpdate={handleUpdateObjective}
-          onDelete={handleDeleteObjective}
           onOpenKeyResultDetails={handleOpenKeyResultDetails}
           pillars={pillars}
           progressPercentage={progressPercentage}

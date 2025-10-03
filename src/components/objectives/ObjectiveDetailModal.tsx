@@ -57,7 +57,7 @@ interface ObjectiveDetailModalProps {
   pillar: StrategicPillar | null;
   plan: StrategicPlan | null;
   onUpdate: (data: Partial<ObjectiveData>) => Promise<void>;
-  onDelete: () => Promise<void>;
+  onDelete?: () => Promise<void>;
   onOpenKeyResultDetails: (kr: KeyResult) => void;
   pillars: StrategicPillar[];
   progressPercentage: number;
@@ -161,13 +161,15 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                       <Edit className="w-4 h-4 mr-2" />
                       Editar
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      onClick={onDelete}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Excluir
-                    </DropdownMenuItem>
+                    {onDelete && (
+                      <DropdownMenuItem 
+                        onClick={onDelete}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Excluir
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
