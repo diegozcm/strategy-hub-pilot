@@ -445,7 +445,11 @@ export const IndicatorsPage: React.FC = () => {
     const orderDiff = (pillarA?.order_index || 999) - (pillarB?.order_index || 999);
     if (orderDiff !== 0) return orderDiff;
     
-    // Dentro do mesmo pilar, ordenar alfabeticamente
+    // Se order_index for igual, ordenar pelo nome do pilar alfabeticamente
+    const pillarNameDiff = (pillarA?.name || '').localeCompare(pillarB?.name || '', 'pt-BR');
+    if (pillarNameDiff !== 0) return pillarNameDiff;
+    
+    // Dentro do mesmo pilar, ordenar alfabeticamente pelo título do KR
     return a.title.localeCompare(b.title, 'pt-BR');
   });
 
