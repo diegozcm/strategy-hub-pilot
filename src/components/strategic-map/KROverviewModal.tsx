@@ -121,7 +121,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1000px] max-h-[95vh] flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[85vh] overflow-y-auto flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
@@ -191,7 +191,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
           </Button>
         </div>
         
-        <ScrollArea className="flex-1 max-h-[calc(95vh-280px)] pr-6">
+        <ScrollArea className="flex-1 max-h-[70vh] pr-6">
           <div className="space-y-6">
             {/* Header Info */}
             <div className="flex flex-wrap gap-2">
