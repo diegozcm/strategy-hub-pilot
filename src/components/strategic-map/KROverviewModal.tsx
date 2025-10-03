@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultMetrics } from './KeyResultMetrics';
@@ -11,7 +11,7 @@ import { KRFCAUnifiedModal } from './KRFCAUnifiedModal';
 import { KRStatusReportModal } from './KRStatusReportModal';
 import { KRInitiativesModal } from './KRInitiativesModal';
 
-import { Edit, Calendar, User, Target, TrendingUp, MoreVertical, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
+import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
 import { useState } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 
@@ -103,6 +103,24 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
               <Button
                 variant="outline"
                 size="sm"
+                onClick={onEdit}
+                className="text-orange-600 border-orange-200 hover:bg-orange-50"
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Editar Info
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onUpdateValues}
+                className="text-cyan-600 border-cyan-200 hover:bg-cyan-50"
+              >
+                <FileEdit className="h-4 w-4 mr-2" />
+                Atualizar Valores
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setShowFCAModal(true)}
                 className="text-blue-600 border-blue-200 hover:bg-blue-50"
               >
@@ -127,30 +145,14 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
                 <Rocket className="h-4 w-4 mr-2" />
                 Iniciativas
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48 bg-background border shadow-lg z-[60]">
-                  <DropdownMenuItem onClick={onEdit} className="flex items-center gap-2">
-                    <Edit className="h-4 w-4" />
-                    Editar Informações
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onUpdateValues} className="flex items-center gap-2">
-                    <FileEdit className="h-4 w-4" />
-                    Atualizar Valores
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={onDelete} 
-                    className="flex items-center gap-2 text-destructive focus:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Excluir KR
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onDelete}
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </DialogHeader>
