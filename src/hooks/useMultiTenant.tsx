@@ -474,9 +474,11 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         console.log('🔐 Auth state change:', event, !!session);
         
         // Prevent automatic re-login during logout process
-        if (isLoggingOut && event === 'INITIAL_SESSION') {
-          console.log('🚪 Ignoring INITIAL_SESSION during logout process');
-          return;
+        if (isLoggingOut) {
+          if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            console.log(`🚪 Ignoring ${event} during logout process`);
+            return;
+          }
         }
         
         if (event === 'SIGNED_IN' && session) {
@@ -637,13 +639,23 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         'sb-auth-token'
       ];
       
-      keysToRemove.forEach(key => {
-        localStorage.removeItem(key);
-        console.log(`🧹 Cleared localStorage key: ${key}`);
+      // Remover TODAS as chaves relacionadas ao Supabase
+      console.log('🧹 Starting comprehensive localStorage cleanup');
+      const allKeys = Object.keys(localStorage);
+      let removedCount = 0;
+
+      allKeys.forEach(key => {
+        if (key.includes('sb-') || key.includes('supabase') || key === 'selectedCompanyId') {
+          localStorage.removeItem(key);
+          console.log(`🧹 Cleared localStorage key: ${key}`);
+          removedCount++;
+        }
       });
+
+      console.log(`✅ Removed ${removedCount} localStorage keys during logout`);
       
-      // Sign out from Supabase with local scope to force complete logout
-      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      // Sign out from Supabase with global scope to invalidate refresh token on server
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
       
       if (error) {
         console.warn('⚠️ Supabase sign out error (continuing anyway):', error);
@@ -654,7 +666,8 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       // Reset logout flag after a delay to allow for navigation
       setTimeout(() => {
         setIsLoggingOut(false);
-      }, 1000);
+        console.log('🔓 Logout process complete, flag cleared');
+      }, 3000);
       
       // Always navigate regardless of errors
       console.log(`🔄 Redirecting to ${redirectPath}`);
