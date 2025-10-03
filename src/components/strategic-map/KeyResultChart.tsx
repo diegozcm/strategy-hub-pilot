@@ -51,11 +51,8 @@ export const KeyResultChart = ({
 
   return (
     <Card className="mb-6">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle className="text-lg">Evolução Mensal - Previsto vs Realizado</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Acompanhe o progresso dos valores realizados em comparação com as metas mensais
-        </p>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="chart" className="w-full">
