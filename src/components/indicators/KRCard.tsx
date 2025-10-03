@@ -45,39 +45,41 @@ export const KRCard: React.FC<KRCardProps> = ({
       {/* Header com cor do pilar */}
       <div 
         style={{ backgroundColor: pillar.color }}
-        className="p-3 flex items-center justify-between"
+        className="p-3"
       >
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 shrink-0">
-            {pillar.name}
-          </Badge>
-          <h3 className="text-white font-semibold text-sm leading-tight truncate">
-            {keyResult.title}
-          </h3>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0 space-y-2">
+            <h3 className="text-white font-semibold text-base leading-tight">
+              {keyResult.title}
+            </h3>
+            <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+              {pillar.name}
+            </Badge>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0 text-white hover:bg-white/20 hover:text-white shrink-0"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                className="text-red-600"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Excluir KR
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 w-8 p-0 text-white hover:bg-white/20 hover:text-white shrink-0"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete();
-              }}
-              className="text-red-600"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Excluir KR
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       {/* Body */}
