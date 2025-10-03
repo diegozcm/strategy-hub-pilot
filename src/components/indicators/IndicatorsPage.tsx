@@ -925,8 +925,11 @@ export const IndicatorsPage: React.FC = () => {
         onSave={async (keyResultData) => {
           try {
             setIsUpdatingKR(true);
+            
+            // Aguarda próximo ciclo de renderização (previne race condition)
+            await new Promise(resolve => setTimeout(resolve, 0));
+            
             setIsKREditModalOpen(false);
-            setSelectedKeyResult(null);
             
             await updateKRWithTimeout(async () => {
               const { data, error } = await supabase
@@ -944,12 +947,19 @@ export const IndicatorsPage: React.FC = () => {
               ));
             });
             
+            // Limpa selectedKeyResult APÓS sucesso
+            setSelectedKeyResult(null);
+            
             toast({
               title: "✅ Sucesso",
               description: "Resultado-chave atualizado!",
             });
           } catch (error) {
             console.error('Error updating key result:', error);
+            
+            // Limpa selectedKeyResult também em caso de erro
+            setSelectedKeyResult(null);
+            
             toast({
               title: "❌ Erro",
               description: "Erro ao atualizar. Tente novamente.",
@@ -973,8 +983,11 @@ export const IndicatorsPage: React.FC = () => {
         onSave={async (keyResultData) => {
           try {
             setIsUpdatingKR(true);
+            
+            // Aguarda próximo ciclo de renderização (previne race condition)
+            await new Promise(resolve => setTimeout(resolve, 0));
+            
             setIsKRUpdateValuesModalOpen(false);
-            setSelectedKeyResult(null);
             
             await updateKRWithTimeout(async () => {
               const { data, error } = await supabase
@@ -992,12 +1005,19 @@ export const IndicatorsPage: React.FC = () => {
               ));
             });
             
+            // Limpa selectedKeyResult APÓS sucesso
+            setSelectedKeyResult(null);
+            
             toast({
               title: "✅ Sucesso",
               description: "Valores atualizados!",
             });
           } catch (error) {
             console.error('Error updating values:', error);
+            
+            // Limpa selectedKeyResult também em caso de erro
+            setSelectedKeyResult(null);
+            
             toast({
               title: "❌ Erro",
               description: "Erro ao atualizar valores. Tente novamente.",
