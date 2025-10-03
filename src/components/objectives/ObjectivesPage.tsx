@@ -998,13 +998,18 @@ export const ObjectivesPage: React.FC = () => {
                           </div>
                         )}
                         <div className="mt-3">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-xs font-medium text-muted-foreground">Progresso</span>
-                            <span className="text-xs font-bold text-foreground">{calculateObjectiveProgress(objectiveKeyResults)}%</span>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-muted-foreground">Progresso</span>
+                            <span className="text-sm font-bold text-foreground">{calculateObjectiveProgress(objectiveKeyResults)}%</span>
                           </div>
-                          <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
+                          <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
                             <div 
-                              className={`h-full transition-all duration-300 rounded-full ${getProgressColor(calculateObjectiveProgress(objectiveKeyResults))}`}
+                              className={`h-full transition-all duration-300 rounded-full ${
+                                calculateObjectiveProgress(objectiveKeyResults) < 30 ? 'bg-red-500' : 
+                                calculateObjectiveProgress(objectiveKeyResults) < 60 ? 'bg-yellow-500' : 
+                                calculateObjectiveProgress(objectiveKeyResults) < 80 ? 'bg-blue-500' : 
+                                'bg-green-500'
+                              }`}
                               style={{ width: `${calculateObjectiveProgress(objectiveKeyResults)}%` }}
                             />
                           </div>
