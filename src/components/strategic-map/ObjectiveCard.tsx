@@ -272,27 +272,16 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
           setIsKROverviewModalOpen(false);
           setSelectedKeyResultForOverview(null);
         }}
-        onEdit={() => {
-          setIsKROverviewModalOpen(false);
-          if (selectedKeyResultForOverview) {
-            handleEditKeyResult(selectedKeyResultForOverview);
-          }
-        }}
-        onUpdateValues={() => {
-          // Close modal and show toast about navigating to strategic map
-          setIsKROverviewModalOpen(false);
-          toast({
-            title: "Atualize valores na página de Mapa Estratégico",
-            description: "Para atualizar os valores dos Resultados-Chave, acesse a página de Mapa Estratégico.",
-          });
-        }}
         onDelete={() => {
-          // Implement delete functionality if needed
           toast({
             title: "Funcionalidade em desenvolvimento",
             description: "A exclusão de Resultados-Chave será implementada em breve.",
           });
         }}
+        onSave={async () => {
+          if (onRefreshData) await onRefreshData();
+        }}
+        objectives={[{ id: objective.id, title: objective.title }]}
       />
 
       {/* Objective Detail Modal */}

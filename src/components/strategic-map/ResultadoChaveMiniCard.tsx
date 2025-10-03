@@ -95,18 +95,14 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, onUpdate, onOpenDetails
         keyResult={resultadoChave}
         open={isKRModalOpen}
         onClose={handleKRModalClose}
-        onEdit={() => {
-          handleKRModalClose();
-          navigate(`/app/indicators?edit=${resultadoChave.id}`);
-        }}
-        onUpdateValues={() => {
-          handleKRModalClose();
-          navigate(`/app/indicators?update=${resultadoChave.id}`);
-        }}
         onDelete={() => {
           handleKRModalClose();
           if (onUpdate) onUpdate();
         }}
+        onSave={async () => {
+          if (onUpdate) onUpdate();
+        }}
+        objectives={[]}
       />
     </>
   );

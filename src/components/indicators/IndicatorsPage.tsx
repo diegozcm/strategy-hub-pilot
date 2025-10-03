@@ -53,8 +53,6 @@ export const IndicatorsPage: React.FC = () => {
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isKROverviewModalOpen, setIsKROverviewModalOpen] = useState(false);
-  const [isKREditModalOpen, setIsKREditModalOpen] = useState(false);
-  const [isKRUpdateValuesModalOpen, setIsKRUpdateValuesModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
   
@@ -178,7 +176,7 @@ export const IndicatorsPage: React.FC = () => {
       const keyResult = keyResults.find(kr => kr.id === editId);
       if (keyResult) {
         setSelectedKeyResult(keyResult);
-        setIsKREditModalOpen(true);
+        setIsKROverviewModalOpen(true);
         // Remove the parameter from URL
         searchParams.delete('edit');
         setSearchParams(searchParams);
@@ -189,7 +187,7 @@ export const IndicatorsPage: React.FC = () => {
       const keyResult = keyResults.find(kr => kr.id === updateId);
       if (keyResult) {
         setSelectedKeyResult(keyResult);
-        setIsKRUpdateValuesModalOpen(true);
+        setIsKROverviewModalOpen(true);
         // Remove the parameter from URL
         searchParams.delete('update');
         setSearchParams(searchParams);
@@ -315,20 +313,8 @@ export const IndicatorsPage: React.FC = () => {
     setIsKROverviewModalOpen(true);
   };
 
-  const openKREditModal = (keyResult: KeyResult) => {
-    setSelectedKeyResult(keyResult);
-    setIsKREditModalOpen(true);
-  };
-
-  const openKRUpdateValuesModal = (keyResult: KeyResult) => {
-    setSelectedKeyResult(keyResult);
-    setIsKRUpdateValuesModalOpen(true);
-  };
-
   const closeAllModals = () => {
     setIsKROverviewModalOpen(false);
-    setIsKREditModalOpen(false);
-    setIsKRUpdateValuesModalOpen(false);
     setSelectedKeyResult(null);
   };
 
@@ -685,20 +671,6 @@ export const IndicatorsPage: React.FC = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={(e) => {
-                        e.stopPropagation();
-                        openKREditModal(keyResult);
-                      }}>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Editar KR
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={(e) => {
-                        e.stopPropagation();
-                        openKRUpdateValuesModal(keyResult);
-                      }}>
-                        <TrendingUp className="w-4 h-4 mr-2" />
-                        Atualizar Valores
-                      </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
@@ -865,107 +837,14 @@ export const IndicatorsPage: React.FC = () => {
             setIsKROverviewModalOpen(false);
             setSelectedKeyResult(null);
           }}
-          onEdit={() => {
-            setIsKROverviewModalOpen(false);
-            setIsKREditModalOpen(true);
-          }}
-          onUpdateValues={() => {
-            setIsKROverviewModalOpen(false);
-            setIsKRUpdateValuesModalOpen(true);
-          }}
           onDelete={() => {
             setIsKROverviewModalOpen(false);
             setIsDeleteConfirmOpen(true);
           }}
-        />
-      )}
-
-      {/* KR Edit Modal */}
-      {selectedKeyResult && isKREditModalOpen && (
-        <KREditModal
-          keyResult={selectedKeyResult}
-          open={isKREditModalOpen}
-          onClose={() => {
-            setIsKREditModalOpen(false);
-            setSelectedKeyResult(null);
+          onSave={async () => {
+            await loadData();
           }}
-          onSave={async (keyResultData) => {
-            try {
-              const { data, error } = await supabase
-                .from('key_results')
-                .update(keyResultData)
-                .eq('id', keyResultData.id)
-                .select('*')
-                .maybeSingle();
-
-              if (error) throw error;
-              if (!data) throw new Error('Nenhum dado retornado');
-
-              setKeyResults((prev) =>
-                prev.map((kr) => (kr.id === data.id ? ({ ...kr, ...data } as KeyResult) : kr))
-              );
-
-              setIsKREditModalOpen(false);
-              setSelectedKeyResult(null);
-
-              toast({
-                title: "Sucesso",
-                description: "Resultado-chave atualizado!",
-              });
-            } catch (error) {
-              console.error('Error updating key result:', error);
-              toast({
-                title: "Erro",
-                description: "Erro ao atualizar. Tente novamente.",
-                variant: "destructive",
-              });
-            }
-          }}
-          objectives={objectives}
-        />
-      )}
-
-      {/* KR Update Values Modal */}
-      {selectedKeyResult && isKRUpdateValuesModalOpen && (
-        <KRUpdateValuesModal
-          keyResult={selectedKeyResult}
-          open={isKRUpdateValuesModalOpen}
-          onClose={() => {
-            setIsKRUpdateValuesModalOpen(false);
-            setSelectedKeyResult(null);
-          }}
-          onSave={async (keyResultData) => {
-            try {
-              const { data, error } = await supabase
-                .from('key_results')
-                .update(keyResultData)
-                .eq('id', keyResultData.id)
-                .select('*')
-                .maybeSingle();
-
-              if (error) throw error;
-              if (!data) throw new Error('Nenhum dado retornado');
-
-              setKeyResults((prev) =>
-                prev.map((kr) => (kr.id === data.id ? ({ ...kr, ...data } as KeyResult) : kr))
-              );
-
-              setIsKRUpdateValuesModalOpen(false);
-              setSelectedKeyResult(null);
-
-              toast({
-                title: "Sucesso",
-                description: "Valores atualizados!",
-              });
-            } catch (error) {
-              console.error('Error updating values:', error);
-              toast({
-                title: "Erro",
-                description: "Erro ao atualizar valores. Tente novamente.",
-                variant: "destructive",
-              });
-            }
-          }}
+          objectives={objectives.map(obj => ({ id: obj.id, title: obj.title }))}
         />
       )}
 

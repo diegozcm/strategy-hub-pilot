@@ -190,19 +190,9 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
           keyResult={selectedKeyResult}
           open={isKRModalOpen}
           onClose={handleKRModalClose}
-          onEdit={() => {
-            const id = (selectedKeyResult as any)?.id;
-            handleKRModalClose();
-            onClose();
-            if (id) navigate(`/app/indicators?edit=${id}`);
-          }}
-          onUpdateValues={() => {
-            const id = (selectedKeyResult as any)?.id;
-            handleKRModalClose();
-            onClose();
-            if (id) navigate(`/app/indicators?update=${id}`);
-          }}
           onDelete={() => {}}
+          onSave={async () => {}}
+          objectives={objective ? [{ id: objective.id, title: objective.title }] : []}
         />
       )}
     </>

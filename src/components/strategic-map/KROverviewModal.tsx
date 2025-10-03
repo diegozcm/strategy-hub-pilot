@@ -10,6 +10,8 @@ import { KeyResultChart } from './KeyResultChart';
 import { KRFCAUnifiedModal } from './KRFCAUnifiedModal';
 import { KRStatusReportModal } from './KRStatusReportModal';
 import { KRInitiativesModal } from './KRInitiativesModal';
+import { KREditModal } from './KREditModal';
+import { KRUpdateValuesModal } from './KRUpdateValuesModal';
 
 import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
 import { useState } from 'react';
@@ -19,15 +21,17 @@ interface KROverviewModalProps {
   keyResult: KeyResult | null;
   open: boolean;
   onClose: () => void;
-  onEdit: () => void;
-  onUpdateValues: () => void;
   onDelete: () => void;
+  onSave: () => void;
+  objectives: Array<{ id: string; title: string }>;
 }
 
-export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValues, onDelete }: KROverviewModalProps) => {
+export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, objectives }: KROverviewModalProps) => {
   const [showFCAModal, setShowFCAModal] = useState(false);
   const [showStatusReportModal, setShowStatusReportModal] = useState(false);
   const [showInitiativesModal, setShowInitiativesModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showUpdateValuesModal, setShowUpdateValuesModal] = useState(false);
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
   
@@ -103,7 +107,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
               <Button
                 variant="outline"
                 size="sm"
-                onClick={onEdit}
+                onClick={() => setShowEditModal(true)}
                 className="text-orange-600 border-orange-200 hover:bg-orange-50"
               >
                 <Edit className="h-4 w-4 mr-2" />
@@ -112,7 +116,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
               <Button
                 variant="outline"
                 size="sm"
-                onClick={onUpdateValues}
+                onClick={() => setShowUpdateValuesModal(true)}
                 className="text-cyan-600 border-cyan-200 hover:bg-cyan-50"
               >
                 <FileEdit className="h-4 w-4 mr-2" />
@@ -233,6 +237,33 @@ export const KROverviewModal = ({ keyResult, open, onClose, onEdit, onUpdateValu
         open={showInitiativesModal}
         onClose={() => setShowInitiativesModal(false)}
       />
+
+      {/* Modal Edit */}
+      {keyResult && (
+        <KREditModal
+          keyResult={keyResult}
+          open={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          onSave={async (updates) => {
+            await onSave();
+            setShowEditModal(false);
+          }}
+          objectives={objectives}
+        />
+      )}
+
+      {/* Modal Update Values */}
+      {keyResult && (
+        <KRUpdateValuesModal
+          keyResult={keyResult}
+          open={showUpdateValuesModal}
+          onClose={() => setShowUpdateValuesModal(false)}
+          onSave={async (updates) => {
+            await onSave();
+            setShowUpdateValuesModal(false);
+          }}
+        />
+      )}
     </Dialog>
   );
 };

@@ -1261,25 +1261,16 @@ export const ObjectivesPage: React.FC = () => {
             setIsKROverviewModalOpen(false);
             setSelectedKeyResultForOverview(null);
           }}
-          onEdit={() => {
-            setIsKROverviewModalOpen(false);
-            if (selectedKeyResultForOverview) {
-              handleEditKeyResult(selectedKeyResultForOverview);
-            }
-          }}
-          onUpdateValues={() => {
-            // Navigate to strategic map page for value updates with KR and objective ID
-            if (selectedKeyResultForOverview) {
-              navigate(`/app/strategic-map?openUpdateKR=1&krId=${selectedKeyResultForOverview.id}&objectiveId=${selectedKeyResultForOverview.objective_id}`);
-            }
-          }}
           onDelete={() => {
-            // Implement delete functionality if needed
             toast({
               title: "Funcionalidade em desenvolvimento",
               description: "A exclusão de Resultados-Chave será implementada em breve.",
             });
           }}
+          onSave={async () => {
+            await refreshData();
+          }}
+          objectives={objectives.map(obj => ({ id: obj.id, title: obj.title }))}
         />
       </div>
     </ErrorBoundary>
