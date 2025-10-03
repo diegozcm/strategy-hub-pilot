@@ -68,6 +68,7 @@ export const IndicatorsPage: React.FC = () => {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUpdatingKR, setIsUpdatingKR] = useState(false);
 
   // Load data
   const loadData = async () => {
@@ -161,6 +162,28 @@ export const IndicatorsPage: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateKRWithTimeout = async (updateFn: () => Promise<void>) => {
+    const timeoutPromise = new Promise<void>((_, reject) => 
+      setTimeout(() => reject(new Error('TIMEOUT')), 10000)
+    );
+    
+    try {
+      await Promise.race([updateFn(), timeoutPromise]);
+    } catch (error: any) {
+      if (error.message === 'TIMEOUT') {
+        toast({
+          title: "⏱️ Operação Lenta Detectada",
+          description: "A operação está demorando muito. Recarregando a página...",
+          variant: "destructive",
+        });
+        
+        setTimeout(() => window.location.reload(), 2000);
+        throw error;
+      }
+      throw error;
     }
   };
 
@@ -490,6 +513,21 @@ export const IndicatorsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Loading Indicator */}
+      {isUpdatingKR && (
+        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-top">
+          <Card className="p-4 shadow-lg border-2 border-primary">
+            <div className="flex items-center gap-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+              <div>
+                <p className="text-sm font-medium">Salvando alterações...</p>
+                <p className="text-xs text-muted-foreground">Aguarde alguns instantes</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -885,23 +923,41 @@ export const IndicatorsPage: React.FC = () => {
           setSelectedKeyResult(null);
         }}
         onSave={async (keyResultData) => {
-          const { data, error } = await supabase
-            .from('key_results')
-            .update(keyResultData)
-            .eq('id', keyResultData.id)
-            .select()
-            .single();
+          try {
+            setIsUpdatingKR(true);
+            setIsKREditModalOpen(false);
+            setSelectedKeyResult(null);
+            
+            await updateKRWithTimeout(async () => {
+              const { data, error } = await supabase
+                .from('key_results')
+                .update(keyResultData)
+                .eq('id', keyResultData.id)
+                .select('*')
+                .maybeSingle();
 
-          if (error) throw error;
+              if (error) throw error;
+              if (!data) throw new Error('Nenhum dado retornado');
 
-          // Atualizar apenas o KR específico no estado local
-          setKeyResults(prev => prev.map(kr => 
-            kr.id === data.id ? { ...kr, ...data } as KeyResult : kr
-          ));
-          
-          // Fechar modal antes do toast
-          setIsKREditModalOpen(false);
-          setSelectedKeyResult(null);
+              setKeyResults(prev => prev.map(kr => 
+                kr.id === data.id ? { ...kr, ...data } as KeyResult : kr
+              ));
+            });
+            
+            toast({
+              title: "✅ Sucesso",
+              description: "Resultado-chave atualizado!",
+            });
+          } catch (error) {
+            console.error('Error updating key result:', error);
+            toast({
+              title: "❌ Erro",
+              description: "Erro ao atualizar. Tente novamente.",
+              variant: "destructive",
+            });
+          } finally {
+            setIsUpdatingKR(false);
+          }
         }}
         objectives={objectives}
       />
@@ -915,23 +971,41 @@ export const IndicatorsPage: React.FC = () => {
           setSelectedKeyResult(null);
         }}
         onSave={async (keyResultData) => {
-          const { data, error } = await supabase
-            .from('key_results')
-            .update(keyResultData)
-            .eq('id', keyResultData.id)
-            .select()
-            .single();
+          try {
+            setIsUpdatingKR(true);
+            setIsKRUpdateValuesModalOpen(false);
+            setSelectedKeyResult(null);
+            
+            await updateKRWithTimeout(async () => {
+              const { data, error } = await supabase
+                .from('key_results')
+                .update(keyResultData)
+                .eq('id', keyResultData.id)
+                .select('*')
+                .maybeSingle();
 
-          if (error) throw error;
+              if (error) throw error;
+              if (!data) throw new Error('Nenhum dado retornado');
 
-          // Atualizar apenas o KR específico no estado local
-          setKeyResults(prev => prev.map(kr => 
-            kr.id === data.id ? { ...kr, ...data } as KeyResult : kr
-          ));
-          
-          // Fechar modal antes do toast
-          setIsKRUpdateValuesModalOpen(false);
-          setSelectedKeyResult(null);
+              setKeyResults(prev => prev.map(kr => 
+                kr.id === data.id ? { ...kr, ...data } as KeyResult : kr
+              ));
+            });
+            
+            toast({
+              title: "✅ Sucesso",
+              description: "Valores atualizados!",
+            });
+          } catch (error) {
+            console.error('Error updating values:', error);
+            toast({
+              title: "❌ Erro",
+              description: "Erro ao atualizar valores. Tente novamente.",
+              variant: "destructive",
+            });
+          } finally {
+            setIsUpdatingKR(false);
+          }
         }}
       />
 

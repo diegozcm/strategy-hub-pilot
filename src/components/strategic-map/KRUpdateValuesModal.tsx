@@ -5,8 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { KeyResult } from '@/types/strategic-map';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { useToast } from '@/hooks/use-toast';
 
 interface KRUpdateValuesModalProps {
   keyResult: KeyResult | null;
@@ -16,8 +14,6 @@ interface KRUpdateValuesModalProps {
 }
 
 export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpdateValuesModalProps) => {
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
@@ -71,44 +67,23 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
     }
   }, [keyResult]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!keyResult) return;
     
-    try {
-      setLoading(true);
-      
-      const yearlyActual = calculateYearlyActual(monthlyActual);
+    const yearlyActual = calculateYearlyActual(monthlyActual);
+    
+    const cleanMonthlyActual = Object.fromEntries(
+      Object.entries(monthlyActual)
+        .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
+    );
 
-      // Validar e limpar dados JSON antes de salvar
-      const cleanMonthlyActual = Object.fromEntries(
-        Object.entries(monthlyActual)
-          .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
-      );
-
-      const dataToSave = {
-        id: keyResult.id,
-        monthly_actual: cleanMonthlyActual,
-        yearly_actual: yearlyActual,
-        current_value: yearlyActual,
-      };
-
-      await onSave(dataToSave);
-      
-      toast({
-        title: "Sucesso",
-        description: "Valores atualizados com sucesso!",
-      });
-    } catch (error) {
-      console.error('Error updating values:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar valores. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    onSave({
+      id: keyResult.id,
+      monthly_actual: cleanMonthlyActual,
+      yearly_actual: yearlyActual,
+      current_value: yearlyActual,
+    });
   };
 
   if (!keyResult) return null;
@@ -125,7 +100,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-4">
           <div className="flex justify-between items-center">
             <div className="space-y-2">
               <Label>Valores Realizados ({selectedYear})</Label>
@@ -209,9 +184,8 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <LoadingSpinner size="sm" className="mr-2" />}
-              {loading ? 'Salvando...' : 'Salvar Valores'}
+            <Button type="submit">
+              Salvar Valores
             </Button>
           </div>
         </form>

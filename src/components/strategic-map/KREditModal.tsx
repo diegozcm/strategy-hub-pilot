@@ -22,7 +22,6 @@ interface KREditModalProps {
 
 export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] }: KREditModalProps) => {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
   const [savingAggregationType, setSavingAggregationType] = useState(false);
   
   // Form states
@@ -146,50 +145,29 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
     }
   }, [keyResult]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!keyResult) return;
     
-    try {
-      setLoading(true);
-      
-      const yearlyTarget = calculateYearlyTarget(monthlyTargets);
+    const yearlyTarget = calculateYearlyTarget(monthlyTargets);
 
-      // Validar e limpar dados JSON antes de salvar
-      const cleanMonthlyTargets = Object.fromEntries(
-        Object.entries(monthlyTargets)
-          .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
-      );
+    const cleanMonthlyTargets = Object.fromEntries(
+      Object.entries(monthlyTargets)
+        .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
+    );
 
-      const dataToSave = {
-        id: keyResult.id,
-        title: basicInfo.title,
-        description: basicInfo.description,
-        unit: basicInfo.unit,
-        responsible: basicInfo.responsible,
-        objective_id: basicInfo.objective_id === '' || basicInfo.objective_id === 'none' ? null : basicInfo.objective_id,
-        monthly_targets: cleanMonthlyTargets,
-        yearly_target: yearlyTarget,
-        target_value: yearlyTarget,
-        aggregation_type: aggregationType
-      };
-
-      await onSave(dataToSave);
-      
-      toast({
-        title: "Sucesso",
-        description: "Resultado-chave atualizado com sucesso!",
-      });
-    } catch (error) {
-      console.error('Error updating key result:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    onSave({
+      id: keyResult.id,
+      title: basicInfo.title,
+      description: basicInfo.description,
+      unit: basicInfo.unit,
+      responsible: basicInfo.responsible,
+      objective_id: basicInfo.objective_id === '' || basicInfo.objective_id === 'none' ? null : basicInfo.objective_id,
+      monthly_targets: cleanMonthlyTargets,
+      yearly_target: yearlyTarget,
+      target_value: yearlyTarget,
+      aggregation_type: aggregationType
+    });
   };
 
   if (!keyResult) return null;
@@ -204,7 +182,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-4">
           <Tabs defaultValue="basic-info" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="basic-info">Informações Básicas</TabsTrigger>
@@ -391,8 +369,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading && <LoadingSpinner size="sm" className="mr-2" />}
+            <Button type="submit">
               Salvar Atualizações
             </Button>
           </div>
