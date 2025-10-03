@@ -104,7 +104,8 @@ export const IndicatorsPage: React.FC = () => {
           .order('order_index');
 
         if (pillarsError) throw pillarsError;
-        setPillars(pillarsData || []);
+      setPillars(pillarsData || []);
+      console.log('📋 Pillars loaded:', pillarsData?.map(p => ({ name: p.name, order: p.order_index })));
       }
 
       // Load key results - filter by company through strategic objectives and plans
@@ -436,6 +437,14 @@ export const IndicatorsPage: React.FC = () => {
     const pillarA = pillars.find(p => p.id === objectiveA?.pillar_id);
     const pillarB = pillars.find(p => p.id === objectiveB?.pillar_id);
     
+    // DEBUG: Log detalhado
+    console.log('🔍 Sorting KRs:', {
+      krA: a.title.substring(0, 40),
+      krB: b.title.substring(0, 40),
+      pillarA: { name: pillarA?.name, order: pillarA?.order_index },
+      pillarB: { name: pillarB?.name, order: pillarB?.order_index }
+    });
+    
     // Se não tiver pilar, coloca no final
     if (!pillarA && pillarB) return 1;
     if (pillarA && !pillarB) return -1;
@@ -443,7 +452,10 @@ export const IndicatorsPage: React.FC = () => {
     
     // Ordenar por order_index do pilar
     const orderDiff = (pillarA?.order_index || 999) - (pillarB?.order_index || 999);
-    if (orderDiff !== 0) return orderDiff;
+    if (orderDiff !== 0) {
+      console.log('📊 Order diff:', orderDiff, pillarA?.name, 'vs', pillarB?.name);
+      return orderDiff;
+    }
     
     // Se order_index for igual, ordenar pelo nome do pilar alfabeticamente
     const pillarNameDiff = (pillarA?.name || '').localeCompare(pillarB?.name || '', 'pt-BR');
