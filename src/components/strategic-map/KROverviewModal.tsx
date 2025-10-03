@@ -125,10 +125,10 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
       <DialogContent className="sm:max-w-[1000px] max-h-[95vh] flex flex-col p-0">
         {/* Header colorido com pilar */}
         {pillar && (
-          <div 
-            style={{ backgroundColor: pillar.color }}
-            className="p-3"
-          >
+        <div 
+          style={{ backgroundColor: pillar.color }}
+          className="p-3 rounded-t-lg"
+        >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 space-y-2">
                 <h2 className="text-white font-semibold text-xl leading-tight">
@@ -138,7 +138,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
                   {pillar.name}
                 </Badge>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0 pr-8">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -169,7 +169,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2 pb-2 border-b flex-shrink-0 px-6">
+        <div className="flex flex-wrap items-center gap-2 pb-2 flex-shrink-0 px-6">
           <Button
             variant="outline"
             size="sm"
