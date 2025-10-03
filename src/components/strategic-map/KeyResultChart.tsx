@@ -71,7 +71,7 @@ export const KeyResultChart = ({
           </TabsList>
           
           <TabsContent value="chart" className="space-y-4">
-            <div className="h-[270px] w-full">
+            <div className="h-[220px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -126,7 +126,7 @@ export const KeyResultChart = ({
           
           <TabsContent value="table" className="space-y-4">
             <div className="rounded-md border">
-              <ScrollArea className="w-full overflow-x-auto">
+              <ScrollArea className="w-full h-[220px] overflow-x-auto">
                 <Table className="relative">
                   <TableHeader>
                     <TableRow>

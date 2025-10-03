@@ -191,7 +191,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
           </Button>
         </div>
         
-        <ScrollArea className="flex-1 pr-6">
+        <ScrollArea className="flex-1 max-h-[calc(95vh-280px)] pr-6">
           <div className="space-y-6">
             {/* Header Info */}
             <div className="flex flex-wrap gap-2">
