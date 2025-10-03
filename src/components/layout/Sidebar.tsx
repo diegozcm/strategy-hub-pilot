@@ -21,7 +21,7 @@ const menuStructure = [
       { name: 'Resultados Chave', href: '/app/indicators', icon: TrendingUp },
       { name: 'Projetos', href: '/app/projects', icon: Briefcase },
       { name: 'Ferramentas', href: '/app/tools', icon: Circle },
-      { name: 'Relatórios', href: '/app/reports', icon: Activity }
+      // { name: 'Relatórios', href: '/app/reports', icon: Activity }
     ]
   },
   {
