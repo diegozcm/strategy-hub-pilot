@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface KROverviewModalProps {
   keyResult: KeyResult | null;
+  pillar?: { name: string; color: string } | null;
   open: boolean;
   onClose: () => void;
   onDelete: () => void;
@@ -27,14 +28,13 @@ interface KROverviewModalProps {
   objectives: Array<{ id: string; title: string }>;
 }
 
-export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, objectives }: KROverviewModalProps) => {
+export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, onSave, objectives }: KROverviewModalProps) => {
   const [showFCAModal, setShowFCAModal] = useState(false);
   const [showStatusReportModal, setShowStatusReportModal] = useState(false);
   const [showInitiativesModal, setShowInitiativesModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUpdateValuesModal, setShowUpdateValuesModal] = useState(false);
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
-  const [pillar, setPillar] = useState<{ name: string; color: string } | null>(null);
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
 
@@ -42,40 +42,6 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
   useEffect(() => {
     setCurrentKeyResult(keyResult);
   }, [keyResult]);
-
-  // Fetch pillar data
-  useEffect(() => {
-    const fetchPillar = async () => {
-      if (!keyResult?.objective_id) return;
-
-      try {
-        const { data, error } = await supabase
-          .from('strategic_objectives')
-          .select(`
-            strategic_pillars (
-              name,
-              color
-            )
-          `)
-          .eq('id', keyResult.objective_id)
-          .single();
-
-        if (error) throw error;
-        if (data?.strategic_pillars) {
-          setPillar({
-            name: data.strategic_pillars.name,
-            color: data.strategic_pillars.color
-          });
-        }
-      } catch (error) {
-        console.error('Erro ao buscar pilar:', error);
-      }
-    };
-
-    if (open) {
-      fetchPillar();
-    }
-  }, [keyResult?.objective_id, open]);
 
   // Function to refresh key result data from database
   const refreshKeyResult = async () => {
@@ -161,7 +127,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
         {pillar && (
           <div 
             style={{ backgroundColor: pillar.color }}
-            className="p-4 rounded-t-lg"
+            className="p-3"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 space-y-2">
@@ -194,16 +160,16 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
           </div>
         )}
 
-        <div className="px-6 pt-4 flex-shrink-0">
+        <div className="px-6 flex-shrink-0">
           {currentKeyResult.description && (
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground mb-2 mt-3">
               {currentKeyResult.description}
             </p>
           )}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2 pb-4 border-b flex-shrink-0 px-6">
+        <div className="flex flex-wrap items-center gap-2 pb-2 border-b flex-shrink-0 px-6">
           <Button
             variant="outline"
             size="sm"
@@ -243,7 +209,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
         </div>
         
         <ScrollArea className="flex-1 px-6">
-          <div className="space-y-6 pr-6">
+          <div className="space-y-4 pr-6 py-4">
             {/* Header Info */}
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">

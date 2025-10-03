@@ -56,6 +56,7 @@ export const IndicatorsPage: React.FC = () => {
   const [isKROverviewModalOpen, setIsKROverviewModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
+  const [selectedPillar, setSelectedPillar] = useState<{ name: string; color: string } | null>(null);
   
   // Form states
   const [formData, setFormData] = useState({
@@ -322,14 +323,44 @@ export const IndicatorsPage: React.FC = () => {
   };
 
   // Modal handlers
-  const openKROverviewModal = (keyResult: KeyResult) => {
+  const openKROverviewModal = async (keyResult: KeyResult) => {
     setSelectedKeyResult(keyResult);
+    
+    // Buscar pillar ANTES de abrir modal para evitar flash
+    if (keyResult.objective_id) {
+      try {
+        const { data, error } = await supabase
+          .from('strategic_objectives')
+          .select(`
+            strategic_pillars (
+              name,
+              color
+            )
+          `)
+          .eq('id', keyResult.objective_id)
+          .single();
+
+        if (!error && data?.strategic_pillars) {
+          setSelectedPillar({
+            name: data.strategic_pillars.name,
+            color: data.strategic_pillars.color
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar pilar:', error);
+        setSelectedPillar({ name: 'Sem pilar', color: '#6B7280' });
+      }
+    } else {
+      setSelectedPillar({ name: 'Sem pilar', color: '#6B7280' });
+    }
+    
     setIsKROverviewModalOpen(true);
   };
 
   const closeAllModals = () => {
     setIsKROverviewModalOpen(false);
     setSelectedKeyResult(null);
+    setSelectedPillar(null);
   };
 
   // Get strategic pillar info for a key result
@@ -789,10 +820,12 @@ export const IndicatorsPage: React.FC = () => {
       {selectedKeyResult && isKROverviewModalOpen && (
         <KROverviewModal
           keyResult={selectedKeyResult}
+          pillar={selectedPillar}
           open={isKROverviewModalOpen}
           onClose={() => {
             setIsKROverviewModalOpen(false);
             setSelectedKeyResult(null);
+            setSelectedPillar(null);
           }}
           onDelete={() => {
             setIsKROverviewModalOpen(false);
