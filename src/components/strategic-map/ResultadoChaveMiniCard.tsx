@@ -98,12 +98,8 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, onUpdate, onOpenDetails
         onEdit={() => {
           handleKRModalClose();
           navigate(`/app/indicators?edit=${resultadoChave.id}`);
-        }}
-        onUpdateValues={() => {
-          handleKRModalClose();
-          navigate(`/app/indicators?update=${resultadoChave.id}`);
-        }}
-        onDelete={() => {
+          }}
+          onDelete={() => {
           handleKRModalClose();
           if (onUpdate) onUpdate();
         }}

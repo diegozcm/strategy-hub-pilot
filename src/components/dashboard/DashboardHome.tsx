@@ -877,16 +877,10 @@ export const DashboardHome: React.FC = () => {
             handleCloseKRModal();
             navigate(`/app/indicators?edit=${selectedKeyResult.id}`);
           }}
-          onUpdateValues={() => {
-            // Close modal and navigate to update values
-            handleCloseKRModal();
-            navigate(`/app/indicators?update=${selectedKeyResult.id}`);
-          }}
           onDelete={() => {
             // Close modal and navigate to indicators with delete confirmation
             handleCloseKRModal();
             navigate(`/app/indicators`);
-            // In a real implementation, you might want to add a delete confirmation modal
           }}
         />
       )}
