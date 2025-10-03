@@ -392,6 +392,7 @@ export const StrategicMapPage = () => {
                                     objective={objective}
                                     compact
                                     keyResults={objectiveKRs}
+                                    pillar={pillar}
                                     onAddResultadoChave={createKeyResult}
                                     onRefreshData={refreshData}
                                   />

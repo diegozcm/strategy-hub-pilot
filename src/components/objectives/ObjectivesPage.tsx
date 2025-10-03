@@ -1255,24 +1255,36 @@ export const ObjectivesPage: React.FC = () => {
         )}
 
         {/* KR Overview Modal */}
-        <KROverviewModal
-          keyResult={selectedKeyResultForOverview}
-          open={isKROverviewModalOpen}
-          onClose={() => {
-            setIsKROverviewModalOpen(false);
-            setSelectedKeyResultForOverview(null);
-          }}
-          onDelete={() => {
-            toast({
-              title: "Funcionalidade em desenvolvimento",
-              description: "A exclusão de Resultados-Chave será implementada em breve.",
-            });
-          }}
-          onSave={async () => {
-            await refreshData();
-          }}
-          objectives={objectives.map(obj => ({ id: obj.id, title: obj.title }))}
-        />
+        {selectedKeyResultForOverview && (
+          <KROverviewModal
+            keyResult={selectedKeyResultForOverview}
+            pillar={(() => {
+              // Buscar o objetivo associado ao key result
+              const objective = objectives.find(obj => 
+                obj.id === selectedKeyResultForOverview.objective_id
+              );
+              // Retornar o pilar do objetivo
+              return objective 
+                ? pillars.find(p => p.id === objective.pillar_id) 
+                : null;
+            })()}
+            open={isKROverviewModalOpen}
+            onClose={() => {
+              setIsKROverviewModalOpen(false);
+              setSelectedKeyResultForOverview(null);
+            }}
+            onDelete={() => {
+              toast({
+                title: "Funcionalidade em desenvolvimento",
+                description: "A exclusão de Resultados-Chave será implementada em breve.",
+              });
+            }}
+            onSave={async () => {
+              await refreshData();
+            }}
+            objectives={objectives.map(obj => ({ id: obj.id, title: obj.title }))}
+          />
+        )}
       </div>
     </ErrorBoundary>
   );

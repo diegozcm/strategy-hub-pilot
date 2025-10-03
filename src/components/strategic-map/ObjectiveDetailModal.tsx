@@ -23,7 +23,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
   onClose,
   keyResultsCount = 0
 }) => {
-  const { keyResults } = useStrategicMap();
+  const { keyResults, pillars } = useStrategicMap();
   const [selectedKeyResult, setSelectedKeyResult] = useState(null);
   const [isKRModalOpen, setIsKRModalOpen] = useState(false);
   const navigate = useNavigate();
@@ -188,6 +188,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
       {selectedKeyResult && (
         <KROverviewModal
           keyResult={selectedKeyResult}
+          pillar={pillars.find(p => p.id === objective.pillar_id)}
           open={isKRModalOpen}
           onClose={handleKRModalClose}
           onDelete={() => {}}

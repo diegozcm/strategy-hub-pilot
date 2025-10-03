@@ -19,6 +19,7 @@ interface ObjectiveCardProps {
   objective: StrategicObjective;
   compact?: boolean;
   keyResults?: KeyResult[];
+  pillar?: { id: string; name: string; color: string; } | null;
   onAddResultadoChave?: (resultadoChaveData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onRefreshData?: () => void;
 }
@@ -43,7 +44,7 @@ const calculateObjectiveProgress = (keyResults: KeyResult[]) => {
   return Math.round(totalProgress / keyResults.length);
 };
 
-export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onAddResultadoChave, onRefreshData }: ObjectiveCardProps) => {
+export const ObjectiveCard = ({ objective, compact = false, keyResults = [], pillar, onAddResultadoChave, onRefreshData }: ObjectiveCardProps) => {
   const [showResultadoChaveForm, setShowResultadoChaveForm] = useState(false);
   const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
   const [isEditKeyResultModalOpen, setIsEditKeyResultModalOpen] = useState(false);
@@ -267,6 +268,7 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], onA
       {/* KR Overview Modal */}
       <KROverviewModal
         keyResult={selectedKeyResultForOverview}
+        pillar={pillar}
         open={isKROverviewModalOpen}
         onClose={() => {
           setIsKROverviewModalOpen(false);
