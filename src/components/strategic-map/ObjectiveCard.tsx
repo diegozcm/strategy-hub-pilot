@@ -1,21 +1,19 @@
-import { useState } from 'react';
-import { MoreVertical, Target, Calendar, User, Plus, Eye, TrendingUp } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MoreVertical, Target, Calendar, User, Plus } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { StrategicObjective, KeyResult } from '@/types/strategic-map';
 import { ResultadoChaveMiniCard } from './ResultadoChaveMiniCard';
 import { KROverviewModal } from './KROverviewModal';
 import { AddResultadoChaveModal } from './AddResultadoChaveModal';
 import { EditKeyResultModal } from './EditKeyResultModal';
+import { ObjectiveDetailModal } from '@/components/objectives/ObjectiveDetailModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { useAuth } from '@/hooks/useMultiTenant';
 
 interface ObjectiveCardProps {
   objective: StrategicObjective;
@@ -53,8 +51,27 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], pil
   const [selectedKeyResultForOverview, setSelectedKeyResultForOverview] = useState<KeyResult | null>(null);
   const [isKROverviewModalOpen, setIsKROverviewModalOpen] = useState(false);
   const [isObjectiveDetailModalOpen, setIsObjectiveDetailModalOpen] = useState(false);
+  const [pillars, setPillars] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
   const { toast } = useToast();
+  const { company } = useAuth();
   const progressPercentage = calculateObjectiveProgress(keyResults);
+
+  // Fetch pillars and plans for the modal
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!company?.id) return;
+      
+      const [pillarsResponse, plansResponse] = await Promise.all([
+        supabase.from('strategic_pillars').select('*').eq('company_id', company.id),
+        supabase.from('strategic_plans').select('*').eq('company_id', company.id),
+      ]);
+
+      if (pillarsResponse.data) setPillars(pillarsResponse.data);
+      if (plansResponse.data) setPlans(plansResponse.data);
+    };
+    fetchData();
+  }, [company?.id]);
   
   const handleAddResultadoChave = async (resultadoChaveData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => {
     if (onAddResultadoChave) {
@@ -87,7 +104,6 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], pil
         description: "Resultado-chave atualizado com sucesso!",
       });
 
-      // Refresh parent data if callback exists
       if (onRefreshData) {
         onRefreshData();
       }
@@ -98,41 +114,68 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], pil
         description: "Erro ao atualizar resultado-chave. Tente novamente.",
         variant: "destructive",
       });
-      throw error;
+    } finally {
+      setIsEditKeyResultModalOpen(false);
+      setSelectedKeyResult(null);
     }
   };
 
-  const getStatusConfig = (status: string) => {
-    switch (status) {
-      case 'not_started':
-        return {
-          className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300',
-          label: 'Não Iniciado'
-        };
-      case 'in_progress':
-        return {
-          className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300',
-          label: 'Em Progresso'
-        };
-      case 'completed':
-        return {
-          className: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300',
-          label: 'Concluído'
-        };
-      case 'suspended':
-        return {
-          className: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300',
-          label: 'Suspenso'
-        };
-      default:
-        return {
-          className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300',
-          label: status
-        };
+  const handleUpdateObjective = async (data: Partial<StrategicObjective>) => {
+    try {
+      const { error } = await supabase
+        .from('strategic_objectives')
+        .update(data)
+        .eq('id', objective.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Objetivo atualizado com sucesso!",
+      });
+
+      if (onRefreshData) {
+        onRefreshData();
+      }
+    } catch (error) {
+      console.error('Error updating objective:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar objetivo. Tente novamente.",
+        variant: "destructive",
+      });
     }
   };
 
-  const statusConfig = getStatusConfig(objective.status);
+  const handleDeleteObjective = async () => {
+    try {
+      const { error } = await supabase
+        .from('strategic_objectives')
+        .delete()
+        .eq('id', objective.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Objetivo excluído com sucesso!",
+      });
+
+      setIsObjectiveDetailModalOpen(false);
+      if (onRefreshData) {
+        onRefreshData();
+      }
+    } catch (error) {
+      console.error('Error deleting objective:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir objetivo. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const currentPlan = plans.find(p => p.id === objective.plan_id);
 
   if (compact) {
     return (
@@ -159,115 +202,19 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], pil
           </div>
         </div>
 
-        {/* Objective Detail Modal - Same as Objectives Page */}
-        <Dialog open={isObjectiveDetailModalOpen} onOpenChange={(open) => { if (!open) setIsObjectiveDetailModalOpen(false); }}>
-          <DialogContent className="sm:max-w-[600px]" aria-describedby={undefined}>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5" />
-                Detalhes do Objetivo
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-6">
-              {/* Cabeçalho do Objetivo */}
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <h3 className="text-xl font-semibold">{objective.title}</h3>
-                  <Badge className={`${statusConfig.className} border`}>
-                    {statusConfig.label}
-                  </Badge>
-                </div>
-                
-                {/* Informações básicas */}
-                <div className="grid grid-cols-1 gap-4 text-sm">
-                  {objective.responsible && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <User className="h-4 w-4" />
-                      <span>
-                        <strong>Responsável:</strong> {objective.responsible}
-                      </span>
-                    </div>
-                  )}
-                  {objective.deadline && (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>
-                        <strong>Prazo:</strong> {format(new Date(objective.deadline), 'dd/MM/yyyy', { locale: ptBR })}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Target className="h-4 w-4" />
-                    <span>
-                      <strong>Resultados-Chave:</strong> {keyResults.length} resultado{keyResults.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Descrição */}
-              {objective.description && (
-                <div className="space-y-2">
-                  <h4 className="font-medium text-foreground">Descrição</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {objective.description}
-                  </p>
-                </div>
-              )}
-
-              {/* Resultados-Chave */}
-              {keyResults.length > 0 && (
-                <div className="space-y-3">
-                  <h4 className="font-medium text-foreground flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4" />
-                    Resultados-Chave ({keyResults.length})
-                  </h4>
-                  <div className="space-y-2">
-                    {keyResults.map((kr) => {
-                      const progress = kr.aggregation_type === 'average' 
-                        ? Math.round(((kr.current_value || 0) / (kr.target_value || 1)) * 100)
-                        : Math.round(((kr.yearly_actual || 0) / (kr.yearly_target || 1)) * 100);
-                      
-                      return (
-                        <Button
-                          key={kr.id}
-                          variant="ghost"
-                          className="w-full justify-start h-auto p-3 hover:bg-accent/50"
-                          onClick={() => handleOpenKeyResultDetails(kr)}
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex-1 text-left">
-                              <p className="font-medium text-sm">{kr.title}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {kr.aggregation_type === 'average' 
-                                  ? `${kr.current_value || 0} de ${kr.target_value || 0} ${kr.unit || ''}`
-                                  : `${kr.yearly_actual || 0} de ${kr.yearly_target || 0} ${kr.unit || ''}`
-                                }
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <Badge variant="outline" className="text-xs">
-                                {progress}%
-                              </Badge>
-                            </div>
-                          </div>
-                        </Button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Informações de criação */}
-              <div className="pt-4 border-t">
-                <p className="text-xs text-muted-foreground">
-                  Criado em {format(new Date(objective.created_at), 'dd/MM/yyyy às HH:mm', { locale: ptBR })}
-                </p>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <ObjectiveDetailModal
+          objective={objective}
+          open={isObjectiveDetailModalOpen}
+          onClose={() => setIsObjectiveDetailModalOpen(false)}
+          keyResults={keyResults}
+          pillar={pillar}
+          plan={currentPlan}
+          onUpdate={handleUpdateObjective}
+          onDelete={handleDeleteObjective}
+          onOpenKeyResultDetails={handleOpenKeyResultDetails}
+          pillars={pillars}
+          progressPercentage={progressPercentage}
+        />
       </>
     );
   }
@@ -300,9 +247,9 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], pil
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>Editar</DropdownMenuItem>
-                  <DropdownMenuItem>Ver Detalhes</DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive">Excluir</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setIsObjectiveDetailModalOpen(true)}>
+                    Ver Detalhes
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -424,115 +371,20 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], pil
         objectives={[{ id: objective.id, title: objective.title }]}
       />
 
-      {/* Objective Detail Modal - Same as Objectives Page */}
-      <Dialog open={isObjectiveDetailModalOpen} onOpenChange={(open) => { if (!open) setIsObjectiveDetailModalOpen(false); }}>
-        <DialogContent className="sm:max-w-[600px]" aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
-              Detalhes do Objetivo
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-6">
-            {/* Cabeçalho do Objetivo */}
-            <div className="space-y-4">
-              <div className="flex items-start justify-between">
-                <h3 className="text-xl font-semibold">{objective.title}</h3>
-                <Badge className={`${statusConfig.className} border`}>
-                  {statusConfig.label}
-                </Badge>
-              </div>
-              
-              {/* Informações básicas */}
-              <div className="grid grid-cols-1 gap-4 text-sm">
-                {objective.responsible && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <User className="h-4 w-4" />
-                    <span>
-                      <strong>Responsável:</strong> {objective.responsible}
-                    </span>
-                  </div>
-                )}
-                {objective.deadline && (
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>
-                      <strong>Prazo:</strong> {format(new Date(objective.deadline), 'dd/MM/yyyy', { locale: ptBR })}
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Target className="h-4 w-4" />
-                  <span>
-                    <strong>Resultados-Chave:</strong> {keyResults.length} resultado{keyResults.length !== 1 ? 's' : ''}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Descrição */}
-            {objective.description && (
-              <div className="space-y-2">
-                <h4 className="font-medium text-foreground">Descrição</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {objective.description}
-                </p>
-              </div>
-            )}
-
-            {/* Resultados-Chave */}
-            {keyResults.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="font-medium text-foreground flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Resultados-Chave ({keyResults.length})
-                </h4>
-                <div className="space-y-2">
-                  {keyResults.map((kr) => {
-                    const progress = kr.aggregation_type === 'average' 
-                      ? Math.round(((kr.current_value || 0) / (kr.target_value || 1)) * 100)
-                      : Math.round(((kr.yearly_actual || 0) / (kr.yearly_target || 1)) * 100);
-                    
-                    return (
-                      <Button
-                        key={kr.id}
-                        variant="ghost"
-                        className="w-full justify-start h-auto p-3 hover:bg-accent/50"
-                        onClick={() => handleOpenKeyResultDetails(kr)}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex-1 text-left">
-                            <p className="font-medium text-sm">{kr.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {kr.aggregation_type === 'average' 
-                                ? `${kr.current_value || 0} de ${kr.target_value || 0} ${kr.unit || ''}`
-                                : `${kr.yearly_actual || 0} de ${kr.yearly_target || 0} ${kr.unit || ''}`
-                              }
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <Badge variant="outline" className="text-xs">
-                              {progress}%
-                            </Badge>
-                          </div>
-                        </div>
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Informações de criação */}
-            <div className="pt-4 border-t">
-              <p className="text-xs text-muted-foreground">
-                Criado em {format(new Date(objective.created_at), 'dd/MM/yyyy às HH:mm', { locale: ptBR })}
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Objective Detail Modal */}
+      <ObjectiveDetailModal
+        objective={objective}
+        open={isObjectiveDetailModalOpen}
+        onClose={() => setIsObjectiveDetailModalOpen(false)}
+        keyResults={keyResults}
+        pillar={pillar}
+        plan={currentPlan}
+        onUpdate={handleUpdateObjective}
+        onDelete={handleDeleteObjective}
+        onOpenKeyResultDetails={handleOpenKeyResultDetails}
+        pillars={pillars}
+        progressPercentage={progressPercentage}
+      />
     </>
   );
 };
