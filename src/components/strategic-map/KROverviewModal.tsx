@@ -34,6 +34,7 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUpdateValuesModal, setShowUpdateValuesModal] = useState(false);
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
+  const [pillar, setPillar] = useState<{ name: string; color: string } | null>(null);
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
 
@@ -41,6 +42,40 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
   useEffect(() => {
     setCurrentKeyResult(keyResult);
   }, [keyResult]);
+
+  // Fetch pillar data
+  useEffect(() => {
+    const fetchPillar = async () => {
+      if (!keyResult?.objective_id) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('strategic_objectives')
+          .select(`
+            strategic_pillars (
+              name,
+              color
+            )
+          `)
+          .eq('id', keyResult.objective_id)
+          .single();
+
+        if (error) throw error;
+        if (data?.strategic_pillars) {
+          setPillar({
+            name: data.strategic_pillars.name,
+            color: data.strategic_pillars.color
+          });
+        }
+      } catch (error) {
+        console.error('Erro ao buscar pilar:', error);
+      }
+    };
+
+    if (open) {
+      fetchPillar();
+    }
+  }, [keyResult?.objective_id, open]);
 
   // Function to refresh key result data from database
   const refreshKeyResult = async () => {
@@ -121,38 +156,54 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1000px] max-h-[95vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <DialogTitle className="text-2xl">{currentKeyResult.title}</DialogTitle>
-              <DialogDescription>
-                {currentKeyResult.description || "Visão geral completa do resultado-chave e evolução dos indicadores"}
-              </DialogDescription>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowEditModal(true)}
-                className="h-8 w-8 text-orange-600 hover:bg-orange-50"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onDelete}
-                className="h-8 w-8 text-destructive hover:bg-destructive/10"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+      <DialogContent className="sm:max-w-[1000px] max-h-[95vh] flex flex-col p-0">
+        {/* Header colorido com pilar */}
+        {pillar && (
+          <div 
+            style={{ backgroundColor: pillar.color }}
+            className="p-4 rounded-t-lg"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 space-y-2">
+                <h2 className="text-white font-semibold text-xl leading-tight">
+                  {currentKeyResult.title}
+                </h2>
+                <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+                  {pillar.name}
+                </Badge>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowEditModal(true)}
+                  className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onDelete}
+                  className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
-        </DialogHeader>
+        )}
+
+        <div className="px-6 pt-4 flex-shrink-0">
+          {currentKeyResult.description && (
+            <p className="text-sm text-muted-foreground mb-4">
+              {currentKeyResult.description}
+            </p>
+          )}
+        </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2 pb-4 border-b flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-2 pb-4 border-b flex-shrink-0 px-6">
           <Button
             variant="outline"
             size="sm"
@@ -191,8 +242,8 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
           </Button>
         </div>
         
-        <ScrollArea className="flex-1 pr-6">
-          <div className="space-y-6">
+        <ScrollArea className="flex-1 px-6">
+          <div className="space-y-6 pr-6">
             {/* Header Info */}
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">
