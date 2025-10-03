@@ -1154,14 +1154,14 @@ export const ObjectivesPage: React.FC = () => {
                 ) : (
                     <div className="space-y-4">
                       <div>
-                        <h3 className="font-medium mb-2">Descrição</h3>
-                        <p className="text-muted-foreground">{selectedObjective.description || 'Nenhuma descrição fornecida.'}</p>
+                        <h3 className="text-sm font-medium mb-2">Descrição</h3>
+                        <p className="text-sm text-muted-foreground">{selectedObjective.description || 'Nenhuma descrição fornecida.'}</p>
                       </div>
                       
                       {selectedObjective.target_date && (
                         <div>
-                          <h4 className="font-medium text-sm text-muted-foreground">Data Meta</h4>
-                          <p>{new Date(selectedObjective.target_date).toLocaleDateString('pt-BR')}</p>
+                          <h4 className="text-xs font-medium text-muted-foreground">Data Meta</h4>
+                          <p className="text-xs">{new Date(selectedObjective.target_date).toLocaleDateString('pt-BR')}</p>
                         </div>
                       )}
 
