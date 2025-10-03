@@ -34,9 +34,17 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, onUpdate, onOpenDetails
   const currentValue = resultadoChave.yearly_actual || resultadoChave.current_value || 0;
   const targetValue = resultadoChave.yearly_target || resultadoChave.target_value;
   
+  // Progresso real sem limitar a 100%
   const progress = targetValue > 0 
-    ? Math.min((currentValue / targetValue) * 100, 100)
+    ? (currentValue / targetValue) * 100
     : 0;
+
+  // Determinar cor do badge baseado no progresso
+  const getProgressBadgeColor = (prog: number) => {
+    if (prog >= 100) return 'bg-green-100 text-green-800 border-green-200';
+    if (prog >= 80) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    return 'bg-red-100 text-red-800 border-red-200';
+  };
 
   const handleCardClick = () => {
     if (onOpenDetails) {
@@ -75,7 +83,7 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, onUpdate, onOpenDetails
             <div className="text-muted-foreground">até {format(new Date(resultadoChave.due_date), 'dd/MM/yyyy')}</div>
           )}
         </div>
-        <div className="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded text-nowrap">
+        <div className={`text-xs px-1.5 py-0.5 rounded text-nowrap border ${getProgressBadgeColor(progress)}`}>
           {progress.toFixed(1)}%
         </div>
       </div>
