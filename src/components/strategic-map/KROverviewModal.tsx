@@ -129,7 +129,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
           style={{ backgroundColor: pillar.color }}
           className="p-3 rounded-t-lg"
         >
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center justify-between gap-4">
               <div className="flex-1 space-y-2">
                 <h2 className="text-white font-semibold text-xl leading-tight">
                   {currentKeyResult.title}
