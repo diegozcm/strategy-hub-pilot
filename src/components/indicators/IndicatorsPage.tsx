@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, User, Target, AlertTriangle, CheckCircle, Activity, Trash2, Save, X, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,6 +67,19 @@ export const IndicatorsPage: React.FC = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Create memoized maps for efficient lookup and sorting
+  const objectiveById = useMemo(() => {
+    const map = new Map<string, StrategicObjective>();
+    objectives.forEach(obj => map.set(obj.id, obj));
+    return map;
+  }, [objectives]);
+
+  const pillarIndexById = useMemo(() => {
+    const map = new Map<string, number>();
+    pillars.forEach((pillar, index) => map.set(pillar.id, index));
+    return map;
+  }, [pillars]);
+
   // Load data
   const loadData = async () => {
     if (!authCompany?.id) return;
@@ -94,12 +107,6 @@ export const IndicatorsPage: React.FC = () => {
           .in('plan_id', planIds);
 
         if (objectivesError) throw objectivesError;
-        console.log('🎯 Objectives loaded:', objectivesData?.length);
-        console.log('🎯 Objectives by pillar:', objectivesData?.reduce((acc, obj) => {
-          const pillar = obj.pillar_id;
-          acc[pillar] = (acc[pillar] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>));
         setObjectives(objectivesData || []);
 
         // Load strategic pillars
@@ -110,8 +117,7 @@ export const IndicatorsPage: React.FC = () => {
           .order('order_index');
 
         if (pillarsError) throw pillarsError;
-      setPillars(pillarsData || []);
-      console.log('📋 Pillars loaded:', pillarsData?.map(p => ({ name: p.name, order: p.order_index })));
+        setPillars(pillarsData || []);
       }
 
       // Load key results - filter by company through strategic objectives and plans
@@ -132,13 +138,6 @@ export const IndicatorsPage: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (keyResultsError) throw keyResultsError;
-      
-      console.log('🔑 Key Results loaded:', keyResultsData?.length);
-      console.log('🔑 Sample KRs with objectives:', keyResultsData?.slice(0, 3).map(kr => ({
-        title: kr.title.substring(0, 30),
-        objective_id: kr.objective_id,
-        objective: kr.strategic_objectives
-      })));
       
       // Cast aggregation_type to the correct union type
       const processedKeyResults = (keyResultsData || []).map(kr => ({
@@ -443,27 +442,19 @@ export const IndicatorsPage: React.FC = () => {
     
     return matchesSearch && matchesPriority && matchesObjective && matchesPillar && matchesProgress;
   }).sort((a, b) => {
-    // Ordenar primeiro por pilar (seguindo a ordem do filtro)
-    const objectiveA = objectives.find(obj => obj.id === a.objective_id);
-    const objectiveB = objectives.find(obj => obj.id === b.objective_id);
+    // Sort by pillar index (following the filter order, same as Dashboard)
+    const objectiveA = objectiveById.get(a.objective_id);
+    const objectiveB = objectiveById.get(b.objective_id);
     
-    const pillarA = pillars.find(p => p.id === objectiveA?.pillar_id);
-    const pillarB = pillars.find(p => p.id === objectiveB?.pillar_id);
+    const pillarIndexA = objectiveA ? (pillarIndexById.get(objectiveA.pillar_id) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
+    const pillarIndexB = objectiveB ? (pillarIndexById.get(objectiveB.pillar_id) ?? Number.MAX_SAFE_INTEGER) : Number.MAX_SAFE_INTEGER;
     
-    // Se não tiver pilar, coloca no final
-    if (!pillarA && pillarB) return 1;
-    if (pillarA && !pillarB) return -1;
-    if (!pillarA && !pillarB) return a.title.localeCompare(b.title, 'pt-BR');
+    // Sort by pillar index first
+    if (pillarIndexA !== pillarIndexB) {
+      return pillarIndexA - pillarIndexB;
+    }
     
-    // Ordenar por order_index do pilar
-    const orderDiff = (pillarA?.order_index || 999) - (pillarB?.order_index || 999);
-    if (orderDiff !== 0) return orderDiff;
-    
-    // Se order_index for igual, ordenar pelo nome do pilar alfabeticamente
-    const pillarNameDiff = (pillarA?.name || '').localeCompare(pillarB?.name || '', 'pt-BR');
-    if (pillarNameDiff !== 0) return pillarNameDiff;
-    
-    // Dentro do mesmo pilar, ordenar alfabeticamente pelo título do KR
+    // Within the same pillar, sort alphabetically by KR title
     return a.title.localeCompare(b.title, 'pt-BR');
   });
 
