@@ -45,7 +45,7 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, pillar, onUpdate, onOpe
             style={{ backgroundColor: pillar.color }}
           />
         )}
-        <div className="flex-1 p-3 hover:bg-muted/50 transition-colors" onClick={handleCardClick}>
+        <div className="flex-1 p-3 hover:bg-muted/50 transition-colors">
           <div className="flex items-center justify-between gap-2">
             <div className="flex-1 min-w-0">
               <div className="space-y-1">
