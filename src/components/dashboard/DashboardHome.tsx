@@ -672,8 +672,8 @@ export const DashboardHome: React.FC = () => {
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="space-y-1">
-                                  <h4 className="font-medium text-foreground">{kr.title}</h4>
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h4 className="font-medium text-foreground">{kr.title}</h4>
                                     <Badge 
                                       variant="secondary" 
                                       className="text-xs"
@@ -685,8 +685,8 @@ export const DashboardHome: React.FC = () => {
                                     >
                                       {kr.pillar_name}
                                     </Badge>
-                                    <span className="text-sm text-muted-foreground">• {kr.objective_title}</span>
                                   </div>
+                                  <p className="text-sm text-muted-foreground">{kr.objective_title}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-3 ml-4">
