@@ -172,6 +172,20 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         target_value: yearlyTarget,
         aggregation_type: aggregationType
       });
+
+      toast({
+        title: "Sucesso",
+        description: "Resultado-chave atualizado com sucesso!",
+      });
+
+      onClose();
+    } catch (error) {
+      console.error('Error saving key result:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as alterações. Tente novamente.",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }

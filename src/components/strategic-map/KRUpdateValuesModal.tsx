@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { KeyResult } from '@/types/strategic-map';
+import { useToast } from '@/hooks/use-toast';
 
 interface KRUpdateValuesModalProps {
   keyResult: KeyResult | null;
@@ -14,6 +15,7 @@ interface KRUpdateValuesModalProps {
 }
 
 export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpdateValuesModalProps) => {
+  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -87,6 +89,20 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
         monthly_actual: cleanMonthlyActual,
         yearly_actual: yearlyActual,
         current_value: yearlyActual,
+      });
+
+      toast({
+        title: "Sucesso",
+        description: "Valores atualizados com sucesso!",
+      });
+
+      onClose();
+    } catch (error) {
+      console.error('Error updating values:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar os valores. Tente novamente.",
+        variant: "destructive",
       });
     } finally {
       setIsSaving(false);

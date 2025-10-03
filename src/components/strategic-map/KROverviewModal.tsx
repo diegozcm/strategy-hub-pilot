@@ -16,6 +16,7 @@ import { KRUpdateValuesModal } from './KRUpdateValuesModal';
 import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
 import { useState } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
+import { supabase } from '@/integrations/supabase/client';
 
 interface KROverviewModalProps {
   keyResult: KeyResult | null;
@@ -248,8 +249,22 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
           open={showEditModal}
           onClose={() => setShowEditModal(false)}
           onSave={async (updates) => {
-            await onSave();
-            setShowEditModal(false);
+            try {
+              // Persistir os dados no banco antes de fechar o modal
+              const { error } = await supabase
+                .from('key_results')
+                .update(updates)
+                .eq('id', keyResult.id);
+
+              if (error) throw error;
+
+              // Recarregar dados da página pai
+              await onSave();
+              setShowEditModal(false);
+            } catch (error) {
+              console.error('Erro ao salvar resultado-chave:', error);
+              throw error; // Propagar o erro para o KREditModal mostrar o toast
+            }
           }}
           objectives={objectives}
         />
@@ -262,8 +277,22 @@ export const KROverviewModal = ({ keyResult, open, onClose, onDelete, onSave, ob
           open={showUpdateValuesModal}
           onClose={() => setShowUpdateValuesModal(false)}
           onSave={async (updates) => {
-            await onSave();
-            setShowUpdateValuesModal(false);
+            try {
+              // Persistir os valores atualizados no banco
+              const { error } = await supabase
+                .from('key_results')
+                .update(updates)
+                .eq('id', keyResult.id);
+
+              if (error) throw error;
+
+              // Recarregar dados da página pai
+              await onSave();
+              setShowUpdateValuesModal(false);
+            } catch (error) {
+              console.error('Erro ao atualizar valores:', error);
+              throw error; // Propagar o erro para o KRUpdateValuesModal mostrar o toast
+            }
           }}
         />
       )}
