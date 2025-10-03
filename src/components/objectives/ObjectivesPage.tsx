@@ -1160,13 +1160,17 @@ export const ObjectivesPage: React.FC = () => {
                         <h3 className="font-medium">Resultados-Chave</h3>
                       </div>
                       <div className="space-y-2">
-                        {getObjectiveKeyResults(selectedObjective.id).map((kr) => (
-                          <ResultadoChaveMiniCard 
-                            key={kr.id} 
-                            resultadoChave={kr} 
-                            onOpenDetails={handleOpenKeyResultDetails}
-                          />
-                        ))}
+                        {getObjectiveKeyResults(selectedObjective.id).map((kr) => {
+                          const pillar = pillars.find(p => p.id === selectedObjective.pillar_id);
+                          return (
+                            <ResultadoChaveMiniCard 
+                              key={kr.id} 
+                              resultadoChave={kr}
+                              pillar={pillar}
+                              onOpenDetails={handleOpenKeyResultDetails}
+                            />
+                          );
+                        })}
                         {getObjectiveKeyResults(selectedObjective.id).length === 0 && (
                           <div className="text-center py-6">
                             <p className="text-sm text-muted-foreground mb-4">

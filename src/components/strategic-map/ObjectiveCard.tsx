@@ -231,7 +231,8 @@ export const ObjectiveCard = ({ objective, compact = false, keyResults = [], pil
                   {keyResults.map((kr) => (
                     <ResultadoChaveMiniCard 
                       key={kr.id} 
-                      resultadoChave={kr} 
+                      resultadoChave={kr}
+                      pillar={pillar}
                       onOpenDetails={handleOpenKeyResultDetails}
                     />
                   ))}
