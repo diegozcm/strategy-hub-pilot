@@ -22,6 +22,7 @@ import { KREditModal } from '@/components/strategic-map/KREditModal';
 import { KRUpdateValuesModal } from '@/components/strategic-map/KRUpdateValuesModal';
 import { KeyResult, StrategicObjective } from '@/types/strategic-map';
 import { useSearchParams } from 'react-router-dom';
+import { KRCard } from './KRCard';
 
 interface KeyResultValue {
   id: string;
@@ -663,92 +664,20 @@ export const IndicatorsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredKeyResults.map((keyResult) => {
           const progress = calculateProgress(keyResult);
+          const pillar = getKeyResultPillar(keyResult);
           
           return (
-            <Card 
-              key={keyResult.id} 
-              className="h-full cursor-pointer hover:shadow-md transition-shadow" 
+            <KRCard
+              key={keyResult.id}
+              keyResult={keyResult}
+              pillar={pillar}
+              progress={progress}
               onClick={() => openKROverviewModal(keyResult)}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: getKeyResultPillar(keyResult).color }}
-                      />
-                      <Badge variant="outline" className="text-xs">
-                        {getKeyResultPillar(keyResult).name}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {getAggregationTypeText(keyResult.aggregation_type || 'sum')}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-lg leading-tight">{keyResult.title}</CardTitle>
-                    {keyResult.description && (
-                      <CardDescription className="mt-1 text-sm">
-                        {keyResult.description}
-                      </CardDescription>
-                    )}
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedKeyResult(keyResult);
-                          setIsDeleteConfirmOpen(true);
-                        }}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Excluir KR
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-4">
-                {/* Progress */}
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Atingimento da Meta</span>
-                    <span className={`text-sm font-bold ${getProgressColor(progress)}`}>
-                      {progress}%
-                    </span>
-                  </div>
-                  <Progress value={progress} className={`h-2 ${
-                    progress >= 90 ? '[&>div]:bg-green-600' : 
-                    progress >= 70 ? '[&>div]:bg-yellow-600' : 
-                    '[&>div]:bg-red-600'
-                  }`} />
-                </div>
-
-                {/* Current vs Target */}
-                <div className="flex justify-between items-center text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Indicador Atual</p>
-                    <p className="font-semibold">{keyResult.current_value.toLocaleString('pt-BR')} {keyResult.unit}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-muted-foreground">Meta</p>
-                    <p className="font-semibold">{keyResult.target_value.toLocaleString('pt-BR')} {keyResult.unit}</p>
-                  </div>
-                </div>
-
-                {/* Last Update */}
-                <div className="text-xs text-muted-foreground">
-                  Última atualização: {new Date(keyResult.updated_at).toLocaleDateString('pt-BR')}
-                </div>
-              </CardContent>
-            </Card>
+              onDelete={() => {
+                setSelectedKeyResult(keyResult);
+                setIsDeleteConfirmOpen(true);
+              }}
+            />
           );
         })}
       </div>
