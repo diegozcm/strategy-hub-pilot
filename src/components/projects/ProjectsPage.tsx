@@ -259,6 +259,8 @@ export const ProjectsPage: React.FC = () => {
         .from('strategic_projects')
         .insert([{
           ...projectForm,
+          start_date: projectForm.start_date || null,
+          end_date: projectForm.end_date || null,
           budget: projectForm.budget ? parseFloat(projectForm.budget) : null,
           company_id: authCompany.id,
           owner_id: user.id,
