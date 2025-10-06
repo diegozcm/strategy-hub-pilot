@@ -515,6 +515,17 @@ export const DashboardHome: React.FC = () => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <LayoutDashboard className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-foreground">Instrumentos</h2>
+              <p className="text-sm text-muted-foreground">Métricas e Indicadores de Performance</p>
+            </div>
+          </div>
+
           {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {getDynamicStats(dashboardStats).map(stat => (
