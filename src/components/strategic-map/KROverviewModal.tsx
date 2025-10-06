@@ -123,7 +123,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1000px] max-h-[95vh] flex flex-col p-0">
+      <DialogContent className="sm:max-w-[1000px] max-h-[90vh] overflow-y-auto flex flex-col p-0">
         {/* Header colorido com pilar */}
         {pillar && (
         <div 
