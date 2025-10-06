@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { useRumoCalculations, PeriodType } from '@/hooks/useRumoCalculations';
 import { RumoPillarBlock } from './RumoPillarBlock';
@@ -13,13 +13,21 @@ export const RumoDashboard = () => {
   const [periodType, setPeriodType] = useState<PeriodType>('monthly');
   const { pillars, objectives, keyResults, loading } = useStrategicMap();
   
+  // Processar dados para aninhar objetivos dentro dos pilares
+  const pillarsWithObjectives = useMemo(() => {
+    return pillars.map(pillar => ({
+      ...pillar,
+      objectives: objectives.filter(obj => obj.pillar_id === pillar.id)
+    }));
+  }, [pillars, objectives]);
+  
   const { 
     pillarProgress, 
     objectiveProgress, 
     krProgress, 
     finalScore,
     hasData 
-  } = useRumoCalculations(pillars, objectives, keyResults, periodType);
+  } = useRumoCalculations(pillarsWithObjectives, objectives, keyResults, periodType);
 
   if (loading) {
     return (
@@ -106,7 +114,7 @@ export const RumoDashboard = () => {
 
       {/* Pillars and Objectives Grid */}
       <div className="space-y-6">
-        {pillars.map((pillar) => {
+        {pillarsWithObjectives.map((pillar) => {
           const progress = pillarProgress.get(pillar.id) || 0;
           const pillarObjectives = pillar.objectives || [];
 
