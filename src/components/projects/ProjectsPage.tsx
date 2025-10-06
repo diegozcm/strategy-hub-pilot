@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause, Edit3, Save, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause, Edit3, Save, ChevronLeft, ChevronRight, Trash2, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +20,16 @@ interface StrategicPlan {
   id: string;
   name: string;
   status: string;
+}
+
+interface StrategicObjective {
+  id: string;
+  title: string;
+  pillar_id: string;
+  strategic_pillars?: {
+    name: string;
+    color: string;
+  };
 }
 
 interface StrategicProject {
@@ -34,6 +45,7 @@ interface StrategicProject {
   plan_id: string;
   owner_id: string;
   created_at: string;
+  objective_ids?: string[];
 }
 
 interface ProjectTask {
@@ -55,6 +67,8 @@ export const ProjectsPage: React.FC = () => {
   const [projects, setProjects] = useState<StrategicProject[]>([]);
   const [plans, setPlans] = useState<StrategicPlan[]>([]);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
+  const [objectives, setObjectives] = useState<StrategicObjective[]>([]);
+  const [selectedObjectives, setSelectedObjectives] = useState<string[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>('all');
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -66,6 +80,7 @@ export const ProjectsPage: React.FC = () => {
   const [selectedProjectForDetail, setSelectedProjectForDetail] = useState<StrategicProject | null>(null);
   const [editingProject, setEditingProject] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingObjectives, setLoadingObjectives] = useState(false);
 
   // Form states
   const [projectForm, setProjectForm] = useState({
@@ -139,7 +154,26 @@ export const ProjectsPage: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (projectsError) throw projectsError;
-      setProjects(projectsData || []);
+      
+      // Load objective IDs for each project
+      if (projectsData && projectsData.length > 0) {
+        const projectsWithObjectives = await Promise.all(
+          projectsData.map(async (project) => {
+            const { data: relations } = await supabase
+              .from('project_objective_relations')
+              .select('objective_id')
+              .eq('project_id', project.id);
+            
+            return {
+              ...project,
+              objective_ids: relations?.map(r => r.objective_id) || []
+            };
+          })
+        );
+        setProjects(projectsWithObjectives);
+      } else {
+        setProjects([]);
+      }
 
       // Load tasks - filter by projects from this company
       if (projectsData && projectsData.length > 0) {
@@ -168,6 +202,42 @@ export const ProjectsPage: React.FC = () => {
     }
   };
 
+  const loadObjectives = async (planId: string) => {
+    if (!planId) {
+      setObjectives([]);
+      return;
+    }
+
+    try {
+      setLoadingObjectives(true);
+      const { data, error } = await supabase
+        .from('strategic_objectives')
+        .select(`
+          id,
+          title,
+          pillar_id,
+          strategic_pillars (
+            name,
+            color
+          )
+        `)
+        .eq('plan_id', planId)
+        .order('title');
+
+      if (error) throw error;
+      setObjectives(data || []);
+    } catch (error) {
+      console.error('Error loading objectives:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar objetivos. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingObjectives(false);
+    }
+  };
+
   const createProject = async () => {
     if (!user || !authCompany || !projectForm.name || !projectForm.plan_id) {
       toast({
@@ -181,7 +251,8 @@ export const ProjectsPage: React.FC = () => {
     }
 
     try {
-      const { data, error } = await supabase
+      // 1. Criar projeto
+      const { data: project, error: projectError } = await supabase
         .from('strategic_projects')
         .insert([{
           ...projectForm,
@@ -193,10 +264,27 @@ export const ProjectsPage: React.FC = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (projectError) throw projectError;
 
-      setProjects(prev => [data, ...prev]);
+      // 2. Criar relações com objetivos
+      if (selectedObjectives.length > 0) {
+        const relations = selectedObjectives.map(objId => ({
+          project_id: project.id,
+          objective_id: objId
+        }));
+
+        const { error: relError } = await supabase
+          .from('project_objective_relations')
+          .insert(relations);
+
+        if (relError) throw relError;
+      }
+
+      // 3. Atualizar estado e resetar formulário
+      setProjects(prev => [{ ...project, objective_ids: selectedObjectives }, ...prev]);
       setProjectForm({ name: '', description: '', plan_id: '', start_date: '', end_date: '', budget: '', priority: 'medium' });
+      setSelectedObjectives([]);
+      setObjectives([]);
       setIsCreateProjectOpen(false);
       
       toast({
@@ -211,6 +299,29 @@ export const ProjectsPage: React.FC = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const groupObjectivesByPillar = (objectives: StrategicObjective[]) => {
+    return objectives.reduce((acc, obj) => {
+      const pillarName = obj.strategic_pillars?.name || 'Sem Pilar';
+      if (!acc[pillarName]) acc[pillarName] = [];
+      acc[pillarName].push(obj);
+      return acc;
+    }, {} as Record<string, StrategicObjective[]>);
+  };
+
+  const toggleObjectiveSelection = (objectiveId: string) => {
+    setSelectedObjectives(prev => 
+      prev.includes(objectiveId)
+        ? prev.filter(id => id !== objectiveId)
+        : [...prev, objectiveId]
+    );
+  };
+
+  const resetProjectForm = () => {
+    setProjectForm({ name: '', description: '', plan_id: '', start_date: '', end_date: '', budget: '', priority: 'medium' });
+    setSelectedObjectives([]);
+    setObjectives([]);
   };
 
   const createTask = async () => {
@@ -613,7 +724,10 @@ export const ProjectsPage: React.FC = () => {
             </DialogContent>
           </Dialog>
 
-          <Dialog open={isCreateProjectOpen} onOpenChange={setIsCreateProjectOpen}>
+          <Dialog open={isCreateProjectOpen} onOpenChange={(open) => {
+            setIsCreateProjectOpen(open);
+            if (!open) resetProjectForm();
+          }}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
@@ -632,7 +746,11 @@ export const ProjectsPage: React.FC = () => {
                   <Label htmlFor="project-plan">Plano Estratégico</Label>
                   <Select 
                     value={projectForm.plan_id} 
-                    onValueChange={(value) => setProjectForm(prev => ({ ...prev, plan_id: value }))}
+                    onValueChange={(value) => {
+                      setProjectForm(prev => ({ ...prev, plan_id: value }));
+                      loadObjectives(value);
+                      setSelectedObjectives([]);
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione um plano" />
@@ -646,6 +764,51 @@ export const ProjectsPage: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Objectives Selection */}
+                {projectForm.plan_id && (
+                  <div>
+                    <Label>Objetivos Associados (opcional)</Label>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Selecione os objetivos estratégicos relacionados a este projeto
+                    </p>
+                    
+                    {loadingObjectives ? (
+                      <div className="text-sm text-muted-foreground">Carregando objetivos...</div>
+                    ) : objectives.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">Nenhum objetivo encontrado para este plano.</div>
+                    ) : (
+                      <div className="max-h-60 overflow-y-auto border rounded-md p-3 space-y-3">
+                        {Object.entries(groupObjectivesByPillar(objectives)).map(([pillarName, pillarObjectives]) => (
+                          <div key={pillarName} className="space-y-2">
+                            <div className="text-sm font-semibold text-foreground">{pillarName}</div>
+                            {pillarObjectives.map((objective) => (
+                              <div key={objective.id} className="flex items-start space-x-2 ml-4">
+                                <Checkbox
+                                  id={`obj-${objective.id}`}
+                                  checked={selectedObjectives.includes(objective.id)}
+                                  onCheckedChange={() => toggleObjectiveSelection(objective.id)}
+                                />
+                                <label
+                                  htmlFor={`obj-${objective.id}`}
+                                  className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                >
+                                  {objective.title}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                        {selectedObjectives.length > 0 && (
+                          <div className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                            {selectedObjectives.length} objetivo(s) selecionado(s)
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div>
                   <Label htmlFor="project-name">Nome do Projeto</Label>
                   <Input
@@ -1125,6 +1288,19 @@ export const ProjectsPage: React.FC = () => {
                             {completedTasks}/{projectTasks.length} concluídas
                           </span>
                         </div>
+
+                        {/* Objectives Count */}
+                        {project.objective_ids && project.objective_ids.length > 0 && (
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center text-muted-foreground">
+                              <Target className="w-4 h-4 mr-1" />
+                              Objetivos
+                            </div>
+                            <span className="font-medium">
+                              {project.objective_ids.length} associado{project.objective_ids.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        )}
 
                         {/* Budget and Timeline */}
                         <div className="flex items-center justify-between text-sm text-muted-foreground">
