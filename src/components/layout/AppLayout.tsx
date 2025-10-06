@@ -8,9 +8,11 @@ import { FloatingAIButton } from '@/components/ai/FloatingAIButton';
 import { FloatingAIChat } from '@/components/ai/FloatingAIChat';
 import { useFloatingAI } from '@/hooks/useFloatingAI';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCompanyAIAccess } from '@/hooks/useCompanyAIAccess';
 
 export const AppLayout: React.FC = () => {
   const isMobile = useIsMobile();
+  const { hasAIAccess } = useCompanyAIAccess();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const floatingAI = useFloatingAI();
 
@@ -18,7 +20,7 @@ export const AppLayout: React.FC = () => {
   const closeSidebar = () => setSidebarOpen(false);
 
   // Debug logs
-  console.log('🤖 AppLayout - isMobile:', isMobile, 'window.innerWidth:', window.innerWidth);
+  console.log('🤖 AppLayout - isMobile:', isMobile, 'hasAIAccess:', hasAIAccess, 'window.innerWidth:', window.innerWidth);
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
@@ -36,8 +38,8 @@ export const AppLayout: React.FC = () => {
         </div>
       </div>
 
-      {/* Floating AI Copilot - Desktop Only */}
-      {!isMobile && (
+      {/* Floating AI Copilot - Desktop Only + AI Access Enabled */}
+      {!isMobile && hasAIAccess && (
         <>
           {!floatingAI.isOpen && (
             <FloatingAIButton

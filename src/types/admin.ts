@@ -8,6 +8,7 @@ export interface Company {
   logo_url?: string;
   status: 'active' | 'inactive';
   company_type?: 'regular' | 'startup';
+  ai_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }

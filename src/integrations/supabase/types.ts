@@ -859,6 +859,7 @@ export type Database = {
       }
       companies: {
         Row: {
+          ai_enabled: boolean
           company_type: Database["public"]["Enums"]["company_type"] | null
           created_at: string
           id: string
@@ -872,6 +873,7 @@ export type Database = {
           vision: string | null
         }
         Insert: {
+          ai_enabled?: boolean
           company_type?: Database["public"]["Enums"]["company_type"] | null
           created_at?: string
           id?: string
@@ -885,6 +887,7 @@ export type Database = {
           vision?: string | null
         }
         Update: {
+          ai_enabled?: boolean
           company_type?: Database["public"]["Enums"]["company_type"] | null
           created_at?: string
           id?: string

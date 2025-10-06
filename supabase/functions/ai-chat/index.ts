@@ -26,6 +26,23 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Verify company has AI access enabled
+    const { data: companyData, error: companyError } = await supabase
+      .from('companies')
+      .select('ai_enabled')
+      .eq('id', company_id)
+      .single();
+
+    if (companyError || !companyData?.ai_enabled) {
+      return new Response(
+        JSON.stringify({ error: 'Empresa não tem acesso aos recursos de IA' }),
+        { 
+          status: 403, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Get AI settings for the company
     let aiSettings = null;
     if (company_id) {

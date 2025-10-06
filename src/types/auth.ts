@@ -11,6 +11,7 @@ export interface Company {
   address?: string;
   logo_url?: string;
   active: boolean;
+  ai_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }

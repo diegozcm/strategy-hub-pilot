@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Save, X } from 'lucide-react';
 import { Company } from '@/types/admin';
@@ -66,6 +67,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
           values: editedCompany.values || null,
           logo_url: editedCompany.logo_url || null,
           status: editedCompany.status,
+          ai_enabled: editedCompany.ai_enabled || false,
           updated_at: new Date().toISOString()
         })
         .eq('id', editedCompany.id);
@@ -135,6 +137,22 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                 <SelectItem value="inactive">Inativa</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="ai-enabled">Acesso à IA</Label>
+              <Switch
+                id="ai-enabled"
+                checked={editedCompany.ai_enabled || false}
+                onCheckedChange={(checked) => 
+                  setEditedCompany({ ...editedCompany, ai_enabled: checked })
+                }
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Habilita o Copilot AI e o botão flutuante de chat para usuários desta empresa
+            </p>
           </div>
 
           <div className="space-y-2">

@@ -33,6 +33,23 @@ serve(async (req) => {
       throw new Error('User ID and Company ID are required');
     }
 
+    // Verify company has AI access enabled
+    const { data: company, error: companyError } = await supabaseClient
+      .from('companies')
+      .select('ai_enabled')
+      .eq('id', company_id)
+      .single();
+
+    if (companyError || !company?.ai_enabled) {
+      return new Response(
+        JSON.stringify({ error: 'Empresa não tem acesso aos recursos de IA' }),
+        { 
+          status: 403, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     console.log(`Generating insights for user: ${user_id}`);
 
     // Get user data using the database function and Startup Hub data
