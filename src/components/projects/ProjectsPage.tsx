@@ -812,8 +812,10 @@ export const ProjectsPage: React.FC = () => {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="project-plan">Plano Estratégico</Label>
-                  <Select 
+                  <Label htmlFor="project-plan">
+                    Plano Estratégico <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
                     value={projectForm.plan_id} 
                     onValueChange={(value) => {
                       setProjectForm(prev => ({ ...prev, plan_id: value }));
@@ -863,7 +865,9 @@ export const ProjectsPage: React.FC = () => {
                 )}
 
                 <div>
-                  <Label htmlFor="project-name">Nome do Projeto</Label>
+                  <Label htmlFor="project-name">
+                    Nome do Projeto <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="project-name"
                     value={projectForm.name}
