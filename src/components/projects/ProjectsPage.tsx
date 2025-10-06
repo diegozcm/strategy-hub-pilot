@@ -950,28 +950,62 @@ export const ProjectsPage: React.FC = () => {
 
           {/* Project Detail/Edit Modal */}
           <Dialog open={isProjectDetailOpen} onOpenChange={setIsProjectDetailOpen}>
-            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <DialogTitle>
-                      {editingProject ? 'Editando Projeto' : 'Detalhes do Projeto'}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {editingProject ? 'Modifique as informações do projeto' : 'Visualize e edite as informações do projeto'}
-                    </DialogDescription>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditingProject(!editingProject)}
-                  >
-                    <Edit3 className="w-4 h-4 mr-2" />
-                    {editingProject ? 'Cancelar' : 'Editar'}
-                  </Button>
-                </div>
-              </DialogHeader>
+        <DialogContent className="sm:max-w-2xl p-0">
+              <div className="max-h-[90vh] overflow-hidden flex flex-col">
+                {/* Header colorido com pilar */}
+                {selectedProjectForDetail && (() => {
+                  // Buscar o primeiro objetivo com pilar
+                  const firstObjective = selectedProjectForDetail.objective_ids
+                    ?.map(objId => objectives.find(o => o.id === objId))
+                    .find(obj => obj?.strategic_pillars);
+                  
+                  const pillarColor = firstObjective?.strategic_pillars?.color || '#6366f1';
+                  const pillarName = firstObjective?.strategic_pillars?.name;
 
+                  return (
+                    <div 
+                      style={{ backgroundColor: pillarColor }}
+                      className="p-3 rounded-t-lg flex-shrink-0"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <h2 className="text-white font-semibold text-xl leading-tight">
+                            {selectedProjectForDetail.name}
+                          </h2>
+                          {pillarName && (
+                            <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+                              {pillarName}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 pr-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setEditingProject(!editingProject)}
+                            className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
+                          >
+                            <Edit3 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              deleteProject(selectedProjectForDetail.id, selectedProjectForDetail.name);
+                              setIsProjectDetailOpen(false);
+                            }}
+                            className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Conteúdo com scroll */}
+                <div className="overflow-y-auto flex-1 p-6">
               {selectedProjectForDetail && (
                 <div className="space-y-6">
                   {/* Basic Information */}
@@ -1245,6 +1279,8 @@ export const ProjectsPage: React.FC = () => {
                   )}
                 </div>
               )}
+              </div>
+              </div>
             </DialogContent>
           </Dialog>
 
