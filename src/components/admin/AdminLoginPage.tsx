@@ -18,19 +18,6 @@ export const AdminLoginPage: React.FC = () => {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!authLoading && user) {
-      const isHardcodedAdmin = user.email === 'admin@example.com' || user.email === 'diego@cofound.com.br';
-      const isProfileAdmin = profile?.role === 'admin' && profile?.status === 'active';
-
-      if (isHardcodedAdmin || isProfileAdmin) {
-        navigate('/app/admin');
-      } else if (profile && profile.role !== 'admin') {
-        setError('Acesso negado. Apenas administradores podem acessar esta área.');
-      }
-    }
-  }, [user, profile, authLoading, navigate]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -48,10 +35,33 @@ export const AdminLoginPage: React.FC = () => {
         } else {
           setError(error.message);
         }
+        setLoading(false);
         return;
       }
       
-      // Don't redirect here - let the useEffect handle it
+      // Aguardar profile ser carregado
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Buscar profile atualizado
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (currentUser) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role, status')
+          .eq('user_id', currentUser.id)
+          .single();
+        
+        const isHardcodedAdmin = currentUser.email === 'admin@example.com' || 
+                                currentUser.email === 'diego@cofound.com.br';
+        const isProfileAdmin = profileData?.role === 'admin' && profileData?.status === 'active';
+        
+        if (isHardcodedAdmin || isProfileAdmin) {
+          navigate('/app/admin');
+        } else {
+          setError('Acesso negado. Apenas administradores podem acessar esta área.');
+        }
+      }
     } catch (err) {
       setError('Erro ao tentar fazer login. Tente novamente.');
     } finally {

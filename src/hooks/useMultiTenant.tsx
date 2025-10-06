@@ -488,9 +488,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           if (isValid) {
             setSession(session);
             setUser(session.user);
-            setTimeout(() => {
-              loadUserProfile(session.user.id);
-            }, 100);
+            loadUserProfile(session.user.id);
           } else {
             console.warn('⚠️ Invalid session on SIGNED_IN, signing out');
             await signOut();
@@ -525,9 +523,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           if (isValid) {
             setSession(session);
             setUser(session.user);
-            setTimeout(() => {
-              loadUserProfile(session.user.id);
-            }, 100);
+            loadUserProfile(session.user.id);
           } else {
             console.warn('⚠️ Invalid initial session, signing out');
             await signOut();
