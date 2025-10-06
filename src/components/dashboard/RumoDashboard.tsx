@@ -109,9 +109,6 @@ export const RumoDashboard = () => {
         </div>
       </div>
 
-      {/* Legend */}
-      <RumoLegend />
-
       {/* Pillars and Objectives Grid */}
       <div className="space-y-6">
         {pillarsWithObjectives.map((pillar) => {
@@ -157,6 +154,9 @@ export const RumoDashboard = () => {
           );
         })}
       </div>
+
+      {/* Legend - Footer */}
+      <RumoLegend />
     </div>
   );
 };
