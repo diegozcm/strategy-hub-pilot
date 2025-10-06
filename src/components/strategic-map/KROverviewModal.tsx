@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultMetrics } from './KeyResultMetrics';
 import { KeyResultChart } from './KeyResultChart';
@@ -123,96 +123,97 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1000px] max-h-[90vh] overflow-y-auto flex flex-col p-0">
-        {/* Header colorido com pilar */}
-        {pillar && (
-        <div 
-          style={{ backgroundColor: pillar.color }}
-          className="p-3 rounded-t-lg"
-        >
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex-1 space-y-2">
-                <h2 className="text-white font-semibold text-xl leading-tight">
-                  {currentKeyResult.title}
-                </h2>
-                <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
-                  {pillar.name}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0 pr-8">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowEditModal(true)}
-                  className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                {showDeleteButton && (
+      <DialogContent className="sm:max-w-[1000px] w-[calc(100vw-2rem)] p-0">
+        <div className="max-h-[90vh] md:max-h-[85vh] overflow-hidden flex flex-col">
+          {/* Header colorido com pilar */}
+          {pillar && (
+          <div 
+            style={{ backgroundColor: pillar.color }}
+            className="p-3 rounded-t-lg flex-shrink-0"
+          >
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1 space-y-2">
+                  <h2 className="text-white font-semibold text-xl leading-tight">
+                    {currentKeyResult.title}
+                  </h2>
+                  <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+                    {pillar.name}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0 pr-8">
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={onDelete}
+                    onClick={() => setShowEditModal(true)}
                     className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Edit className="h-4 w-4" />
                   </Button>
-                )}
+                  {showDeleteButton && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={onDelete}
+                      className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        )}
-
-        <div className="px-6 flex-shrink-0">
-          {currentKeyResult.description && (
-            <p className="text-sm text-muted-foreground mb-2 mt-3">
-              {currentKeyResult.description}
-            </p>
           )}
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2 pb-2 flex-shrink-0 px-6">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowUpdateValuesModal(true)}
-            className="text-cyan-600 border-cyan-200 hover:bg-cyan-100 hover:border-cyan-300 hover:text-cyan-600"
-          >
-            <FileEdit className="h-4 w-4 mr-2" />
-            Atualizar Valores
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowFCAModal(true)}
-            className="text-blue-600 border-blue-200 hover:bg-blue-100 hover:border-blue-300 hover:text-blue-600"
-          >
-            <ListChecks className="h-4 w-4 mr-2" />
-            FCA & Ações
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowStatusReportModal(true)}
-            className="text-green-600 border-green-200 hover:bg-green-100 hover:border-green-300 hover:text-green-600"
-          >
-            <FileBarChart className="h-4 w-4 mr-2" />
-            Status Report
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowInitiativesModal(true)}
-            className="text-purple-600 border-purple-200 hover:bg-purple-100 hover:border-purple-300 hover:text-purple-600"
-          >
-            <Rocket className="h-4 w-4 mr-2" />
-            Iniciativas
-          </Button>
-        </div>
-        
-        <ScrollArea className="flex-1 px-6">
-          <div className="space-y-4 pr-6 py-4">
+          <div className="px-6 flex-shrink-0">
+            {currentKeyResult.description && (
+              <p className="text-sm text-muted-foreground mb-2 mt-3">
+                {currentKeyResult.description}
+              </p>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2 pb-2 flex-shrink-0 px-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowUpdateValuesModal(true)}
+              className="text-cyan-600 border-cyan-200 hover:bg-cyan-100 hover:border-cyan-300 hover:text-cyan-600"
+            >
+              <FileEdit className="h-4 w-4 mr-2" />
+              Atualizar Valores
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFCAModal(true)}
+              className="text-blue-600 border-blue-200 hover:bg-blue-100 hover:border-blue-300 hover:text-blue-600"
+            >
+              <ListChecks className="h-4 w-4 mr-2" />
+              FCA & Ações
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowStatusReportModal(true)}
+              className="text-green-600 border-green-200 hover:bg-green-100 hover:border-green-300 hover:text-green-600"
+            >
+              <FileBarChart className="h-4 w-4 mr-2" />
+              Status Report
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowInitiativesModal(true)}
+              className="text-purple-600 border-purple-200 hover:bg-purple-100 hover:border-purple-300 hover:text-purple-600"
+            >
+              <Rocket className="h-4 w-4" />
+              Iniciativas
+            </Button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto px-6">
+            <div className="space-y-4 pr-2 py-4">
             {/* Header Info */}
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">
@@ -264,7 +265,8 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
               selectedYear={new Date().getFullYear()}
             />
           </div>
-        </ScrollArea>
+        </div>
+        </div>
       </DialogContent>
 
       {/* Modal FCA Unificado */}
