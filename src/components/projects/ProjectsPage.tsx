@@ -734,7 +734,7 @@ export const ProjectsPage: React.FC = () => {
                 Novo Projeto
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Criar Projeto Estratégico</DialogTitle>
                 <DialogDescription>
