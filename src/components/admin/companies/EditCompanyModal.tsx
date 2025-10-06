@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Save, X } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Save, X, Building2, Settings } from 'lucide-react';
 import { Company } from '@/types/admin';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -104,107 +105,124 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nome da Empresa</Label>
-            <Input
-              id="name"
-              value={editedCompany.name}
-              onChange={(e) => setEditedCompany({ ...editedCompany, name: e.target.value })}
-            />
-          </div>
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="general" className="flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Informações Gerais
+            </TabsTrigger>
+            <TabsTrigger value="parameters" className="flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Parâmetros
+            </TabsTrigger>
+          </TabsList>
 
-          <ImageCropUpload
-            currentImageUrl={editedCompany.logo_url}
-            onImageUploaded={(url) => setEditedCompany({ ...editedCompany, logo_url: url })}
-            disabled={isLoading}
-            aspectRatio={1}
-          />
-
-          <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={editedCompany.status}
-              onValueChange={(value: 'active' | 'inactive') => 
-                setEditedCompany({ ...editedCompany, status: value })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Ativa</SelectItem>
-                <SelectItem value="inactive">Inativa</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="ai-enabled">Acesso à IA</Label>
-              <Switch
-                id="ai-enabled"
-                checked={editedCompany.ai_enabled || false}
-                onCheckedChange={(checked) => 
-                  setEditedCompany({ ...editedCompany, ai_enabled: checked })
-                }
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Habilita o Copilot AI e o botão flutuante de chat para usuários desta empresa
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="mission">Missão</Label>
-            <Textarea
-              id="mission"
-              value={editedCompany.mission || ''}
-              onChange={(e) => setEditedCompany({ ...editedCompany, mission: e.target.value })}
-              placeholder="Descrição da missão da empresa"
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="vision">Visão</Label>
-            <Textarea
-              id="vision"
-              value={editedCompany.vision || ''}
-              onChange={(e) => setEditedCompany({ ...editedCompany, vision: e.target.value })}
-              placeholder="Descrição da visão da empresa"
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-3">
-            <Label>Valores</Label>
-            <div className="flex gap-2">
+          <TabsContent value="general" className="space-y-6 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome da Empresa</Label>
               <Input
-                value={newValue}
-                onChange={(e) => setNewValue(e.target.value)}
-                placeholder="Adicionar novo valor"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddValue()}
+                id="name"
+                value={editedCompany.name}
+                onChange={(e) => setEditedCompany({ ...editedCompany, name: e.target.value })}
               />
-              <Button onClick={handleAddValue} size="sm">
-                Adicionar
-              </Button>
             </div>
-            {editedCompany.values && editedCompany.values.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {editedCompany.values.map((value, index) => (
-                  <Badge key={index} variant="secondary" className="gap-1">
-                    {value}
-                    <X
-                      className="w-3 h-3 cursor-pointer hover:text-destructive"
-                      onClick={() => handleRemoveValue(index)}
-                    />
-                  </Badge>
-                ))}
+
+            <ImageCropUpload
+              currentImageUrl={editedCompany.logo_url}
+              onImageUploaded={(url) => setEditedCompany({ ...editedCompany, logo_url: url })}
+              disabled={isLoading}
+              aspectRatio={1}
+            />
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={editedCompany.status}
+                onValueChange={(value: 'active' | 'inactive') => 
+                  setEditedCompany({ ...editedCompany, status: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Ativa</SelectItem>
+                  <SelectItem value="inactive">Inativa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mission">Missão</Label>
+              <Textarea
+                id="mission"
+                value={editedCompany.mission || ''}
+                onChange={(e) => setEditedCompany({ ...editedCompany, mission: e.target.value })}
+                placeholder="Descrição da missão da empresa"
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="vision">Visão</Label>
+              <Textarea
+                id="vision"
+                value={editedCompany.vision || ''}
+                onChange={(e) => setEditedCompany({ ...editedCompany, vision: e.target.value })}
+                placeholder="Descrição da visão da empresa"
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label>Valores</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={newValue}
+                  onChange={(e) => setNewValue(e.target.value)}
+                  placeholder="Adicionar novo valor"
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddValue()}
+                />
+                <Button onClick={handleAddValue} size="sm">
+                  Adicionar
+                </Button>
               </div>
-            )}
-          </div>
-        </div>
+              {editedCompany.values && editedCompany.values.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {editedCompany.values.map((value, index) => (
+                    <Badge key={index} variant="secondary" className="gap-1">
+                      {value}
+                      <X
+                        className="w-3 h-3 cursor-pointer hover:text-destructive"
+                        onClick={() => handleRemoveValue(index)}
+                      />
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="parameters" className="space-y-6 mt-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="ai-enabled">Acesso à IA</Label>
+                <Switch
+                  id="ai-enabled"
+                  checked={editedCompany.ai_enabled || false}
+                  onCheckedChange={(checked) => 
+                    setEditedCompany({ ...editedCompany, ai_enabled: checked })
+                  }
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Habilita o Copilot AI e o botão flutuante de chat para usuários desta empresa
+              </p>
+            </div>
+
+            {/* Futuros parâmetros de configuração por empresa devem ser adicionados aqui */}
+          </TabsContent>
+        </Tabs>
 
         <div className="flex justify-end gap-3 pt-4 border-t">
           <Button variant="outline" onClick={onCancel}>
