@@ -76,7 +76,7 @@ const getDynamicStats = (stats: DashboardStats) => [{
 
 export const DashboardHome: React.FC = () => {
   const { company } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('rumo');
   const [keyResults, setKeyResults] = useState<KeyResultWithPillar[]>([]);
   const [filteredKeyResults, setFilteredKeyResults] = useState<KeyResultWithPillar[]>([]);
   const [objectives, setObjectives] = useState<any[]>([]);
@@ -504,13 +504,13 @@ export const DashboardHome: React.FC = () => {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
-          <TabsTrigger value="overview" className="gap-2">
-            <LayoutDashboard className="w-4 h-4" />
-            Visão Geral
-          </TabsTrigger>
           <TabsTrigger value="rumo" className="gap-2">
             <Compass className="w-4 h-4" />
             Rumo
+          </TabsTrigger>
+          <TabsTrigger value="overview" className="gap-2">
+            <LayoutDashboard className="w-4 h-4" />
+            Instrumentos
           </TabsTrigger>
         </TabsList>
 
