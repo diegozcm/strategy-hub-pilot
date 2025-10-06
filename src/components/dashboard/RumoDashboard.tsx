@@ -109,30 +109,6 @@ export const RumoDashboard = () => {
         </div>
       </div>
 
-      {/* Pillars Summary - Compact Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-        {pillarsWithObjectives.map((pillar) => {
-          const progress = pillarProgress.get(pillar.id) || 0;
-          const performance = getPerformanceColor(progress);
-          const styles = getPerformanceStyles(performance);
-
-          return (
-            <Card 
-              key={`summary-${pillar.id}`} 
-              className={`p-4 ${styles} border-2 transition-all duration-300 hover:scale-105 cursor-pointer`}
-            >
-              <div className="space-y-1">
-                <p className="text-xs font-medium opacity-80 line-clamp-1">
-                  {pillar.name}
-                </p>
-                <p className="text-2xl font-bold">
-                  {progress.toFixed(0)}%
-                </p>
-              </div>
-            </Card>
-          );
-        })}
-      </div>
 
       {/* Pillars and Objectives Grid */}
       <div className="space-y-6">
