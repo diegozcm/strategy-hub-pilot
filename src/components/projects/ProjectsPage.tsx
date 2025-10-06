@@ -81,6 +81,9 @@ export const ProjectsPage: React.FC = () => {
   const [editingProject, setEditingProject] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingObjectives, setLoadingObjectives] = useState(false);
+  const [isObjectivesModalOpen, setIsObjectivesModalOpen] = useState(false);
+  const [currentProjectForObjectives, setCurrentProjectForObjectives] = useState<string | null>(null);
+  const [tempSelectedObjectives, setTempSelectedObjectives] = useState<string[]>([]);
 
   // Form states
   const [projectForm, setProjectForm] = useState({
@@ -311,11 +314,77 @@ export const ProjectsPage: React.FC = () => {
   };
 
   const toggleObjectiveSelection = (objectiveId: string) => {
-    setSelectedObjectives(prev => 
+    setTempSelectedObjectives(prev => 
       prev.includes(objectiveId)
         ? prev.filter(id => id !== objectiveId)
         : [...prev, objectiveId]
     );
+  };
+
+  const openObjectivesModal = (projectId?: string) => {
+    if (projectId) {
+      // Editing existing project
+      const project = projects.find(p => p.id === projectId);
+      setTempSelectedObjectives(project?.objective_ids || []);
+      setCurrentProjectForObjectives(projectId);
+    } else {
+      // Creating new project
+      setTempSelectedObjectives(selectedObjectives);
+      setCurrentProjectForObjectives(null);
+    }
+    setIsObjectivesModalOpen(true);
+  };
+
+  const saveObjectivesSelection = async () => {
+    if (currentProjectForObjectives) {
+      // Update existing project objectives
+      try {
+        // Remove old relations
+        await supabase
+          .from('project_objective_relations')
+          .delete()
+          .eq('project_id', currentProjectForObjectives);
+
+        // Add new relations
+        if (tempSelectedObjectives.length > 0) {
+          const relations = tempSelectedObjectives.map(objId => ({
+            project_id: currentProjectForObjectives,
+            objective_id: objId
+          }));
+
+          const { error } = await supabase
+            .from('project_objective_relations')
+            .insert(relations);
+
+          if (error) throw error;
+        }
+
+        // Update local state
+        setProjects(prev => prev.map(p => 
+          p.id === currentProjectForObjectives 
+            ? { ...p, objective_ids: tempSelectedObjectives }
+            : p
+        ));
+
+        toast({
+          title: "Sucesso",
+          description: "Objetivos atualizados com sucesso!",
+        });
+      } catch (error) {
+        console.error('Error updating objectives:', error);
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar objetivos. Tente novamente.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      // Creating new project - just update selection
+      setSelectedObjectives(tempSelectedObjectives);
+    }
+    
+    setIsObjectivesModalOpen(false);
+    setCurrentProjectForObjectives(null);
   };
 
   const resetProjectForm = () => {
@@ -765,47 +834,31 @@ export const ProjectsPage: React.FC = () => {
                   </Select>
                 </div>
 
-                {/* Objectives Selection */}
+                {/* Objectives Selection Button */}
                 {projectForm.plan_id && (
                   <div>
                     <Label>Objetivos Associados (opcional)</Label>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Selecione os objetivos estratégicos relacionados a este projeto
+                      Adicione objetivos estratégicos relacionados a este projeto
                     </p>
-                    
-                    {loadingObjectives ? (
-                      <div className="text-sm text-muted-foreground">Carregando objetivos...</div>
-                    ) : objectives.length === 0 ? (
-                      <div className="text-sm text-muted-foreground">Nenhum objetivo encontrado para este plano.</div>
-                    ) : (
-                      <div className="max-h-60 overflow-y-auto border rounded-md p-3 space-y-3">
-                        {Object.entries(groupObjectivesByPillar(objectives)).map(([pillarName, pillarObjectives]) => (
-                          <div key={pillarName} className="space-y-2">
-                            <div className="text-sm font-semibold text-foreground">{pillarName}</div>
-                            {pillarObjectives.map((objective) => (
-                              <div key={objective.id} className="flex items-start space-x-2 ml-4">
-                                <Checkbox
-                                  id={`obj-${objective.id}`}
-                                  checked={selectedObjectives.includes(objective.id)}
-                                  onCheckedChange={() => toggleObjectiveSelection(objective.id)}
-                                />
-                                <label
-                                  htmlFor={`obj-${objective.id}`}
-                                  className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                                >
-                                  {objective.title}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        ))}
-                        {selectedObjectives.length > 0 && (
-                          <div className="text-xs text-muted-foreground mt-2 pt-2 border-t">
-                            {selectedObjectives.length} objetivo(s) selecionado(s)
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          loadObjectives(projectForm.plan_id);
+                          openObjectivesModal();
+                        }}
+                      >
+                        <Target className="w-4 h-4 mr-2" />
+                        {selectedObjectives.length > 0 ? 'Editar Objetivos' : 'Adicionar Objetivos'}
+                      </Button>
+                      {selectedObjectives.length > 0 && (
+                        <Badge variant="secondary">
+                          {selectedObjectives.length} objetivo(s) selecionado(s)
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -1087,6 +1140,48 @@ export const ProjectsPage: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Project Objectives Section */}
+                  <div className="border-t pt-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-medium text-foreground">Objetivos Estratégicos</h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (selectedProjectForDetail?.plan_id) {
+                            loadObjectives(selectedProjectForDetail.plan_id);
+                            openObjectivesModal(selectedProjectForDetail.id);
+                          }
+                        }}
+                      >
+                        <Target className="w-4 h-4 mr-2" />
+                        Gerenciar Objetivos
+                      </Button>
+                    </div>
+                    {selectedProjectForDetail?.objective_ids && selectedProjectForDetail.objective_ids.length > 0 ? (
+                      <div className="space-y-2">
+                        {selectedProjectForDetail.objective_ids.map((objId) => {
+                          const objective = objectives.find(o => o.id === objId);
+                          if (!objective) return null;
+                          return (
+                            <div key={objId} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                              <Target className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-sm">{objective.title}</span>
+                              {objective.strategic_pillars && (
+                                <Badge variant="outline" className="text-xs">
+                                  {objective.strategic_pillars.name}
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Nenhum objetivo associado a este projeto.</p>
+                    )}
+                  </div>
+
                   {/* Project Tasks Summary */}
                   <div className="border-t pt-6">
                     <h3 className="text-lg font-medium text-foreground mb-4">Tarefas do Projeto</h3>
@@ -1144,6 +1239,63 @@ export const ProjectsPage: React.FC = () => {
                   )}
                 </div>
               )}
+            </DialogContent>
+          </Dialog>
+
+          {/* Objectives Selection Modal */}
+          <Dialog open={isObjectivesModalOpen} onOpenChange={setIsObjectivesModalOpen}>
+            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Selecionar Objetivos Estratégicos</DialogTitle>
+                <DialogDescription>
+                  Escolha os objetivos estratégicos relacionados a este projeto
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                {loadingObjectives ? (
+                  <div className="text-sm text-muted-foreground">Carregando objetivos...</div>
+                ) : objectives.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">Nenhum objetivo encontrado para este plano.</div>
+                ) : (
+                  <div className="space-y-4">
+                    {Object.entries(groupObjectivesByPillar(objectives)).map(([pillarName, pillarObjectives]) => (
+                      <div key={pillarName} className="space-y-3">
+                        <div className="text-sm font-semibold text-foreground border-b pb-2">{pillarName}</div>
+                        <div className="space-y-2">
+                          {pillarObjectives.map((objective) => (
+                            <div key={objective.id} className="flex items-start space-x-3 p-2 hover:bg-muted rounded-md transition-colors">
+                              <Checkbox
+                                id={`modal-obj-${objective.id}`}
+                                checked={tempSelectedObjectives.includes(objective.id)}
+                                onCheckedChange={() => toggleObjectiveSelection(objective.id)}
+                              />
+                              <label
+                                htmlFor={`modal-obj-${objective.id}`}
+                                className="text-sm leading-relaxed cursor-pointer flex-1"
+                              >
+                                {objective.title}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {tempSelectedObjectives.length > 0 && (
+                  <div className="text-sm text-muted-foreground pt-3 border-t">
+                    {tempSelectedObjectives.length} objetivo(s) selecionado(s)
+                  </div>
+                )}
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button variant="outline" onClick={() => setIsObjectivesModalOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button onClick={saveObjectivesSelection}>
+                    Salvar Objetivos
+                  </Button>
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
