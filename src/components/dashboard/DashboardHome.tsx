@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, ChevronDown, ChevronUp, Settings, Search } from 'lucide-react';
+import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, ChevronDown, ChevronUp, Settings, Search, Compass, LayoutDashboard } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { RumoDashboard } from './RumoDashboard';
 
 interface KeyResultWithPillar {
   id: string;
@@ -74,6 +76,7 @@ const getDynamicStats = (stats: DashboardStats) => [{
 
 export const DashboardHome: React.FC = () => {
   const { company } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
   const [keyResults, setKeyResults] = useState<KeyResultWithPillar[]>([]);
   const [filteredKeyResults, setFilteredKeyResults] = useState<KeyResultWithPillar[]>([]);
   const [objectives, setObjectives] = useState<any[]>([]);
@@ -498,7 +501,21 @@ export const DashboardHome: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2 mb-6">
+          <TabsTrigger value="overview" className="gap-2">
+            <LayoutDashboard className="w-4 h-4" />
+            Visão Geral
+          </TabsTrigger>
+          <TabsTrigger value="rumo" className="gap-2">
+            <Compass className="w-4 h-4" />
+            Rumo
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {getDynamicStats(dashboardStats).map(stat => (
           <Card key={stat.title} className="hover:shadow-lg transition-shadow">
@@ -816,6 +833,12 @@ export const DashboardHome: React.FC = () => {
           </Card>
         </div>
       </div>
+        </TabsContent>
+
+        <TabsContent value="rumo">
+          <RumoDashboard />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
