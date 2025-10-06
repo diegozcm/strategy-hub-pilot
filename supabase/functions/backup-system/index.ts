@@ -89,10 +89,12 @@ const handler = async (req: Request): Promise<Response> => {
         
         // Strategic planning tables
         'golden_circle', 'golden_circle_history', 'swot_analysis', 'swot_history',
+        'vision_alignment', 'vision_alignment_history', 'vision_alignment_objectives',
         'strategic_plans', 'strategic_pillars', 'strategic_projects', 'strategic_objectives',
         
         // Key results and tracking
         'key_results', 'key_result_values', 'key_results_history',
+        'kr_fca', 'kr_initiatives', 'kr_monthly_actions', 'kr_status_reports', 'kr_actions_history',
         
         // Project management
         'project_members', 'project_objective_relations', 'project_kr_relations', 'project_tasks',
@@ -102,11 +104,11 @@ const handler = async (req: Request): Promise<Response> => {
         'beep_assessments', 'beep_answers',
         
         // Mentoring system
-        'mentor_startup_relations', 'mentoring_sessions', 'action_items',
+        'mentor_startup_relations', 'mentoring_sessions', 'action_items', 'mentor_todos',
         
         // AI system
         'ai_insights', 'ai_recommendations', 'ai_analytics', 'ai_chat_sessions', 
-        'ai_chat_messages', 'ai_user_preferences',
+        'ai_chat_messages', 'ai_user_preferences', 'ai_company_settings', 'landing_page_content',
         
         // Performance and reviews
         'performance_reviews',
