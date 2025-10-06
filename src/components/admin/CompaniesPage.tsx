@@ -32,6 +32,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Company, CompanyUser } from '@/types/admin';
 import { ManageUsersModal } from './companies/ManageUsersModal';
 import { CreateCompanyModal } from './companies/CreateCompanyModal';
+import { EditCompanyModal } from './companies/EditCompanyModal';
 import { useCompanyDataLoader } from '@/hooks/useCompanyDataLoader';
 
 interface CompanyCardProps {
@@ -166,221 +167,6 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
   );
 };
 
-interface EditCompanyDialogProps {
-  company: Company | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onCompanyUpdated: () => void;
-}
-
-const EditCompanyDialog: React.FC<EditCompanyDialogProps> = ({ 
-  company, 
-  open, 
-  onOpenChange, 
-  onCompanyUpdated 
-}) => {
-  const { user: currentUser } = useAuth();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [editedCompany, setEditedCompany] = useState<Company | null>(null);
-  const [newValue, setNewValue] = useState('');
-
-  useEffect(() => {
-    if (company) {
-      setEditedCompany({ ...company });
-    }
-  }, [company]);
-
-  const handleAddValue = () => {
-    if (newValue.trim() && editedCompany) {
-      setEditedCompany({
-        ...editedCompany,
-        values: [...(editedCompany.values || []), newValue.trim()]
-      });
-      setNewValue('');
-    }
-  };
-
-  const handleRemoveValue = (index: number) => {
-    if (editedCompany) {
-      setEditedCompany({
-        ...editedCompany,
-        values: editedCompany.values?.filter((_, i) => i !== index)
-      });
-    }
-  };
-
-  const handleSaveCompany = async () => {
-    if (!editedCompany || !currentUser) {
-      console.log('DEBUG: Missing data', { editedCompany: !!editedCompany, currentUser: !!currentUser });
-      return;
-    }
-
-    if (!editedCompany.name.trim()) {
-      toast({
-        title: "Erro",
-        description: "O nome da empresa é obrigatório",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    console.log('DEBUG: Tentando atualizar empresa', {
-      companyId: editedCompany.id,
-      newName: editedCompany.name.trim(),
-      currentUserId: currentUser.id,
-      userRole: currentUser.role
-    });
-
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('companies')
-        .update({
-          name: editedCompany.name.trim(),
-          mission: editedCompany.mission || null,
-          vision: editedCompany.vision || null,
-          values: editedCompany.values || null,
-          status: editedCompany.status,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', editedCompany.id)
-        .select();
-
-      console.log('DEBUG: Resultado da atualização', { data, error });
-
-      if (error) throw error;
-
-      toast({
-        title: 'Sucesso',
-        description: 'Empresa atualizada com sucesso'
-      });
-
-      onCompanyUpdated();
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Erro ao atualizar empresa:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao atualizar empresa',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (!editedCompany) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-card border-border text-foreground">
-        <DialogHeader>
-          <DialogTitle>Editar Empresa</DialogTitle>
-          <DialogDescription className="text-muted-foreground">
-            Edite as informações da empresa
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-foreground">Nome da Empresa</Label>
-            <Input
-              id="name"
-              value={editedCompany.name}
-              onChange={(e) => setEditedCompany({ ...editedCompany, name: e.target.value })}
-              className="bg-background border-input text-foreground"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="status" className="text-foreground">Status</Label>
-            <Select
-              value={editedCompany.status}
-              onValueChange={(value: 'active' | 'inactive') => 
-                setEditedCompany({ ...editedCompany, status: value })
-              }
-            >
-              <SelectTrigger className="bg-background border-input text-foreground">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border-border text-popover-foreground">
-                <SelectItem value="active">Ativa</SelectItem>
-                <SelectItem value="inactive">Inativa</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="mission" className="text-foreground">Missão</Label>
-            <Textarea
-              id="mission"
-              value={editedCompany.mission || ''}
-              onChange={(e) => setEditedCompany({ ...editedCompany, mission: e.target.value })}
-              placeholder="Descrição da missão da empresa"
-              rows={3}
-              className="bg-background border-input text-foreground"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="vision" className="text-foreground">Visão</Label>
-            <Textarea
-              id="vision"
-              value={editedCompany.vision || ''}
-              onChange={(e) => setEditedCompany({ ...editedCompany, vision: e.target.value })}
-              placeholder="Descrição da visão da empresa"
-              rows={3}
-              className="bg-background border-input text-foreground"
-            />
-          </div>
-
-          <div className="space-y-3">
-            <Label className="text-foreground">Valores</Label>
-            <div className="flex gap-2">
-              <Input
-                value={newValue}
-                onChange={(e) => setNewValue(e.target.value)}
-                placeholder="Adicionar novo valor"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddValue()}
-                className="bg-background border-input text-foreground"
-              />
-              <Button onClick={handleAddValue} size="sm">
-                Adicionar
-              </Button>
-            </div>
-            {editedCompany.values && editedCompany.values.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {editedCompany.values.map((value, index) => (
-                  <Badge key={index} variant="secondary" className="gap-1">
-                    {value}
-                    <button
-                      type="button"
-                      className="ml-1 hover:text-destructive"
-                      onClick={() => handleRemoveValue(index)}
-                    >
-                      ×
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 pt-4 border-t border-border">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSaveCompany} disabled={isLoading}>
-            <Save className="w-4 h-4 mr-2" />
-            {isLoading ? 'Salvando...' : 'Salvar'}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-};
 
 export const CompaniesPage: React.FC = () => {
   const { user, profile } = useAuth();
@@ -725,12 +511,16 @@ export const CompaniesPage: React.FC = () => {
           )}
         </div>
 
-        <EditCompanyDialog
-          company={selectedCompany}
-          open={isEditDialogOpen}
-          onOpenChange={setIsEditDialogOpen}
-          onCompanyUpdated={loadAllData}
-        />
+        {selectedCompany && isEditDialogOpen && (
+          <EditCompanyModal
+            company={selectedCompany}
+            onSave={() => {
+              setIsEditDialogOpen(false);
+              loadAllData();
+            }}
+            onCancel={() => setIsEditDialogOpen(false)}
+          />
+        )}
 
         {/* Modal de criação de empresa */}
         <CreateCompanyModal
