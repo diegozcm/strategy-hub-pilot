@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { CompanyDisplay } from '@/components/CompanyDisplay';
+import { useCompanyAIAccess } from '@/hooks/useCompanyAIAccess';
 
 interface DashboardHeaderProps {
   onToggleSidebar?: () => void;
@@ -23,6 +24,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
   const { user, profile, signOut, clearCompanySelection } = useAuth();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const { hasAIAccess } = useCompanyAIAccess();
 
   const handleSignOut = async () => {
     console.log('🚪 DashboardHeader: Starting logout process');
@@ -77,12 +79,14 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
           {/* Company Display */}
           <CompanyDisplay />
           
-          <NavLink to="/app/ai-copilot">
-            <Button variant="ghost" size="sm" className="flex items-center space-x-2">
-              <Brain className="h-4 w-4" />
-              <span className="hidden sm:block text-sm font-medium">Copilot HUB</span>
-            </Button>
-          </NavLink>
+          {hasAIAccess && (
+            <NavLink to="/app/ai-copilot">
+              <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                <Brain className="h-4 w-4" />
+                <span className="hidden sm:block text-sm font-medium">Copilot HUB</span>
+              </Button>
+            </NavLink>
+          )}
           
           
           <DropdownMenu>
