@@ -1438,20 +1438,6 @@ export const ProjectsPage: React.FC = () => {
                           </CardDescription>
                         </div>
                         <div className="flex flex-col items-end space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteProject(project.id, project.name);
-                              }}
-                              title="Deletar projeto"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
                           <Badge variant="secondary" className={`${getStatusColor(project.status)} text-white`}>
                             {getStatusText(project.status)}
                           </Badge>
