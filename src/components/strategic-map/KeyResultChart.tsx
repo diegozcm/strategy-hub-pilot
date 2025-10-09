@@ -39,13 +39,13 @@ export const KeyResultChart = ({
 
   const chartData = months.map(month => ({
     month: month.name,
-    previsto: monthlyTargets[month.key] || 0,
-    realizado: monthlyActual[month.key] || 0,
+    previsto: monthlyTargets[month.key] ?? 0,
+    realizado: monthlyActual[month.key] ?? 0,
   }));
 
   // Calcular totais para a tabela
   const calculateTotal = (data: Record<string, number>) => {
-    return Object.values(data).reduce((sum, value) => sum + (value || 0), 0);
+    return Object.values(data).reduce((sum, value) => sum + (value ?? 0), 0);
   };
 
   const targetTotal = calculateTotal(monthlyTargets);
@@ -156,46 +156,64 @@ export const KeyResultChart = ({
                     <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Previsto</TableCell>
                     {months.map(month => {
                       const isCurrentMonth = month.key === currentMonth;
-                      const value = monthlyTargets[month.key] || 0;
+                      const value = monthlyTargets[month.key] ?? 0;
+                      const hasValue = value !== 0 && value !== null && value !== undefined;
                       return (
                         <TableCell 
                           key={month.key} 
                           className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
                         >
-                          {value > 0 ? `${value.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
+                          {hasValue ? (
+                            <span className={value < 0 ? "text-red-600" : ""}>
+                              {value.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
+                            </span>
+                          ) : '-'}
                         </TableCell>
                       );
                     })}
                     <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
-                      {targetTotal > 0 ? `${targetTotal.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
+                      {targetTotal !== 0 ? (
+                        <span className={targetTotal < 0 ? "text-red-600" : ""}>
+                          {targetTotal.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
+                        </span>
+                      ) : '-'}
                     </TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Realizado</TableCell>
                     {months.map(month => {
                       const isCurrentMonth = month.key === currentMonth;
-                      const value = monthlyActual[month.key] || 0;
+                      const value = monthlyActual[month.key] ?? 0;
+                      const hasValue = value !== 0 && value !== null && value !== undefined;
                       
                       return (
                         <TableCell 
                           key={month.key} 
                           className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
                         >
-                          {value > 0 ? `${value.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
+                          {hasValue ? (
+                            <span className={value < 0 ? "text-red-600 font-semibold" : ""}>
+                              {value.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
+                            </span>
+                          ) : '-'}
                         </TableCell>
                       );
                     })}
                     <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
-                      {actualTotal > 0 ? `${actualTotal.toLocaleString('pt-BR')}${unit ? ` ${unit}` : ''}` : '-'}
+                      {actualTotal !== 0 ? (
+                        <span className={actualTotal < 0 ? "text-red-600" : ""}>
+                          {actualTotal.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
+                        </span>
+                      ) : '-'}
                     </TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">% Atingimento</TableCell>
                     {months.map(month => {
                       const isCurrentMonth = month.key === currentMonth;
-                      const value = monthlyActual[month.key] || 0;
-                      const target = monthlyTargets[month.key] || 0;
-                      const achievement = target > 0 ? (value / target) * 100 : 0;
+                      const value = monthlyActual[month.key] ?? 0;
+                      const target = monthlyTargets[month.key] ?? 0;
+                      const achievement = target !== 0 ? (value / target) * 100 : 0;
                       
                       const getAchievementColor = (percentage: number) => {
                         if (percentage >= 100) return "text-green-600 font-semibold";
@@ -208,7 +226,7 @@ export const KeyResultChart = ({
                           key={month.key} 
                           className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
                         >
-                          {target > 0 ? (
+                          {target !== 0 ? (
                             <span className={getAchievementColor(achievement)}>
                               {achievement.toFixed(0)}%
                             </span>
@@ -219,7 +237,7 @@ export const KeyResultChart = ({
                       );
                     })}
                     <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
-                      {targetTotal > 0 && actualTotal > 0 ? (
+                      {targetTotal !== 0 ? (
                         <span className={
                           ((actualTotal / targetTotal) * 100) >= 100 ? "text-green-600 font-semibold" :
                           ((actualTotal / targetTotal) * 100) >= 80 ? "text-yellow-600 font-semibold" :
