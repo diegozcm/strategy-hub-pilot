@@ -538,20 +538,21 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 
           {/* Content */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-6">
-              {activeTab === 'personal' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="firstName">Nome</Label>
-                      <Input
-                        id="firstName"
-                        value={editedUser.first_name || ''}
-                        onChange={(e) => setEditedUser({ ...editedUser, first_name: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="lastName">Sobrenome</Label>
+            <ScrollArea className="flex-1">
+              <div className="p-6">
+                {activeTab === 'personal' && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="firstName">Nome</Label>
+                        <Input
+                          id="firstName"
+                          value={editedUser.first_name || ''}
+                          onChange={(e) => setEditedUser({ ...editedUser, first_name: e.target.value })}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="lastName">Sobrenome</Label>
                       <Input
                         id="lastName"
                         value={editedUser.last_name || ''}
@@ -945,9 +946,10 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                 </div>
               )}
             </div>
+          </ScrollArea>
 
-            {/* Footer com botão de salvar */}
-            <div className="border-t p-4 bg-background">
+          {/* Footer com botão de salvar */}
+          <div className="border-t p-4 bg-background">
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={() => onOpenChange(false)}>
                   Cancelar
