@@ -173,7 +173,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2 pb-2 flex-shrink-0 px-6">
+          <div className="flex flex-wrap items-center gap-2 py-4 flex-shrink-0 px-6">
             <Button
               variant="outline"
               size="sm"
