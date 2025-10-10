@@ -54,11 +54,21 @@ const normalizedTargets: Record<string, number | null> =
 const normalizedActuals: Record<string, number | null> =
   Object.fromEntries(Object.entries(monthlyActual || {}).map(([k, v]) => [k, normalizeNumber(v as unknown)]));
 
-const chartData = months.map(month => ({
-  month: month.name,
-  previsto: normalizedTargets[month.key],
-  realizado: normalizedActuals[month.key],
-}));
+  const chartData = months.map(month => ({
+    month: month.name,
+    previsto: normalizedTargets[month.key],
+    realizado: normalizedActuals[month.key],
+  }));
+
+  // Calculate magnitudes for dual axis logic
+  const previstoVals = Object.values(normalizedTargets).filter(v => v !== null && Number.isFinite(v)) as number[];
+  const realizadoVals = Object.values(normalizedActuals).filter(v => v !== null && Number.isFinite(v)) as number[];
+  
+  const maxAbsPrev = previstoVals.length > 0 ? Math.max(...previstoVals.map(Math.abs)) : 0;
+  const maxAbsReal = realizadoVals.length > 0 ? Math.max(...realizadoVals.map(Math.abs)) : 0;
+  
+  const useDualAxis = maxAbsPrev > 0 && maxAbsReal > 0 && 
+    (Math.max(maxAbsPrev, maxAbsReal) / Math.min(maxAbsPrev, maxAbsReal)) >= 10;
 
   const calculateTotal = (data: Record<string, number | null | undefined>) => {
     return Object.values(data).reduce((sum, value) => {
@@ -74,7 +84,14 @@ const chartData = months.map(month => ({
   return (
     <Card className="mb-6">
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">Evolução Mensal - Previsto vs Realizado</CardTitle>
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-lg">Evolução Mensal - Previsto vs Realizado</CardTitle>
+          {useDualAxis && (
+            <Badge variant="outline" className="text-xs">
+              Escalas independentes
+            </Badge>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -98,17 +115,27 @@ const chartData = months.map(month => ({
         {viewMode === 'chart' ? (
           <div className="h-[270px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <LineChart data={chartData} margin={{ top: 20, right: useDualAxis ? 50 : 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
                   dataKey="month" 
                   className="text-xs fill-muted-foreground"
                 />
                 <YAxis 
+                  yAxisId="left"
                   className="text-xs fill-muted-foreground"
                   tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
                   domain={['auto', 'auto']}
                   includeHidden={true}
+                />
+                <YAxis 
+                  yAxisId="right"
+                  orientation="right"
+                  className="text-xs fill-muted-foreground"
+                  tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
+                  domain={['auto', 'auto']}
+                  includeHidden={true}
+                  hide={!useDualAxis}
                 />
                 <Tooltip 
                   formatter={(value: number | null, name: string) => [
@@ -129,10 +156,12 @@ const chartData = months.map(month => ({
                     </span>
                   )}
                 />
-                <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                <ReferenceLine y={0} yAxisId="left" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                {useDualAxis && <ReferenceLine y={0} yAxisId="right" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />}
                 <Line 
                   type="monotone" 
-                  dataKey="previsto" 
+                  dataKey="previsto"
+                  yAxisId="left"
                   stroke="hsl(var(--muted-foreground))" 
                   strokeWidth={2}
                   strokeDasharray="5 5"
@@ -142,7 +171,8 @@ const chartData = months.map(month => ({
                 />
                 <Line 
                   type="monotone" 
-                  dataKey="realizado" 
+                  dataKey="realizado"
+                  yAxisId={useDualAxis ? 'right' : 'left'}
                   stroke="hsl(var(--primary))" 
                   strokeWidth={3}
                   connectNulls={false}
