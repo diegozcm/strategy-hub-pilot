@@ -88,6 +88,7 @@ export const KeyResultChart = ({
                 <YAxis 
                   className="text-xs fill-muted-foreground"
                   tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
+                  domain={['auto', 'auto']}
                 />
                 <Tooltip 
                   formatter={(value: number, name: string) => [

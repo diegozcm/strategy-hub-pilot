@@ -44,7 +44,9 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
 
   // Calculate yearly actual based on aggregation type
   const calculateYearlyActual = (actuals: Record<string, number>) => {
-    const values = Object.values(actuals).filter(value => value > 0);
+    const values = Object.values(actuals).filter(value => 
+      value !== null && value !== undefined && !isNaN(value)
+    );
     if (values.length === 0) return 0;
 
     const aggregationType = keyResult?.aggregation_type || 'sum';
@@ -161,7 +163,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
             {months.map((month) => {
               const target = monthlyTargets[month.key] || 0;
               const actual = monthlyActual[month.key] || 0;
-              const percentage = target > 0 ? (actual / target) * 100 : 0;
+              const percentage = target !== 0 ? (actual / target) * 100 : 0;
 
               return (
                 <div key={month.key} className="grid grid-cols-5 gap-4 items-center p-3 border rounded-lg">

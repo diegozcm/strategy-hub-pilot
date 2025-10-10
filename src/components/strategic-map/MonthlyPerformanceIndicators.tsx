@@ -84,14 +84,14 @@ export const MonthlyPerformanceIndicators: React.FC<MonthlyPerformanceIndicators
             <TooltipContent side="top" className="text-xs">
               <div className="space-y-1">
                 <p className="font-semibold">{monthName}</p>
-                {target > 0 ? (
+                {target !== 0 ? (
                   <>
                     <p>Previsto: {Number(target).toFixed(1)}</p>
                     <p>Realizado: {Number(actual).toFixed(1)}</p>
                     <p className="font-semibold">Atingimento: {Number(progress).toFixed(1)}%</p>
                   </>
                 ) : (
-                  <p className="text-muted-foreground">Sem dados</p>
+                  <p className="text-muted-foreground">Sem dados para este mês</p>
                 )}
               </div>
             </TooltipContent>
