@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { RumoDashboard } from './RumoDashboard';
+import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
 
 interface KeyResultWithPillar {
   id: string;
@@ -699,7 +700,7 @@ export const DashboardHome: React.FC = () => {
                           <div className="flex-1 p-4 hover:bg-muted/50 transition-colors">
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
-                                <div className="space-y-1">
+                                <div className="space-y-2">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <h4 className="font-medium text-foreground">{kr.title}</h4>
                                     <Badge 
@@ -715,6 +716,12 @@ export const DashboardHome: React.FC = () => {
                                     </Badge>
                                   </div>
                                   <p className="text-sm text-muted-foreground">{kr.objective_title}</p>
+                                  <MonthlyPerformanceIndicators
+                                    monthlyTargets={kr.monthly_targets}
+                                    monthlyActual={kr.monthly_actual}
+                                    selectedYear={selectedYear}
+                                    size="sm"
+                                  />
                                 </div>
                               </div>
                               <div className="flex items-center gap-3 ml-4">

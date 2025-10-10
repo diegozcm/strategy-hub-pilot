@@ -9,28 +9,17 @@ interface MonthlyPerformanceIndicatorsProps {
   size?: 'sm' | 'md';
 }
 
-const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-const MONTH_NAMES = {
-  jan: 'Janeiro',
-  fev: 'Fevereiro',
-  mar: 'Março',
-  abr: 'Abril',
-  mai: 'Maio',
-  jun: 'Junho',
-  jul: 'Julho',
-  ago: 'Agosto',
-  set: 'Setembro',
-  out: 'Outubro',
-  nov: 'Novembro',
-  dez: 'Dezembro',
-};
+const MONTH_NAMES = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
 
 const getMonthPerformanceColor = (progress: number): string => {
-  if (progress > 105) return 'blue';      // Superado
-  if (progress >= 91) return 'green';     // No Alvo
-  if (progress >= 71) return 'yellow';    // Atenção
-  if (progress > 0) return 'red';         // Crítico
-  return 'gray';                          // Sem dados
+  if (progress > 105) return 'blue';    // Superado
+  if (progress >= 91) return 'green';   // No Alvo
+  if (progress >= 71) return 'yellow';  // Atenção
+  if (progress > 0) return 'red';       // Crítico
+  return 'gray';                        // Sem dados
 };
 
 const getIconByPerformance = (progress: number, size: number) => {
@@ -60,27 +49,33 @@ export const MonthlyPerformanceIndicators: React.FC<MonthlyPerformanceIndicators
   const iconSize = size === 'sm' ? 14 : 18;
 
   const monthlyData = useMemo(() => {
-    return MONTHS.map((month) => {
-      const target = monthlyTargets[month] || 0;
-      const actual = monthlyActual[month] || 0;
+    // Generate 12 months in YYYY-MM format for the selected year
+    return Array.from({ length: 12 }, (_, i) => {
+      const monthIndex = i + 1;
+      const monthKey = `${selectedYear}-${monthIndex.toString().padStart(2, '0')}`; // e.g., "2025-01"
+      const monthName = MONTH_NAMES[i];
+      
+      const target = monthlyTargets[monthKey] || 0;
+      const actual = monthlyActual[monthKey] || 0;
       const progress = target > 0 ? (actual / target) * 100 : 0;
       const color = getMonthPerformanceColor(progress);
 
       return {
-        month,
+        monthKey,
+        monthName,
         target,
         actual,
         progress,
         color,
       };
     });
-  }, [monthlyTargets, monthlyActual]);
+  }, [monthlyTargets, monthlyActual, selectedYear]);
 
   return (
     <TooltipProvider>
       <div className="flex gap-1 items-center flex-wrap">
-        {monthlyData.map(({ month, target, actual, progress }) => (
-          <Tooltip key={month}>
+        {monthlyData.map(({ monthKey, monthName, target, actual, progress }) => (
+          <Tooltip key={monthKey}>
             <TooltipTrigger asChild>
               <div className="cursor-help">
                 {getIconByPerformance(progress, iconSize)}
@@ -88,7 +83,7 @@ export const MonthlyPerformanceIndicators: React.FC<MonthlyPerformanceIndicators
             </TooltipTrigger>
             <TooltipContent side="top" className="text-xs">
               <div className="space-y-1">
-                <p className="font-semibold">{MONTH_NAMES[month as keyof typeof MONTH_NAMES]}</p>
+                <p className="font-semibold">{monthName}</p>
                 {target > 0 ? (
                   <>
                     <p>Previsto: {target.toFixed(1)}</p>
