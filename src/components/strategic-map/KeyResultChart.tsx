@@ -1,4 +1,4 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -37,24 +37,38 @@ export const KeyResultChart = ({
     { key: `${selectedYear}-12`, name: 'Dez' },
   ];
 
-  const chartData = months.map(month => ({
-    month: month.name,
-    previsto: monthlyTargets[month.key] !== undefined && monthlyTargets[month.key] !== null ? monthlyTargets[month.key] : null,
-    realizado: monthlyActual[month.key] !== undefined && monthlyActual[month.key] !== null ? monthlyActual[month.key] : null,
-  }));
+const normalizeNumber = (val: unknown): number | null => {
+  if (val === null || val === undefined) return null;
+  if (typeof val === 'number') return Number.isFinite(val) ? val : null;
+  if (typeof val === 'string') {
+    const cleaned = val.trim().replace(/\s+/g, '').replace(',', '.');
+    const num = Number(cleaned);
+    return Number.isFinite(num) ? num : null;
+  }
+  return null;
+};
 
-  // Calcular totais para a tabela
-  const calculateTotal = (data: Record<string, number>) => {
+const normalizedTargets: Record<string, number | null> =
+  Object.fromEntries(Object.entries(monthlyTargets || {}).map(([k, v]) => [k, normalizeNumber(v as unknown)]));
+
+const normalizedActuals: Record<string, number | null> =
+  Object.fromEntries(Object.entries(monthlyActual || {}).map(([k, v]) => [k, normalizeNumber(v as unknown)]));
+
+const chartData = months.map(month => ({
+  month: month.name,
+  previsto: normalizedTargets[month.key],
+  realizado: normalizedActuals[month.key],
+}));
+
+  const calculateTotal = (data: Record<string, number | null | undefined>) => {
     return Object.values(data).reduce((sum, value) => {
-      if (value !== null && value !== undefined && !isNaN(value)) {
-        return sum + value;
-      }
-      return sum;
+      const n = typeof value === 'number' ? value : Number(value as any);
+      return Number.isFinite(n) ? sum + n : sum;
     }, 0);
   };
 
-  const targetTotal = calculateTotal(monthlyTargets);
-  const actualTotal = calculateTotal(monthlyActual);
+  const targetTotal = calculateTotal(normalizedTargets);
+  const actualTotal = calculateTotal(normalizedActuals);
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
 
   return (
@@ -98,7 +112,7 @@ export const KeyResultChart = ({
                 />
                 <Tooltip 
                   formatter={(value: number | null, name: string) => [
-                    value !== null && value !== undefined ? `${value.toLocaleString('pt-BR')} ${unit}` : 'Sem dados', 
+                    value !== null && value !== undefined && Number.isFinite(Number(value)) ? `${Number(value).toLocaleString('pt-BR')} ${unit}` : 'Sem dados', 
                     name === 'previsto' ? 'Previsto' : 'Realizado'
                   ]}
                   labelFormatter={(label) => `Mês: ${label}`}
@@ -115,6 +129,7 @@ export const KeyResultChart = ({
                     </span>
                   )}
                 />
+                <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
                 <Line 
                   type="monotone" 
                   dataKey="previsto" 
@@ -165,8 +180,8 @@ export const KeyResultChart = ({
                     <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Previsto</TableCell>
                     {months.map(month => {
                       const isCurrentMonth = month.key === currentMonth;
-                      const value = monthlyTargets[month.key];
-                      const hasValue = value !== null && value !== undefined;
+                      const value = normalizedTargets[month.key];
+                      const hasValue = value !== null && value !== undefined && Number.isFinite(Number(value));
                       return (
                         <TableCell 
                           key={month.key} 
@@ -192,8 +207,8 @@ export const KeyResultChart = ({
                     <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Realizado</TableCell>
                     {months.map(month => {
                       const isCurrentMonth = month.key === currentMonth;
-                      const value = monthlyActual[month.key];
-                      const hasValue = value !== null && value !== undefined;
+                      const value = normalizedActuals[month.key];
+                      const hasValue = value !== null && value !== undefined && Number.isFinite(Number(value));
                       
                       return (
                         <TableCell 
@@ -220,9 +235,11 @@ export const KeyResultChart = ({
                     <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">% Atingimento</TableCell>
                     {months.map(month => {
                       const isCurrentMonth = month.key === currentMonth;
-                      const value = monthlyActual[month.key] ?? 0;
-                      const target = monthlyTargets[month.key] ?? 0;
-                      const achievement = target !== 0 ? (value / target) * 100 : 0;
+                      const value = normalizedActuals[month.key];
+                      const target = normalizedTargets[month.key];
+                      const v = Number.isFinite(Number(value)) ? Number(value) : 0;
+                      const t = Number.isFinite(Number(target)) ? Number(target) : 0;
+                      const achievement = t !== 0 ? (v / t) * 100 : 0;
                       
                       const getAchievementColor = (percentage: number) => {
                         if (percentage >= 100) return "text-green-600 font-semibold";
@@ -235,7 +252,7 @@ export const KeyResultChart = ({
                           key={month.key} 
                           className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
                         >
-                          {target !== 0 ? (
+                          {t !== 0 ? (
                             <span className={getAchievementColor(achievement)}>
                               {achievement.toFixed(0)}%
                             </span>
