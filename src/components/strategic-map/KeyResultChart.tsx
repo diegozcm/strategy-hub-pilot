@@ -39,13 +39,18 @@ export const KeyResultChart = ({
 
   const chartData = months.map(month => ({
     month: month.name,
-    previsto: monthlyTargets[month.key] ?? 0,
-    realizado: monthlyActual[month.key] ?? 0,
+    previsto: monthlyTargets[month.key] !== undefined && monthlyTargets[month.key] !== null ? monthlyTargets[month.key] : null,
+    realizado: monthlyActual[month.key] !== undefined && monthlyActual[month.key] !== null ? monthlyActual[month.key] : null,
   }));
 
   // Calcular totais para a tabela
   const calculateTotal = (data: Record<string, number>) => {
-    return Object.values(data).reduce((sum, value) => sum + (value ?? 0), 0);
+    return Object.values(data).reduce((sum, value) => {
+      if (value !== null && value !== undefined && !isNaN(value)) {
+        return sum + value;
+      }
+      return sum;
+    }, 0);
   };
 
   const targetTotal = calculateTotal(monthlyTargets);
@@ -89,10 +94,11 @@ export const KeyResultChart = ({
                   className="text-xs fill-muted-foreground"
                   tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
                   domain={['auto', 'auto']}
+                  includeHidden={true}
                 />
                 <Tooltip 
-                  formatter={(value: number, name: string) => [
-                    `${value.toLocaleString('pt-BR')} ${unit}`, 
+                  formatter={(value: number | null, name: string) => [
+                    value !== null && value !== undefined ? `${value.toLocaleString('pt-BR')} ${unit}` : 'Sem dados', 
                     name === 'previsto' ? 'Previsto' : 'Realizado'
                   ]}
                   labelFormatter={(label) => `Mês: ${label}`}
@@ -115,6 +121,7 @@ export const KeyResultChart = ({
                   stroke="hsl(var(--muted-foreground))" 
                   strokeWidth={2}
                   strokeDasharray="5 5"
+                  connectNulls={false}
                   dot={{ fill: 'hsl(var(--muted-foreground))', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, fill: 'hsl(var(--muted-foreground))' }}
                 />
@@ -123,6 +130,7 @@ export const KeyResultChart = ({
                   dataKey="realizado" 
                   stroke="hsl(var(--primary))" 
                   strokeWidth={3}
+                  connectNulls={false}
                   dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
                 />
@@ -157,8 +165,8 @@ export const KeyResultChart = ({
                     <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Previsto</TableCell>
                     {months.map(month => {
                       const isCurrentMonth = month.key === currentMonth;
-                      const value = monthlyTargets[month.key] ?? 0;
-                      const hasValue = value !== 0 && value !== null && value !== undefined;
+                      const value = monthlyTargets[month.key];
+                      const hasValue = value !== null && value !== undefined;
                       return (
                         <TableCell 
                           key={month.key} 
@@ -184,8 +192,8 @@ export const KeyResultChart = ({
                     <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Realizado</TableCell>
                     {months.map(month => {
                       const isCurrentMonth = month.key === currentMonth;
-                      const value = monthlyActual[month.key] ?? 0;
-                      const hasValue = value !== 0 && value !== null && value !== undefined;
+                      const value = monthlyActual[month.key];
+                      const hasValue = value !== null && value !== undefined;
                       
                       return (
                         <TableCell 
