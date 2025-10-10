@@ -115,10 +115,10 @@ export const useRumoCalculations = (
 };
 
 export const getPerformanceColor = (progress: number): string => {
-  if (progress >= 100) return 'excellent'; // Blue
-  if (progress >= 80) return 'success'; // Green
-  if (progress >= 50) return 'warning'; // Yellow
-  return 'critical'; // Red
+  if (progress > 105) return 'excellent';  // Blue - Superado
+  if (progress >= 91) return 'success';    // Green - No Alvo
+  if (progress >= 71) return 'warning';    // Yellow - Atenção
+  return 'critical';                       // Red - Crítico
 };
 
 export const getPerformanceStyles = (performance: string): string => {

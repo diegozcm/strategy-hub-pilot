@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Target } from 'lucide-react';
 import { ObjectiveDetailModal } from '@/components/objectives/ObjectiveDetailModal';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
+import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
@@ -166,16 +167,23 @@ export const RumoObjectiveBlock = ({
                     const krPerf = getPerformanceColor(krProg);
                     
                     return (
-                      <div key={kr.id} className="text-xs flex justify-between items-center gap-2">
-                        <span className="flex-1 line-clamp-1">{kr.title}</span>
-                        <span className={`font-bold ${
-                          krPerf === 'excellent' ? 'text-blue-500' :
-                          krPerf === 'success' ? 'text-green-500' :
-                          krPerf === 'warning' ? 'text-yellow-500' :
-                          'text-red-500'
-                        }`}>
-                          {krProg.toFixed(1)}%
-                        </span>
+                      <div key={kr.id} className="text-xs space-y-1">
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="flex-1 line-clamp-1">{kr.title}</span>
+                          <span className={`font-bold ${
+                            krPerf === 'excellent' ? 'text-blue-500' :
+                            krPerf === 'success' ? 'text-green-500' :
+                            krPerf === 'warning' ? 'text-yellow-500' :
+                            'text-red-500'
+                          }`}>
+                            {krProg.toFixed(1)}%
+                          </span>
+                        </div>
+                        <MonthlyPerformanceIndicators
+                          monthlyTargets={kr.monthly_targets}
+                          monthlyActual={kr.monthly_actual}
+                          size="sm"
+                        />
                       </div>
                     );
                   })}

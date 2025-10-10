@@ -2,6 +2,7 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { KeyResult } from '@/types/strategic-map';
+import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
 
 interface KRCardProps {
   keyResult: KeyResult;
@@ -59,6 +60,15 @@ export const KRCard: React.FC<KRCardProps> = ({
           <div 
             className={`h-full transition-all duration-300 rounded-full ${getProgressBarColor(progress)}`}
             style={{ width: `${progress}%` }}
+          />
+        </div>
+
+        {/* Indicadores mensais */}
+        <div className="pt-2">
+          <MonthlyPerformanceIndicators
+            monthlyTargets={keyResult.monthly_targets}
+            monthlyActual={keyResult.monthly_actual}
+            size="sm"
           />
         </div>
 
