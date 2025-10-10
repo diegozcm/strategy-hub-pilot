@@ -5,3 +5,4 @@ export { ActionCard } from './ActionCard';
 export { ActionFormModal } from './ActionFormModal';
 export { FCAActionsTable } from './FCAActionsTable';
 export { KRFCAUnifiedModal } from './KRFCAUnifiedModal';
+export { KeyResultTestChart } from './KeyResultTestChart';
