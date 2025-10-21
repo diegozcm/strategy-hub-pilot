@@ -136,7 +136,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1100px] max-h-[95vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[900px] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Atualizar Valores - {keyResult.title}</DialogTitle>
           <DialogDescription>
@@ -153,15 +153,15 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
           </div>
 
           <div className="space-y-3">
-            <div className="grid grid-cols-[150px_180px_240px_140px_50px] gap-4 p-3 bg-muted/30 rounded-lg font-medium text-sm">
+            <div className="grid grid-cols-[150px_180px_240px_140px_50px] gap-4 p-3 bg-muted/30 rounded-lg font-medium text-sm items-center">
               <div>Mês</div>
-              <div className="text-center">Meta ({selectedYear})</div>
+              <div className="text-center">Meta</div>
               <div className="text-center">Realizado</div>
               <div className="text-center">% Atingimento</div>
-              <div className="text-center flex flex-col items-center gap-1">
-                <Label className="text-xs font-medium">Ano</Label>
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-xs">Ano</span>
                 <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                  <SelectTrigger className="h-7 w-[50px] text-xs px-1">
+                  <SelectTrigger className="h-7 w-[70px] text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
