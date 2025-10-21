@@ -90,8 +90,23 @@ const normalizedActuals: Record<string, number | null> =
     }, 0);
   };
 
-  const targetTotal = calculateTotal(normalizedTargets);
-  const actualTotal = calculateTotal(normalizedActuals);
+  // Calculate totals only for months with valid targets (target > 0)
+  const monthsWithData = months.filter(month => {
+    const target = normalizedTargets[month.key];
+    return target !== null && target !== undefined && Number.isFinite(Number(target)) && Number(target) > 0;
+  });
+
+  const targetTotal = monthsWithData.reduce((sum, month) => {
+    const value = normalizedTargets[month.key];
+    const n = typeof value === 'number' ? value : Number(value as any);
+    return Number.isFinite(n) ? sum + n : sum;
+  }, 0);
+
+  const actualTotal = monthsWithData.reduce((sum, month) => {
+    const value = normalizedActuals[month.key];
+    const n = typeof value === 'number' ? value : Number(value as any);
+    return Number.isFinite(n) ? sum + n : sum;
+  }, 0);
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
 
   return (
