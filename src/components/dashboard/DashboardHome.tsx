@@ -408,14 +408,17 @@ export const DashboardHome: React.FC = () => {
   };
 
   const getMonthlyPerformance = (kr: KeyResultWithPillar, monthKey: string) => {
-    const target = kr.monthly_targets?.[monthKey] || 0;
-    const actual = kr.monthly_actual?.[monthKey] || 0;
+    const target = kr.monthly_targets?.[monthKey];
+    const actual = kr.monthly_actual?.[monthKey];
     
-    // Se não há target definido, não há dados para calcular
-    if (target === 0) {
+    const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
+    const hasActual = typeof actual === 'number' && Number.isFinite(actual);
+    
+    // Se não há target válido ou actual, não há dados para calcular
+    if (!hasTarget || !hasActual) {
       return {
-        target,
-        actual,
+        target: hasTarget ? target : null,
+        actual: hasActual ? actual : null,
         percentage: null
       };
     }
@@ -452,10 +455,13 @@ export const DashboardHome: React.FC = () => {
     const months = getMonthsOfYear();
     const aggregationType = kr.aggregation_type || 'sum';
     
-    // Coletar apenas valores mensais com targets definidos (meses com dados reais)
+    // Coletar apenas valores mensais com targets definidos E actual presente
     const monthsWithData = months.filter(month => {
-      const target = kr.monthly_targets?.[month.key] || 0;
-      return target > 0;
+      const target = kr.monthly_targets?.[month.key];
+      const actual = kr.monthly_actual?.[month.key];
+      const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
+      const hasActual = typeof actual === 'number' && Number.isFinite(actual);
+      return hasTarget && hasActual;
     });
     
     const targetValues = monthsWithData.map(month => kr.monthly_targets?.[month.key] || 0);
@@ -464,7 +470,7 @@ export const DashboardHome: React.FC = () => {
     const totalTarget = calculateAggregatedValue(targetValues, aggregationType);
     const totalActual = calculateAggregatedValue(actualValues, aggregationType);
     const totalPercentage = totalTarget > 0 
-      ? Math.round(calculateKRStatus(totalActual, totalTarget, kr.target_direction || 'maximize').percentage)
+      ? calculateKRStatus(totalActual, totalTarget, kr.target_direction || 'maximize').percentage
       : null;
     
     return {
@@ -820,7 +826,7 @@ export const DashboardHome: React.FC = () => {
                                 </TableHeader>
                                 <TableBody>
                                   <TableRow>
-                                    <TableCell className="font-medium bg-white">Previsto</TableCell>
+                                     <TableCell className="font-medium bg-white">Previsto</TableCell>
                                      {months.map(month => {
                                        const performance = getMonthlyPerformance(kr, month.key);
                                        const isCurrentMonth = month.key === currentMonth && selectedYear === currentYear;
@@ -829,7 +835,7 @@ export const DashboardHome: React.FC = () => {
                                            key={month.key} 
                                            className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-white"}`}
                                          >
-                                           {performance.target || '-'}
+                                           {performance.target !== null ? performance.target : '-'}
                                          </TableCell>
                                       );
                                     })}
@@ -847,7 +853,7 @@ export const DashboardHome: React.FC = () => {
                                            key={month.key} 
                                            className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-white"}`}
                                          >
-                                           {performance.actual || '-'}
+                                           {performance.actual !== null ? performance.actual : '-'}
                                          </TableCell>
                                        );
                                      })}
@@ -875,15 +881,15 @@ export const DashboardHome: React.FC = () => {
                                          </TableCell>
                                        );
                                      })}
-                                      <TableCell className="text-center bg-muted/50 font-semibold">
-                                        {getAggregatedTotals(kr).percentage !== null ? (
-                                          <span className={getStatusColor(getAggregatedTotals(kr).percentage)}>
-                                            {getAggregatedTotals(kr).percentage.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
-                                          </span>
-                                        ) : (
-                                          <span className="text-gray-400">-</span>
-                                        )}
-                                      </TableCell>
+                                       <TableCell className="text-center bg-muted/50 font-semibold">
+                                         {getAggregatedTotals(kr).percentage !== null ? (
+                                           <span className={getStatusColor(getAggregatedTotals(kr).percentage)}>
+                                             {getAggregatedTotals(kr).percentage.toFixed(1)}%
+                                           </span>
+                                         ) : (
+                                           <span className="text-gray-400">-</span>
+                                         )}
+                                       </TableCell>
                                    </TableRow>
                                 </TableBody>
                               </Table>
