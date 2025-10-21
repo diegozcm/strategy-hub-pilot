@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { KeyResult } from '@/types/strategic-map';
 import { useToast } from '@/hooks/use-toast';
 import { X } from 'lucide-react';
+import { calculateKRStatus } from '@/lib/krHelpers';
 
 interface KRUpdateValuesModalProps {
   keyResult: KeyResult | null;
@@ -182,7 +183,10 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
             {months.map((month) => {
               const target = monthlyTargets[month.key] || 0;
               const actual = monthlyActual[month.key] ?? null;
-              const percentage = actual !== null && target !== 0 ? (actual / target) * 100 : null;
+              const status = actual !== null && target !== 0 
+                ? calculateKRStatus(actual, target, keyResult.target_direction || 'maximize')
+                : null;
+              const percentage = status?.percentage ?? null;
 
               return (
                 <div key={month.key} className="grid grid-cols-[150px_180px_240px_140px_50px] gap-4 items-center p-3 border rounded-lg">
@@ -244,12 +248,8 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
                     </Button>
                   </div>
                   <div className="text-center">
-                    {percentage !== null ? (
-                      <span className={`text-sm font-medium ${
-                        percentage >= 100 ? 'text-green-600' :
-                        percentage >= 80 ? 'text-yellow-600' :
-                        'text-red-600'
-                      }`}>
+                    {percentage !== null && status ? (
+                      <span className={`text-sm font-medium ${status.color}`}>
                         {percentage.toFixed(1)}%
                       </span>
                     ) : (
