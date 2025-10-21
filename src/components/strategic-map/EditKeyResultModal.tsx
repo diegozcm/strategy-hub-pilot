@@ -154,20 +154,42 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
     saveAggregationType(newType);
   };
 
+  // Inicializar dados quando keyResult mudar
   useEffect(() => {
-    if (keyResult.monthly_actual) {
-      setMonthlyActual(keyResult.monthly_actual as Record<string, number>);
-      setOriginalMonthlyActual(keyResult.monthly_actual as Record<string, number>);
-    }
-    if (keyResult.monthly_targets) {
-      setMonthlyTargets(keyResult.monthly_targets as Record<string, number>);
-      setOriginalMonthlyTargets(keyResult.monthly_targets as Record<string, number>);
-    }
-    // Carrega o tipo de agregação salvo ou usa 'sum' como padrão
     if (keyResult.aggregation_type) {
       setAggregationType(keyResult.aggregation_type);
     }
   }, [keyResult]);
+
+  // Filtrar dados do ano selecionado quando o ano mudar
+  useEffect(() => {
+    if (keyResult) {
+      // Filtrar monthly_actual para o ano selecionado
+      const filteredActual: Record<string, number> = {};
+      if (keyResult.monthly_actual) {
+        Object.entries(keyResult.monthly_actual as Record<string, number>).forEach(([key, value]) => {
+          if (key.startsWith(`${selectedYear}-`)) {
+            filteredActual[key] = value;
+          }
+        });
+      }
+      
+      // Filtrar monthly_targets para o ano selecionado
+      const filteredTargets: Record<string, number> = {};
+      if (keyResult.monthly_targets) {
+        Object.entries(keyResult.monthly_targets as Record<string, number>).forEach(([key, value]) => {
+          if (key.startsWith(`${selectedYear}-`)) {
+            filteredTargets[key] = value;
+          }
+        });
+      }
+      
+      setMonthlyActual(filteredActual);
+      setMonthlyTargets(filteredTargets);
+      setOriginalMonthlyActual(filteredActual);
+      setOriginalMonthlyTargets(filteredTargets);
+    }
+  }, [selectedYear, keyResult]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

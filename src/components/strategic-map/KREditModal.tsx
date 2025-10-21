@@ -158,10 +158,26 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         objective_id: keyResult.objective_id || 'none'
       });
       
-      setMonthlyTargets(keyResult.monthly_targets as Record<string, number> || {});
       setAggregationType(keyResult.aggregation_type || 'sum');
     }
   }, [keyResult]);
+
+  // Filtrar dados do ano selecionado quando o ano mudar
+  useEffect(() => {
+    if (keyResult) {
+      // Filtrar monthly_targets para o ano selecionado
+      const filteredTargets: Record<string, number> = {};
+      if (keyResult.monthly_targets) {
+        Object.entries(keyResult.monthly_targets as Record<string, number>).forEach(([key, value]) => {
+          if (key.startsWith(`${selectedYear}-`)) {
+            filteredTargets[key] = value;
+          }
+        });
+      }
+      
+      setMonthlyTargets(filteredTargets);
+    }
+  }, [selectedYear, keyResult]);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
