@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { BarChart3, TableIcon } from 'lucide-react';
 import { useState } from 'react';
 
@@ -183,132 +182,130 @@ const normalizedActuals: Record<string, number | null> =
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="rounded-md border">
-            <ScrollArea className="w-full overflow-x-auto">
-              <Table className="relative">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-32 sticky left-0 bg-background z-10 border-r">Indicador</TableHead>
-                    {months.map(month => {
-                      const isCurrentMonth = month.key === currentMonth;
-                      return (
-                        <TableHead key={month.key} className="text-center min-w-20">
-                          {month.name}
-                          {isCurrentMonth && (
-                            <span className="block text-xs text-primary">(atual)</span>
-                          )}
-                        </TableHead>
-                      );
-                    })}
-                    <TableHead className="text-center min-w-24 bg-muted font-semibold">
-                      Total
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Previsto</TableCell>
-                    {months.map(month => {
-                      const isCurrentMonth = month.key === currentMonth;
-                      const value = normalizedTargets[month.key];
-                      const hasValue = value !== null && value !== undefined && Number.isFinite(Number(value));
-                      return (
-                        <TableCell 
-                          key={month.key} 
-                          className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
-                        >
-                          {hasValue ? (
-                            <span className={value < 0 ? "text-red-600" : ""}>
-                              {value.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
-                            </span>
-                          ) : '-'}
-                        </TableCell>
-                      );
-                    })}
-                    <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
-                      {targetTotal !== 0 ? (
-                        <span className={targetTotal < 0 ? "text-red-600" : ""}>
-                          {targetTotal.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
-                        </span>
-                      ) : '-'}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Realizado</TableCell>
-                    {months.map(month => {
-                      const isCurrentMonth = month.key === currentMonth;
-                      const value = normalizedActuals[month.key];
-                      const hasValue = value !== null && value !== undefined && Number.isFinite(Number(value));
-                      
-                      return (
-                        <TableCell 
-                          key={month.key} 
-                          className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
-                        >
-                          {hasValue ? (
-                            <span className={value < 0 ? "text-red-600 font-semibold" : ""}>
-                              {value.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
-                            </span>
-                          ) : '-'}
-                        </TableCell>
-                      );
-                    })}
-                    <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
-                      {actualTotal !== 0 ? (
-                        <span className={actualTotal < 0 ? "text-red-600" : ""}>
-                          {actualTotal.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
-                        </span>
-                      ) : '-'}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">% Atingimento</TableCell>
-                    {months.map(month => {
-                      const isCurrentMonth = month.key === currentMonth;
-                      const value = normalizedActuals[month.key];
-                      const target = normalizedTargets[month.key];
-                      const v = Number.isFinite(Number(value)) ? Number(value) : 0;
-                      const t = Number.isFinite(Number(target)) ? Number(target) : 0;
-                      const achievement = t !== 0 ? (v / t) * 100 : 0;
-                      
-                      const getAchievementColor = (percentage: number) => {
-                        if (percentage >= 100) return "text-green-600 font-semibold";
-                        if (percentage >= 80) return "text-yellow-600 font-semibold";
-                        return "text-red-600 font-semibold";
-                      };
-                      
-                      return (
-                        <TableCell 
-                          key={month.key} 
-                          className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
-                        >
-                          {t !== 0 ? (
-                            <span className={getAchievementColor(achievement)}>
-                              {achievement.toFixed(0)}%
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          )}
-                        </TableCell>
-                      );
-                    })}
-                    <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
-                      {targetTotal !== 0 ? (
-                        <span className={
-                          ((actualTotal / targetTotal) * 100) >= 100 ? "text-green-600 font-semibold" :
-                          ((actualTotal / targetTotal) * 100) >= 80 ? "text-yellow-600 font-semibold" :
-                          "text-red-600 font-semibold"
-                        }>
-                          {((actualTotal / targetTotal) * 100).toFixed(0)}%
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </ScrollArea>
+          <div className="rounded-md border overflow-x-auto">
+            <Table className="relative">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-32 sticky left-0 bg-background z-10 border-r">Indicador</TableHead>
+                  {months.map(month => {
+                    const isCurrentMonth = month.key === currentMonth;
+                    return (
+                      <TableHead key={month.key} className="text-center min-w-20">
+                        {month.name}
+                        {isCurrentMonth && (
+                          <span className="block text-xs text-primary">(atual)</span>
+                        )}
+                      </TableHead>
+                    );
+                  })}
+                  <TableHead className="text-center min-w-24 bg-muted font-semibold">
+                    Total
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Previsto</TableCell>
+                  {months.map(month => {
+                    const isCurrentMonth = month.key === currentMonth;
+                    const value = normalizedTargets[month.key];
+                    const hasValue = value !== null && value !== undefined && Number.isFinite(Number(value));
+                    return (
+                      <TableCell 
+                        key={month.key} 
+                        className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
+                      >
+                        {hasValue ? (
+                          <span className={value < 0 ? "text-red-600" : ""}>
+                            {value.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
+                          </span>
+                        ) : '-'}
+                      </TableCell>
+                    );
+                  })}
+                  <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
+                    {targetTotal !== 0 ? (
+                      <span className={targetTotal < 0 ? "text-red-600" : ""}>
+                        {targetTotal.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
+                      </span>
+                    ) : '-'}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Realizado</TableCell>
+                  {months.map(month => {
+                    const isCurrentMonth = month.key === currentMonth;
+                    const value = normalizedActuals[month.key];
+                    const hasValue = value !== null && value !== undefined && Number.isFinite(Number(value));
+                    
+                    return (
+                      <TableCell 
+                        key={month.key} 
+                        className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
+                      >
+                        {hasValue ? (
+                          <span className={value < 0 ? "text-red-600 font-semibold" : ""}>
+                            {value.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
+                          </span>
+                        ) : '-'}
+                      </TableCell>
+                    );
+                  })}
+                  <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
+                    {actualTotal !== 0 ? (
+                      <span className={actualTotal < 0 ? "text-red-600" : ""}>
+                        {actualTotal.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
+                      </span>
+                    ) : '-'}
+                  </TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">% Atingimento</TableCell>
+                  {months.map(month => {
+                    const isCurrentMonth = month.key === currentMonth;
+                    const value = normalizedActuals[month.key];
+                    const target = normalizedTargets[month.key];
+                    const v = Number.isFinite(Number(value)) ? Number(value) : 0;
+                    const t = Number.isFinite(Number(target)) ? Number(target) : 0;
+                    const achievement = t !== 0 ? (v / t) * 100 : 0;
+                    
+                    const getAchievementColor = (percentage: number) => {
+                      if (percentage >= 100) return "text-green-600 font-semibold";
+                      if (percentage >= 80) return "text-yellow-600 font-semibold";
+                      return "text-red-600 font-semibold";
+                    };
+                    
+                    return (
+                      <TableCell 
+                        key={month.key} 
+                        className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
+                      >
+                        {t !== 0 ? (
+                          <span className={getAchievementColor(achievement)}>
+                            {achievement.toFixed(0)}%
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </TableCell>
+                    );
+                  })}
+                  <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
+                    {targetTotal !== 0 ? (
+                      <span className={
+                        ((actualTotal / targetTotal) * 100) >= 100 ? "text-green-600 font-semibold" :
+                        ((actualTotal / targetTotal) * 100) >= 80 ? "text-yellow-600 font-semibold" :
+                        "text-red-600 font-semibold"
+                      }>
+                        {((actualTotal / targetTotal) * 100).toFixed(0)}%
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
           </div>
         )}
       </CardContent>
