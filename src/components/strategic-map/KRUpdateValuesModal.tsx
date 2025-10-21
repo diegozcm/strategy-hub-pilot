@@ -171,7 +171,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
           </div>
 
           <div className="space-y-3">
-            <div className="grid grid-cols-[150px_180px_1fr_140px_100px] gap-4 p-3 bg-muted/30 rounded-lg font-medium text-sm">
+            <div className="grid grid-cols-[150px_180px_240px_140px_100px] gap-4 p-3 bg-muted/30 rounded-lg font-medium text-sm">
               <div>Mês</div>
               <div className="text-center">Meta ({selectedYear})</div>
               <div className="text-center">Realizado</div>
@@ -185,7 +185,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
               const percentage = actual !== null && target !== 0 ? (actual / target) * 100 : null;
 
               return (
-                <div key={month.key} className="grid grid-cols-[150px_180px_1fr_140px_100px] gap-4 items-center p-3 border rounded-lg">
+                <div key={month.key} className="grid grid-cols-[150px_180px_240px_140px_100px] gap-4 items-center p-3 border rounded-lg">
                   <div className="font-medium text-sm">
                     {month.name}
                   </div>
