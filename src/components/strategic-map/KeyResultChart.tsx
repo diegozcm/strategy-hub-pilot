@@ -90,10 +90,13 @@ const normalizedActuals: Record<string, number | null> =
     }, 0);
   };
 
-  // Calculate totals only for months with valid targets (target > 0)
+  // Calculate totals only for months with valid targets AND actual data present
   const monthsWithData = months.filter(month => {
     const target = normalizedTargets[month.key];
-    return target !== null && target !== undefined && Number.isFinite(Number(target)) && Number(target) > 0;
+    const actual = normalizedActuals[month.key];
+    const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
+    const hasActual = typeof actual === 'number' && Number.isFinite(actual);
+    return hasTarget && hasActual;
   });
 
   const targetTotal = monthsWithData.reduce((sum, month) => {
@@ -312,12 +315,12 @@ const normalizedActuals: Record<string, number | null> =
                   <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">% Atingimento</TableCell>
                   {months.map(month => {
                     const isCurrentMonth = month.key === currentMonth;
-                    const value = normalizedActuals[month.key];
+                    const actual = normalizedActuals[month.key];
                     const target = normalizedTargets[month.key];
-                    const v = Number.isFinite(Number(value)) ? Number(value) : 0;
-                    const t = Number.isFinite(Number(target)) ? Number(target) : 0;
+                    const hasActual = typeof actual === 'number' && Number.isFinite(actual);
+                    const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
                     
-                    const status = t !== 0 ? calculateKRStatus(v, t, targetDirection) : null;
+                    const status = hasActual && hasTarget ? calculateKRStatus(actual, target, targetDirection) : null;
                     
                     return (
                       <TableCell 
@@ -340,7 +343,7 @@ const normalizedActuals: Record<string, number | null> =
                         const totalStatus = calculateKRStatus(actualTotal, targetTotal, targetDirection);
                         return (
                           <span className={`${totalStatus.color} font-semibold`}>
-                            {totalStatus.percentage.toFixed(0)}%
+                            {totalStatus.percentage.toFixed(1)}%
                           </span>
                         );
                       })()
