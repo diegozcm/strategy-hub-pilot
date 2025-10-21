@@ -12,7 +12,7 @@ import { KRStatusReportModal } from './KRStatusReportModal';
 import { KRInitiativesModal } from './KRInitiativesModal';
 import { KREditModal } from './KREditModal';
 import { KRUpdateValuesModal } from './KRUpdateValuesModal';
-import { getDirectionLabel } from '@/lib/krHelpers';
+import { getDirectionLabel, calculateKRStatus } from '@/lib/krHelpers';
 
 import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -111,7 +111,13 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
 
   const yearlyTarget = calculateYearlyTarget(monthlyTargets);
   const yearlyActual = calculateYearlyActual(monthlyActual);
-  const achievementPercentage = yearlyTarget > 0 ? (yearlyActual / yearlyTarget) * 100 : 0;
+  const achievementPercentage = yearlyTarget > 0 
+    ? calculateKRStatus(
+        yearlyActual, 
+        yearlyTarget, 
+        (currentKeyResult.target_direction as 'maximize' | 'minimize') || 'maximize'
+      ).percentage
+    : 0;
 
   const getAggregationTypeText = (type: string) => {
     switch (type) {
