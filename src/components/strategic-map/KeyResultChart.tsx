@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { BarChart3, TableIcon } from 'lucide-react';
 import { useState } from 'react';
 
@@ -11,15 +13,24 @@ interface KeyResultChartProps {
   monthlyActual: Record<string, number>;
   unit: string;
   selectedYear: number;
+  onYearChange?: (year: number) => void;
 }
 
 export const KeyResultChart = ({ 
   monthlyTargets, 
   monthlyActual, 
   unit, 
-  selectedYear 
+  selectedYear,
+  onYearChange 
 }: KeyResultChartProps) => {
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+  
+  // Generate year options (from 2020 to current year + 5)
+  const currentYear = new Date().getFullYear();
+  const yearOptions = [];
+  for (let year = 2020; year <= currentYear + 5; year++) {
+    yearOptions.push(year);
+  }
   
   const months = [
     { key: `${selectedYear}-01`, name: 'Jan' },
@@ -91,23 +102,43 @@ const normalizedActuals: Record<string, number | null> =
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setViewMode('chart')}
-            className={`h-8 w-8 ${viewMode === 'chart' ? 'bg-accent' : ''}`}
-          >
-            <BarChart3 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setViewMode('table')}
-            className={`h-8 w-8 ${viewMode === 'table' ? 'bg-accent' : ''}`}
-          >
-            <TableIcon className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Label className="text-sm font-medium whitespace-nowrap">Ano:</Label>
+            <Select 
+              value={selectedYear.toString()} 
+              onValueChange={(value) => onYearChange?.(parseInt(value))}
+            >
+              <SelectTrigger className="w-24 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {yearOptions.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setViewMode('chart')}
+              className={`h-8 w-8 ${viewMode === 'chart' ? 'bg-accent' : ''}`}
+            >
+              <BarChart3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setViewMode('table')}
+              className={`h-8 w-8 ${viewMode === 'table' ? 'bg-accent' : ''}`}
+            >
+              <TableIcon className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

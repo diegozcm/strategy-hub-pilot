@@ -247,6 +247,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
           monthlyActual={monthlyActual}
           unit={keyResult.unit || ''}
           selectedYear={selectedYear}
+          onYearChange={setSelectedYear}
         />
         
         <form onSubmit={handleSubmit} className="space-y-4">
