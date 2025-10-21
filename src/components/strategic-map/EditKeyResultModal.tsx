@@ -95,6 +95,23 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
     }
   };
 
+  // Formata número para padrão brasileiro (xxx.xxx.xxx,xx)
+  const formatBrazilianNumber = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) return '';
+    return value.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  // Remove formatação e converte para número
+  const parseBrazilianNumber = (value: string): number | null => {
+    if (!value || value.trim() === '') return null;
+    const cleaned = value.replace(/\./g, '').replace(',', '.');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? null : num;
+  };
+
   // Função para salvar o tipo de agregação
   const saveAggregationType = async (newType: 'sum' | 'average' | 'max' | 'min') => {
     try {
@@ -245,13 +262,13 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
                 <div>
                   <Label className="text-sm font-medium">Meta Anual</Label>
                   <p className="text-lg font-semibold">
-                    {calculateYearlyTarget(monthlyTargets).toFixed(2)} {keyResult.unit}
+                    {formatBrazilianNumber(calculateYearlyTarget(monthlyTargets))} {keyResult.unit}
                   </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Realizado no Ano</Label>
                   <p className="text-lg font-semibold">
-                    {calculateYearlyActual(monthlyActual).toFixed(2)} {keyResult.unit}
+                    {formatBrazilianNumber(calculateYearlyActual(monthlyActual))} {keyResult.unit}
                   </p>
                 </div>
               </div>
@@ -388,34 +405,45 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
                         </div>
                         <div>
                           <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0"
-                            value={monthlyTargets[month.key] || ''}
+                            type="text"
+                            placeholder="0,00"
+                            value={formatBrazilianNumber(monthlyTargets[month.key])}
                             disabled={!editMode}
                             onChange={(e) => {
-                              const value = e.target.value ? parseFloat(e.target.value) : 0;
+                              const value = parseBrazilianNumber(e.target.value);
                               setMonthlyTargets(prev => ({
                                 ...prev,
-                                [month.key]: value
+                                [month.key]: value || 0
                               }));
                             }}
-                            className={!editMode ? "bg-muted text-muted-foreground" : ""}
+                            onBlur={(e) => {
+                              const value = parseBrazilianNumber(e.target.value);
+                              if (value !== null) {
+                                e.target.value = formatBrazilianNumber(value);
+                              }
+                            }}
+                            className={!editMode ? "bg-muted text-muted-foreground text-right font-mono" : "text-right font-mono"}
                           />
                         </div>
                         <div>
                           <Input
-                            type="number"
-                            step="0.01"
-                            placeholder="0"
-                            value={monthlyActual[month.key] || ''}
+                            type="text"
+                            placeholder="0,00"
+                            value={formatBrazilianNumber(monthlyActual[month.key])}
                             onChange={(e) => {
-                              const value = e.target.value ? parseFloat(e.target.value) : 0;
+                              const value = parseBrazilianNumber(e.target.value);
                               setMonthlyActual(prev => ({
                                 ...prev,
-                                [month.key]: value
+                                [month.key]: value || 0
                               }));
                             }}
+                            onBlur={(e) => {
+                              const value = parseBrazilianNumber(e.target.value);
+                              if (value !== null) {
+                                e.target.value = formatBrazilianNumber(value);
+                              }
+                            }}
+                            className="text-right font-mono"
                           />
                         </div>
                         <div className="text-center">
@@ -449,13 +477,13 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
                     <div className="text-center p-3 bg-background rounded-lg">
                       <div className="text-sm text-muted-foreground mb-1">Meta Anual</div>
                       <div className="text-lg font-bold text-primary">
-                        {calculateYearlyTarget(monthlyTargets).toFixed(2)} {keyResult.unit}
+                        {formatBrazilianNumber(calculateYearlyTarget(monthlyTargets))} {keyResult.unit}
                       </div>
                     </div>
                     <div className="text-center p-3 bg-background rounded-lg">
                       <div className="text-sm text-muted-foreground mb-1">Realizado no Ano</div>
                       <div className="text-lg font-bold text-green-600">
-                        {calculateYearlyActual(monthlyActual).toFixed(2)} {keyResult.unit}
+                        {formatBrazilianNumber(calculateYearlyActual(monthlyActual))} {keyResult.unit}
                       </div>
                     </div>
                   </div>

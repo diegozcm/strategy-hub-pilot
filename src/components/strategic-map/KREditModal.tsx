@@ -98,6 +98,23 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
     }
   };
 
+  // Formata número para padrão brasileiro (xxx.xxx.xxx,xx)
+  const formatBrazilianNumber = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) return '';
+    return value.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  // Remove formatação e converte para número
+  const parseBrazilianNumber = (value: string): number | null => {
+    if (!value || value.trim() === '') return null;
+    const cleaned = value.replace(/\./g, '').replace(',', '.');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? null : num;
+  };
+
   // Save aggregation type
   const saveAggregationType = async (newType: 'sum' | 'average' | 'max' | 'min') => {
     if (!keyResult) return;
@@ -359,21 +376,27 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                     </div>
                     <div>
                       <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0"
-                        value={monthlyTargets[month.key] || ''}
+                        type="text"
+                        placeholder="0,00"
+                        value={formatBrazilianNumber(monthlyTargets[month.key])}
                         onChange={(e) => {
-                          const value = e.target.value ? parseFloat(e.target.value) : 0;
+                          const value = parseBrazilianNumber(e.target.value);
                           setMonthlyTargets(prev => ({
                             ...prev,
-                            [month.key]: value
+                            [month.key]: value || 0
                           }));
                         }}
+                        onBlur={(e) => {
+                          const value = parseBrazilianNumber(e.target.value);
+                          if (value !== null) {
+                            e.target.value = formatBrazilianNumber(value);
+                          }
+                        }}
+                        className="text-right font-mono"
                       />
                     </div>
                     <div className="text-center text-sm font-medium">
-                      {calculateYearlyTarget(monthlyTargets).toFixed(2)}
+                      {formatBrazilianNumber(calculateYearlyTarget(monthlyTargets))}
                     </div>
                     <div className="text-center text-sm text-muted-foreground">
                       {basicInfo.unit}
