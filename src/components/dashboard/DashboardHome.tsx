@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { RumoDashboard } from './RumoDashboard';
 import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
+import { calculateKRStatus } from '@/lib/krHelpers';
 
 interface KeyResultWithPillar {
   id: string;
@@ -348,7 +349,14 @@ export const DashboardHome: React.FC = () => {
   };
 
   const getYearlyAchievement = (kr: KeyResultWithPillar) => {
-    return kr.yearly_target > 0 ? Math.round(kr.yearly_actual / kr.yearly_target * 100) : 0;
+    if (kr.yearly_target === 0) return 0;
+    return Math.round(
+      calculateKRStatus(
+        kr.yearly_actual,
+        kr.yearly_target,
+        kr.target_direction || 'maximize'
+      ).percentage
+    );
   };
 
   const toggleKRExpansion = (krId: string) => {
@@ -392,7 +400,9 @@ export const DashboardHome: React.FC = () => {
   const getMonthlyPerformance = (kr: KeyResultWithPillar, monthKey: string) => {
     const target = kr.monthly_targets?.[monthKey] || 0;
     const actual = kr.monthly_actual?.[monthKey] || 0;
-    const percentage = target > 0 ? Math.round(actual / target * 100) : 0;
+    const percentage = target > 0 
+      ? Math.round(calculateKRStatus(actual, target, kr.target_direction || 'maximize').percentage)
+      : 0;
     return {
       target,
       actual,
@@ -427,7 +437,9 @@ export const DashboardHome: React.FC = () => {
     
     const totalTarget = calculateAggregatedValue(targetValues, aggregationType);
     const totalActual = calculateAggregatedValue(actualValues, aggregationType);
-    const totalPercentage = totalTarget > 0 ? Math.round(totalActual / totalTarget * 100) : 0;
+    const totalPercentage = totalTarget > 0 
+      ? Math.round(calculateKRStatus(totalActual, totalTarget, kr.target_direction || 'maximize').percentage)
+      : 0;
     
     return {
       target: totalTarget,
