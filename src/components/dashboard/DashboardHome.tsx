@@ -357,13 +357,11 @@ export const DashboardHome: React.FC = () => {
 
   const getYearlyAchievement = (kr: KeyResultWithPillar) => {
     if (kr.yearly_target === 0) return 0;
-    return Math.round(
-      calculateKRStatus(
-        kr.yearly_actual,
-        kr.yearly_target,
-        kr.target_direction || 'maximize'
-      ).percentage
-    );
+    return calculateKRStatus(
+      kr.yearly_actual,
+      kr.yearly_target,
+      kr.target_direction || 'maximize'
+    ).percentage;
   };
 
   const toggleKRExpansion = (krId: string) => {
@@ -775,7 +773,7 @@ export const DashboardHome: React.FC = () => {
                                   {getStatusIcon(yearlyAchievement)}
                                   <div className="flex flex-col items-end">
                                     <span className={`text-sm font-medium ${getStatusColor(yearlyAchievement)}`}>
-                                      {yearlyAchievement.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% no ano
+                                      {yearlyAchievement.toFixed(1)}% no ano
                                     </span>
                                     <span className="text-xs text-muted-foreground">
                                       Atual: {kr.yearly_actual || kr.current_value || 0}
