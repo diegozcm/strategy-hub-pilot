@@ -136,7 +136,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1100px] max-h-[95vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[920px] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Atualizar Valores - {keyResult.title}</DialogTitle>
           <DialogDescription>
