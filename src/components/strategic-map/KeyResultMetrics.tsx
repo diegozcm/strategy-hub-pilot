@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
 import { calculateKRStatus, type TargetDirection } from '@/lib/krHelpers';
+import { formatValueWithUnit } from '@/lib/utils';
 
 interface KeyResultMetricsProps {
   yearlyTarget: number;
@@ -36,7 +37,7 @@ export const KeyResultMetrics = ({
         </CardHeader>
         <CardContent className="px-4 pb-3 pt-0">
           <div className="text-xl font-bold">
-            {yearlyTarget.toLocaleString('pt-BR')} {unit}
+            {formatValueWithUnit(yearlyTarget, unit)}
           </div>
         </CardContent>
       </Card>
@@ -52,7 +53,7 @@ export const KeyResultMetrics = ({
         </CardHeader>
         <CardContent className="px-4 pb-3 pt-0">
           <div className="text-xl font-bold">
-            {yearlyActual.toLocaleString('pt-BR')} {unit}
+            {formatValueWithUnit(yearlyActual, unit)}
           </div>
         </CardContent>
       </Card>
