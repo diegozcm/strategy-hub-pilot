@@ -145,14 +145,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
         </DialogHeader>
         
         <form onSubmit={handleFormSubmit} className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div className="space-y-2">
-              <Label>Valores Realizados ({selectedYear})</Label>
-              <p className="text-sm text-muted-foreground">
-                Atualize os valores realizados para cada mês.
-              </p>
-            </div>
-            
+          <div className="flex items-start gap-6">
             <div className="w-32">
               <Label className="text-sm font-medium">Ano</Label>
               <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
@@ -167,6 +160,13 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Valores Realizados ({selectedYear})</Label>
+              <p className="text-sm text-muted-foreground">
+                Atualize os valores realizados para cada mês.
+              </p>
             </div>
           </div>
 
