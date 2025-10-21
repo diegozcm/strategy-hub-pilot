@@ -12,6 +12,7 @@ import { KRStatusReportModal } from './KRStatusReportModal';
 import { KRInitiativesModal } from './KRInitiativesModal';
 import { KREditModal } from './KREditModal';
 import { KRUpdateValuesModal } from './KRUpdateValuesModal';
+import { getDirectionLabel } from '@/lib/krHelpers';
 
 import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -248,8 +249,8 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
               <Badge variant="secondary">
                 Atualizado: {new Date(currentKeyResult.updated_at).toLocaleDateString('pt-BR')}
               </Badge>
-              <Badge variant={achievementPercentage >= 100 ? "default" : achievementPercentage >= 80 ? "secondary" : "destructive"}>
-                {achievementPercentage >= 100 ? "Meta alcançada" : achievementPercentage >= 80 ? "No caminho" : "Atenção"}
+              <Badge variant="outline" className="bg-primary/5">
+                {getDirectionLabel(currentKeyResult.target_direction || 'maximize')}
               </Badge>
             </div>
 
