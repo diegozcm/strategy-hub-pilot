@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { KeyResult } from '@/types/strategic-map';
 import { useToast } from '@/hooks/use-toast';
+import { X } from 'lucide-react';
 
 interface KRUpdateValuesModalProps {
   keyResult: KeyResult | null;
@@ -162,8 +163,8 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
             
             {months.map((month) => {
               const target = monthlyTargets[month.key] || 0;
-              const actual = monthlyActual[month.key] || 0;
-              const percentage = target !== 0 ? (actual / target) * 100 : 0;
+              const actual = monthlyActual[month.key] ?? null;
+              const percentage = actual !== null && target !== 0 ? (actual / target) * 100 : null;
 
               return (
                 <div key={month.key} className="grid grid-cols-5 gap-4 items-center p-3 border rounded-lg">
@@ -173,29 +174,60 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
                   <div className="text-center text-sm">
                     {target.toFixed(2)}
                   </div>
-                  <div>
+                  <div className="flex gap-1 items-center">
                     <Input
                       type="number"
                       step="0.01"
                       placeholder="0"
-                      value={monthlyActual[month.key] || ''}
+                      value={monthlyActual[month.key] ?? ''}
                       onChange={(e) => {
-                        const value = e.target.value ? parseFloat(e.target.value) : 0;
-                        setMonthlyActual(prev => ({
-                          ...prev,
-                          [month.key]: value
-                        }));
+                        if (e.target.value === '') {
+                          setMonthlyActual(prev => {
+                            const newActual = { ...prev };
+                            delete newActual[month.key];
+                            return newActual;
+                          });
+                        } else {
+                          const value = parseFloat(e.target.value);
+                          if (!isNaN(value)) {
+                            setMonthlyActual(prev => ({
+                              ...prev,
+                              [month.key]: value
+                            }));
+                          }
+                        }
                       }}
+                      className="flex-1"
                     />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 shrink-0"
+                      onClick={() => {
+                        setMonthlyActual(prev => {
+                          const newActual = { ...prev };
+                          delete newActual[month.key];
+                          return newActual;
+                        });
+                      }}
+                      title="Limpar valor realizado"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                   <div className="text-center">
-                    <span className={`text-sm font-medium ${
-                      percentage >= 100 ? 'text-green-600' :
-                      percentage >= 80 ? 'text-yellow-600' :
-                      'text-red-600'
-                    }`}>
-                      {percentage.toFixed(1)}%
-                    </span>
+                    {percentage !== null ? (
+                      <span className={`text-sm font-medium ${
+                        percentage >= 100 ? 'text-green-600' :
+                        percentage >= 80 ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        {percentage.toFixed(1)}%
+                      </span>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">-</span>
+                    )}
                   </div>
                   <div className="text-center text-sm text-muted-foreground">
                     {keyResult.unit}
