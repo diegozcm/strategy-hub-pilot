@@ -21,6 +21,24 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
+  // Formata número para padrão brasileiro (xxx.xxx.xxx,xx)
+  const formatBrazilianNumber = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) return '';
+    return value.toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  // Remove formatação e converte para número
+  const parseBrazilianNumber = (value: string): number | null => {
+    if (!value || value.trim() === '') return null;
+    // Remove pontos (separador de milhar) e substitui vírgula por ponto
+    const cleaned = value.replace(/\./g, '').replace(',', '.');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? null : num;
+  };
+
   const currentYear = new Date().getFullYear();
   const months = [
     { key: `${selectedYear}-01`, name: 'Janeiro', short: 'Jan' },
@@ -118,7 +136,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[900px] max-h-[95vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[1100px] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Atualizar Valores - {keyResult.title}</DialogTitle>
           <DialogDescription>
@@ -153,9 +171,9 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
           </div>
 
           <div className="space-y-3">
-            <div className="grid grid-cols-5 gap-4 p-3 bg-muted/30 rounded-lg font-medium text-sm">
+            <div className="grid grid-cols-[150px_180px_1fr_140px_100px] gap-4 p-3 bg-muted/30 rounded-lg font-medium text-sm">
               <div>Mês</div>
-              <div className="text-center">Meta</div>
+              <div className="text-center">Meta ({selectedYear})</div>
               <div className="text-center">Realizado</div>
               <div className="text-center">% Atingimento</div>
               <div className="text-center">Unidade</div>
@@ -167,37 +185,46 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
               const percentage = actual !== null && target !== 0 ? (actual / target) * 100 : null;
 
               return (
-                <div key={month.key} className="grid grid-cols-5 gap-4 items-center p-3 border rounded-lg">
-                  <div>
-                    <Label className="text-sm font-medium">{month.name}</Label>
+                <div key={month.key} className="grid grid-cols-[150px_180px_1fr_140px_100px] gap-4 items-center p-3 border rounded-lg">
+                  <div className="font-medium text-sm">
+                    {month.name}
                   </div>
-                  <div className="text-center text-sm">
-                    {target.toFixed(2)}
+                  <div className="text-right text-base font-medium pr-2">
+                    {formatBrazilianNumber(target)}
                   </div>
                   <div className="flex gap-1 items-center">
                     <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0"
-                      value={monthlyActual[month.key] ?? ''}
+                      type="text"
+                      placeholder="0,00"
+                      value={monthlyActual[month.key] !== undefined 
+                        ? formatBrazilianNumber(monthlyActual[month.key]) 
+                        : ''}
                       onChange={(e) => {
-                        if (e.target.value === '') {
+                        const rawValue = e.target.value;
+                        
+                        if (rawValue === '' || rawValue === '-') {
                           setMonthlyActual(prev => {
                             const newActual = { ...prev };
                             delete newActual[month.key];
                             return newActual;
                           });
                         } else {
-                          const value = parseFloat(e.target.value);
-                          if (!isNaN(value)) {
+                          const parsed = parseBrazilianNumber(rawValue);
+                          if (parsed !== null) {
                             setMonthlyActual(prev => ({
                               ...prev,
-                              [month.key]: value
+                              [month.key]: parsed
                             }));
                           }
                         }
                       }}
-                      className="flex-1"
+                      onBlur={() => {
+                        // Força re-render com formatação completa ao sair do campo
+                        if (monthlyActual[month.key] !== undefined) {
+                          setMonthlyActual(prev => ({ ...prev }));
+                        }
+                      }}
+                      className="flex-1 text-right font-mono text-base"
                     />
                     <Button
                       type="button"
