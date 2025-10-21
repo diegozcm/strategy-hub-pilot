@@ -145,29 +145,11 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
         </DialogHeader>
         
         <form onSubmit={handleFormSubmit} className="space-y-4">
-          <div className="flex justify-between items-center">
-            <div className="space-y-2">
-              <Label>Valores Realizados ({selectedYear})</Label>
-              <p className="text-sm text-muted-foreground">
-                Atualize os valores realizados para cada mês.
-              </p>
-            </div>
-            
-            <div className="w-32">
-              <Label className="text-sm font-medium">Ano</Label>
-              <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearOptions.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label>Valores Realizados ({selectedYear})</Label>
+            <p className="text-sm text-muted-foreground">
+              Atualize os valores realizados para cada mês.
+            </p>
           </div>
 
           <div className="space-y-3">
@@ -176,7 +158,21 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
               <div className="text-center">Meta ({selectedYear})</div>
               <div className="text-center">Realizado</div>
               <div className="text-center">% Atingimento</div>
-              <div className="text-center">Unidade</div>
+              <div className="text-center flex flex-col items-center gap-1">
+                <Label className="text-xs font-medium">Ano</Label>
+                <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                  <SelectTrigger className="h-7 w-[50px] text-xs px-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yearOptions.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
             {months.map((month) => {
