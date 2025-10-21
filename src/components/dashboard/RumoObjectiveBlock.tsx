@@ -143,7 +143,7 @@ export const RumoObjectiveBlock = ({
             </div>
             <div className="text-right flex-shrink-0">
               <p className="text-2xl font-bold">
-                {Math.round(progress)}%
+                {progress.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
               </p>
               <p className="text-xs opacity-80">
                 {objectiveKRs.length} KR(s)
@@ -176,7 +176,7 @@ export const RumoObjectiveBlock = ({
                             krPerf === 'warning' ? 'text-yellow-500' :
                             'text-red-500'
                           }`}>
-                            {krProg.toFixed(1)}%
+                            {krProg.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
                           </span>
                         </div>
                         <MonthlyPerformanceIndicators
