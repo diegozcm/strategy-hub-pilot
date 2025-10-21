@@ -36,6 +36,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUpdateValuesModal, setShowUpdateValuesModal] = useState(false);
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
 
@@ -124,6 +125,10 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[1000px] w-[calc(100vw-2rem)] p-0">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Visão do Resultado-Chave</DialogTitle>
+          <DialogDescription>Detalhes e evolução do resultado-chave</DialogDescription>
+        </DialogHeader>
         <div className="max-h-[90vh] md:max-h-[85vh] overflow-hidden flex flex-col">
           {/* Header colorido com pilar */}
           {pillar && (
@@ -262,7 +267,8 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
               monthlyTargets={monthlyTargets}
               monthlyActual={monthlyActual}
               unit={currentKeyResult.unit || ''}
-              selectedYear={new Date().getFullYear()}
+              selectedYear={selectedYear}
+              onYearChange={setSelectedYear}
             />
           </div>
         </div>
