@@ -410,9 +410,20 @@ export const DashboardHome: React.FC = () => {
   const getMonthlyPerformance = (kr: KeyResultWithPillar, monthKey: string) => {
     const target = kr.monthly_targets?.[monthKey] || 0;
     const actual = kr.monthly_actual?.[monthKey] || 0;
-    const percentage = target > 0 
-      ? Math.round(calculateKRStatus(actual, target, kr.target_direction || 'maximize').percentage)
-      : 0;
+    
+    // Se não há target definido, não há dados para calcular
+    if (target === 0) {
+      return {
+        target,
+        actual,
+        percentage: null
+      };
+    }
+    
+    const percentage = Math.round(
+      calculateKRStatus(actual, target, kr.target_direction || 'maximize').percentage
+    );
+    
     return {
       target,
       actual,
@@ -441,15 +452,20 @@ export const DashboardHome: React.FC = () => {
     const months = getMonthsOfYear();
     const aggregationType = kr.aggregation_type || 'sum';
     
-    // Coletar valores mensais
-    const targetValues = months.map(month => kr.monthly_targets?.[month.key] || 0);
-    const actualValues = months.map(month => kr.monthly_actual?.[month.key] || 0);
+    // Coletar apenas valores mensais com targets definidos (meses com dados reais)
+    const monthsWithData = months.filter(month => {
+      const target = kr.monthly_targets?.[month.key] || 0;
+      return target > 0;
+    });
+    
+    const targetValues = monthsWithData.map(month => kr.monthly_targets?.[month.key] || 0);
+    const actualValues = monthsWithData.map(month => kr.monthly_actual?.[month.key] || 0);
     
     const totalTarget = calculateAggregatedValue(targetValues, aggregationType);
     const totalActual = calculateAggregatedValue(actualValues, aggregationType);
     const totalPercentage = totalTarget > 0 
       ? Math.round(calculateKRStatus(totalActual, totalTarget, kr.target_direction || 'maximize').percentage)
-      : 0;
+      : null;
     
     return {
       target: totalTarget,
@@ -849,16 +865,24 @@ export const DashboardHome: React.FC = () => {
                                            key={month.key} 
                                            className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-white"}`}
                                          >
-                                           <span className={getStatusColor(performance.percentage)}>
-                                             {performance.percentage > 0 ? `${performance.percentage}%` : '-'}
-                                           </span>
+                                           {performance.percentage !== null ? (
+                                             <span className={getStatusColor(performance.percentage)}>
+                                               {performance.percentage}%
+                                             </span>
+                                           ) : (
+                                             <span className="text-gray-400">-</span>
+                                           )}
                                          </TableCell>
                                        );
                                      })}
                                      <TableCell className="text-center bg-muted/50 font-semibold">
-                                       <span className={getStatusColor(getAggregatedTotals(kr).percentage)}>
-                                         {getAggregatedTotals(kr).percentage}%
-                                       </span>
+                                       {getAggregatedTotals(kr).percentage !== null ? (
+                                         <span className={getStatusColor(getAggregatedTotals(kr).percentage)}>
+                                           {getAggregatedTotals(kr).percentage}%
+                                         </span>
+                                       ) : (
+                                         <span className="text-gray-400">-</span>
+                                       )}
                                      </TableCell>
                                    </TableRow>
                                 </TableBody>
