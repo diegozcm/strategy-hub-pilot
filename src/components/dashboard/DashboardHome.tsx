@@ -31,6 +31,7 @@ interface KeyResultWithPillar {
   pillar_id: string;
   aggregation_type?: string;
   priority?: string;
+  target_direction?: 'maximize' | 'minimize';
 }
 
 interface DashboardStats {
@@ -719,6 +720,7 @@ export const DashboardHome: React.FC = () => {
                                   <MonthlyPerformanceIndicators
                                     monthlyTargets={kr.monthly_targets}
                                     monthlyActual={kr.monthly_actual}
+                                    targetDirection={kr.target_direction || 'maximize'}
                                     selectedYear={selectedYear}
                                     size="sm"
                                   />

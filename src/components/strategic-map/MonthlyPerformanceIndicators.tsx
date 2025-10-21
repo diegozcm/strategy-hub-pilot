@@ -1,12 +1,14 @@
 import React, { useMemo } from 'react';
 import { CheckCircle2, Circle, Triangle, XCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { calculateKRStatus, type TargetDirection } from '@/lib/krHelpers';
 
 interface MonthlyPerformanceIndicatorsProps {
   monthlyTargets?: Record<string, number>;
   monthlyActual?: Record<string, number>;
   selectedYear?: number;
   size?: 'sm' | 'md';
+  targetDirection?: TargetDirection;
 }
 
 const MONTH_NAMES = [
@@ -45,6 +47,7 @@ export const MonthlyPerformanceIndicators: React.FC<MonthlyPerformanceIndicators
   monthlyActual = {},
   selectedYear = new Date().getFullYear(),
   size = 'sm',
+  targetDirection = 'maximize',
 }) => {
   const iconSize = size === 'sm' ? 14 : 18;
 
@@ -57,7 +60,8 @@ export const MonthlyPerformanceIndicators: React.FC<MonthlyPerformanceIndicators
       
       const target = monthlyTargets[monthKey] || 0;
       const actual = monthlyActual[monthKey] || 0;
-      const progress = target > 0 ? (actual / target) * 100 : 0;
+      const status = target > 0 ? calculateKRStatus(actual, target, targetDirection) : { percentage: 0 };
+      const progress = status.percentage;
       const color = getMonthPerformanceColor(progress);
 
       return {
@@ -69,7 +73,7 @@ export const MonthlyPerformanceIndicators: React.FC<MonthlyPerformanceIndicators
         color,
       };
     });
-  }, [monthlyTargets, monthlyActual, selectedYear]);
+  }, [monthlyTargets, monthlyActual, selectedYear, targetDirection]);
 
   return (
     <TooltipProvider>

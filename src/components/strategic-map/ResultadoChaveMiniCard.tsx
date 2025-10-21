@@ -55,6 +55,7 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, pillar, onUpdate, onOpe
                 <MonthlyPerformanceIndicators
                   monthlyTargets={resultadoChave.monthly_targets}
                   monthlyActual={resultadoChave.monthly_actual}
+                  targetDirection={resultadoChave.target_direction || 'maximize'}
                   size="sm"
                 />
               </div>

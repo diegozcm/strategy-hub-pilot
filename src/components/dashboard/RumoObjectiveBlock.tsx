@@ -182,6 +182,7 @@ export const RumoObjectiveBlock = ({
                         <MonthlyPerformanceIndicators
                           monthlyTargets={kr.monthly_targets}
                           monthlyActual={kr.monthly_actual}
+                          targetDirection={kr.target_direction || 'maximize'}
                           size="sm"
                         />
                       </div>

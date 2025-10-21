@@ -68,6 +68,7 @@ export const KRCard: React.FC<KRCardProps> = ({
           <MonthlyPerformanceIndicators
             monthlyTargets={keyResult.monthly_targets}
             monthlyActual={keyResult.monthly_actual}
+            targetDirection={keyResult.target_direction || 'maximize'}
             size="sm"
           />
         </div>
