@@ -769,7 +769,7 @@ export const DashboardHome: React.FC = () => {
                                   {getStatusIcon(yearlyAchievement)}
                                   <div className="flex flex-col items-end">
                                     <span className={`text-sm font-medium ${getStatusColor(yearlyAchievement)}`}>
-                                      {yearlyAchievement}% no ano
+                                      {yearlyAchievement.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% no ano
                                     </span>
                                     <span className="text-xs text-muted-foreground">
                                       Atual: {kr.yearly_actual || kr.current_value || 0}
