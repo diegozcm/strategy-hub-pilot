@@ -249,7 +249,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
               <Badge variant="secondary">
                 Atualizado: {new Date(currentKeyResult.updated_at).toLocaleDateString('pt-BR')}
               </Badge>
-              <Badge variant="outline" className="bg-primary/5">
+              <Badge variant="secondary">
                 {getDirectionLabel(currentKeyResult.target_direction || 'maximize')}
               </Badge>
             </div>
