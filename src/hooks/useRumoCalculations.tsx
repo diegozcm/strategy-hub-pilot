@@ -43,6 +43,7 @@ export const useRumoCalculations = (
       );
       
       let progress = status.percentage;
+      const annualProgress = progress; // Store annual progress as fallback
       
       // If there's monthly data, adjust to show only the selected period
       if (periodType === 'monthly') {
@@ -57,7 +58,10 @@ export const useRumoCalculations = (
             monthlyTarget,
             kr.target_direction || 'maximize'
           );
-          progress = monthlyStatus.percentage;
+          // Only use monthly progress if it's positive, otherwise keep annual
+          if (monthlyStatus.percentage > 0) {
+            progress = monthlyStatus.percentage;
+          }
         }
         // Otherwise, keep the progress calculated with yearly values
       } else if (periodType === 'ytd') {
@@ -84,7 +88,10 @@ export const useRumoCalculations = (
             ytdTarget,
             kr.target_direction || 'maximize'
           );
-          progress = ytdStatus.percentage;
+          // Only use YTD progress if it's positive, otherwise keep annual
+          if (ytdStatus.percentage > 0) {
+            progress = ytdStatus.percentage;
+          }
         }
         // Otherwise, keep the progress calculated with yearly values
       }
