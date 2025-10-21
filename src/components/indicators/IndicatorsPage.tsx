@@ -23,6 +23,7 @@ import { KRUpdateValuesModal } from '@/components/strategic-map/KRUpdateValuesMo
 import { KeyResult, StrategicObjective } from '@/types/strategic-map';
 import { useSearchParams } from 'react-router-dom';
 import { KRCard } from './KRCard';
+import { calculateKRStatus } from '@/lib/krHelpers';
 
 interface KeyResultValue {
   id: string;
@@ -384,13 +385,20 @@ export const IndicatorsPage: React.FC = () => {
     const monthlyActual = keyResult.monthly_actual as Record<string, number> || {};
     const monthlyTargets = keyResult.monthly_targets as Record<string, number> || {};
     
-    const actualValues = Object.values(monthlyActual).filter((value): value is number => typeof value === 'number' && value > 0);
+    // Permitir valores >= 0 (incluindo zero) para não descartar dados válidos
+    const actualValues = Object.values(monthlyActual).filter((value): value is number => typeof value === 'number' && value >= 0);
     const targetValues = Object.values(monthlyTargets).filter((value): value is number => typeof value === 'number' && value > 0);
     
     if (actualValues.length === 0 || targetValues.length === 0) {
       // Fallback para o cálculo antigo se não houver dados mensais
       if (keyResult.target_value === 0) return 0;
-      return Math.round((keyResult.current_value / keyResult.target_value) * 100);
+      return Math.round(
+        calculateKRStatus(
+          keyResult.current_value,
+          keyResult.target_value,
+          keyResult.target_direction || 'maximize'
+        ).percentage
+      );
     }
     
     // Calcular valores anuais usando o tipo de agregação
@@ -419,7 +427,13 @@ export const IndicatorsPage: React.FC = () => {
     }
     
     if (yearlyTarget === 0) return 0;
-    return Math.round((yearlyActual / yearlyTarget) * 100);
+    return Math.round(
+      calculateKRStatus(
+        yearlyActual,
+        yearlyTarget,
+        keyResult.target_direction || 'maximize'
+      ).percentage
+    );
   };
 
   const getProgressColor = (progress: number) => {
