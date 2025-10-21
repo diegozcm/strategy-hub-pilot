@@ -108,7 +108,12 @@ export const DashboardHome: React.FC = () => {
   // Calculate progress function
   const calculateProgress = (keyResult: KeyResultWithPillar): number => {
     if (!keyResult.target_value || keyResult.target_value === 0) return 0;
-    return Math.min((keyResult.current_value / keyResult.target_value) * 100, 100);
+    const pct = calculateKRStatus(
+      keyResult.current_value,
+      keyResult.target_value,
+      keyResult.target_direction || 'maximize'
+    ).percentage;
+    return Math.min(pct, 100);
   };
 
   // Filter and sort logic
@@ -249,6 +254,7 @@ export const DashboardHome: React.FC = () => {
           yearly_actual,
           monthly_targets,
           monthly_actual,
+          target_direction,
           aggregation_type,
           objective_id,
           strategic_objectives!inner (
@@ -287,6 +293,7 @@ export const DashboardHome: React.FC = () => {
         objective_id: kr.objective_id,
         pillar_id: kr.strategic_objectives.pillar_id,
         aggregation_type: kr.aggregation_type || 'sum',
+        target_direction: (kr.target_direction as 'maximize' | 'minimize') || 'maximize',
         priority: 'medium'
       })) || [];
 
