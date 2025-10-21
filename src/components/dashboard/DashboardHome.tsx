@@ -875,15 +875,15 @@ export const DashboardHome: React.FC = () => {
                                          </TableCell>
                                        );
                                      })}
-                                     <TableCell className="text-center bg-muted/50 font-semibold">
-                                       {getAggregatedTotals(kr).percentage !== null ? (
-                                         <span className={getStatusColor(getAggregatedTotals(kr).percentage)}>
-                                           {getAggregatedTotals(kr).percentage}%
-                                         </span>
-                                       ) : (
-                                         <span className="text-gray-400">-</span>
-                                       )}
-                                     </TableCell>
+                                      <TableCell className="text-center bg-muted/50 font-semibold">
+                                        {getAggregatedTotals(kr).percentage !== null ? (
+                                          <span className={getStatusColor(getAggregatedTotals(kr).percentage)}>
+                                            {getAggregatedTotals(kr).percentage.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                          </span>
+                                        ) : (
+                                          <span className="text-gray-400">-</span>
+                                        )}
+                                      </TableCell>
                                    </TableRow>
                                 </TableBody>
                               </Table>
