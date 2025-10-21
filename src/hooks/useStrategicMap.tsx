@@ -174,7 +174,8 @@ export const useStrategicMap = () => {
       // Cast aggregation_type to the correct union type
       const processedData = (data || []).map(kr => ({
         ...kr,
-        aggregation_type: (kr.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum'
+        aggregation_type: (kr.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum',
+        target_direction: (kr.target_direction as 'maximize' | 'minimize') || 'maximize'
       }));
 
       setKeyResults(processedData);
@@ -548,7 +549,8 @@ export const useStrategicMap = () => {
       // Cast aggregation_type to the correct union type
       const processedData = {
         ...data,
-        aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum'
+        aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum',
+        target_direction: (data.target_direction as 'maximize' | 'minimize') || 'maximize'
       };
 
       setKeyResults(prev => [...prev, processedData]);
@@ -587,7 +589,8 @@ export const useStrategicMap = () => {
       // Cast aggregation_type to the correct union type
       const processedData = {
         ...data,
-        aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum'
+        aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum',
+        target_direction: (data.target_direction as 'maximize' | 'minimize') || 'maximize'
       };
 
       setKeyResults(prev => prev.map(kr => kr.id === keyResultId ? processedData : kr));

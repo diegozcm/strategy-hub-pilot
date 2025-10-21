@@ -1,13 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
+import { calculateKRStatus, type TargetDirection } from '@/lib/krHelpers';
 
 interface KeyResultMetricsProps {
   yearlyTarget: number;
   yearlyActual: number;
   unit: string;
-  achievementPercentage: number;
+  achievementPercentage?: number; // Made optional as we'll calculate it
   currentMonth: string;
+  targetDirection?: TargetDirection;
 }
 
 export const KeyResultMetrics = ({ 
@@ -15,10 +17,15 @@ export const KeyResultMetrics = ({
   yearlyActual, 
   unit, 
   achievementPercentage,
-  currentMonth 
+  currentMonth,
+  targetDirection = 'maximize'
 }: KeyResultMetricsProps) => {
-  const isOnTrack = achievementPercentage >= 80;
-  const isOverTarget = achievementPercentage >= 100;
+  // Calculate status using the helper function
+  const status = calculateKRStatus(yearlyActual, yearlyTarget, targetDirection);
+  const calculatedPercentage = achievementPercentage ?? status.percentage;
+  
+  const isOnTrack = status.isGood;
+  const isOverTarget = status.isExcellent;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -55,14 +62,14 @@ export const KeyResultMetrics = ({
           <CardTitle className="text-sm font-medium">% Atingimento</CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-3 pt-0">
-          <div className="text-xl font-bold">
-            {achievementPercentage.toFixed(1)}%
+          <div className={`text-xl font-bold ${status.color}`}>
+            {calculatedPercentage.toFixed(1)}%
           </div>
           <div className="flex items-center justify-between mt-1">
             <p className="text-xs text-muted-foreground">
               {isOverTarget 
-                ? `+${(achievementPercentage - 100).toFixed(1)}%`
-                : `-${(100 - achievementPercentage).toFixed(1)}%`
+                ? `+${(calculatedPercentage - 100).toFixed(1)}%`
+                : `-${(100 - calculatedPercentage).toFixed(1)}%`
               }
             </p>
             <Badge variant={isOverTarget ? "default" : isOnTrack ? "secondary" : "destructive"} className="text-xs px-2 py-0">

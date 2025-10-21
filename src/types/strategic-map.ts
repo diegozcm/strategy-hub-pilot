@@ -64,6 +64,7 @@ export interface KeyResult {
   yearly_target?: number;
   yearly_actual?: number;
   aggregation_type?: 'sum' | 'average' | 'max' | 'min';
+  target_direction?: 'maximize' | 'minimize';
   projects?: StrategicProject[];
   monthly_actions?: KRMonthlyAction[];
   created_at: string;

@@ -1,6 +1,7 @@
 import React from 'react';
 import { KeyResult } from '@/types/strategic-map';
 import { MonthlyPerformanceIndicators } from './MonthlyPerformanceIndicators';
+import { calculateKRStatus } from '@/lib/krHelpers';
 
 interface ResultadoChaveMiniCardProps {
   resultadoChave: KeyResult;
@@ -14,17 +15,12 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, pillar, onUpdate, onOpe
   const currentValue = resultadoChave.yearly_actual || resultadoChave.current_value || 0;
   const targetValue = resultadoChave.yearly_target || resultadoChave.target_value;
   
-  // Progresso real sem limitar a 100%
-  const progress = targetValue > 0 
-    ? (currentValue / targetValue) * 100
-    : 0;
-
-  // Determinar cor do badge baseado no progresso
-  const getProgressColor = (prog: number) => {
-    if (prog >= 100) return 'text-green-600';
-    if (prog >= 80) return 'text-yellow-600';
-    return 'text-red-600';
-  };
+  // Calculate status using the new helper function
+  const status = calculateKRStatus(
+    currentValue,
+    targetValue,
+    resultadoChave.target_direction || 'maximize'
+  );
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -64,8 +60,8 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, pillar, onUpdate, onOpe
               </div>
             </div>
             <div className="flex flex-col items-end flex-shrink-0">
-              <span className={`text-sm font-medium ${getProgressColor(progress)}`}>
-                {progress.toFixed(1)}%
+              <span className={`text-sm font-medium ${status.color}`}>
+                {status.percentage.toFixed(1)}%
               </span>
             </div>
           </div>

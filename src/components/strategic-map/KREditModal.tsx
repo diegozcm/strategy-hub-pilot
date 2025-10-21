@@ -7,10 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Info } from 'lucide-react';
 import { KeyResult } from '@/types/strategic-map';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { getDirectionLabel, getDirectionDescription, type TargetDirection } from '@/lib/krHelpers';
 
 interface KREditModalProps {
   keyResult: KeyResult | null;
@@ -31,7 +34,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
     description: '',
     unit: '',
     responsible: '',
-    objective_id: ''
+    objective_id: '',
+    target_direction: 'maximize' as TargetDirection
   });
   
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
@@ -155,7 +159,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         description: keyResult.description || '',
         unit: keyResult.unit || '',
         responsible: keyResult.responsible || '',
-        objective_id: keyResult.objective_id || 'none'
+        objective_id: keyResult.objective_id || 'none',
+        target_direction: (keyResult.target_direction as TargetDirection) || 'maximize'
       });
       
       setAggregationType(keyResult.aggregation_type || 'sum');
@@ -203,7 +208,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         monthly_targets: cleanMonthlyTargets,
         yearly_target: yearlyTarget,
         target_value: yearlyTarget,
-        aggregation_type: aggregationType
+        aggregation_type: aggregationType,
+        target_direction: basicInfo.target_direction
       });
 
       toast({
@@ -245,6 +251,15 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
 
             {/* Basic Info Tab */}
             <TabsContent value="basic-info" className="space-y-4 mt-4">
+              <Alert className="mb-4">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Direcionamento:</strong> Define como o resultado será interpretado.
+                  Escolha "Maior é melhor" para metas que devem crescer (receita, clientes) 
+                  ou "Menor é melhor" para metas que devem diminuir (custos, tempo, erros).
+                </AlertDescription>
+              </Alert>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="title">Título *</Label>
@@ -275,6 +290,32 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="target_direction">Direcionamento *</Label>
+                <Select 
+                  value={basicInfo.target_direction} 
+                  onValueChange={(value: TargetDirection) => setBasicInfo({...basicInfo, target_direction: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="maximize">
+                      <div className="flex flex-col">
+                        <span>{getDirectionLabel('maximize')}</span>
+                        <span className="text-xs text-muted-foreground">{getDirectionDescription('maximize')}</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="minimize">
+                      <div className="flex flex-col">
+                        <span>{getDirectionLabel('minimize')}</span>
+                        <span className="text-xs text-muted-foreground">{getDirectionDescription('minimize')}</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

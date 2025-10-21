@@ -253,24 +253,26 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
         
         {/* Indicadores e Gráfico na parte superior */}
         <KeyResultMetrics
-          yearlyTarget={calculateYearlyTarget(monthlyTargets)}
-          yearlyActual={calculateYearlyActual(monthlyActual)}
-          unit={keyResult.unit || ''}
-          achievementPercentage={(() => {
-            const target = calculateYearlyTarget(monthlyTargets);
-            const actual = calculateYearlyActual(monthlyActual);
-            return target > 0 ? (actual / target) * 100 : 0;
-          })()}
-          currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-        />
-        
-        <KeyResultChart
-          monthlyTargets={monthlyTargets}
-          monthlyActual={monthlyActual}
-          unit={keyResult.unit || ''}
-          selectedYear={selectedYear}
-          onYearChange={setSelectedYear}
-        />
+            yearlyTarget={calculateYearlyTarget(monthlyTargets)}
+            yearlyActual={calculateYearlyActual(monthlyActual)}
+            unit={keyResult.unit || ''}
+            achievementPercentage={(() => {
+              const target = calculateYearlyTarget(monthlyTargets);
+              const actual = calculateYearlyActual(monthlyActual);
+              return target > 0 ? (actual / target) * 100 : 0;
+            })()}
+            currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+            targetDirection={(keyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
+          />
+          
+          <KeyResultChart
+            monthlyTargets={monthlyTargets}
+            monthlyActual={monthlyActual}
+            unit={keyResult.unit || ''}
+            selectedYear={selectedYear}
+            onYearChange={setSelectedYear}
+            targetDirection={(keyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
+          />
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <Tabs defaultValue="monthly-data" className="w-full">

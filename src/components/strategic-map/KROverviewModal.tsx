@@ -254,21 +254,23 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
             </div>
 
             {/* Key Metrics */}
-            <KeyResultMetrics
-              yearlyTarget={yearlyTarget}
-              yearlyActual={yearlyActual}
-              unit={currentKeyResult.unit || ''}
-              achievementPercentage={achievementPercentage}
-              currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-            />
+        <KeyResultMetrics
+            yearlyTarget={yearlyTarget}
+            yearlyActual={yearlyActual}
+            unit={currentKeyResult.unit || ''}
+            achievementPercentage={achievementPercentage}
+            currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+            targetDirection={(currentKeyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
+          />
 
             {/* Evolution Chart */}
-            <KeyResultChart
+          <KeyResultChart
               monthlyTargets={monthlyTargets}
               monthlyActual={monthlyActual}
               unit={currentKeyResult.unit || ''}
               selectedYear={selectedYear}
               onYearChange={setSelectedYear}
+              targetDirection={(currentKeyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
             />
           </div>
         </div>

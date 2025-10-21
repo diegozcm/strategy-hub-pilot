@@ -1064,6 +1064,7 @@ export type Database = {
           owner_id: string
           priority: string | null
           responsible: string | null
+          target_direction: string | null
           target_value: number
           title: string
           unit: string
@@ -1089,6 +1090,7 @@ export type Database = {
           owner_id: string
           priority?: string | null
           responsible?: string | null
+          target_direction?: string | null
           target_value: number
           title: string
           unit?: string
@@ -1114,6 +1116,7 @@ export type Database = {
           owner_id?: string
           priority?: string | null
           responsible?: string | null
+          target_direction?: string | null
           target_value?: number
           title?: string
           unit?: string

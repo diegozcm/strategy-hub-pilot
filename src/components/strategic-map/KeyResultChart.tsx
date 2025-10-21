@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { BarChart3, TableIcon } from 'lucide-react';
 import { useState } from 'react';
+import { calculateKRStatus, type TargetDirection } from '@/lib/krHelpers';
 
 interface KeyResultChartProps {
   monthlyTargets: Record<string, number>;
@@ -14,6 +15,7 @@ interface KeyResultChartProps {
   unit: string;
   selectedYear: number;
   onYearChange?: (year: number) => void;
+  targetDirection?: TargetDirection;
 }
 
 export const KeyResultChart = ({ 
@@ -21,7 +23,8 @@ export const KeyResultChart = ({
   monthlyActual, 
   unit, 
   selectedYear,
-  onYearChange 
+  onYearChange,
+  targetDirection = 'maximize'
 }: KeyResultChartProps) => {
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
   
@@ -298,22 +301,17 @@ const normalizedActuals: Record<string, number | null> =
                     const target = normalizedTargets[month.key];
                     const v = Number.isFinite(Number(value)) ? Number(value) : 0;
                     const t = Number.isFinite(Number(target)) ? Number(target) : 0;
-                    const achievement = t !== 0 ? (v / t) * 100 : 0;
                     
-                    const getAchievementColor = (percentage: number) => {
-                      if (percentage >= 100) return "text-green-600 font-semibold";
-                      if (percentage >= 80) return "text-yellow-600 font-semibold";
-                      return "text-red-600 font-semibold";
-                    };
+                    const status = t !== 0 ? calculateKRStatus(v, t, targetDirection) : null;
                     
                     return (
                       <TableCell 
                         key={month.key} 
                         className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
                       >
-                        {t !== 0 ? (
-                          <span className={getAchievementColor(achievement)}>
-                            {achievement.toFixed(0)}%
+                        {status ? (
+                          <span className={`${status.color} font-semibold`}>
+                            {status.percentage.toFixed(0)}%
                           </span>
                         ) : (
                           <span className="text-gray-400">-</span>
@@ -323,13 +321,14 @@ const normalizedActuals: Record<string, number | null> =
                   })}
                   <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
                     {targetTotal !== 0 ? (
-                      <span className={
-                        ((actualTotal / targetTotal) * 100) >= 100 ? "text-green-600 font-semibold" :
-                        ((actualTotal / targetTotal) * 100) >= 80 ? "text-yellow-600 font-semibold" :
-                        "text-red-600 font-semibold"
-                      }>
-                        {((actualTotal / targetTotal) * 100).toFixed(0)}%
-                      </span>
+                      (() => {
+                        const totalStatus = calculateKRStatus(actualTotal, targetTotal, targetDirection);
+                        return (
+                          <span className={`${totalStatus.color} font-semibold`}>
+                            {totalStatus.percentage.toFixed(0)}%
+                          </span>
+                        );
+                      })()
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
