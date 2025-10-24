@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { KeyResult } from '@/types/strategic-map';
 import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
+import { formatValueWithUnit } from '@/lib/utils';
 
 interface KRCardProps {
   keyResult: KeyResult;
@@ -78,13 +79,13 @@ export const KRCard: React.FC<KRCardProps> = ({
           <div>
             <p className="text-xs text-muted-foreground">Indicador Atual</p>
             <p className="text-base font-semibold">
-              {keyResult.current_value.toLocaleString('pt-BR')} {keyResult.unit}
+              {formatValueWithUnit(keyResult.current_value, keyResult.unit)}
             </p>
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Meta</p>
             <p className="text-base font-semibold">
-              {keyResult.target_value.toLocaleString('pt-BR')} {keyResult.unit}
+              {formatValueWithUnit(keyResult.target_value, keyResult.unit)}
             </p>
           </div>
         </div>

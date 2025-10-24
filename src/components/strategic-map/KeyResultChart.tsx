@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { BarChart3, TableIcon } from 'lucide-react';
 import { useState } from 'react';
 import { calculateKRStatus, type TargetDirection } from '@/lib/krHelpers';
+import { formatValueWithUnit } from '@/lib/utils';
 
 interface KeyResultChartProps {
   monthlyTargets: Record<string, number>;
@@ -190,7 +191,7 @@ const normalizedActuals: Record<string, number | null> =
                 />
                 <Tooltip 
                   formatter={(value: number | null, name: string) => [
-                    value !== null && value !== undefined && Number.isFinite(Number(value)) ? `${Number(value).toLocaleString('pt-BR')} ${unit}` : 'Sem dados', 
+                    value !== null && value !== undefined && Number.isFinite(Number(value)) ? formatValueWithUnit(Number(value), unit) : 'Sem dados', 
                     name === 'previsto' ? 'Previsto' : 'Realizado'
                   ]}
                   labelFormatter={(label) => `Mês: ${label}`}
@@ -269,7 +270,7 @@ const normalizedActuals: Record<string, number | null> =
                       >
                         {hasValue ? (
                           <span className={value < 0 ? "text-red-600" : ""}>
-                            {value.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
+                            {formatValueWithUnit(value, unit)}
                           </span>
                         ) : '-'}
                       </TableCell>
@@ -278,7 +279,7 @@ const normalizedActuals: Record<string, number | null> =
                   <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
                     {targetTotal !== 0 ? (
                       <span className={targetTotal < 0 ? "text-red-600" : ""}>
-                        {targetTotal.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
+                        {formatValueWithUnit(targetTotal, unit)}
                       </span>
                     ) : '-'}
                   </TableCell>
@@ -297,7 +298,7 @@ const normalizedActuals: Record<string, number | null> =
                       >
                         {hasValue ? (
                           <span className={value < 0 ? "text-red-600 font-semibold" : ""}>
-                            {value.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
+                            {formatValueWithUnit(value, unit)}
                           </span>
                         ) : '-'}
                       </TableCell>
@@ -306,7 +307,7 @@ const normalizedActuals: Record<string, number | null> =
                   <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
                     {actualTotal !== 0 ? (
                       <span className={actualTotal < 0 ? "text-red-600" : ""}>
-                        {actualTotal.toLocaleString('pt-BR')}{unit ? ` ${unit}` : ''}
+                        {formatValueWithUnit(actualTotal, unit)}
                       </span>
                     ) : '-'}
                   </TableCell>

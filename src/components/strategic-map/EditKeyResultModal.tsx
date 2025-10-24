@@ -13,6 +13,7 @@ import { KeyResultChart } from './KeyResultChart';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { formatValueWithUnit } from '@/lib/utils';
 
 interface EditKeyResultModalProps {
   keyResult: KeyResult;
@@ -287,13 +288,13 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
                 <div>
                   <Label className="text-sm font-medium">Meta Anual</Label>
                   <p className="text-lg font-semibold">
-                    {formatBrazilianNumber(calculateYearlyTarget(monthlyTargets))} {keyResult.unit}
+                    {formatValueWithUnit(Number(formatBrazilianNumber(calculateYearlyTarget(monthlyTargets)).replace(/\./g, '').replace(',', '.')), keyResult.unit)}
                   </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Realizado no Ano</Label>
                   <p className="text-lg font-semibold">
-                    {formatBrazilianNumber(calculateYearlyActual(monthlyActual))} {keyResult.unit}
+                    {formatValueWithUnit(Number(formatBrazilianNumber(calculateYearlyActual(monthlyActual)).replace(/\./g, '').replace(',', '.')), keyResult.unit)}
                   </p>
                 </div>
               </div>

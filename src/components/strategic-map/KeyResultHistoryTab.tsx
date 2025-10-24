@@ -5,6 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { KeyResult } from '@/types/strategic-map';
 import { useKeyResultHistory, KeyResultHistoryEntry } from '@/hooks/useKeyResultHistory';
 import { Clock, User, TrendingUp, TrendingDown } from 'lucide-react';
+import { formatValueWithUnit } from '@/lib/utils';
 
 interface KeyResultHistoryTabProps {
   keyResult: KeyResult;
@@ -106,11 +107,11 @@ export const KeyResultHistoryTab = ({ keyResult }: KeyResultHistoryTabProps) => 
                   <span className="text-sm font-medium">Valor Atual:</span>
                   <div className="flex items-center gap-2">
                     <span className="text-sm">
-                      {entry.previous_current_value?.toLocaleString('pt-BR')} {keyResult.unit}
+                      {formatValueWithUnit(entry.previous_current_value || 0, keyResult.unit)}
                     </span>
                     <span className="text-muted-foreground">→</span>
                     <span className="text-sm font-medium">
-                      {keyResult.current_value?.toLocaleString('pt-BR')} {keyResult.unit}
+                      {formatValueWithUnit(keyResult.current_value || 0, keyResult.unit)}
                     </span>
                     {keyResult.current_value > (entry.previous_current_value || 0) ? (
                       <TrendingUp className="w-4 h-4 text-green-600" />
@@ -127,11 +128,11 @@ export const KeyResultHistoryTab = ({ keyResult }: KeyResultHistoryTabProps) => 
                   <span className="text-sm font-medium">Meta:</span>
                   <div className="flex items-center gap-2">
                     <span className="text-sm">
-                      {entry.previous_target_value?.toLocaleString('pt-BR')} {keyResult.unit}
+                      {formatValueWithUnit(entry.previous_target_value || 0, keyResult.unit)}
                     </span>
                     <span className="text-muted-foreground">→</span>
                     <span className="text-sm font-medium">
-                      {keyResult.target_value?.toLocaleString('pt-BR')} {keyResult.unit}
+                      {formatValueWithUnit(keyResult.target_value || 0, keyResult.unit)}
                     </span>
                   </div>
                 </div>
