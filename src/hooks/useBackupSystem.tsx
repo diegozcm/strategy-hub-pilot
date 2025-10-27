@@ -444,29 +444,70 @@ export const useBackupSystem = () => {
       const month = cronParts[3];
       const dayOfWeek = cronParts[4];
 
-      // Simple logic for common patterns
-      if (minute === '0' && hour === '0' && day === '*') {
-        // Daily at midnight
-        nextRun.setDate(nextRun.getDate() + 1);
-        nextRun.setHours(0, 0, 0, 0);
-      } else if (minute === '0' && hour === '*') {
-        // Every hour
-        nextRun.setHours(nextRun.getHours() + 1);
-        nextRun.setMinutes(0, 0, 0);
-      } else if (minute === '*') {
-        // Every minute
+      // Handle different cron patterns
+      if (minute === '*') {
+        // Every minute - next minute
         nextRun.setMinutes(nextRun.getMinutes() + 1);
         nextRun.setSeconds(0, 0);
-      } else if (minute === '0' && hour !== '*' && day === '*') {
-        // Daily at specific hour
-        nextRun.setDate(nextRun.getDate() + 1);
-        nextRun.setHours(parseInt(hour), 0, 0, 0);
+      } else if (minute === '0' && hour === '*') {
+        // Every hour - next hour at minute 0
+        nextRun.setHours(nextRun.getHours() + 1);
+        nextRun.setMinutes(0, 0, 0);
+      } else if (minute !== '*' && hour !== '*' && day === '*') {
+        // Daily at specific time - calculate next occurrence
+        const targetHour = parseInt(hour);
+        const targetMinute = parseInt(minute);
+        
+        nextRun.setHours(targetHour, targetMinute, 0, 0);
+        
+        // If the time has already passed today, move to tomorrow
+        if (nextRun <= now) {
+          nextRun.setDate(nextRun.getDate() + 1);
+        }
+      } else if (minute === '0' && hour === '0' && day === '*') {
+        // Daily at midnight
+        nextRun.setHours(0, 0, 0, 0);
+        // If it's already past midnight, move to tomorrow
+        if (nextRun <= now) {
+          nextRun.setDate(nextRun.getDate() + 1);
+        }
+      } else if (dayOfWeek !== '*') {
+        // Weekly at specific day and time
+        const targetDay = parseInt(dayOfWeek);
+        const targetHour = parseInt(hour);
+        const targetMinute = parseInt(minute);
+        const currentDay = nextRun.getDay();
+        
+        nextRun.setHours(targetHour, targetMinute, 0, 0);
+        
+        // Calculate days until target day
+        let daysUntilTarget = targetDay - currentDay;
+        if (daysUntilTarget < 0) {
+          daysUntilTarget += 7;
+        } else if (daysUntilTarget === 0 && nextRun <= now) {
+          daysUntilTarget = 7;
+        }
+        
+        nextRun.setDate(nextRun.getDate() + daysUntilTarget);
+      } else if (day !== '*') {
+        // Monthly at specific day
+        const targetDay = parseInt(day);
+        const targetHour = parseInt(hour);
+        const targetMinute = parseInt(minute);
+        
+        nextRun.setDate(targetDay);
+        nextRun.setHours(targetHour, targetMinute, 0, 0);
+        
+        // If the date has already passed this month, move to next month
+        if (nextRun <= now) {
+          nextRun.setMonth(nextRun.getMonth() + 1);
+        }
       } else {
-        // Default: add 1 day
+        // Default: next day at the same time
         nextRun.setDate(nextRun.getDate() + 1);
       }
     } else {
-      // Default: add 1 day
+      // Invalid cron expression, default to next day
       nextRun.setDate(nextRun.getDate() + 1);
     }
 

@@ -1710,7 +1710,7 @@ export type Database = {
           accessed_user_id: string
           accessing_user_id: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           user_agent: string | null
         }
         Insert: {
@@ -1719,7 +1719,7 @@ export type Database = {
           accessed_user_id: string
           accessing_user_id: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
         }
         Update: {
@@ -1728,7 +1728,7 @@ export type Database = {
           accessed_user_id?: string
           accessing_user_id?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           user_agent?: string | null
         }
         Relationships: []
@@ -2754,14 +2754,8 @@ export type Database = {
         Args: { _admin_id: string; _user_id: string }
         Returns: boolean
       }
-      analyze_user_data: {
-        Args: { target_user_id: string }
-        Returns: Json
-      }
-      analyze_user_relations: {
-        Args: { _user_id: string }
-        Returns: Json
-      }
+      analyze_user_data: { Args: { target_user_id: string }; Returns: Json }
+      analyze_user_relations: { Args: { _user_id: string }; Returns: Json }
       assign_user_to_company: {
         Args: { _admin_id: string; _company_id: string; _user_id: string }
         Returns: boolean
@@ -2779,10 +2773,7 @@ export type Database = {
         Args: { actual: number; target: number }
         Returns: number
       }
-      can_delete_company: {
-        Args: { _company_id: string }
-        Returns: boolean
-      }
+      can_delete_company: { Args: { _company_id: string }; Returns: boolean }
       check_startup_integrity: {
         Args: { _company_id: string }
         Returns: {
@@ -2902,7 +2893,7 @@ export type Database = {
         Returns: boolean
       }
       create_missing_profiles: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           action: string
           missing_email: string
@@ -2961,7 +2952,7 @@ export type Database = {
         Returns: boolean
       }
       debug_auth_context: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           current_user_id: string
           profile_company_id: string
@@ -2970,10 +2961,7 @@ export type Database = {
           user_company_relations_count: number
         }[]
       }
-      end_impersonation: {
-        Args: { _admin_id: string }
-        Returns: boolean
-      }
+      end_impersonation: { Args: { _admin_id: string }; Returns: boolean }
       find_compatible_replacement_users: {
         Args: { _admin_id: string; _user_id: string }
         Returns: {
@@ -2986,10 +2974,7 @@ export type Database = {
           user_id: string
         }[]
       }
-      generate_temporary_password: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_temporary_password: { Args: never; Returns: string }
       get_monthly_objective_achievement: {
         Args: { objective_id: string; target_month: string }
         Returns: {
@@ -3002,14 +2987,8 @@ export type Database = {
           yearly_target: number
         }[]
       }
-      get_table_names: {
-        Args: Record<PropertyKey, never>
-        Returns: string[]
-      }
-      get_user_company_id: {
-        Args: { _user_id: string }
-        Returns: string
-      }
+      get_table_names: { Args: never; Returns: string[] }
+      get_user_company_id: { Args: { _user_id: string }; Returns: string }
       get_user_module_roles: {
         Args: { _user_id: string }
         Returns: {
@@ -3052,14 +3031,8 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
-      is_system_admin: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_system_admin: { Args: { _user_id: string }; Returns: boolean }
       repair_startup: {
         Args: { _company_id: string }
         Returns: {

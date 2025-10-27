@@ -171,10 +171,14 @@ export const BackupTab: React.FC = () => {
     if (!scheduleName || !cronExpression) return;
 
     try {
+      // Calculate next_run before creating the schedule
+      const nextRun = calculateNextRun(cronExpression);
+      
       await createBackupSchedule({
         schedule_name: scheduleName,
         backup_type: scheduleBackupType,
         cron_expression: cronExpression,
+        next_run: nextRun.toISOString(),
         tables_included: scheduleBackupType === 'selective' ? scheduleSelectedTables : undefined,
         retention_days: retentionDays,
         notes: scheduleNotes || undefined,
