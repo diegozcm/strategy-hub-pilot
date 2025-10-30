@@ -33,6 +33,8 @@ import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { EditKeyResultModal } from '@/components/strategic-map/EditKeyResultModal';
+import { useRumoCalculations, PeriodType } from '@/hooks/useRumoCalculations';
+import { StrategicObjective, StrategicPillar } from '@/types/strategic-map';
 
 interface StrategicPlan {
   id: string;
@@ -46,26 +48,6 @@ interface StrategicPlan {
   created_at: string;
 }
 
-interface StrategicObjective {
-  id: string;
-  title: string;
-  description: string;
-  progress: number;
-  target_date: string;
-  plan_id: string;
-  pillar_id: string;
-  owner_id: string;
-  created_at: string;
-}
-
-interface StrategicPillar {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
-  company_id: string;
-}
-
 export const ObjectivesPage: React.FC = () => {
   const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
@@ -77,6 +59,20 @@ export const ObjectivesPage: React.FC = () => {
     setObjectives, setPlans, setPillars, setKeyResults,
     refreshData, softReload, invalidateAndReload, handleError, clearError
   } = useObjectivesData();
+  
+  // Period type for Rumo calculations
+  const [periodType, setPeriodType] = useState<PeriodType>('monthly');
+  
+  // Calculate progress using Rumo calculations hook
+  const { objectiveProgress, krProgress } = useRumoCalculations(
+    pillars.map(pillar => ({
+      ...pillar,
+      objectives: objectives.filter(obj => obj.pillar_id === pillar.id)
+    })) as StrategicPillar[],
+    objectives as StrategicObjective[],
+    keyResults,
+    periodType
+  );
   
   const [selectedPlan, setSelectedPlan] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -417,19 +413,6 @@ export const ObjectivesPage: React.FC = () => {
     if (progress < 60) return 'bg-yellow-500';
     if (progress < 80) return 'bg-blue-500';
     return 'bg-green-500';
-  };
-
-  const calculateObjectiveProgress = (keyResults: any[]) => {
-    if (keyResults.length === 0) return 0;
-    
-    const totalProgress = keyResults.reduce((sum, kr) => {
-      const currentValue = kr.yearly_actual || kr.current_value || 0;
-      const targetValue = kr.yearly_target || kr.target_value || 1;
-      const progress = targetValue > 0 ? Math.min((currentValue / targetValue) * 100, 100) : 0;
-      return sum + progress;
-    }, 0);
-    
-    return Math.round(totalProgress / keyResults.length);
   };
 
   const getObjectiveKeyResults = (objectiveId: string) => {
@@ -960,6 +943,22 @@ export const ObjectivesPage: React.FC = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
+              <Button
+                variant={periodType === 'monthly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setPeriodType('monthly')}
+              >
+                Mensal
+              </Button>
+              <Button
+                variant={periodType === 'ytd' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setPeriodType('ytd')}
+              >
+                YTD
+              </Button>
+            </div>
           </div>
 
           {/* Objectives Grid */}
@@ -988,12 +987,13 @@ export const ObjectivesPage: React.FC = () => {
                 const pillar = pillars.find(p => p.id === objective.pillar_id);
                 const plan = plans.find(p => p.id === objective.plan_id);
                 const objectiveKeyResults = getObjectiveKeyResults(objective.id);
+                const objTyped = objective as StrategicObjective;
                 
                 return (
                   <Card 
                     key={objective.id} 
                     className="hover:shadow-lg transition-all cursor-pointer group overflow-hidden"
-                    onClick={() => openDetailModal(objective)}
+                    onClick={() => openDetailModal(objTyped)}
                   >
                     {/* Header colorido com pilar */}
                     {pillar && (
@@ -1036,17 +1036,19 @@ export const ObjectivesPage: React.FC = () => {
                         <div className="mt-3">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium text-muted-foreground">Progresso</span>
-                            <span className="text-sm font-bold text-foreground">{calculateObjectiveProgress(objectiveKeyResults)}%</span>
+                            <span className="text-sm font-bold text-foreground">
+                              {(objectiveProgress.get(objective.id) || 0).toFixed(1)}%
+                            </span>
                           </div>
                           <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
                             <div 
                               className={`h-full transition-all duration-300 rounded-full ${
-                                calculateObjectiveProgress(objectiveKeyResults) < 30 ? 'bg-red-500' : 
-                                calculateObjectiveProgress(objectiveKeyResults) < 60 ? 'bg-yellow-500' : 
-                                calculateObjectiveProgress(objectiveKeyResults) < 80 ? 'bg-blue-500' : 
+                                (objectiveProgress.get(objective.id) || 0) < 30 ? 'bg-red-500' : 
+                                (objectiveProgress.get(objective.id) || 0) < 60 ? 'bg-yellow-500' : 
+                                (objectiveProgress.get(objective.id) || 0) < 80 ? 'bg-blue-500' : 
                                 'bg-green-500'
                               }`}
-                              style={{ width: `${calculateObjectiveProgress(objectiveKeyResults)}%` }}
+                              style={{ width: `${Math.min(objectiveProgress.get(objective.id) || 0, 100)}%` }}
                             />
                           </div>
                         </div>
@@ -1071,7 +1073,7 @@ export const ObjectivesPage: React.FC = () => {
           onDelete={handleDeleteObjective}
           onOpenKeyResultDetails={handleOpenKeyResultDetails}
           pillars={pillars}
-          progressPercentage={selectedObjective ? calculateObjectiveProgress(getObjectiveKeyResults(selectedObjective.id)) : 0}
+          progressPercentage={selectedObjective ? (objectiveProgress.get(selectedObjective.id) || 0) : 0}
         />
 
 
