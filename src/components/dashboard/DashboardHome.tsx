@@ -522,27 +522,6 @@ export const DashboardHome: React.FC = () => {
             Visão geral estratégica da empresa - {company.name}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Ano:</span>
-          <Select
-            value={selectedYear.toString()}
-            onValueChange={(value) => {
-              setSelectedYear(parseInt(value));
-              setExpandedKRs(new Set()); // Collapse all KRs when changing year
-            }}
-          >
-            <SelectTrigger className="w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: currentYear - 2019 + 5 }, (_, i) => 2020 + i).map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       {/* Tabs */}
