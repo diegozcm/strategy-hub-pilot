@@ -42,6 +42,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
   const [editMode, setEditMode] = useState<boolean>(false);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [tempValue, setTempValue] = useState<string>('');
 
   const currentYear = new Date().getFullYear();
   const months = [
@@ -435,19 +437,22 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                       <Input
                         type="text"
                         placeholder="0,00"
-                        value={formatBrazilianNumber(monthlyTargets[month.key])}
+                        value={editingField === month.key ? tempValue : formatBrazilianNumber(monthlyTargets[month.key])}
+                        onFocus={() => {
+                          setEditingField(month.key);
+                          setTempValue(monthlyTargets[month.key]?.toString() || '');
+                        }}
                         onChange={(e) => {
-                          const value = parseBrazilianNumber(e.target.value);
+                          setTempValue(e.target.value);
+                        }}
+                        onBlur={() => {
+                          const value = parseBrazilianNumber(tempValue);
                           setMonthlyTargets(prev => ({
                             ...prev,
                             [month.key]: value || 0
                           }));
-                        }}
-                        onBlur={(e) => {
-                          const value = parseBrazilianNumber(e.target.value);
-                          if (value !== null) {
-                            e.target.value = formatBrazilianNumber(value);
-                          }
+                          setEditingField(null);
+                          setTempValue('');
                         }}
                         className="text-right font-mono"
                       />
