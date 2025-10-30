@@ -42,19 +42,22 @@ export const useRumoCalculations = (
       
       // Only use monthly data from the selected year (no fallback to yearly fields)
       if (periodType === 'monthly' && lastAvailableMonth > 0) {
-        const monthlyActual = kr.monthly_actual?.[monthKey];
-        const monthlyTarget = kr.monthly_targets?.[monthKey];
-        
-        const hasTarget = typeof monthlyTarget === 'number' && monthlyTarget > 0;
-        const hasActual = typeof monthlyActual === 'number';
-        
-        if (hasTarget && hasActual) {
-          const monthlyStatus = calculateKRStatus(
-            monthlyActual,
-            monthlyTarget,
-            kr.target_direction || 'maximize'
-          );
-          progress = monthlyStatus.percentage;
+        // Use the most recent month in selectedYear that has valid data
+        for (let m = lastAvailableMonth; m >= 1; m--) {
+          const key = `${selectedYear}-${String(m).padStart(2, '0')}`;
+          const monthlyActual = kr.monthly_actual?.[key];
+          const monthlyTarget = kr.monthly_targets?.[key];
+          const hasTarget = typeof monthlyTarget === 'number' && Number.isFinite(monthlyTarget) && monthlyTarget > 0;
+          const hasActual = typeof monthlyActual === 'number' && Number.isFinite(monthlyActual);
+          if (hasTarget && hasActual) {
+            const monthlyStatus = calculateKRStatus(
+              monthlyActual,
+              monthlyTarget,
+              kr.target_direction || 'maximize'
+            );
+            progress = monthlyStatus.percentage;
+            break;
+          }
         }
       } else if (periodType === 'ytd' && lastAvailableMonth > 0) {
         // For YTD, calculate based on accumulated months
@@ -67,8 +70,10 @@ export const useRumoCalculations = (
           const key = `${selectedYear}-${String(m).padStart(2, '0')}`;
           const actual = kr.monthly_actual?.[key];
           const target = kr.monthly_targets?.[key];
+          const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
+          const hasActual = typeof actual === 'number' && Number.isFinite(actual);
           
-          if (actual !== undefined && target !== undefined) {
+          if (hasTarget && hasActual) {
             ytdActual += actual;
             ytdTarget += target;
             hasMonthlyData = true;
