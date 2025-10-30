@@ -15,13 +15,15 @@ interface RumoObjectiveBlockProps {
   progress: number;
   keyResults: KeyResult[];
   krProgress: Map<string, number>;
+  selectedYear?: number;
 }
 
 export const RumoObjectiveBlock = ({ 
   objective, 
   progress, 
   keyResults,
-  krProgress 
+  krProgress,
+  selectedYear
 }: RumoObjectiveBlockProps) => {
   const performance = getPerformanceColor(progress);
   const styles = getPerformanceStyles(performance);
@@ -184,6 +186,7 @@ export const RumoObjectiveBlock = ({
                           monthlyActual={kr.monthly_actual}
                           targetDirection={kr.target_direction || 'maximize'}
                           size="sm"
+                          selectedYear={selectedYear}
                         />
                       </div>
                     );

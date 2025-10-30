@@ -142,6 +142,7 @@ export const RumoDashboard = ({ selectedYear = new Date().getFullYear() }: RumoD
                             progress={objProgress}
                             keyResults={keyResults}
                             krProgress={krProgress}
+                            selectedYear={selectedYear}
                           />
                         );
                       })}
