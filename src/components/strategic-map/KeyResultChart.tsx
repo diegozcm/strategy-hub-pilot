@@ -123,23 +123,22 @@ const normalizedActuals: Record<string, number | null> =
           )}
         </div>
         <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setViewMode('chart')}
-              className={`h-8 w-8 ${viewMode === 'chart' ? 'bg-accent' : ''}`}
-            >
-              <BarChart3 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setViewMode('table')}
-              className={`h-8 w-8 ${viewMode === 'table' ? 'bg-accent' : ''}`}
-            >
-              <TableIcon className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setViewMode('chart')}
+            className={`h-8 w-8 ${viewMode === 'chart' ? 'bg-accent' : ''}`}
+          >
+            <BarChart3 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setViewMode('table')}
+            className={`h-8 w-8 ${viewMode === 'table' ? 'bg-accent' : ''}`}
+          >
+            <TableIcon className="h-4 w-4" />
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
