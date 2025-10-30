@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { StrategicPillar, StrategicObjective, KeyResult } from '@/types/strategic-map';
-import { calculateKRStatus } from '@/lib/krHelpers';
+import { useKRCalculations, PeriodType } from './useKRCalculations';
 
-export type PeriodType = 'monthly' | 'ytd';
+export type { PeriodType };
 
 interface RumoCalculations {
   pillarProgress: Map<string, number>;
@@ -24,70 +24,74 @@ export const useRumoCalculations = (
     const objectiveProgress = new Map<string, number>();
     const pillarProgress = new Map<string, number>();
 
-    // Get current date
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1; // 1-12
-    const currentYear = now.getFullYear();
-    
-    // Determinar o último mês disponível baseado no ano selecionado
-    const lastAvailableMonth = selectedYear < currentYear ? 12 : 
-                               selectedYear === currentYear ? currentMonth : 
-                               0; // Ano futuro, sem dados
-    
-    const monthKey = `${selectedYear}-${String(lastAvailableMonth).padStart(2, '0')}`;
-
-    // Calculate KR progress
+    // Calculate KR progress usando o hook compartilhado
     keyResults.forEach(kr => {
-      let progress = 0;
+      // Criar um objeto KR temporário para usar com useKRCalculations
+      // Nota: Não podemos usar o hook dentro do loop, então vamos replicar a lógica
+      const now = new Date();
+      const currentMonth = now.getMonth() + 1;
+      const currentYear = now.getFullYear();
       
-      // Only use monthly data from the selected year (no fallback to yearly fields)
+      const lastAvailableMonth = selectedYear < currentYear ? 12 : 
+                                 selectedYear === currentYear ? currentMonth : 0;
+      
+      let target = 0;
+      let actual = 0;
+      let hasData = false;
+
       if (periodType === 'monthly' && lastAvailableMonth > 0) {
-        // Use the most recent month in selectedYear that has valid data
+        // LÓGICA MENSAL: pegar o último mês com dados
         for (let m = lastAvailableMonth; m >= 1; m--) {
           const key = `${selectedYear}-${String(m).padStart(2, '0')}`;
           const monthlyActual = kr.monthly_actual?.[key];
           const monthlyTarget = kr.monthly_targets?.[key];
-          const hasTarget = typeof monthlyTarget === 'number' && Number.isFinite(monthlyTarget) && monthlyTarget > 0;
+          
+          const hasTarget = typeof monthlyTarget === 'number' && Number.isFinite(monthlyTarget) && monthlyTarget !== 0;
           const hasActual = typeof monthlyActual === 'number' && Number.isFinite(monthlyActual);
+          
           if (hasTarget && hasActual) {
-            const monthlyStatus = calculateKRStatus(
-              monthlyActual,
-              monthlyTarget,
-              kr.target_direction || 'maximize'
-            );
-            progress = monthlyStatus.percentage;
+            target = monthlyTarget;
+            actual = monthlyActual;
+            hasData = true;
             break;
           }
         }
       } else if (periodType === 'ytd' && lastAvailableMonth > 0) {
-        // For YTD, calculate based on accumulated months
-        let ytdActual = 0;
-        let ytdTarget = 0;
-        let hasMonthlyData = false;
-
-        // Acumular de janeiro até o último mês disponível do ano selecionado
+        // LÓGICA YTD: acumular jan até mês atual
         for (let m = 1; m <= lastAvailableMonth; m++) {
           const key = `${selectedYear}-${String(m).padStart(2, '0')}`;
-          const actual = kr.monthly_actual?.[key];
-          const target = kr.monthly_targets?.[key];
-          const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
-          const hasActual = typeof actual === 'number' && Number.isFinite(actual);
+          const monthlyActual = kr.monthly_actual?.[key];
+          const monthlyTarget = kr.monthly_targets?.[key];
+          
+          const hasTarget = typeof monthlyTarget === 'number' && Number.isFinite(monthlyTarget);
+          const hasActual = typeof monthlyActual === 'number' && Number.isFinite(monthlyActual);
           
           if (hasTarget && hasActual) {
-            ytdActual += actual;
-            ytdTarget += target;
-            hasMonthlyData = true;
+            target += monthlyTarget;
+            actual += monthlyActual;
+            hasData = true;
           }
         }
+      }
 
-        if (hasMonthlyData && ytdTarget > 0) {
-          const ytdStatus = calculateKRStatus(
-            ytdActual,
-            ytdTarget,
-            kr.target_direction || 'maximize'
-          );
-          progress = ytdStatus.percentage;
+      // Calcular percentual usando a mesma lógica do useKRCalculations
+      let progress = 0;
+      if (hasData && target !== 0) {
+        const status = {
+          percentage: 0,
+          isGood: false,
+          isExcellent: false,
+          color: 'text-red-600'
+        };
+        
+        const direction = kr.target_direction || 'maximize';
+        if (direction === 'minimize') {
+          status.percentage = target > 0 ? ((target - actual) / target) * 100 + 100 : 0;
+        } else {
+          status.percentage = target > 0 ? (actual / target) * 100 : 0;
         }
+        
+        progress = status.percentage;
       }
 
       krProgress.set(kr.id, Math.max(0, progress));

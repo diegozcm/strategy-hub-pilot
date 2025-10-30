@@ -17,6 +17,8 @@ interface KeyResultChartProps {
   selectedYear: number;
   onYearChange?: (year: number) => void;
   targetDirection?: TargetDirection;
+  periodType?: 'monthly' | 'ytd';
+  onPeriodTypeChange?: (type: 'monthly' | 'ytd') => void;
 }
 
 export const KeyResultChart = ({ 
@@ -25,7 +27,9 @@ export const KeyResultChart = ({
   unit, 
   selectedYear,
   onYearChange,
-  targetDirection = 'maximize'
+  targetDirection = 'maximize',
+  periodType = 'monthly',
+  onPeriodTypeChange
 }: KeyResultChartProps) => {
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
   
@@ -125,6 +129,22 @@ const normalizedActuals: Record<string, number | null> =
           )}
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={periodType === 'monthly' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onPeriodTypeChange?.('monthly')}
+            >
+              Mensal
+            </Button>
+            <Button
+              variant={periodType === 'ytd' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => onPeriodTypeChange?.('ytd')}
+            >
+              YTD
+            </Button>
+          </div>
           <div className="flex items-center gap-2">
             <Label className="text-sm font-medium whitespace-nowrap">Ano:</Label>
             <Select 
