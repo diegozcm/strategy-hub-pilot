@@ -107,10 +107,28 @@ export const DashboardHome: React.FC = () => {
 
   // Calculate progress function
   const calculateProgress = (keyResult: KeyResultWithPillar): number => {
-    if (!keyResult.target_value || keyResult.target_value === 0) return 0;
+    // Calcular progresso baseado no ano selecionado
+    const months = getMonthsOfYear();
+    const aggregationType = keyResult.aggregation_type || 'sum';
+    
+    const targetValues = months
+      .map(month => keyResult.monthly_targets?.[month.key])
+      .filter(val => typeof val === 'number' && Number.isFinite(val));
+    
+    const actualValues = months
+      .map(month => keyResult.monthly_actual?.[month.key])
+      .filter(val => typeof val === 'number' && Number.isFinite(val));
+    
+    if (targetValues.length === 0) return 0;
+    
+    const yearlyTarget = calculateAggregatedValue(targetValues, aggregationType);
+    const yearlyActual = calculateAggregatedValue(actualValues, aggregationType);
+    
+    if (yearlyTarget === 0) return 0;
+    
     const pct = calculateKRStatus(
-      keyResult.current_value,
-      keyResult.target_value,
+      yearlyActual,
+      yearlyTarget,
       keyResult.target_direction || 'maximize'
     ).percentage;
     return Math.min(pct, 100);
@@ -165,7 +183,48 @@ export const DashboardHome: React.FC = () => {
     } else {
       setLoading(false);
     }
-  }, [company?.id, selectedYear]);
+  }, [company?.id]);
+
+  // Recalcular estatísticas quando o ano selecionado mudar
+  useEffect(() => {
+    if (keyResults.length === 0) return;
+    
+    // Calcular score geral baseado no ano selecionado
+    const scores = keyResults.map(kr => {
+      const months = getMonthsOfYear();
+      const aggregationType = kr.aggregation_type || 'sum';
+      
+      const targetValues = months
+        .map(month => kr.monthly_targets?.[month.key])
+        .filter(val => typeof val === 'number' && Number.isFinite(val));
+      
+      const actualValues = months
+        .map(month => kr.monthly_actual?.[month.key])
+        .filter(val => typeof val === 'number' && Number.isFinite(val));
+      
+      if (targetValues.length === 0) return 0;
+      
+      const yearlyTarget = calculateAggregatedValue(targetValues, aggregationType);
+      const yearlyActual = calculateAggregatedValue(actualValues, aggregationType);
+      
+      if (yearlyTarget === 0) return 0;
+      
+      return calculateKRStatus(
+        yearlyActual,
+        yearlyTarget,
+        kr.target_direction || 'maximize'
+      ).percentage;
+    });
+    
+    const overallScore = scores.length > 0 
+      ? scores.reduce((sum, score) => sum + score, 0) / scores.length 
+      : 0;
+    
+    setDashboardStats(prev => ({
+      ...prev,
+      overallScore
+    }));
+  }, [selectedYear, keyResults]);
 
   const fetchDashboardData = async () => {
     if (!company?.id) return;
@@ -304,13 +363,6 @@ export const DashboardHome: React.FC = () => {
         proj.status === 'in_progress' || proj.status === 'planning'
       ).length || 0;
 
-      // Calcular score geral
-      const scores = keyResultsWithPillars.map(kr => {
-        const yearlyPercentage = kr.yearly_target > 0 ? kr.yearly_actual / kr.yearly_target * 100 : 0;
-        return Math.min(yearlyPercentage, 100);
-      });
-      const overallScore = scores.length > 0 ? scores.reduce((sum, score) => sum + score, 0) / scores.length : 0;
-
       // Contar ferramentas preenchidas
       const toolsPromises = [
         // Golden Circle
@@ -345,7 +397,7 @@ export const DashboardHome: React.FC = () => {
         totalObjectives,
         totalKRs,
         activeProjects,
-        overallScore,
+        overallScore: 0, // Será recalculado pelo useEffect baseado no ano selecionado
         filledTools
       });
     } catch (error) {
@@ -356,10 +408,29 @@ export const DashboardHome: React.FC = () => {
   };
 
   const getYearlyAchievement = (kr: KeyResultWithPillar) => {
-    if (kr.yearly_target === 0) return 0;
+    // Calcular valores anuais baseados apenas nos meses do ano selecionado
+    const months = getMonthsOfYear();
+    const aggregationType = kr.aggregation_type || 'sum';
+    
+    // Coletar valores mensais do ano selecionado
+    const targetValues = months
+      .map(month => kr.monthly_targets?.[month.key])
+      .filter(val => typeof val === 'number' && Number.isFinite(val));
+    
+    const actualValues = months
+      .map(month => kr.monthly_actual?.[month.key])
+      .filter(val => typeof val === 'number' && Number.isFinite(val));
+    
+    if (targetValues.length === 0) return 0;
+    
+    const yearlyTarget = calculateAggregatedValue(targetValues, aggregationType);
+    const yearlyActual = calculateAggregatedValue(actualValues, aggregationType);
+    
+    if (yearlyTarget === 0) return 0;
+    
     return calculateKRStatus(
-      kr.yearly_actual,
-      kr.yearly_target,
+      yearlyActual,
+      yearlyTarget,
       kr.target_direction || 'maximize'
     ).percentage;
   };
