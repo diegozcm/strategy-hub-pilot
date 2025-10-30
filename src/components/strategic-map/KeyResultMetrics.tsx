@@ -12,6 +12,7 @@ interface KeyResultMetricsProps {
   currentMonth: string;
   targetDirection?: TargetDirection;
   periodType?: 'monthly' | 'ytd';
+  selectedYear?: number;
 }
 
 export const KeyResultMetrics = ({ 
@@ -21,7 +22,8 @@ export const KeyResultMetrics = ({
   achievementPercentage,
   currentMonth,
   targetDirection = 'maximize',
-  periodType = 'monthly'
+  periodType = 'monthly',
+  selectedYear
 }: KeyResultMetricsProps) => {
   // Calculate status using the helper function
   const status = calculateKRStatus(yearlyActual, yearlyTarget, targetDirection);
@@ -36,6 +38,7 @@ export const KeyResultMetrics = ({
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
           <CardTitle className="text-sm font-medium">
             {periodType === 'monthly' ? 'Meta Mensal' : 'Meta YTD'}
+            {selectedYear && ` (${selectedYear})`}
           </CardTitle>
           <Target className="h-4 w-4 text-muted-foreground" />
         </CardHeader>

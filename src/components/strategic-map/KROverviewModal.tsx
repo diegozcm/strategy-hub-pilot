@@ -2,6 +2,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultMetrics } from './KeyResultMetrics';
 import { KeyResultChart } from './KeyResultChart';
@@ -139,24 +141,46 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
             )}
           </div>
 
-          {/* Period Type Buttons */}
-          <div className="flex items-center gap-2 px-6 pt-4">
-            <Button
-              variant={periodType === 'monthly' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setPeriodType('monthly')}
-            >
-              Mensal
-            </Button>
-            <Button
-              variant={periodType === 'ytd' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setPeriodType('ytd')}
-            >
-              YTD
-            </Button>
+          {/* Controles de período e ano */}
+          <div className="flex items-center gap-3 px-6 pt-4 pb-2 border-b flex-wrap">
+            <div className="flex items-center gap-2">
+              <Button
+                variant={periodType === 'monthly' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setPeriodType('monthly')}
+              >
+                Mensal
+              </Button>
+              <Button
+                variant={periodType === 'ytd' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setPeriodType('ytd')}
+              >
+                YTD
+              </Button>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Label className="text-sm font-medium">Ano:</Label>
+              <Select 
+                value={selectedYear.toString()} 
+                onValueChange={(value) => setSelectedYear(parseInt(value))}
+              >
+                <SelectTrigger className="w-24 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[2020, 2021, 2022, 2023, 2024, 2025].map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
             {krCalculation.lastMonthWithData && (
-              <Badge variant="secondary" className="ml-2">
+              <Badge variant="secondary">
                 Ref: {new Date(krCalculation.lastMonthWithData + '-01').toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
               </Badge>
             )}
@@ -247,6 +271,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
             currentMonth={periodType === 'monthly' ? 'Mensal' : 'YTD'}
             targetDirection={(currentKeyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
             periodType={periodType}
+            selectedYear={selectedYear}
           />
 
             {/* Evolution Chart */}
@@ -255,10 +280,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
               monthlyActual={monthlyActual}
               unit={currentKeyResult.unit || ''}
               selectedYear={selectedYear}
-              onYearChange={setSelectedYear}
               targetDirection={(currentKeyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
-              periodType={periodType}
-              onPeriodTypeChange={setPeriodType}
             />
           </div>
         </div>

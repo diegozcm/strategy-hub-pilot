@@ -45,6 +45,14 @@ export const useKRCalculations = (
         const hasActual = typeof monthlyActual === 'number' && Number.isFinite(monthlyActual);
         
         if (hasTarget && hasActual) {
+          // DEBUG: Mostrar qual mês foi selecionado
+          console.log(`[useKRCalculations] Modo ${periodType}, Ano ${selectedYear}, Mês selecionado: ${key}`, {
+            monthlyTarget,
+            monthlyActual,
+            hasTarget,
+            hasActual
+          });
+          
           target = monthlyTarget;
           actual = monthlyActual;
           hasData = true;

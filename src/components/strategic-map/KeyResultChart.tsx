@@ -15,10 +15,7 @@ interface KeyResultChartProps {
   monthlyActual: Record<string, number>;
   unit: string;
   selectedYear: number;
-  onYearChange?: (year: number) => void;
   targetDirection?: TargetDirection;
-  periodType?: 'monthly' | 'ytd';
-  onPeriodTypeChange?: (type: 'monthly' | 'ytd') => void;
 }
 
 export const KeyResultChart = ({ 
@@ -26,10 +23,7 @@ export const KeyResultChart = ({
   monthlyActual, 
   unit, 
   selectedYear,
-  onYearChange,
-  targetDirection = 'maximize',
-  periodType = 'monthly',
-  onPeriodTypeChange
+  targetDirection = 'maximize'
 }: KeyResultChartProps) => {
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
   
@@ -128,42 +122,7 @@ const normalizedActuals: Record<string, number | null> =
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Button
-              variant={periodType === 'monthly' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => onPeriodTypeChange?.('monthly')}
-            >
-              Mensal
-            </Button>
-            <Button
-              variant={periodType === 'ytd' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => onPeriodTypeChange?.('ytd')}
-            >
-              YTD
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Label className="text-sm font-medium whitespace-nowrap">Ano:</Label>
-            <Select 
-              value={selectedYear.toString()} 
-              onValueChange={(value) => onYearChange?.(parseInt(value))}
-            >
-              <SelectTrigger className="w-24 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {yearOptions.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
