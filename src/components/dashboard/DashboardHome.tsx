@@ -977,7 +977,7 @@ export const DashboardHome: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="rumo">
-          <RumoDashboard />
+          <RumoDashboard selectedYear={selectedYear} />
         </TabsContent>
       </Tabs>
     </div>

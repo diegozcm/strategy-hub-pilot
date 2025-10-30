@@ -16,18 +16,25 @@ export const useRumoCalculations = (
   pillars: StrategicPillar[],
   objectives: StrategicObjective[],
   keyResults: KeyResult[],
-  periodType: PeriodType = 'monthly'
+  periodType: PeriodType = 'monthly',
+  selectedYear: number = new Date().getFullYear()
 ): RumoCalculations => {
   return useMemo(() => {
     const krProgress = new Map<string, number>();
     const objectiveProgress = new Map<string, number>();
     const pillarProgress = new Map<string, number>();
 
-    // Get current month/year
+    // Get current date
     const now = new Date();
     const currentMonth = now.getMonth() + 1; // 1-12
     const currentYear = now.getFullYear();
-    const monthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+    
+    // Determinar o último mês disponível baseado no ano selecionado
+    const lastAvailableMonth = selectedYear < currentYear ? 12 : 
+                               selectedYear === currentYear ? currentMonth : 
+                               0; // Ano futuro, sem dados
+    
+    const monthKey = `${selectedYear}-${String(lastAvailableMonth).padStart(2, '0')}`;
 
     // Calculate KR progress
     keyResults.forEach(kr => {
@@ -46,7 +53,7 @@ export const useRumoCalculations = (
       const annualProgress = progress; // Store annual progress as fallback
       
       // If there's monthly data, adjust to show only the selected period
-      if (periodType === 'monthly') {
+      if (periodType === 'monthly' && lastAvailableMonth > 0) {
         const monthlyActual = kr.monthly_actual?.[monthKey];
         const monthlyTarget = kr.monthly_targets?.[monthKey];
         
@@ -64,14 +71,15 @@ export const useRumoCalculations = (
           }
         }
         // Otherwise, keep the progress calculated with yearly values
-      } else if (periodType === 'ytd') {
+      } else if (periodType === 'ytd' && lastAvailableMonth > 0) {
         // For YTD, try to calculate based on accumulated months
         let ytdActual = 0;
         let ytdTarget = 0;
         let hasMonthlyData = false;
 
-        for (let m = 1; m <= currentMonth; m++) {
-          const key = `${currentYear}-${String(m).padStart(2, '0')}`;
+        // Acumular de janeiro até o último mês disponível do ano selecionado
+        for (let m = 1; m <= lastAvailableMonth; m++) {
+          const key = `${selectedYear}-${String(m).padStart(2, '0')}`;
           const actual = kr.monthly_actual?.[key];
           const target = kr.monthly_targets?.[key];
           
@@ -145,7 +153,7 @@ export const useRumoCalculations = (
       finalScore,
       hasData,
     };
-  }, [pillars, objectives, keyResults, periodType]);
+  }, [pillars, objectives, keyResults, periodType, selectedYear]);
 };
 
 export const getPerformanceColor = (progress: number): string => {
