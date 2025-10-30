@@ -21,6 +21,8 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
   const [isSaving, setIsSaving] = useState(false);
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [tempValue, setTempValue] = useState<string>('');
 
   // Formata número para padrão brasileiro (xxx.xxx.xxx,xx)
   const formatBrazilianNumber = (value: number | null | undefined): string => {
@@ -200,33 +202,35 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
                     <Input
                       type="text"
                       placeholder="0,00"
-                      value={monthlyActual[month.key] !== undefined 
-                        ? formatBrazilianNumber(monthlyActual[month.key]) 
-                        : ''}
+                      value={editingField === month.key 
+                        ? tempValue 
+                        : (monthlyActual[month.key] !== undefined 
+                            ? formatBrazilianNumber(monthlyActual[month.key]) 
+                            : '')
+                      }
+                      onFocus={() => {
+                        setEditingField(month.key);
+                        setTempValue(monthlyActual[month.key]?.toString() || '');
+                      }}
                       onChange={(e) => {
-                        const rawValue = e.target.value;
-                        
-                        if (rawValue === '' || rawValue === '-') {
+                        setTempValue(e.target.value);
+                      }}
+                      onBlur={() => {
+                        const value = parseBrazilianNumber(tempValue);
+                        if (tempValue === '' || tempValue === '-') {
                           setMonthlyActual(prev => {
                             const newActual = { ...prev };
                             delete newActual[month.key];
                             return newActual;
                           });
-                        } else {
-                          const parsed = parseBrazilianNumber(rawValue);
-                          if (parsed !== null) {
-                            setMonthlyActual(prev => ({
-                              ...prev,
-                              [month.key]: parsed
-                            }));
-                          }
+                        } else if (value !== null) {
+                          setMonthlyActual(prev => ({
+                            ...prev,
+                            [month.key]: value
+                          }));
                         }
-                      }}
-                      onBlur={() => {
-                        // Força re-render com formatação completa ao sair do campo
-                        if (monthlyActual[month.key] !== undefined) {
-                          setMonthlyActual(prev => ({ ...prev }));
-                        }
+                        setEditingField(null);
+                        setTempValue('');
                       }}
                       className="flex-1 text-right font-mono text-base"
                     />
