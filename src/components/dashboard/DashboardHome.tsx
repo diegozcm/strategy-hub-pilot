@@ -175,7 +175,7 @@ export const DashboardHome: React.FC = () => {
     });
     
     setFilteredKeyResults(sorted);
-  }, [keyResults, searchTerm, priorityFilter, objectiveFilter, pillarFilter, progressFilter, pillars]);
+  }, [keyResults, searchTerm, priorityFilter, objectiveFilter, pillarFilter, progressFilter, pillars, selectedYear]);
 
   useEffect(() => {
     if (company?.id) {
@@ -801,6 +801,7 @@ export const DashboardHome: React.FC = () => {
                     const months = getMonthsOfYear();
                     const yearlyAchievement = getYearlyAchievement(kr);
                     const isExpanded = expandedKRs.has(kr.id);
+                    const totals = getAggregatedTotals(kr);
                     
                     return (
                       <div key={kr.id} className="border rounded-lg overflow-hidden group">
@@ -847,7 +848,7 @@ export const DashboardHome: React.FC = () => {
                                       {yearlyAchievement.toFixed(1)}% no ano
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                      Atual: {kr.yearly_actual || kr.current_value || 0}
+                                      Atual: {Number(totals.actual).toFixed(1)} ({selectedYear})
                                     </span>
                                   </div>
                                 </div>

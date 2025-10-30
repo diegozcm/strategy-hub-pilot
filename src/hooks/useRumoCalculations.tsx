@@ -38,41 +38,26 @@ export const useRumoCalculations = (
 
     // Calculate KR progress
     keyResults.forEach(kr => {
-      // Use yearly values as base (same logic as ResultadoChaveMiniCard)
-      const currentValue = kr.yearly_actual || kr.current_value || 0;
-      const targetValue = kr.yearly_target || kr.target_value || 0;
+      let progress = 0;
       
-      // Calculate using helper function that considers target_direction
-      const status = calculateKRStatus(
-        currentValue,
-        targetValue,
-        kr.target_direction || 'maximize'
-      );
-      
-      let progress = status.percentage;
-      const annualProgress = progress; // Store annual progress as fallback
-      
-      // If there's monthly data, adjust to show only the selected period
+      // Only use monthly data from the selected year (no fallback to yearly fields)
       if (periodType === 'monthly' && lastAvailableMonth > 0) {
         const monthlyActual = kr.monthly_actual?.[monthKey];
         const monthlyTarget = kr.monthly_targets?.[monthKey];
         
-        if (monthlyActual !== undefined && monthlyActual !== null && 
-            monthlyTarget !== undefined && monthlyTarget !== null && monthlyTarget > 0) {
-          // If has monthly data, use it for the monthly period
+        const hasTarget = typeof monthlyTarget === 'number' && monthlyTarget > 0;
+        const hasActual = typeof monthlyActual === 'number';
+        
+        if (hasTarget && hasActual) {
           const monthlyStatus = calculateKRStatus(
             monthlyActual,
             monthlyTarget,
             kr.target_direction || 'maximize'
           );
-          // Only use monthly progress if it's positive, otherwise keep annual
-          if (monthlyStatus.percentage > 0) {
-            progress = monthlyStatus.percentage;
-          }
+          progress = monthlyStatus.percentage;
         }
-        // Otherwise, keep the progress calculated with yearly values
       } else if (periodType === 'ytd' && lastAvailableMonth > 0) {
-        // For YTD, try to calculate based on accumulated months
+        // For YTD, calculate based on accumulated months
         let ytdActual = 0;
         let ytdTarget = 0;
         let hasMonthlyData = false;
@@ -96,12 +81,8 @@ export const useRumoCalculations = (
             ytdTarget,
             kr.target_direction || 'maximize'
           );
-          // Only use YTD progress if it's positive, otherwise keep annual
-          if (ytdStatus.percentage > 0) {
-            progress = ytdStatus.percentage;
-          }
+          progress = ytdStatus.percentage;
         }
-        // Otherwise, keep the progress calculated with yearly values
       }
 
       krProgress.set(kr.id, Math.max(0, progress));
