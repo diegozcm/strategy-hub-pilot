@@ -101,16 +101,29 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
     setIsSaving(true);
     
     try {
-      const yearlyActual = calculateYearlyActual(monthlyActual);
+      // Merge dos dados existentes com os novos dados do ano selecionado
+      const existingMonthlyActual = (keyResult.monthly_actual as Record<string, number>) || {};
       
-      const cleanMonthlyActual = Object.fromEntries(
+      // Limpar valores vazios ou inválidos do monthly_actual do ano atual
+      const cleanCurrentYearActual = Object.fromEntries(
         Object.entries(monthlyActual)
           .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
       );
+      
+      // Preservar dados de outros anos e atualizar apenas o ano selecionado
+      const mergedMonthlyActual = { ...existingMonthlyActual };
+      Object.keys(mergedMonthlyActual).forEach(key => {
+        if (key.startsWith(`${selectedYear}-`)) {
+          delete mergedMonthlyActual[key];
+        }
+      });
+      Object.assign(mergedMonthlyActual, cleanCurrentYearActual);
+
+      const yearlyActual = calculateYearlyActual(cleanCurrentYearActual);
 
       await onSave({
         id: keyResult.id,
-        monthly_actual: cleanMonthlyActual,
+        monthly_actual: mergedMonthlyActual,
         yearly_actual: yearlyActual,
         current_value: yearlyActual,
       });

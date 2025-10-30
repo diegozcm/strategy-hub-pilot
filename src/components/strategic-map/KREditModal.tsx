@@ -193,12 +193,25 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
     setIsSaving(true);
     
     try {
-      const yearlyTarget = calculateYearlyTarget(monthlyTargets);
-
-      const cleanMonthlyTargets = Object.fromEntries(
+      // Merge dos dados existentes com os novos dados do ano selecionado
+      const existingMonthlyTargets = (keyResult.monthly_targets as Record<string, number>) || {};
+      
+      // Limpar valores vazios ou inválidos do monthly_targets do ano atual
+      const cleanCurrentYearTargets = Object.fromEntries(
         Object.entries(monthlyTargets)
           .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
       );
+      
+      // Preservar dados de outros anos e atualizar apenas o ano selecionado
+      const mergedMonthlyTargets = { ...existingMonthlyTargets };
+      Object.keys(mergedMonthlyTargets).forEach(key => {
+        if (key.startsWith(`${selectedYear}-`)) {
+          delete mergedMonthlyTargets[key];
+        }
+      });
+      Object.assign(mergedMonthlyTargets, cleanCurrentYearTargets);
+
+      const yearlyTarget = calculateYearlyTarget(cleanCurrentYearTargets);
 
       await onSave({
         id: keyResult.id,
@@ -207,7 +220,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         unit: basicInfo.unit,
         responsible: basicInfo.responsible,
         objective_id: basicInfo.objective_id === '' || basicInfo.objective_id === 'none' ? null : basicInfo.objective_id,
-        monthly_targets: cleanMonthlyTargets,
+        monthly_targets: mergedMonthlyTargets,
         yearly_target: yearlyTarget,
         target_value: yearlyTarget,
         aggregation_type: aggregationType,
