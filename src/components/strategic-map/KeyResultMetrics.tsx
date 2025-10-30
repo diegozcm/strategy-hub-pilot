@@ -8,11 +8,9 @@ interface KeyResultMetricsProps {
   yearlyTarget: number;
   yearlyActual: number;
   unit: string;
-  achievementPercentage?: number;
+  achievementPercentage?: number; // Made optional as we'll calculate it
   currentMonth: string;
   targetDirection?: TargetDirection;
-  periodType?: 'monthly' | 'ytd';
-  selectedYear?: number;
 }
 
 export const KeyResultMetrics = ({ 
@@ -21,9 +19,7 @@ export const KeyResultMetrics = ({
   unit, 
   achievementPercentage,
   currentMonth,
-  targetDirection = 'maximize',
-  periodType = 'monthly',
-  selectedYear
+  targetDirection = 'maximize'
 }: KeyResultMetricsProps) => {
   // Calculate status using the helper function
   const status = calculateKRStatus(yearlyActual, yearlyTarget, targetDirection);
@@ -36,10 +32,7 @@ export const KeyResultMetrics = ({
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       <Card className="h-24">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
-          <CardTitle className="text-sm font-medium">
-            {periodType === 'monthly' ? 'Meta Mensal' : 'Meta YTD'}
-            {selectedYear && ` (${selectedYear})`}
-          </CardTitle>
+          <CardTitle className="text-sm font-medium">Meta Anual</CardTitle>
           <Target className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent className="px-4 pb-3 pt-0">
@@ -51,9 +44,7 @@ export const KeyResultMetrics = ({
 
       <Card className="h-24">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
-          <CardTitle className="text-sm font-medium">
-            {periodType === 'monthly' ? 'Realizado (Mês)' : 'Realizado (YTD)'}
-          </CardTitle>
+          <CardTitle className="text-sm font-medium">Realizado</CardTitle>
           {isOverTarget ? (
             <TrendingUp className="h-4 w-4 text-green-600" />
           ) : (

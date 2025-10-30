@@ -2,8 +2,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultMetrics } from './KeyResultMetrics';
 import { KeyResultChart } from './KeyResultChart';
@@ -18,7 +16,6 @@ import { formatValueWithUnit } from '@/lib/utils';
 import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
-import { useKRCalculations, PeriodType } from '@/hooks/useKRCalculations';
 import { supabase } from '@/integrations/supabase/client';
 
 interface KROverviewModalProps {
@@ -40,10 +37,8 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
   const [showUpdateValuesModal, setShowUpdateValuesModal] = useState(false);
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [periodType, setPeriodType] = useState<PeriodType>('monthly');
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
-  const krCalculation = useKRCalculations(currentKeyResult, periodType, selectedYear);
 
   // Update local state when keyResult prop changes
   useEffect(() => {
@@ -72,9 +67,56 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
   
   if (!currentKeyResult) return null;
 
+  // Calculate values using the same logic as EditKeyResultModal
   const monthlyTargets = currentKeyResult.monthly_targets as Record<string, number> || {};
   const monthlyActual = currentKeyResult.monthly_actual as Record<string, number> || {};
   const aggregationType = currentKeyResult.aggregation_type || 'sum';
+  
+  const calculateYearlyTarget = (targets: Record<string, number>) => {
+    const values = Object.values(targets).filter(value => value > 0);
+    if (values.length === 0) return 0;
+
+    switch (aggregationType) {
+      case 'sum':
+        return values.reduce((sum, value) => sum + value, 0);
+      case 'average':
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+      case 'max':
+        return Math.max(...values);
+      case 'min':
+        return Math.min(...values);
+      default:
+        return values.reduce((sum, value) => sum + value, 0);
+    }
+  };
+
+  const calculateYearlyActual = (actuals: Record<string, number>) => {
+    const values = Object.values(actuals).filter(value => value > 0);
+    if (values.length === 0) return 0;
+
+    switch (aggregationType) {
+      case 'sum':
+        return values.reduce((sum, value) => sum + value, 0);
+      case 'average':
+        return values.reduce((sum, value) => sum + value, 0) / values.length;
+      case 'max':
+        return Math.max(...values);
+      case 'min':
+        return Math.min(...values);
+      default:
+        return values.reduce((sum, value) => sum + value, 0);
+    }
+  };
+
+  const yearlyTarget = calculateYearlyTarget(monthlyTargets);
+  const yearlyActual = calculateYearlyActual(monthlyActual);
+  const achievementPercentage = yearlyTarget > 0 
+    ? calculateKRStatus(
+        yearlyActual, 
+        yearlyTarget, 
+        (currentKeyResult.target_direction as 'maximize' | 'minimize') || 'maximize'
+      ).percentage
+    : 0;
 
   const getAggregationTypeText = (type: string) => {
     switch (type) {
@@ -138,51 +180,6 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
               <p className="text-sm text-muted-foreground mb-2 mt-3">
                 {currentKeyResult.description}
               </p>
-            )}
-          </div>
-
-          {/* Controles de período e ano */}
-          <div className="flex items-center gap-3 px-6 pt-4 pb-2 border-b flex-wrap">
-            <div className="flex items-center gap-2">
-              <Button
-                variant={periodType === 'monthly' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setPeriodType('monthly')}
-              >
-                Mensal
-              </Button>
-              <Button
-                variant={periodType === 'ytd' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setPeriodType('ytd')}
-              >
-                YTD
-              </Button>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <Label className="text-sm font-medium">Ano:</Label>
-              <Select 
-                value={selectedYear.toString()} 
-                onValueChange={(value) => setSelectedYear(parseInt(value))}
-              >
-                <SelectTrigger className="w-24 h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {[2020, 2021, 2022, 2023, 2024, 2025].map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {krCalculation.lastMonthWithData && (
-              <Badge variant="secondary">
-                Ref: {new Date(krCalculation.lastMonthWithData + '-01').toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
-              </Badge>
             )}
           </div>
 
@@ -264,14 +261,12 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
 
             {/* Key Metrics */}
         <KeyResultMetrics
-            yearlyTarget={krCalculation.target}
-            yearlyActual={krCalculation.actual}
+            yearlyTarget={yearlyTarget}
+            yearlyActual={yearlyActual}
             unit={currentKeyResult.unit || ''}
-            achievementPercentage={krCalculation.percentage}
-            currentMonth={periodType === 'monthly' ? 'Mensal' : 'YTD'}
+            achievementPercentage={achievementPercentage}
+            currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
             targetDirection={(currentKeyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
-            periodType={periodType}
-            selectedYear={selectedYear}
           />
 
             {/* Evolution Chart */}
@@ -280,6 +275,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
               monthlyActual={monthlyActual}
               unit={currentKeyResult.unit || ''}
               selectedYear={selectedYear}
+              onYearChange={setSelectedYear}
               targetDirection={(currentKeyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
             />
           </div>

@@ -271,6 +271,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
             monthlyActual={monthlyActual}
             unit={keyResult.unit || ''}
             selectedYear={selectedYear}
+            onYearChange={setSelectedYear}
             targetDirection={(keyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
           />
         

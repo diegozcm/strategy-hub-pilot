@@ -9,11 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Compass, Calendar, TrendingUp } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
-interface RumoDashboardProps {
-  selectedYear?: number;
-}
-
-export const RumoDashboard = ({ selectedYear = new Date().getFullYear() }: RumoDashboardProps) => {
+export const RumoDashboard = () => {
   const [periodType, setPeriodType] = useState<PeriodType>('monthly');
   const { pillars, objectives, keyResults, loading } = useStrategicMap();
   
@@ -31,7 +27,7 @@ export const RumoDashboard = ({ selectedYear = new Date().getFullYear() }: RumoD
     krProgress, 
     finalScore,
     hasData 
-  } = useRumoCalculations(pillarsWithObjectives, objectives, keyResults, periodType, selectedYear);
+  } = useRumoCalculations(pillarsWithObjectives, objectives, keyResults, periodType);
 
   if (loading) {
     return (
@@ -142,7 +138,6 @@ export const RumoDashboard = ({ selectedYear = new Date().getFullYear() }: RumoD
                             progress={objProgress}
                             keyResults={keyResults}
                             krProgress={krProgress}
-                            selectedYear={selectedYear}
                           />
                         );
                       })}

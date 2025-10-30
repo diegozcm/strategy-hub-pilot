@@ -15,6 +15,7 @@ interface KeyResultChartProps {
   monthlyActual: Record<string, number>;
   unit: string;
   selectedYear: number;
+  onYearChange?: (year: number) => void;
   targetDirection?: TargetDirection;
 }
 
@@ -23,6 +24,7 @@ export const KeyResultChart = ({
   monthlyActual, 
   unit, 
   selectedYear,
+  onYearChange,
   targetDirection = 'maximize'
 }: KeyResultChartProps) => {
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
@@ -122,23 +124,43 @@ const normalizedActuals: Record<string, number | null> =
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setViewMode('chart')}
-            className={`h-8 w-8 ${viewMode === 'chart' ? 'bg-accent' : ''}`}
-          >
-            <BarChart3 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setViewMode('table')}
-            className={`h-8 w-8 ${viewMode === 'table' ? 'bg-accent' : ''}`}
-          >
-            <TableIcon className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Label className="text-sm font-medium whitespace-nowrap">Ano:</Label>
+            <Select 
+              value={selectedYear.toString()} 
+              onValueChange={(value) => onYearChange?.(parseInt(value))}
+            >
+              <SelectTrigger className="w-24 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {yearOptions.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setViewMode('chart')}
+              className={`h-8 w-8 ${viewMode === 'chart' ? 'bg-accent' : ''}`}
+            >
+              <BarChart3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setViewMode('table')}
+              className={`h-8 w-8 ${viewMode === 'table' ? 'bg-accent' : ''}`}
+            >
+              <TableIcon className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
