@@ -22,7 +22,7 @@ import { useOperationState } from '@/hooks/useOperationState';
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
-import { KeyResult } from '@/types/strategic-map';
+import { KeyResult, StrategicObjective, StrategicPillar } from '@/types/strategic-map';
 import { PlanCard } from './PlanCard';
 import { PlanDetailModal } from './PlanDetailModal';
 import { EditPlanModal } from './EditPlanModal';
@@ -46,25 +46,6 @@ interface StrategicPlan {
   created_at: string;
 }
 
-interface StrategicObjective {
-  id: string;
-  title: string;
-  description: string;
-  progress: number;
-  target_date: string;
-  plan_id: string;
-  pillar_id: string;
-  owner_id: string;
-  created_at: string;
-}
-
-interface StrategicPillar {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
-  company_id: string;
-}
 
 export const ObjectivesPage: React.FC = () => {
   const { user, company: authCompany } = useAuth();

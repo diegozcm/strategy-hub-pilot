@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
-import { KeyResult } from '@/types/strategic-map';
+import { KeyResult, StrategicObjective, StrategicPillar } from '@/types/strategic-map';
 import { useHealthMonitor } from './useHealthMonitor';
 import { useOperationState } from './useOperationState';
 
@@ -16,28 +16,6 @@ interface StrategicPlan {
   mission?: string;
   company_id: string;
   created_at: string;
-}
-
-interface StrategicObjective {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  progress: number;
-  weight: number;
-  target_date: string;
-  plan_id: string;
-  pillar_id: string;
-  owner_id: string;
-  created_at: string;
-}
-
-interface StrategicPillar {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
-  company_id: string;
 }
 
 export const useObjectivesData = () => {
