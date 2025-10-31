@@ -262,34 +262,38 @@ export const ObjectivesPage: React.FC = () => {
     try {
       console.log('🔄 Updating objective:', selectedObjective.id);
 
+      // Sanitize payload: convert empty date strings to null to avoid Postgres 22007 errors
+      const updates: Partial<StrategicObjective> & { [key: string]: any } = { ...data };
+      if (updates.target_date === '' || updates.target_date === undefined) updates.target_date = null as any;
+      if ((updates as any).deadline === '' || (updates as any).deadline === undefined) (updates as any).deadline = null;
+
       const { data: updatedData, error } = await supabase
         .from('strategic_objectives')
-        .update(data)
+        .update(updates)
         .eq('id', selectedObjective.id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
+      const finalUpdated = updatedData ?? { ...selectedObjective, ...updates };
+
       // Optimistic update
       setObjectives(prev => prev.map(obj => 
-        obj.id === selectedObjective.id ? updatedData : obj
+        obj.id === selectedObjective.id ? finalUpdated : obj
       ));
       
-      setSelectedObjective(updatedData);
-      
+      setSelectedObjective(finalUpdated);
+
       toast({
-        title: "Sucesso",
-        description: "Objetivo atualizado com sucesso!",
+        title: 'Sucesso',
+        description: 'Objetivo atualizado com sucesso!',
       });
 
-      // Soft reload in background without blocking UI
-      void softReload();
-      console.log('✅ Objective updated successfully');
+      setIsEditing(false);
+      setIsDetailModalOpen(false);
     } catch (error) {
       handleError(error, 'atualizar objetivo');
-      // Revert optimistic update if needed
-      await refreshData();
     } finally {
       setIsSubmitting(false);
     }
