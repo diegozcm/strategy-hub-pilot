@@ -548,48 +548,48 @@ export const IndicatorsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header com Title + Period Selector lado a lado */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Resultados-Chave</h1>
-          <p className="text-muted-foreground mt-2">Acompanhe resultados-chave e métricas estratégicas em tempo real</p>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          {/* Period Filter - Same style as Rumo */}
-          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-            <Button
-              variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedPeriod('ytd')}
-              className="gap-2"
-            >
-              <TrendingUp className="w-4 h-4" />
-              YTD
-            </Button>
-            <Button
-              variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedPeriod('monthly')}
-              className="gap-2"
-            >
-              <Calendar className="w-4 h-4" />
-              {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
-            </Button>
-            <Button
-              variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedPeriod('yearly')}
-              className="gap-2"
-            >
-              <Target className="w-4 h-4" />
-              Ano
-            </Button>
+      {/* Header */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Resultados-Chave</h1>
+            <p className="text-muted-foreground mt-2">Acompanhe resultados-chave e métricas estratégicas em tempo real</p>
           </div>
           
-          <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
+          <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 w-fit">
             <Plus className="w-4 h-4" />
             Novo Resultado-Chave
+          </Button>
+        </div>
+        
+        {/* Period Filter - Linha separada para garantir visibilidade */}
+        <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg w-fit">
+          <Button
+            variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setSelectedPeriod('ytd')}
+            className="gap-2"
+          >
+            <TrendingUp className="w-4 h-4" />
+            YTD
+          </Button>
+          <Button
+            variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setSelectedPeriod('monthly')}
+            className="gap-2"
+          >
+            <Calendar className="w-4 h-4" />
+            {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
+          </Button>
+          <Button
+            variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setSelectedPeriod('yearly')}
+            className="gap-2"
+          >
+            <Target className="w-4 h-4" />
+            Ano
           </Button>
         </div>
       </div>
