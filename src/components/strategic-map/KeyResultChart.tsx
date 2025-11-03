@@ -193,11 +193,6 @@ const normalizedActuals: Record<string, number | null> =
               Escalas independentes (3 eixos)
             </Badge>
           )}
-          {!useDualAxis && (
-            <Badge variant="outline" className="text-xs">
-              Total em escala separada
-            </Badge>
-          )}
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
