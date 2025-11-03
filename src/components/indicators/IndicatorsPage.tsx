@@ -560,28 +560,28 @@ export const IndicatorsPage: React.FC = () => {
       </div>
 
       {/* Period Selector */}
-      <div className="flex justify-center">
-        <div className="inline-flex rounded-lg border bg-background p-1">
+      <div className="flex justify-start">
+        <div className="inline-flex rounded-lg bg-background p-1">
           <Button
             variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setSelectedPeriod('ytd')}
           >
-            YTD {new Date().getFullYear()}
+            YTD
           </Button>
           <Button
             variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setSelectedPeriod('monthly')}
           >
-            Mês Atual
+            {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
           </Button>
           <Button
             variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setSelectedPeriod('yearly')}
           >
-            Ano {new Date().getFullYear()}
+            Ano
           </Button>
         </div>
       </div>
