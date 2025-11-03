@@ -37,10 +37,10 @@ export const KRCard: React.FC<KRCardProps> = ({
   const progress = currentMetrics.percentage;
 
   const getProgressBarColor = (value: number): string => {
-    if (value < 30) return 'bg-red-500';
-    if (value < 60) return 'bg-yellow-500';
-    if (value < 80) return 'bg-blue-500';
-    return 'bg-green-500';
+    if (value > 105) return 'bg-blue-500';
+    if (value >= 100) return 'bg-green-500';
+    if (value >= 71) return 'bg-yellow-500';
+    return 'bg-red-500';
   };
 
   return (
