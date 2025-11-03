@@ -14,7 +14,7 @@ import { KRUpdateValuesModal } from './KRUpdateValuesModal';
 import { getDirectionLabel, calculateKRStatus } from '@/lib/krHelpers';
 import { formatValueWithUnit, cn } from '@/lib/utils';
 
-import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
+import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket, CalendarDays } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { supabase } from '@/integrations/supabase/client';
@@ -368,30 +368,33 @@ export const KROverviewModal = ({
               </Button>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+              <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
                 <Button
                   variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setSelectedPeriod('ytd')}
-                  className="h-8 px-3 text-xs"
+                  className="gap-2"
                 >
+                  <TrendingUp className="w-4 h-4" />
                   YTD
-                </Button>
-                <Button
-                  variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setSelectedPeriod('monthly')}
-                  className="h-8 px-3 text-xs"
-                >
-                  Mês
                 </Button>
                 <Button
                   variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setSelectedPeriod('yearly')}
-                  className="h-8 px-3 text-xs"
+                  className="gap-2"
                 >
+                  <Target className="w-4 h-4" />
                   Ano
+                </Button>
+                <Button
+                  variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedPeriod('monthly')}
+                  className="gap-2"
+                >
+                  <CalendarDays className="w-4 h-4" />
+                  Mês
                 </Button>
               </div>
               
