@@ -88,7 +88,7 @@ export const getAchievementStatus = (
  * Format metric value with unit
  */
 export const formatMetricValue = (value: number, unit?: string): string => {
-  if (!unit) return value.toFixed(2);
+  if (!unit) return value.toFixed(1);
   
   switch (unit.toLowerCase()) {
     case 'percentage':
@@ -96,9 +96,9 @@ export const formatMetricValue = (value: number, unit?: string): string => {
       return `${value.toFixed(1)}%`;
     case 'currency':
     case 'r$':
-      return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
     case 'number':
     default:
-      return value.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+      return value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   }
 };
