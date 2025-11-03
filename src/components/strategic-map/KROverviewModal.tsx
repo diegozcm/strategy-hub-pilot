@@ -359,6 +359,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
 
             {/* Evolution Chart */}
           <KeyResultChart
+              keyResult={currentKeyResult}
               monthlyTargets={monthlyTargets}
               monthlyActual={monthlyActual}
               unit={currentKeyResult.unit || ''}

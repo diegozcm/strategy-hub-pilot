@@ -9,8 +9,10 @@ import { BarChart3, TableIcon } from 'lucide-react';
 import { useState } from 'react';
 import { calculateKRStatus, type TargetDirection } from '@/lib/krHelpers';
 import { formatValueWithUnit } from '@/lib/utils';
+import { KeyResultWithMetrics } from '@/hooks/useKRMetrics';
 
 interface KeyResultChartProps {
+  keyResult: KeyResultWithMetrics;
   monthlyTargets: Record<string, number>;
   monthlyActual: Record<string, number>;
   unit: string;
@@ -22,6 +24,7 @@ interface KeyResultChartProps {
 }
 
 export const KeyResultChart = ({ 
+  keyResult,
   monthlyTargets, 
   monthlyActual, 
   unit, 
@@ -147,8 +150,24 @@ const normalizedActuals: Record<string, number | null> =
     }
   };
 
-  const targetTotal = calculateAggregation(normalizedTargets, aggregationType);
-  const actualTotal = calculateAggregation(normalizedActuals, aggregationType);
+  // Use pre-calculated values from database based on selected period
+  const targetTotal = selectedPeriod === 'yearly'
+    ? (keyResult.yearly_target ?? 0)
+    : selectedPeriod === 'monthly'
+    ? (keyResult.current_month_target ?? 0)
+    : (keyResult.ytd_target ?? 0);
+
+  const actualTotal = selectedPeriod === 'yearly'
+    ? (keyResult.yearly_actual ?? 0)
+    : selectedPeriod === 'monthly'
+    ? (keyResult.current_month_actual ?? 0)
+    : (keyResult.ytd_actual ?? 0);
+  
+  const preCalculatedPercentage = selectedPeriod === 'yearly'
+    ? (keyResult.yearly_percentage ?? 0)
+    : selectedPeriod === 'monthly'
+    ? (keyResult.monthly_percentage ?? 0)
+    : (keyResult.ytd_percentage ?? 0);
 
   // Calculate the maximum value for barAxis domain (0 to 110% of max)
   const maxBarValue = Math.max(
@@ -489,10 +508,11 @@ const normalizedActuals: Record<string, number | null> =
                   <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
                     {targetTotal !== 0 ? (
                       (() => {
+                        // Use pre-calculated percentage from database
                         const totalStatus = calculateKRStatus(actualTotal, targetTotal, targetDirection);
                         return (
                           <span className={`${totalStatus.color} font-semibold`}>
-                            {totalStatus.percentage.toFixed(1)}%
+                            {preCalculatedPercentage.toFixed(1)}%
                           </span>
                         );
                       })()

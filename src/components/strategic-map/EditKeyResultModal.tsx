@@ -258,6 +258,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
         />
           
         <KeyResultChart
+            keyResult={keyResult}
             monthlyTargets={monthlyTargets}
             monthlyActual={monthlyActual}
             unit={keyResult.unit || ''}
