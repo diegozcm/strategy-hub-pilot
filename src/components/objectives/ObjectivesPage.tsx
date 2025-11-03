@@ -61,6 +61,7 @@ export const ObjectivesPage: React.FC = () => {
   
   const [selectedPlan, setSelectedPlan] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
   const [isCreateObjectiveOpen, setIsCreateObjectiveOpen] = useState(false);
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
@@ -395,7 +396,23 @@ export const ObjectivesPage: React.FC = () => {
                          objective.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPlan = selectedPlan === 'all' || objective.plan_id === selectedPlan;
     
-    return matchesSearch && matchesPlan;
+    // Check status match
+    let matchesStatus = statusFilter === 'all';
+    if (!matchesStatus) {
+      const objectiveKeyResults = getObjectiveKeyResults(objective.id);
+      const progress = calculateObjectiveProgress(objectiveKeyResults, selectedPeriod);
+      if (statusFilter === 'excellent') {
+        matchesStatus = progress > 105;
+      } else if (statusFilter === 'success') {
+        matchesStatus = progress >= 100 && progress <= 105;
+      } else if (statusFilter === 'attention') {
+        matchesStatus = progress >= 71 && progress < 100;
+      } else if (statusFilter === 'critical') {
+        matchesStatus = progress < 71;
+      }
+    }
+    
+    return matchesSearch && matchesPlan && matchesStatus;
   });
 
   const getProgressColor = (progress: number) => {
@@ -499,7 +516,6 @@ export const ObjectivesPage: React.FC = () => {
   };
 
   const handleOpenKeyResultDetails = (keyResult: KeyResult) => {
-    console.log('🔍 Opening KR Overview Modal - selectedPeriod:', selectedPeriod);
     setSelectedKeyResultForOverview(keyResult);
     setIsKROverviewModalOpen(true);
   };
@@ -996,6 +1012,39 @@ export const ObjectivesPage: React.FC = () => {
                       {plan.name}
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full sm:w-44">
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="excellent">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500" />
+                      &gt;105% Excelente
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="success">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500" />
+                      100-105% No Alvo
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="attention">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                      71-99% Atenção
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="critical">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                      &lt;71% Crítico
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
