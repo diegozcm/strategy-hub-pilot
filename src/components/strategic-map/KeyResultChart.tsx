@@ -242,7 +242,7 @@ const normalizedActuals: Record<string, number | null> =
         {viewMode === 'chart' ? (
           <div className="h-[270px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 20, right: useDualAxis ? 80 : 50, left: 20, bottom: 5 }}>
+              <ComposedChart data={chartData} margin={{ top: 20, right: useDualAxis ? 60 : 35, left: 10, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
                   dataKey="month" 
