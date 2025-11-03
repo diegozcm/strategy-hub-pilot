@@ -365,12 +365,12 @@ export const StrategicMapPage = () => {
                             <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
                               <div 
                                 className={`h-full transition-all duration-300 rounded-full ${
-                                  progress < 30 ? 'bg-red-500' : 
-                                  progress < 60 ? 'bg-yellow-500' : 
-                                  progress < 80 ? 'bg-blue-500' : 
-                                  'bg-green-500'
+                                  progress > 105 ? 'bg-blue-500' :
+                                  progress >= 100 ? 'bg-green-500' :
+                                  progress >= 71 ? 'bg-yellow-500' :
+                                  'bg-red-500'
                                 }`}
-                                style={{ width: `${progress}%` }}
+                                style={{ width: `${Math.min(progress, 100)}%` }}
                               />
                             </div>
                           </div>
