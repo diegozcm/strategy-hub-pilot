@@ -145,7 +145,7 @@ export const KeyResultMetrics = ({
                   }}
                   onOpenChange={setIsComboOpen}
                 >
-                  <SelectTrigger className="w-full h-9 text-lg font-bold">
+                  <SelectTrigger className="w-full h-9 text-base font-bold">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
