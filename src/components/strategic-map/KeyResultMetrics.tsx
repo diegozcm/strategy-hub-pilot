@@ -115,14 +115,16 @@ export const KeyResultMetrics = ({
       </Card>
 
         <Card className="h-24">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-2">
             <CardTitle className="text-sm font-medium">Período Atual</CardTitle>
-            <div className="flex flex-col gap-1">
+          </CardHeader>
+          <CardContent className="px-4 pb-2 pt-0">
+            <div className="flex items-center gap-1 mb-1">
               <Button
                 variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => handlePeriodChange('ytd')}
-                className="h-6 px-2 text-xs w-20"
+                className="h-5 px-2 text-xs w-16"
               >
                 YTD
               </Button>
@@ -130,14 +132,12 @@ export const KeyResultMetrics = ({
                 variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => handlePeriodChange('monthly')}
-                className="h-6 px-2 text-xs w-20"
+                className="h-5 px-2 text-xs w-16"
               >
                 {new Date().toLocaleDateString('pt-BR', { month: 'short' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'short' }).slice(1)}
               </Button>
             </div>
-          </CardHeader>
-          <CardContent className="px-4 pb-3 pt-0">
-            <div className="text-xl font-bold">
+            <div className="text-lg font-bold">
               {currentPeriodDisplay}
             </div>
             <p className="text-xs text-muted-foreground">
