@@ -39,10 +39,12 @@ export const calculateKRStatus = (
     percentage = target > 0 ? (actual / target) * 100 : 0;
   }
   
-  const isExcellent = percentage >= 100;
-  const isGood = percentage >= 80;
+  const isExcellent = percentage > 105;
+  const isSuccess = percentage >= 100;
+  const isGood = percentage >= 71;
   
-  const color = isExcellent ? 'text-green-600' : 
+  const color = isExcellent ? 'text-blue-600' : 
+                isSuccess ? 'text-green-600' :
                 isGood ? 'text-yellow-600' : 
                 'text-red-600';
   
