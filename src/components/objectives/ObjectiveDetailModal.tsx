@@ -175,7 +175,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                       'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                     }`}
                   >
-                    {currentProgress.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% de avanço
+                    {currentProgress.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% de avanço
                   </Badge>
                 </div>
               </DialogDescription>
