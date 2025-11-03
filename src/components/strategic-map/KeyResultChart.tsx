@@ -165,6 +165,28 @@ const normalizedActuals: Record<string, number | null> =
     return '(YTD)';
   };
 
+  // Format value for table with 1 decimal place and smaller unit
+  const formatValueForTable = (value: number, unit: string) => {
+    const formattedValue = value.toLocaleString('pt-BR', { 
+      minimumFractionDigits: 1, 
+      maximumFractionDigits: 1 
+    });
+    
+    if (unit === 'R$') {
+      return (
+        <>
+          R$ {formattedValue} 
+        </>
+      );
+    }
+    
+    return (
+      <>
+        {formattedValue} <span className="text-xs text-muted-foreground">{unit}</span>
+      </>
+    );
+  };
+
   const chartData = [
     ...months.map(month => ({
       month: month.name,
@@ -396,7 +418,7 @@ const normalizedActuals: Record<string, number | null> =
                       >
                         {hasValue ? (
                           <span className={value < 0 ? "text-red-600" : ""}>
-                            {formatValueWithUnit(value, unit)}
+                            {formatValueForTable(value, unit)}
                           </span>
                         ) : '-'}
                       </TableCell>
@@ -405,7 +427,7 @@ const normalizedActuals: Record<string, number | null> =
                   <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
                     {targetTotal !== 0 ? (
                       <span className={targetTotal < 0 ? "text-red-600" : ""}>
-                        {formatValueWithUnit(targetTotal, unit)}
+                        {formatValueForTable(targetTotal, unit)}
                       </span>
                     ) : '-'}
                   </TableCell>
@@ -424,7 +446,7 @@ const normalizedActuals: Record<string, number | null> =
                       >
                         {hasValue ? (
                           <span className={value < 0 ? "text-red-600 font-semibold" : ""}>
-                            {formatValueWithUnit(value, unit)}
+                            {formatValueForTable(value, unit)}
                           </span>
                         ) : '-'}
                       </TableCell>
@@ -433,7 +455,7 @@ const normalizedActuals: Record<string, number | null> =
                   <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
                     {actualTotal !== 0 ? (
                       <span className={actualTotal < 0 ? "text-red-600" : ""}>
-                        {formatValueWithUnit(actualTotal, unit)}
+                        {formatValueForTable(actualTotal, unit)}
                       </span>
                     ) : '-'}
                   </TableCell>
