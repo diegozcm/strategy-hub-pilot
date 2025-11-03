@@ -12,6 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
 import { KeyResult } from '@/types/strategic-map';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 // Flexible interface for objective to support both ObjectivesPage and StrategicMap
 interface ObjectiveData {
@@ -168,7 +170,11 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                     </Badge>
                   )}
                   <Badge variant="outline" className="bg-primary/10">
-                    {selectedPeriod === 'yearly' ? '📅 Ano' : selectedPeriod === 'monthly' ? '📆 Mês Corrente' : '📊 YTD'}
+                    {selectedPeriod === 'yearly' 
+                      ? '📅 Ano' 
+                      : selectedPeriod === 'monthly' 
+                      ? `📆 ${format(new Date(), 'MMMM', { locale: ptBR }).charAt(0).toUpperCase() + format(new Date(), 'MMMM', { locale: ptBR }).slice(1)}` 
+                      : '📊 YTD'}
                   </Badge>
                   <Badge 
                     className={`font-semibold ${
