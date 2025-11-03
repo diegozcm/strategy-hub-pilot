@@ -54,9 +54,9 @@ export const RumoDashboard = () => {
 
   // Get performance color for final score
   const getFinalScoreColor = () => {
-    if (finalScore >= 100) return 'text-blue-500 border-blue-500 bg-blue-500/10';
-    if (finalScore >= 80) return 'text-green-500 border-green-500 bg-green-500/10';
-    if (finalScore >= 50) return 'text-yellow-500 border-yellow-500 bg-yellow-500/10';
+    if (finalScore > 105) return 'text-blue-500 border-blue-500 bg-blue-500/10';
+    if (finalScore >= 100) return 'text-green-500 border-green-500 bg-green-500/10';
+    if (finalScore >= 71) return 'text-yellow-500 border-yellow-500 bg-yellow-500/10';
     return 'text-red-500 border-red-500 bg-red-500/10';
   };
 
