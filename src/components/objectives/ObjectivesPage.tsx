@@ -614,12 +614,50 @@ export const ObjectivesPage: React.FC = () => {
     <ErrorBoundary>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Objetivos Estratégicos</h1>
-            <p className="text-muted-foreground mt-2">Gerencie seus planos estratégicos e objetivos</p>
-          </div>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Target className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Objetivos Estratégicos</h1>
+              <p className="text-muted-foreground mt-2">Gerencie seus planos estratégicos e objetivos</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            {/* Period Filter */}
+            <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
+              <Button
+                variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setSelectedPeriod('ytd')}
+                className="gap-2"
+              >
+                <TrendingUp className="w-4 h-4" />
+                YTD
+              </Button>
+              <Button
+                variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setSelectedPeriod('monthly')}
+                className="gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                {(() => {
+                  const monthName = format(new Date(), 'MMMM', { locale: ptBR });
+                  return monthName.charAt(0).toUpperCase() + monthName.slice(1);
+                })()}
+              </Button>
+              <Button
+                variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setSelectedPeriod('yearly')}
+                className="gap-2"
+              >
+                <Target className="w-4 h-4" />
+                Ano
+              </Button>
+            </div>
             <div className="flex space-x-3">
             <Dialog open={isCreatePlanOpen} onOpenChange={setIsCreatePlanOpen}>
               <DialogTrigger asChild>
@@ -937,36 +975,6 @@ export const ObjectivesPage: React.FC = () => {
           {/* Filters and Search */}
           <div className="flex flex-col sm:flex-row gap-4 justify-between">
             <div className="flex flex-col sm:flex-row gap-2">
-              {/* Seletor de Período */}
-              <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
-                <Button
-                  variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setSelectedPeriod('ytd')}
-                  className="h-8 px-3 text-xs"
-                >
-                  YTD
-                </Button>
-              <Button
-                variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedPeriod('monthly')}
-                className="h-8 px-3 text-xs"
-              >
-                {(() => {
-                  const monthName = format(new Date(), 'MMMM', { locale: ptBR });
-                  return monthName.charAt(0).toUpperCase() + monthName.slice(1);
-                })()}
-              </Button>
-                <Button
-                  variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setSelectedPeriod('yearly')}
-                  className="h-8 px-3 text-xs"
-                >
-                  Ano
-                </Button>
-              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
