@@ -69,13 +69,14 @@ export const KROverviewModal = ({
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
       
+      // Formato resumido: "Nov 2024"
       const monthName = date.toLocaleDateString('pt-BR', { month: 'short' })
         .replace(/^\w/, (c) => c.toUpperCase())
-        .replace('.', '');
+        .replace('.', ''); // Remove ponto se houver
       
       options.push({
         value: `${year}-${month.toString().padStart(2, '0')}`,
-        label: monthName
+        label: `${monthName} ${year}`
       });
     }
     
@@ -366,8 +367,8 @@ export const KROverviewModal = ({
                 Iniciativas
               </Button>
             </div>
-            <div className="flex items-center gap-2 flex-nowrap">
-              <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
                 <Button
                   variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
                   size="sm"
@@ -407,7 +408,7 @@ export const KROverviewModal = ({
                     setSelectedMonth(parseInt(month));
                   }}
                 >
-                  <SelectTrigger className="w-[100px] h-8 flex-shrink-0">
+                  <SelectTrigger className="w-[130px] h-8">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
