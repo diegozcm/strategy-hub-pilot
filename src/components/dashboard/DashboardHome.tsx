@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, ChevronDown, ChevronUp, Settings, Search, Compass, LayoutDashboard } from 'lucide-react';
+import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, ChevronDown, ChevronUp, Settings, Search, Compass, LayoutDashboard, Calendar } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -33,6 +33,14 @@ interface KeyResultWithPillar {
   aggregation_type?: string;
   priority?: string;
   target_direction?: 'maximize' | 'minimize';
+  // Pre-calculated fields from database
+  ytd_target?: number;
+  ytd_actual?: number;
+  ytd_percentage?: number;
+  current_month_target?: number;
+  current_month_actual?: number;
+  monthly_percentage?: number;
+  yearly_percentage?: number;
 }
 
 interface DashboardStats {
@@ -101,6 +109,7 @@ export const DashboardHome: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
+  const [periodType, setPeriodType] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
 
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
   const currentYear = new Date().getFullYear();
@@ -128,7 +137,7 @@ export const DashboardHome: React.FC = () => {
       // Check progress match
       let matchesProgress = progressFilter === 'all';
       if (!matchesProgress) {
-        const progress = calculateProgress(keyResult);
+        const progress = getSelectedAchievement(keyResult);
         if (progressFilter === 'above') {
           matchesProgress = progress >= 90;
         } else if (progressFilter === 'near') {
@@ -257,6 +266,13 @@ export const DashboardHome: React.FC = () => {
           target_direction,
           aggregation_type,
           objective_id,
+          ytd_target,
+          ytd_actual,
+          ytd_percentage,
+          current_month_target,
+          current_month_actual,
+          monthly_percentage,
+          yearly_percentage,
           strategic_objectives!inner (
             id,
             title,
@@ -362,6 +378,44 @@ export const DashboardHome: React.FC = () => {
       kr.yearly_target,
       kr.target_direction || 'maximize'
     ).percentage;
+  };
+
+  const getPeriodLabel = () => {
+    if (periodType === 'ytd') return 'YTD';
+    if (periodType === 'monthly') {
+      return new Date().toLocaleDateString('pt-BR', { month: 'long' }).replace(/^./, c => c.toUpperCase());
+    }
+    return 'Ano';
+  };
+
+  const getSelectedAchievement = (kr: KeyResultWithPillar) => {
+    if (periodType === 'monthly') {
+      if (typeof kr.monthly_percentage === 'number') return kr.monthly_percentage;
+      const monthKey = new Date().toISOString().slice(0, 7);
+      const target = kr.current_month_target ?? kr.monthly_targets?.[monthKey] ?? 0;
+      const actual = kr.current_month_actual ?? kr.monthly_actual?.[monthKey] ?? 0;
+      return target > 0 ? (actual / target) * 100 : 0;
+    }
+    if (periodType === 'ytd') {
+      if (typeof kr.ytd_percentage === 'number') return kr.ytd_percentage;
+      return 0;
+    }
+    // yearly
+    if (typeof kr.yearly_percentage === 'number') return kr.yearly_percentage;
+    const yTarget = kr.yearly_target || kr.target_value || 0;
+    const yActual = kr.yearly_actual || kr.current_value || 0;
+    return yTarget > 0 ? (yActual / yTarget) * 100 : 0;
+  };
+
+  const getSelectedActualValue = (kr: KeyResultWithPillar) => {
+    if (periodType === 'monthly') {
+      const monthKey = new Date().toISOString().slice(0, 7);
+      return kr.current_month_actual ?? kr.monthly_actual?.[monthKey] ?? 0;
+    }
+    if (periodType === 'ytd') {
+      return kr.ytd_actual ?? 0;
+    }
+    return kr.yearly_actual ?? kr.current_value ?? 0;
   };
 
   const toggleKRExpansion = (krId: string) => {
@@ -539,13 +593,48 @@ export const DashboardHome: React.FC = () => {
 
         <TabsContent value="overview" className="space-y-6">
           {/* Header */}
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <LayoutDashboard className="w-6 h-6 text-primary" />
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <LayoutDashboard className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Instrumentos</h2>
+                <p className="text-sm text-muted-foreground">Métricas e Indicadores de Performance</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">Instrumentos</h2>
-              <p className="text-sm text-muted-foreground">Métricas e Indicadores de Performance</p>
+
+            <div className="flex items-center gap-4">
+              {/* Period Filter */}
+              <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
+                <Button
+                  variant={periodType === 'ytd' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setPeriodType('ytd')}
+                  className="gap-2"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  YTD
+                </Button>
+                <Button
+                  variant={periodType === 'monthly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setPeriodType('monthly')}
+                  className="gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  {new Date().toLocaleDateString('pt-BR', { month: 'long' }).replace(/^./, c => c.toUpperCase())}
+                </Button>
+                <Button
+                  variant={periodType === 'yearly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setPeriodType('yearly')}
+                  className="gap-2"
+                >
+                  <Target className="w-4 h-4" />
+                  Ano
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -707,7 +796,8 @@ export const DashboardHome: React.FC = () => {
                 <div className="space-y-4">
                   {filteredKeyResults.map(kr => {
                     const months = getMonthsOfYear();
-                    const yearlyAchievement = getYearlyAchievement(kr);
+                    const selectedAchievement = getSelectedAchievement(kr);
+                    const selectedActualValue = getSelectedActualValue(kr);
                     const isExpanded = expandedKRs.has(kr.id);
                     
                     return (
@@ -749,13 +839,13 @@ export const DashboardHome: React.FC = () => {
                               </div>
                               <div className="flex items-center gap-3 ml-4">
                                 <div className="flex items-center gap-2">
-                                  {getStatusIcon(yearlyAchievement)}
+                                  {getStatusIcon(selectedAchievement)}
                                   <div className="flex flex-col items-end">
-                                    <span className={`text-sm font-medium ${getStatusColor(yearlyAchievement)}`}>
-                                      {yearlyAchievement.toFixed(1)}% no ano
+                                    <span className={`text-sm font-medium ${getStatusColor(selectedAchievement)}`}>
+                                      {selectedAchievement.toFixed(1)}% {periodType === 'monthly' ? 'no mês' : periodType === 'ytd' ? 'YTD' : 'no ano'}
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                      Atual: {kr.yearly_actual || kr.current_value || 0}
+                                      Atual: {selectedActualValue}
                                     </span>
                                   </div>
                                 </div>
