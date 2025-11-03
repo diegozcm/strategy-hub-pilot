@@ -88,6 +88,7 @@ export const KeyResultMetrics = ({
         </CardHeader>
         <CardContent className="px-4 pb-3 pt-0">
           <div className={`text-xl font-bold ${
+            status === 'excellent' ? 'text-blue-600' :
             status === 'success' ? 'text-green-600' :
             status === 'warning' ? 'text-yellow-600' :
             'text-red-600'

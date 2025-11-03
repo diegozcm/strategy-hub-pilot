@@ -75,9 +75,10 @@ export const useKRMetrics = (keyResult: KeyResultWithMetrics | null | undefined)
 export const getAchievementStatus = (
   percentage: number,
   targetDirection: 'maximize' | 'minimize' = 'maximize'
-): 'success' | 'warning' | 'danger' => {
+): 'excellent' | 'success' | 'warning' | 'danger' => {
+  if (percentage > 105) return 'excellent';
   if (percentage >= 100) return 'success';
-  if (percentage >= 70) return 'warning';
+  if (percentage >= 71) return 'warning';
   return 'danger';
 };
 
