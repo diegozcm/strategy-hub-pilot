@@ -118,6 +118,12 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
       ).percentage
     : 0;
 
+  // Calculate current month values
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const currentMonthTarget = monthlyTargets[currentMonthKey] || 0;
+  const currentMonthActual = monthlyActual[currentMonthKey] || 0;
+
   const getAggregationTypeText = (type: string) => {
     switch (type) {
       case 'sum': return 'Soma';
@@ -263,6 +269,8 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
         <KeyResultMetrics
             yearlyTarget={yearlyTarget}
             yearlyActual={yearlyActual}
+            monthlyTarget={currentMonthTarget}
+            monthlyActual={currentMonthActual}
             unit={currentKeyResult.unit || ''}
             achievementPercentage={achievementPercentage}
             currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
