@@ -23,7 +23,7 @@ import { KRUpdateValuesModal } from '@/components/strategic-map/KRUpdateValuesMo
 import { KeyResult, StrategicObjective } from '@/types/strategic-map';
 import { useSearchParams } from 'react-router-dom';
 import { KRCard } from './KRCard';
-import { calculateKRStatus } from '@/lib/krHelpers';
+import { useKRMetrics } from '@/hooks/useKRMetrics';
 
 interface KeyResultValue {
   id: string;
@@ -51,6 +51,7 @@ export const IndicatorsPage: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
   
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -380,60 +381,47 @@ export const IndicatorsPage: React.FC = () => {
     };
   };
 
-  const calculateProgress = (keyResult: KeyResult) => {
-    // Calcular progresso baseado nos valores mensais usando tipo de agregação
-    const monthlyActual = keyResult.monthly_actual as Record<string, number> || {};
-    const monthlyTargets = keyResult.monthly_targets as Record<string, number> || {};
+  // Pre-calculate metrics for all KRs to avoid hook issues in loops
+  const krMetricsMap = useMemo(() => {
+    const map = new Map();
+    keyResults.forEach(kr => {
+      const metrics = {
+        ytd: {
+          target: kr.ytd_target ?? 0,
+          actual: kr.ytd_actual ?? 0,
+          percentage: kr.ytd_percentage ?? 0,
+        },
+        monthly: {
+          target: kr.current_month_target ?? 0,
+          actual: kr.current_month_actual ?? 0,
+          percentage: kr.monthly_percentage ?? 0,
+        },
+        yearly: {
+          target: kr.yearly_target ?? 0,
+          actual: kr.yearly_actual ?? 0,
+          percentage: kr.yearly_percentage ?? 0,
+        },
+      };
+      map.set(kr.id, metrics);
+    });
+    return map;
+  }, [keyResults]);
+
+  const getMetricsByPeriod = (keyResultId: string) => {
+    const metrics = krMetricsMap.get(keyResultId);
+    if (!metrics) return { target: 0, actual: 0, percentage: 0 };
     
-    // Permitir valores >= 0 (incluindo zero) para não descartar dados válidos
-    const actualValues = Object.values(monthlyActual).filter((value): value is number => typeof value === 'number' && value >= 0);
-    const targetValues = Object.values(monthlyTargets).filter((value): value is number => typeof value === 'number' && value > 0);
-    
-    if (actualValues.length === 0 || targetValues.length === 0) {
-      // Fallback para o cálculo antigo se não houver dados mensais
-      if (keyResult.target_value === 0) return 0;
-      return Math.round(
-        calculateKRStatus(
-          keyResult.current_value,
-          keyResult.target_value,
-          keyResult.target_direction || 'maximize'
-        ).percentage
-      );
+    return selectedPeriod === 'monthly' ? metrics.monthly :
+           selectedPeriod === 'yearly' ? metrics.yearly :
+           metrics.ytd;
+  };
+
+  const getPeriodLabel = () => {
+    switch (selectedPeriod) {
+      case 'ytd': return 'YTD';
+      case 'monthly': return 'Mês Atual';
+      case 'yearly': return 'Ano';
     }
-    
-    // Calcular valores anuais usando o tipo de agregação
-    const aggregationType = keyResult.aggregation_type || 'sum';
-    
-    let yearlyActual = 0;
-    let yearlyTarget = 0;
-    
-    switch (aggregationType) {
-      case 'sum':
-        yearlyActual = actualValues.reduce((sum, value) => sum + value, 0);
-        yearlyTarget = targetValues.reduce((sum, value) => sum + value, 0);
-        break;
-      case 'average':
-        yearlyActual = actualValues.reduce((sum, value) => sum + value, 0) / actualValues.length;
-        yearlyTarget = targetValues.reduce((sum, value) => sum + value, 0) / targetValues.length;
-        break;
-      case 'max':
-        yearlyActual = Math.max(...actualValues);
-        yearlyTarget = Math.max(...targetValues);
-        break;
-      case 'min':
-        yearlyActual = Math.min(...actualValues);
-        yearlyTarget = Math.min(...targetValues);
-        break;
-    }
-    
-    if (yearlyTarget === 0) return 0;
-    return Math.round(
-      calculateKRStatus(
-        yearlyActual,
-        yearlyTarget,
-        keyResult.target_direction || 'maximize'
-      ).percentage
-    );
   };
 
   const getProgressColor = (progress: number) => {
@@ -478,7 +466,8 @@ export const IndicatorsPage: React.FC = () => {
     // Check progress match
     let matchesProgress = progressFilter === 'all';
     if (!matchesProgress) {
-      const progress = calculateProgress(keyResult);
+      const metrics = getMetricsByPeriod(keyResult.id);
+      const progress = metrics.percentage;
       if (progressFilter === 'above') {
         matchesProgress = progress >= 90;
       } else if (progressFilter === 'near') {
@@ -506,14 +495,21 @@ export const IndicatorsPage: React.FC = () => {
     return a.title.localeCompare(b.title, 'pt-BR');
   });
 
-  // Calculate summary statistics
+  // Calculate summary statistics based on selected period
   const totalKeyResults = keyResults.length;
-  const onTargetKeyResults = keyResults.filter(kr => calculateProgress(kr) >= 90).length;
+  const onTargetKeyResults = keyResults.filter(kr => {
+    const metrics = getMetricsByPeriod(kr.id);
+    return metrics.percentage >= 90;
+  }).length;
   const atRiskKeyResults = keyResults.filter(kr => {
-    const progress = calculateProgress(kr);
+    const metrics = getMetricsByPeriod(kr.id);
+    const progress = metrics.percentage;
     return progress >= 70 && progress < 90;
   }).length;
-  const criticalKeyResults = keyResults.filter(kr => calculateProgress(kr) < 70).length;
+  const criticalKeyResults = keyResults.filter(kr => {
+    const metrics = getMetricsByPeriod(kr.id);
+    return metrics.percentage < 70;
+  }).length;
 
   if (loading) {
     return (
@@ -563,6 +559,33 @@ export const IndicatorsPage: React.FC = () => {
         </Button>
       </div>
 
+      {/* Period Selector */}
+      <div className="flex justify-center">
+        <div className="inline-flex rounded-lg border bg-background p-1">
+          <Button
+            variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setSelectedPeriod('ytd')}
+          >
+            YTD {new Date().getFullYear()}
+          </Button>
+          <Button
+            variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setSelectedPeriod('monthly')}
+          >
+            Mês Atual
+          </Button>
+          <Button
+            variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setSelectedPeriod('yearly')}
+          >
+            Ano {new Date().getFullYear()}
+          </Button>
+        </div>
+      </div>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -583,7 +606,7 @@ export const IndicatorsPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{onTargetKeyResults}</div>
-            <p className="text-xs text-muted-foreground">≥90% da meta</p>
+            <p className="text-xs text-muted-foreground">≥90% da meta ({getPeriodLabel()})</p>
           </CardContent>
         </Card>
         
@@ -594,7 +617,7 @@ export const IndicatorsPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">{atRiskKeyResults}</div>
-            <p className="text-xs text-muted-foreground">70-89% da meta</p>
+            <p className="text-xs text-muted-foreground">70-89% da meta ({getPeriodLabel()})</p>
           </CardContent>
         </Card>
         
@@ -605,7 +628,7 @@ export const IndicatorsPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{criticalKeyResults}</div>
-            <p className="text-xs text-muted-foreground">&lt;70% da meta</p>
+            <p className="text-xs text-muted-foreground">&lt;70% da meta ({getPeriodLabel()})</p>
           </CardContent>
         </Card>
       </div>
@@ -710,7 +733,6 @@ export const IndicatorsPage: React.FC = () => {
       {/* Key Results Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredKeyResults.map((keyResult) => {
-          const progress = calculateProgress(keyResult);
           const pillar = getKeyResultPillar(keyResult);
           
           return (
@@ -718,7 +740,7 @@ export const IndicatorsPage: React.FC = () => {
               key={keyResult.id}
               keyResult={keyResult}
               pillar={pillar}
-              progress={progress}
+              selectedPeriod={selectedPeriod}
               onClick={() => openKROverviewModal(keyResult)}
             />
           );
