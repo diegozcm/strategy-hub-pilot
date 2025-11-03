@@ -875,7 +875,7 @@ export const DashboardHome: React.FC = () => {
                                       {selectedAchievement.toFixed(1)}% {periodType === 'monthly' ? 'no mês' : periodType === 'ytd' ? 'YTD' : 'no ano'}
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                      Atual: {selectedActualValue}
+                                      Atual: {Number(selectedActualValue).toFixed(1)}
                                     </span>
                                   </div>
                                 </div>
