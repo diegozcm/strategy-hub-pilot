@@ -15,13 +15,15 @@ interface RumoObjectiveBlockProps {
   progress: number;
   keyResults: KeyResult[];
   krProgress: Map<string, number>;
+  selectedPeriod: 'ytd' | 'monthly' | 'yearly';
 }
 
 export const RumoObjectiveBlock = ({ 
   objective, 
   progress, 
   keyResults,
-  krProgress 
+  krProgress,
+  selectedPeriod
 }: RumoObjectiveBlockProps) => {
   const performance = getPerformanceColor(progress);
   const styles = getPerformanceStyles(performance);
@@ -143,7 +145,7 @@ export const RumoObjectiveBlock = ({
             </div>
             <div className="text-right flex-shrink-0">
               <p className="text-2xl font-bold">
-                {progress.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%
+                {progress.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
               </p>
               <p className="text-xs opacity-80">
                 {objectiveKRs.length} KR(s)
@@ -176,7 +178,7 @@ export const RumoObjectiveBlock = ({
                             krPerf === 'warning' ? 'text-yellow-500' :
                             'text-red-500'
                           }`}>
-                            {krProg.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                            {krProg.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
                           </span>
                         </div>
                         <MonthlyPerformanceIndicators
@@ -209,6 +211,7 @@ export const RumoObjectiveBlock = ({
         onOpenKeyResultDetails={handleOpenKeyResultDetails}
         pillars={pillars}
         progressPercentage={progress}
+        selectedPeriod={selectedPeriod}
       />
 
       {/* KR Overview Modal */}

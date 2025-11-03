@@ -6,11 +6,11 @@ import { RumoObjectiveBlock } from './RumoObjectiveBlock';
 import { RumoLegend } from './RumoLegend';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Compass, Calendar, TrendingUp } from 'lucide-react';
+import { Compass, Calendar, TrendingUp, Target } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export const RumoDashboard = () => {
-  const [periodType, setPeriodType] = useState<PeriodType>('monthly');
+  const [periodType, setPeriodType] = useState<PeriodType>('ytd');
   const { pillars, objectives, keyResults, loading } = useStrategicMap();
   
   // Processar dados para aninhar objetivos dentro dos pilares
@@ -78,6 +78,15 @@ export const RumoDashboard = () => {
           {/* Period Filter */}
           <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
             <Button
+              variant={periodType === 'ytd' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setPeriodType('ytd')}
+              className="gap-2"
+            >
+              <TrendingUp className="w-4 h-4" />
+              YTD
+            </Button>
+            <Button
               variant={periodType === 'monthly' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setPeriodType('monthly')}
@@ -87,13 +96,13 @@ export const RumoDashboard = () => {
               {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
             </Button>
             <Button
-              variant={periodType === 'ytd' ? 'default' : 'ghost'}
+              variant={periodType === 'yearly' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setPeriodType('ytd')}
+              onClick={() => setPeriodType('yearly')}
               className="gap-2"
             >
-              <TrendingUp className="w-4 h-4" />
-              YTD
+              <Target className="w-4 h-4" />
+              Ano
             </Button>
           </div>
 
@@ -138,6 +147,7 @@ export const RumoDashboard = () => {
                             progress={objProgress}
                             keyResults={keyResults}
                             krProgress={krProgress}
+                            selectedPeriod={periodType}
                           />
                         );
                       })}
