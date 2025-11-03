@@ -87,7 +87,7 @@ export const ResultadoChaveMiniCard = ({
             </div>
             <div className="flex flex-col items-end flex-shrink-0">
               <span className={`text-sm font-medium ${statusColor}`}>
-                {percentage.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                {percentage.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
               </span>
             </div>
           </div>
