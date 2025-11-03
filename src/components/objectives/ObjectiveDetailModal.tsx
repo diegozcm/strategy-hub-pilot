@@ -89,6 +89,26 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
     pillar_id: '',
   });
 
+  // Calcular percentual do objetivo baseado no período selecionado
+  const calculateObjectiveProgress = () => {
+    if (keyResults.length === 0) return 0;
+    
+    const percentages = keyResults.map(kr => {
+      if (selectedPeriod === 'monthly') {
+        return kr.monthly_percentage || 0;
+      } else if (selectedPeriod === 'yearly') {
+        return kr.yearly_percentage || 0;
+      } else {
+        return kr.ytd_percentage || 0;
+      }
+    });
+    
+    const sum = percentages.reduce((acc, p) => acc + p, 0);
+    return sum / percentages.length;
+  };
+
+  const currentProgress = calculateObjectiveProgress();
+
   useEffect(() => {
     if (objective) {
       setEditForm({
@@ -149,13 +169,13 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                   )}
                   <Badge 
                     className={`font-semibold ${
-                      progressPercentage > 105 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
-                      progressPercentage >= 100 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
-                      progressPercentage >= 71 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                      currentProgress > 105 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
+                      currentProgress >= 100 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                      currentProgress >= 71 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
                       'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                     }`}
                   >
-                    {progressPercentage.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% de avanço
+                    {currentProgress.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% de avanço
                   </Badge>
                 </div>
               </DialogDescription>
@@ -276,6 +296,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                       resultadoChave={kr}
                       pillar={pillar}
                       onOpenDetails={onOpenKeyResultDetails}
+                      selectedPeriod={selectedPeriod}
                     />
                   ))}
                   {keyResults.length === 0 && (

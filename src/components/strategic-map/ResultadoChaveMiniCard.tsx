@@ -1,7 +1,6 @@
 import React from 'react';
 import { KeyResult } from '@/types/strategic-map';
 import { MonthlyPerformanceIndicators } from './MonthlyPerformanceIndicators';
-import { calculateKRStatus } from '@/lib/krHelpers';
 import { formatValueWithUnit } from '@/lib/utils';
 
 interface ResultadoChaveMiniCardProps {
@@ -9,19 +8,44 @@ interface ResultadoChaveMiniCardProps {
   pillar?: { name: string; color: string } | null;
   onUpdate?: () => void;
   onOpenDetails?: (keyResult: KeyResult) => void;
+  selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
 }
 
-export const ResultadoChaveMiniCard = ({ resultadoChave, pillar, onUpdate, onOpenDetails }: ResultadoChaveMiniCardProps) => {
-  // Calcular progresso usando yearly_actual se disponível, senão current_value
-  const currentValue = resultadoChave.yearly_actual || resultadoChave.current_value || 0;
-  const targetValue = resultadoChave.yearly_target || resultadoChave.target_value;
+export const ResultadoChaveMiniCard = ({ 
+  resultadoChave, 
+  pillar, 
+  onUpdate, 
+  onOpenDetails,
+  selectedPeriod = 'ytd'
+}: ResultadoChaveMiniCardProps) => {
+  // Calcular progresso baseado no período selecionado
+  const currentValue = selectedPeriod === 'monthly' 
+    ? (resultadoChave.current_month_actual || 0)
+    : selectedPeriod === 'yearly'
+    ? (resultadoChave.yearly_actual || 0)
+    : (resultadoChave.ytd_actual || 0);
+    
+  const targetValue = selectedPeriod === 'monthly'
+    ? (resultadoChave.current_month_target || 0)
+    : selectedPeriod === 'yearly'
+    ? (resultadoChave.yearly_target || 0)
+    : (resultadoChave.ytd_target || 0);
   
-  // Calculate status using the new helper function
-  const status = calculateKRStatus(
-    currentValue,
-    targetValue,
-    resultadoChave.target_direction || 'maximize'
-  );
+  const percentage = selectedPeriod === 'monthly'
+    ? (resultadoChave.monthly_percentage || 0)
+    : selectedPeriod === 'yearly'
+    ? (resultadoChave.yearly_percentage || 0)
+    : (resultadoChave.ytd_percentage || 0);
+  
+  // Determine status color based on percentage (already calculated in DB)
+  const getStatusColor = (pct: number) => {
+    if (pct > 105) return 'text-blue-600';
+    if (pct >= 100) return 'text-green-600';
+    if (pct >= 71) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+  
+  const statusColor = getStatusColor(percentage);
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -62,8 +86,8 @@ export const ResultadoChaveMiniCard = ({ resultadoChave, pillar, onUpdate, onOpe
               </div>
             </div>
             <div className="flex flex-col items-end flex-shrink-0">
-              <span className={`text-sm font-medium ${status.color}`}>
-                {status.percentage.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+              <span className={`text-sm font-medium ${statusColor}`}>
+                {percentage.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
               </span>
             </div>
           </div>
