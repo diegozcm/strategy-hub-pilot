@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
 import { useKRMetrics, formatMetricValue, getAchievementStatus } from '@/hooks/useKRMetrics';
 import { KeyResult } from '@/types/strategic-map';
+import { calculateKRStatus } from '@/lib/krHelpers';
 
 interface KeyResultMetricsProps {
   keyResult: KeyResult;
@@ -40,13 +41,16 @@ export const KeyResultMetrics = ({
     metrics.ytd;
 
 
-  const status = getAchievementStatus(
-    currentMetrics.percentage, 
-    keyResult.target_direction
+  const krStatus = calculateKRStatus(
+    currentMetrics.actual,
+    currentMetrics.target,
+    keyResult.target_direction || 'maximize'
   );
-  
-  const isOnTrack = status !== 'danger';
-  const isOverTarget = status === 'success' && currentMetrics.percentage >= 100;
+
+  const isExcellent = krStatus.isExcellent;
+  const isGood = krStatus.isGood;
+  const isOnTrack = isGood;
+  const isOverTarget = krStatus.percentage >= 100;
 
   // Format current period display
   const currentPeriodDisplay = selectedPeriod === 'ytd'
@@ -105,27 +109,31 @@ export const KeyResultMetrics = ({
             {selectedPeriod === 'ytd' ? '% Atingimento YTD' : selectedPeriod === 'yearly' ? '% Atingimento Anual' : '% Atingimento Mensal'}
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-4 pb-3 pt-0">
-          <div className={`text-xl font-bold ${
-            status === 'excellent' ? 'text-blue-600' :
-            status === 'success' ? 'text-green-600' :
-            status === 'warning' ? 'text-yellow-600' :
-            'text-red-600'
-          }`}>
-            {currentMetrics.percentage.toFixed(1)}%
-          </div>
-          <div className="flex items-center justify-between mt-1">
-            <p className="text-xs text-muted-foreground">
-              {isOverTarget 
-                ? `+${(currentMetrics.percentage - 100).toFixed(1)}%`
-                : `-${(100 - currentMetrics.percentage).toFixed(1)}%`
-              }
-            </p>
-            <Badge variant={isOverTarget ? "default" : isOnTrack ? "secondary" : "destructive"} className="text-xs px-2 py-0">
-              {isOverTarget ? "✓" : isOnTrack ? "~" : "!"}
-            </Badge>
-          </div>
-        </CardContent>
+          <CardContent className="px-4 pb-3 pt-0">
+            <div className={`text-xl font-bold ${krStatus.color}`}>
+              {krStatus.percentage.toFixed(1)}%
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-xs text-muted-foreground">
+                {isOverTarget 
+                  ? `+${(krStatus.percentage - 100).toFixed(1)}%`
+                  : `-${(100 - krStatus.percentage).toFixed(1)}%`
+                }
+              </p>
+              <Badge 
+                variant={
+                  isExcellent || (isGood && krStatus.percentage >= 100) ? "default" : 
+                  isGood ? "secondary" : 
+                  "destructive"
+                } 
+                className="text-xs px-2 py-0"
+              >
+                {isExcellent || (isGood && krStatus.percentage >= 100) ? "✓" : 
+                 isGood ? "~" : 
+                 "!"}
+              </Badge>
+            </div>
+          </CardContent>
       </Card>
 
         <Card className="h-24">
