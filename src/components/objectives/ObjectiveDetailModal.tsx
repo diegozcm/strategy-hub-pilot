@@ -167,6 +167,9 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                       {plan.name}
                     </Badge>
                   )}
+                  <Badge variant="outline" className="bg-primary/10">
+                    {selectedPeriod === 'yearly' ? '📅 Ano' : selectedPeriod === 'monthly' ? '📆 Mês Corrente' : '📊 YTD'}
+                  </Badge>
                   <Badge 
                     className={`font-semibold ${
                       currentProgress > 105 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
