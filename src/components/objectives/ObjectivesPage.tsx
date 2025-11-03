@@ -1026,12 +1026,12 @@ export const ObjectivesPage: React.FC = () => {
                           <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
                             <div 
                               className={`h-full transition-all duration-300 rounded-full ${
-                                calculateObjectiveProgress(objectiveKeyResults) < 30 ? 'bg-red-500' : 
-                                calculateObjectiveProgress(objectiveKeyResults) < 60 ? 'bg-yellow-500' : 
-                                calculateObjectiveProgress(objectiveKeyResults) < 80 ? 'bg-blue-500' : 
-                                'bg-green-500'
+                                calculateObjectiveProgress(objectiveKeyResults) > 105 ? 'bg-blue-500' :
+                                calculateObjectiveProgress(objectiveKeyResults) >= 100 ? 'bg-green-500' :
+                                calculateObjectiveProgress(objectiveKeyResults) >= 71 ? 'bg-yellow-500' :
+                                'bg-red-500'
                               }`}
-                              style={{ width: `${calculateObjectiveProgress(objectiveKeyResults)}%` }}
+                              style={{ width: `${Math.min(calculateObjectiveProgress(objectiveKeyResults), 100)}%` }}
                             />
                           </div>
                         </div>
