@@ -37,7 +37,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
   const [showUpdateValuesModal, setShowUpdateValuesModal] = useState(false);
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly'>('ytd');
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
 
@@ -118,6 +118,49 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
     return { target: ytdTarget, actual: ytdActual };
   };
 
+  // Calculate yearly values (all 12 months)
+  const calculateYearly = (targets: Record<string, number>, actuals: Record<string, number>, year: number) => {
+    const targetValues: number[] = [];
+    const actualValues: number[] = [];
+
+    // Iterate through all 12 months of the year
+    for (let month = 1; month <= 12; month++) {
+      const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+      const target = targets[monthKey] || 0;
+      const actual = actuals[monthKey] || 0;
+      
+      targetValues.push(target);
+      actualValues.push(actual);
+    }
+
+    let yearlyTarget = 0;
+    let yearlyActual = 0;
+
+    switch (aggregationType) {
+      case 'sum':
+        yearlyTarget = targetValues.reduce((sum, value) => sum + value, 0);
+        yearlyActual = actualValues.reduce((sum, value) => sum + value, 0);
+        break;
+      case 'average':
+        yearlyTarget = targetValues.reduce((sum, value) => sum + value, 0) / 12;
+        yearlyActual = actualValues.reduce((sum, value) => sum + value, 0) / 12;
+        break;
+      case 'max':
+        yearlyTarget = Math.max(...targetValues);
+        yearlyActual = Math.max(...actualValues);
+        break;
+      case 'min':
+        yearlyTarget = Math.min(...targetValues);
+        yearlyActual = Math.min(...actualValues);
+        break;
+      default:
+        yearlyTarget = targetValues.reduce((sum, value) => sum + value, 0);
+        yearlyActual = actualValues.reduce((sum, value) => sum + value, 0);
+    }
+
+    return { target: yearlyTarget, actual: yearlyActual };
+  };
+
   const ytdValues = calculateYTD(monthlyTargets, monthlyActual);
   const yearlyTarget = ytdValues.target;
   const yearlyActual = ytdValues.actual;
@@ -134,6 +177,11 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const currentMonthTarget = monthlyTargets[currentMonthKey] || 0;
   const currentMonthActual = monthlyActual[currentMonthKey] || 0;
+
+  // Calculate yearly values (all 12 months)
+  const yearlyFullValues = calculateYearly(monthlyTargets, monthlyActual, selectedYear);
+  const fullYearTarget = yearlyFullValues.target;
+  const fullYearActual = yearlyFullValues.actual;
 
   const getAggregationTypeText = (type: string) => {
     switch (type) {
@@ -289,6 +337,14 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
               >
                 {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
               </Button>
+              <Button
+                variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setSelectedPeriod('yearly')}
+                className="h-8 px-3 text-xs"
+              >
+                Ano
+              </Button>
             </div>
           </div>
           
@@ -301,6 +357,8 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
             yearlyActual={yearlyActual}
             monthlyTarget={currentMonthTarget}
             monthlyActual={currentMonthActual}
+            yearlyFullTarget={fullYearTarget}
+            yearlyFullActual={fullYearActual}
             unit={currentKeyResult.unit || ''}
             achievementPercentage={achievementPercentage}
             currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}

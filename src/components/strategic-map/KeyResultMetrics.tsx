@@ -11,11 +11,13 @@ interface KeyResultMetricsProps {
   yearlyActual: number;
   monthlyTarget?: number;
   monthlyActual?: number;
+  yearlyFullTarget?: number;
+  yearlyFullActual?: number;
   unit: string;
   achievementPercentage?: number;
   currentMonth: string;
   targetDirection?: TargetDirection;
-  selectedPeriod?: 'ytd' | 'monthly';
+  selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
 }
 
 export const KeyResultMetrics = ({ 
@@ -23,6 +25,8 @@ export const KeyResultMetrics = ({
   yearlyActual,
   monthlyTarget,
   monthlyActual,
+  yearlyFullTarget,
+  yearlyFullActual,
   unit, 
   achievementPercentage,
   currentMonth,
@@ -31,8 +35,12 @@ export const KeyResultMetrics = ({
 }: KeyResultMetricsProps) => {
 
   // Determine values to display based on selected period
-  const displayTarget = selectedPeriod === 'ytd' ? yearlyTarget : (monthlyTarget || 0);
-  const displayActual = selectedPeriod === 'ytd' ? yearlyActual : (monthlyActual || 0);
+  const displayTarget = selectedPeriod === 'ytd' ? yearlyTarget : 
+                       selectedPeriod === 'yearly' ? (yearlyFullTarget || 0) :
+                       (monthlyTarget || 0);
+  const displayActual = selectedPeriod === 'ytd' ? yearlyActual : 
+                       selectedPeriod === 'yearly' ? (yearlyFullActual || 0) :
+                       (monthlyActual || 0);
 
   // Calculate status using the helper function
   const status = calculateKRStatus(displayActual, displayTarget, targetDirection);
@@ -46,10 +54,14 @@ export const KeyResultMetrics = ({
   // Format current period display
   const currentPeriodDisplay = selectedPeriod === 'ytd'
     ? `YTD ${new Date().getFullYear()}`
+    : selectedPeriod === 'yearly'
+    ? `Ano ${new Date().getFullYear()}`
     : new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
   const currentPeriodSubtext = selectedPeriod === 'ytd'
     ? `Jan-${new Date().toLocaleString('pt-BR', { month: 'short' })}`
+    : selectedPeriod === 'yearly'
+    ? 'Todos os 12 meses'
     : 'Mês de referência';
 
   return (
@@ -59,7 +71,7 @@ export const KeyResultMetrics = ({
         <Card className="h-24">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
             <CardTitle className="text-sm font-medium">
-              {selectedPeriod === 'ytd' ? 'Meta YTD' : 'Meta Mensal'}
+              {selectedPeriod === 'ytd' ? 'Meta YTD' : selectedPeriod === 'yearly' ? 'Meta Anual' : 'Meta Mensal'}
             </CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -73,7 +85,7 @@ export const KeyResultMetrics = ({
         <Card className="h-24">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
             <CardTitle className="text-sm font-medium">
-              {selectedPeriod === 'ytd' ? 'Realizado YTD' : 'Realizado Mensal'}
+              {selectedPeriod === 'ytd' ? 'Realizado YTD' : selectedPeriod === 'yearly' ? 'Realizado Anual' : 'Realizado Mensal'}
             </CardTitle>
             {isOverTarget ? (
               <TrendingUp className="h-4 w-4 text-green-600" />
@@ -91,7 +103,7 @@ export const KeyResultMetrics = ({
       <Card className="h-24">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
           <CardTitle className="text-sm font-medium">
-            {selectedPeriod === 'ytd' ? '% Atingimento YTD' : '% Atingimento Mensal'}
+            {selectedPeriod === 'ytd' ? '% Atingimento YTD' : selectedPeriod === 'yearly' ? '% Atingimento Anual' : '% Atingimento Mensal'}
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-3 pt-0">
