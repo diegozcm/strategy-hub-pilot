@@ -561,7 +561,7 @@ export const IndicatorsPage: React.FC = () => {
 
       {/* Period Selector */}
       <div className="flex justify-start">
-        <div className="inline-flex rounded-lg bg-background p-1">
+        <div className="inline-flex rounded-lg bg-background p-1 gap-2">
           <Button
             variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
             size="sm"
