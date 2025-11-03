@@ -109,7 +109,7 @@ export const KeyResultMetrics = ({
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
             <div className="text-xl font-bold">
-              {formatValueWithUnit(displayActual, unit)}
+              {displayActual.toFixed(1)}{unit}
             </div>
           </CardContent>
         </Card>
