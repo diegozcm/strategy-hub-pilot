@@ -150,6 +150,14 @@ const normalizedActuals: Record<string, number | null> =
   const targetTotal = calculateAggregation(normalizedTargets, aggregationType);
   const actualTotal = calculateAggregation(normalizedActuals, aggregationType);
 
+  // Calculate the maximum value for barAxis domain (0 to 110% of max)
+  const maxBarValue = Math.max(
+    Math.abs(targetTotal), 
+    Math.abs(actualTotal),
+    0
+  );
+  const barAxisMax = maxBarValue * 1.1;
+
   // Get period label for Total column
   const getPeriodLabel = () => {
     if (selectedPeriod === 'monthly') return '(Mês)';
@@ -261,7 +269,7 @@ const normalizedActuals: Record<string, number | null> =
                   orientation="right"
                   className="text-xs fill-muted-foreground"
                   tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
-                  domain={['auto', 'auto']}
+                  domain={[0, barAxisMax]}
                   label={{ 
                     value: 'Total', 
                     angle: -90, 
