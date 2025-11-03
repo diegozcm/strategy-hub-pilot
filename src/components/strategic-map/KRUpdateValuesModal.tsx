@@ -195,7 +195,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
               <div className="text-center">Unidade</div>
             </div>
             
-            {months.map((month) => {
+            {months.map((month, index) => {
               const target = monthlyTargets[month.key] || 0;
               const actual = monthlyActual[month.key] ?? null;
               const status = actual !== null && target !== 0 
@@ -215,6 +215,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
                     <Input
                       type="text"
                       placeholder="0,00"
+                      tabIndex={index + 1}
                       value={editingField === month.key 
                         ? tempValue 
                         : (monthlyActual[month.key] !== undefined 
@@ -227,6 +228,30 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
                       }}
                       onChange={(e) => {
                         setTempValue(e.target.value);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Tab' && !e.shiftKey && index < months.length - 1) {
+                          e.preventDefault();
+                          const nextInput = document.querySelector(`input[tabindex="${index + 2}"]`) as HTMLInputElement;
+                          if (nextInput) {
+                            nextInput.focus();
+                          }
+                        } else if (e.key === 'Tab' && e.shiftKey && index > 0) {
+                          e.preventDefault();
+                          const prevInput = document.querySelector(`input[tabindex="${index}"]`) as HTMLInputElement;
+                          if (prevInput) {
+                            prevInput.focus();
+                          }
+                        } else if (e.key === 'Enter') {
+                          e.preventDefault();
+                          (e.target as HTMLInputElement).blur();
+                          if (index < months.length - 1) {
+                            const nextInput = document.querySelector(`input[tabindex="${index + 2}"]`) as HTMLInputElement;
+                            if (nextInput) {
+                              nextInput.focus();
+                            }
+                          }
+                        }
                       }}
                       onBlur={() => {
                         const value = parseBrazilianNumber(tempValue);
