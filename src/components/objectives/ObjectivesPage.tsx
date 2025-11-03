@@ -61,6 +61,7 @@ export const ObjectivesPage: React.FC = () => {
   
   const [selectedPlan, setSelectedPlan] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
   const [isCreateObjectiveOpen, setIsCreateObjectiveOpen] = useState(false);
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -404,14 +405,26 @@ export const ObjectivesPage: React.FC = () => {
     return 'bg-green-500';
   };
 
-  const calculateObjectiveProgress = (keyResults: any[]) => {
+  const calculateObjectiveProgress = (keyResults: any[], period: 'ytd' | 'monthly' | 'yearly' = 'ytd') => {
     if (keyResults.length === 0) return 0;
     
     const totalProgress = keyResults.reduce((sum, kr) => {
-      const currentValue = kr.yearly_actual || kr.current_value || 0;
-      const targetValue = kr.yearly_target || kr.target_value || 1;
-      const progress = targetValue > 0 ? Math.min((currentValue / targetValue) * 100, 100) : 0;
-      return sum + progress;
+      let percentage = 0;
+      
+      switch (period) {
+        case 'monthly':
+          percentage = kr.monthly_percentage || 0;
+          break;
+        case 'yearly':
+          percentage = kr.yearly_percentage || 0;
+          break;
+        case 'ytd':
+        default:
+          percentage = kr.ytd_percentage || 0;
+          break;
+      }
+      
+      return sum + percentage;
     }, 0);
     
     return Math.round(totalProgress / keyResults.length);
@@ -606,7 +619,35 @@ export const ObjectivesPage: React.FC = () => {
             <h1 className="text-3xl font-bold text-foreground">Objetivos Estratégicos</h1>
             <p className="text-muted-foreground mt-2">Gerencie seus planos estratégicos e objetivos</p>
           </div>
-          <div className="flex space-x-3">
+          <div className="flex items-center gap-3">
+            {/* Seletor de Período */}
+            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+              <Button
+                variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setSelectedPeriod('ytd')}
+                className="h-8 px-3 text-xs"
+              >
+                YTD
+              </Button>
+              <Button
+                variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setSelectedPeriod('monthly')}
+                className="h-8 px-3 text-xs"
+              >
+                Mês
+              </Button>
+              <Button
+                variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setSelectedPeriod('yearly')}
+                className="h-8 px-3 text-xs"
+              >
+                Ano
+              </Button>
+            </div>
+            <div className="flex space-x-3">
             <Dialog open={isCreatePlanOpen} onOpenChange={setIsCreatePlanOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">
@@ -777,6 +818,7 @@ export const ObjectivesPage: React.FC = () => {
                 )}
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </div>
 
@@ -1021,18 +1063,23 @@ export const ObjectivesPage: React.FC = () => {
                         <div className="mt-3">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium text-muted-foreground">Progresso</span>
-                            <span className="text-sm font-bold text-foreground">{calculateObjectiveProgress(objectiveKeyResults)}%</span>
+                            <span className="text-sm font-bold text-foreground">{calculateObjectiveProgress(objectiveKeyResults, selectedPeriod)}%</span>
                           </div>
                           <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
-                            <div 
-                              className={`h-full transition-all duration-300 rounded-full ${
-                                calculateObjectiveProgress(objectiveKeyResults) > 105 ? 'bg-blue-500' :
-                                calculateObjectiveProgress(objectiveKeyResults) >= 100 ? 'bg-green-500' :
-                                calculateObjectiveProgress(objectiveKeyResults) >= 71 ? 'bg-yellow-500' :
-                                'bg-red-500'
-                              }`}
-                              style={{ width: `${Math.min(calculateObjectiveProgress(objectiveKeyResults), 100)}%` }}
-                            />
+                            {(() => {
+                              const progress = calculateObjectiveProgress(objectiveKeyResults, selectedPeriod);
+                              return (
+                                <div 
+                                  className={`h-full transition-all duration-300 rounded-full ${
+                                    progress > 105 ? 'bg-blue-500' :
+                                    progress >= 100 ? 'bg-green-500' :
+                                    progress >= 71 ? 'bg-yellow-500' :
+                                    'bg-red-500'
+                                  }`}
+                                  style={{ width: `${Math.min(progress, 100)}%` }}
+                                />
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -1056,7 +1103,8 @@ export const ObjectivesPage: React.FC = () => {
           onDelete={handleDeleteObjective}
           onOpenKeyResultDetails={handleOpenKeyResultDetails}
           pillars={pillars}
-          progressPercentage={selectedObjective ? calculateObjectiveProgress(getObjectiveKeyResults(selectedObjective.id)) : 0}
+          progressPercentage={selectedObjective ? calculateObjectiveProgress(getObjectiveKeyResults(selectedObjective.id), selectedPeriod) : 0}
+          selectedPeriod={selectedPeriod}
         />
 
 

@@ -62,6 +62,7 @@ interface ObjectiveDetailModalProps {
   onOpenKeyResultDetails: (kr: KeyResult) => void;
   pillars: StrategicPillar[];
   progressPercentage: number;
+  selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
 }
 
 export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
@@ -76,6 +77,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
   onOpenKeyResultDetails,
   pillars,
   progressPercentage,
+  selectedPeriod = 'ytd',
 }) => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
