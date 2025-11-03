@@ -148,9 +148,21 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <DialogTitle className="text-xl">
-                {objective.title}
-              </DialogTitle>
+              <div className="flex items-center gap-2">
+                <DialogTitle className="text-xl">
+                  {objective.title}
+                </DialogTitle>
+                <Badge 
+                  className={`font-semibold text-xl ${
+                    currentProgress > 105 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
+                    currentProgress >= 100 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                    currentProgress >= 71 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                  }`}
+                >
+                  {currentProgress.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% de avanço
+                </Badge>
+              </div>
               <DialogDescription>
                 <div className="flex items-center gap-2 mt-2">
                   {pillar && (
@@ -175,16 +187,6 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                       : selectedPeriod === 'monthly' 
                       ? `📆 ${format(new Date(), 'MMMM', { locale: ptBR }).charAt(0).toUpperCase() + format(new Date(), 'MMMM', { locale: ptBR }).slice(1)}` 
                       : '📊 YTD'}
-                  </Badge>
-                  <Badge 
-                    className={`font-semibold ${
-                      currentProgress > 105 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
-                      currentProgress >= 100 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
-                      currentProgress >= 71 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
-                    }`}
-                  >
-                    {currentProgress.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% de avanço
                   </Badge>
                 </div>
               </DialogDescription>
