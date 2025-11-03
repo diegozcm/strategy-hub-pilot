@@ -157,7 +157,7 @@ const normalizedActuals: Record<string, number | null> =
 
   // Get period label for Total column
   const getPeriodLabel = () => {
-    if (selectedPeriod === 'monthly') return '(Mês Atual)';
+    if (selectedPeriod === 'monthly') return '(Mês)';
     if (selectedPeriod === 'yearly') return '(Ano)';
     return '(YTD)';
   };
