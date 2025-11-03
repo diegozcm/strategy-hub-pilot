@@ -143,7 +143,7 @@ export const RumoObjectiveBlock = ({
             </div>
             <div className="text-right flex-shrink-0">
               <p className="text-2xl font-bold">
-                {progress.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                {progress.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}%
               </p>
               <p className="text-xs opacity-80">
                 {objectiveKRs.length} KR(s)
