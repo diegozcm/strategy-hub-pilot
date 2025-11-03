@@ -953,7 +953,7 @@ export const ObjectivesPage: React.FC = () => {
                 onClick={() => setSelectedPeriod('monthly')}
                 className="h-8 px-3 text-xs"
               >
-                {format(new Date(), 'MMM', { locale: ptBR })}
+                {format(new Date(), 'MMMM', { locale: ptBR })}
               </Button>
                 <Button
                   variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
