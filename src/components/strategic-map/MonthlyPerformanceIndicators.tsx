@@ -17,10 +17,10 @@ const MONTH_NAMES = [
 ];
 
 const getMonthPerformanceColor = (progress: number): string => {
-  if (progress > 105) return 'blue';    // Superado
-  if (progress >= 91) return 'green';   // No Alvo
-  if (progress >= 71) return 'yellow';  // Atenção
-  if (progress > 0) return 'red';       // Crítico
+  if (progress > 105) return 'blue';    // Excelente (superou a meta)
+  if (progress >= 100) return 'green';  // Sucesso (no alvo)
+  if (progress >= 71) return 'yellow';  // Atenção (próximo da meta)
+  if (progress > 0) return 'red';       // Crítico (abaixo da meta)
   return 'gray';                        // Sem dados
 };
 
@@ -30,7 +30,7 @@ const getIconByPerformance = (progress: number, size: number) => {
   if (progress > 105) {
     return <CheckCircle2 size={iconSize} className="text-blue-500" />;
   }
-  if (progress >= 91) {
+  if (progress >= 100) {
     return <Circle size={iconSize} className="text-green-500 fill-green-500" />;
   }
   if (progress >= 71) {
