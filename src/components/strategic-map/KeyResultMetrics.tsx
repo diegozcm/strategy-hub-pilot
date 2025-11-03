@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target } from 'lucide-react';
 import { calculateKRStatus, type TargetDirection } from '@/lib/krHelpers';
 import { formatValueWithUnit } from '@/lib/utils';
 
@@ -60,28 +60,6 @@ export const KeyResultMetrics = ({
 
   return (
     <div className="space-y-4 mb-6">
-      {/* Toggle YTD/Mensal */}
-      <div className="flex items-center justify-start">
-        <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
-          <Button
-            variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => handlePeriodChange('ytd')}
-            className="h-8 px-3 text-xs"
-          >
-            YTD
-          </Button>
-          <Button
-            variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => handlePeriodChange('monthly')}
-            className="h-8 px-3 text-xs"
-          >
-            {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
-          </Button>
-        </div>
-      </div>
-
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="h-24">
@@ -139,7 +117,24 @@ export const KeyResultMetrics = ({
         <Card className="h-24">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
             <CardTitle className="text-sm font-medium">Período Atual</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <div className="flex flex-col gap-1">
+              <Button
+                variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => handlePeriodChange('ytd')}
+                className="h-6 px-2 text-xs w-20"
+              >
+                YTD
+              </Button>
+              <Button
+                variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => handlePeriodChange('monthly')}
+                className="h-6 px-2 text-xs w-20"
+              >
+                {new Date().toLocaleDateString('pt-BR', { month: 'short' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'short' }).slice(1)}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
             <div className="text-xl font-bold">
