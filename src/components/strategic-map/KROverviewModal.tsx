@@ -41,6 +41,8 @@ export const KROverviewModal = ({
   showDeleteButton = true,
   initialPeriod = 'ytd'
 }: KROverviewModalProps) => {
+  console.log('📊 KROverviewModal rendered - initialPeriod:', initialPeriod, 'open:', open);
+  
   const [showFCAModal, setShowFCAModal] = useState(false);
   const [showStatusReportModal, setShowStatusReportModal] = useState(false);
   const [showInitiativesModal, setShowInitiativesModal] = useState(false);
@@ -59,6 +61,7 @@ export const KROverviewModal = ({
 
   // Update selected period when initialPeriod changes
   useEffect(() => {
+    console.log('🔄 KROverviewModal useEffect - updating selectedPeriod from:', selectedPeriod, 'to:', initialPeriod);
     setSelectedPeriod(initialPeriod);
   }, [initialPeriod]);
 

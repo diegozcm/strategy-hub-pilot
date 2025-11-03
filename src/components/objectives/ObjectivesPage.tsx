@@ -499,6 +499,7 @@ export const ObjectivesPage: React.FC = () => {
   };
 
   const handleOpenKeyResultDetails = (keyResult: KeyResult) => {
+    console.log('🔍 Opening KR Overview Modal - selectedPeriod:', selectedPeriod);
     setSelectedKeyResultForOverview(keyResult);
     setIsKROverviewModalOpen(true);
   };
