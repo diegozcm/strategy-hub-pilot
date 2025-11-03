@@ -419,7 +419,7 @@ export const IndicatorsPage: React.FC = () => {
   const getPeriodLabel = () => {
     switch (selectedPeriod) {
       case 'ytd': return 'YTD';
-      case 'monthly': return 'Mês Atual';
+      case 'monthly': return new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1);
       case 'yearly': return 'Ano';
     }
   };
