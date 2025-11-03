@@ -378,6 +378,14 @@ export const KROverviewModal = ({
                   YTD
                 </Button>
                 <Button
+                  variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedPeriod('monthly')}
+                  className="h-8 px-3 text-xs"
+                >
+                  Mês
+                </Button>
+                <Button
                   variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setSelectedPeriod('yearly')}
@@ -387,41 +395,28 @@ export const KROverviewModal = ({
                 </Button>
               </div>
               
-              {/* Smart Combo - Visual muda conforme período ativo */}
-              <Select
-                value={`${selectedMonthYear}-${selectedMonth.toString().padStart(2, '0')}`}
-                onValueChange={(value) => {
-                  const [year, month] = value.split('-');
-                  setSelectedMonthYear(parseInt(year));
-                  setSelectedMonth(parseInt(month));
-                  // Ao selecionar um mês, automaticamente muda para o período 'monthly'
-                  setSelectedPeriod('monthly');
-                }}
-              >
-                <SelectTrigger 
-                  className={cn(
-                    "w-[130px] h-8 transition-all",
-                    selectedPeriod === 'monthly' 
-                      ? "border-primary bg-primary/10 ring-1 ring-primary/20 font-medium" 
-                      : "border-muted-foreground/20 bg-muted/30 hover:bg-muted/50 text-muted-foreground"
-                  )}
-                  onClick={() => {
-                    // Clicar no combo também ativa o período mensal
-                    if (selectedPeriod !== 'monthly') {
-                      setSelectedPeriod('monthly');
-                    }
+              {/* Month selector - visible when 'monthly' is selected */}
+              {selectedPeriod === 'monthly' && (
+                <Select
+                  value={`${selectedMonthYear}-${selectedMonth.toString().padStart(2, '0')}`}
+                  onValueChange={(value) => {
+                    const [year, month] = value.split('-');
+                    setSelectedMonthYear(parseInt(year));
+                    setSelectedMonth(parseInt(month));
                   }}
                 >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {generateMonthOptions().map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  <SelectTrigger className="w-[130px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {generateMonthOptions().map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
           
