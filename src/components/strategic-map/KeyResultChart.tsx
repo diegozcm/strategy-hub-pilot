@@ -301,7 +301,7 @@ const normalizedActuals: Record<string, number | null> =
                     );
                   })}
                   <TableHead className="text-center min-w-24 bg-muted font-semibold">
-                    {getAggregationLabel(aggregationType)} {getPeriodLabel()}
+                    {getAggregationLabel(aggregationType)} <span className="text-xs">{getPeriodLabel()}</span>
                   </TableHead>
                 </TableRow>
               </TableHeader>
