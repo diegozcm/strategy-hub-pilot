@@ -12,7 +12,7 @@ import { KRInitiativesModal } from './KRInitiativesModal';
 import { KREditModal } from './KREditModal';
 import { KRUpdateValuesModal } from './KRUpdateValuesModal';
 import { getDirectionLabel, calculateKRStatus } from '@/lib/krHelpers';
-import { formatValueWithUnit } from '@/lib/utils';
+import { formatValueWithUnit, cn } from '@/lib/utils';
 
 import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -387,7 +387,7 @@ export const KROverviewModal = ({
                 </Button>
               </div>
               
-              {/* Combo sempre visível - representa o período mensal */}
+              {/* Smart Combo - Visual muda conforme período ativo */}
               <Select
                 value={`${selectedMonthYear}-${selectedMonth.toString().padStart(2, '0')}`}
                 onValueChange={(value) => {
@@ -398,7 +398,20 @@ export const KROverviewModal = ({
                   setSelectedPeriod('monthly');
                 }}
               >
-                <SelectTrigger className="w-[130px] h-8">
+                <SelectTrigger 
+                  className={cn(
+                    "w-[130px] h-8 transition-all",
+                    selectedPeriod === 'monthly' 
+                      ? "border-primary bg-primary/10 ring-1 ring-primary/20 font-medium" 
+                      : "border-muted-foreground/20 bg-muted/30 hover:bg-muted/50 text-muted-foreground"
+                  )}
+                  onClick={() => {
+                    // Clicar no combo também ativa o período mensal
+                    if (selectedPeriod !== 'monthly') {
+                      setSelectedPeriod('monthly');
+                    }
+                  }}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
