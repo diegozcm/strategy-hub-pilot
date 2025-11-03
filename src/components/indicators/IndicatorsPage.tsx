@@ -468,12 +468,14 @@ export const IndicatorsPage: React.FC = () => {
     if (!matchesProgress) {
       const metrics = getMetricsByPeriod(keyResult.id);
       const progress = metrics.percentage;
-      if (progressFilter === 'above') {
-        matchesProgress = progress >= 90;
-      } else if (progressFilter === 'near') {
-        matchesProgress = progress >= 70 && progress < 90;
-      } else if (progressFilter === 'below') {
-        matchesProgress = progress < 70;
+      if (progressFilter === 'excellent') {
+        matchesProgress = progress > 105;
+      } else if (progressFilter === 'success') {
+        matchesProgress = progress >= 100 && progress <= 105;
+      } else if (progressFilter === 'attention') {
+        matchesProgress = progress >= 71 && progress < 100;
+      } else if (progressFilter === 'critical') {
+        matchesProgress = progress < 71;
       }
     }
     
@@ -718,22 +720,28 @@ export const IndicatorsPage: React.FC = () => {
              </SelectTrigger>
              <SelectContent>
                <SelectItem value="all">Todos os status</SelectItem>
-               <SelectItem value="above">
+               <SelectItem value="excellent">
+                 <div className="flex items-center gap-2">
+                   <div className="w-3 h-3 rounded-full bg-blue-500" />
+                   &gt;105% Excelente
+                 </div>
+               </SelectItem>
+               <SelectItem value="success">
                  <div className="flex items-center gap-2">
                    <div className="w-3 h-3 rounded-full bg-green-500" />
-                   Acima da meta
+                   100-105% No Alvo
                  </div>
                </SelectItem>
-               <SelectItem value="near">
+               <SelectItem value="attention">
                  <div className="flex items-center gap-2">
                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                   Próximo da meta
+                   71-99% Atenção
                  </div>
                </SelectItem>
-               <SelectItem value="below">
+               <SelectItem value="critical">
                  <div className="flex items-center gap-2">
                    <div className="w-3 h-3 rounded-full bg-red-500" />
-                   Abaixo da meta
+                   &lt;71% Crítico
                  </div>
                </SelectItem>
              </SelectContent>
