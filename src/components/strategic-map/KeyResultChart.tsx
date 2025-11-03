@@ -295,7 +295,7 @@ const normalizedActuals: Record<string, number | null> =
                       >
                         {hasValue ? (
                           <span className={value < 0 ? "text-red-600" : ""}>
-                            {value.toFixed(1)}{unit}
+                            {formatValueWithUnit(value, unit)}
                           </span>
                         ) : '-'}
                       </TableCell>
@@ -304,7 +304,7 @@ const normalizedActuals: Record<string, number | null> =
                   <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
                     {targetTotal !== 0 ? (
                       <span className={targetTotal < 0 ? "text-red-600" : ""}>
-                        {targetTotal.toFixed(1)}{unit}
+                        {formatValueWithUnit(targetTotal, unit)}
                       </span>
                     ) : '-'}
                   </TableCell>
@@ -323,7 +323,7 @@ const normalizedActuals: Record<string, number | null> =
                       >
                         {hasValue ? (
                           <span className={value < 0 ? "text-red-600 font-semibold" : ""}>
-                            {value.toFixed(1)}{unit}
+                            {formatValueWithUnit(value, unit)}
                           </span>
                         ) : '-'}
                       </TableCell>
@@ -332,7 +332,7 @@ const normalizedActuals: Record<string, number | null> =
                   <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
                     {actualTotal !== 0 ? (
                       <span className={actualTotal < 0 ? "text-red-600" : ""}>
-                        {actualTotal.toFixed(1)}{unit}
+                        {formatValueWithUnit(actualTotal, unit)}
                       </span>
                     ) : '-'}
                   </TableCell>
