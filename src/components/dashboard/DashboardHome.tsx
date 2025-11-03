@@ -34,6 +34,7 @@ interface KeyResultWithPillar {
   aggregation_type?: string;
   priority?: string;
   target_direction?: 'maximize' | 'minimize';
+  unit?: string;
   // Pre-calculated fields from database
   ytd_target?: number;
   ytd_actual?: number;
@@ -267,6 +268,7 @@ export const DashboardHome: React.FC = () => {
           target_direction,
           aggregation_type,
           objective_id,
+          unit,
           ytd_target,
           ytd_actual,
           ytd_percentage,
@@ -312,6 +314,7 @@ export const DashboardHome: React.FC = () => {
         aggregation_type: kr.aggregation_type || 'sum',
         target_direction: (kr.target_direction as 'maximize' | 'minimize') || 'maximize',
         priority: 'medium',
+        unit: kr.unit,
         // Pre-calculated fields from database
         ytd_target: kr.ytd_target,
         ytd_actual: kr.ytd_actual,
@@ -875,7 +878,7 @@ export const DashboardHome: React.FC = () => {
                                       {selectedAchievement.toFixed(1)}% {periodType === 'monthly' ? 'no mês' : periodType === 'ytd' ? 'YTD' : 'no ano'}
                                     </span>
                                     <span className="text-xs text-muted-foreground">
-                                      Atual: {Number(selectedActualValue).toFixed(1)}
+                                      Atual: {Number(selectedActualValue).toFixed(1)}{kr.unit ? ` ${kr.unit}` : ''}
                                     </span>
                                   </div>
                                 </div>
