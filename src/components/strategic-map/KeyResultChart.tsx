@@ -260,7 +260,7 @@ const normalizedActuals: Record<string, number | null> =
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="rounded-md border overflow-x-auto">
+          <div className="rounded-md border overflow-x-auto [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-thumb]:rounded-full">
             <Table className="relative">
               <TableHeader>
                 <TableRow>
