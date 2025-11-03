@@ -11,7 +11,10 @@ export function formatDate(date: string | Date): string {
 }
 
 export function formatValueWithUnit(value: number, unit: string): string {
-  const formattedValue = value.toLocaleString('pt-BR');
+  const formattedValue = value.toLocaleString('pt-BR', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  });
   
   // Se a unidade for R$, coloca antes do valor
   if (unit === 'R$') {
