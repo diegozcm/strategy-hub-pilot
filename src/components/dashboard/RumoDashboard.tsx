@@ -84,7 +84,7 @@ export const RumoDashboard = () => {
               className="gap-2"
             >
               <Calendar className="w-4 h-4" />
-              Mensal
+              {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
             </Button>
             <Button
               variant={periodType === 'ytd' ? 'default' : 'ghost'}
