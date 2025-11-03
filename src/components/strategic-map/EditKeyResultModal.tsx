@@ -254,29 +254,10 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
         
         {/* Indicadores e Gráfico na parte superior */}
         <KeyResultMetrics
-            yearlyTarget={calculateYearlyTarget(monthlyTargets)}
-            yearlyActual={calculateYearlyActual(monthlyActual)}
-            monthlyTarget={(() => {
-              const now = new Date();
-              const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-              return monthlyTargets[currentMonthKey] || 0;
-            })()}
-            monthlyActual={(() => {
-              const now = new Date();
-              const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-              return monthlyActual[currentMonthKey] || 0;
-            })()}
-            unit={keyResult.unit || ''}
-            achievementPercentage={(() => {
-              const target = calculateYearlyTarget(monthlyTargets);
-              const actual = calculateYearlyActual(monthlyActual);
-              return target > 0 ? (actual / target) * 100 : 0;
-            })()}
-            currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-            targetDirection={(keyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
-          />
+          keyResult={keyResult}
+        />
           
-          <KeyResultChart
+        <KeyResultChart
             monthlyTargets={monthlyTargets}
             monthlyActual={monthlyActual}
             unit={keyResult.unit || ''}

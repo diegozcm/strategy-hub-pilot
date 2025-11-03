@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.change-password-logged-in]
 verify_jwt = true
+
+[functions.recalculate-kr-metrics]
+verify_jwt = true

@@ -69,6 +69,14 @@ export interface KeyResult {
   monthly_actions?: KRMonthlyAction[];
   created_at: string;
   updated_at: string;
+  // Pre-calculated metrics from database
+  ytd_target?: number;
+  ytd_actual?: number;
+  ytd_percentage?: number;
+  current_month_target?: number;
+  current_month_actual?: number;
+  monthly_percentage?: number;
+  yearly_percentage?: number;
 }
 
 export interface StrategicProject {

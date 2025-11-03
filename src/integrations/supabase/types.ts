@@ -1050,6 +1050,8 @@ export type Database = {
           aggregation_type: string | null
           category: string | null
           created_at: string
+          current_month_actual: number | null
+          current_month_target: number | null
           current_value: number | null
           deadline: string | null
           description: string | null
@@ -1059,6 +1061,7 @@ export type Database = {
           last_updated: string | null
           metric_type: string | null
           monthly_actual: Json | null
+          monthly_percentage: number | null
           monthly_targets: Json | null
           objective_id: string
           owner_id: string
@@ -1070,12 +1073,18 @@ export type Database = {
           unit: string
           updated_at: string
           yearly_actual: number | null
+          yearly_percentage: number | null
           yearly_target: number | null
+          ytd_actual: number | null
+          ytd_percentage: number | null
+          ytd_target: number | null
         }
         Insert: {
           aggregation_type?: string | null
           category?: string | null
           created_at?: string
+          current_month_actual?: number | null
+          current_month_target?: number | null
           current_value?: number | null
           deadline?: string | null
           description?: string | null
@@ -1085,6 +1094,7 @@ export type Database = {
           last_updated?: string | null
           metric_type?: string | null
           monthly_actual?: Json | null
+          monthly_percentage?: number | null
           monthly_targets?: Json | null
           objective_id: string
           owner_id: string
@@ -1096,12 +1106,18 @@ export type Database = {
           unit?: string
           updated_at?: string
           yearly_actual?: number | null
+          yearly_percentage?: number | null
           yearly_target?: number | null
+          ytd_actual?: number | null
+          ytd_percentage?: number | null
+          ytd_target?: number | null
         }
         Update: {
           aggregation_type?: string | null
           category?: string | null
           created_at?: string
+          current_month_actual?: number | null
+          current_month_target?: number | null
           current_value?: number | null
           deadline?: string | null
           description?: string | null
@@ -1111,6 +1127,7 @@ export type Database = {
           last_updated?: string | null
           metric_type?: string | null
           monthly_actual?: Json | null
+          monthly_percentage?: number | null
           monthly_targets?: Json | null
           objective_id?: string
           owner_id?: string
@@ -1122,7 +1139,11 @@ export type Database = {
           unit?: string
           updated_at?: string
           yearly_actual?: number | null
+          yearly_percentage?: number | null
           yearly_target?: number | null
+          ytd_actual?: number | null
+          ytd_percentage?: number | null
+          ytd_target?: number | null
         }
         Relationships: [
           {
@@ -2773,6 +2794,7 @@ export type Database = {
         Args: { actual: number; target: number }
         Returns: number
       }
+      calculate_kr_metrics: { Args: { kr_id: string }; Returns: undefined }
       can_delete_company: { Args: { _company_id: string }; Returns: boolean }
       check_startup_integrity: {
         Args: { _company_id: string }

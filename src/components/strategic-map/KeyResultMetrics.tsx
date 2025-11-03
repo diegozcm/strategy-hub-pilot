@@ -1,55 +1,35 @@
-import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
-import { calculateKRStatus, type TargetDirection } from '@/lib/krHelpers';
-import { formatValueWithUnit } from '@/lib/utils';
+import { useKRMetrics, formatMetricValue, getAchievementStatus } from '@/hooks/useKRMetrics';
+import { KeyResult } from '@/types/strategic-map';
 
 interface KeyResultMetricsProps {
-  yearlyTarget: number;
-  yearlyActual: number;
-  monthlyTarget?: number;
-  monthlyActual?: number;
-  yearlyFullTarget?: number;
-  yearlyFullActual?: number;
-  unit: string;
-  achievementPercentage?: number;
-  currentMonth: string;
-  targetDirection?: TargetDirection;
+  keyResult: KeyResult;
   selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
 }
 
 export const KeyResultMetrics = ({ 
-  yearlyTarget, 
-  yearlyActual,
-  monthlyTarget,
-  monthlyActual,
-  yearlyFullTarget,
-  yearlyFullActual,
-  unit, 
-  achievementPercentage,
-  currentMonth,
-  targetDirection = 'maximize',
+  keyResult,
   selectedPeriod = 'ytd'
 }: KeyResultMetricsProps) => {
 
-  // Determine values to display based on selected period
-  const displayTarget = selectedPeriod === 'ytd' ? yearlyTarget : 
-                       selectedPeriod === 'yearly' ? (yearlyFullTarget || 0) :
-                       (monthlyTarget || 0);
-  const displayActual = selectedPeriod === 'ytd' ? yearlyActual : 
-                       selectedPeriod === 'yearly' ? (yearlyFullActual || 0) :
-                       (monthlyActual || 0);
-
-  // Calculate status using the helper function
-  const status = calculateKRStatus(displayActual, displayTarget, targetDirection);
-  const calculatedPercentage = achievementPercentage && selectedPeriod === 'ytd' 
-    ? achievementPercentage 
-    : status.percentage;
+  // Get pre-calculated metrics from database
+  const metrics = useKRMetrics(keyResult);
   
-  const isOnTrack = status.isGood;
-  const isOverTarget = status.isExcellent;
+  // Select appropriate metrics based on period
+  const currentMetrics = 
+    selectedPeriod === 'monthly' ? metrics.monthly :
+    selectedPeriod === 'yearly' ? metrics.yearly :
+    metrics.ytd;
+
+  const status = getAchievementStatus(
+    currentMetrics.percentage, 
+    keyResult.target_direction
+  );
+  
+  const isOnTrack = status !== 'danger';
+  const isOverTarget = status === 'success' && currentMetrics.percentage >= 100;
 
   // Format current period display
   const currentPeriodDisplay = selectedPeriod === 'ytd'
@@ -77,7 +57,7 @@ export const KeyResultMetrics = ({
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
             <div className="text-xl font-bold">
-              {formatValueWithUnit(displayTarget, unit)}
+              {formatMetricValue(currentMetrics.target, keyResult.unit)}
             </div>
           </CardContent>
         </Card>
@@ -95,7 +75,7 @@ export const KeyResultMetrics = ({
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
             <div className="text-xl font-bold">
-              {formatValueWithUnit(displayActual, unit)}
+              {formatMetricValue(currentMetrics.actual, keyResult.unit)}
             </div>
           </CardContent>
         </Card>
@@ -107,14 +87,18 @@ export const KeyResultMetrics = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-3 pt-0">
-          <div className={`text-xl font-bold ${status.color}`}>
-            {calculatedPercentage.toFixed(1)}%
+          <div className={`text-xl font-bold ${
+            status === 'success' ? 'text-green-600' :
+            status === 'warning' ? 'text-yellow-600' :
+            'text-red-600'
+          }`}>
+            {currentMetrics.percentage.toFixed(1)}%
           </div>
           <div className="flex items-center justify-between mt-1">
             <p className="text-xs text-muted-foreground">
               {isOverTarget 
-                ? `+${(calculatedPercentage - 100).toFixed(1)}%`
-                : `-${(100 - calculatedPercentage).toFixed(1)}%`
+                ? `+${(currentMetrics.percentage - 100).toFixed(1)}%`
+                : `-${(100 - currentMetrics.percentage).toFixed(1)}%`
               }
             </p>
             <Badge variant={isOverTarget ? "default" : isOnTrack ? "secondary" : "destructive"} className="text-xs px-2 py-0">
