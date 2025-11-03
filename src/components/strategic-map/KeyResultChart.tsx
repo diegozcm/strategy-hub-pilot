@@ -295,7 +295,7 @@ const normalizedActuals: Record<string, number | null> =
                       >
                         {hasValue ? (
                           <span className={value < 0 ? "text-red-600" : ""}>
-                            {formatValueWithUnit(value, unit)}
+                            {value.toFixed(1)}{unit}
                           </span>
                         ) : '-'}
                       </TableCell>
@@ -304,7 +304,7 @@ const normalizedActuals: Record<string, number | null> =
                   <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
                     {targetTotal !== 0 ? (
                       <span className={targetTotal < 0 ? "text-red-600" : ""}>
-                        {formatValueWithUnit(targetTotal, unit)}
+                        {targetTotal.toFixed(1)}{unit}
                       </span>
                     ) : '-'}
                   </TableCell>
@@ -323,7 +323,7 @@ const normalizedActuals: Record<string, number | null> =
                       >
                         {hasValue ? (
                           <span className={value < 0 ? "text-red-600 font-semibold" : ""}>
-                            {formatValueWithUnit(value, unit)}
+                            {value.toFixed(1)}{unit}
                           </span>
                         ) : '-'}
                       </TableCell>
@@ -332,7 +332,7 @@ const normalizedActuals: Record<string, number | null> =
                   <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
                     {actualTotal !== 0 ? (
                       <span className={actualTotal < 0 ? "text-red-600" : ""}>
-                        {formatValueWithUnit(actualTotal, unit)}
+                        {actualTotal.toFixed(1)}{unit}
                       </span>
                     ) : '-'}
                   </TableCell>
@@ -355,7 +355,7 @@ const normalizedActuals: Record<string, number | null> =
                       >
                         {status ? (
                           <span className={`${status.color} font-semibold`}>
-                            {status.percentage.toFixed(0)}%
+                            {status.percentage.toFixed(1)}%
                           </span>
                         ) : (
                           <span className="text-gray-400">-</span>
