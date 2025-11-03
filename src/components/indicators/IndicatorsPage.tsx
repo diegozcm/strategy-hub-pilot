@@ -499,16 +499,17 @@ export const IndicatorsPage: React.FC = () => {
   const totalKeyResults = keyResults.length;
   const onTargetKeyResults = keyResults.filter(kr => {
     const metrics = getMetricsByPeriod(kr.id);
-    return metrics.percentage >= 90;
+    const p = metrics.percentage;
+    return p >= 100 && p <= 105;
   }).length;
   const atRiskKeyResults = keyResults.filter(kr => {
     const metrics = getMetricsByPeriod(kr.id);
-    const progress = metrics.percentage;
-    return progress >= 70 && progress < 90;
+    const p = metrics.percentage;
+    return p >= 71 && p < 100;
   }).length;
   const criticalKeyResults = keyResults.filter(kr => {
     const metrics = getMetricsByPeriod(kr.id);
-    return metrics.percentage < 70;
+    return metrics.percentage < 71;
   }).length;
 
   if (loading) {
@@ -606,7 +607,7 @@ export const IndicatorsPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{onTargetKeyResults}</div>
-            <p className="text-xs text-muted-foreground">≥90% da meta ({getPeriodLabel()})</p>
+            <p className="text-xs text-muted-foreground">100-105% da meta ({getPeriodLabel()})</p>
           </CardContent>
         </Card>
         
@@ -617,7 +618,7 @@ export const IndicatorsPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-600">{atRiskKeyResults}</div>
-            <p className="text-xs text-muted-foreground">70-89% da meta ({getPeriodLabel()})</p>
+            <p className="text-xs text-muted-foreground">71-99% da meta ({getPeriodLabel()})</p>
           </CardContent>
         </Card>
         
@@ -628,7 +629,7 @@ export const IndicatorsPage: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{criticalKeyResults}</div>
-            <p className="text-xs text-muted-foreground">&lt;70% da meta ({getPeriodLabel()})</p>
+            <p className="text-xs text-muted-foreground">&lt;71% da meta ({getPeriodLabel()})</p>
           </CardContent>
         </Card>
       </div>
