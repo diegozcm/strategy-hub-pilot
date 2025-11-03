@@ -283,9 +283,13 @@ const normalizedActuals: Record<string, number | null> =
                       return ['Sem dados', name];
                     }
                     
-                    const label = name === 'previsto' || name === 'previstoBar' 
-                      ? 'Previsto' 
-                      : 'Realizado';
+                    // Determine the label based on the dataKey name
+                    let label = 'Realizado';
+                    if (name === 'previsto' || name === 'previstoBar') {
+                      label = 'Previsto (Meta)';
+                    } else if (name === 'realizado' || name === 'realizadoBar') {
+                      label = 'Realizado';
+                    }
                     
                     return [formatValueWithUnit(Number(value), unit), label];
                   }}
