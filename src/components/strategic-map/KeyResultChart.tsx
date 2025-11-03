@@ -182,7 +182,12 @@ const normalizedActuals: Record<string, number | null> =
           <CardTitle className="text-lg">Evolução Mensal - Previsto vs Realizado</CardTitle>
           {useDualAxis && (
             <Badge variant="outline" className="text-xs">
-              Escalas independentes
+              Escalas independentes (3 eixos)
+            </Badge>
+          )}
+          {!useDualAxis && (
+            <Badge variant="outline" className="text-xs">
+              Total em escala separada
             </Badge>
           )}
         </div>
@@ -229,7 +234,7 @@ const normalizedActuals: Record<string, number | null> =
         {viewMode === 'chart' ? (
           <div className="h-[270px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 20, right: useDualAxis ? 50 : 30, left: 20, bottom: 5 }}>
+              <ComposedChart data={chartData} margin={{ top: 20, right: useDualAxis ? 80 : 50, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
                   dataKey="month" 
@@ -250,6 +255,19 @@ const normalizedActuals: Record<string, number | null> =
                   domain={['auto', 'auto']}
                   includeHidden={true}
                   hide={!useDualAxis}
+                />
+                <YAxis 
+                  yAxisId="barAxis"
+                  orientation="right"
+                  className="text-xs fill-muted-foreground"
+                  tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
+                  domain={['auto', 'auto']}
+                  label={{ 
+                    value: 'Total', 
+                    angle: -90, 
+                    position: 'insideRight',
+                    style: { textAnchor: 'middle', fontSize: '12px', fill: 'hsl(var(--muted-foreground))' }
+                  }}
                 />
                 <Tooltip 
                   formatter={(value: number | null, name: string) => {
@@ -283,6 +301,7 @@ const normalizedActuals: Record<string, number | null> =
                 />
                 <ReferenceLine y={0} yAxisId="left" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
                 {useDualAxis && <ReferenceLine y={0} yAxisId="right" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />}
+                <ReferenceLine y={0} yAxisId="barAxis" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
                 <Line 
                   type="monotone" 
                   dataKey="previsto"
@@ -306,20 +325,30 @@ const normalizedActuals: Record<string, number | null> =
                 />
                 <Bar 
                   dataKey="previstoBar"
-                  yAxisId="left"
+                  yAxisId="barAxis"
                   fill="hsl(var(--muted-foreground))"
                   opacity={0.5}
                   radius={[4, 4, 0, 0]}
                   barSize={30}
                   name="Previsto (Meta)"
+                  label={{ 
+                    position: 'top', 
+                    formatter: (value: number) => formatValueWithUnit(value, unit),
+                    style: { fontSize: '11px', fill: 'hsl(var(--muted-foreground))' }
+                  }}
                 />
                 <Bar 
                   dataKey="realizadoBar"
-                  yAxisId={useDualAxis ? 'right' : 'left'}
+                  yAxisId="barAxis"
                   fill="hsl(var(--primary))"
                   radius={[4, 4, 0, 0]}
                   barSize={30}
                   name="Realizado"
+                  label={{ 
+                    position: 'top', 
+                    formatter: (value: number) => formatValueWithUnit(value, unit),
+                    style: { fontSize: '11px', fill: 'hsl(var(--primary))', fontWeight: 600 }
+                  }}
                 />
               </ComposedChart>
             </ResponsiveContainer>
