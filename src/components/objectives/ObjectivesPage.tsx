@@ -1216,6 +1216,7 @@ export const ObjectivesPage: React.FC = () => {
             }}
             objectives={objectives.map(obj => ({ id: obj.id, title: obj.title }))}
             showDeleteButton={false}
+            initialPeriod={selectedPeriod}
           />
         )}
       </div>
