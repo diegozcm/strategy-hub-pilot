@@ -15,6 +15,7 @@ interface KeyResultMetricsProps {
   achievementPercentage?: number;
   currentMonth: string;
   targetDirection?: TargetDirection;
+  selectedPeriod?: 'ytd' | 'monthly';
 }
 
 export const KeyResultMetrics = ({ 
@@ -25,16 +26,9 @@ export const KeyResultMetrics = ({
   unit, 
   achievementPercentage,
   currentMonth,
-  targetDirection = 'maximize'
+  targetDirection = 'maximize',
+  selectedPeriod = 'ytd'
 }: KeyResultMetricsProps) => {
-  // Always start with YTD selected
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly'>('ytd');
-
-  // Save preference when changed
-  const handlePeriodChange = (period: 'ytd' | 'monthly') => {
-    setSelectedPeriod(period);
-    localStorage.setItem('kr_metrics_period', period);
-  };
 
   // Determine values to display based on selected period
   const displayTarget = selectedPeriod === 'ytd' ? yearlyTarget : (monthlyTarget || 0);
@@ -59,29 +53,7 @@ export const KeyResultMetrics = ({
     : 'Mês de referência';
 
   return (
-    <div className="space-y-4 mb-6">
-      {/* Toggle YTD/Mensal */}
-      <div className="flex items-center justify-start">
-        <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
-          <Button
-            variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => handlePeriodChange('ytd')}
-            className="h-8 px-3 text-xs"
-          >
-            YTD
-          </Button>
-          <Button
-            variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => handlePeriodChange('monthly')}
-            className="h-8 px-3 text-xs"
-          >
-            {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
-          </Button>
-        </div>
-      </div>
-
+    <div className="space-y-4">
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="h-24">

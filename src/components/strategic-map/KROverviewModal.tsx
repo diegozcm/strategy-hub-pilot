@@ -37,6 +37,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
   const [showUpdateValuesModal, setShowUpdateValuesModal] = useState(false);
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly'>('ytd');
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
 
@@ -222,43 +223,63 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2 py-4 flex-shrink-0 px-6">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowUpdateValuesModal(true)}
-              className="text-cyan-600 border-cyan-200 hover:bg-cyan-100 hover:border-cyan-300 hover:text-cyan-600"
-            >
-              <FileEdit className="h-4 w-4 mr-2" />
-              Atualizar Valores
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFCAModal(true)}
-              className="text-blue-600 border-blue-200 hover:bg-blue-100 hover:border-blue-300 hover:text-blue-600"
-            >
-              <ListChecks className="h-4 w-4 mr-2" />
-              FCA & Ações
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowStatusReportModal(true)}
-              className="text-green-600 border-green-200 hover:bg-green-100 hover:border-green-300 hover:text-green-600"
-            >
-              <FileBarChart className="h-4 w-4 mr-2" />
-              Status Report
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowInitiativesModal(true)}
-              className="text-purple-600 border-purple-200 hover:bg-purple-100 hover:border-purple-300 hover:text-purple-600"
-            >
-              <Rocket className="h-4 w-4" />
-              Iniciativas
-            </Button>
+          <div className="flex flex-wrap items-center justify-between gap-2 py-4 flex-shrink-0 px-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowUpdateValuesModal(true)}
+                className="text-cyan-600 border-cyan-200 hover:bg-cyan-100 hover:border-cyan-300 hover:text-cyan-600"
+              >
+                <FileEdit className="h-4 w-4 mr-2" />
+                Atualizar Valores
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFCAModal(true)}
+                className="text-blue-600 border-blue-200 hover:bg-blue-100 hover:border-blue-300 hover:text-blue-600"
+              >
+                <ListChecks className="h-4 w-4 mr-2" />
+                FCA & Ações
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowStatusReportModal(true)}
+                className="text-green-600 border-green-200 hover:bg-green-100 hover:border-green-300 hover:text-green-600"
+              >
+                <FileBarChart className="h-4 w-4 mr-2" />
+                Status Report
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowInitiativesModal(true)}
+                className="text-purple-600 border-purple-200 hover:bg-purple-100 hover:border-purple-300 hover:text-purple-600"
+              >
+                <Rocket className="h-4 w-4" />
+                Iniciativas
+              </Button>
+            </div>
+            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+              <Button
+                variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setSelectedPeriod('ytd')}
+                className="h-8 px-3 text-xs"
+              >
+                YTD
+              </Button>
+              <Button
+                variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setSelectedPeriod('monthly')}
+                className="h-8 px-3 text-xs"
+              >
+                {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
+              </Button>
+            </div>
           </div>
           
           <div className="flex-1 overflow-y-auto px-6">
@@ -274,6 +295,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
             achievementPercentage={achievementPercentage}
             currentMonth={new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
             targetDirection={(currentKeyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
+            selectedPeriod={selectedPeriod}
           />
 
             {/* Evolution Chart */}
