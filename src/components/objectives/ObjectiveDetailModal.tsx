@@ -147,10 +147,10 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                   )}
                   <Badge 
                     className={`font-semibold ${
-                      progressPercentage < 30 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' : 
-                      progressPercentage < 60 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' : 
-                      progressPercentage < 80 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 
-                      'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                      progressPercentage > 105 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
+                      progressPercentage >= 100 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                      progressPercentage >= 71 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                     }`}
                   >
                     {progressPercentage.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}% de avanço
