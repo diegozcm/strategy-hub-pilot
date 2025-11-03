@@ -241,7 +241,7 @@ const normalizedActuals: Record<string, number | null> =
       <CardContent>
         {viewMode === 'chart' ? (
           <div className="h-[270px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="95%" height="100%">
               <ComposedChart data={chartData} margin={{ top: 20, right: useDualAxis ? 80 : 50, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
