@@ -27,11 +27,8 @@ export const KeyResultMetrics = ({
   currentMonth,
   targetDirection = 'maximize'
 }: KeyResultMetricsProps) => {
-  // Load saved period preference from localStorage
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly'>(() => {
-    const saved = localStorage.getItem('kr_metrics_period');
-    return (saved === 'monthly' || saved === 'ytd') ? saved : 'ytd';
-  });
+  // Always start with YTD selected
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly'>('ytd');
 
   // Save preference when changed
   const handlePeriodChange = (period: 'ytd' | 'monthly') => {
