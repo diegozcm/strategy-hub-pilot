@@ -61,7 +61,7 @@ export const KeyResultMetrics = ({
   return (
     <div className="space-y-4 mb-6">
       {/* Toggle YTD/Mensal */}
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-start">
         <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
           <Button
             variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
