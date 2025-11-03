@@ -7,15 +7,22 @@ import { KeyResult } from '@/types/strategic-map';
 interface KeyResultMetricsProps {
   keyResult: KeyResult;
   selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
+  selectedMonth?: number;
+  selectedYear?: number;
 }
 
 export const KeyResultMetrics = ({ 
   keyResult,
-  selectedPeriod = 'ytd'
+  selectedPeriod = 'ytd',
+  selectedMonth,
+  selectedYear
 }: KeyResultMetricsProps) => {
 
-  // Get pre-calculated metrics from database
-  const metrics = useKRMetrics(keyResult);
+  // Get metrics from database (with optional custom month)
+  const metrics = useKRMetrics(keyResult, {
+    selectedMonth,
+    selectedYear,
+  });
   
   // Select appropriate metrics based on period
   const currentMetrics = 
@@ -36,7 +43,9 @@ export const KeyResultMetrics = ({
   const currentPeriodDisplay = selectedPeriod === 'ytd'
     ? `YTD ${new Date().getFullYear()}`
     : selectedPeriod === 'yearly'
-    ? `Ano ${new Date().getFullYear()}`
+    ? `Ano ${selectedYear || new Date().getFullYear()}`
+    : selectedMonth && selectedYear
+    ? new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
     : new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
   const currentPeriodSubtext = selectedPeriod === 'ytd'

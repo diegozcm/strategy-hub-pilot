@@ -2795,6 +2795,14 @@ export type Database = {
         Returns: number
       }
       calculate_kr_metrics: { Args: { kr_id: string }; Returns: undefined }
+      calculate_kr_metrics_for_month: {
+        Args: { p_kr_id: string; p_month: number; p_year: number }
+        Returns: {
+          month_actual: number
+          month_percentage: number
+          month_target: number
+        }[]
+      }
       can_delete_company: { Args: { _company_id: string }; Returns: boolean }
       check_startup_integrity: {
         Args: { _company_id: string }

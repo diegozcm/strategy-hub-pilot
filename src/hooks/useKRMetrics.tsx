@@ -33,6 +33,9 @@ export interface KeyResultWithMetrics {
   yearly_percentage?: number;
   target_direction?: 'maximize' | 'minimize';
   unit?: string;
+  // Raw monthly data for custom month selection
+  monthly_targets?: Record<string, number>;
+  monthly_actual?: Record<string, number>;
 }
 
 /**
@@ -40,7 +43,13 @@ export interface KeyResultWithMetrics {
  * All calculations are done in the database via triggers
  * This hook simply extracts and formats the calculated values
  */
-export const useKRMetrics = (keyResult: KeyResultWithMetrics | null | undefined): KRMetrics => {
+export const useKRMetrics = (
+  keyResult: KeyResultWithMetrics | null | undefined,
+  options?: {
+    selectedMonth?: number;
+    selectedYear?: number;
+  }
+): KRMetrics => {
   return useMemo(() => {
     if (!keyResult) {
       return {
@@ -50,7 +59,36 @@ export const useKRMetrics = (keyResult: KeyResultWithMetrics | null | undefined)
       };
     }
 
-    // Usar campos pré-calculados do banco (mesma lógica que outros componentes)
+    // If specific month is provided, calculate metrics for that month
+    if (options?.selectedMonth && options?.selectedYear) {
+      const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
+      const monthlyTargets = (keyResult.monthly_targets as Record<string, number>) || {};
+      const monthlyActual = (keyResult.monthly_actual as Record<string, number>) || {};
+      
+      const monthTarget = monthlyTargets[monthKey] || 0;
+      const monthActual = monthlyActual[monthKey] || 0;
+      const monthPercentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
+      
+      return {
+        ytd: {
+          target: keyResult.ytd_target ?? 0,
+          actual: keyResult.ytd_actual ?? 0,
+          percentage: keyResult.ytd_percentage ?? 0,
+        },
+        monthly: {
+          target: monthTarget,
+          actual: monthActual,
+          percentage: monthPercentage,
+        },
+        yearly: {
+          target: keyResult.yearly_target ?? 0,
+          actual: keyResult.yearly_actual ?? 0,
+          percentage: keyResult.yearly_percentage ?? 0,
+        },
+      };
+    }
+
+    // Default behavior - use pre-calculated fields from database
     return {
       ytd: {
         target: keyResult.ytd_target ?? 0,
@@ -68,7 +106,7 @@ export const useKRMetrics = (keyResult: KeyResultWithMetrics | null | undefined)
         percentage: keyResult.yearly_percentage ?? 0,
       },
     };
-  }, [keyResult]);
+  }, [keyResult, options?.selectedMonth, options?.selectedYear]);
 };
 
 /**

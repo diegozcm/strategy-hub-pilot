@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultMetrics } from './KeyResultMetrics';
 import { KeyResultChart } from './KeyResultChart';
@@ -49,8 +50,29 @@ export const KROverviewModal = ({
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>(initialPeriod);
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedMonthYear, setSelectedMonthYear] = useState<number>(new Date().getFullYear());
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
+
+  // Generate month options for the last 24 months
+  const generateMonthOptions = () => {
+    const options = [];
+    const currentDate = new Date();
+    
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      
+      options.push({
+        value: `${year}-${month.toString().padStart(2, '0')}`,
+        label: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, (c) => c.toUpperCase())
+      });
+    }
+    
+    return options;
+  };
 
   // Update local state when keyResult prop changes
   useEffect(() => {
@@ -336,31 +358,56 @@ export const KROverviewModal = ({
                 Iniciativas
               </Button>
             </div>
-            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
-              <Button
-                variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedPeriod('ytd')}
-                className="h-8 px-3 text-xs"
-              >
-                YTD
-              </Button>
-              <Button
-                variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedPeriod('monthly')}
-                className="h-8 px-3 text-xs"
-              >
-                {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
-              </Button>
-              <Button
-                variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedPeriod('yearly')}
-                className="h-8 px-3 text-xs"
-              >
-                Ano
-              </Button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+                <Button
+                  variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedPeriod('ytd')}
+                  className="h-8 px-3 text-xs"
+                >
+                  YTD
+                </Button>
+                <Button
+                  variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedPeriod('monthly')}
+                  className="h-8 px-3 text-xs"
+                >
+                  Mensal
+                </Button>
+                <Button
+                  variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedPeriod('yearly')}
+                  className="h-8 px-3 text-xs"
+                >
+                  Ano
+                </Button>
+              </div>
+              
+              {/* Month selector - only visible when 'monthly' is selected */}
+              {selectedPeriod === 'monthly' && (
+                <Select
+                  value={`${selectedMonthYear}-${selectedMonth.toString().padStart(2, '0')}`}
+                  onValueChange={(value) => {
+                    const [year, month] = value.split('-');
+                    setSelectedMonthYear(parseInt(year));
+                    setSelectedMonth(parseInt(month));
+                  }}
+                >
+                  <SelectTrigger className="w-[180px] h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {generateMonthOptions().map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
           
@@ -371,6 +418,8 @@ export const KROverviewModal = ({
         <KeyResultMetrics
           keyResult={currentKeyResult}
           selectedPeriod={selectedPeriod}
+          selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
+          selectedYear={selectedPeriod === 'monthly' ? selectedMonthYear : undefined}
         />
 
             {/* Evolution Chart */}
