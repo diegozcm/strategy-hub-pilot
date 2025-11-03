@@ -80,7 +80,7 @@ export const KeyResultMetrics = ({
             onClick={() => handlePeriodChange('monthly')}
             className="h-8 px-3 text-xs"
           >
-            Mensal
+            {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
           </Button>
         </div>
       </div>
