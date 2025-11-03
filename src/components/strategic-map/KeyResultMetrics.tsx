@@ -23,15 +23,6 @@ export const KeyResultMetrics = ({
     selectedPeriod === 'yearly' ? metrics.yearly :
     metrics.ytd;
 
-  // DEBUG: Log metrics to identify the 14.6% issue
-  console.log(`🔍 KeyResultMetrics Debug:`, {
-    krTitle: keyResult.title,
-    selectedPeriod,
-    ytdPercentage: metrics.ytd.percentage,
-    monthlyPercentage: metrics.monthly.percentage,
-    yearlyPercentage: metrics.yearly.percentage,
-    currentMetricsPercentage: currentMetrics.percentage
-  });
 
   const status = getAchievementStatus(
     currentMetrics.percentage, 
