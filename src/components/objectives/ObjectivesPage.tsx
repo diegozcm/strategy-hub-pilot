@@ -390,6 +390,35 @@ export const ObjectivesPage: React.FC = () => {
     }
   };
 
+  // Helper functions - must be declared before filteredObjectives
+  const getObjectiveKeyResults = (objectiveId: string) => {
+    return keyResults.filter(kr => kr.objective_id === objectiveId);
+  };
+
+  const calculateObjectiveProgress = (keyResults: any[], period: 'ytd' | 'monthly' | 'yearly' = 'ytd') => {
+    if (keyResults.length === 0) return 0;
+    
+    const totalProgress = keyResults.reduce((sum, kr) => {
+      let percentage = 0;
+      
+      switch (period) {
+        case 'monthly':
+          percentage = kr.monthly_percentage || 0;
+          break;
+        case 'yearly':
+          percentage = kr.yearly_percentage || 0;
+          break;
+        case 'ytd':
+        default:
+          percentage = kr.ytd_percentage || 0;
+          break;
+      }
+      
+      return sum + percentage;
+    }, 0);
+    
+    return Math.round(totalProgress / keyResults.length);
+  };
 
   const filteredObjectives = objectives.filter(objective => {
     const matchesSearch = objective.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -422,34 +451,6 @@ export const ObjectivesPage: React.FC = () => {
     return 'bg-green-500';
   };
 
-  const calculateObjectiveProgress = (keyResults: any[], period: 'ytd' | 'monthly' | 'yearly' = 'ytd') => {
-    if (keyResults.length === 0) return 0;
-    
-    const totalProgress = keyResults.reduce((sum, kr) => {
-      let percentage = 0;
-      
-      switch (period) {
-        case 'monthly':
-          percentage = kr.monthly_percentage || 0;
-          break;
-        case 'yearly':
-          percentage = kr.yearly_percentage || 0;
-          break;
-        case 'ytd':
-        default:
-          percentage = kr.ytd_percentage || 0;
-          break;
-      }
-      
-      return sum + percentage;
-    }, 0);
-    
-    return Math.round(totalProgress / keyResults.length);
-  };
-
-  const getObjectiveKeyResults = (objectiveId: string) => {
-    return keyResults.filter(kr => kr.objective_id === objectiveId);
-  };
 
   // Plan management functions
   const updatePlan = async (planId: string, updates: Partial<StrategicPlan>) => {
