@@ -17,6 +17,7 @@ interface KeyResultChartProps {
   selectedYear: number;
   onYearChange?: (year: number) => void;
   targetDirection?: TargetDirection;
+  aggregationType?: 'sum' | 'average' | 'max' | 'min';
 }
 
 export const KeyResultChart = ({ 
@@ -25,8 +26,19 @@ export const KeyResultChart = ({
   unit, 
   selectedYear,
   onYearChange,
-  targetDirection = 'maximize'
+  targetDirection = 'maximize',
+  aggregationType = 'sum'
 }: KeyResultChartProps) => {
+  // Get aggregation type label
+  const getAggregationLabel = (type: string) => {
+    switch (type) {
+      case 'sum': return 'Total';
+      case 'average': return 'Média';
+      case 'max': return 'Máximo';
+      case 'min': return 'Mínimo';
+      default: return 'Total';
+    }
+  };
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
   
   // Generate year options (from 2020 to current year + 5)
@@ -100,17 +112,30 @@ const normalizedActuals: Record<string, number | null> =
     return hasTarget && hasActual;
   });
 
-  const targetTotal = monthsWithData.reduce((sum, month) => {
-    const value = normalizedTargets[month.key];
-    const n = typeof value === 'number' ? value : Number(value as any);
-    return Number.isFinite(n) ? sum + n : sum;
-  }, 0);
+  // Calculate aggregated value based on aggregation type
+  const calculateAggregation = (data: Record<string, number | null | undefined>, type: string) => {
+    const values = monthsWithData
+      .map(month => data[month.key])
+      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+    
+    if (values.length === 0) return 0;
+    
+    switch (type) {
+      case 'sum':
+        return values.reduce((sum, v) => sum + v, 0);
+      case 'average':
+        return values.reduce((sum, v) => sum + v, 0) / values.length;
+      case 'max':
+        return Math.max(...values);
+      case 'min':
+        return Math.min(...values);
+      default:
+        return values.reduce((sum, v) => sum + v, 0);
+    }
+  };
 
-  const actualTotal = monthsWithData.reduce((sum, month) => {
-    const value = normalizedActuals[month.key];
-    const n = typeof value === 'number' ? value : Number(value as any);
-    return Number.isFinite(n) ? sum + n : sum;
-  }, 0);
+  const targetTotal = calculateAggregation(normalizedTargets, aggregationType);
+  const actualTotal = calculateAggregation(normalizedActuals, aggregationType);
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
 
   return (
@@ -252,7 +277,7 @@ const normalizedActuals: Record<string, number | null> =
                     );
                   })}
                   <TableHead className="text-center min-w-24 bg-muted font-semibold">
-                    Total
+                    {getAggregationLabel(aggregationType)}
                   </TableHead>
                 </TableRow>
               </TableHeader>

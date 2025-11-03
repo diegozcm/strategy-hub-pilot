@@ -283,6 +283,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
             selectedYear={selectedYear}
             onYearChange={setSelectedYear}
             targetDirection={(keyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
+            aggregationType={keyResult.aggregation_type || 'sum'}
           />
         
         <form onSubmit={handleSubmit} className="space-y-4">
