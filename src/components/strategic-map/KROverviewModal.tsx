@@ -375,6 +375,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
               onYearChange={setSelectedYear}
               targetDirection={(currentKeyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
               aggregationType={currentKeyResult.aggregation_type || 'sum'}
+              selectedPeriod={selectedPeriod}
             />
           </div>
         </div>

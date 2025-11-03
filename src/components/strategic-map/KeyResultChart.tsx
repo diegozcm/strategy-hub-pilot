@@ -18,6 +18,7 @@ interface KeyResultChartProps {
   onYearChange?: (year: number) => void;
   targetDirection?: TargetDirection;
   aggregationType?: 'sum' | 'average' | 'max' | 'min';
+  selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
 }
 
 export const KeyResultChart = ({ 
@@ -27,7 +28,8 @@ export const KeyResultChart = ({
   selectedYear,
   onYearChange,
   targetDirection = 'maximize',
-  aggregationType = 'sum'
+  aggregationType = 'sum',
+  selectedPeriod = 'ytd'
 }: KeyResultChartProps) => {
   // Get aggregation type label
   const getAggregationLabel = (type: string) => {
@@ -103,18 +105,34 @@ const normalizedActuals: Record<string, number | null> =
     }, 0);
   };
 
-  // Calculate totals only for months with valid targets AND actual data present
-  const monthsWithData = months.filter(month => {
-    const target = normalizedTargets[month.key];
-    const actual = normalizedActuals[month.key];
-    const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
-    const hasActual = typeof actual === 'number' && Number.isFinite(actual);
-    return hasTarget && hasActual;
-  });
+  // Calculate totals based on selected period
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+  
+  // Determine which months to include based on selected period
+  const getMonthsForPeriod = () => {
+    if (selectedPeriod === 'monthly') {
+      // Only current month
+      return months.filter(month => month.key === currentMonth);
+    } else if (selectedPeriod === 'yearly') {
+      // All 12 months
+      return months;
+    } else {
+      // YTD: only months with valid targets AND actual data
+      return months.filter(month => {
+        const target = normalizedTargets[month.key];
+        const actual = normalizedActuals[month.key];
+        const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
+        const hasActual = typeof actual === 'number' && Number.isFinite(actual);
+        return hasTarget && hasActual;
+      });
+    }
+  };
+
+  const monthsForTotal = getMonthsForPeriod();
 
   // Calculate aggregated value based on aggregation type
   const calculateAggregation = (data: Record<string, number | null | undefined>, type: string) => {
-    const values = monthsWithData
+    const values = monthsForTotal
       .map(month => data[month.key])
       .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
     
@@ -136,7 +154,13 @@ const normalizedActuals: Record<string, number | null> =
 
   const targetTotal = calculateAggregation(normalizedTargets, aggregationType);
   const actualTotal = calculateAggregation(normalizedActuals, aggregationType);
-  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
+
+  // Get period label for Total column
+  const getPeriodLabel = () => {
+    if (selectedPeriod === 'monthly') return '(Mês Atual)';
+    if (selectedPeriod === 'yearly') return '(Ano)';
+    return '(YTD)';
+  };
 
   return (
     <Card className="mb-6">
@@ -277,7 +301,7 @@ const normalizedActuals: Record<string, number | null> =
                     );
                   })}
                   <TableHead className="text-center min-w-24 bg-muted font-semibold">
-                    {getAggregationLabel(aggregationType)}
+                    {getAggregationLabel(aggregationType)} {getPeriodLabel()}
                   </TableHead>
                 </TableRow>
               </TableHeader>
