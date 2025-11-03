@@ -620,33 +620,6 @@ export const ObjectivesPage: React.FC = () => {
             <p className="text-muted-foreground mt-2">Gerencie seus planos estratégicos e objetivos</p>
           </div>
           <div className="flex items-center gap-3">
-            {/* Seletor de Período */}
-            <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
-              <Button
-                variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedPeriod('ytd')}
-                className="h-8 px-3 text-xs"
-              >
-                YTD
-              </Button>
-              <Button
-                variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedPeriod('monthly')}
-                className="h-8 px-3 text-xs"
-              >
-                Mês
-              </Button>
-              <Button
-                variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedPeriod('yearly')}
-                className="h-8 px-3 text-xs"
-              >
-                Ano
-              </Button>
-            </div>
             <div className="flex space-x-3">
             <Dialog open={isCreatePlanOpen} onOpenChange={setIsCreatePlanOpen}>
               <DialogTrigger asChild>
@@ -964,6 +937,33 @@ export const ObjectivesPage: React.FC = () => {
           {/* Filters and Search */}
           <div className="flex flex-col sm:flex-row gap-4 justify-between">
             <div className="flex flex-col sm:flex-row gap-2">
+              {/* Seletor de Período */}
+              <div className="flex items-center gap-1 bg-muted/50 p-1 rounded-lg">
+                <Button
+                  variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedPeriod('ytd')}
+                  className="h-8 px-3 text-xs"
+                >
+                  YTD
+                </Button>
+                <Button
+                  variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedPeriod('monthly')}
+                  className="h-8 px-3 text-xs"
+                >
+                  Mês
+                </Button>
+                <Button
+                  variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedPeriod('yearly')}
+                  className="h-8 px-3 text-xs"
+                >
+                  Ano
+                </Button>
+              </div>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
