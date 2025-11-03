@@ -153,9 +153,41 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
                   <h2 className="text-white font-semibold text-xl leading-tight">
                     {currentKeyResult.title}
                   </h2>
-                  <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
-                    {pillar.name}
-                  </Badge>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+                      {pillar.name}
+                    </Badge>
+                    <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+                      {getAggregationTypeText(aggregationType)}
+                    </Badge>
+                    {currentKeyResult.unit && (
+                      <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+                        <Target className="w-3 h-3 mr-1" />
+                        {currentKeyResult.unit}
+                      </Badge>
+                    )}
+                    <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+                      Mensal
+                    </Badge>
+                    {currentKeyResult.responsible && (
+                      <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+                        <User className="w-3 h-3 mr-1" />
+                        {currentKeyResult.responsible}
+                      </Badge>
+                    )}
+                    {currentKeyResult.due_date && (
+                      <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+                        <Calendar className="w-3 h-3 mr-1" />
+                        {new Date(currentKeyResult.due_date).toLocaleDateString('pt-BR')}
+                      </Badge>
+                    )}
+                    <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+                      Atualizado: {new Date(currentKeyResult.updated_at).toLocaleDateString('pt-BR')}
+                    </Badge>
+                    <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
+                      {getDirectionLabel(currentKeyResult.target_direction || 'maximize')}
+                    </Badge>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 pr-8">
                   <Button
@@ -231,39 +263,6 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
           
           <div className="flex-1 overflow-y-auto px-6">
             <div className="space-y-4 pr-2 py-4">
-            {/* Header Info */}
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">
-                {getAggregationTypeText(aggregationType)}
-              </Badge>
-              {currentKeyResult.unit && (
-                <Badge variant="secondary">
-                  <Target className="w-3 h-3 mr-1" />
-                  {currentKeyResult.unit}
-                </Badge>
-              )}
-              <Badge variant="secondary">
-                Mensal
-              </Badge>
-              {currentKeyResult.responsible && (
-                <Badge variant="secondary">
-                  <User className="w-3 h-3 mr-1" />
-                  {currentKeyResult.responsible}
-                </Badge>
-              )}
-              {currentKeyResult.due_date && (
-                <Badge variant="secondary">
-                  <Calendar className="w-3 h-3 mr-1" />
-                  {new Date(currentKeyResult.due_date).toLocaleDateString('pt-BR')}
-                </Badge>
-              )}
-              <Badge variant="secondary">
-                Atualizado: {new Date(currentKeyResult.updated_at).toLocaleDateString('pt-BR')}
-              </Badge>
-              <Badge variant="secondary">
-                {getDirectionLabel(currentKeyResult.target_direction || 'maximize')}
-              </Badge>
-            </div>
 
             {/* Key Metrics */}
         <KeyResultMetrics
