@@ -90,7 +90,9 @@ export const KeyResultMetrics = ({
 
       <Card className="h-24">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
-          <CardTitle className="text-sm font-medium">% Atingimento</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {selectedPeriod === 'ytd' ? '% Atingimento YTD' : '% Atingimento Mensal'}
+          </CardTitle>
         </CardHeader>
         <CardContent className="px-4 pb-3 pt-0">
           <div className={`text-xl font-bold ${status.color}`}>
