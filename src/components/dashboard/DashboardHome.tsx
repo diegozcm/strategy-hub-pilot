@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, ChevronDown, ChevronUp, Settings, Search, Compass, LayoutDashboard, Calendar } from 'lucide-react';
+import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, Settings, Search, Compass, LayoutDashboard, Calendar } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { RumoDashboard } from './RumoDashboard';
 import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
+import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 import { calculateKRStatus } from '@/lib/krHelpers';
 
 interface KeyResultWithPillar {
@@ -92,7 +93,7 @@ export const DashboardHome: React.FC = () => {
   const [filteredKeyResults, setFilteredKeyResults] = useState<KeyResultWithPillar[]>([]);
   const [objectives, setObjectives] = useState<any[]>([]);
   const [pillars, setPillars] = useState<any[]>([]);
-  const [expandedKRs, setExpandedKRs] = useState<Set<string>>(new Set());
+  const [selectedKRForModal, setSelectedKRForModal] = useState<KeyResultWithPillar | null>(null);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
     totalObjectives: 0,
     totalKRs: 0,
@@ -292,45 +293,34 @@ export const DashboardHome: React.FC = () => {
         .eq('company_id', company.id);
 
       // Processar Key Results com informações de pilares
-      const keyResultsWithPillars: KeyResultWithPillar[] = keyResultsData?.map(kr => {
-        const processed = {
-          id: kr.id,
-          title: kr.title,
-          description: kr.description,
-          monthly_targets: kr.monthly_targets as Record<string, number> || {},
-          monthly_actual: kr.monthly_actual as Record<string, number> || {},
-          yearly_target: kr.yearly_target || kr.target_value || 0,
-          yearly_actual: kr.yearly_actual || kr.current_value || 0,
-          current_value: kr.current_value || 0,
-          target_value: kr.target_value || 0,
-          due_date: kr.due_date,
-          pillar_name: kr.strategic_objectives.strategic_pillars.name,
-          pillar_color: kr.strategic_objectives.strategic_pillars.color,
-          objective_title: kr.strategic_objectives.title,
-          objective_id: kr.objective_id,
-          pillar_id: kr.strategic_objectives.pillar_id,
-          aggregation_type: kr.aggregation_type || 'sum',
-          target_direction: (kr.target_direction as 'maximize' | 'minimize') || 'maximize',
-          priority: 'medium',
-          // Pre-calculated fields from database
-          ytd_target: kr.ytd_target,
-          ytd_actual: kr.ytd_actual,
-          ytd_percentage: kr.ytd_percentage,
-          current_month_target: kr.current_month_target,
-          current_month_actual: kr.current_month_actual,
-          monthly_percentage: kr.monthly_percentage,
-          yearly_percentage: kr.yearly_percentage,
-        };
-        
-        // Debug log to verify pre-calculated fields
-        console.log(`[DashboardHome] KR: ${kr.title}`, {
-          ytd_percentage: kr.ytd_percentage,
-          monthly_percentage: kr.monthly_percentage,
-          yearly_percentage: kr.yearly_percentage
-        });
-        
-        return processed;
-      }) || [];
+      const keyResultsWithPillars: KeyResultWithPillar[] = keyResultsData?.map(kr => ({
+        id: kr.id,
+        title: kr.title,
+        description: kr.description,
+        monthly_targets: kr.monthly_targets as Record<string, number> || {},
+        monthly_actual: kr.monthly_actual as Record<string, number> || {},
+        yearly_target: kr.yearly_target || kr.target_value || 0,
+        yearly_actual: kr.yearly_actual || kr.current_value || 0,
+        current_value: kr.current_value || 0,
+        target_value: kr.target_value || 0,
+        due_date: kr.due_date,
+        pillar_name: kr.strategic_objectives.strategic_pillars.name,
+        pillar_color: kr.strategic_objectives.strategic_pillars.color,
+        objective_title: kr.strategic_objectives.title,
+        objective_id: kr.objective_id,
+        pillar_id: kr.strategic_objectives.pillar_id,
+        aggregation_type: kr.aggregation_type || 'sum',
+        target_direction: (kr.target_direction as 'maximize' | 'minimize') || 'maximize',
+        priority: 'medium',
+        // Pre-calculated fields from database
+        ytd_target: kr.ytd_target,
+        ytd_actual: kr.ytd_actual,
+        ytd_percentage: kr.ytd_percentage,
+        current_month_target: kr.current_month_target,
+        current_month_actual: kr.current_month_actual,
+        monthly_percentage: kr.monthly_percentage,
+        yearly_percentage: kr.yearly_percentage,
+      })) || [];
 
       // Calcular estatísticas do dashboard
       const totalObjectives = objectiveIds.length;
@@ -408,42 +398,22 @@ export const DashboardHome: React.FC = () => {
   };
 
   const getSelectedAchievement = (kr: KeyResultWithPillar) => {
-    console.log(`[getSelectedAchievement] Period: ${periodType}, KR: ${kr.title}`, {
-      ytd_percentage: kr.ytd_percentage,
-      monthly_percentage: kr.monthly_percentage,
-      yearly_percentage: kr.yearly_percentage
-    });
-    
     if (periodType === 'monthly') {
-      if (typeof kr.monthly_percentage === 'number') {
-        console.log(`[getSelectedAchievement] Using monthly_percentage: ${kr.monthly_percentage}`);
-        return kr.monthly_percentage;
-      }
+      if (typeof kr.monthly_percentage === 'number') return kr.monthly_percentage;
       const monthKey = new Date().toISOString().slice(0, 7);
       const target = kr.current_month_target ?? kr.monthly_targets?.[monthKey] ?? 0;
       const actual = kr.current_month_actual ?? kr.monthly_actual?.[monthKey] ?? 0;
-      const calculated = target > 0 ? (actual / target) * 100 : 0;
-      console.log(`[getSelectedAchievement] Fallback monthly calculation: ${calculated}`, { target, actual });
-      return calculated;
+      return target > 0 ? (actual / target) * 100 : 0;
     }
     if (periodType === 'ytd') {
-      if (typeof kr.ytd_percentage === 'number') {
-        console.log(`[getSelectedAchievement] Using ytd_percentage: ${kr.ytd_percentage}`);
-        return kr.ytd_percentage;
-      }
-      console.log(`[getSelectedAchievement] No ytd_percentage found, returning 0`);
+      if (typeof kr.ytd_percentage === 'number') return kr.ytd_percentage;
       return 0;
     }
     // yearly
-    if (typeof kr.yearly_percentage === 'number') {
-      console.log(`[getSelectedAchievement] Using yearly_percentage: ${kr.yearly_percentage}`);
-      return kr.yearly_percentage;
-    }
+    if (typeof kr.yearly_percentage === 'number') return kr.yearly_percentage;
     const yTarget = kr.yearly_target || kr.target_value || 0;
     const yActual = kr.yearly_actual || kr.current_value || 0;
-    const calculated = yTarget > 0 ? (yActual / yTarget) * 100 : 0;
-    console.log(`[getSelectedAchievement] Fallback yearly calculation: ${calculated}`, { yTarget, yActual });
-    return calculated;
+    return yTarget > 0 ? (yActual / yTarget) * 100 : 0;
   };
 
   const getSelectedActualValue = (kr: KeyResultWithPillar) => {
@@ -457,14 +427,36 @@ export const DashboardHome: React.FC = () => {
     return kr.yearly_actual ?? kr.current_value ?? 0;
   };
 
-  const toggleKRExpansion = (krId: string) => {
-    const newExpanded = new Set(expandedKRs);
-    if (newExpanded.has(krId)) {
-      newExpanded.delete(krId);
-    } else {
-      newExpanded.add(krId);
+  const handleOpenKRModal = (kr: KeyResultWithPillar) => {
+    setSelectedKRForModal(kr);
+  };
+
+  const handleCloseKRModal = () => {
+    setSelectedKRForModal(null);
+  };
+
+  const handleDeleteKR = async () => {
+    if (!selectedKRForModal) return;
+    
+    try {
+      const { error } = await supabase
+        .from('key_results')
+        .delete()
+        .eq('id', selectedKRForModal.id);
+
+      if (error) throw error;
+
+      // Refresh data
+      await fetchDashboardData();
+      handleCloseKRModal();
+    } catch (error) {
+      console.error('Error deleting KR:', error);
     }
-    setExpandedKRs(newExpanded);
+  };
+
+  const handleSaveKR = async () => {
+    // Refresh data after save
+    await fetchDashboardData();
   };
 
   const getStatusColor = (percentage: number) => {
@@ -837,11 +829,10 @@ export const DashboardHome: React.FC = () => {
                     const months = getMonthsOfYear();
                     const selectedAchievement = getSelectedAchievement(kr);
                     const selectedActualValue = getSelectedActualValue(kr);
-                    const isExpanded = expandedKRs.has(kr.id);
                     
                     return (
                       <div key={kr.id} className="border rounded-lg overflow-hidden group">
-                        {/* Collapsed State - Always Visible */}
+                        {/* KR Card */}
                         <div className="flex">
                           {/* Barra lateral colorida com a cor do pilar */}
                           <div 
@@ -891,117 +882,16 @@ export const DashboardHome: React.FC = () => {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => toggleKRExpansion(kr.id)}
+                                  onClick={() => handleOpenKRModal(kr)}
                                   className="text-muted-foreground hover:text-foreground"
+                                  title="Ver detalhes"
                                 >
-                                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                  <Search className="h-4 w-4" />
                                 </Button>
                               </div>
                             </div>
                           </div>
                         </div>
-
-                        {/* Expanded State - Monthly Details */}
-                        {isExpanded && (
-                          <div className="border-t bg-muted/50">
-                            <div className="p-4">
-                              <div className="flex justify-between items-center mb-4">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium text-muted-foreground">Tipo de Totalizador:</span>
-                                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                    {getAggregationTypeLabel(kr.aggregation_type || 'sum')}
-                                  </Badge>
-                                </div>
-                              </div>
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead className="w-32">Indicador</TableHead>
-                                       {months.map(month => (
-                                         <TableHead key={month.key} className="text-center min-w-20">
-                                           {month.name}
-                                           {month.key === currentMonth && selectedYear === currentYear && (
-                                             <span className="block text-xs text-blue-600">(atual)</span>
-                                           )}
-                                         </TableHead>
-                                       ))}
-                                        <TableHead className="text-center min-w-24 bg-muted/50 font-semibold">
-                                          Total
-                                        </TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  <TableRow>
-                                     <TableCell className="font-medium bg-white">Previsto</TableCell>
-                                     {months.map(month => {
-                                       const performance = getMonthlyPerformance(kr, month.key);
-                                       const isCurrentMonth = month.key === currentMonth && selectedYear === currentYear;
-                                       return (
-                                         <TableCell 
-                                           key={month.key} 
-                                           className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-white"}`}
-                                         >
-                                           {performance.target !== null ? performance.target : '-'}
-                                         </TableCell>
-                                      );
-                                    })}
-                                     <TableCell className="text-center bg-muted/50 font-semibold">
-                                       {getAggregatedTotals(kr).target}
-                                     </TableCell>
-                                  </TableRow>
-                                   <TableRow>
-                                     <TableCell className="font-medium bg-white">Realizado</TableCell>
-                                     {months.map(month => {
-                                       const performance = getMonthlyPerformance(kr, month.key);
-                                       const isCurrentMonth = month.key === currentMonth && selectedYear === currentYear;
-                                       return (
-                                         <TableCell 
-                                           key={month.key} 
-                                           className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-white"}`}
-                                         >
-                                           {performance.actual !== null ? performance.actual : '-'}
-                                         </TableCell>
-                                       );
-                                     })}
-                                      <TableCell className="text-center bg-muted/50 font-semibold">
-                                        {getAggregatedTotals(kr).actual}
-                                      </TableCell>
-                                   </TableRow>
-                                   <TableRow>
-                                     <TableCell className="font-medium bg-white">% Atingimento</TableCell>
-                                     {months.map(month => {
-                                       const performance = getMonthlyPerformance(kr, month.key);
-                                       const isCurrentMonth = month.key === currentMonth && selectedYear === currentYear;
-                                       return (
-                                         <TableCell 
-                                           key={month.key} 
-                                           className={`text-center ${isCurrentMonth ? "bg-blue-50" : "bg-white"}`}
-                                         >
-                                           {performance.percentage !== null ? (
-                                             <span className={getStatusColor(performance.percentage)}>
-                                               {performance.percentage}%
-                                             </span>
-                                           ) : (
-                                             <span className="text-gray-400">-</span>
-                                           )}
-                                         </TableCell>
-                                       );
-                                     })}
-                                       <TableCell className="text-center bg-muted/50 font-semibold">
-                                         {getAggregatedTotals(kr).percentage !== null ? (
-                                           <span className={getStatusColor(getAggregatedTotals(kr).percentage)}>
-                                             {getAggregatedTotals(kr).percentage.toFixed(1)}%
-                                           </span>
-                                         ) : (
-                                           <span className="text-gray-400">-</span>
-                                         )}
-                                       </TableCell>
-                                   </TableRow>
-                                </TableBody>
-                              </Table>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -1017,6 +907,24 @@ export const DashboardHome: React.FC = () => {
           <RumoDashboard />
         </TabsContent>
       </Tabs>
+
+      {/* KR Overview Modal */}
+      {selectedKRForModal && (
+        <KROverviewModal
+          keyResult={selectedKRForModal as any}
+          pillar={{
+            name: selectedKRForModal.pillar_name,
+            color: selectedKRForModal.pillar_color
+          }}
+          open={!!selectedKRForModal}
+          onClose={handleCloseKRModal}
+          onDelete={handleDeleteKR}
+          onSave={handleSaveKR}
+          objectives={objectives}
+          showDeleteButton={true}
+          initialPeriod={periodType}
+        />
+      )}
     </div>
   );
 };

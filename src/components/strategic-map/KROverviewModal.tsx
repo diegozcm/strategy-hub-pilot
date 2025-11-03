@@ -27,9 +27,20 @@ interface KROverviewModalProps {
   onSave: () => void;
   objectives: Array<{ id: string; title: string }>;
   showDeleteButton?: boolean;
+  initialPeriod?: 'ytd' | 'monthly' | 'yearly';
 }
 
-export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, onSave, objectives, showDeleteButton = true }: KROverviewModalProps) => {
+export const KROverviewModal = ({ 
+  keyResult, 
+  pillar, 
+  open, 
+  onClose, 
+  onDelete, 
+  onSave, 
+  objectives, 
+  showDeleteButton = true,
+  initialPeriod = 'ytd'
+}: KROverviewModalProps) => {
   const [showFCAModal, setShowFCAModal] = useState(false);
   const [showStatusReportModal, setShowStatusReportModal] = useState(false);
   const [showInitiativesModal, setShowInitiativesModal] = useState(false);
@@ -37,7 +48,7 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
   const [showUpdateValuesModal, setShowUpdateValuesModal] = useState(false);
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>(initialPeriod);
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
 
@@ -45,6 +56,11 @@ export const KROverviewModal = ({ keyResult, pillar, open, onClose, onDelete, on
   useEffect(() => {
     setCurrentKeyResult(keyResult);
   }, [keyResult]);
+
+  // Update selected period when initialPeriod changes
+  useEffect(() => {
+    setSelectedPeriod(initialPeriod);
+  }, [initialPeriod]);
 
   // Function to refresh key result data from database
   const refreshKeyResult = async () => {
