@@ -375,16 +375,16 @@ export const DashboardHome: React.FC = () => {
   };
 
   const getStatusColor = (percentage: number) => {
-    if (percentage > 105) return 'text-blue-600 font-semibold';  // Superado
-    if (percentage >= 91) return 'text-green-600';               // No Alvo
-    if (percentage >= 71) return 'text-yellow-600';              // Atenção
-    if (percentage > 0) return 'text-red-600';                   // Crítico
+    if (percentage > 105) return 'text-blue-600 font-semibold';  // Excelente (superou a meta)
+    if (percentage >= 100) return 'text-green-600';              // Sucesso (no alvo)
+    if (percentage >= 71) return 'text-yellow-600';              // Atenção (próximo da meta)
+    if (percentage > 0) return 'text-red-600';                   // Crítico (abaixo da meta)
     return 'text-gray-400';                                      // Sem dados
   };
 
   const getStatusIcon = (percentage: number) => {
-    if (percentage > 105) return <CheckCircle className="h-4 w-4 text-blue-500" />;  // Superado
-    if (percentage >= 91) return <CheckCircle className="h-4 w-4 text-green-500" />; // No Alvo
+    if (percentage > 105) return <CheckCircle className="h-4 w-4 text-blue-500" />;  // Excelente
+    if (percentage >= 100) return <CheckCircle className="h-4 w-4 text-green-500" />; // Sucesso
     if (percentage >= 71) return <TrendingUp className="h-4 w-4 text-yellow-500" />; // Atenção
     return <AlertCircle className="h-4 w-4 text-red-500" />;                         // Crítico
   };
