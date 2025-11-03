@@ -50,12 +50,16 @@ export const KROverviewModal = ({
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>(initialPeriod);
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-  const [selectedMonthYear, setSelectedMonthYear] = useState<number>(new Date().getFullYear());
+  
+  // Inicializar com o último mês fechado (mês anterior)
+  const previousMonth = new Date();
+  previousMonth.setMonth(previousMonth.getMonth() - 1);
+  const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
+  const [selectedMonthYear, setSelectedMonthYear] = useState<number>(previousMonth.getFullYear());
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
 
-  // Generate month options for the last 24 months
+  // Generate month options for the last 24 months (formato resumido)
   const generateMonthOptions = () => {
     const options = [];
     const currentDate = new Date();
@@ -65,9 +69,14 @@ export const KROverviewModal = ({
       const year = date.getFullYear();
       const month = date.getMonth() + 1;
       
+      // Formato resumido: "Nov 2024"
+      const monthName = date.toLocaleDateString('pt-BR', { month: 'short' })
+        .replace(/^\w/, (c) => c.toUpperCase())
+        .replace('.', ''); // Remove ponto se houver
+      
       options.push({
         value: `${year}-${month.toString().padStart(2, '0')}`,
-        label: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^\w/, (c) => c.toUpperCase())
+        label: `${monthName} ${year}`
       });
     }
     
@@ -369,14 +378,6 @@ export const KROverviewModal = ({
                   YTD
                 </Button>
                 <Button
-                  variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setSelectedPeriod('monthly')}
-                  className="h-8 px-3 text-xs"
-                >
-                  Mensal
-                </Button>
-                <Button
                   variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setSelectedPeriod('yearly')}
@@ -386,28 +387,28 @@ export const KROverviewModal = ({
                 </Button>
               </div>
               
-              {/* Month selector - only visible when 'monthly' is selected */}
-              {selectedPeriod === 'monthly' && (
-                <Select
-                  value={`${selectedMonthYear}-${selectedMonth.toString().padStart(2, '0')}`}
-                  onValueChange={(value) => {
-                    const [year, month] = value.split('-');
-                    setSelectedMonthYear(parseInt(year));
-                    setSelectedMonth(parseInt(month));
-                  }}
-                >
-                  <SelectTrigger className="w-[180px] h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {generateMonthOptions().map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
+              {/* Combo sempre visível - representa o período mensal */}
+              <Select
+                value={`${selectedMonthYear}-${selectedMonth.toString().padStart(2, '0')}`}
+                onValueChange={(value) => {
+                  const [year, month] = value.split('-');
+                  setSelectedMonthYear(parseInt(year));
+                  setSelectedMonth(parseInt(month));
+                  // Ao selecionar um mês, automaticamente muda para o período 'monthly'
+                  setSelectedPeriod('monthly');
+                }}
+              >
+                <SelectTrigger className="w-[130px] h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {generateMonthOptions().map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           
