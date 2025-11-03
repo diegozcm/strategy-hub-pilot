@@ -41,11 +41,18 @@ export const KeyResultMetrics = ({
     metrics.ytd;
 
 
-  const krStatus = calculateKRStatus(
-    currentMetrics.actual,
-    currentMetrics.target,
-    keyResult.target_direction || 'maximize'
-  );
+  // Verificar se há dados realizados para calcular
+  const hasActualData = currentMetrics.actual > 0;
+  const hasTarget = currentMetrics.target > 0;
+  const hasData = hasTarget && hasActualData;
+
+  const krStatus = hasData
+    ? calculateKRStatus(
+        currentMetrics.actual,
+        currentMetrics.target,
+        keyResult.target_direction || 'maximize'
+      )
+    : { percentage: 0, isExcellent: false, isGood: false, color: 'text-gray-500' };
 
   const isExcellent = krStatus.isExcellent;
   const isGood = krStatus.isGood;
@@ -90,11 +97,13 @@ export const KeyResultMetrics = ({
             <CardTitle className="text-sm font-medium">
               {selectedPeriod === 'ytd' ? 'Realizado YTD' : selectedPeriod === 'yearly' ? 'Realizado Anual' : 'Realizado Mensal'}
             </CardTitle>
-            {isOverTarget ? (
-              <TrendingUp className="h-4 w-4 text-green-600" />
-            ) : (
-              <TrendingDown className="h-4 w-4 text-red-600" />
-            )}
+            {hasData ? (
+              isOverTarget ? (
+                <TrendingUp className="h-4 w-4 text-green-600" />
+              ) : (
+                <TrendingDown className="h-4 w-4 text-red-600" />
+              )
+            ) : null}
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
             <div className="text-xl font-bold">
@@ -110,29 +119,42 @@ export const KeyResultMetrics = ({
           </CardTitle>
         </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
-            <div className={`text-xl font-bold ${krStatus.color}`}>
-              {krStatus.percentage.toFixed(1)}%
-            </div>
-            <div className="flex items-center justify-between mt-1">
-              <p className="text-xs text-muted-foreground">
-                {isOverTarget 
-                  ? `+${(krStatus.percentage - 100).toFixed(1)}%`
-                  : `-${(100 - krStatus.percentage).toFixed(1)}%`
-                }
-              </p>
-              <Badge 
-                variant={
-                  isExcellent || (isGood && krStatus.percentage >= 100) ? "default" : 
-                  isGood ? "secondary" : 
-                  "destructive"
-                } 
-                className="text-xs px-2 py-0"
-              >
-                {isExcellent || (isGood && krStatus.percentage >= 100) ? "✓" : 
-                 isGood ? "~" : 
-                 "!"}
-              </Badge>
-            </div>
+            {hasData ? (
+              <>
+                <div className={`text-xl font-bold ${krStatus.color}`}>
+                  {krStatus.percentage.toFixed(1)}%
+                </div>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-xs text-muted-foreground">
+                    {isOverTarget 
+                      ? `+${(krStatus.percentage - 100).toFixed(1)}%`
+                      : `-${(100 - krStatus.percentage).toFixed(1)}%`
+                    }
+                  </p>
+                  <Badge 
+                    variant={
+                      isExcellent || (isGood && krStatus.percentage >= 100) ? "default" : 
+                      isGood ? "secondary" : 
+                      "destructive"
+                    } 
+                    className="text-xs px-2 py-0"
+                  >
+                    {isExcellent || (isGood && krStatus.percentage >= 100) ? "✓" : 
+                     isGood ? "~" : 
+                     "!"}
+                  </Badge>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-xl font-bold text-gray-500">
+                  —
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Sem dados realizados
+                </p>
+              </>
+            )}
           </CardContent>
       </Card>
 
