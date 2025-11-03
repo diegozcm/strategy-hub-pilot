@@ -59,7 +59,7 @@ export const KeyResultMetrics = ({
         <Card className="h-24">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
             <CardTitle className="text-sm font-medium">
-              {selectedPeriod === 'ytd' ? 'Meta Anual' : 'Meta Mensal'}
+              {selectedPeriod === 'ytd' ? 'Meta YTD' : 'Meta Mensal'}
             </CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -72,7 +72,9 @@ export const KeyResultMetrics = ({
 
         <Card className="h-24">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
-            <CardTitle className="text-sm font-medium">Realizado</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              {selectedPeriod === 'ytd' ? 'Realizado YTD' : 'Realizado Mensal'}
+            </CardTitle>
             {isOverTarget ? (
               <TrendingUp className="h-4 w-4 text-green-600" />
             ) : (
