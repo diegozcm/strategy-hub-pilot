@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
 import { useKRMetrics, formatMetricValue, getAchievementStatus } from '@/hooks/useKRMetrics';
 import { KeyResult } from '@/types/strategic-map';
@@ -9,14 +11,21 @@ interface KeyResultMetricsProps {
   selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
   selectedMonth?: number;
   selectedYear?: number;
+  onMonthChange?: (month: number) => void;
+  onYearChange?: (year: number) => void;
+  monthOptions?: Array<{ value: string; label: string }>;
 }
 
 export const KeyResultMetrics = ({ 
   keyResult,
   selectedPeriod = 'ytd',
   selectedMonth,
-  selectedYear
+  selectedYear,
+  onMonthChange,
+  onYearChange,
+  monthOptions = []
 }: KeyResultMetricsProps) => {
+  const [isComboOpen, setIsComboOpen] = useState(false);
 
   // Get metrics from database (with optional custom month)
   const metrics = useKRMetrics(keyResult, {
@@ -125,12 +134,44 @@ export const KeyResultMetrics = ({
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
-            <div className="text-xl font-bold">
-              {currentPeriodDisplay}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {currentPeriodSubtext}
-            </p>
+            {selectedPeriod === 'monthly' && onMonthChange && onYearChange ? (
+              <>
+                <Select
+                  value={`${selectedYear}-${selectedMonth?.toString().padStart(2, '0')}`}
+                  onValueChange={(value) => {
+                    const [year, month] = value.split('-');
+                    onYearChange(parseInt(year));
+                    onMonthChange(parseInt(month));
+                  }}
+                  onOpenChange={setIsComboOpen}
+                >
+                  <SelectTrigger className="w-full h-9 text-lg font-bold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!isComboOpen && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Mês de referência
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="text-xl font-bold">
+                  {currentPeriodDisplay}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {currentPeriodSubtext}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

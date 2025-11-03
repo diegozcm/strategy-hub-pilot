@@ -398,28 +398,6 @@ export const KROverviewModal = ({
                 </Button>
               </div>
               
-              {/* Month selector - visible when 'monthly' is selected */}
-              {selectedPeriod === 'monthly' && (
-                <Select
-                  value={`${selectedMonthYear}-${selectedMonth.toString().padStart(2, '0')}`}
-                  onValueChange={(value) => {
-                    const [year, month] = value.split('-');
-                    setSelectedMonthYear(parseInt(year));
-                    setSelectedMonth(parseInt(month));
-                  }}
-                >
-                  <SelectTrigger className="w-[130px] h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {generateMonthOptions().map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
             </div>
           </div>
           
@@ -427,12 +405,15 @@ export const KROverviewModal = ({
             <div className="space-y-4 pr-2 py-4">
 
             {/* Key Metrics */}
-        <KeyResultMetrics
-          keyResult={currentKeyResult}
-          selectedPeriod={selectedPeriod}
-          selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-          selectedYear={selectedPeriod === 'monthly' ? selectedMonthYear : undefined}
-        />
+            <KeyResultMetrics
+              keyResult={currentKeyResult}
+              selectedPeriod={selectedPeriod}
+              selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
+              selectedYear={selectedPeriod === 'monthly' ? selectedMonthYear : undefined}
+              onMonthChange={(month: number) => setSelectedMonth(month)}
+              onYearChange={(year: number) => setSelectedMonthYear(year)}
+              monthOptions={generateMonthOptions()}
+            />
 
             {/* Evolution Chart */}
           <KeyResultChart
