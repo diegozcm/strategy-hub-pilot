@@ -1,4 +1,4 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -82,11 +82,6 @@ const normalizedTargets: Record<string, number | null> =
 const normalizedActuals: Record<string, number | null> =
   Object.fromEntries(Object.entries(monthlyActual || {}).map(([k, v]) => [k, normalizeNumber(v as unknown)]));
 
-  const chartData = months.map(month => ({
-    month: month.name,
-    previsto: normalizedTargets[month.key],
-    realizado: normalizedActuals[month.key],
-  }));
 
   // Calculate magnitudes for dual axis logic
   const previstoVals = Object.values(normalizedTargets).filter(v => v !== null && Number.isFinite(v)) as number[];
@@ -162,6 +157,24 @@ const normalizedActuals: Record<string, number | null> =
     return '(YTD)';
   };
 
+  const chartData = [
+    ...months.map(month => ({
+      month: month.name,
+      previsto: normalizedTargets[month.key],
+      realizado: normalizedActuals[month.key],
+      previstoBar: null,
+      realizadoBar: null,
+    })),
+    {
+      month: `Total ${getPeriodLabel().replace(/[()]/g, '')}`,
+      previsto: null,
+      realizado: null,
+      previstoBar: targetTotal !== 0 ? targetTotal : null,
+      realizadoBar: actualTotal !== 0 ? actualTotal : null,
+    }
+  ];
+
+
   return (
     <Card className="mb-6">
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
@@ -216,7 +229,7 @@ const normalizedActuals: Record<string, number | null> =
         {viewMode === 'chart' ? (
           <div className="h-[270px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 20, right: useDualAxis ? 50 : 30, left: 20, bottom: 5 }}>
+              <ComposedChart data={chartData} margin={{ top: 20, right: useDualAxis ? 50 : 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis 
                   dataKey="month" 
@@ -239,11 +252,18 @@ const normalizedActuals: Record<string, number | null> =
                   hide={!useDualAxis}
                 />
                 <Tooltip 
-                  formatter={(value: number | null, name: string) => [
-                    value !== null && value !== undefined && Number.isFinite(Number(value)) ? formatValueWithUnit(Number(value), unit) : 'Sem dados', 
-                    name === 'previsto' ? 'Previsto' : 'Realizado'
-                  ]}
-                  labelFormatter={(label) => `Mês: ${label}`}
+                  formatter={(value: number | null, name: string) => {
+                    if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+                      return ['Sem dados', name];
+                    }
+                    
+                    const label = name === 'previsto' || name === 'previstoBar' 
+                      ? 'Previsto' 
+                      : 'Realizado';
+                    
+                    return [formatValueWithUnit(Number(value), unit), label];
+                  }}
+                  labelFormatter={(label) => label.includes('Total') ? label : `Mês: ${label}`}
                   contentStyle={{
                     backgroundColor: 'hsl(var(--background))',
                     border: '1px solid hsl(var(--border))',
@@ -251,11 +271,15 @@ const normalizedActuals: Record<string, number | null> =
                   }}
                 />
                 <Legend 
-                  formatter={(value) => (
-                    <span className="text-sm">
-                      {value === 'previsto' ? 'Previsto (Meta)' : 'Realizado'}
-                    </span>
-                  )}
+                  formatter={(value) => {
+                    if (value === 'previstoBar' || value === 'realizadoBar') return null;
+                    
+                    return (
+                      <span className="text-sm">
+                        {value === 'previsto' ? 'Previsto (Meta)' : 'Realizado'}
+                      </span>
+                    );
+                  }}
                 />
                 <ReferenceLine y={0} yAxisId="left" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
                 {useDualAxis && <ReferenceLine y={0} yAxisId="right" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />}
@@ -280,7 +304,24 @@ const normalizedActuals: Record<string, number | null> =
                   dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
                 />
-              </LineChart>
+                <Bar 
+                  dataKey="previstoBar"
+                  yAxisId="left"
+                  fill="hsl(var(--muted-foreground))"
+                  opacity={0.5}
+                  radius={[4, 4, 0, 0]}
+                  barSize={30}
+                  name="Previsto (Meta)"
+                />
+                <Bar 
+                  dataKey="realizadoBar"
+                  yAxisId={useDualAxis ? 'right' : 'left'}
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 0, 0]}
+                  barSize={30}
+                  name="Realizado"
+                />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         ) : (
