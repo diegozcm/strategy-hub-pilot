@@ -169,7 +169,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                       {plan.name}
                     </Badge>
                   )}
-                  <Badge variant="outline" className="bg-primary/10">
+                  <Badge variant="outline">
                     {selectedPeriod === 'yearly' 
                       ? '📅 Ano' 
                       : selectedPeriod === 'monthly' 
