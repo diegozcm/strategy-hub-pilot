@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X, Trash2, Layout, MoreVertical, Calendar } from 'lucide-react';
+import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X, Trash2, Layout, MoreVertical, Calendar, CalendarDays } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,6 +63,13 @@ export const ObjectivesPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
+  
+  // Inicializar com o último mês fechado (mês anterior)
+  const previousMonth = new Date();
+  previousMonth.setMonth(previousMonth.getMonth() - 1);
+  const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
+  
   const [isCreateObjectiveOpen, setIsCreateObjectiveOpen] = useState(false);
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -395,6 +402,26 @@ export const ObjectivesPage: React.FC = () => {
     return keyResults.filter(kr => kr.objective_id === objectiveId);
   };
 
+  // Gerar lista de meses disponíveis (últimos 24 meses)
+  const monthOptions = React.useMemo(() => {
+    const options = [];
+    const now = new Date();
+    
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      
+      options.push({
+        value: `${year}-${month.toString().padStart(2, '0')}`,
+        label: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+          .replace(/^\w/, c => c.toUpperCase())
+      });
+    }
+    
+    return options;
+  }, []);
+
   const calculateObjectiveProgress = (keyResults: any[], period: 'ytd' | 'monthly' | 'yearly' = 'ytd') => {
     if (keyResults.length === 0) return 0;
     
@@ -642,41 +669,7 @@ export const ObjectivesPage: React.FC = () => {
               <p className="text-muted-foreground mt-2">Gerencie seus planos estratégicos e objetivos</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            {/* Period Filter */}
-            <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-              <Button
-                variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedPeriod('ytd')}
-                className="gap-2"
-              >
-                <TrendingUp className="w-4 h-4" />
-                YTD
-              </Button>
-              <Button
-                variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedPeriod('monthly')}
-                className="gap-2"
-              >
-                <Calendar className="w-4 h-4" />
-                {(() => {
-                  const monthName = format(new Date(), 'MMMM', { locale: ptBR });
-                  return monthName.charAt(0).toUpperCase() + monthName.slice(1);
-                })()}
-              </Button>
-              <Button
-                variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setSelectedPeriod('yearly')}
-                className="gap-2"
-              >
-                <Target className="w-4 h-4" />
-                Ano
-              </Button>
-            </div>
-            <div className="flex space-x-3">
+          <div className="flex space-x-3">
             <Dialog open={isCreatePlanOpen} onOpenChange={setIsCreatePlanOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">
@@ -849,6 +842,66 @@ export const ObjectivesPage: React.FC = () => {
             </Dialog>
             </div>
           </div>
+        </div>
+
+        {/* Period Selector - Below Description */}
+        <div className="flex items-center gap-2">
+          {/* Botões de Período - Sempre visíveis */}
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
+            <Button
+              variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('ytd')}
+              className="gap-2"
+            >
+              <TrendingUp className="w-4 h-4" />
+              YTD
+            </Button>
+            
+            <Button
+              variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('yearly')}
+              className="gap-2"
+            >
+              <Target className="w-4 h-4" />
+              Ano
+            </Button>
+            
+            <Button
+              variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('monthly')}
+              className="gap-2"
+            >
+              <CalendarDays className="w-4 h-4" />
+              Mês
+            </Button>
+          </div>
+          
+          {/* Select de Mês - Aparece ao lado quando monthly está selecionado */}
+          {selectedPeriod === 'monthly' && (
+            <Select
+              value={`${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`}
+              onValueChange={(value) => {
+                const [year, month] = value.split('-');
+                setSelectedYear(parseInt(year));
+                setSelectedMonth(parseInt(month));
+              }}
+            >
+              <SelectTrigger className="h-9 w-[180px] gap-2">
+                <Calendar className="w-4 h-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
 
         {/* Plans Management Section */}
@@ -1167,6 +1220,8 @@ export const ObjectivesPage: React.FC = () => {
           pillars={pillars}
           progressPercentage={selectedObjective ? calculateObjectiveProgress(getObjectiveKeyResults(selectedObjective.id), selectedPeriod) : 0}
           selectedPeriod={selectedPeriod}
+          selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
+          selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
         />
 
 
@@ -1268,6 +1323,8 @@ export const ObjectivesPage: React.FC = () => {
             objectives={objectives.map(obj => ({ id: obj.id, title: obj.title }))}
             showDeleteButton={false}
             initialPeriod={selectedPeriod}
+            initialMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
+            initialYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
           />
         )}
       </div>

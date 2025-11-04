@@ -65,6 +65,8 @@ interface ObjectiveDetailModalProps {
   pillars: StrategicPillar[];
   progressPercentage: number;
   selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
+  selectedMonth?: number;
+  selectedYear?: number;
 }
 
 export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
@@ -80,6 +82,8 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
   pillars,
   progressPercentage,
   selectedPeriod = 'ytd',
+  selectedMonth,
+  selectedYear,
 }) => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
@@ -185,7 +189,14 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                     {selectedPeriod === 'yearly' 
                       ? '📅 Ano' 
                       : selectedPeriod === 'monthly' 
-                      ? `📆 ${format(new Date(), 'MMMM', { locale: ptBR }).charAt(0).toUpperCase() + format(new Date(), 'MMMM', { locale: ptBR }).slice(1)}` 
+                      ? (selectedMonth && selectedYear
+                          ? `📆 ${new Date(selectedYear, selectedMonth - 1, 1)
+                              .toLocaleDateString('pt-BR', { month: 'long' })
+                              .charAt(0).toUpperCase() + 
+                              new Date(selectedYear, selectedMonth - 1, 1)
+                              .toLocaleDateString('pt-BR', { month: 'long' })
+                              .slice(1)}`
+                          : `📆 ${format(new Date(), 'MMMM', { locale: ptBR }).charAt(0).toUpperCase() + format(new Date(), 'MMMM', { locale: ptBR }).slice(1)}`)
                       : '📊 YTD'}
                   </Badge>
                 </div>
