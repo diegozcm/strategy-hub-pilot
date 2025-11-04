@@ -29,6 +29,8 @@ interface KROverviewModalProps {
   objectives: Array<{ id: string; title: string }>;
   showDeleteButton?: boolean;
   initialPeriod?: 'ytd' | 'monthly' | 'yearly';
+  initialMonth?: number;
+  initialYear?: number;
 }
 
 export const KROverviewModal = ({ 
@@ -40,7 +42,9 @@ export const KROverviewModal = ({
   onSave, 
   objectives, 
   showDeleteButton = true,
-  initialPeriod = 'ytd'
+  initialPeriod = 'ytd',
+  initialMonth,
+  initialYear
 }: KROverviewModalProps) => {
   const [showFCAModal, setShowFCAModal] = useState(false);
   const [showStatusReportModal, setShowStatusReportModal] = useState(false);
@@ -51,11 +55,11 @@ export const KROverviewModal = ({
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>(initialPeriod);
   
-  // Inicializar com o último mês fechado (mês anterior)
+  // Inicializar com o último mês fechado (mês anterior) ou com os valores fornecidos
   const previousMonth = new Date();
   previousMonth.setMonth(previousMonth.getMonth() - 1);
-  const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
-  const [selectedMonthYear, setSelectedMonthYear] = useState<number>(previousMonth.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(initialMonth || previousMonth.getMonth() + 1);
+  const [selectedMonthYear, setSelectedMonthYear] = useState<number>(initialYear || previousMonth.getFullYear());
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
 

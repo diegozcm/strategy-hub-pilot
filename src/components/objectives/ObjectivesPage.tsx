@@ -840,7 +840,6 @@ export const ObjectivesPage: React.FC = () => {
                 )}
               </DialogContent>
             </Dialog>
-            </div>
           </div>
         </div>
 
