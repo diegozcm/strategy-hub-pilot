@@ -52,6 +52,8 @@ export const IndicatorsPage: React.FC = () => {
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -407,8 +409,72 @@ export const IndicatorsPage: React.FC = () => {
     return map;
   }, [keyResults]);
 
+  // Recalcular metrics considerando mês customizado
+  const customMetricsMap = useMemo(() => {
+    if (selectedPeriod !== 'monthly' || !selectedMonth || !selectedYear) {
+      return krMetricsMap;
+    }
+    
+    const map = new Map();
+    keyResults.forEach(kr => {
+      // Para monthly com mês customizado, precisamos recalcular
+      const monthKey = selectedMonth.toString();
+      const target = kr.monthly_targets?.[monthKey] ?? 0;
+      const actual = kr.monthly_actual?.[monthKey] ?? 0;
+      
+      // Calcular percentage usando a mesma lógica do banco
+      let percentage = 0;
+      if (target > 0 && actual > 0) {
+        if (kr.target_direction === 'minimize') {
+          percentage = ((target - actual) / target) * 100 + 100;
+        } else {
+          percentage = (actual / target) * 100;
+        }
+      }
+      
+      map.set(kr.id, {
+        ytd: {
+          target: kr.ytd_target ?? 0,
+          actual: kr.ytd_actual ?? 0,
+          percentage: kr.ytd_percentage ?? 0,
+        },
+        monthly: {
+          target,
+          actual,
+          percentage,
+        },
+        yearly: {
+          target: kr.yearly_target ?? 0,
+          actual: kr.yearly_actual ?? 0,
+          percentage: kr.yearly_percentage ?? 0,
+        },
+      });
+    });
+    return map;
+  }, [keyResults, selectedPeriod, selectedMonth, selectedYear, krMetricsMap]);
+
+  // Gerar lista de meses disponíveis (últimos 24 meses)
+  const monthOptions = useMemo(() => {
+    const options = [];
+    const now = new Date();
+    
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      
+      options.push({
+        value: `${year}-${month.toString().padStart(2, '0')}`,
+        label: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+          .replace(/^\w/, c => c.toUpperCase())
+      });
+    }
+    
+    return options;
+  }, []);
+
   const getMetricsByPeriod = (keyResultId: string) => {
-    const metrics = krMetricsMap.get(keyResultId);
+    const metrics = customMetricsMap.get(keyResultId);
     if (!metrics) return { target: 0, actual: 0, percentage: 0 };
     
     return selectedPeriod === 'monthly' ? metrics.monthly :
@@ -417,11 +483,17 @@ export const IndicatorsPage: React.FC = () => {
   };
 
   const getPeriodLabel = () => {
-    switch (selectedPeriod) {
-      case 'ytd': return 'YTD';
-      case 'monthly': return new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1);
-      case 'yearly': return 'Ano';
+    if (selectedPeriod === 'ytd') return 'YTD';
+    if (selectedPeriod === 'yearly') return 'Ano';
+    if (selectedPeriod === 'monthly' && selectedMonth && selectedYear) {
+      return new Date(selectedYear, selectedMonth - 1, 1)
+        .toLocaleDateString('pt-BR', { month: 'long' })
+        .charAt(0).toUpperCase() + 
+        new Date(selectedYear, selectedMonth - 1, 1)
+        .toLocaleDateString('pt-BR', { month: 'long' })
+        .slice(1);
     }
+    return 'Mês Atual';
   };
 
   const getProgressColor = (progress: number) => {
@@ -550,53 +622,76 @@ export const IndicatorsPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header - Same pattern as Rumo */}
+      {/* Header - Title and Description */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        {/* Left side: Title + Description */}
         <div>
           <h1 className="text-3xl font-bold">Resultados-Chave</h1>
-          <p className="text-muted-foreground mt-2">Acompanhe resultados-chave e métricas estratégicas em tempo real</p>
+          <p className="text-muted-foreground mt-2">
+            Acompanhe resultados-chave e métricas estratégicas em tempo real
+          </p>
         </div>
+        
+        {/* Right side: Only New KR Button */}
+        <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
+          <Plus className="w-4 h-4" />
+          Novo Resultado-Chave
+        </Button>
+      </div>
 
-        {/* Right side: Period Filter + Button */}
-        <div className="flex items-center gap-4">
-          {/* Period Filter */}
-          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-            <Button
-              variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedPeriod('ytd')}
-              className="gap-2"
-            >
-              <TrendingUp className="w-4 h-4" />
-              YTD
-            </Button>
-            <Button
-              variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedPeriod('monthly')}
-              className="gap-2"
-            >
+      {/* Period Selector - Below Description */}
+      <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg w-fit">
+        <Button
+          variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setSelectedPeriod('ytd')}
+          className="gap-2"
+        >
+          <TrendingUp className="w-4 h-4" />
+          YTD
+        </Button>
+        
+        <Button
+          variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+          size="sm"
+          onClick={() => setSelectedPeriod('yearly')}
+          className="gap-2"
+        >
+          <Target className="w-4 h-4" />
+          Ano
+        </Button>
+        
+        {selectedPeriod === 'monthly' ? (
+          <Select
+            value={`${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`}
+            onValueChange={(value) => {
+              const [year, month] = value.split('-');
+              setSelectedYear(parseInt(year));
+              setSelectedMonth(parseInt(month));
+            }}
+          >
+            <SelectTrigger className="h-9 w-[180px] gap-2">
               <Calendar className="w-4 h-4" />
-              {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
-            </Button>
-            <Button
-              variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedPeriod('yearly')}
-              className="gap-2"
-            >
-              <Target className="w-4 h-4" />
-              Ano
-            </Button>
-          </div>
-          
-          {/* New KR Button */}
-          <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Novo Resultado-Chave
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {monthOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedPeriod('monthly')}
+            className="gap-2"
+          >
+            <Calendar className="w-4 h-4" />
+            Mês
           </Button>
-        </div>
+        )}
       </div>
 
       {/* Summary Cards */}
@@ -760,6 +855,8 @@ export const IndicatorsPage: React.FC = () => {
               keyResult={keyResult}
               pillar={pillar}
               selectedPeriod={selectedPeriod}
+              selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
+              selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
               onClick={() => openKROverviewModal(keyResult)}
             />
           );

@@ -13,6 +13,8 @@ interface KRCardProps {
     color: string;
   };
   selectedPeriod: 'ytd' | 'monthly' | 'yearly';
+  selectedMonth?: number;
+  selectedYear?: number;
   onClick: () => void;
 }
 
@@ -20,9 +22,14 @@ export const KRCard: React.FC<KRCardProps> = ({
   keyResult,
   pillar,
   selectedPeriod,
+  selectedMonth,
+  selectedYear,
   onClick,
 }) => {
-  const metrics = useKRMetrics(keyResult);
+  const metrics = useKRMetrics(keyResult, {
+    selectedMonth,
+    selectedYear,
+  });
   
   const currentMetrics = 
     selectedPeriod === 'monthly' ? metrics.monthly :
@@ -30,9 +37,15 @@ export const KRCard: React.FC<KRCardProps> = ({
     metrics.ytd;
   
   const periodLabel = 
-    selectedPeriod === 'monthly' ? 'Mês Atual' :
-    selectedPeriod === 'yearly' ? 'Anual' :
-    'YTD';
+    selectedPeriod === 'monthly' 
+      ? (selectedMonth && selectedYear 
+          ? new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString('pt-BR', { month: 'short' })
+            .charAt(0).toUpperCase() + 
+            new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString('pt-BR', { month: 'short' })
+            .slice(1)
+          : 'Mês')
+      : selectedPeriod === 'yearly' ? 'Anual'
+      : 'YTD';
 
   const progress = currentMetrics.percentage;
 
