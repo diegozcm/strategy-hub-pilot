@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, User, Target, AlertTriangle, CheckCircle, Activity, Trash2, Save, X, MoreVertical } from 'lucide-react';
+import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, CalendarDays, User, Target, AlertTriangle, CheckCircle, Activity, Trash2, Save, X, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -52,8 +52,12 @@ export const IndicatorsPage: React.FC = () => {
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  
+  // Inicializar com o último mês fechado (mês anterior)
+  const previousMonth = new Date();
+  previousMonth.setMonth(previousMonth.getMonth() - 1);
+  const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
   
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -638,61 +642,65 @@ export const IndicatorsPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* Period Selector - Below Description */}
-      <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg w-fit">
-        <Button
-          variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => setSelectedPeriod('ytd')}
-          className="gap-2"
-        >
-          <TrendingUp className="w-4 h-4" />
-          YTD
-        </Button>
-        
-        <Button
-          variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
-          size="sm"
-          onClick={() => setSelectedPeriod('yearly')}
-          className="gap-2"
-        >
-          <Target className="w-4 h-4" />
-          Ano
-        </Button>
-        
-        {selectedPeriod === 'monthly' ? (
-          <Select
-            value={`${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`}
-            onValueChange={(value) => {
-              const [year, month] = value.split('-');
-              setSelectedYear(parseInt(year));
-              setSelectedMonth(parseInt(month));
-            }}
-          >
-            <SelectTrigger className="h-9 w-[180px] gap-2">
-              <Calendar className="w-4 h-4" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {monthOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSelectedPeriod('monthly')}
-            className="gap-2"
-          >
-            <Calendar className="w-4 h-4" />
-            Mês
-          </Button>
-        )}
-      </div>
+        {/* Period Selector - Below Description */}
+        <div className="flex items-center gap-2">
+          {/* Botões de Período - Sempre visíveis */}
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
+            <Button
+              variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('ytd')}
+              className="gap-2"
+            >
+              <TrendingUp className="w-4 h-4" />
+              YTD
+            </Button>
+            
+            <Button
+              variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('yearly')}
+              className="gap-2"
+            >
+              <Target className="w-4 h-4" />
+              Ano
+            </Button>
+            
+            <Button
+              variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('monthly')}
+              className="gap-2"
+            >
+              <CalendarDays className="w-4 h-4" />
+              Mês
+            </Button>
+          </div>
+          
+          {/* Select de Mês - Aparece ao lado quando monthly está selecionado */}
+          {selectedPeriod === 'monthly' && (
+            <Select
+              value={`${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`}
+              onValueChange={(value) => {
+                const [year, month] = value.split('-');
+                setSelectedYear(parseInt(year));
+                setSelectedMonth(parseInt(month));
+              }}
+            >
+              <SelectTrigger className="h-9 w-[180px] gap-2">
+                <Calendar className="w-4 h-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
