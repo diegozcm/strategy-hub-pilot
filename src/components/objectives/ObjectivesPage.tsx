@@ -422,7 +422,14 @@ export const ObjectivesPage: React.FC = () => {
     return options;
   }, []);
 
-  const calculateObjectiveProgress = (keyResults: any[], period: 'ytd' | 'monthly' | 'yearly' = 'ytd') => {
+  const calculateObjectiveProgress = (
+    keyResults: any[], 
+    period: 'ytd' | 'monthly' | 'yearly' = 'ytd',
+    options?: {
+      selectedMonth?: number;
+      selectedYear?: number;
+    }
+  ) => {
     if (keyResults.length === 0) return 0;
     
     const totalProgress = keyResults.reduce((sum, kr) => {
@@ -430,7 +437,19 @@ export const ObjectivesPage: React.FC = () => {
       
       switch (period) {
         case 'monthly':
-          percentage = kr.monthly_percentage || 0;
+          // Se mês customizado foi fornecido, recalcular
+          if (options?.selectedMonth && options?.selectedYear) {
+            const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
+            const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
+            const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+            
+            const monthTarget = monthlyTargets[monthKey] || 0;
+            const monthActual = monthlyActual[monthKey] || 0;
+            percentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
+          } else {
+            // Usar valor pré-calculado do mês atual
+            percentage = kr.monthly_percentage || 0;
+          }
           break;
         case 'yearly':
           percentage = kr.yearly_percentage || 0;
@@ -456,7 +475,11 @@ export const ObjectivesPage: React.FC = () => {
     let matchesStatus = statusFilter === 'all';
     if (!matchesStatus) {
       const objectiveKeyResults = getObjectiveKeyResults(objective.id);
-      const progress = calculateObjectiveProgress(objectiveKeyResults, selectedPeriod);
+      const progress = calculateObjectiveProgress(
+        objectiveKeyResults, 
+        selectedPeriod,
+        selectedPeriod === 'monthly' ? { selectedMonth, selectedYear } : undefined
+      );
       if (statusFilter === 'excellent') {
         matchesStatus = progress > 105;
       } else if (statusFilter === 'success') {
@@ -1177,11 +1200,19 @@ export const ObjectivesPage: React.FC = () => {
                         <div className="mt-3">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium text-muted-foreground">Progresso</span>
-                            <span className="text-sm font-bold text-foreground">{calculateObjectiveProgress(objectiveKeyResults, selectedPeriod)}%</span>
+                            <span className="text-sm font-bold text-foreground">{calculateObjectiveProgress(
+                              objectiveKeyResults, 
+                              selectedPeriod,
+                              selectedPeriod === 'monthly' ? { selectedMonth, selectedYear } : undefined
+                            )}%</span>
                           </div>
                           <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
                             {(() => {
-                              const progress = calculateObjectiveProgress(objectiveKeyResults, selectedPeriod);
+                              const progress = calculateObjectiveProgress(
+                                objectiveKeyResults, 
+                                selectedPeriod,
+                                selectedPeriod === 'monthly' ? { selectedMonth, selectedYear } : undefined
+                              );
                               return (
                                 <div 
                                   className={`h-full transition-all duration-300 rounded-full ${
@@ -1217,7 +1248,11 @@ export const ObjectivesPage: React.FC = () => {
           onDelete={handleDeleteObjective}
           onOpenKeyResultDetails={handleOpenKeyResultDetails}
           pillars={pillars}
-          progressPercentage={selectedObjective ? calculateObjectiveProgress(getObjectiveKeyResults(selectedObjective.id), selectedPeriod) : 0}
+          progressPercentage={selectedObjective ? calculateObjectiveProgress(
+            getObjectiveKeyResults(selectedObjective.id), 
+            selectedPeriod,
+            selectedPeriod === 'monthly' ? { selectedMonth, selectedYear } : undefined
+          ) : 0}
           selectedPeriod={selectedPeriod}
           selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
           selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
