@@ -39,16 +39,29 @@ export const AdminLoginPage: React.FC = () => {
         return;
       }
       
-      // Redirecionar imediatamente - AdminProtectedRoute validará o acesso
-      navigate('/app/admin');
+      // Aguardar um curto período para evitar condição de corrida do onAuthStateChange
+      await new Promise((resolve) => setTimeout(resolve, 400));
+
+      // Redirecionar - AdminProtectedRoute validará o acesso
+      navigate('/app/admin', { replace: true });
     } catch (err) {
       setError('Erro ao tentar fazer login. Tente novamente.');
       setLoading(false);
     }
   };
 
-  // Remover verificação duplicada - o redirect acontece via AdminProtectedRoute
+  // Redirecionar automaticamente se já estiver autenticado como admin (evita segunda tentativa)
+  useEffect(() => {
+    if (authLoading) return;
 
+    const isHardcodedAdmin =
+      user?.email === 'admin@example.com' || user?.email === 'diego@cofound.com.br';
+    const isProfileAdmin = profile?.role === 'admin' && profile?.status === 'active';
+
+    if (user && (isHardcodedAdmin || isProfileAdmin)) {
+      navigate('/app/admin', { replace: true });
+    }
+  }, [user, profile, authLoading, navigate]);
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
