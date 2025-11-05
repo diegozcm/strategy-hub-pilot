@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { DatabaseCleanupTab } from './DatabaseCleanupTab';
 import { BackupTab } from './BackupTab';
+import { SystemAdminsTab } from './SystemAdminsTab';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -295,7 +296,7 @@ export const SystemSettingsPage: React.FC = () => {
       <Card>
         <CardContent className="p-6">
           <Tabs defaultValue="settings" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger 
                 value="settings"
               >
@@ -318,6 +319,14 @@ export const SystemSettingsPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <HardDrive className="h-4 w-4" />
                   <span className="hidden sm:inline">Backup & Restore</span>
+                </div>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="admins"
+              >
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden sm:inline">System Admins</span>
                 </div>
               </TabsTrigger>
             </TabsList>
@@ -402,6 +411,10 @@ export const SystemSettingsPage: React.FC = () => {
 
             <TabsContent value="backup" className="space-y-6">
               <BackupTab />
+            </TabsContent>
+
+            <TabsContent value="admins" className="space-y-6">
+              <SystemAdminsTab />
             </TabsContent>
           </Tabs>
         </CardContent>
