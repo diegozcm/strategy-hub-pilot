@@ -157,6 +157,8 @@ export const AuthPage: React.FC = () => {
       const result = await signIn(email, password);
       
       if (result.error) {
+        setLoading(false);
+        
         if (result.error.message?.includes('Invalid login credentials')) {
           setError('E-mail ou senha incorretos.');
         } else if (result.error.message?.includes('User not found')) {
@@ -165,10 +167,10 @@ export const AuthPage: React.FC = () => {
           setError(result.error.message);
         }
       }
+      // Se não houver erro, mantém loading ativo até que useEffect navegue
     } catch (error: any) {
-      setError('Ocorreu um erro inesperado. Tente novamente.');
-    } finally {
       setLoading(false);
+      setError('Ocorreu um erro inesperado. Tente novamente.');
     }
   };
 
