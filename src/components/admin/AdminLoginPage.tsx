@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useMultiTenant';
-import { useIsSystemAdmin } from '@/hooks/useIsSystemAdmin';
 import { useNavigate } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +16,6 @@ export const AdminLoginPage: React.FC = () => {
   const [error, setError] = useState('');
   
   const { user, loading: authLoading } = useAuth();
-  const { data: isSystemAdmin, isLoading: adminCheckLoading } = useIsSystemAdmin();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,14 +50,6 @@ export const AdminLoginPage: React.FC = () => {
     }
   };
 
-  // Redirecionar automaticamente se já estiver autenticado como admin
-  useEffect(() => {
-    if (authLoading || adminCheckLoading) return;
-
-    if (user && isSystemAdmin) {
-      navigate('/app/admin', { replace: true });
-    }
-  }, [user, isSystemAdmin, authLoading, adminCheckLoading, navigate]);
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
