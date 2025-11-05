@@ -136,9 +136,17 @@ export const CompanySelectionPage: React.FC = () => {
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{company.name}</CardTitle>
-                  <div className="flex-shrink-0 bg-primary/10 rounded-full p-2">
-                    <Building2 className="h-5 w-5 text-primary" />
-                  </div>
+                  {company.logo_url ? (
+                    <img 
+                      src={company.logo_url} 
+                      alt={`Logo ${company.name}`}
+                      className="h-10 w-10 object-cover rounded-md border border-border/50"
+                    />
+                  ) : (
+                    <div className="flex-shrink-0 bg-primary/10 rounded-full p-2">
+                      <Building2 className="h-5 w-5 text-primary" />
+                    </div>
+                  )}
                 </div>
                 <CardDescription className="text-sm">
                   {company.document ? `CNPJ: ${company.document}` : 'Empresa'}
