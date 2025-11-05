@@ -266,7 +266,7 @@ export const StrategicMapPage = () => {
       )}
 
       {/* Period Selector - Below Company Data */}
-      {!isInitialLoading && (
+      {company && (
         <div className="flex items-center gap-2">
           {/* Botões de Período - Sempre visíveis */}
           <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
