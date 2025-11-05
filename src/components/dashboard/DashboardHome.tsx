@@ -686,35 +686,35 @@ export const DashboardHome: React.FC = () => {
 
             <div className="flex items-center gap-4">
               {/* Period Filter */}
-              <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-                <Button
-                  variant={periodType === 'ytd' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setPeriodType('ytd')}
-                  className="gap-2"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  YTD
-                </Button>
-                <Button
-                  variant={periodType === 'monthly' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setPeriodType('monthly')}
-                  className="gap-2"
-                >
-                  <Calendar className="w-4 h-4" />
-                  Mês
-                </Button>
-                <Button
-                  variant={periodType === 'yearly' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setPeriodType('yearly')}
-                  className="gap-2"
-                >
-                  <Target className="w-4 h-4" />
-                  Ano
-                </Button>
-              </div>
+            <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
+              <Button
+                variant={periodType === 'ytd' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setPeriodType('ytd')}
+                className="gap-2"
+              >
+                <TrendingUp className="w-4 h-4" />
+                YTD
+              </Button>
+              <Button
+                variant={periodType === 'yearly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setPeriodType('yearly')}
+                className="gap-2"
+              >
+                <Target className="w-4 h-4" />
+                Ano
+              </Button>
+              <Button
+                variant={periodType === 'monthly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setPeriodType('monthly')}
+                className="gap-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Mês
+              </Button>
+            </div>
               
               {/* Select de Mês - Aparece ao lado quando monthly está selecionado */}
               {periodType === 'monthly' && (
