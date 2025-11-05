@@ -494,9 +494,9 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     console.log('📊 MultiTenantAuthProvider: Initializing...');
     
-    // Auth state listener - improved with validation and logout prevention
+    // Auth state listener - sem await direto para evitar deadlocks
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('🔐 Auth state change:', event, !!session);
         
         // Prevent automatic re-login during logout process
@@ -509,17 +509,22 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         
         if (event === 'SIGNED_IN' && session) {
           console.log('👤 User found, loading profile for:', session.user.email);
-          const isValid = await validateSession(session);
           
-          if (isValid) {
-            setSession(session);
-            setUser(session.user);
-            loadUserProfile(session.user.id);
-          } else {
-            console.warn('⚠️ Invalid session on SIGNED_IN, signing out');
-            await signOut();
-            return;
-          }
+          // Setar session e user IMEDIATAMENTE (síncrono)
+          setSession(session);
+          setUser(session.user);
+          
+          // Deferir validação e carregamento de profile
+          setTimeout(() => {
+            validateSession(session).then(isValid => {
+              if (isValid) {
+                loadUserProfile(session.user.id);
+              } else {
+                console.warn('⚠️ Invalid session on SIGNED_IN, signing out');
+                signOut();
+              }
+            });
+          }, 0);
         } else if (event === 'SIGNED_OUT' || !session) {
           console.log('❌ No user session, clearing state');
           setUser(null);
@@ -543,18 +548,23 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           setSession(session);
           setUser(session.user);
         } else if (event === 'INITIAL_SESSION' && session) {
-          console.log('👤 User found, loading profile for:', session.user.email);
-          const isValid = await validateSession(session);
+          console.log('👤 Initial session found, loading profile for:', session.user.email);
           
-          if (isValid) {
-            setSession(session);
-            setUser(session.user);
-            loadUserProfile(session.user.id);
-          } else {
-            console.warn('⚠️ Invalid initial session, signing out');
-            await signOut();
-            return;
-          }
+          // Setar session e user IMEDIATAMENTE (síncrono)
+          setSession(session);
+          setUser(session.user);
+          
+          // Deferir validação e carregamento de profile
+          setTimeout(() => {
+            validateSession(session).then(isValid => {
+              if (isValid) {
+                loadUserProfile(session.user.id);
+              } else {
+                console.warn('⚠️ Invalid initial session, signing out');
+                signOut();
+              }
+            });
+          }, 0);
         }
         
         setLoading(false);

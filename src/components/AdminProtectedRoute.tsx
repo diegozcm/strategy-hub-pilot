@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useIsSystemAdmin } from '@/hooks/useIsSystemAdmin';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { AdminLoginPage } from '@/components/admin/AdminLoginPage';
 
 interface AdminProtectedRouteProps {
   children: React.ReactNode;
@@ -22,8 +23,9 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
     );
   }
 
+  // Renderizar AdminLoginPage inline se não houver usuário
   if (!user) {
-    return <Navigate to="/admin-login" replace />;
+    return <AdminLoginPage />;
   }
 
   if (!isSystemAdmin) {

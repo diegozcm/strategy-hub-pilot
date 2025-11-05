@@ -18,6 +18,14 @@ export const AdminLoginPage: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
+  // Aguardar o contexto user ficar disponível antes de navegar
+  useEffect(() => {
+    if (user && !authLoading && loading) {
+      console.log('✅ User context ready, navigating to admin panel');
+      navigate('/app/admin', { replace: true });
+    }
+  }, [user, authLoading, loading, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -39,11 +47,8 @@ export const AdminLoginPage: React.FC = () => {
         return;
       }
       
-      // Aguardar um curto período para evitar condição de corrida do onAuthStateChange
-      await new Promise((resolve) => setTimeout(resolve, 400));
-
-      // Redirecionar - AdminProtectedRoute validará o acesso
-      navigate('/app/admin', { replace: true });
+      // Não navegar imediatamente - aguardar o useEffect detectar user
+      console.log('✅ Login successful, waiting for user context...');
     } catch (err) {
       setError('Erro ao tentar fazer login. Tente novamente.');
       setLoading(false);
