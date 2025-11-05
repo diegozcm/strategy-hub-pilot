@@ -53,17 +53,15 @@ export const AuthPage: React.FC = () => {
     }
 
     // Regular redirect logic for authenticated users
-    if (user && profile) {
-      // Check if profile is inactive
-      if (profile.status === 'inactive') {
+    if (!isPasswordReset && user) {
+      // Check if profile is already loaded and inactive
+      if (profile && profile.status === 'inactive') {
         setError('Sua conta foi desativada. Entre em contato com um administrador.');
         return;
       }
       
-      // Redirect active users to company selection
-      if (profile.status === 'active') {
-        navigate('/company-selection');
-      }
+      // Navigate immediately - company selection will handle profile loading
+      navigate('/company-selection', { replace: true });
     }
   }, [user, profile, navigate, isPasswordReset, accessToken, refreshToken]);
 
