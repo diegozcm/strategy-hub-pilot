@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Building2, ArrowRight, Users, Calendar, ArrowLeft } from 'lucide-react';
+import { Building2, ArrowRight, Users, Calendar, ArrowLeft, LogOut, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { Company } from '@/types/auth';
+import { toast } from 'sonner';
 
 export const CompanySelectionPage: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -13,7 +15,7 @@ export const CompanySelectionPage: React.FC = () => {
   const [selectingCompanyId, setSelectingCompanyId] = useState<string | null>(null);
   const [error, setError] = useState('');
   
-  const { user, profile, fetchAllUserCompanies, switchCompany } = useAuth();
+  const { user, profile, fetchAllUserCompanies, switchCompany, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -72,6 +74,17 @@ export const CompanySelectionPage: React.FC = () => {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success('Logout realizado com sucesso');
+      navigate('/auth');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      toast.error('Erro ao fazer logout');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 flex items-center justify-center">
@@ -106,8 +119,8 @@ export const CompanySelectionPage: React.FC = () => {
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="text-center mb-8">
-          {fromSwitching && (
-            <div className="flex justify-start mb-4">
+          <div className="flex justify-between items-center mb-4">
+            {fromSwitching ? (
               <Button
                 variant="ghost"
                 onClick={() => navigate(-1)}
@@ -116,8 +129,18 @@ export const CompanySelectionPage: React.FC = () => {
                 <ArrowLeft className="h-4 w-4" />
                 Voltar
               </Button>
-            </div>
-          )}
+            ) : (
+              <div />
+            )}
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Sair
+            </Button>
+          </div>
           <div className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 p-3 rounded-2xl mb-4">
             <Building2 className="h-8 w-8 text-white" />
           </div>
@@ -135,7 +158,15 @@ export const CompanySelectionPage: React.FC = () => {
             <Card key={company.id} className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{company.name}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">{company.name}</CardTitle>
+                    {company.ai_enabled && (
+                      <Badge variant="secondary" className="flex items-center gap-1">
+                        <Sparkles className="h-3 w-3" />
+                        AI Ativo
+                      </Badge>
+                    )}
+                  </div>
                   {company.logo_url ? (
                     <img 
                       src={company.logo_url} 
