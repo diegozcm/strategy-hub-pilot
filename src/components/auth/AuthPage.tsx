@@ -27,7 +27,7 @@ export const AuthPage: React.FC = () => {
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   
-  const { signIn, user, profile } = useAuth();
+  const { signIn, user, profile, isSystemAdmin } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -60,10 +60,18 @@ export const AuthPage: React.FC = () => {
         return;
       }
       
-      // Navigate immediately - company selection will handle profile loading
-      navigate('/company-selection', { replace: true });
+      // ✅ ROTEAMENTO INTELIGENTE
+      // System Admin vai direto para /app/admin
+      if (isSystemAdmin) {
+        console.log('✅ System Admin detectado - navegando para /app/admin');
+        navigate('/app/admin', { replace: true });
+      } else {
+        // Outros usuários vão para seleção de empresa
+        console.log('✅ Usuário regular - navegando para /company-selection');
+        navigate('/company-selection', { replace: true });
+      }
     }
-  }, [user, profile, navigate, isPasswordReset, accessToken, refreshToken]);
+  }, [user, profile, navigate, isPasswordReset, accessToken, refreshToken, isSystemAdmin]);
 
   const handlePasswordResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
