@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Building2, ArrowRight, Users, Calendar, ArrowLeft, LogOut, Sparkles } from 'lucide-react';
+import { Building2, ArrowRight, Users, Calendar, ArrowLeft, LogOut, Sparkles, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,7 @@ export const CompanySelectionPage: React.FC = () => {
   const [selectingCompanyId, setSelectingCompanyId] = useState<string | null>(null);
   const [error, setError] = useState('');
   
-  const { user, profile, fetchAllUserCompanies, switchCompany, signOut } = useAuth();
+  const { user, profile, fetchAllUserCompanies, switchCompany, signOut, isSystemAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -60,12 +60,8 @@ export const CompanySelectionPage: React.FC = () => {
       // Selecionar a empresa
       await switchCompany?.(company.id);
       
-      // Navegar para o app
-      if (profile?.role === 'admin') {
-        navigate('/app/admin');
-      } else {
-        navigate('/app/dashboard');
-      }
+      // Navegar para o dashboard
+      navigate('/app/dashboard');
     } catch (error) {
       console.error('Error selecting company:', error);
       setError('Erro ao selecionar empresa. Tente novamente.');
@@ -132,14 +128,26 @@ export const CompanySelectionPage: React.FC = () => {
             ) : (
               <div />
             )}
-            <Button
-              variant="outline"
-              onClick={handleLogout}
-              className="flex items-center gap-2"
-            >
-              <LogOut className="h-4 w-4" />
-              Sair
-            </Button>
+            <div className="flex items-center gap-2">
+              {isSystemAdmin && (
+                <Button
+                  variant="default"
+                  onClick={() => navigate('/app/admin')}
+                  className="flex items-center gap-2"
+                >
+                  <Shield className="h-4 w-4" />
+                  Console Administrativo
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </Button>
+            </div>
           </div>
           <div className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 p-3 rounded-2xl mb-4">
             <Building2 className="h-8 w-8 text-white" />
