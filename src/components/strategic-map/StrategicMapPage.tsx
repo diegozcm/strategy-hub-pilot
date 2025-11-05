@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { useAuth } from '@/hooks/useMultiTenant';
@@ -62,6 +63,15 @@ export const StrategicMapPage = () => {
   const [editingPillar, setEditingPillar] = useState<StrategicPillar | null>(null);
   const [deletingPillar, setDeletingPillar] = useState<StrategicPillar | null>(null);
   
+  // Period selection states
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
+  
+  // Inicializar com o último mês fechado (mês anterior)
+  const previousMonth = new Date();
+  previousMonth.setMonth(previousMonth.getMonth() - 1);
+  const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
+  
   // Handle KR modal from URL parameters
   const [showAddKRModal, setShowAddKRModal] = useState(false);
   const [targetObjectiveId, setTargetObjectiveId] = useState<string>('');
@@ -76,6 +86,26 @@ export const StrategicMapPage = () => {
       setShowAddKRModal(true);
     }
   }, [searchParams]);
+
+  // Gerar lista de meses disponíveis (últimos 24 meses)
+  const monthOptions = React.useMemo(() => {
+    const options = [];
+    const now = new Date();
+    
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      
+      options.push({
+        value: `${year}-${month.toString().padStart(2, '0')}`,
+        label: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+          .replace(/^\w/, c => c.toUpperCase())
+      });
+    }
+    
+    return options;
+  }, []);
 
   // Clear URL parameters and close modal
   const handleCloseAddKRModal = () => {
@@ -235,6 +265,55 @@ export const StrategicMapPage = () => {
       </Card>
       )}
 
+      {/* Period Selection */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Button
+            variant={selectedPeriod === 'ytd' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedPeriod('ytd')}
+          >
+            YTD
+          </Button>
+          <Button
+            variant={selectedPeriod === 'monthly' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedPeriod('monthly')}
+          >
+            Mês
+          </Button>
+          <Button
+            variant={selectedPeriod === 'yearly' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedPeriod('yearly')}
+          >
+            Ano
+          </Button>
+        </div>
+
+        {selectedPeriod === 'monthly' && (
+          <Select
+            value={`${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`}
+            onValueChange={(value) => {
+              const [year, month] = value.split('-');
+              setSelectedYear(parseInt(year));
+              setSelectedMonth(parseInt(month));
+            }}
+          >
+            <SelectTrigger className="w-[200px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {monthOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+
       <Separator />
 
       {/* Strategic Pillars */}
@@ -388,7 +467,7 @@ export const StrategicMapPage = () => {
                               {pillarObjectives.slice(0, 3).map((objective) => {
                                 const objectiveKRs = keyResults.filter(kr => kr.objective_id === objective.id);
                                 return (
-                                  <ObjectiveCard
+                                   <ObjectiveCard
                                     key={objective.id}
                                     objective={objective}
                                     compact
@@ -396,6 +475,9 @@ export const StrategicMapPage = () => {
                                     pillar={pillar}
                                     onAddResultadoChave={createKeyResult}
                                     onRefreshData={refreshData}
+                                    selectedPeriod={selectedPeriod}
+                                    selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
+                                    selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
                                   />
                                 );
                               })}
