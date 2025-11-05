@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, Settings, Search, Compass, LayoutDashboard, Calendar } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -113,8 +113,34 @@ export const DashboardHome: React.FC = () => {
   const [progressFilter, setProgressFilter] = useState('all');
   const [periodType, setPeriodType] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
 
+  // Month/Year selection states
+  const previousMonth = new Date();
+  previousMonth.setMonth(previousMonth.getMonth() - 1);
+  const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
+  const [selectedMonthYear, setSelectedMonthYear] = useState<number>(previousMonth.getFullYear());
+
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
   const currentYear = new Date().getFullYear();
+  
+  // Gerar lista de meses disponíveis (últimos 24 meses)
+  const monthOptions = useMemo(() => {
+    const options = [];
+    const now = new Date();
+    
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      
+      options.push({
+        value: `${year}-${month.toString().padStart(2, '0')}`,
+        label: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+          .replace(/^\w/, c => c.toUpperCase())
+      });
+    }
+    
+    return options;
+  }, []);
 
   // Calculate progress function
   const calculateProgress = (keyResult: KeyResultWithPillar): number => {
@@ -402,11 +428,28 @@ export const DashboardHome: React.FC = () => {
 
   const getSelectedAchievement = (kr: KeyResultWithPillar) => {
     if (periodType === 'monthly') {
+      // Se mês customizado foi selecionado
+      if (selectedMonth && selectedMonthYear) {
+        const monthKey = `${selectedMonthYear}-${selectedMonth.toString().padStart(2, '0')}`;
+        const monthlyTargets = kr.monthly_targets || {};
+        const monthlyActual = kr.monthly_actual || {};
+        
+        const target = monthlyTargets[monthKey] || 0;
+        const actual = monthlyActual[monthKey] || 0;
+        
+        if (target > 0 && actual > 0) {
+          if (kr.target_direction === 'minimize') {
+            return ((target - actual) / target) * 100 + 100;
+          } else {
+            return (actual / target) * 100;
+          }
+        }
+        return 0;
+      }
+      
+      // Usar valor pré-calculado do mês atual
       if (typeof kr.monthly_percentage === 'number') return kr.monthly_percentage;
-      const monthKey = new Date().toISOString().slice(0, 7);
-      const target = kr.current_month_target ?? kr.monthly_targets?.[monthKey] ?? 0;
-      const actual = kr.current_month_actual ?? kr.monthly_actual?.[monthKey] ?? 0;
-      return target > 0 ? (actual / target) * 100 : 0;
+      return 0;
     }
     if (periodType === 'ytd') {
       if (typeof kr.ytd_percentage === 'number') return kr.ytd_percentage;
@@ -414,15 +457,18 @@ export const DashboardHome: React.FC = () => {
     }
     // yearly
     if (typeof kr.yearly_percentage === 'number') return kr.yearly_percentage;
-    const yTarget = kr.yearly_target || kr.target_value || 0;
-    const yActual = kr.yearly_actual || kr.current_value || 0;
-    return yTarget > 0 ? (yActual / yTarget) * 100 : 0;
+    return 0;
   };
 
   const getSelectedActualValue = (kr: KeyResultWithPillar) => {
     if (periodType === 'monthly') {
-      const monthKey = new Date().toISOString().slice(0, 7);
-      return kr.current_month_actual ?? kr.monthly_actual?.[monthKey] ?? 0;
+      // Se mês customizado foi selecionado
+      if (selectedMonth && selectedMonthYear) {
+        const monthKey = `${selectedMonthYear}-${selectedMonth.toString().padStart(2, '0')}`;
+        return kr.monthly_actual?.[monthKey] ?? 0;
+      }
+      // Usar mês atual
+      return kr.current_month_actual ?? 0;
     }
     if (periodType === 'ytd') {
       return kr.ytd_actual ?? 0;
@@ -657,7 +703,7 @@ export const DashboardHome: React.FC = () => {
                   className="gap-2"
                 >
                   <Calendar className="w-4 h-4" />
-                  {new Date().toLocaleDateString('pt-BR', { month: 'long' }).replace(/^./, c => c.toUpperCase())}
+                  Mês
                 </Button>
                 <Button
                   variant={periodType === 'yearly' ? 'default' : 'ghost'}
@@ -669,6 +715,30 @@ export const DashboardHome: React.FC = () => {
                   Ano
                 </Button>
               </div>
+              
+              {/* Select de Mês - Aparece ao lado quando monthly está selecionado */}
+              {periodType === 'monthly' && (
+                <Select
+                  value={`${selectedMonthYear}-${selectedMonth.toString().padStart(2, '0')}`}
+                  onValueChange={(value) => {
+                    const [year, month] = value.split('-');
+                    setSelectedMonthYear(parseInt(year));
+                    setSelectedMonth(parseInt(month));
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-[200px] gap-2">
+                    <Calendar className="w-4 h-4" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {monthOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
 
@@ -875,7 +945,13 @@ export const DashboardHome: React.FC = () => {
                                   {getStatusIcon(selectedAchievement)}
                                   <div className="flex flex-col items-end">
                                     <span className={`text-sm font-medium ${getStatusColor(selectedAchievement)}`}>
-                                      {selectedAchievement.toFixed(1)}% {periodType === 'monthly' ? 'no mês' : periodType === 'ytd' ? 'YTD' : 'no ano'}
+                                      {selectedAchievement.toFixed(1)}% {
+                                        periodType === 'monthly' 
+                                          ? `em ${new Date(selectedMonthYear, selectedMonth - 1).toLocaleDateString('pt-BR', { month: 'long' })}` 
+                                          : periodType === 'ytd' 
+                                          ? 'YTD' 
+                                          : 'no ano'
+                                      }
                                     </span>
                                     <span className="text-xs text-muted-foreground">
                                       Atual: {Number(selectedActualValue).toFixed(1)}{kr.unit ? ` ${kr.unit}` : ''}

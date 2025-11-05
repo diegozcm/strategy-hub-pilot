@@ -16,17 +16,21 @@ export const useRumoCalculations = (
   pillars: StrategicPillar[],
   objectives: StrategicObjective[],
   keyResults: KeyResult[],
-  periodType: PeriodType = 'monthly'
+  periodType: PeriodType = 'monthly',
+  options?: {
+    selectedMonth?: number;
+    selectedYear?: number;
+  }
 ): RumoCalculations => {
   return useMemo(() => {
     const krProgress = new Map<string, number>();
     const objectiveProgress = new Map<string, number>();
     const pillarProgress = new Map<string, number>();
 
-    // Get current month/year
+    // Get current month/year OR use selected month/year
     const now = new Date();
-    const currentMonth = now.getMonth() + 1; // 1-12
-    const currentYear = now.getFullYear();
+    const currentMonth = options?.selectedMonth ?? (now.getMonth() + 1);
+    const currentYear = options?.selectedYear ?? now.getFullYear();
     const monthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
 
     // Calculate KR progress using pre-calculated database fields
@@ -35,7 +39,26 @@ export const useRumoCalculations = (
       
       // Use pre-calculated percentages from database based on period type
       if (periodType === 'monthly') {
-        progress = kr.monthly_percentage || 0;
+        // Se mês customizado foi fornecido, recalcular
+        if (options?.selectedMonth && options?.selectedYear) {
+          const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
+          const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+          
+          const monthTarget = monthlyTargets[monthKey] || 0;
+          const monthActual = monthlyActual[monthKey] || 0;
+          
+          // Usar mesma lógica do banco para calcular percentage
+          if (monthTarget > 0 && monthActual > 0) {
+            if (kr.target_direction === 'minimize') {
+              progress = ((monthTarget - monthActual) / monthTarget) * 100 + 100;
+            } else {
+              progress = (monthActual / monthTarget) * 100;
+            }
+          }
+        } else {
+          // Usar valor pré-calculado do mês atual
+          progress = kr.monthly_percentage || 0;
+        }
       } else if (periodType === 'ytd') {
         progress = kr.ytd_percentage || 0;
       } else if (periodType === 'yearly') {
@@ -91,7 +114,7 @@ export const useRumoCalculations = (
       finalScore,
       hasData,
     };
-  }, [pillars, objectives, keyResults, periodType]);
+  }, [pillars, objectives, keyResults, periodType, options?.selectedMonth, options?.selectedYear]);
 };
 
 export const getPerformanceColor = (progress: number): string => {

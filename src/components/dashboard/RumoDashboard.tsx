@@ -6,11 +6,19 @@ import { RumoObjectiveBlock } from './RumoObjectiveBlock';
 import { RumoLegend } from './RumoLegend';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Compass, Calendar, TrendingUp, Target } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 export const RumoDashboard = () => {
   const [periodType, setPeriodType] = useState<PeriodType>('ytd');
+  
+  // Inicializar com o último mês fechado (mês anterior)
+  const previousMonth = new Date();
+  previousMonth.setMonth(previousMonth.getMonth() - 1);
+  const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
+  
   const { pillars, objectives, keyResults, loading } = useStrategicMap();
   
   // Processar dados para aninhar objetivos dentro dos pilares
@@ -21,13 +29,39 @@ export const RumoDashboard = () => {
     }));
   }, [pillars, objectives]);
   
+  // Gerar lista de meses disponíveis (últimos 24 meses)
+  const monthOptions = useMemo(() => {
+    const options = [];
+    const now = new Date();
+    
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      
+      options.push({
+        value: `${year}-${month.toString().padStart(2, '0')}`,
+        label: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+          .replace(/^\w/, c => c.toUpperCase())
+      });
+    }
+    
+    return options;
+  }, []);
+  
   const { 
     pillarProgress, 
     objectiveProgress, 
     krProgress, 
     finalScore,
     hasData 
-  } = useRumoCalculations(pillarsWithObjectives, objectives, keyResults, periodType);
+  } = useRumoCalculations(
+    pillarsWithObjectives, 
+    objectives, 
+    keyResults, 
+    periodType,
+    periodType === 'monthly' ? { selectedMonth, selectedYear } : undefined
+  );
 
   if (loading) {
     return (
@@ -93,7 +127,7 @@ export const RumoDashboard = () => {
               className="gap-2"
             >
               <Calendar className="w-4 h-4" />
-              {new Date().toLocaleDateString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + new Date().toLocaleDateString('pt-BR', { month: 'long' }).slice(1)}
+              Mês
             </Button>
             <Button
               variant={periodType === 'yearly' ? 'default' : 'ghost'}
@@ -105,6 +139,30 @@ export const RumoDashboard = () => {
               Ano
             </Button>
           </div>
+          
+          {/* Select de Mês - Aparece ao lado quando monthly está selecionado */}
+          {periodType === 'monthly' && (
+            <Select
+              value={`${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`}
+              onValueChange={(value) => {
+                const [year, month] = value.split('-');
+                setSelectedYear(parseInt(year));
+                setSelectedMonth(parseInt(month));
+              }}
+            >
+              <SelectTrigger className="h-9 w-[200px] gap-2">
+                <Calendar className="w-4 h-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           {/* Final Score */}
           <Card className={`px-6 py-3 border-2 ${getFinalScoreColor()}`}>
@@ -148,6 +206,8 @@ export const RumoDashboard = () => {
                             keyResults={keyResults}
                             krProgress={krProgress}
                             selectedPeriod={periodType}
+                            selectedMonth={periodType === 'monthly' ? selectedMonth : undefined}
+                            selectedYear={periodType === 'monthly' ? selectedYear : undefined}
                           />
                         );
                       })}

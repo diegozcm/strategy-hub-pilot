@@ -16,6 +16,8 @@ interface RumoObjectiveBlockProps {
   keyResults: KeyResult[];
   krProgress: Map<string, number>;
   selectedPeriod: 'ytd' | 'monthly' | 'yearly';
+  selectedMonth?: number;
+  selectedYear?: number;
 }
 
 export const RumoObjectiveBlock = ({ 
@@ -23,7 +25,9 @@ export const RumoObjectiveBlock = ({
   progress, 
   keyResults,
   krProgress,
-  selectedPeriod
+  selectedPeriod,
+  selectedMonth,
+  selectedYear
 }: RumoObjectiveBlockProps) => {
   const performance = getPerformanceColor(progress);
   const styles = getPerformanceStyles(performance);
