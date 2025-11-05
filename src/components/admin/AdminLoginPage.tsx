@@ -22,7 +22,7 @@ export const AdminLoginPage: React.FC = () => {
 
   // Aguardar o contexto user ficar disponível e validar permissões de admin
   useEffect(() => {
-    if (user && !authLoading && !adminCheckLoading && loading) {
+    if (user && !authLoading && !adminCheckLoading && isSystemAdmin !== undefined && loading) {
       console.log('✅ User context ready, checking admin status...');
       
       if (isSystemAdmin) {
