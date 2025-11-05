@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Building2, Target, Users, TrendingUp, Lightbulb, Heart, Edit, Trash2, MoreVertical } from 'lucide-react';
+import { Plus, Building2, Target, Users, TrendingUp, Lightbulb, Heart, Edit, Trash2, MoreVertical, CalendarDays, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
@@ -66,6 +67,15 @@ export const StrategicMapPage = () => {
   const [showAddKRModal, setShowAddKRModal] = useState(false);
   const [targetObjectiveId, setTargetObjectiveId] = useState<string>('');
 
+  // Period selection states
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
+  
+  // Inicializar com o último mês fechado (mês anterior)
+  const previousMonth = new Date();
+  previousMonth.setMonth(previousMonth.getMonth() - 1);
+  const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
+
   // Check URL parameters on component mount and when search params change
   React.useEffect(() => {
     const openCreateKR = searchParams.get('openCreateKR');
@@ -87,6 +97,26 @@ export const StrategicMapPage = () => {
     newSearchParams.delete('objectiveId');
     setSearchParams(newSearchParams);
   };
+
+  // Gerar lista de meses disponíveis (últimos 24 meses)
+  const monthOptions = React.useMemo(() => {
+    const options = [];
+    const now = new Date();
+    
+    for (let i = 0; i < 24; i++) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      
+      options.push({
+        value: `${year}-${month.toString().padStart(2, '0')}`,
+        label: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+          .replace(/^\w/, c => c.toUpperCase())
+      });
+    }
+    
+    return options;
+  }, []);
 
   // Handle KR creation with toast feedback
   const handleSaveKeyResult = async (keyResultData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => {
@@ -233,6 +263,68 @@ export const StrategicMapPage = () => {
           </div>
         </CardContent>
       </Card>
+      )}
+
+      {/* Period Selector - Below Company Data */}
+      {!isInitialLoading && (
+        <div className="flex items-center gap-2">
+          {/* Botões de Período - Sempre visíveis */}
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
+            <Button
+              variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('ytd')}
+              className="gap-2"
+            >
+              <TrendingUp className="w-4 h-4" />
+              YTD
+            </Button>
+            
+            <Button
+              variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('yearly')}
+              className="gap-2"
+            >
+              <Target className="w-4 h-4" />
+              Ano
+            </Button>
+            
+            <Button
+              variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('monthly')}
+              className="gap-2"
+            >
+              <CalendarDays className="w-4 h-4" />
+              Mês
+            </Button>
+          </div>
+          
+          {/* Select de Mês - Aparece ao lado quando monthly está selecionado */}
+          {selectedPeriod === 'monthly' && (
+            <Select
+              value={`${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`}
+              onValueChange={(value) => {
+                const [year, month] = value.split('-');
+                setSelectedYear(parseInt(year));
+                setSelectedMonth(parseInt(month));
+              }}
+            >
+              <SelectTrigger className="h-9 w-[180px] gap-2">
+                <Calendar className="w-4 h-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {monthOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       )}
 
       <Separator />
@@ -388,15 +480,18 @@ export const StrategicMapPage = () => {
                               {pillarObjectives.slice(0, 3).map((objective) => {
                                 const objectiveKRs = keyResults.filter(kr => kr.objective_id === objective.id);
                                 return (
-                                  <ObjectiveCard
-                                    key={objective.id}
-                                    objective={objective}
-                                    compact
-                                    keyResults={objectiveKRs}
-                                    pillar={pillar}
-                                    onAddResultadoChave={createKeyResult}
-                                    onRefreshData={refreshData}
-                                  />
+                                <ObjectiveCard
+                                  key={objective.id}
+                                  objective={objective}
+                                  compact
+                                  keyResults={objectiveKRs}
+                                  pillar={pillar}
+                                  onAddResultadoChave={createKeyResult}
+                                  onRefreshData={refreshData}
+                                  selectedPeriod={selectedPeriod}
+                                  selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
+                                  selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
+                                />
                                 );
                               })}
                               {pillarObjectives.length > 3 && (
