@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { useIsSystemAdmin } from '@/hooks/useIsSystemAdmin';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 interface AdminProtectedRouteProps {
@@ -8,7 +9,10 @@ interface AdminProtectedRouteProps {
 }
 
 export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) => {
-  const { user, profile, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { data: isSystemAdmin, isLoading: adminCheckLoading } = useIsSystemAdmin();
+
+  const loading = authLoading || adminCheckLoading;
 
   if (loading) {
     return (
@@ -22,14 +26,9 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
     return <Navigate to="/admin-login" replace />;
   }
 
-  // Verificação de acesso admin: hardcoded emails ou perfil admin ativo
-  const isSystemAdmin = (
-    (user.email === 'admin@example.com' || user.email === 'diego@cofound.com.br') ||
-    (profile?.role === 'admin' && profile?.status === 'active')
-  );
-  
   if (!isSystemAdmin) {
     return <Navigate to="/auth" replace />;
   }
+
   return <>{children}</>;
 };

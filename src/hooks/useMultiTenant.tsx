@@ -44,11 +44,13 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // State for system admin check
+  const [isSystemAdmin, setIsSystemAdmin] = useState(false);
+  
   const permissions = profile ? getPermissions(profile.role) : { read: false, write: false, delete: false };
   const canEdit = permissions.write;
   const canDelete = permissions.delete;
   const canAdmin = permissions.admin || false;
-  const isSystemAdmin = profile?.role === 'admin';
   const isCompanyAdmin = profile?.role === 'admin';
 
   // Handle first login password change
@@ -69,10 +71,34 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     signOut();
   };
 
+  // Check if user is system admin using database function
+  const checkIsSystemAdmin = async (userId: string) => {
+    try {
+      const { data, error } = await supabase.rpc('is_system_admin', {
+        _user_id: userId
+      });
+
+      if (error) {
+        console.error('❌ Error checking system admin status:', error);
+        setIsSystemAdmin(false);
+        return;
+      }
+
+      setIsSystemAdmin(data === true);
+      console.log(`🔐 System admin check for ${userId}: ${data === true}`);
+    } catch (error) {
+      console.error('❌ Unexpected error checking system admin:', error);
+      setIsSystemAdmin(false);
+    }
+  };
+
   // Load profile data - simplified version without auth.users access
   const loadUserProfile = async (userId: string) => {
     try {
       console.log(`📋 Loading profile for user ${userId}`);
+      
+      // Check system admin status
+      await checkIsSystemAdmin(userId);
       
       const { data: profile, error: profileError } = await supabase
         .from('profiles')

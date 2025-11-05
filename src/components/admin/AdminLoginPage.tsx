@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { useIsSystemAdmin } from '@/hooks/useIsSystemAdmin';
 import { useNavigate } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,7 +16,8 @@ export const AdminLoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { data: isSystemAdmin, isLoading: adminCheckLoading } = useIsSystemAdmin();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,18 +52,14 @@ export const AdminLoginPage: React.FC = () => {
     }
   };
 
-  // Redirecionar automaticamente se já estiver autenticado como admin (evita segunda tentativa)
+  // Redirecionar automaticamente se já estiver autenticado como admin
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || adminCheckLoading) return;
 
-    const isHardcodedAdmin =
-      user?.email === 'admin@example.com' || user?.email === 'diego@cofound.com.br';
-    const isProfileAdmin = profile?.role === 'admin' && profile?.status === 'active';
-
-    if (user && (isHardcodedAdmin || isProfileAdmin)) {
+    if (user && isSystemAdmin) {
       navigate('/app/admin', { replace: true });
     }
-  }, [user, profile, authLoading, navigate]);
+  }, [user, isSystemAdmin, authLoading, adminCheckLoading, navigate]);
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">

@@ -36,12 +36,11 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     return <Navigate to={fallbackPath} replace />;
   }
 
-  // Check admin requirement
+  // Check admin requirement (via context)
   if (requireAdmin) {
-    const isHardcodedAdmin = user?.email === 'admin@example.com' || user?.email === 'diego@cofound.com.br';
-    const isProfileAdmin = profile?.role === 'admin' && profile?.status === 'active';
+    const { isSystemAdmin } = useAuth();
     
-    if (!isHardcodedAdmin && !isProfileAdmin) {
+    if (!isSystemAdmin) {
       return <Navigate to="/auth" replace />;
     }
   }
