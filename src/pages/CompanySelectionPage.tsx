@@ -15,7 +15,7 @@ export const CompanySelectionPage: React.FC = () => {
   const [selectingCompanyId, setSelectingCompanyId] = useState<string | null>(null);
   const [error, setError] = useState('');
   
-  const { user, profile, fetchAllUserCompanies, switchCompany, signOut, isSystemAdmin, isLoadingSystemAdmin } = useAuth();
+  const { user, profile, fetchAllUserCompanies, switchCompany, signOut, isSystemAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -129,19 +129,15 @@ export const CompanySelectionPage: React.FC = () => {
               <div />
             )}
             <div className="flex items-center gap-2">
-              {isLoadingSystemAdmin ? (
-                <div className="h-10 w-48 bg-muted animate-pulse rounded-md" />
-              ) : (
-                isSystemAdmin && (
-                  <Button
-                    variant="default"
-                    onClick={() => navigate('/app/admin')}
-                    className="flex items-center gap-2"
-                  >
-                    <Shield className="h-4 w-4" />
-                    Console Administrativo
-                  </Button>
-                )
+              {isSystemAdmin && (
+                <Button
+                  variant="default"
+                  onClick={() => navigate('/app/admin')}
+                  className="flex items-center gap-2"
+                >
+                  <Shield className="h-4 w-4" />
+                  Console Administrativo
+                </Button>
               )}
               <Button
                 variant="outline"
