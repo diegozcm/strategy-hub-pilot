@@ -22,9 +22,6 @@ interface ObjectiveCardProps {
   pillar?: { id: string; name: string; color: string; } | null;
   onAddResultadoChave?: (resultadoChaveData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onRefreshData?: () => void;
-  selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
-  selectedMonth?: number;
-  selectedYear?: number;
 }
 
 const getProgressColor = (progress: number) => {
@@ -34,61 +31,20 @@ const getProgressColor = (progress: number) => {
   return 'bg-green-500';
 };
 
-const calculateObjectiveProgress = (
-  keyResults: KeyResult[], 
-  period: 'ytd' | 'monthly' | 'yearly' = 'ytd',
-  options?: {
-    selectedMonth?: number;
-    selectedYear?: number;
-  }
-) => {
+const calculateObjectiveProgress = (keyResults: KeyResult[]) => {
   if (keyResults.length === 0) return 0;
   
   const totalProgress = keyResults.reduce((sum, kr) => {
-    let percentage = 0;
-    
-    switch (period) {
-      case 'monthly':
-        // Se mês customizado foi fornecido, recalcular
-        if (options?.selectedMonth && options?.selectedYear) {
-          const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
-          const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-          const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
-          
-          const monthTarget = monthlyTargets[monthKey] || 0;
-          const monthActual = monthlyActual[monthKey] || 0;
-          percentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
-        } else {
-          // Usar valor pré-calculado do mês atual
-          percentage = kr.monthly_percentage || 0;
-        }
-        break;
-      case 'yearly':
-        percentage = kr.yearly_percentage || 0;
-        break;
-      case 'ytd':
-      default:
-        percentage = kr.ytd_percentage || 0;
-        break;
-    }
-    
-    return sum + percentage;
+    const currentValue = kr.yearly_actual || kr.current_value || 0;
+    const targetValue = kr.yearly_target || kr.target_value || 1;
+    const progress = targetValue > 0 ? Math.min((currentValue / targetValue) * 100, 100) : 0;
+    return sum + progress;
   }, 0);
   
   return Math.round(totalProgress / keyResults.length);
 };
 
-export const ObjectiveCard = ({ 
-  objective, 
-  compact = false, 
-  keyResults = [], 
-  pillar, 
-  onAddResultadoChave, 
-  onRefreshData,
-  selectedPeriod = 'ytd',
-  selectedMonth,
-  selectedYear
-}: ObjectiveCardProps) => {
+export const ObjectiveCard = ({ objective, compact = false, keyResults = [], pillar, onAddResultadoChave, onRefreshData }: ObjectiveCardProps) => {
   const [showResultadoChaveForm, setShowResultadoChaveForm] = useState(false);
   const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
   const [isEditKeyResultModalOpen, setIsEditKeyResultModalOpen] = useState(false);
@@ -99,11 +55,7 @@ export const ObjectiveCard = ({
   const [plans, setPlans] = useState<any[]>([]);
   const { toast } = useToast();
   const { company } = useAuth();
-  const progressPercentage = calculateObjectiveProgress(
-    keyResults, 
-    selectedPeriod,
-    selectedPeriod === 'monthly' ? { selectedMonth, selectedYear } : undefined
-  );
+  const progressPercentage = calculateObjectiveProgress(keyResults);
 
   // Fetch pillars and plans for the modal
   useEffect(() => {
@@ -261,9 +213,6 @@ export const ObjectiveCard = ({
           onOpenKeyResultDetails={handleOpenKeyResultDetails}
           pillars={pillars}
           progressPercentage={progressPercentage}
-          selectedPeriod={selectedPeriod}
-          selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-          selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
         />
 
         {/* KR Overview Modal (compact mode) */}
@@ -390,7 +339,6 @@ export const ObjectiveCard = ({
                       resultadoChave={kr}
                       pillar={pillar}
                       onOpenDetails={handleOpenKeyResultDetails}
-                      selectedPeriod={selectedPeriod}
                     />
                   ))}
                 </div>
@@ -458,9 +406,6 @@ export const ObjectiveCard = ({
         onOpenKeyResultDetails={handleOpenKeyResultDetails}
         pillars={pillars}
         progressPercentage={progressPercentage}
-        selectedPeriod={selectedPeriod}
-        selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-        selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
       />
     </>
   );
