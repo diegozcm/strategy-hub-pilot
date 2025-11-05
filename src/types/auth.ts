@@ -72,6 +72,7 @@ export interface AuthContextType {
   canDelete: boolean;
   canAdmin: boolean;
   isSystemAdmin: boolean;
+  isLoadingSystemAdmin: boolean;
   isCompanyAdmin: boolean;
   switchCompany?: (companyId: string) => Promise<void>;
   clearCompanySelection?: (reason?: string) => void;
