@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { useNavigate } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsSystemAdmin } from '@/hooks/useIsSystemAdmin';
 
 export const AdminLoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -16,15 +17,27 @@ export const AdminLoginPage: React.FC = () => {
   const [error, setError] = useState('');
   
   const { user, loading: authLoading } = useAuth();
+  const { data: isSystemAdmin, isLoading: adminCheckLoading } = useIsSystemAdmin();
   const navigate = useNavigate();
 
-  // Aguardar o contexto user ficar disponível antes de navegar
+  // Aguardar o contexto user ficar disponível e validar permissões de admin
   useEffect(() => {
-    if (user && !authLoading && loading) {
-      console.log('✅ User context ready, navigating to admin panel');
-      navigate('/app/admin', { replace: true });
+    if (user && !authLoading && !adminCheckLoading && loading) {
+      console.log('✅ User context ready, checking admin status...');
+      
+      if (isSystemAdmin) {
+        console.log('✅ User is admin, navigating to admin panel');
+        navigate('/app/admin', { replace: true });
+      } else {
+        console.log('❌ User is NOT admin, blocking access');
+        setError('Você não tem permissões de administrador. Entre com uma conta admin.');
+        setLoading(false);
+        
+        // Fazer logout para limpar a sessão
+        supabase.auth.signOut();
+      }
     }
-  }, [user, authLoading, loading, navigate]);
+  }, [user, authLoading, adminCheckLoading, isSystemAdmin, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
