@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Building, Users, Shield, Activity, TrendingUp, AlertTriangle } from 'lucide-react';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { AdminDashboardSkeleton } from './AdminDashboardSkeleton';
 
 interface AdminStats {
   totalCompanies: number;
@@ -32,33 +32,20 @@ export const AdminDashboard: React.FC = () => {
     try {
       setLoading(true);
 
-      // Total companies
-      const { count: companiesCount } = await supabase
-        .from('companies')
-        .select('*', { count: 'exact', head: true });
-
-      // Total users
-      const { count: usersCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-
-      // Pending users
-      const { count: pendingCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-
-      // Active users
-      const { count: activeCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active');
-
-      // System admins
-      const { count: adminCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'admin');
+      // Executar todas as queries em paralelo para melhor performance
+      const [
+        { count: companiesCount },
+        { count: usersCount },
+        { count: pendingCount },
+        { count: activeCount },
+        { count: adminCount }
+      ] = await Promise.all([
+        supabase.from('companies').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('role', 'admin')
+      ]);
 
       setStats({
         totalCompanies: companiesCount || 0,
@@ -89,11 +76,7 @@ export const AdminDashboard: React.FC = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <AdminDashboardSkeleton />;
   }
 
   const statsCards = [

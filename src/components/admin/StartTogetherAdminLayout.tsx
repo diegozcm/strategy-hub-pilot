@@ -176,50 +176,7 @@ const StartTogetherAdminSidebar: React.FC = () => {
 };
 
 export const StartTogetherAdminLayout: React.FC = () => {
-  const { user, profile, loading } = useAuth();
-  const navigate = useNavigate();
-
-  // Verificação de acesso - apenas admins
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  // Verificação de acesso admin - sincronizada com AdminProtectedRoute
-  const isSystemAdmin = (
-    (user?.email === 'admin@example.com' || user?.email === 'diego@cofound.com.br') ||
-    (profile?.role === 'admin' && profile?.status === 'active')
-  );
-  
-  if (!user || !isSystemAdmin) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="w-full max-w-md p-6">
-          <div className="text-center space-y-4">
-            <div className="w-12 h-12 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
-              <User className="w-6 h-6 text-destructive" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Acesso Negado</h2>
-              <p className="text-sm text-muted-foreground">
-                Você precisa ser administrador para acessar esta área.
-              </p>
-            </div>
-            <Button 
-              onClick={() => navigate('/auth')} 
-              className="w-full"
-            >
-              Fazer Login
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
-
+  // Remover verificação duplicada - AdminProtectedRoute já valida o acesso
   return (
     <SidebarProvider>
       <div className="min-h-screen w-full bg-background">

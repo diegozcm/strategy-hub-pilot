@@ -39,56 +39,15 @@ export const AdminLoginPage: React.FC = () => {
         return;
       }
       
-      // Aguardar profile ser carregado
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Buscar profile atualizado
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      
-      if (currentUser) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('role, status')
-          .eq('user_id', currentUser.id)
-          .single();
-        
-        const isHardcodedAdmin = currentUser.email === 'admin@example.com' || 
-                                currentUser.email === 'diego@cofound.com.br';
-        const isProfileAdmin = profileData?.role === 'admin' && profileData?.status === 'active';
-        
-        if (isHardcodedAdmin || isProfileAdmin) {
-          navigate('/app/admin');
-        } else {
-          setError('Acesso negado. Apenas administradores podem acessar esta área.');
-        }
-      }
+      // Redirecionar imediatamente - AdminProtectedRoute validará o acesso
+      navigate('/app/admin');
     } catch (err) {
       setError('Erro ao tentar fazer login. Tente novamente.');
-    } finally {
       setLoading(false);
     }
   };
 
-  // Show loading while auth is being determined
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  // If user is already logged in and is admin, don't show login form
-  const isHardcodedAdmin = user?.email === 'admin@example.com' || user?.email === 'diego@cofound.com.br';
-  const isProfileAdmin = profile?.role === 'admin';
-  
-  if (user && (isHardcodedAdmin || isProfileAdmin)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
+  // Remover verificação duplicada - o redirect acontece via AdminProtectedRoute
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
