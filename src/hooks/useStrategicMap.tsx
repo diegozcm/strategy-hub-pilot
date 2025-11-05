@@ -311,24 +311,72 @@ export const useStrategicMap = () => {
   };
 
   // Calculate progress
-  const calculateObjectiveProgress = (objectiveId: string): number => {
+  const calculateObjectiveProgress = (
+    objectiveId: string,
+    period: 'ytd' | 'monthly' | 'yearly' = 'ytd',
+    options?: {
+      selectedMonth?: number;
+      selectedYear?: number;
+    }
+  ): number => {
     const objectiveKRs = keyResults.filter(kr => kr.objective_id === objectiveId);
     if (objectiveKRs.length === 0) return 0;
     
     const totalProgress = objectiveKRs.reduce((sum, kr) => {
-      const progress = kr.target_value > 0 ? (kr.current_value / kr.target_value) * 100 : 0;
-      return sum + Math.min(progress, 100);
+      let percentage = 0;
+      
+      switch (period) {
+        case 'monthly':
+          // Se mês customizado foi fornecido, recalcular
+          if (options?.selectedMonth && options?.selectedYear) {
+            const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
+            const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
+            const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+            
+            const monthTarget = monthlyTargets[monthKey] || 0;
+            const monthActual = monthlyActual[monthKey] || 0;
+            
+            // Usar mesma lógica do banco para calcular percentage
+            if (monthTarget > 0 && monthActual > 0) {
+              if (kr.target_direction === 'minimize') {
+                percentage = ((monthTarget - monthActual) / monthTarget) * 100 + 100;
+              } else {
+                percentage = (monthActual / monthTarget) * 100;
+              }
+            }
+          } else {
+            // Usar valor pré-calculado do mês atual
+            percentage = kr.monthly_percentage || 0;
+          }
+          break;
+        case 'yearly':
+          percentage = kr.yearly_percentage || 0;
+          break;
+        case 'ytd':
+        default:
+          percentage = kr.ytd_percentage || 0;
+          break;
+      }
+      
+      return sum + percentage;
     }, 0);
     
     return Math.round(totalProgress / objectiveKRs.length);
   };
 
-  const calculatePillarProgress = (pillarId: string): number => {
+  const calculatePillarProgress = (
+    pillarId: string,
+    period: 'ytd' | 'monthly' | 'yearly' = 'ytd',
+    options?: {
+      selectedMonth?: number;
+      selectedYear?: number;
+    }
+  ): number => {
     const pillarObjectives = objectives.filter(obj => obj.pillar_id === pillarId);
     if (pillarObjectives.length === 0) return 0;
     
     const totalProgress = pillarObjectives.reduce((sum, obj) => {
-      return sum + calculateObjectiveProgress(obj.id);
+      return sum + calculateObjectiveProgress(obj.id, period, options);
     }, 0);
     
     return Math.round(totalProgress / pillarObjectives.length);

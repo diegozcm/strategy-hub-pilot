@@ -409,7 +409,11 @@ export const StrategicMapPage = () => {
                 {/* Pilares Existentes */}
                 <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-4">
                   {pillars.map((pillar) => {
-                    const progress = calculatePillarProgress(pillar.id);
+                    const progress = calculatePillarProgress(
+                      pillar.id, 
+                      selectedPeriod,
+                      selectedPeriod === 'monthly' ? { selectedMonth, selectedYear } : undefined
+                    );
                     const pillarObjectives = objectives.filter(obj => obj.pillar_id === pillar.id);
 
                     return (
