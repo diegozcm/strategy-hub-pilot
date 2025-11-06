@@ -48,6 +48,32 @@ export const AuthPage: React.FC = () => {
     });
   }, []);
 
+  // Timeout de segurança: força reavaliação após 5s se não navegar
+  useEffect(() => {
+    if (!isPasswordReset && user && !authLoading) {
+      const timeoutId = setTimeout(() => {
+        if (location.pathname === '/auth') {
+          console.warn('⚠️ Navigation timeout - forcing re-evaluation');
+          logStep('AuthPage:navigation:timeout', {
+            hasUser: !!user,
+            hasProfile: !!profile,
+            hasCompany: !!company,
+            authLoading
+          });
+          
+          // Se temos user mas ainda estamos em /auth, algo deu errado
+          if (user && profile && profile.status === 'active') {
+            const destination = company ? '/app/dashboard' : '/company-selection';
+            console.log(`🔄 Forcing navigation to ${destination}`);
+            navigate(destination, { replace: true });
+          }
+        }
+      }, 5000);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [user, profile, company, authLoading, isPasswordReset, location.pathname, navigate]);
+
   useEffect(() => {
     // Handle password reset session
     if (isPasswordReset && accessToken && refreshToken) {
@@ -78,7 +104,7 @@ export const AuthPage: React.FC = () => {
       currentPath: location.pathname
     });
 
-    // Navigate only when ALL data is loaded (including auth loading complete)
+    // Navigate only when ALL data is loaded
     if (!isPasswordReset && !authLoading && user && profile && profile.status === 'active') {
       if (company) {
         logStep('AuthPage:navigation:go', { to: '/app/dashboard' });

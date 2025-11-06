@@ -218,20 +218,6 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       console.log(`⚡ Profile loaded in ${durationMs}ms`);
       logStep('Profile:load:done', { durationMs });
       
-      // Auto-redirect if we have everything and not logging out
-      if (profileData && activeCompanies?.length > 0 && !isLoggingOut) {
-        setTimeout(() => {
-          const currentCompany = activeCompanies.length === 1 ? activeCompanies[0].companies : null;
-          if (currentCompany) {
-            logStep('Profile:load:auto-redirect-ready', { 
-              hasProfile: !!profileData,
-              hasCompany: !!currentCompany,
-              destination: '/app/dashboard'
-            });
-          }
-        }, 100);
-      }
-      
     } catch (error) {
       console.error('Error loading profile:', error);
       setProfile(null);
