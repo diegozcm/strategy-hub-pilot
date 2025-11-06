@@ -63,32 +63,65 @@ export const AdminDashboard: React.FC = () => {
 
   const fetchRecentLogins = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch login logs
+      const { data: logs, error: logsError } = await supabase
         .from('user_login_logs')
-        .select(`
-          id,
-          user_id,
-          company_id,
-          login_time,
-          profiles!user_login_logs_user_id_fkey (
-            first_name,
-            last_name,
-            email,
-            role
-          ),
-          companies (
-            name
-          )
-        `)
+        .select('*')
         .order('login_time', { ascending: false })
         .limit(10);
 
-      if (error) {
-        console.error('Error fetching recent logins:', error);
+      if (logsError) {
+        console.error('Error fetching recent logins:', logsError);
         return;
       }
 
-      setRecentLogins(data || []);
+      if (!logs || logs.length === 0) {
+        setRecentLogins([]);
+        return;
+      }
+
+      // Extract unique user IDs and company IDs
+      const userIds = [...new Set(logs.map(log => log.user_id))];
+      const companyIds = [...new Set(logs.map(log => log.company_id).filter(Boolean))];
+
+      // Fetch profiles for these users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name, email, role')
+        .in('user_id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+
+      // Fetch companies (if any)
+      let companies: any[] = [];
+      if (companyIds.length > 0) {
+        const { data: companiesData, error: companiesError } = await supabase
+          .from('companies')
+          .select('id, name')
+          .in('id', companyIds);
+
+        if (companiesError) {
+          console.error('Error fetching companies:', companiesError);
+        } else {
+          companies = companiesData || [];
+        }
+      }
+
+      // Map profiles and companies to logs
+      const enrichedLogs = logs.map(log => {
+        const profile = profiles?.find(p => p.user_id === log.user_id);
+        const company = companies.find(c => c.id === log.company_id);
+
+        return {
+          ...log,
+          profiles: profile,
+          companies: company
+        };
+      });
+
+      setRecentLogins(enrichedLogs);
     } catch (error) {
       console.error('Error fetching recent logins:', error);
     }
