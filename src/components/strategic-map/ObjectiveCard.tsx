@@ -399,6 +399,8 @@ export const ObjectiveCard = ({
                       pillar={pillar}
                       onOpenDetails={handleOpenKeyResultDetails}
                       selectedPeriod={selectedPeriod}
+                      selectedMonth={selectedMonth}
+                      selectedYear={selectedYear}
                     />
                   ))}
                 </div>
