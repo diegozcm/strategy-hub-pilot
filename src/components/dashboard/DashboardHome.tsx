@@ -1002,6 +1002,8 @@ export const DashboardHome: React.FC = () => {
           objectives={objectives}
           showDeleteButton={true}
           initialPeriod={periodType}
+          initialMonth={selectedMonth}
+          initialYear={selectedMonthYear}
         />
       )}
     </div>
