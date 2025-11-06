@@ -118,10 +118,28 @@ export function startAttempt(context?: Record<string, any>): string {
 
 export function logStep(step: string, data?: any, attemptId?: string) {
   try {
-    const targetId = attemptId || currentAttemptId;
+    let targetId = attemptId || currentAttemptId;
+    
+    // If no active attempt, create a global "session" attempt
     if (!targetId) {
-      console.warn('[LoginTrace] No active attempt for step:', step);
-      return;
+      const buffer = getBuffer();
+      let sessionAttempt = buffer.find(a => a.id.startsWith('session_') && !a.endedAt);
+      
+      if (!sessionAttempt) {
+        targetId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        sessionAttempt = {
+          id: targetId,
+          startedAt: Date.now(),
+          steps: []
+        };
+        buffer.push(sessionAttempt);
+        if (buffer.length > MAX_ATTEMPTS) {
+          buffer.shift();
+        }
+        saveBuffer(buffer);
+      } else {
+        targetId = sessionAttempt.id;
+      }
     }
     
     const buffer = getBuffer();
