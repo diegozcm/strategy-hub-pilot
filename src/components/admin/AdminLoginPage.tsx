@@ -32,7 +32,7 @@ export const AdminLoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -46,9 +46,29 @@ export const AdminLoginPage: React.FC = () => {
         setLoading(false);
         return;
       }
+
+      // Check if user is System Admin - BLOCK if not
+      const { data: isAdmin, error: adminError } = await supabase.rpc('is_system_admin', {
+        _user_id: data.user.id
+      });
+
+      if (adminError) {
+        console.error('Error checking admin status:', adminError);
+        setError('Erro ao verificar permissões.');
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+
+      if (isAdmin !== true) {
+        console.warn('🚫 Normal user blocked from /admin-login');
+        setError('Acesso negado. Esta área é restrita a administradores do sistema.');
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
       
-      // Não navegar imediatamente - aguardar o useEffect detectar user
-      console.log('✅ Login successful, waiting for user context...');
+      console.log('✅ Admin login successful, waiting for user context...');
     } catch (err) {
       setError('Erro ao tentar fazer login. Tente novamente.');
       setLoading(false);

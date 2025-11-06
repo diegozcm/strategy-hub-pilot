@@ -92,7 +92,106 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Load profile data - simplified version without auth.users access
+  // Load profile data - OPTIMIZED for normal users (no admin checks)
+  const loadUserProfileOptimized = async (userId: string) => {
+    const startTime = performance.now();
+    
+    try {
+      console.log(`📋 [OPTIMIZED] Loading profile for user ${userId}`);
+      
+      // Single query with JOIN to get profile + companies in one call
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          user_company_relations!inner(
+            company_id,
+            role,
+            companies!inner(
+              id,
+              name,
+              status,
+              company_type,
+              owner_id,
+              mission,
+              vision,
+              values,
+              logo_url,
+              created_at,
+              updated_at
+            )
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('user_company_relations.companies.status', 'active')
+        .single();
+
+      if (profileError) {
+        if (profileError.code === 'PGRST116') {
+          console.log('👤 Profile not found');
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+        throw profileError;
+      }
+
+      setProfile(profileData as UserProfile);
+      console.log('📋 Profile loaded successfully');
+
+      // Check if user must change password
+      if (profileData?.must_change_password === true) {
+        console.log('🔐 User must change password - showing modal');
+        setShowFirstLoginModal(true);
+        setLoading(false);
+        return;
+      }
+
+      // Auto-select company if user has only one
+      const userCompanies = (profileData as any)?.user_company_relations || [];
+      const activeCompanies = userCompanies
+        .map((relation: any) => relation.companies)
+        .filter(Boolean);
+
+      if (activeCompanies.length === 1) {
+        const company = activeCompanies[0];
+        console.log('✅ Auto-selected single company:', company.name);
+        
+        setCompany({
+          ...company,
+          active: company.status === 'active'
+        } as Company);
+        setSelectedCompanyId(company.id);
+        localStorage.setItem('selectedCompanyId', company.id);
+      } else if (activeCompanies.length > 1) {
+        // Check for persisted company
+        const persistedCompanyId = localStorage.getItem('selectedCompanyId');
+        if (persistedCompanyId) {
+          const persistedCompany = activeCompanies.find((c: any) => c.id === persistedCompanyId);
+          if (persistedCompany) {
+            console.log('✅ Restored persisted company:', persistedCompany.name);
+            setCompany({
+              ...persistedCompany,
+              active: persistedCompany.status === 'active'
+            } as Company);
+            setSelectedCompanyId(persistedCompany.id);
+          }
+        }
+      }
+
+      setLoading(false);
+      
+      const endTime = performance.now();
+      console.log(`⚡ Profile loaded in ${(endTime - startTime).toFixed(0)}ms`);
+      
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      setProfile(null);
+      setLoading(false);
+    }
+  };
+
+  // Legacy function kept for admin usage only
   const loadUserProfile = async (userId: string) => {
     try {
       console.log(`📋 Loading profile for user ${userId}`);
@@ -109,7 +208,6 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       if (profileError) {
         console.error('Profile fetch error:', profileError);
         
-        // If profile not found, user needs to be created by trigger
         if (profileError.code === 'PGRST116') {
           console.log('👤 Profile not found - may need to be created by system');
           setProfile(null);
@@ -122,28 +220,23 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       console.log('📋 Profile loaded successfully:', profile);
       setProfile(profile as UserProfile);
 
-      // Check if user must change password
       if (profile?.must_change_password === true) {
         console.log('🔐 User must change password - showing modal');
         setShowFirstLoginModal(true);
       }
 
-      // Check if there's a persisted company selection
       const persistedCompanyId = localStorage.getItem('selectedCompanyId');
       if (persistedCompanyId) {
         console.log('🏢 Loading persisted company:', persistedCompanyId);
-        // Verify user still has access to this company
         const hasAccess = await verifyCompanyAccess(userId, persistedCompanyId);
         if (hasAccess) {
           await loadCompanyById(persistedCompanyId);
         } else {
           console.log('❌ User no longer has access to persisted company, removing from storage');
           localStorage.removeItem('selectedCompanyId');
-          // Try to auto-recover with available companies
           await autoRecoverCompany(userId);
         }
       } else {
-        // No persisted company, try to auto-recover
         await autoRecoverCompany(userId);
       }
     } catch (error) {
@@ -494,39 +587,31 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     console.log('📊 MultiTenantAuthProvider: Initializing...');
     
-    // Auth state listener - sem await direto para evitar deadlocks
+    // Auth state listener - OPTIMIZED for normal users
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('🔐 Auth state change:', event, !!session);
         
-        // Prevent automatic re-login during logout process
-        if (isLoggingOut) {
-          if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            console.log(`🚪 Ignoring ${event} during logout process`);
-            return;
-          }
+        // Prevent automatic re-login during logout
+        if (isLoggingOut && event !== 'SIGNED_OUT') {
+          console.log(`🚪 Ignoring ${event} during logout`);
+          return;
         }
         
         if (event === 'SIGNED_IN' && session) {
-          console.log('👤 User found, loading profile for:', session.user.email);
-          
-          // Setar session e user IMEDIATAMENTE (síncrono)
+          console.log('👤 User signed in:', session.user.email);
           setSession(session);
           setUser(session.user);
-          
-          // Deferir validação e carregamento de profile
-          setTimeout(() => {
-            validateSession(session).then(isValid => {
-              if (isValid) {
-                loadUserProfile(session.user.id);
-              } else {
-                console.warn('⚠️ Invalid session on SIGNED_IN, signing out');
-                signOut();
-              }
-            });
-          }, 0);
-        } else if (event === 'SIGNED_OUT' || !session) {
-          console.log('❌ No user session, clearing state');
+          loadUserProfileOptimized(session.user.id);
+        } 
+        else if (event === 'INITIAL_SESSION' && session) {
+          console.log('👤 Initial session found:', session.user.email);
+          setSession(session);
+          setUser(session.user);
+          loadUserProfileOptimized(session.user.id);
+        }
+        else if (event === 'SIGNED_OUT' || !session) {
+          console.log('❌ User signed out');
           setUser(null);
           setSession(null);
           setProfile(null);
@@ -536,38 +621,17 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           setOriginalAdmin(null);
           setImpersonationSession(null);
           setShowFirstLoginModal(false);
-          // Only clear selectedCompanyId if this is an intentional logout (not just token issues)
+          setLoading(false);
+          
           if (event === 'SIGNED_OUT') {
-            console.log('🏢 Clearing company selection due to explicit sign out');
             localStorage.removeItem('selectedCompanyId');
-          } else {
-            console.log('🔄 Preserving company selection for potential recovery');
           }
-        } else if (event === 'TOKEN_REFRESHED' && session) {
+        }
+        else if (event === 'TOKEN_REFRESHED' && session) {
           console.log('🔄 Token refreshed');
           setSession(session);
           setUser(session.user);
-        } else if (event === 'INITIAL_SESSION' && session) {
-          console.log('👤 Initial session found, loading profile for:', session.user.email);
-          
-          // Setar session e user IMEDIATAMENTE (síncrono)
-          setSession(session);
-          setUser(session.user);
-          
-          // Deferir validação e carregamento de profile
-          setTimeout(() => {
-            validateSession(session).then(isValid => {
-              if (isValid) {
-                loadUserProfile(session.user.id);
-              } else {
-                console.warn('⚠️ Invalid initial session, signing out');
-                signOut();
-              }
-            });
-          }, 0);
         }
-        
-        setLoading(false);
       }
     );
 
@@ -611,6 +675,45 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Sign in for NORMAL USERS ONLY - blocks System Admins
+  const signInNormalUser = async (email: string, password: string) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error('❌ Sign in error:', error);
+        return { error };
+      }
+
+      // Check if user is System Admin - BLOCK if true
+      const { data: isAdmin, error: adminError } = await supabase.rpc('is_system_admin', {
+        _user_id: data.user.id
+      });
+
+      if (adminError) {
+        console.error('❌ Error checking admin status:', adminError);
+        await supabase.auth.signOut();
+        return { error: new Error('Erro ao verificar permissões') };
+      }
+
+      if (isAdmin === true) {
+        console.warn('🚫 System Admin blocked from /auth login');
+        await supabase.auth.signOut();
+        return { error: { code: 'admin_blocked', message: 'Administradores devem usar /admin-login' } };
+      }
+
+      console.log('✅ Normal user sign in successful');
+      return { error: null };
+    } catch (error) {
+      console.error('❌ Unexpected sign in error:', error);
+      return { error };
+    }
+  };
+
+  // Legacy signIn kept for admin usage
   const signIn = async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -643,16 +746,11 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
 
   const signOut = async () => {
     try {
-      console.log('🚪 Starting sign out process...');
+      console.log('🚪 Starting sign out...');
       
-      // Set logout flag to prevent automatic re-login
       setIsLoggingOut(true);
       
-      // Determine user type for appropriate redirect
-      const isAdmin = profile?.role === 'admin';
-      const redirectPath = isAdmin ? '/admin-login' : '/auth';
-      
-      // Clear local state first
+      // Clear state
       setUser(null);
       setSession(null);
       setProfile(null);
@@ -663,54 +761,30 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       setImpersonationSession(null);
       setShowFirstLoginModal(false);
       
-      // Clear ALL Supabase-related localStorage keys
-      const keysToRemove = [
-        'selectedCompanyId',
-        'sb-pdpzxjlnaqwlyqoyoyhr-auth-token',
-        'supabase.auth.token',
-        'sb-auth-token'
-      ];
-      
-      // Remover TODAS as chaves relacionadas ao Supabase
-      console.log('🧹 Starting comprehensive localStorage cleanup');
+      // Clear localStorage
+      console.log('🧹 Clearing localStorage');
       const allKeys = Object.keys(localStorage);
-      let removedCount = 0;
-
       allKeys.forEach(key => {
         if (key.includes('sb-') || key.includes('supabase') || key === 'selectedCompanyId') {
           localStorage.removeItem(key);
-          console.log(`🧹 Cleared localStorage key: ${key}`);
-          removedCount++;
         }
       });
-
-      console.log(`✅ Removed ${removedCount} localStorage keys during logout`);
       
-      // Sign out from Supabase with global scope to invalidate refresh token on server
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      // Sign out from Supabase
+      await supabase.auth.signOut({ scope: 'global' });
       
-      if (error) {
-        console.warn('⚠️ Supabase sign out error (continuing anyway):', error);
-      } else {
-        console.log('✅ Supabase sign out successful');
-      }
+      // Clear flag immediately
+      setIsLoggingOut(false);
+      console.log('🔓 Logout complete');
       
-      // Reset logout flag after a delay to allow for navigation
-      setTimeout(() => {
-        setIsLoggingOut(false);
-        console.log('🔓 Logout process complete, flag cleared');
-      }, 3000);
-      
-      // Always navigate regardless of errors
-      console.log(`🔄 Redirecting to ${redirectPath}`);
-      navigate(redirectPath);
+      // Always redirect to /auth for normal users
+      // (System Admins use separate AdminLoginPage)
+      navigate('/auth');
       
     } catch (error) {
-      console.error('❌ Unexpected sign out error:', error);
-      // Reset logout flag and force navigation even on unexpected errors
+      console.error('❌ Sign out error:', error);
       setIsLoggingOut(false);
-      const redirectPath = profile?.role === 'admin' ? '/admin-login' : '/auth';
-      navigate(redirectPath);
+      navigate('/auth');
     }
   };
 
@@ -812,8 +886,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       loading,
       permissions,
       signIn,
-      // signUp removed - admin creates users
-      // signUp removed
+      signInNormalUser, // New: blocks System Admins
       signOut,
       updateProfile,
       canEdit,

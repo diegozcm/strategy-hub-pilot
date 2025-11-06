@@ -27,7 +27,7 @@ export const AuthPage: React.FC = () => {
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   
-  const { signIn, user, profile } = useAuth();
+  const { signInNormalUser, user, profile, company } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -52,18 +52,20 @@ export const AuthPage: React.FC = () => {
       return;
     }
 
-    // Regular redirect logic for authenticated users
-    if (!isPasswordReset && user) {
-      // Check if profile is already loaded and inactive
-      if (profile && profile.status === 'inactive') {
-        setError('Sua conta foi desativada. Entre em contato com um administrador.');
-        return;
+    // Navigate only when ALL data is loaded
+    if (!isPasswordReset && user && profile && profile.status === 'active') {
+      if (company) {
+        navigate('/app/dashboard', { replace: true });
+      } else {
+        navigate('/company-selection', { replace: true });
       }
-      
-      // Navigate immediately - company selection will handle profile loading
-      navigate('/company-selection', { replace: true });
     }
-  }, [user, profile, navigate, isPasswordReset, accessToken, refreshToken]);
+    
+    // Handle inactive profile
+    if (profile && profile.status === 'inactive') {
+      setError('Sua conta foi desativada. Entre em contato com um administrador.');
+    }
+  }, [user, profile, company, navigate, isPasswordReset, accessToken, refreshToken]);
 
   const handlePasswordResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,10 +156,16 @@ export const AuthPage: React.FC = () => {
     setError('');
 
     try {
-      const result = await signIn(email, password);
+      const result = await signInNormalUser(email, password);
       
       if (result.error) {
         setLoading(false);
+        
+        // Check if System Admin was blocked
+        if ((result.error as any).code === 'admin_blocked') {
+          setError('Acesso negado. Administradores devem usar o login administrativo.');
+          return;
+        }
         
         if (result.error.message?.includes('Invalid login credentials')) {
           setError('E-mail ou senha incorretos.');
@@ -167,7 +175,7 @@ export const AuthPage: React.FC = () => {
           setError(result.error.message);
         }
       }
-      // Se não houver erro, mantém loading ativo até que useEffect navegue
+      // Loading stays active until useEffect navigates
     } catch (error: any) {
       setLoading(false);
       setError('Ocorreu um erro inesperado. Tente novamente.');
