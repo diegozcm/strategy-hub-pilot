@@ -31,6 +31,9 @@ interface KROverviewModalProps {
   initialPeriod?: 'ytd' | 'monthly' | 'yearly';
   initialMonth?: number;
   initialYear?: number;
+  onPeriodChange?: (period: 'ytd' | 'monthly' | 'yearly') => void;
+  onMonthChange?: (month: number) => void;
+  onYearChange?: (year: number) => void;
 }
 
 export const KROverviewModal = ({ 
@@ -44,7 +47,10 @@ export const KROverviewModal = ({
   showDeleteButton = true,
   initialPeriod = 'ytd',
   initialMonth,
-  initialYear
+  initialYear,
+  onPeriodChange,
+  onMonthChange,
+  onYearChange
 }: KROverviewModalProps) => {
   const [showFCAModal, setShowFCAModal] = useState(false);
   const [showStatusReportModal, setShowStatusReportModal] = useState(false);
@@ -390,7 +396,10 @@ export const KROverviewModal = ({
                 <Button
                   variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => setSelectedPeriod('ytd')}
+                  onClick={() => {
+                    setSelectedPeriod('ytd');
+                    onPeriodChange?.('ytd');
+                  }}
                   className="gap-2"
                 >
                   <TrendingUp className="w-4 h-4" />
@@ -399,7 +408,10 @@ export const KROverviewModal = ({
                 <Button
                   variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => setSelectedPeriod('yearly')}
+                  onClick={() => {
+                    setSelectedPeriod('yearly');
+                    onPeriodChange?.('yearly');
+                  }}
                   className="gap-2"
                 >
                   <Target className="w-4 h-4" />
@@ -408,7 +420,10 @@ export const KROverviewModal = ({
                 <Button
                   variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
                   size="sm"
-                  onClick={() => setSelectedPeriod('monthly')}
+                  onClick={() => {
+                    setSelectedPeriod('monthly');
+                    onPeriodChange?.('monthly');
+                  }}
                   className="gap-2"
                 >
                   <CalendarDays className="w-4 h-4" />
@@ -428,8 +443,14 @@ export const KROverviewModal = ({
               selectedPeriod={selectedPeriod}
               selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
               selectedYear={selectedPeriod === 'monthly' ? selectedMonthYear : undefined}
-              onMonthChange={(month: number) => setSelectedMonth(month)}
-              onYearChange={(year: number) => setSelectedMonthYear(year)}
+              onMonthChange={(month: number) => {
+                setSelectedMonth(month);
+                onMonthChange?.(month);
+              }}
+              onYearChange={(year: number) => {
+                setSelectedMonthYear(year);
+                onYearChange?.(year);
+              }}
               monthOptions={generateMonthOptions()}
             />
 

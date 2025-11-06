@@ -25,6 +25,9 @@ interface ObjectiveCardProps {
   selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
   selectedMonth?: number;
   selectedYear?: number;
+  onPeriodChange?: (period: 'ytd' | 'monthly' | 'yearly') => void;
+  onMonthChange?: (month: number) => void;
+  onYearChange?: (year: number) => void;
 }
 
 const getProgressColor = (progress: number) => {
@@ -95,7 +98,10 @@ export const ObjectiveCard = ({
   onRefreshData,
   selectedPeriod = 'ytd',
   selectedMonth,
-  selectedYear
+  selectedYear,
+  onPeriodChange,
+  onMonthChange,
+  onYearChange
 }: ObjectiveCardProps) => {
   const [showResultadoChaveForm, setShowResultadoChaveForm] = useState(false);
   const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
@@ -294,6 +300,12 @@ export const ObjectiveCard = ({
           }}
           objectives={[{ id: objective.id, title: objective.title }]}
           showDeleteButton={false}
+          initialPeriod={selectedPeriod}
+          initialMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
+          initialYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
+          onPeriodChange={onPeriodChange}
+          onMonthChange={onMonthChange}
+          onYearChange={onYearChange}
         />
       </>
     );
@@ -456,6 +468,9 @@ export const ObjectiveCard = ({
         initialPeriod={selectedPeriod}
         initialMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
         initialYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
+        onPeriodChange={onPeriodChange}
+        onMonthChange={onMonthChange}
+        onYearChange={onYearChange}
       />
 
       {/* Objective Detail Modal */}

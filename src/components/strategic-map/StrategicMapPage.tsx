@@ -495,6 +495,9 @@ export const StrategicMapPage = () => {
                                   selectedPeriod={selectedPeriod}
                                   selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
                                   selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
+                                  onPeriodChange={setSelectedPeriod}
+                                  onMonthChange={setSelectedMonth}
+                                  onYearChange={setSelectedYear}
                                 />
                                 );
                               })}
