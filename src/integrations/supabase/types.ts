@@ -2469,6 +2469,44 @@ export type Database = {
           },
         ]
       }
+      user_login_logs: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          login_time: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          login_time?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          login_time?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_login_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_module_profiles: {
         Row: {
           created_at: string

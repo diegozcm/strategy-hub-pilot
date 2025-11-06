@@ -21,11 +21,11 @@ export const AdminDashboard: React.FC = () => {
     systemAdmins: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [recentLogins, setRecentLogins] = useState<any[]>([]);
 
   useEffect(() => {
     fetchAdminStats();
-    fetchRecentActivity();
+    fetchRecentLogins();
   }, []);
 
   const fetchAdminStats = async () => {
@@ -61,17 +61,36 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchRecentActivity = async () => {
+  const fetchRecentLogins = async () => {
     try {
-      const { data } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, email, created_at, status, role')
-        .order('created_at', { ascending: false })
-        .limit(5);
+      const { data, error } = await supabase
+        .from('user_login_logs')
+        .select(`
+          id,
+          user_id,
+          company_id,
+          login_time,
+          profiles!user_login_logs_user_id_fkey (
+            first_name,
+            last_name,
+            email,
+            role
+          ),
+          companies (
+            name
+          )
+        `)
+        .order('login_time', { ascending: false })
+        .limit(10);
 
-      setRecentActivity(data || []);
+      if (error) {
+        console.error('Error fetching recent logins:', error);
+        return;
+      }
+
+      setRecentLogins(data || []);
     } catch (error) {
-      console.error('Error fetching recent activity:', error);
+      console.error('Error fetching recent logins:', error);
     }
   };
 
@@ -150,51 +169,59 @@ export const AdminDashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Logins */}
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="text-foreground flex items-center">
             <Activity className="h-5 w-5 mr-2" />
-            Atividade Recente
+            Últimos Logins
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            Últimos usuários registrados no sistema
+            Últimos 10 logins de usuários no sistema
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {recentActivity.length > 0 ? (
-              recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center">
+            {recentLogins.length > 0 ? (
+              recentLogins.map((login) => (
+                <div key={login.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center flex-1">
                     <div className="bg-muted p-2 rounded-full mr-3">
                       <Users className="h-4 w-4 text-foreground" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm font-medium text-foreground">
-                        {activity.first_name} {activity.last_name}
+                        {login.profiles?.first_name} {login.profiles?.last_name}
                       </p>
-                      <p className="text-xs text-muted-foreground">{activity.email}</p>
+                      <p className="text-xs text-muted-foreground">{login.profiles?.email}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      activity.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
-                      activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
-                      'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                    }`}>
-                      {activity.status === 'active' ? 'Ativo' :
-                       activity.status === 'pending' ? 'Pendente' : 'Inativo'}
-                    </span>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {activity.role === 'admin' ? 'Admin' :
-                       activity.role === 'manager' ? 'Gestor' : 'Membro'}
+                  <div className="text-right ml-4">
+                    <p className="text-sm font-medium text-foreground">
+                      {login.companies?.name || 'Sem empresa'}
                     </p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(login.login_time).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${
+                      login.profiles?.role === 'admin' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :
+                      login.profiles?.role === 'manager' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' :
+                      'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+                    }`}>
+                      {login.profiles?.role === 'admin' ? 'Admin' :
+                       login.profiles?.role === 'manager' ? 'Gestor' : 'Membro'}
+                    </span>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-muted-foreground text-center py-4">Nenhuma atividade recente</p>
+              <p className="text-muted-foreground text-center py-4">Nenhum login registrado</p>
             )}
           </div>
         </CardContent>

@@ -98,6 +98,21 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Log user login
+  const logUserLogin = async (userId: string, companyId: string | null) => {
+    try {
+      await supabase.from('user_login_logs').insert({
+        user_id: userId,
+        company_id: companyId,
+        login_time: new Date().toISOString(),
+      });
+      console.log('✅ Login logged successfully');
+    } catch (error) {
+      console.error('❌ Error logging login:', error);
+      // Non-blocking error - continue even if logging fails
+    }
+  };
+
   // Load profile data - OPTIMIZED for normal users (no admin checks)
   const loadUserProfileOptimized = async (userId: string) => {
     const startTime = performance.now();
@@ -196,6 +211,9 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         
         setSelectedCompanyId(company.id);
         localStorage.setItem('selectedCompanyId', company.id);
+
+        // Log login with company
+        await logUserLogin(userId, company.id);
       } else if (activeCompanies.length > 1) {
         console.log(`🏢 User has ${activeCompanies.length} companies - will need to select`);
         
@@ -210,10 +228,18 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
               active: persistedCompany.companies.status === 'active'
             } as Company);
             setSelectedCompanyId(persistedCompany.companies.id);
+
+            // Log login with company
+            await logUserLogin(userId, persistedCompany.companies.id);
           }
+        } else {
+          // Log login without company (will select later)
+          await logUserLogin(userId, null);
         }
       } else {
         console.log('⚠️ User has no active companies');
+        // Log login without company
+        await logUserLogin(userId, null);
       }
 
       setLoading(false);
