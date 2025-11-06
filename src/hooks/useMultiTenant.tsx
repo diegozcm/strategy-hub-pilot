@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -23,7 +23,12 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   
   // Logout state to prevent automatic re-login
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  
+  const isLoggingOutRef = useRef(false);
+
+  useEffect(() => {
+    isLoggingOutRef.current = isLoggingOut;
+  }, [isLoggingOut]);
+
   // Impersonation state
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [originalAdmin, setOriginalAdmin] = useState<UserProfile | null>(null);
@@ -626,10 +631,10 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('🔐 Auth state change:', event, !!session);
-        logStep('Auth:event', { event, hasSession: !!session, isLoggingOut });
+        logStep('Auth:event', { event, hasSession: !!session, isLoggingOut: isLoggingOutRef.current });
         
-        // Prevent automatic re-login during logout
-        if (isLoggingOut && event !== 'SIGNED_OUT') {
+        // Prevent processing noisy INITIAL_SESSION during active logout
+        if (isLoggingOutRef.current && event === 'INITIAL_SESSION') {
           console.log(`🚪 Ignoring ${event} during logout`);
           logStep('Auth:event:ignored', { event, reason: 'isLoggingOut' });
           return;
