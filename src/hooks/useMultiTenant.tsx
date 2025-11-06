@@ -99,12 +99,19 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     try {
       console.log(`📋 [OPTIMIZED] Loading profile for user ${userId}`);
       
-      // Single query with JOIN to get profile + companies in one call
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          user_company_relations!inner(
+      // Execute 2 queries in parallel
+      const [profileResult, companiesResult] = await Promise.all([
+        // Query 1: Get user profile
+        supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .single(),
+        
+        // Query 2: Get user companies with JOIN
+        supabase
+          .from('user_company_relations')
+          .select(`
             company_id,
             role,
             companies!inner(
@@ -120,12 +127,15 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
               created_at,
               updated_at
             )
-          )
-        `)
-        .eq('user_id', userId)
-        .eq('user_company_relations.companies.status', 'active')
-        .single();
+          `)
+          .eq('user_id', userId)
+          .eq('companies.status', 'active')
+      ]);
 
+      const { data: profileData, error: profileError } = profileResult;
+      const { data: companiesData, error: companiesError } = companiesResult;
+
+      // Handle profile errors
       if (profileError) {
         if (profileError.code === 'PGRST116') {
           console.log('👤 Profile not found');
@@ -134,6 +144,11 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           return;
         }
         throw profileError;
+      }
+
+      // Handle companies errors (non-blocking)
+      if (companiesError) {
+        console.warn('⚠️ Error loading companies:', companiesError);
       }
 
       setProfile(profileData as UserProfile);
@@ -147,36 +162,40 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         return;
       }
 
-      // Auto-select company if user has only one
-      const userCompanies = (profileData as any)?.user_company_relations || [];
-      const activeCompanies = userCompanies
-        .map((relation: any) => relation.companies)
-        .filter(Boolean);
+      // Auto-select company if user has only one active company
+      const activeCompanies = companiesData || [];
 
       if (activeCompanies.length === 1) {
-        const company = activeCompanies[0];
+        const relation = activeCompanies[0];
+        const company = relation.companies;
+        
         console.log('✅ Auto-selected single company:', company.name);
         
         setCompany({
           ...company,
           active: company.status === 'active'
         } as Company);
+        
         setSelectedCompanyId(company.id);
         localStorage.setItem('selectedCompanyId', company.id);
       } else if (activeCompanies.length > 1) {
+        console.log(`🏢 User has ${activeCompanies.length} companies - will need to select`);
+        
         // Check for persisted company
         const persistedCompanyId = localStorage.getItem('selectedCompanyId');
         if (persistedCompanyId) {
-          const persistedCompany = activeCompanies.find((c: any) => c.id === persistedCompanyId);
+          const persistedCompany = activeCompanies.find((c: any) => c.companies.id === persistedCompanyId);
           if (persistedCompany) {
-            console.log('✅ Restored persisted company:', persistedCompany.name);
+            console.log('✅ Restored persisted company:', persistedCompany.companies.name);
             setCompany({
-              ...persistedCompany,
-              active: persistedCompany.status === 'active'
+              ...persistedCompany.companies,
+              active: persistedCompany.companies.status === 'active'
             } as Company);
-            setSelectedCompanyId(persistedCompany.id);
+            setSelectedCompanyId(persistedCompany.companies.id);
           }
         }
+      } else {
+        console.log('⚠️ User has no active companies');
       }
 
       setLoading(false);
