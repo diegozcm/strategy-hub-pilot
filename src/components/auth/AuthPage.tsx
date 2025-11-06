@@ -27,7 +27,7 @@ export const AuthPage: React.FC = () => {
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   
-  const { signInNormalUser, user, profile, company } = useAuth();
+  const { signInNormalUser, user, profile, company, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -52,8 +52,8 @@ export const AuthPage: React.FC = () => {
       return;
     }
 
-    // Navigate only when ALL data is loaded
-    if (!isPasswordReset && user && profile && profile.status === 'active') {
+    // Navigate only when ALL data is loaded (including auth loading complete)
+    if (!isPasswordReset && !authLoading && user && profile && profile.status === 'active') {
       if (company) {
         navigate('/app/dashboard', { replace: true });
       } else {
@@ -65,7 +65,7 @@ export const AuthPage: React.FC = () => {
     if (profile && profile.status === 'inactive') {
       setError('Sua conta foi desativada. Entre em contato com um administrador.');
     }
-  }, [user, profile, company, navigate, isPasswordReset, accessToken, refreshToken]);
+  }, [user, profile, company, authLoading, navigate, isPasswordReset, accessToken, refreshToken]);
 
   const handlePasswordResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
