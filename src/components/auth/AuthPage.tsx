@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useMultiTenant';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
+import { logStep, startAttempt, endAttempt } from '@/lib/loginTrace';
 
 // Password validation schema
 const passwordSchema = z.string()
@@ -30,6 +31,7 @@ export const AuthPage: React.FC = () => {
   const { signInNormalUser, user, profile, company, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   
   // Check if this is a password reset
@@ -37,9 +39,19 @@ export const AuthPage: React.FC = () => {
   const accessToken = searchParams.get('access_token');
   const refreshToken = searchParams.get('refresh_token');
 
+  // Log component mount
+  useEffect(() => {
+    logStep('AuthPage:mount', { 
+      route: location.pathname, 
+      isPasswordReset, 
+      hasTokens: !!(accessToken && refreshToken) 
+    });
+  }, []);
+
   useEffect(() => {
     // Handle password reset session
     if (isPasswordReset && accessToken && refreshToken) {
+      logStep('AuthPage:reset:setSession:start');
       supabase.auth.setSession({ 
         access_token: accessToken, 
         refresh_token: refreshToken 
@@ -47,16 +59,33 @@ export const AuthPage: React.FC = () => {
         if (error) {
           console.error('Error setting session for password reset:', error);
           setError('Link de reset inválido ou expirado. Solicite um novo reset.');
+          logStep('AuthPage:reset:setSession:error', { errorMessage: error.message });
+        } else {
+          logStep('AuthPage:reset:setSession:done');
         }
       });
       return;
     }
 
+    // Always log the navigation gate check
+    logStep('AuthPage:navigation:check', {
+      isPasswordReset,
+      authLoading,
+      hasUser: !!user,
+      hasProfile: !!profile,
+      profileStatus: profile?.status,
+      hasCompany: !!company
+    });
+
     // Navigate only when ALL data is loaded (including auth loading complete)
     if (!isPasswordReset && !authLoading && user && profile && profile.status === 'active') {
       if (company) {
+        logStep('AuthPage:navigation:go', { to: '/app/dashboard' });
+        endAttempt('success', { destination: '/app/dashboard' });
         navigate('/app/dashboard', { replace: true });
       } else {
+        logStep('AuthPage:navigation:go', { to: '/company-selection' });
+        endAttempt('success', { destination: '/company-selection' });
         navigate('/company-selection', { replace: true });
       }
     }
@@ -64,6 +93,7 @@ export const AuthPage: React.FC = () => {
     // Handle inactive profile
     if (profile && profile.status === 'inactive') {
       setError('Sua conta foi desativada. Entre em contato com um administrador.');
+      endAttempt('error', { reason: 'inactive_profile' });
     }
   }, [user, profile, company, authLoading, navigate, isPasswordReset, accessToken, refreshToken]);
 
@@ -155,8 +185,17 @@ export const AuthPage: React.FC = () => {
     setLoading(true);
     setError('');
 
+    const attemptId = startAttempt({ channel: 'auth', type: 'normal' });
+    logStep('AuthPage:submit:start', { email }, attemptId);
+
     try {
       const result = await signInNormalUser(email, password);
+      
+      logStep('AuthPage:submit:result', { 
+        ok: !result.error, 
+        errorCode: (result.error as any)?.code,
+        errorMessage: result.error?.message 
+      }, attemptId);
       
       if (result.error) {
         setLoading(false);
@@ -164,21 +203,27 @@ export const AuthPage: React.FC = () => {
         // Check if System Admin was blocked
         if ((result.error as any).code === 'admin_blocked') {
           setError('Acesso negado. Administradores devem usar o login administrativo.');
+          endAttempt('error', { reason: 'admin_blocked' }, attemptId);
           return;
         }
         
         if (result.error.message?.includes('Invalid login credentials')) {
           setError('E-mail ou senha incorretos.');
+          endAttempt('error', { reason: 'invalid_credentials' }, attemptId);
         } else if (result.error.message?.includes('User not found')) {
           setError('Usuário não encontrado. Entre em contato com o administrador.');
+          endAttempt('error', { reason: 'user_not_found' }, attemptId);
         } else {
           setError(result.error.message);
+          endAttempt('error', { reason: 'other', message: result.error.message }, attemptId);
         }
       }
       // Loading stays active until useEffect navigates
     } catch (error: any) {
       setLoading(false);
       setError('Ocorreu um erro inesperado. Tente novamente.');
+      logStep('AuthPage:submit:exception', { error: error?.message });
+      endAttempt('error', { reason: 'exception', message: error?.message });
     }
   };
 

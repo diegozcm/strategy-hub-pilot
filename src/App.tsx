@@ -9,6 +9,7 @@ import { ModulesProvider } from "@/hooks/useModules";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { AuthStateDebugger } from "@/components/ui/AuthStateDebugger";
 import { LoadingStateMonitor } from "@/components/ui/LoadingStateMonitor";
+import { AuthFlowDebugger } from "@/components/ui/AuthFlowDebugger";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { AdminLoginPage } from "@/components/admin/AdminLoginPage";
 import { CompanyInactivePage } from "@/pages/CompanyInactivePage";
@@ -62,6 +63,7 @@ const App = () => (
           <MultiTenantAuthProvider>
             <LoadingStateMonitor>
               <AuthStateDebugger>
+                <AuthFlowDebugger />
                 <ThemeProvider>
                   <ModulesProvider>
                 <Routes>

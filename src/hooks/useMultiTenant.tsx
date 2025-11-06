@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, Company, Permission, AuthContextType, UserRole } from '@/types/auth';
 import { FirstLoginModal } from '@/components/ui/FirstLoginModal';
+import { logStep } from '@/lib/loginTrace';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -98,6 +99,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     
     try {
       console.log(`📋 [OPTIMIZED] Loading profile for user ${userId}`);
+      logStep('Profile:load:start', { userId });
       
       // Execute 2 queries in parallel
       const [profileResult, companiesResult] = await Promise.all([
@@ -135,20 +137,30 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       const { data: profileData, error: profileError } = profileResult;
       const { data: companiesData, error: companiesError } = companiesResult;
 
+      logStep('Profile:load:results', { 
+        hasProfile: !!profileData, 
+        companiesCount: companiesData?.length || 0,
+        profileError: profileError?.code,
+        companiesError: companiesError?.code
+      });
+
       // Handle profile errors
       if (profileError) {
         if (profileError.code === 'PGRST116') {
           console.log('👤 Profile not found');
+          logStep('Profile:load:error', { reason: 'not_found' });
           setProfile(null);
           setLoading(false);
           return;
         }
+        logStep('Profile:load:error', { reason: 'fetch_error', code: profileError.code });
         throw profileError;
       }
 
       // Handle companies errors (non-blocking)
       if (companiesError) {
         console.warn('⚠️ Error loading companies:', companiesError);
+        logStep('Profile:load:companies_error', { code: companiesError.code });
       }
 
       setProfile(profileData as UserProfile);
@@ -170,6 +182,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         const company = relation.companies;
         
         console.log('✅ Auto-selected single company:', company.name);
+        logStep('Company:autoSelect', { companyName: company.name, companyId: company.id });
         
         setCompany({
           ...company,
@@ -201,7 +214,9 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       setLoading(false);
       
       const endTime = performance.now();
-      console.log(`⚡ Profile loaded in ${(endTime - startTime).toFixed(0)}ms`);
+      const durationMs = (endTime - startTime).toFixed(0);
+      console.log(`⚡ Profile loaded in ${durationMs}ms`);
+      logStep('Profile:load:done', { durationMs });
       
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -605,15 +620,18 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   // Initialize auth state
   useEffect(() => {
     console.log('📊 MultiTenantAuthProvider: Initializing...');
+    logStep('Auth:provider:init');
     
     // Auth state listener - OPTIMIZED for normal users
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('🔐 Auth state change:', event, !!session);
+        logStep('Auth:event', { event, hasSession: !!session, isLoggingOut });
         
         // Prevent automatic re-login during logout
         if (isLoggingOut && event !== 'SIGNED_OUT') {
           console.log(`🚪 Ignoring ${event} during logout`);
+          logStep('Auth:event:ignored', { event, reason: 'isLoggingOut' });
           return;
         }
         
@@ -656,9 +674,11 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
 
     // Check existing session with validation
     console.log('🔍 Checking existing session...');
+    logStep('Auth:existingSession:check:start');
     supabase.auth.getSession()
       .then(async ({ data: { session }, error }) => {
         console.log('🔍 Existing session check result:', !!session);
+        logStep('Auth:existingSession:check:result', { hasSession: !!session, hasError: !!error });
         if (error) {
           console.error('❌ Session check error:', error);
           localStorage.removeItem('sb-pdpzxjlnaqwlyqoyoyhr-auth-token');
@@ -697,37 +717,49 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   // Sign in for NORMAL USERS ONLY - blocks System Admins
   const signInNormalUser = async (email: string, password: string) => {
     try {
+      logStep('Auth:signIn:start', { email });
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      logStep('Auth:signIn:result', { ok: !error, userId: data?.user?.id });
+
       if (error) {
         console.error('❌ Sign in error:', error);
+        logStep('Auth:signIn:error', { code: error.code, message: error.message });
         return { error };
       }
 
       // Check if user is System Admin - BLOCK if true
+      logStep('Auth:signIn:checkAdmin:start', { userId: data.user.id });
       const { data: isAdmin, error: adminError } = await supabase.rpc('is_system_admin', {
         _user_id: data.user.id
       });
 
+      logStep('Auth:signIn:checkAdmin:result', { isAdmin, hasError: !!adminError });
+
       if (adminError) {
         console.error('❌ Error checking admin status:', adminError);
         await supabase.auth.signOut();
+        logStep('Auth:signIn:error', { reason: 'admin_check_failed' });
         return { error: new Error('Erro ao verificar permissões') };
       }
 
       if (isAdmin === true) {
         console.warn('🚫 System Admin blocked from /auth login');
         await supabase.auth.signOut();
+        logStep('Auth:signIn:blocked', { reason: 'is_admin' });
         return { error: { code: 'admin_blocked', message: 'Administradores devem usar /admin-login' } };
       }
 
       console.log('✅ Normal user sign in successful');
+      logStep('Auth:signIn:success');
       return { error: null };
     } catch (error) {
       console.error('❌ Unexpected sign in error:', error);
+      logStep('Auth:signIn:exception', { error: (error as any)?.message });
       return { error };
     }
   };
@@ -766,6 +798,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   const signOut = async () => {
     try {
       console.log('🚪 Starting sign out...');
+      logStep('Auth:signOut:start');
       
       setIsLoggingOut(true);
       
@@ -795,6 +828,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       // Clear flag immediately
       setIsLoggingOut(false);
       console.log('🔓 Logout complete');
+      logStep('Auth:signOut:done');
       
       // Always redirect to /auth for normal users
       // (System Admins use separate AdminLoginPage)
@@ -802,6 +836,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       
     } catch (error) {
       console.error('❌ Sign out error:', error);
+      logStep('Auth:signOut:error', { error: (error as any)?.message });
       setIsLoggingOut(false);
       navigate('/auth');
     }
