@@ -2476,6 +2476,7 @@ export type Database = {
           id: string
           ip_address: string | null
           login_time: string
+          logout_time: string | null
           user_agent: string | null
           user_id: string
         }
@@ -2485,6 +2486,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           login_time?: string
+          logout_time?: string | null
           user_agent?: string | null
           user_id: string
         }
@@ -2494,6 +2496,7 @@ export type Database = {
           id?: string
           ip_address?: string | null
           login_time?: string
+          logout_time?: string | null
           user_agent?: string | null
           user_id?: string
         }

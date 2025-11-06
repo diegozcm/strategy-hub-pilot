@@ -98,6 +98,30 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  // Log user logout
+  const logUserLogout = async (userId: string) => {
+    try {
+      const { data: activeSession } = await supabase
+        .from('user_login_logs')
+        .select('id')
+        .eq('user_id', userId)
+        .is('logout_time', null)
+        .order('login_time', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (activeSession) {
+        await supabase
+          .from('user_login_logs')
+          .update({ logout_time: new Date().toISOString() })
+          .eq('id', activeSession.id);
+        console.log('✅ Logout logged successfully');
+      }
+    } catch (error) {
+      console.error('❌ Error logging logout:', error);
+    }
+  };
+
   // Log user login
   const logUserLogin = async (userId: string, companyId: string | null) => {
     try {
@@ -680,6 +704,12 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         }
         else if (event === 'SIGNED_OUT' || !session) {
           console.log('❌ User signed out');
+          
+          // Log the logout time for the active session
+          if (event === 'SIGNED_OUT' && user?.id) {
+            logUserLogout(user.id).catch(console.error);
+          }
+          
           setUser(null);
           setSession(null);
           setProfile(null);
