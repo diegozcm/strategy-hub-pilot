@@ -216,6 +216,8 @@ export const RumoObjectiveBlock = ({
         pillars={pillars}
         progressPercentage={progress}
         selectedPeriod={selectedPeriod}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
       />
 
       {/* KR Overview Modal */}
@@ -238,6 +240,9 @@ export const RumoObjectiveBlock = ({
         }}
         objectives={[{ id: objective.id, title: objective.title }]}
         showDeleteButton={false}
+        initialPeriod={selectedPeriod}
+        initialMonth={selectedMonth}
+        initialYear={selectedYear}
       />
     </>
   );

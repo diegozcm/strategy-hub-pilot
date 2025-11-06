@@ -319,6 +319,8 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                       pillar={pillar}
                       onOpenDetails={onOpenKeyResultDetails}
                       selectedPeriod={selectedPeriod}
+                      selectedMonth={selectedMonth}
+                      selectedYear={selectedYear}
                     />
                   ))}
                   {keyResults.length === 0 && (

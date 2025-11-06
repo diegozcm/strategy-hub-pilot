@@ -2,6 +2,7 @@ import React from 'react';
 import { KeyResult } from '@/types/strategic-map';
 import { MonthlyPerformanceIndicators } from './MonthlyPerformanceIndicators';
 import { formatValueWithUnit } from '@/lib/utils';
+import { useKRMetrics } from '@/hooks/useKRMetrics';
 
 interface ResultadoChaveMiniCardProps {
   resultadoChave: KeyResult;
@@ -9,6 +10,8 @@ interface ResultadoChaveMiniCardProps {
   onUpdate?: () => void;
   onOpenDetails?: (keyResult: KeyResult) => void;
   selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
+  selectedMonth?: number;
+  selectedYear?: number;
 }
 
 export const ResultadoChaveMiniCard = ({ 
@@ -16,26 +19,34 @@ export const ResultadoChaveMiniCard = ({
   pillar, 
   onUpdate, 
   onOpenDetails,
-  selectedPeriod = 'ytd'
+  selectedPeriod = 'ytd',
+  selectedMonth,
+  selectedYear
 }: ResultadoChaveMiniCardProps) => {
+  // Usar useKRMetrics para obter valores corretos baseado no período e mês/ano selecionados
+  const metrics = useKRMetrics(resultadoChave, { 
+    selectedMonth, 
+    selectedYear 
+  });
+  
   // Calcular progresso baseado no período selecionado
   const currentValue = selectedPeriod === 'monthly' 
-    ? (resultadoChave.current_month_actual || 0)
+    ? metrics.monthly.actual
     : selectedPeriod === 'yearly'
-    ? (resultadoChave.yearly_actual || 0)
-    : (resultadoChave.ytd_actual || 0);
+    ? metrics.yearly.actual
+    : metrics.ytd.actual;
     
   const targetValue = selectedPeriod === 'monthly'
-    ? (resultadoChave.current_month_target || 0)
+    ? metrics.monthly.target
     : selectedPeriod === 'yearly'
-    ? (resultadoChave.yearly_target || 0)
-    : (resultadoChave.ytd_target || 0);
+    ? metrics.yearly.target
+    : metrics.ytd.target;
   
   const percentage = selectedPeriod === 'monthly'
-    ? (resultadoChave.monthly_percentage || 0)
+    ? metrics.monthly.percentage
     : selectedPeriod === 'yearly'
-    ? (resultadoChave.yearly_percentage || 0)
-    : (resultadoChave.ytd_percentage || 0);
+    ? metrics.yearly.percentage
+    : metrics.ytd.percentage;
   
   // Determine status color based on percentage (already calculated in DB)
   const getStatusColor = (pct: number) => {
