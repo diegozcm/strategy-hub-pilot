@@ -218,6 +218,20 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       console.log(`⚡ Profile loaded in ${durationMs}ms`);
       logStep('Profile:load:done', { durationMs });
       
+      // Auto-redirect if we have everything and not logging out
+      if (profileData && activeCompanies?.length > 0 && !isLoggingOut) {
+        setTimeout(() => {
+          const currentCompany = activeCompanies.length === 1 ? activeCompanies[0].companies : null;
+          if (currentCompany) {
+            logStep('Profile:load:auto-redirect-ready', { 
+              hasProfile: !!profileData,
+              hasCompany: !!currentCompany,
+              destination: '/app/dashboard'
+            });
+          }
+        }, 100);
+      }
+      
     } catch (error) {
       console.error('Error loading profile:', error);
       setProfile(null);
@@ -717,6 +731,8 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   // Sign in for NORMAL USERS ONLY - blocks System Admins
   const signInNormalUser = async (email: string, password: string) => {
     try {
+      // Reset logout flag at the start of login
+      setIsLoggingOut(false);
       logStep('Auth:signIn:start', { email });
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -825,8 +841,6 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       // Sign out from Supabase
       await supabase.auth.signOut({ scope: 'global' });
       
-      // Clear flag immediately
-      setIsLoggingOut(false);
       console.log('🔓 Logout complete');
       logStep('Auth:signOut:done');
       
@@ -837,8 +851,10 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error) {
       console.error('❌ Sign out error:', error);
       logStep('Auth:signOut:error', { error: (error as any)?.message });
-      setIsLoggingOut(false);
       navigate('/auth');
+    } finally {
+      // Always reset logout flag in finally to ensure it happens
+      setIsLoggingOut(false);
     }
   };
 

@@ -74,7 +74,8 @@ export const AuthPage: React.FC = () => {
       hasUser: !!user,
       hasProfile: !!profile,
       profileStatus: profile?.status,
-      hasCompany: !!company
+      hasCompany: !!company,
+      currentPath: location.pathname
     });
 
     // Navigate only when ALL data is loaded (including auth loading complete)
@@ -88,6 +89,18 @@ export const AuthPage: React.FC = () => {
         endAttempt('success', { destination: '/company-selection' });
         navigate('/company-selection', { replace: true });
       }
+    } else {
+      // Log why navigation is blocked
+      const blockReasons = [];
+      if (isPasswordReset) blockReasons.push('password_reset');
+      if (authLoading) blockReasons.push('auth_loading');
+      if (!user) blockReasons.push('no_user');
+      if (!profile) blockReasons.push('no_profile');
+      if (profile && profile.status !== 'active') blockReasons.push(`profile_${profile.status}`);
+      
+      if (blockReasons.length > 0) {
+        logStep('AuthPage:navigation:blocked', { reasons: blockReasons });
+      }
     }
     
     // Handle inactive profile
@@ -95,7 +108,7 @@ export const AuthPage: React.FC = () => {
       setError('Sua conta foi desativada. Entre em contato com um administrador.');
       endAttempt('error', { reason: 'inactive_profile' });
     }
-  }, [user, profile, company, authLoading, navigate, isPasswordReset, accessToken, refreshToken]);
+  }, [user, profile, company, authLoading, navigate, isPasswordReset, accessToken, refreshToken, location.pathname]);
 
   const handlePasswordResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
