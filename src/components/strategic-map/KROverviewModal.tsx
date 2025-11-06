@@ -97,6 +97,20 @@ export const KROverviewModal = ({
     setSelectedPeriod(initialPeriod);
   }, [initialPeriod]);
 
+  // Update selected month when initialMonth changes
+  useEffect(() => {
+    if (initialMonth) {
+      setSelectedMonth(initialMonth);
+    }
+  }, [initialMonth]);
+
+  // Update selected year when initialYear changes
+  useEffect(() => {
+    if (initialYear) {
+      setSelectedMonthYear(initialYear);
+    }
+  }, [initialYear]);
+
   // Function to refresh key result data from database
   const refreshKeyResult = async () => {
     if (!keyResult?.id) return;
