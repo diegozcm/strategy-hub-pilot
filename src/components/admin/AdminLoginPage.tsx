@@ -1,10 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/useMultiTenant';
 import { useNavigate } from 'react-router-dom';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,16 +14,7 @@ export const AdminLoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-
-  // Aguardar o contexto user ficar disponível antes de navegar
-  useEffect(() => {
-    if (user && !authLoading && loading) {
-      console.log('✅ User context ready, navigating to admin panel');
-      navigate('/app/admin', { replace: true });
-    }
-  }, [user, authLoading, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +58,9 @@ export const AdminLoginPage: React.FC = () => {
         return;
       }
       
-      console.log('✅ Admin login successful, waiting for user context...');
+      console.log('✅ Admin login successful, redirecting to admin panel...');
+      // Navegação direta após confirmar que é admin
+      navigate('/app/admin', { replace: true });
     } catch (err) {
       setError('Erro ao tentar fazer login. Tente novamente.');
       setLoading(false);
