@@ -40,6 +40,7 @@ import NotFound from "@/pages/NotFound";
 import { GoldenCirclePage } from "@/components/golden-circle/GoldenCirclePage";
 import { ToolsPage } from "@/components/tools/ToolsPage";
 import { StartupHubPage } from "@/components/startup-hub/StartupHubPage";
+import { ModuleBasedRedirect } from "@/components/ModuleBasedRedirect";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -92,7 +93,7 @@ const App = () => (
                     <AppLayout />
                   </ProtectedRoute>
                 }>
-                  <Route index element={<Navigate to="/app/dashboard" replace />} />
+                  <Route index element={<ModuleBasedRedirect />} />
                   <Route path="dashboard" element={<DashboardHome />} />
                   <Route path="strategic-map" element={<StrategicMapPageWrapper />} />
                   <Route path="objectives" element={<ObjectivesPageWrapper />} />

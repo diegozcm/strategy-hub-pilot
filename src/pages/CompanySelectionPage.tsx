@@ -60,8 +60,8 @@ export const CompanySelectionPage: React.FC = () => {
       // Selecionar a empresa
       await switchCompany?.(company.id);
       
-      // Navegar para o dashboard
-      navigate('/app/dashboard');
+      // Navegar para /app - ModuleBasedRedirect will handle the rest
+      navigate('/app');
     } catch (error) {
       console.error('Error selecting company:', error);
       setError('Erro ao selecionar empresa. Tente novamente.');

@@ -63,7 +63,7 @@ export const AuthPage: React.FC = () => {
           
           // Se temos user mas ainda estamos em /auth, algo deu errado
           if (user && profile && profile.status === 'active') {
-            const destination = company ? '/app/dashboard' : '/company-selection';
+            const destination = company ? '/app' : '/company-selection';
             console.log(`🔄 Forcing navigation to ${destination}`);
             navigate(destination, { replace: true });
           }
@@ -107,9 +107,10 @@ export const AuthPage: React.FC = () => {
     // Navigate only when ALL data is loaded
     if (!isPasswordReset && !authLoading && user && profile && profile.status === 'active') {
       if (company) {
-        logStep('AuthPage:navigation:go', { to: '/app/dashboard' });
-        endAttempt('success', { destination: '/app/dashboard' });
-        navigate('/app/dashboard', { replace: true });
+        // Navigate to /app - ModuleBasedRedirect will handle the rest
+        logStep('AuthPage:navigation:go', { to: '/app' });
+        endAttempt('success', { destination: '/app' });
+        navigate('/app', { replace: true });
       } else {
         logStep('AuthPage:navigation:go', { to: '/company-selection' });
         endAttempt('success', { destination: '/company-selection' });
