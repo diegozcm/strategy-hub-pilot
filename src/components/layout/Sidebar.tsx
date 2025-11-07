@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { BarChart3, Target, Briefcase, Users, Settings, ChevronLeft, ChevronRight, Zap, TrendingUp, Activity, Brain, Map, Building2, UserCheck, Shield, Building, User, Circle, Rocket, Search, Calendar } from 'lucide-react';
+import { BarChart3, Target, Briefcase, Users, Settings, ChevronLeft, ChevronRight, Zap, TrendingUp, Activity, Brain, Map, Building, User, Circle, Rocket, Search, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useMultiTenant';
-import { PermissionGate } from '@/components/PermissionGate';
+
 import { useModules } from '@/hooks/useModules';
 import { useStartupProfile } from '@/hooks/useStartupProfile';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -45,11 +45,6 @@ const menuStructure = [
   }
 ];
 
-const systemAdminNavigation = [
-  { name: 'Painel Admin', href: '/app/admin', icon: Shield },
-  { name: 'Empresas', href: '/app/admin/companies', icon: Building2 },
-  { name: 'Usuários Pendentes', href: '/app/admin/users', icon: UserCheck }
-];
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -224,37 +219,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
             </div>
           );
         })}
-        
-        {/* System Admin Section */}
-        <PermissionGate requiredRole="admin">
-          <div className="pt-4 mt-4 border-t border-border space-y-2">
-            {(!collapsed || isMobile) && (
-              <div className="flex items-center px-3 py-1">
-                <Shield className="h-4 w-4 mr-2 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                  Admin Sistema
-                </span>
-              </div>
-            )}
-            
-            <div className="space-y-1">
-              {systemAdminNavigation.map(item => (
-                <NavLink 
-                  key={item.name} 
-                  to={item.href} 
-                  className={({ isActive }) => cn(
-                    "flex items-center px-3 py-2 rounded-lg transition-colors",
-                    isActive ? "bg-destructive/10 text-destructive font-medium" : "text-foreground hover:bg-destructive/5",
-                    collapsed && !isMobile && "justify-center"
-                  )}
-                >
-                  <item.icon className={cn("h-5 w-5", (!collapsed || isMobile) && "mr-3")} />
-                  {(!collapsed || isMobile) && <span className="text-sm">{item.name}</span>}
-                </NavLink>
-              ))}
-            </div>
-          </div>
-        </PermissionGate>
       </nav>
     </div>
     </>
