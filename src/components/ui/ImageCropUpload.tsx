@@ -50,7 +50,7 @@ export const ImageCropUpload: React.FC<ImageCropUploadProps> = ({
   const onImageLoad = useCallback(
     (e: React.SyntheticEvent<HTMLImageElement>) => {
       const { width, height } = e.currentTarget;
-      setCrop(centerCrop(
+      const initialCrop = centerCrop(
         makeAspectCrop(
           {
             unit: '%',
@@ -62,7 +62,20 @@ export const ImageCropUpload: React.FC<ImageCropUploadProps> = ({
         ),
         width,
         height,
-      ));
+      );
+      
+      setCrop(initialCrop);
+      
+      // Calcular o completedCrop em pixels para permitir salvar sem ajuste manual
+      const pixelCrop: PixelCrop = {
+        x: (initialCrop.x / 100) * width,
+        y: (initialCrop.y / 100) * height,
+        width: (initialCrop.width / 100) * width,
+        height: (initialCrop.height / 100) * height,
+        unit: 'px'
+      };
+      
+      setCompletedCrop(pixelCrop);
     },
     [aspectRatio]
   );
@@ -107,10 +120,19 @@ export const ImageCropUpload: React.FC<ImageCropUploadProps> = ({
   }, [completedCrop, canvasPreview]);
 
   const handleSaveCrop = async () => {
-    if (!completedCrop || !previewCanvasRef.current || !user || !company) {
+    if (!completedCrop || !previewCanvasRef.current) {
       toast({
         title: "Erro",
-        description: "Por favor, selecione uma área para recortar",
+        description: "Por favor, aguarde o carregamento completo da imagem",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user || !company) {
+      toast({
+        title: "Erro",
+        description: "Dados de autenticação não disponíveis. Tente novamente.",
         variant: "destructive",
       });
       return;
