@@ -39,6 +39,12 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Initialize regular Supabase client for templates
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    );
+
     // Check if user exists in auth.users
     const { data: users, error: getUserError } = await supabaseAdmin.auth.admin.listUsers();
     
@@ -134,11 +140,34 @@ const handler = async (req: Request): Promise<Response> => {
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
     const userName = profile ? `${profile.first_name} ${profile.last_name}` : email.split('@')[0];
 
-    const emailResponse = await resend.emails.send({
-      from: "Start Together <onboarding@resend.dev>",
-      to: [email],
-      subject: "Reset de Senha - Start Together",
-      html: `
+    // Fetch email template from database
+    console.log('Fetching password_reset template from database...');
+    let emailSubject = "Reset de Senha - Start Together";
+    let emailBody = "";
+
+    try {
+      const { data: template, error: templateError } = await supabase
+        .from('email_templates')
+        .select('subject, body_html')
+        .eq('template_key', 'password_reset')
+        .eq('is_active', true)
+        .single();
+      
+      if (templateError) {
+        console.error('Error fetching email template:', templateError);
+      } else if (template) {
+        emailSubject = template.subject;
+        emailBody = template.body_html;
+        console.log('Email template loaded from database');
+      }
+    } catch (error) {
+      console.error('Error loading email template:', error);
+    }
+
+    // Fallback to hardcoded template if not found in database
+    if (!emailBody) {
+      console.log('Using fallback hardcoded template');
+      emailBody = `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #2563eb; margin: 0;">🔷 Start Together</h1>
@@ -146,28 +175,26 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
           
           <div style="background: #f8fafc; padding: 25px; border-radius: 8px; margin-bottom: 25px;">
-            <h2 style="color: #1e293b; margin-top: 0;">Olá, ${userName}!</h2>
+            <h2 style="color: #1e293b; margin-top: 0;">Olá, {{userName}}!</h2>
             <p style="color: #475569; line-height: 1.6;">
               Você solicitou a redefinição da sua senha no sistema Start Together. 
               Use as credenciais temporárias abaixo para fazer login:
             </p>
             
             <div style="background: white; padding: 20px; border-radius: 6px; border-left: 4px solid #2563eb; margin: 20px 0;">
-              <p style="margin: 0; color: #1e293b;"><strong>E-mail:</strong> ${email}</p>
-              <p style="margin: 10px 0 0; color: #1e293b;"><strong>Senha temporária:</strong> <code style="background: #e2e8f0; padding: 4px 8px; border-radius: 4px; font-size: 14px;">${tempPassword}</code></p>
+              <p style="margin: 0; color: #1e293b;"><strong>E-mail:</strong> {{email}}</p>
+              <p style="margin: 10px 0 0; color: #1e293b;"><strong>Senha temporária:</strong> <code style="background: #e2e8f0; padding: 4px 8px; border-radius: 4px; font-size: 14px;">{{temporaryPassword}}</code></p>
             </div>
             
             <div style="background: #fef3c7; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 20px 0;">
               <p style="margin: 0; color: #92400e; font-size: 14px;">
-                <strong>⚠️ Importante:</strong> Esta é uma senha temporária. Você será obrigatoriamente solicitado(a) a alterá-la no próximo login. 
-                Não será possível navegar no sistema até que a senha seja alterada.
+                <strong>⚠️ Importante:</strong> Esta é uma senha temporária. Você será obrigatoriamente solicitado(a) a alterá-la no próximo login.
               </p>
             </div>
           </div>
           
           <div style="text-align: center; margin-bottom: 25px;">
-            <a href="${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'https://seu-app.lovable.app'}" 
-               style="background: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 500; display: inline-block;">
+            <a href="{{loginUrl}}" style="background: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">
               Acessar o Sistema
             </a>
           </div>
@@ -179,7 +206,29 @@ const handler = async (req: Request): Promise<Response> => {
             </p>
           </div>
         </div>
-      `,
+      `;
+    }
+
+    // Replace template variables
+    const loginUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'https://seu-app.lovable.app'}`;
+
+    emailSubject = emailSubject
+      .replace(/\{\{userName\}\}/g, userName)
+      .replace(/\{\{email\}\}/g, email);
+
+    emailBody = emailBody
+      .replace(/\{\{userName\}\}/g, userName)
+      .replace(/\{\{email\}\}/g, email)
+      .replace(/\{\{temporaryPassword\}\}/g, tempPassword)
+      .replace(/\{\{loginUrl\}\}/g, loginUrl);
+
+    console.log('Sending password reset email to:', email);
+
+    const emailResponse = await resend.emails.send({
+      from: "Start Together <noreply@cofound.com.br>",
+      to: [email],
+      subject: emailSubject,
+      html: emailBody,
     });
 
     if (emailResponse.error) {
