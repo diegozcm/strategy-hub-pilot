@@ -95,7 +95,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       try {
         emailResponse = await resend.emails.send({
-          from: "Start Together <onboarding@resend.dev>",
+          from: "Start Together <noreply@cofound.com.br>",
           to: [to],
           subject: "Bem-vindo(a) ao Start Together - Suas credenciais de acesso",
           html: `
