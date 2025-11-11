@@ -17,6 +17,7 @@ interface ImageCropUploadProps {
   aspectRatio?: number;
   minWidth?: number;
   minHeight?: number;
+  companyId?: string; // ID da empresa para contexto admin
 }
 
 export const ImageCropUpload: React.FC<ImageCropUploadProps> = ({
@@ -26,6 +27,7 @@ export const ImageCropUpload: React.FC<ImageCropUploadProps> = ({
   aspectRatio = 1,
   minWidth = 200,
   minHeight = 200,
+  companyId,
 }) => {
   const { user, company } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -129,10 +131,22 @@ export const ImageCropUpload: React.FC<ImageCropUploadProps> = ({
       return;
     }
 
-    if (!user || !company) {
+    // Usar companyId da prop ou do contexto
+    const targetCompanyId = companyId || company?.id;
+
+    if (!user) {
       toast({
         title: "Erro",
-        description: "Dados de autenticação não disponíveis. Tente novamente.",
+        description: "Usuário não autenticado. Faça login novamente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!targetCompanyId) {
+      toast({
+        title: "Erro",
+        description: "ID da empresa não disponível. Tente novamente.",
         variant: "destructive",
       });
       return;
@@ -148,7 +162,7 @@ export const ImageCropUpload: React.FC<ImageCropUploadProps> = ({
       if (!blob) throw new Error('Failed to create image blob');
 
       // Create file name
-      const fileName = `${company.id}-${Date.now()}.webp`;
+      const fileName = `${targetCompanyId}-${Date.now()}.webp`;
       const filePath = `logos/${fileName}`;
 
       // Upload to Supabase storage

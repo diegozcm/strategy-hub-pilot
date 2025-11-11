@@ -127,12 +127,13 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
               />
             </div>
 
-            <ImageCropUpload
-              currentImageUrl={editedCompany.logo_url}
-              onImageUploaded={(url) => setEditedCompany({ ...editedCompany, logo_url: url })}
-              disabled={isLoading}
-              aspectRatio={1}
-            />
+              <ImageCropUpload
+                currentImageUrl={editedCompany.logo_url}
+                onImageUploaded={(url) => setEditedCompany({ ...editedCompany, logo_url: url })}
+                disabled={isLoading}
+                aspectRatio={1}
+                companyId={editedCompany.id}
+              />
 
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
