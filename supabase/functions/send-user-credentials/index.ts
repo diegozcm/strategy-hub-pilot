@@ -1,7 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -84,7 +89,86 @@ const handler = async (req: Request): Promise<Response> => {
     }
     console.log('Resend API key found');
 
-    console.log('Step 4: Attempting to send email to:', to);
+    console.log('Step 4: Fetching email template from database...');
+    
+    // Fetch email template from database
+    let emailSubject = "Bem-vindo(a) ao Start Together - Suas credenciais de acesso";
+    let emailBody = "";
+    
+    try {
+      const { data: template, error: templateError } = await supabase
+        .from('email_templates')
+        .select('subject, body_html')
+        .eq('template_key', 'welcome_credentials')
+        .eq('is_active', true)
+        .single();
+      
+      if (templateError) {
+        console.error('Error fetching email template:', templateError);
+      } else if (template) {
+        emailSubject = template.subject;
+        emailBody = template.body_html;
+        console.log('Email template loaded from database');
+      }
+    } catch (error) {
+      console.error('Error loading email template:', error);
+    }
+    
+    // Fallback to hardcoded template if not found in database
+    if (!emailBody) {
+      console.log('Using fallback hardcoded template');
+      emailBody = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #2563eb; margin: 0;">🔷 Start Together</h1>
+                <p style="color: #64748b; margin: 5px 0;">Gestão Estratégica</p>
+              </div>
+              
+              <div style="background: #f8fafc; padding: 25px; border-radius: 8px; margin-bottom: 25px;">
+                <h2 style="color: #1e293b; margin-top: 0;">Olá, {{userName}}!</h2>
+                <p style="color: #475569; line-height: 1.6;">
+                  Você foi convidado(a) para acessar o sistema Start Together. 
+                  Suas credenciais de acesso são:
+                </p>
+                
+                <div style="background: white; padding: 20px; border-radius: 6px; border-left: 4px solid #2563eb; margin: 20px 0;">
+                  <p style="margin: 0; color: #1e293b;"><strong>E-mail:</strong> {{email}}</p>
+                  <p style="margin: 10px 0 0; color: #1e293b;"><strong>Senha temporária:</strong> <code style="background: #e2e8f0; padding: 4px 8px; border-radius: 4px;">{{temporaryPassword}}</code></p>
+                </div>
+                
+                <div style="background: #fef3c7; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+                  <p style="margin: 0; color: #92400e; font-size: 14px;">
+                    <strong>⚠️ Importante:</strong> Esta é uma senha temporária. Você será solicitado(a) a alterá-la no seu primeiro acesso.
+                  </p>
+                </div>
+              </div>
+              
+              <div style="text-align: center; margin-bottom: 25px;">
+                <a href="{{loginUrl}}" style="background: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">
+                  Acessar o Sistema
+                </a>
+              </div>
+            </div>
+          `;
+    }
+    
+    console.log('Step 5: Replacing template variables...');
+    
+    // Replace template variables
+    const loginUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'https://seu-app.lovable.app'}`;
+    
+    emailSubject = emailSubject
+      .replace(/\{\{userName\}\}/g, userName)
+      .replace(/\{\{email\}\}/g, email);
+    
+    emailBody = emailBody
+      .replace(/\{\{userName\}\}/g, userName)
+      .replace(/\{\{email\}\}/g, email)
+      .replace(/\{\{temporaryPassword\}\}/g, temporaryPassword)
+      .replace(/\{\{companyName\}\}/g, companyName || 'Start Together')
+      .replace(/\{\{loginUrl\}\}/g, loginUrl);
+
+    console.log('Step 6: Attempting to send email to:', to);
 
     // Attempt to send email with retry logic
     let emailResponse;
@@ -97,49 +181,8 @@ const handler = async (req: Request): Promise<Response> => {
         emailResponse = await resend.emails.send({
           from: "Start Together <noreply@cofound.com.br>",
           to: [to],
-          subject: "Bem-vindo(a) ao Start Together - Suas credenciais de acesso",
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-              <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #2563eb; margin: 0;">🔷 Start Together</h1>
-                <p style="color: #64748b; margin: 5px 0;">Gestão Estratégica</p>
-              </div>
-              
-              <div style="background: #f8fafc; padding: 25px; border-radius: 8px; margin-bottom: 25px;">
-                <h2 style="color: #1e293b; margin-top: 0;">Olá, ${userName}!</h2>
-                <p style="color: #475569; line-height: 1.6;">
-                  Você foi convidado(a) para acessar o sistema Start Together${companyName ? ` da empresa <strong>${companyName}</strong>` : ''}. 
-                  Suas credenciais de acesso são:
-                </p>
-                
-                <div style="background: white; padding: 20px; border-radius: 6px; border-left: 4px solid #2563eb; margin: 20px 0;">
-                  <p style="margin: 0; color: #1e293b;"><strong>E-mail:</strong> ${email}</p>
-                  <p style="margin: 10px 0 0; color: #1e293b;"><strong>Senha temporária:</strong> <code style="background: #e2e8f0; padding: 4px 8px; border-radius: 4px; font-size: 14px;">${temporaryPassword}</code></p>
-                </div>
-                
-                <div style="background: #fef3c7; padding: 15px; border-radius: 6px; border-left: 4px solid #f59e0b; margin: 20px 0;">
-                  <p style="margin: 0; color: #92400e; font-size: 14px;">
-                    <strong>⚠️ Importante:</strong> Esta é uma senha temporária. Você será solicitado(a) a alterá-la no seu primeiro acesso. 
-                    Não será possível navegar no sistema até que a senha seja alterada.
-                  </p>
-                </div>
-              </div>
-              
-              <div style="text-align: center; margin-bottom: 25px;">
-                <a href="${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'https://seu-app.lovable.app'}" 
-                   style="background: #2563eb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 500; display: inline-block;">
-                  Acessar o Sistema
-                </a>
-              </div>
-              
-              <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; text-align: center;">
-                <p style="color: #94a3b8; font-size: 12px; margin: 0;">
-                  Este e-mail foi enviado automaticamente pelo sistema Start Together.<br>
-                  Se você não deveria ter recebido este e-mail, pode ignorá-lo com segurança.
-                </p>
-              </div>
-            </div>
-          `,
+          subject: emailSubject,
+          html: emailBody,
         });
         
         console.log(`Attempt ${attempt} - Resend response:`, emailResponse);

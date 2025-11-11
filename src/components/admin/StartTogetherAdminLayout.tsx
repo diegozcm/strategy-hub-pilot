@@ -8,7 +8,8 @@ import {
   LogOut,
   User,
   Monitor,
-  FileText
+  FileText,
+  Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -71,6 +72,12 @@ const adminMenuItems = [
     path: '/app/admin/landing-page',
     icon: FileText,
     description: 'Editar conteúdo da página inicial'
+  },
+  {
+    name: 'Templates de Email',
+    path: '/app/admin/email-templates',
+    icon: Mail,
+    description: 'Gerenciar templates de email'
   }
 ];
 

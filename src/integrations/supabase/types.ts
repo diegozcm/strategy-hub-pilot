@@ -938,6 +938,51 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          available_variables: string[] | null
+          body_html: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          subject: string
+          template_key: string
+          template_name: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          available_variables?: string[] | null
+          body_html: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          subject: string
+          template_key: string
+          template_name: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          available_variables?: string[] | null
+          body_html?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          subject?: string
+          template_key?: string
+          template_name?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       golden_circle: {
         Row: {
           company_id: string

@@ -14,7 +14,6 @@ import { AuthPage } from "@/components/auth/AuthPage";
 import { AdminLoginPage } from "@/components/admin/AdminLoginPage";
 import { CompanyInactivePage } from "@/pages/CompanyInactivePage";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
-import { StartTogetherAdminLayout } from "@/components/admin/StartTogetherAdminLayout";
 import { MonitoringPage } from "@/components/admin/MonitoringPage";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
@@ -31,9 +30,11 @@ import { UserManagementPage } from "@/components/admin/UserManagementPage";
 import { ModulesManagementPage } from "@/components/admin/ModulesManagementPage";
 import { SystemSettingsPage } from "@/components/admin/SystemSettingsPage";
 import { CreateUserPage } from "@/components/admin/CreateUserPage";
-import { LandingPageEditorPage } from "@/components/admin/LandingPageEditorPage";
+import { LandingPageEditorPage } from "./components/admin/LandingPageEditorPage";
+import { EmailTemplatesPage } from "./components/admin/EmailTemplatesPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
+import { StartTogetherAdminLayout } from "./components/admin/StartTogetherAdminLayout";
 import { CompanySelectionPage } from "@/pages/CompanySelectionPage";
 import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
@@ -123,6 +124,7 @@ const App = () => (
                   <Route path="settings" element={<SystemSettingsPage />} />
                   <Route path="monitoring" element={<MonitoringPage />} />
                   <Route path="landing-page" element={<LandingPageEditorPage />} />
+                  <Route path="email-templates" element={<EmailTemplatesPage />} />
                 </Route>
 
               {/* Redirect /admin to /app/admin */}

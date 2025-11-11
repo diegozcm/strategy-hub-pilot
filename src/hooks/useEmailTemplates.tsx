@@ -23,19 +23,19 @@ export const useEmailTemplates = () => {
     queryKey: ['email-templates'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('email_templates')
+        .from('email_templates' as any)
         .select('*')
         .order('template_name');
 
       if (error) throw error;
-      return data as EmailTemplate[];
+      return data as unknown as EmailTemplate[];
     },
   });
 
   const updateTemplate = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<EmailTemplate> }) => {
       const { data, error } = await supabase
-        .from('email_templates')
+        .from('email_templates' as any)
         .update({
           ...updates,
           updated_at: new Date().toISOString(),
