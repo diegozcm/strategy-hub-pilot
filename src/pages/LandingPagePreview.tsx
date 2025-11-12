@@ -521,7 +521,7 @@ const LandingPagePreview = () => {
               target="_blank" 
               rel="noopener noreferrer"
             >
-              <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-2 border-white text-white hover:bg-white hover:text-cofound-navy shadow-lg">
+              <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-2 border-white text-black hover:bg-white hover:text-cofound-navy shadow-lg">
                 {getContent('final_cta', 'secondary_button', 'Agendar Demonstração')}
               </Button>
             </a>
