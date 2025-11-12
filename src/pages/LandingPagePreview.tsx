@@ -100,7 +100,7 @@ const LandingPagePreview = () => {
 
           <div className="flex items-center space-x-4">
             <Link to="/auth">
-              <Button variant="outline" className="border-white text-white hover:bg-white hover:text-cofound-cyan">Login</Button>
+              <Button variant="outline" className="border-2 border-white text-white hover:bg-white hover:text-cofound-navy shadow-md transition-all duration-300">Login</Button>
             </Link>
           </div>
         </div>
