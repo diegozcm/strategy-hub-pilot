@@ -1571,6 +1571,48 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_page_content_draft: {
+        Row: {
+          content_key: string
+          content_type: string
+          content_value: string | null
+          created_at: string | null
+          created_by: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          section_name: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          content_key: string
+          content_type?: string
+          content_value?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          section_name: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          content_key?: string
+          content_type?: string
+          content_value?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          section_name?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       mentor_startup_relations: {
         Row: {
           assigned_at: string
@@ -3149,6 +3191,7 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_system_admin: { Args: { _user_id?: string }; Returns: boolean }
+      publish_landing_page_content: { Args: never; Returns: undefined }
       repair_startup: {
         Args: { _company_id: string }
         Returns: {

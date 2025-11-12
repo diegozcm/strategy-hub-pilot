@@ -4,11 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Brain, BarChart3, Target as TargetIcon, FileText, Users, TrendingUp, ArrowRight, Play, Star, Shield, Zap, Lock, Target, Award, ChevronLeft, ChevronRight, Map, Lightbulb, Building2, Rocket, CheckCircle, Phone, Mail, MapPin, Linkedin, Twitter, MessageSquare, UserCheck, TrendingDown, Activity, PieChart, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useLandingPageContent } from '@/hooks/useLandingPageContent';
+import { useLandingPageContentDraft } from '@/hooks/useLandingPageContentDraft';
+import { PublishButton } from '@/components/admin/landing-page/PublishButton';
 import * as Icons from 'lucide-react';
 
 const LandingPagePreview = () => {
-  const { getContent } = useLandingPageContent();
+  const { getContent } = useLandingPageContentDraft();
   const [currentScreenshot, setCurrentScreenshot] = React.useState(0);
   
   // Helper function to parse boolean values from content (buttons disabled by default)
@@ -75,6 +76,11 @@ const LandingPagePreview = () => {
 
   return (
     <div className="min-h-screen bg-cofound-light-gray">
+      {/* Publish Button - Fixed to top right */}
+      <div className="fixed top-20 right-4 z-50">
+        <PublishButton />
+      </div>
+
       {/* Header */}
       <header className="fixed top-0 w-full bg-cofound-cyan/95 backdrop-blur-sm border-b border-white/10 shadow-sm z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
