@@ -319,35 +319,35 @@ const LandingPagePreview = () => {
       </section>
 
       {/* Demo Section */}
-      <section className="py-16 px-4 bg-cofound-navy">
+      <section className="py-16 px-4 bg-gradient-to-br from-gray-50 via-white to-gray-50">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">
+            <h2 className="text-4xl font-bold text-cofound-navy mb-4">
               {getContent('demo', 'title', 'Veja o Start Together em Ação')}
             </h2>
-            <p className="text-xl text-white/80">
+            <p className="text-xl text-gray-600">
               {getContent('demo', 'subtitle', 'Explore as principais funcionalidades da plataforma')}
             </p>
           </div>
 
           {screenshots.length > 0 && (
             <div className="max-w-4xl mx-auto">
-              <div className="relative bg-white/10 backdrop-blur-sm rounded-3xl p-8 mb-8">
-                <div className="aspect-video bg-white/20 rounded-lg flex items-center justify-center mb-4 relative overflow-hidden">
+              <div className="relative bg-gradient-to-br from-cofound-cyan/10 to-cofound-navy/5 backdrop-blur-sm rounded-3xl p-8 mb-8 border-2 border-cofound-cyan/20">
+                <div className="aspect-video bg-white rounded-lg flex items-center justify-center mb-4 relative overflow-hidden border border-gray-200 shadow-lg">
                   {screenshots[currentScreenshot]?.image ? (
                     <img 
                       src={screenshots[currentScreenshot].image} 
                       alt={screenshots[currentScreenshot].title}
-                      className="w-full h-full object-contain rounded-lg bg-white/10"
+                      className="w-full h-full object-contain rounded-lg"
                     />
                   ) : (
                     <div className="text-center">
-                      <div className="w-16 h-16 bg-cofound-lime/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <BarChart3 className="h-8 w-8 text-cofound-lime" />
+                      <div className="w-16 h-16 bg-cofound-cyan/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <BarChart3 className="h-8 w-8 text-cofound-cyan" />
                       </div>
-                      <h3 className="text-xl font-semibold mb-2 text-white">{screenshots[currentScreenshot]?.title}</h3>
-                      <p className="text-white/80 mb-4">{screenshots[currentScreenshot]?.description}</p>
-                      <p className="text-xs text-white/60">
+                      <h3 className="text-xl font-semibold mb-2 text-cofound-navy">{screenshots[currentScreenshot]?.title}</h3>
+                      <p className="text-gray-600 mb-4">{screenshots[currentScreenshot]?.description}</p>
+                      <p className="text-xs text-gray-500">
                         📸 Faça upload da imagem no painel administrativo
                       </p>
                     </div>
@@ -361,8 +361,8 @@ const LandingPagePreview = () => {
                 
                 {screenshots[currentScreenshot]?.image && (
                   <div className="text-center">
-                    <h3 className="text-xl font-semibold mb-2 text-white">{screenshots[currentScreenshot].title}</h3>
-                    <p className="text-white/80">{screenshots[currentScreenshot].description}</p>
+                    <h3 className="text-xl font-semibold mb-2 text-cofound-navy">{screenshots[currentScreenshot].title}</h3>
+                    <p className="text-gray-600">{screenshots[currentScreenshot].description}</p>
                   </div>
                 )}
 
@@ -371,7 +371,7 @@ const LandingPagePreview = () => {
                     variant="outline" 
                     size="sm" 
                     onClick={prevScreenshot} 
-                    className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+                    className="bg-cofound-cyan border-cofound-cyan text-white hover:bg-cofound-navy transition-colors"
                     disabled={screenshots.length === 0}
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -381,8 +381,8 @@ const LandingPagePreview = () => {
                     {screenshots.map((_, index) => (
                       <button 
                         key={index} 
-                        className={`w-2 h-2 rounded-full transition-colors ${
-                          index === currentScreenshot ? 'bg-cofound-lime' : 'bg-white/30'
+                        className={`w-2 h-2 rounded-full transition-all ${
+                          index === currentScreenshot ? 'bg-cofound-cyan w-8' : 'bg-gray-300'
                         }`} 
                         onClick={() => setCurrentScreenshot(index)} 
                       />
@@ -393,7 +393,7 @@ const LandingPagePreview = () => {
                     variant="outline" 
                     size="sm" 
                     onClick={nextScreenshot} 
-                    className="bg-white/10 border-white/30 text-white hover:bg-white/20"
+                    className="bg-cofound-cyan border-cofound-cyan text-white hover:bg-cofound-navy transition-colors"
                     disabled={screenshots.length === 0}
                   >
                     <ChevronRight className="h-4 w-4" />
