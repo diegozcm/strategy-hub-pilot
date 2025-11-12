@@ -436,7 +436,7 @@ const LandingPagePreview = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-16 px-4 bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      <section id="cases" className="py-16 px-4 bg-gradient-to-br from-gray-50 via-white to-gray-50">
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-cofound-navy mb-4">
