@@ -49,6 +49,13 @@ All colors MUST be HSL.
     --strategy-gray-light: 0 0% 97%;
     --strategy-gray-medium: 220 13% 46%;
 
+    /* COFOUND New Brand Colors (Landing Preview) */
+    --cofound-cyan: 199 78% 55%;
+    --cofound-navy: 211 61% 10%;
+    --cofound-lime: 68 100% 42%;
+    --cofound-white: 0 0% 100%;
+    --cofound-light-gray: 0 0% 96%;
+
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;

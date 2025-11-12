@@ -9,7 +9,8 @@ import {
   User,
   Monitor,
   FileText,
-  Mail
+  Mail,
+  Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -72,6 +73,12 @@ const adminMenuItems = [
     path: '/app/admin/landing-page',
     icon: FileText,
     description: 'Editar conteúdo da página inicial'
+  },
+  {
+    name: 'Landing Preview',
+    path: '/app/admin/landing-preview',
+    icon: Eye,
+    description: 'Preview do novo design COFOUND'
   },
   {
     name: 'Templates de Email',

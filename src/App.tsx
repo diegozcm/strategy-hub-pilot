@@ -37,6 +37,7 @@ import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 import { StartTogetherAdminLayout } from "./components/admin/StartTogetherAdminLayout";
 import { CompanySelectionPage } from "@/pages/CompanySelectionPage";
 import LandingPage from "@/pages/LandingPage";
+import LandingPagePreview from "@/pages/LandingPagePreview";
 import NotFound from "@/pages/NotFound";
 import { GoldenCirclePage } from "@/components/golden-circle/GoldenCirclePage";
 import { ToolsPage } from "@/components/tools/ToolsPage";
@@ -124,6 +125,7 @@ const App = () => (
                   <Route path="settings" element={<SystemSettingsPage />} />
                   <Route path="monitoring" element={<MonitoringPage />} />
                   <Route path="landing-page" element={<LandingPageEditorPage />} />
+                  <Route path="landing-preview" element={<LandingPagePreview />} />
                   <Route path="email-templates" element={<EmailTemplatesPage />} />
                 </Route>
 

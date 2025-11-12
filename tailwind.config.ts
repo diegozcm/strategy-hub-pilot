@@ -71,6 +71,13 @@ export default {
 					'blue-bright-hover': 'hsl(var(--strategy-blue-bright-hover))',
 					'gray-light': 'hsl(var(--strategy-gray-light))',
 					'gray-medium': 'hsl(var(--strategy-gray-medium))'
+				},
+				cofound: {
+					cyan: 'hsl(var(--cofound-cyan))',
+					navy: 'hsl(var(--cofound-navy))',
+					lime: 'hsl(var(--cofound-lime))',
+					white: 'hsl(var(--cofound-white))',
+					'light-gray': 'hsl(var(--cofound-light-gray))'
 				}
 			},
 			borderRadius: {
