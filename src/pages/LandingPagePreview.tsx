@@ -107,21 +107,21 @@ const LandingPagePreview = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="pt-24 pb-16 px-4 bg-gradient-to-br from-cofound-light-gray to-white">
+      <section className="pt-24 pb-16 px-4 bg-gradient-to-br from-white via-gray-50 to-cofound-cyan/5">
         <div className="container mx-auto text-center">
           <div className="max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-6xl font-bold text-cofound-cyan mb-6 leading-tight">
+            <h1 className="text-5xl md:text-6xl font-bold text-cofound-navy mb-6 leading-tight">
               {getContent('hero', 'title', 'A primeira plataforma que unifica Strategy HUB e Startup HUB')}
             </h1>
             
-            <p className="text-xl text-cofound-navy mb-8 leading-relaxed">
+            <p className="text-xl text-gray-700 mb-8 leading-relaxed">
               {getContent('hero', 'subtitle', 'Transforme sua visão em resultados concretos com uma plataforma que acelera o crescimento do seu negócio e conecta startups aos melhores mentores do mercado.')}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               {parseBoolean(getContent('hero', 'primary_button_active', 'false')) && (
                 <Link to={getContent('hero', 'primary_button_link', '/auth')}>
-                  <Button size="lg" className="text-lg px-8 py-6 bg-cofound-cyan hover:bg-cofound-cyan/90 text-white">
+                  <Button size="lg" className="text-lg px-8 py-6 bg-cofound-cyan hover:bg-cofound-navy text-white shadow-lg">
                     <ArrowRight className="mr-2 h-5 w-5" />
                     {getContent('hero', 'primary_button', 'Começar Gratuitamente')}
                   </Button>
@@ -133,7 +133,7 @@ const LandingPagePreview = () => {
                   target="_blank" 
                   rel="noopener noreferrer"
                 >
-                  <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-cofound-navy text-cofound-navy hover:bg-cofound-navy hover:text-white">
+                  <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-2 border-cofound-navy text-cofound-navy hover:bg-cofound-navy hover:text-white shadow-md">
                     <Phone className="mr-2 h-5 w-5" />
                     {getContent('hero', 'secondary_button', 'Fale com um consultor!')}
                   </Button>
