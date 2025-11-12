@@ -436,13 +436,13 @@ const LandingPagePreview = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="py-16 px-4 bg-cofound-navy">
+      <section className="py-16 px-4 bg-gradient-to-br from-gray-50 via-white to-gray-50">
         <div className="container mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">
+            <h2 className="text-4xl font-bold text-cofound-navy mb-4">
               {getContent('testimonials', 'title', 'Depoimentos de Clientes')}
             </h2>
-            <p className="text-xl text-white/80">
+            <p className="text-xl text-gray-600">
               {getContent('testimonials', 'subtitle', 'Veja o que nossos clientes dizem sobre o Start Together')}
             </p>
           </div>
@@ -459,7 +459,7 @@ const LandingPagePreview = () => {
               if (!name || !text) return null;
               
               return (
-                <Card key={num} className="hover:shadow-lg transition-all duration-300 bg-white border">
+                <Card key={num} className="hover:shadow-xl transition-all duration-300 bg-white border-2 border-cofound-cyan/10 hover:border-cofound-cyan/30">
                   <CardHeader>
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 bg-gray-200 rounded-full overflow-hidden">
@@ -473,14 +473,14 @@ const LandingPagePreview = () => {
                         <h4 className="font-semibold text-cofound-cyan">{name}</h4>
                         <p className="text-sm text-cofound-navy">{role}{company ? `, ${company}` : ''}</p>
                         {badge && (
-                          <Badge className={`mt-1 text-xs ${badge.includes('Startup') ? 'bg-cofound-lime text-cofound-navy' : 'bg-cofound-cyan text-white'}`}>
+                          <Badge className="mt-1 text-xs bg-cofound-cyan text-white">
                             {badge}
                           </Badge>
                         )}
                       </div>
                     </div>
                     <div className="flex space-x-1">
-                      {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-cofound-lime text-cofound-lime" />)}
+                      {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-cofound-cyan text-cofound-cyan" />)}
                     </div>
                   </CardHeader>
                   <CardContent>
