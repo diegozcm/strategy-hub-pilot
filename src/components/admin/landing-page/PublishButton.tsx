@@ -37,9 +37,25 @@ export const PublishButton = () => {
       }, 1500);
       
     } catch (error) {
-      console.error('Error publishing:', error);
+      console.error('❌ Error publishing landing page:', error);
+      
+      // Log detalhado para debug
+      if (error && typeof error === 'object') {
+        console.error('Error details:', JSON.stringify(error, null, 2));
+      }
+      
+      // Extrair mensagem do erro do Supabase
+      let errorMessage = 'Não foi possível publicar o conteúdo. Tente novamente.';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = String(error.message);
+      }
+      
       toast.error('Erro ao publicar', {
-        description: error instanceof Error ? error.message : 'Não foi possível publicar o conteúdo. Tente novamente.',
+        description: errorMessage,
+        duration: 10000, // 10 segundos para ler o erro completo
       });
     } finally {
       setPublishing(false);
