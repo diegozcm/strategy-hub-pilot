@@ -28,7 +28,7 @@ const themes = {
     logoColor: 'text-white',
     logoSubtext: 'text-white/90',
     navLink: 'text-white hover:text-cofound-navy',
-    loginBtn: 'border-2 border-white text-white hover:bg-white hover:text-cofound-navy shadow-md transition-all duration-300',
+    loginBtn: 'border-2 border-white text-cofound-navy hover:bg-white hover:text-cofound-cyan shadow-md transition-all duration-300',
     
     // Hero section
     heroBg: 'bg-gradient-to-br from-white via-gray-50 to-cofound-cyan/5',
