@@ -94,7 +94,7 @@ const themes = {
     ctaBg: 'bg-gradient-to-r from-cofound-cyan to-cofound-navy',
     ctaTitle: 'text-white',
     ctaSubtitle: 'text-white/90',
-    ctaPrimaryBtn: 'bg-white text-cofound-navy hover:bg-gray-100',
+    ctaPrimaryBtn: 'bg-white text-cofound-navy hover:bg-gray-100 hover:text-cofound-cyan',
     ctaSecondaryBtn: 'border-2 border-white text-cofound-navy hover:bg-white hover:text-cofound-cyan',
     
     // Footer
