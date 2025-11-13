@@ -480,7 +480,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
       </section>
 
       {/* Demo Section */}
-      <section className={`py-16 px-4 ${t.demoBg}`}>
+      <section id="cases" className={`py-16 px-4 ${t.demoBg}`}>
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className={`text-4xl font-bold ${t.demoTitle} mb-4`}>
