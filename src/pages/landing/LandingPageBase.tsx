@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Brain, BarChart3, Target as TargetIcon, FileText, Users, TrendingUp, ArrowRight, Play, Star, Shield, Zap, Lock, Target, Award, ChevronLeft, ChevronRight, Map, Lightbulb, Building2, Rocket, CheckCircle, Phone, Mail, MapPin, Linkedin, Twitter, MessageSquare, UserCheck, TrendingDown, Activity, PieChart, Clock } from 'lucide-react';
+import { Brain, BarChart3, Target as TargetIcon, FileText, Users, TrendingUp, ArrowRight, Play, Star, Shield, Zap, Lock, Target, Award, ChevronLeft, ChevronRight, Map, Lightbulb, Building2, Rocket, CheckCircle, Phone, Mail, MapPin, Linkedin, Instagram, MessageSquare, UserCheck, TrendingDown, Activity, PieChart, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 
@@ -285,7 +285,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({ getContent, th
             <a href="#cases" className={t.navLink}>
               Casos de Uso
             </a>
-            <a href="#contact" className={t.navLink}>
+            <a href={getContent('hero', 'secondary_button_link', 'https://wa.me/554796342353?text=Tenho%20interesse%20em%20saber%20mais%20sobre%20o%20Start%20Together%20by%20COFOUND')} className={t.navLink}>
               Contato
             </a>
           </nav>
@@ -711,7 +711,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({ getContent, th
       {/* Footer */}
       <footer className={t.footerBg}>
         <div className="container mx-auto px-4 py-12">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
             {/* Company Info */}
             <div>
               <div className="flex items-center space-x-2 mb-4">
@@ -722,11 +722,11 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({ getContent, th
                 {getContent('footer', 'description', 'Impulsionando o crescimento de empresas através de estratégia e inovação.')}
               </p>
               <div className="flex gap-4">
-                <a href={getContent('footer', 'linkedin_url', '#')} target="_blank" rel="noopener noreferrer" className={t.footerLink}>
+                <a href={getContent('footer', 'linkedin_url', 'https://www.linkedin.com/company/cofoundbr/')} target="_blank" rel="noopener noreferrer" className={t.footerLink}>
                   <Linkedin className="h-5 w-5" />
                 </a>
-                <a href={getContent('footer', 'twitter_url', '#')} target="_blank" rel="noopener noreferrer" className={t.footerLink}>
-                  <Twitter className="h-5 w-5" />
+                <a href={getContent('footer', 'instagram_url', 'https://instagram.com/cofoundbr')} target="_blank" rel="noopener noreferrer" className={t.footerLink}>
+                  <Instagram className="h-5 w-5" />
                 </a>
               </div>
             </div>
@@ -741,36 +741,26 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({ getContent, th
               </ul>
             </div>
 
-            {/* Support */}
-            <div>
-              <h3 className={`font-semibold ${t.footerTitle} mb-4`}>Suporte</h3>
-              <ul className="space-y-2">
-                <li><a href={getContent('footer', 'help_center_url', '#')} className={t.footerLink}>Central de Ajuda</a></li>
-                <li><a href={getContent('footer', 'documentation_url', '#')} className={t.footerLink}>Documentação</a></li>
-                <li><a href={getContent('footer', 'contact_url', '#contact')} className={t.footerLink}>Contato</a></li>
-              </ul>
-            </div>
-
             {/* Contact */}
             <div id="contact">
               <h3 className={`font-semibold ${t.footerTitle} mb-4`}>Contato</h3>
               <ul className="space-y-3">
                 <li className="flex items-center gap-2">
                   <Mail className={`h-4 w-4 ${t.footerText}`} />
-                  <a href={`mailto:${getContent('footer', 'email', 'contato@starttogether.com')}`} className={t.footerLink}>
-                    {getContent('footer', 'email', 'contato@starttogether.com')}
+                  <a href={`mailto:${getContent('footer', 'email', 'admin@cofound.com.br')}`} className={t.footerLink}>
+                    {getContent('footer', 'email', 'admin@cofound.com.br')}
                   </a>
                 </li>
                 <li className="flex items-center gap-2">
                   <Phone className={`h-4 w-4 ${t.footerText}`} />
-                  <a href={`tel:${getContent('footer', 'phone', '+55479634-2353')}`} className={t.footerLink}>
-                    {getContent('footer', 'phone', '+55 47 9634-2353')}
+                  <a href={`tel:${getContent('footer', 'phone', '+5548336335549')}`} className={t.footerLink}>
+                    {getContent('footer', 'phone', '+55 48 3363-3549')}
                   </a>
                 </li>
                 <li className="flex items-start gap-2">
                   <MapPin className={`h-4 w-4 ${t.footerText} mt-1`} />
                   <span className={t.footerText}>
-                    {getContent('footer', 'address', 'Florianópolis, SC - Brasil')}
+                    {getContent('footer', 'address', 'Ágora Tech Park - Joinville - SC - Brasil')}
                   </span>
                 </li>
               </ul>
