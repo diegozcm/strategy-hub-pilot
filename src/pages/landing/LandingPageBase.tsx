@@ -95,7 +95,7 @@ const themes = {
     ctaTitle: 'text-white',
     ctaSubtitle: 'text-white/90',
     ctaPrimaryBtn: 'bg-white text-cofound-navy hover:bg-gray-100',
-    ctaSecondaryBtn: 'border-2 border-white text-white hover:bg-white hover:text-cofound-navy',
+    ctaSecondaryBtn: 'border-2 border-white text-cofound-navy hover:bg-white hover:text-cofound-cyan',
     
     // Footer
     footerBg: 'bg-cofound-navy',
