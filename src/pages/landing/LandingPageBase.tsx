@@ -383,8 +383,16 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({ getContent, th
               </div>
               
               <div className="grid md:grid-cols-3 gap-6 mb-8">
-                {[1, 2, 3].map((num) => {
-                  const iconName = getContent('features', `strategy_feature_${num}_icon`, num === 1 ? 'BarChart3' : num === 2 ? 'Target' : 'Brain');
+                {[
+                  { icon: 'Activity', title: 'Dashboard RUMO', desc: 'Visão executiva integrada com objetivos, pilares estratégicos e indicadores de desempenho em tempo real' },
+                  { icon: 'Map', title: 'Mapa Estratégico', desc: 'Estruture e visualize pilares estratégicos, objetivos corporativos e resultados-chave em uma visão unificada' },
+                  { icon: 'Target', title: 'OKRs e Indicadores', desc: 'Defina objetivos, estabeleça key results mensuráveis e acompanhe o progresso com métricas detalhadas' },
+                  { icon: 'Briefcase', title: 'Planos de Ação', desc: 'Gerencie iniciativas estratégicas, projetos e ações com acompanhamento de responsáveis e prazos' },
+                  { icon: 'Lightbulb', title: 'Ferramentas Estratégicas', desc: 'Análise SWOT, Golden Circle e Vision Alignment para fortalecer seu planejamento estratégico' },
+                  { icon: 'Brain', title: 'Copiloto com IA', desc: 'Assistente inteligente que fornece insights, análises preditivas e recomendações estratégicas personalizadas' }
+                ].map((feature, index) => {
+                  const num = index + 1;
+                  const iconName = getContent('features', `strategy_feature_${num}_icon`, feature.icon);
                   const IconComponent = Icons[iconName as keyof typeof Icons] as React.ComponentType<any>;
                   
                   return (
@@ -394,16 +402,12 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({ getContent, th
                           {IconComponent ? <IconComponent className={`h-6 w-6 ${t.strategyCardIcon}`} /> : <BarChart3 className={`h-6 w-6 ${t.strategyCardIcon}`} />}
                         </div>
                         <CardTitle className={t.strategyCardTitle}>
-                          {getContent('features', `strategy_feature_${num}_title`, num === 1 ? 'Dashboard Executivo' : num === 2 ? 'Mapa Estratégico' : 'Copiloto com IA')}
+                          {getContent('features', `strategy_feature_${num}_title`, feature.title)}
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
                         <CardDescription className={`text-base ${t.strategyCardDesc}`}>
-                          {getContent('features', `strategy_feature_${num}_description`, 
-                            num === 1 ? 'Visão centralizada de todos os indicadores estratégicos da empresa' : 
-                            num === 2 ? 'Visualize e gerencie objetivos, resultados-chave e iniciativas' :
-                            'Assistente inteligente para análises e insights estratégicos'
-                          )}
+                          {getContent('features', `strategy_feature_${num}_description`, feature.desc)}
                         </CardDescription>
                       </CardContent>
                     </Card>
