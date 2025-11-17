@@ -169,9 +169,8 @@ export const CompanySelectionPage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-lg">{company.name}</CardTitle>
                     {company.ai_enabled && (
-                      <Badge variant="secondary" className="flex items-center gap-1">
-                        <Sparkles className="h-3 w-3" />
-                        AI Ativo
+                      <Badge variant="secondary" className="p-1.5">
+                        <Sparkles className="h-4 w-4 text-orange-500" />
                       </Badge>
                     )}
                   </div>
