@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, TrendingUp, AlertTriangle, CheckCircle, Settings, Zap, Target, Users, BarChart3, Clock, ArrowRight, X, Sparkles, History, RefreshCw, Lightbulb, MessageSquare } from 'lucide-react';
+import { Brain, TrendingUp, AlertTriangle, CheckCircle, Zap, Target, Users, BarChart3, Clock, ArrowRight, X, Sparkles, History, RefreshCw, Lightbulb, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AISettingsModal } from './AISettingsModal';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
@@ -45,7 +44,6 @@ export const AICopilotPage: React.FC = () => {
   const [isInsightModalOpen, setIsInsightModalOpen] = useState(false);
   const [generatingInsights, setGeneratingInsights] = useState(false);
   const [confirmedInsights, setConfirmedInsights] = useState<AIInsight[]>([]);
-  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   useEffect(() => {
     loadAIData();
@@ -287,24 +285,18 @@ export const AICopilotPage: React.FC = () => {
           </h1>
           <p className="text-muted-foreground mt-2">Assistente inteligente para execução estratégica</p>
         </div>
-        <div className="flex gap-3">
-          <Button 
-            variant="outline" 
-            onClick={generateRealInsights}
-            disabled={generatingInsights}
-          >
-            {generatingInsights ? (
-              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Brain className="w-4 h-4 mr-2" />
-            )}
-            Analisar Dados
-          </Button>
-          <Button onClick={() => setSettingsModalOpen(true)}>
-            <Settings className="w-4 h-4 mr-2" />
-            Configurações
-          </Button>
-        </div>
+        <Button 
+          variant="outline" 
+          onClick={generateRealInsights}
+          disabled={generatingInsights}
+        >
+          {generatingInsights ? (
+            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Brain className="w-4 h-4 mr-2" />
+          )}
+          Analisar Dados
+        </Button>
       </div>
 
       {/* KPI Cards */}
@@ -618,11 +610,6 @@ export const AICopilotPage: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
-
-      <AISettingsModal 
-        open={settingsModalOpen} 
-        onOpenChange={setSettingsModalOpen}
-      />
     </div>
   );
 };
