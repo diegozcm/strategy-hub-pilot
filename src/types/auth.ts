@@ -2,6 +2,8 @@ export type UserRole = 'admin' | 'manager' | 'member';
 
 export type UserStatus = 'pending' | 'active' | 'inactive';
 
+export type CompanyType = 'regular' | 'startup';
+
 export interface Company {
   id: string;
   name: string;
@@ -12,6 +14,7 @@ export interface Company {
   logo_url?: string;
   active: boolean;
   ai_enabled?: boolean;
+  company_type?: CompanyType;
   created_at: string;
   updated_at: string;
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Building2, ArrowRight, Users, Calendar, ArrowLeft, LogOut, Sparkles, Shield } from 'lucide-react';
+import { Building2, ArrowRight, Users, Calendar, ArrowLeft, LogOut, Sparkles, Shield, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -168,11 +168,16 @@ export const CompanySelectionPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-lg">{company.name}</CardTitle>
-                    {company.ai_enabled && (
-                      <Badge variant="secondary" className="p-1.5">
+                    <div className="flex items-center gap-1">
+                      {company.ai_enabled && (
                         <Sparkles className="h-4 w-4 text-orange-500" />
-                      </Badge>
-                    )}
+                      )}
+                      {company.company_type === 'startup' ? (
+                        <Rocket className="h-4 w-4 text-blue-500" />
+                      ) : (
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </div>
                   </div>
                   {company.logo_url ? (
                     <img 
@@ -187,18 +192,27 @@ export const CompanySelectionPage: React.FC = () => {
                   )}
                 </div>
                 <CardDescription className="text-sm">
-                  {company.document ? `CNPJ: ${company.document}` : 'Empresa'}
+                  {company.document ? `CNPJ: ${company.document}` : 'Sem CNPJ cadastrado'}
                 </CardDescription>
               </CardHeader>
               
               <CardContent className="pt-0">
                 <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-                  <div className="flex items-center">
-                    <Users className="h-4 w-4 mr-1" />
-                    <span>Empresa</span>
+                  <div className="flex items-center gap-1">
+                    {company.company_type === 'startup' ? (
+                      <>
+                        <Rocket className="h-4 w-4" />
+                        <span>Startup</span>
+                      </>
+                    ) : (
+                      <>
+                        <Building2 className="h-4 w-4" />
+                        <span>Regular</span>
+                      </>
+                    )}
                   </div>
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
                     <span>{new Date(company.created_at).getFullYear()}</span>
                   </div>
                 </div>
