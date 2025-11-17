@@ -170,6 +170,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
               vision,
               values,
               logo_url,
+              ai_enabled,
               created_at,
               updated_at
             )
@@ -478,6 +479,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
             vision,
             values,
             logo_url,
+            ai_enabled,
             created_at,
             updated_at
           )
@@ -527,6 +529,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
             vision,
             values,
             logo_url,
+            ai_enabled,
             created_at,
             updated_at
           )
