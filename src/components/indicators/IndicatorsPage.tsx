@@ -704,7 +704,10 @@ export const IndicatorsPage: React.FC = () => {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-lg ${progressFilter === 'all' ? 'ring-2 ring-primary' : ''}`}
+          onClick={() => setProgressFilter('all')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
@@ -715,7 +718,10 @@ export const IndicatorsPage: React.FC = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-lg ${progressFilter === 'success' ? 'ring-2 ring-green-600' : ''}`}
+          onClick={() => setProgressFilter('success')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">No Alvo</CardTitle>
             <CheckCircle className="h-4 w-4 text-green-600" />
@@ -726,7 +732,10 @@ export const IndicatorsPage: React.FC = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-lg ${progressFilter === 'warning' ? 'ring-2 ring-yellow-600' : ''}`}
+          onClick={() => setProgressFilter('warning')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Em Risco</CardTitle>
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
@@ -737,7 +746,10 @@ export const IndicatorsPage: React.FC = () => {
           </CardContent>
         </Card>
         
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-lg ${progressFilter === 'danger' ? 'ring-2 ring-red-600' : ''}`}
+          onClick={() => setProgressFilter('danger')}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Críticos</CardTitle>
             <Activity className="h-4 w-4 text-red-600" />
