@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, Brain, MessageSquare, Lightbulb, TrendingUp, AlertTriangle, CheckCircle, Settings, Zap, Target, Users, BarChart3, Clock, ArrowRight, X, Send, Sparkles, History, RefreshCw } from 'lucide-react';
+import { Brain, TrendingUp, AlertTriangle, CheckCircle, Settings, Zap, Target, Users, BarChart3, Clock, ArrowRight, X, Sparkles, History, RefreshCw, Lightbulb, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -34,51 +34,13 @@ interface AIInsight {
   confirmed_by?: string;
 }
 
-interface AIRecommendation {
-  id: string;
-  insight_id: string;
-  title: string;
-  description: string;
-  action_type: string;
-  priority: string;
-  estimated_impact: string;
-  effort_required: string;
-  deadline?: string;
-  assigned_to?: string;
-  status: string;
-  feedback?: string;
-  created_at: string;
-}
-
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  message_type: string;
-  metadata?: any;
-  created_at: string;
-}
-
-interface ChatSession {
-  id: string;
-  user_id: string;
-  session_title?: string;
-  created_at: string;
-  updated_at: string;
-}
 
 export const AICopilotPage: React.FC = () => {
   const { user, company } = useAuth();
   const { toast } = useToast();
   
   const [insights, setInsights] = useState<AIInsight[]>([]);
-  const [recommendations, setRecommendations] = useState<AIRecommendation[]>([]);
-  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
-  const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [chatLoading, setChatLoading] = useState(false);
-  const [messageInput, setMessageInput] = useState('');
   const [selectedInsight, setSelectedInsight] = useState<AIInsight | null>(null);
   const [isInsightModalOpen, setIsInsightModalOpen] = useState(false);
   const [generatingInsights, setGeneratingInsights] = useState(false);
@@ -95,7 +57,7 @@ export const AICopilotPage: React.FC = () => {
     try {
       setLoading(true);
       
-      const [insightsRes, recommendationsRes, chatSessionsRes, confirmedInsightsRes] = await Promise.all([
+      const [insightsRes, confirmedInsightsRes] = await Promise.all([
         supabase
           .from('ai_insights')
           .select('*')
@@ -103,18 +65,6 @@ export const AICopilotPage: React.FC = () => {
           .eq('user_id', user?.id)
           .eq('status', 'active')
           .order('created_at', { ascending: false }),
-        supabase
-          .from('ai_recommendations')
-          .select('*')
-          .eq('insight_id', null) // Filter only general recommendations for now
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('ai_chat_sessions')
-          .select('*')
-          .eq('user_id', user?.id)
-          .eq('company_id', company.id)
-          .order('updated_at', { ascending: false })
-          .limit(10),
         supabase
           .from('ai_insights')
           .select('*')
@@ -126,8 +76,6 @@ export const AICopilotPage: React.FC = () => {
       ]);
 
       if (insightsRes.data) setInsights(insightsRes.data);
-      if (recommendationsRes.data) setRecommendations(recommendationsRes.data);
-      if (chatSessionsRes.data) setChatSessions(chatSessionsRes.data);
       if (confirmedInsightsRes.data) setConfirmedInsights(confirmedInsightsRes.data);
 
     } catch (error) {
@@ -142,121 +90,6 @@ export const AICopilotPage: React.FC = () => {
     }
   };
 
-  const createChatSession = async () => {
-    if (!user || !company?.id) return null;
-
-    try {
-      const { data, error } = await supabase
-        .from('ai_chat_sessions')
-        .insert([{
-          user_id: user.id,
-          company_id: company.id,
-          session_title: `Chat ${new Date().toLocaleDateString('pt-BR')}`
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      console.error('Error creating chat session:', error);
-      return null;
-    }
-  };
-
-  const sendMessage = async () => {
-    if (!messageInput.trim() || !user) return;
-
-    try {
-      setChatLoading(true);
-      
-      let session = currentSession;
-      if (!session) {
-        session = await createChatSession();
-        if (!session) return;
-        setCurrentSession(session);
-      }
-
-      // Add user message
-      const userMessage = {
-        session_id: session.id,
-        role: 'user' as const,
-        content: messageInput,
-        message_type: 'text'
-      };
-
-      const { data: userMsgData, error: userMsgError } = await supabase
-        .from('ai_chat_messages')
-        .insert([userMessage])
-        .select()
-        .single();
-
-      if (userMsgError) throw userMsgError;
-
-      setMessages(prev => [...prev, userMsgData as ChatMessage]);
-      setMessageInput('');
-
-      // Send to AI chat function
-      const response = await supabase.functions.invoke('ai-chat', {
-        body: { 
-          message: messageInput,
-          session_id: session.id,
-          user_id: user.id,
-          company_id: company?.id
-        }
-      });
-
-      if (response.error) throw response.error;
-
-      // Add assistant response
-      const assistantMessage = {
-        session_id: session.id,
-        role: 'assistant' as const,
-        content: response.data.response,
-        message_type: 'text'
-      };
-
-      const { data: assistantMsgData, error: assistantMsgError } = await supabase
-        .from('ai_chat_messages')
-        .insert([assistantMessage])
-        .select()
-        .single();
-
-      if (assistantMsgError) throw assistantMsgError;
-
-      setMessages(prev => [...prev, assistantMsgData as ChatMessage]);
-
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao enviar mensagem. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setChatLoading(false);
-    }
-  };
-
-  const loadChatMessages = async (sessionId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('ai_chat_messages')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setMessages((data || []) as ChatMessage[]);
-    } catch (error) {
-      console.error('Error loading messages:', error);
-    }
-  };
-
-  const selectChatSession = async (session: ChatSession) => {
-    setCurrentSession(session);
-    await loadChatMessages(session.id);
-  };
 
   const generateRealInsights = async () => {
     if (!user || !company?.id) return;
@@ -415,12 +248,6 @@ export const AICopilotPage: React.FC = () => {
     }
   };
 
-  const quickActions = [
-    { label: "Como estão meus KPIs?", action: () => setMessageInput("Como estão meus KPIs principais?") },
-    { label: "Status dos projetos", action: () => setMessageInput("Qual é o status atual dos meus projetos?") },
-    { label: "Resumo das mentorias", action: () => setMessageInput("Me dê um resumo das últimas sessões de mentoria") },
-    { label: "Status das startups", action: () => setMessageInput("Como estão as startups no programa de aceleração?") }
-  ];
 
   if (loading) {
     return (
@@ -481,7 +308,7 @@ export const AICopilotPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -491,20 +318,6 @@ export const AICopilotPage: React.FC = () => {
               </div>
               <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <Brain className="w-4 h-4 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Recomendações</p>
-                <p className="text-2xl font-bold text-green-600">{recommendations.filter(r => r.status === 'pending').length}</p>
-              </div>
-              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <Lightbulb className="w-4 h-4 text-green-600" />
               </div>
             </div>
           </CardContent>
@@ -544,12 +357,10 @@ export const AICopilotPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="chat" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="chat">Chat Assistente</TabsTrigger>
+      <Tabs defaultValue="insights" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="insights">Insights Ativos</TabsTrigger>
           <TabsTrigger value="history">Histórico</TabsTrigger>
-          <TabsTrigger value="recommendations">Recomendações</TabsTrigger>
         </TabsList>
 
         <TabsContent value="insights" className="space-y-6">
@@ -728,204 +539,6 @@ export const AICopilotPage: React.FC = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="chat" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-96">
-            {/* Chat Sessions Sidebar */}
-            <Card className="lg:col-span-1">
-              <CardHeader>
-                <CardTitle className="text-lg">Conversas</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <ScrollArea className="h-80">
-                  <div className="space-y-2 p-4">
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        setCurrentSession(null);
-                        setMessages([]);
-                      }}
-                    >
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Nova Conversa
-                    </Button>
-                    {chatSessions.map((session) => (
-                      <Button
-                        key={session.id}
-                        variant={currentSession?.id === session.id ? "default" : "ghost"}
-                        className="w-full justify-start text-left"
-                        onClick={() => selectChatSession(session)}
-                      >
-                        <MessageSquare className="w-4 h-4 mr-2 flex-shrink-0" />
-                        <span className="truncate">
-                          {session.session_title || `Chat ${new Date(session.created_at).toLocaleDateString('pt-BR')}`}
-                        </span>
-                      </Button>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-
-            {/* Chat Interface */}
-            <Card className="lg:col-span-3">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Bot className="w-5 h-5" />
-                  Assistente IA
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ScrollArea className="h-64 border rounded-lg p-4">
-                  <div className="space-y-4">
-                    {messages.length === 0 && (
-                      <div className="text-center text-muted-foreground">
-                        <Bot className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                        <p>Olá! Sou seu assistente de IA. Como posso ajudá-lo hoje?</p>
-                      </div>
-                    )}
-                    {messages.map((message) => (
-                      <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[80%] p-3 rounded-lg ${
-                          message.role === 'user' 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'bg-muted'
-                        }`}>
-                          <div className="text-sm whitespace-pre-wrap">
-                            {message.content.split('\n').map((line, index) => (
-                              <div key={index} className={line.trim().startsWith('•') || line.trim().startsWith('*') ? 'ml-2' : ''}>
-                                {line.trim().startsWith('•') || line.trim().startsWith('*') 
-                                  ? <span>• {line.replace(/^[•*]\s*/, '').trim()}</span>
-                                  : line.trim().startsWith('**') && line.trim().endsWith('**')
-                                  ? <strong>{line.replace(/^\*\*|\*\*$/g, '')}</strong>
-                                  : line
-                                }
-                              </div>
-                            ))}
-                          </div>
-                          <p className="text-xs opacity-70 mt-1">
-                            {new Date(message.created_at).toLocaleTimeString('pt-BR', { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    {chatLoading && (
-                      <div className="flex justify-start">
-                        <div className="bg-muted p-3 rounded-lg">
-                          <div className="flex items-center gap-2">
-                            <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full"></div>
-                            <span className="text-sm">Pensando...</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Digite sua mensagem..."
-                    value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !chatLoading && sendMessage()}
-                    disabled={chatLoading}
-                  />
-                  <Button 
-                    onClick={sendMessage} 
-                    disabled={!messageInput.trim() || chatLoading}
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="recommendations" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {recommendations.map((recommendation) => (
-              <Card key={recommendation.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg leading-tight">{recommendation.title}</CardTitle>
-                    <Badge variant={
-                      recommendation.priority === 'urgent' ? 'destructive' :
-                      recommendation.priority === 'high' ? 'destructive' :
-                      recommendation.priority === 'medium' ? 'secondary' : 'outline'
-                    }>
-                      {recommendation.priority}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">{recommendation.description}</p>
-                  
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Tipo de Ação:</span>
-                      <span className="font-medium">{recommendation.action_type}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Impacto Estimado:</span>
-                      <Badge variant="outline">{recommendation.estimated_impact}</Badge>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Esforço Necessário:</span>
-                      <Badge variant="outline">{recommendation.effort_required}</Badge>
-                    </div>
-                    {recommendation.deadline && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Prazo:</span>
-                        <span className="font-medium">
-                          {new Date(recommendation.deadline).toLocaleDateString('pt-BR')}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Status:</span>
-                      <Badge variant={recommendation.status === 'completed' ? 'default' : 'secondary'}>
-                        {recommendation.status}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  {recommendation.status === 'pending' && (
-                    <div className="flex gap-2 mt-4">
-                      <Button variant="default" size="sm">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Aceitar
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Clock className="w-3 h-3 mr-1" />
-                        Adiar
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <X className="w-3 h-3 mr-1" />
-                        Rejeitar
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {recommendations.length === 0 && (
-            <Card className="text-center py-12">
-              <CardContent>
-                <Lightbulb className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhuma recomendação ativa</h3>
-                <p className="text-muted-foreground">
-                  A IA gerará recomendações baseadas na análise dos seus dados.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
       </Tabs>
 
       {/* Insight Detail Modal */}
