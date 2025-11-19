@@ -884,7 +884,7 @@ STARTUP HUB:
         insights_inserted: insertedInsights,
         recommendations_generated: aiRecommendations.length,
         recommendations_inserted: insertedRecommendations,
-        ai_enhanced: openAIKey ? true : false,
+        ai_enhanced: lovableApiKey ? true : false,
         data_summary: {
           strategic_plans: planIds.length,
           projects: projects.length,
