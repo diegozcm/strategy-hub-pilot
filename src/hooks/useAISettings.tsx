@@ -18,7 +18,7 @@ export interface AISettings {
 }
 
 const DEFAULT_SETTINGS: Omit<AISettings, 'id' | 'company_id'> = {
-  model: 'gpt-4o-mini',
+  model: 'google/gemini-2.5-flash',
   temperature: 0.7,
   max_tokens: 1000,
   web_search_enabled: false,
@@ -26,7 +26,7 @@ const DEFAULT_SETTINGS: Omit<AISettings, 'id' | 'company_id'> = {
   voice_enabled: false,
   voice_model: 'tts-1',
   voice_id: 'alloy',
-  system_prompt: 'Você é um assistente especializado em análise estratégica e gestão empresarial. Forneça insights precisos e acionáveis.',
+  system_prompt: 'Você é um assistente especializado em análise estratégica e gestão empresarial. Forneça insights precisos e acionáveis baseados nos dados da empresa.',
 };
 
 export const useAISettings = () => {
