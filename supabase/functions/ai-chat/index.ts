@@ -29,10 +29,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verificar se a empresa tem AI habilitado
+    // Verificar se a empresa tem AI habilitado e buscar nome
     const { data: companyData } = await supabase
       .from('companies')
-      .select('ai_enabled')
+      .select('ai_enabled, name')
       .eq('id', company_id)
       .single();
 
@@ -46,6 +46,8 @@ serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const companyName = companyData.name || 'Empresa';
 
     // Buscar configurações de IA da empresa
     const { data: aiSettings } = await supabase
@@ -124,7 +126,7 @@ serve(async (req) => {
     };
 
     const contextPrompt = `
-Dados disponíveis da empresa (ID: ${company_id}):
+Dados disponíveis de ${companyName}:
 
 ${contextData.objectives.length > 0 ? `
 📊 Strategy Hub - Objetivos Estratégicos:
