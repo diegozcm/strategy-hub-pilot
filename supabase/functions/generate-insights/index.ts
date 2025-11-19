@@ -50,28 +50,107 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Generating insights for user: ${user_id}`);
+    console.log(`Generating insights for user: ${user_id}, company: ${company_id}`);
 
-    // Get user data using the database function and Startup Hub data
-    const [analysisResponse, startupProfilesResponse, mentorSessionsResponse] = await Promise.all([
-      supabaseClient.rpc('analyze_user_data', { target_user_id: user_id }),
-      supabaseClient.from('startup_profiles').select('*').eq('company_id', company_id),
-      supabaseClient.from('mentor_sessions').select('*').eq('company_id', company_id).order('session_date', { ascending: false }).limit(20)
-    ]);
+    // CRITICAL: Fetch data ONLY for the selected company
+    // Step 1: Get strategic plans for the company
+    const { data: strategicPlans, error: plansError } = await supabaseClient
+      .from('strategic_plans')
+      .select('id')
+      .eq('company_id', company_id);
 
-    if (analysisResponse.error) {
-      console.error('Analysis error:', analysisResponse.error);
-      throw analysisResponse.error;
+    if (plansError) {
+      console.error('Error fetching strategic plans:', plansError);
+      throw plansError;
     }
 
-    const analysis: AnalysisResult = analysisResponse.data;
+    const planIds = strategicPlans?.map(p => p.id) || [];
+    console.log(`Found ${planIds.length} strategic plans for company ${company_id}`);
+
+    // Step 2: Fetch objectives, key results, and projects filtered by company plans
+    const [objectivesResponse, startupProfilesResponse, mentorSessionsResponse] = await Promise.all([
+      // Objectives for company plans
+      planIds.length > 0 
+        ? supabaseClient
+            .from('strategic_objectives')
+            .select('id, title, progress, status, target_date, plan_id')
+            .in('plan_id', planIds)
+        : Promise.resolve({ data: [], error: null }),
+      
+      // Startup Hub data (already filtered by company_id)
+      supabaseClient.from('startup_profiles').select('*').eq('company_id', company_id),
+      
+      // Mentoring sessions (already filtered by company_id)
+      supabaseClient.from('mentor_sessions')
+        .select('*')
+        .eq('company_id', company_id)
+        .order('session_date', { ascending: false })
+        .limit(20)
+    ]);
+
+    if (objectivesResponse.error) {
+      console.error('Error fetching objectives:', objectivesResponse.error);
+      throw objectivesResponse.error;
+    }
+
+    const objectives = objectivesResponse.data || [];
+    const objectiveIds = objectives.map(o => o.id);
+    console.log(`Found ${objectives.length} objectives for company ${company_id}`);
+
+    // Step 3: Fetch key results and projects
+    const [keyResultsResponse, projectsResponse] = await Promise.all([
+      // Key results for company objectives
+      objectiveIds.length > 0
+        ? supabaseClient
+            .from('key_results')
+            .select('id, title, current_value, target_value, unit, due_date, priority, objective_id')
+            .in('objective_id', objectiveIds)
+        : Promise.resolve({ data: [], error: null }),
+      
+      // Projects for company plans
+      planIds.length > 0
+        ? supabaseClient
+            .from('strategic_projects')
+            .select('id, name, progress, status, start_date, end_date, budget, priority, plan_id')
+            .in('plan_id', planIds)
+        : Promise.resolve({ data: [], error: null })
+    ]);
+
+    if (keyResultsResponse.error) {
+      console.error('Error fetching key results:', keyResultsResponse.error);
+      throw keyResultsResponse.error;
+    }
+
+    if (projectsResponse.error) {
+      console.error('Error fetching projects:', projectsResponse.error);
+      throw projectsResponse.error;
+    }
+
+    const keyResults = keyResultsResponse.data || [];
+    const projects = projectsResponse.data || [];
     const startupProfiles = startupProfilesResponse.data || [];
     const mentorSessions = mentorSessionsResponse.data || [];
     
-    console.log('Analysis data:', { 
-      ...analysis, 
-      startupProfiles: startupProfiles.length, 
-      mentorSessions: mentorSessions.length 
+    // Build analysis object with company-filtered data
+    const analysis: AnalysisResult = {
+      projects: projects,
+      indicators: keyResults,
+      objectives: objectives
+    };
+
+    // Log telemetry for audit trail
+    console.log('Company-filtered analysis data:', { 
+      company_id,
+      user_id,
+      strategic_plans: planIds.length,
+      projects: projects.length,
+      objectives: objectives.length,
+      key_results: keyResults.length,
+      startup_profiles: startupProfiles.length,
+      mentor_sessions: mentorSessions.length,
+      plan_ids: planIds.slice(0, 3), // Log first 3 plan IDs for reference
+      sample_projects: projects.slice(0, 2).map(p => p.name),
+      sample_objectives: objectives.slice(0, 2).map(o => o.title)
     });
 
     const insights = [];
@@ -742,17 +821,26 @@ STARTUP HUB:
       }
     }
 
-    // Insert insights into database
+    // Insert insights into database with audit metadata
     let insertedInsights = 0;
     for (const insight of insights) {
       try {
+        // Enrich metadata with company information for audit trail
+        const enrichedMetadata = {
+          ...(insight.metadata || {}),
+          source_company_id: company_id,
+          generated_at: new Date().toISOString(),
+          data_scope: 'company_only'
+        };
+
         const { error } = await supabaseClient
           .from('ai_insights')
           .insert([{
             ...insight,
             user_id: user_id,
             company_id: company_id,
-            status: 'active'
+            status: 'active',
+            metadata: enrichedMetadata
           }]);
         
         if (!error) {
@@ -783,15 +871,26 @@ STARTUP HUB:
 
     console.log(`Generated ${insights.length} insights, inserted ${insertedInsights}`);
     console.log(`Generated ${aiRecommendations.length} recommendations, inserted ${insertedRecommendations}`);
+    console.log(`AUDIT: All insights generated for company_id: ${company_id}, user_id: ${user_id}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
+        company_id: company_id,
+        user_id: user_id,
         insights_generated: insights.length,
         insights_inserted: insertedInsights,
         recommendations_generated: aiRecommendations.length,
         recommendations_inserted: insertedRecommendations,
         ai_enhanced: openAIKey ? true : false,
+        data_summary: {
+          strategic_plans: planIds.length,
+          projects: projects.length,
+          objectives: objectives.length,
+          key_results: keyResults.length,
+          startup_profiles: startupProfiles.length,
+          mentor_sessions: mentorSessions.length
+        },
         insights: insights.slice(0, 5) // Return first 5 for preview
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
