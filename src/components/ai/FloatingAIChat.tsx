@@ -149,16 +149,35 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
         }
       });
 
-      if (response.error) throw response.error;
+      if (response.error) {
+        console.error('Error calling ai-chat function:', response.error);
+        throw response.error;
+      }
 
-      // Save assistant response
+      // Verificar se a resposta indica erro
+      if (response.data?.success === false || response.data?.error) {
+        console.error('AI error:', response.data?.error);
+        toast({
+          title: "Erro da IA",
+          description: response.data?.response || "Não foi possível processar sua solicitação",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Save assistant response only if successful
       const { error: assistantMsgError } = await supabase
         .from('ai_chat_messages')
         .insert([{
           session_id: currentSessionId,
           role: 'assistant',
           content: response.data.response,
-          message_type: 'text'
+          message_type: 'text',
+          metadata: {
+            model_used: response.data.model_used,
+            company_id: response.data.company_id,
+            context_summary: response.data.context_summary
+          }
         }]);
 
       if (assistantMsgError) throw assistantMsgError;

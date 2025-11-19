@@ -25,7 +25,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const openAIKey = Deno.env.get('OPENAI_API_KEY');
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
 
     const { user_id, company_id } = await req.json();
 
@@ -157,7 +157,7 @@ serve(async (req) => {
     const aiRecommendations = [];
 
     // Enhanced analysis with AI integration including Startup Hub data
-    if (openAIKey && (analysis.projects?.length > 0 || analysis.indicators?.length > 0 || analysis.objectives?.length > 0 || startupProfiles.length > 0 || mentorSessions.length > 0)) {
+    if (lovableApiKey && (analysis.projects?.length > 0 || analysis.indicators?.length > 0 || analysis.objectives?.length > 0 || startupProfiles.length > 0 || mentorSessions.length > 0)) {
       try {
         // Prepare data for OpenAI analysis including Startup Hub
         const contextData = {
@@ -239,14 +239,14 @@ STARTUP HUB:
 - Gaps no programa de mentoria
 - Oportunidades de crescimento do ecossistema`;
 
-        const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        const openAIResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${openAIKey}`,
+            'Authorization': `Bearer ${lovableApiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4.1-2025-04-14',
+            model: 'google/gemini-2.5-flash',
             messages: [
               {
                 role: 'system',
@@ -257,7 +257,8 @@ STARTUP HUB:
                 content: prompt
               }
             ],
-            max_completion_tokens: 2000
+            temperature: 0.7,
+            max_tokens: 2000
           }),
         });
 

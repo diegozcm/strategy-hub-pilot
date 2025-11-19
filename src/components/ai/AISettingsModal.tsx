@@ -23,10 +23,11 @@ interface AISettingsModalProps {
 }
 
 const MODEL_OPTIONS = [
-  { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Rápido)', description: 'Modelo rápido e eficiente' },
-  { value: 'gpt-4o', label: 'GPT-4o (Equilibrado)', description: 'Melhor relação custo-benefício' },
-  { value: 'gpt-4-turbo', label: 'GPT-4 Turbo (Avançado)', description: 'Mais poderoso para tarefas complexas' },
-  { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo (Econômico)', description: 'Opção mais econômica' },
+  { value: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash (Recomendado)', description: 'Equilibrado: bom desempenho e custo' },
+  { value: 'google/gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash Lite (Rápido)', description: 'Mais rápido e econômico' },
+  { value: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro (Avançado)', description: 'Mais poderoso para tarefas complexas' },
+  { value: 'openai/gpt-5-mini', label: 'GPT-5 Mini (Premium)', description: 'Alta qualidade com boa velocidade' },
+  { value: 'openai/gpt-5', label: 'GPT-5 (Premium Max)', description: 'Máximo desempenho (mais caro)' },
 ];
 
 const VOICE_OPTIONS = [
