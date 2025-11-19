@@ -33,10 +33,10 @@ serve(async (req) => {
       throw new Error('User ID and Company ID are required');
     }
 
-    // Verify company has AI access enabled
+    // Verify company has AI access enabled and get company name
     const { data: company, error: companyError } = await supabaseClient
       .from('companies')
-      .select('ai_enabled')
+      .select('ai_enabled, name')
       .eq('id', company_id)
       .single();
 
@@ -50,7 +50,8 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Generating insights for user: ${user_id}, company: ${company_id}`);
+    const companyName = company.name || 'Empresa';
+    console.log(`Generating insights for user: ${user_id}, company: ${companyName} (${company_id})`);
 
     // CRITICAL: Fetch data ONLY for the selected company
     // Step 1: Get strategic plans for the company
@@ -201,7 +202,7 @@ serve(async (req) => {
           }))
         };
 
-        const prompt = `Analise os seguintes dados de uma empresa e gere insights estratégicos em português considerando TODOS os módulos disponíveis:
+        const prompt = `Analise os seguintes dados de ${companyName} e gere insights estratégicos em português considerando TODOS os módulos disponíveis:
 
 STRATEGY HUB:
 PROJETOS: ${JSON.stringify(contextData.projects, null, 2)}
