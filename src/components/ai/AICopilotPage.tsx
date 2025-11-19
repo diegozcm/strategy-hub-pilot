@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, TrendingUp, AlertTriangle, CheckCircle, Zap, Target, Users, BarChart3, Clock, ArrowRight, X, Sparkles, History, RefreshCw, Lightbulb, MessageSquare } from 'lucide-react';
+import { ClearInsightsModal } from './ClearInsightsModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -44,6 +45,8 @@ export const AICopilotPage: React.FC = () => {
   const [isInsightModalOpen, setIsInsightModalOpen] = useState(false);
   const [generatingInsights, setGeneratingInsights] = useState(false);
   const [confirmedInsights, setConfirmedInsights] = useState<AIInsight[]>([]);
+  const [isClearModalOpen, setIsClearModalOpen] = useState(false);
+  const [clearingInsights, setClearingInsights] = useState(false);
 
   useEffect(() => {
     loadAIData();
@@ -167,6 +170,80 @@ export const AICopilotPage: React.FC = () => {
     }
   };
 
+  const clearAllInsights = async () => {
+    if (!company?.id) {
+      toast({
+        title: "Erro",
+        description: "Empresa não identificada",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setClearingInsights(true);
+      
+      // Step 1: Buscar todos os insight_ids da empresa
+      const { data: companyInsights, error: fetchError } = await supabase
+        .from('ai_insights')
+        .select('id')
+        .eq('company_id', company.id);
+
+      if (fetchError) throw fetchError;
+
+      const insightIds = companyInsights?.map(i => i.id) || [];
+
+      if (insightIds.length === 0) {
+        toast({
+          title: "Nenhum insight encontrado",
+          description: "Não há insights para deletar nesta empresa.",
+        });
+        setIsClearModalOpen(false);
+        return;
+      }
+
+      // Step 2: Deletar recomendações relacionadas (explícito, por segurança)
+      const { error: recError } = await supabase
+        .from('ai_recommendations')
+        .delete()
+        .in('insight_id', insightIds);
+
+      if (recError) {
+        console.error('Error deleting recommendations:', recError);
+        // Continua mesmo se falhar, pois CASCADE deve lidar com isso
+      }
+
+      // Step 3: Deletar todos os insights da empresa
+      const { error: deleteError } = await supabase
+        .from('ai_insights')
+        .delete()
+        .eq('company_id', company.id);
+
+      if (deleteError) throw deleteError;
+
+      // Step 4: Limpar estados locais
+      setInsights([]);
+      setConfirmedInsights([]);
+
+      toast({
+        title: "✅ Insights Limpos",
+        description: `${insightIds.length} insights e suas recomendações foram deletados com sucesso.`,
+      });
+
+      setIsClearModalOpen(false);
+
+    } catch (error) {
+      console.error('Error clearing insights:', error);
+      toast({
+        title: "Erro ao limpar insights",
+        description: error.message || "Erro desconhecido ao deletar insights.",
+        variant: "destructive",
+      });
+    } finally {
+      setClearingInsights(false);
+    }
+  };
+
   const dismissInsight = async (insightId: string) => {
     if (!user) return;
 
@@ -285,18 +362,30 @@ export const AICopilotPage: React.FC = () => {
           </h1>
           <p className="text-muted-foreground mt-2">Assistente inteligente para execução estratégica</p>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={generateRealInsights}
-          disabled={generatingInsights}
-        >
-          {generatingInsights ? (
-            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-          ) : (
-            <Brain className="w-4 h-4 mr-2" />
-          )}
-          Analisar Dados
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => setIsClearModalOpen(true)}
+            disabled={clearingInsights || (insights.length === 0 && confirmedInsights.length === 0)}
+          >
+            <X className="w-4 h-4 mr-2" />
+            Limpar Insights
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            onClick={generateRealInsights}
+            disabled={generatingInsights}
+          >
+            {generatingInsights ? (
+              <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Brain className="w-4 h-4 mr-2" />
+            )}
+            Analisar Dados
+          </Button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -610,6 +699,15 @@ export const AICopilotPage: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <ClearInsightsModal
+        isOpen={isClearModalOpen}
+        onClose={() => setIsClearModalOpen(false)}
+        onConfirm={clearAllInsights}
+        companyName={company?.name || 'N/A'}
+        insightsCount={insights.length + confirmedInsights.length}
+        loading={clearingInsights}
+      />
     </div>
   );
 };
