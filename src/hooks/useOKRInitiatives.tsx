@@ -22,8 +22,17 @@ export const useOKRInitiatives = (keyResultId: string | null) => {
       return;
     }
 
+    // ETAPA 2: Validação okr_enabled
+    if (!company.okr_enabled) {
+      console.log('📊 [OKR Initiatives] OKR not enabled for company:', company.id);
+      setInitiatives([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('📊 [OKR Initiatives] Loading initiatives for key result:', keyResultId);
 
       const { data, error } = await supabase
         .from('okr_initiatives')

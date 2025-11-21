@@ -19,8 +19,17 @@ export const useOKRYears = () => {
   const loadYears = useCallback(async () => {
     if (!company?.id) return;
 
+    // ETAPA 2: Validação okr_enabled
+    if (!company.okr_enabled) {
+      console.log('📊 [OKR Years] OKR not enabled for company:', company.id);
+      setYears([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('📊 [OKR Years] Loading years for company:', company.id);
 
       const { data, error } = await supabase
         .from('okr_years')

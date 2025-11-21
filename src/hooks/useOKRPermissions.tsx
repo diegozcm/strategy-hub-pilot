@@ -1,17 +1,84 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { OKRPeriod, OKRYear } from '@/types/okr';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Hook para gerenciar permissões relacionadas ao módulo OKR
+ * Usa user_module_roles para permissões específicas do módulo
  */
 export const useOKRPermissions = () => {
-  const { profile } = useAuth();
-  const userRole = profile?.role;
+  const { profile, user, company } = useAuth();
+  const [moduleRoles, setModuleRoles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const isAdmin = useMemo(() => userRole === 'admin', [userRole]);
-  const isManager = useMemo(() => userRole === 'manager', [userRole]);
+  // Buscar roles específicos do módulo OKR
+  useEffect(() => {
+    const loadModuleRoles = async () => {
+      if (!user?.id) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Buscar módulo OKR
+        const { data: okrModule } = await supabase
+          .from('system_modules')
+          .select('id')
+          .eq('slug', 'okr-execution')
+          .single();
+
+        if (!okrModule) {
+          console.log('📊 OKR Module not found, using fallback role');
+          setModuleRoles([]);
+          setLoading(false);
+          return;
+        }
+
+        // Buscar roles do usuário para o módulo OKR
+        const { data: rolesData } = await supabase
+          .rpc('get_user_module_roles', { _user_id: user.id });
+
+        const okrRoles = rolesData?.find((r: any) => r.module_id === okrModule.id);
+        const roles = okrRoles?.roles || [];
+        
+        console.log('📊 [OKR Permissions] Module roles loaded:', {
+          userId: user.id,
+          moduleId: okrModule.id,
+          roles,
+          fallbackRole: profile?.role
+        });
+
+        setModuleRoles(roles);
+      } catch (error) {
+        console.error('Error loading OKR module roles:', error);
+        setModuleRoles([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadModuleRoles();
+  }, [user?.id, profile?.role]);
+
+  // Determinar role efetivo (módulo > global)
+  const effectiveRole = useMemo(() => {
+    if (moduleRoles.length > 0) {
+      // Se tem roles no módulo, usar o maior privilégio
+      if (moduleRoles.includes('admin')) return 'admin';
+      if (moduleRoles.includes('manager')) return 'manager';
+      return 'member';
+    }
+    // Fallback para role global
+    return profile?.role || 'member';
+  }, [moduleRoles, profile?.role]);
+
+  const isAdmin = useMemo(() => effectiveRole === 'admin', [effectiveRole]);
+  const isManager = useMemo(() => effectiveRole === 'manager', [effectiveRole]);
   const isAdminOrManager = useMemo(() => isAdmin || isManager, [isAdmin, isManager]);
+  
+  // Verificar se OKR está habilitado para a empresa
+  const okrEnabled = useMemo(() => company?.okr_enabled === true, [company?.okr_enabled]);
 
   /**
    * Verifica se o usuário pode editar um período específico
@@ -102,5 +169,8 @@ export const useOKRPermissions = () => {
     canCreateInitiative,
     canAllocateInitiatives,
     canManageYearTransitions,
+    okrEnabled,
+    effectiveRole,
+    loading,
   };
 };

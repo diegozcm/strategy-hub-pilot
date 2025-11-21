@@ -385,9 +385,16 @@ export const CompaniesPage: React.FC = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
-                            {company.status === 'active' ? 'Ativa' : 'Inativa'}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
+                              {company.status === 'active' ? 'Ativa' : 'Inativa'}
+                            </Badge>
+                            {company.okr_enabled && (
+                              <Badge variant="outline" className="text-xs">
+                                OKR
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">

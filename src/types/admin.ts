@@ -9,6 +9,7 @@ export interface Company {
   status: 'active' | 'inactive';
   company_type?: 'regular' | 'startup';
   ai_enabled?: boolean;
+  okr_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }
