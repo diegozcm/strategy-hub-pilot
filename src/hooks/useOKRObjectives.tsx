@@ -22,8 +22,17 @@ export const useOKRObjectives = (periodId: string | null) => {
       return;
     }
 
+    // ETAPA 2: Validação okr_enabled
+    if (!company.okr_enabled) {
+      console.log('📊 [OKR Objectives] OKR not enabled for company:', company.id);
+      setObjectives([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('📊 [OKR Objectives] Loading objectives for period:', periodId);
 
       const { data, error } = await supabase
         .from('okr_objectives')

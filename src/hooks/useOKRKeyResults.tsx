@@ -22,8 +22,17 @@ export const useOKRKeyResults = (objectiveId: string | null) => {
       return;
     }
 
+    // ETAPA 2: Validação okr_enabled
+    if (!company.okr_enabled) {
+      console.log('📊 [OKR Key Results] OKR not enabled for company:', company.id);
+      setKeyResults([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('📊 [OKR Key Results] Loading key results for objective:', objectiveId);
 
       const { data, error } = await supabase
         .from('okr_key_results')

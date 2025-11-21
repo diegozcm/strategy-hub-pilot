@@ -14,6 +14,7 @@ export interface Company {
   logo_url?: string;
   active: boolean;
   ai_enabled?: boolean;
+  okr_enabled?: boolean;
   company_type?: CompanyType;
   created_at: string;
   updated_at: string;
@@ -65,6 +66,7 @@ export interface AuthContextType {
   session: any;
   profile: UserProfile | null;
   company: Company | null;
+  companies?: Company[];
   loading: boolean;
   permissions: Permission;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
