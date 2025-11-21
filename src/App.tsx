@@ -43,7 +43,7 @@ import { GoldenCirclePage } from "@/components/golden-circle/GoldenCirclePage";
 import { ToolsPage } from "@/components/tools/ToolsPage";
 import { StartupHubPage } from "@/components/startup-hub/StartupHubPage";
 import { ModuleBasedRedirect } from "@/components/ModuleBasedRedirect";
-import { OKRPage } from "@/pages/OKRPage";
+import OKRPage from "@/pages/OKRPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
