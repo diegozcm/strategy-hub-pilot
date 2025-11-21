@@ -5,7 +5,7 @@ export const useOKRPermissions = () => {
   const { profile } = useAuth();
   const { isInModule, canAccessModule } = useModulePermissions();
 
-  const isInOKRModule = isInModule('okr-planning');
+  const isInOKRModule = canAccessModule('okr-planning');
   
   // Check if user has admin role in any company
   const isAdmin = profile?.role === 'admin';
