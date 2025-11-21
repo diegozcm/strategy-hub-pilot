@@ -1,39 +1,146 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Target } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { useOKRYears } from '@/hooks/useOKRYears';
+import { useOKRQuarters } from '@/hooks/useOKRQuarters';
+import { useOKRObjectives } from '@/hooks/useOKRObjectives';
+import { useOKRPermissions } from '@/hooks/useOKRPermissions';
+import {
+  OKRYearSelector,
+  OKRQuarterTabs,
+  OKRObjectivesGrid,
+  OKRObjectiveModal,
+  OKRObjectiveForm,
+} from '@/components/okr-planning';
+import { OKRObjective } from '@/types/okr';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export const OKRPlanningPage: React.FC = () => {
+  const { years, currentYear, setCurrentYear, fetchYears, loading: yearsLoading } = useOKRYears();
+  const { quarters, currentQuarter, setCurrentQuarter } = useOKRQuarters(currentYear?.id || null);
+  const { objectives, createObjective, loading: objectivesLoading } = useOKRObjectives(currentQuarter?.id || null);
+  const { isInModule } = useOKRPermissions();
+  
+  const [selectedObjective, setSelectedObjective] = useState<OKRObjective | null>(null);
+  const [showObjectiveModal, setShowObjectiveModal] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
+  if (!isInModule) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardContent className="pt-6 text-center">
+            <Target className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">Acesso Negado</h3>
+            <p className="text-muted-foreground">
+              Você não tem acesso ao módulo OKR Planning. Entre em contato com o administrador.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const handleCreateObjective = async (data: any) => {
+    if (!currentQuarter) return;
+    
+    const result = await createObjective({
+      ...data,
+      okr_quarter_id: currentQuarter.id,
+      progress_percentage: 0,
+    });
+    
+    if (result) {
+      setShowCreateForm(false);
+    }
+  };
+
+  const handleObjectiveClick = (objective: OKRObjective) => {
+    setSelectedObjective(objective);
+    setShowObjectiveModal(true);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3">
         <Target className="h-8 w-8 text-primary" />
         <div>
           <h1 className="text-3xl font-bold text-foreground">OKR Planning</h1>
-          <p className="text-muted-foreground">Planejamento e Gestão de OKRs</p>
+          <p className="text-muted-foreground">
+            Planejamento e Gestão de Objectives & Key Results
+          </p>
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Bem-vindo ao Módulo OKR Planning</CardTitle>
-          <CardDescription>
-            Este módulo está em desenvolvimento e em breve você poderá gerenciar seus OKRs (Objectives and Key Results) de forma completa.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-lg bg-muted p-6 text-center">
+      {years.length === 0 && !yearsLoading ? (
+        <Card>
+          <CardContent className="pt-6 text-center">
             <Target className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">Funcionalidades Planejadas</h3>
-            <ul className="text-sm text-muted-foreground space-y-2 text-left max-w-md mx-auto">
-              <li>• Criação e gestão de Objetivos</li>
-              <li>• Definição de Key Results mensuráveis</li>
-              <li>• Acompanhamento de progresso em tempo real</li>
-              <li>• Alinhamento de OKRs entre times</li>
-              <li>• Relatórios e dashboards de performance</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
+            <h3 className="text-lg font-semibold mb-2">Nenhum ano OKR configurado</h3>
+            <p className="text-muted-foreground mb-4">
+              Para começar, crie um ano OKR e defina seus trimestres
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <OKRYearSelector
+                years={years}
+                currentYear={currentYear}
+                onYearChange={setCurrentYear}
+                onYearCreated={fetchYears}
+              />
+
+              {currentYear && quarters.length > 0 && (
+                <OKRQuarterTabs
+                  quarters={quarters}
+                  currentQuarter={currentQuarter}
+                  onQuarterChange={setCurrentQuarter}
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          {currentQuarter && (
+            <Card>
+              <CardContent className="pt-6">
+                <OKRObjectivesGrid
+                  objectives={objectives}
+                  onObjectiveClick={handleObjectiveClick}
+                  onCreateClick={() => setShowCreateForm(true)}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Criar Novo Objetivo</DialogTitle>
+          </DialogHeader>
+          {currentQuarter && (
+            <OKRObjectiveForm
+              quarterId={currentQuarter.id}
+              onSubmit={handleCreateObjective}
+              onCancel={() => setShowCreateForm(false)}
+              loading={objectivesLoading}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <OKRObjectiveModal
+        objective={selectedObjective}
+        open={showObjectiveModal}
+        onClose={() => {
+          setShowObjectiveModal(false);
+          setSelectedObjective(null);
+        }}
+      />
     </div>
   );
 };
