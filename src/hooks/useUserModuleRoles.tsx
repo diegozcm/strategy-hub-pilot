@@ -32,16 +32,16 @@ export const useUserModuleRoles = () => {
         if (rpcError) throw rpcError;
 
         // Build a map: moduleId -> roles[]
+        // The RPC returns: { module_id: uuid, roles: app_role[] }
         const rolesMap: ModuleRoles = {};
         if (data && Array.isArray(data)) {
           data.forEach((item: any) => {
             const moduleId = item.module_id;
-            const role = item.role as UserRole;
+            const rolesArray = item.roles; // This is already an array from the RPC
             
-            if (!rolesMap[moduleId]) {
-              rolesMap[moduleId] = [];
+            if (rolesArray && Array.isArray(rolesArray)) {
+              rolesMap[moduleId] = rolesArray as UserRole[];
             }
-            rolesMap[moduleId].push(role);
           });
         }
 
