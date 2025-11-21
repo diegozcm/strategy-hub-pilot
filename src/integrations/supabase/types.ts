@@ -866,6 +866,7 @@ export type Database = {
           logo_url: string | null
           mission: string | null
           name: string
+          okr_enabled: boolean | null
           owner_id: string
           status: string | null
           updated_at: string
@@ -880,6 +881,7 @@ export type Database = {
           logo_url?: string | null
           mission?: string | null
           name: string
+          okr_enabled?: boolean | null
           owner_id: string
           status?: string | null
           updated_at?: string
@@ -894,6 +896,7 @@ export type Database = {
           logo_url?: string | null
           mission?: string | null
           name?: string
+          okr_enabled?: boolean | null
           owner_id?: string
           status?: string | null
           updated_at?: string
@@ -1748,6 +1751,448 @@ export type Database = {
           {
             foreignKeyName: "fk_mentoring_sessions_company"
             columns: ["startup_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      okr_initiatives: {
+        Row: {
+          allocated_quarter: string | null
+          company_id: string
+          completed_at: string | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          display_order: number | null
+          due_date: string | null
+          evidence_links: string[] | null
+          id: string
+          is_in_backlog: boolean | null
+          notes: string | null
+          okr_key_result_id: string
+          priority: string | null
+          responsible: string | null
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          allocated_quarter?: string | null
+          company_id: string
+          completed_at?: string | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          display_order?: number | null
+          due_date?: string | null
+          evidence_links?: string[] | null
+          id?: string
+          is_in_backlog?: boolean | null
+          notes?: string | null
+          okr_key_result_id: string
+          priority?: string | null
+          responsible?: string | null
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          allocated_quarter?: string | null
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          display_order?: number | null
+          due_date?: string | null
+          evidence_links?: string[] | null
+          id?: string
+          is_in_backlog?: boolean | null
+          notes?: string | null
+          okr_key_result_id?: string
+          priority?: string | null
+          responsible?: string | null
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "okr_initiatives_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "okr_initiatives_okr_key_result_id_fkey"
+            columns: ["okr_key_result_id"]
+            isOneToOne: false
+            referencedRelation: "okr_key_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      okr_key_results: {
+        Row: {
+          company_id: string
+          completed_initiatives: number | null
+          created_at: string | null
+          created_by: string
+          current_value: number | null
+          description: string | null
+          display_order: number | null
+          id: string
+          okr_objective_id: string
+          progress_percentage: number | null
+          responsible: string | null
+          status: string
+          target_direction: string | null
+          target_value: number
+          title: string
+          total_initiatives: number | null
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          completed_initiatives?: number | null
+          created_at?: string | null
+          created_by: string
+          current_value?: number | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          okr_objective_id: string
+          progress_percentage?: number | null
+          responsible?: string | null
+          status?: string
+          target_direction?: string | null
+          target_value: number
+          title: string
+          total_initiatives?: number | null
+          unit?: string
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          completed_initiatives?: number | null
+          created_at?: string | null
+          created_by?: string
+          current_value?: number | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          okr_objective_id?: string
+          progress_percentage?: number | null
+          responsible?: string | null
+          status?: string
+          target_direction?: string | null
+          target_value?: number
+          title?: string
+          total_initiatives?: number | null
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "okr_key_results_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "okr_key_results_okr_objective_id_fkey"
+            columns: ["okr_objective_id"]
+            isOneToOne: false
+            referencedRelation: "okr_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      okr_objectives: {
+        Row: {
+          company_id: string
+          completed_key_results: number | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          display_order: number | null
+          id: string
+          okr_period_id: string
+          progress_percentage: number | null
+          responsible: string | null
+          status: string
+          strategic_objective_id: string | null
+          title: string
+          total_key_results: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          completed_key_results?: number | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          okr_period_id: string
+          progress_percentage?: number | null
+          responsible?: string | null
+          status?: string
+          strategic_objective_id?: string | null
+          title: string
+          total_key_results?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          completed_key_results?: number | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          okr_period_id?: string
+          progress_percentage?: number | null
+          responsible?: string | null
+          status?: string
+          strategic_objective_id?: string | null
+          title?: string
+          total_key_results?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "okr_objectives_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "okr_objectives_okr_period_id_fkey"
+            columns: ["okr_period_id"]
+            isOneToOne: false
+            referencedRelation: "okr_periods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "okr_objectives_strategic_objective_id_fkey"
+            columns: ["strategic_objective_id"]
+            isOneToOne: false
+            referencedRelation: "strategic_objectives"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      okr_periods: {
+        Row: {
+          company_id: string
+          completed_initiatives: number | null
+          completed_key_results: number | null
+          completed_objectives: number | null
+          created_at: string | null
+          end_date: string
+          id: string
+          is_locked: boolean | null
+          okr_year_id: string
+          overall_progress_percentage: number | null
+          quarter: string
+          start_date: string
+          status: string
+          total_initiatives: number | null
+          total_key_results: number | null
+          total_objectives: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_id: string
+          completed_initiatives?: number | null
+          completed_key_results?: number | null
+          completed_objectives?: number | null
+          created_at?: string | null
+          end_date: string
+          id?: string
+          is_locked?: boolean | null
+          okr_year_id: string
+          overall_progress_percentage?: number | null
+          quarter: string
+          start_date: string
+          status?: string
+          total_initiatives?: number | null
+          total_key_results?: number | null
+          total_objectives?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_id?: string
+          completed_initiatives?: number | null
+          completed_key_results?: number | null
+          completed_objectives?: number | null
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          is_locked?: boolean | null
+          okr_year_id?: string
+          overall_progress_percentage?: number | null
+          quarter?: string
+          start_date?: string
+          status?: string
+          total_initiatives?: number | null
+          total_key_results?: number | null
+          total_objectives?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "okr_periods_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "okr_periods_okr_year_id_fkey"
+            columns: ["okr_year_id"]
+            isOneToOne: false
+            referencedRelation: "okr_years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      okr_year_transitions: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          from_year_id: string
+          id: string
+          notes: string | null
+          objectives_cancelled: number | null
+          objectives_carried_over: number | null
+          objectives_completed: number | null
+          performed_by: string
+          to_year_id: string
+          transition_date: string
+          transition_type: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          from_year_id: string
+          id?: string
+          notes?: string | null
+          objectives_cancelled?: number | null
+          objectives_carried_over?: number | null
+          objectives_completed?: number | null
+          performed_by: string
+          to_year_id: string
+          transition_date?: string
+          transition_type: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          from_year_id?: string
+          id?: string
+          notes?: string | null
+          objectives_cancelled?: number | null
+          objectives_carried_over?: number | null
+          objectives_completed?: number | null
+          performed_by?: string
+          to_year_id?: string
+          transition_date?: string
+          transition_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "okr_year_transitions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "okr_year_transitions_from_year_id_fkey"
+            columns: ["from_year_id"]
+            isOneToOne: false
+            referencedRelation: "okr_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "okr_year_transitions_to_year_id_fkey"
+            columns: ["to_year_id"]
+            isOneToOne: false
+            referencedRelation: "okr_years"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      okr_years: {
+        Row: {
+          company_id: string
+          completed_initiatives: number | null
+          completed_key_results: number | null
+          completed_objectives: number | null
+          created_at: string | null
+          created_by: string
+          end_date: string
+          id: string
+          is_locked: boolean | null
+          overall_progress_percentage: number | null
+          start_date: string
+          status: string
+          total_initiatives: number | null
+          total_key_results: number | null
+          total_objectives: number | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          company_id: string
+          completed_initiatives?: number | null
+          completed_key_results?: number | null
+          completed_objectives?: number | null
+          created_at?: string | null
+          created_by: string
+          end_date: string
+          id?: string
+          is_locked?: boolean | null
+          overall_progress_percentage?: number | null
+          start_date: string
+          status?: string
+          total_initiatives?: number | null
+          total_key_results?: number | null
+          total_objectives?: number | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          company_id?: string
+          completed_initiatives?: number | null
+          completed_key_results?: number | null
+          completed_objectives?: number | null
+          created_at?: string | null
+          created_by?: string
+          end_date?: string
+          id?: string
+          is_locked?: boolean | null
+          overall_progress_percentage?: number | null
+          start_date?: string
+          status?: string
+          total_initiatives?: number | null
+          total_key_results?: number | null
+          total_objectives?: number | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "okr_years_company_id_fkey"
+            columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
