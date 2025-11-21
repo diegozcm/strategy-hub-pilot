@@ -194,6 +194,7 @@ export const CompaniesPage: React.FC = () => {
   } = useCompanyDataLoader();
   const [searchTerm, setSearchTerm] = useState('');
   const [companyTypeFilter, setCompanyTypeFilter] = useState<'all' | 'regular' | 'startup'>('all');
+  const [moduleFilter, setModuleFilter] = useState<'all' | 'ai_enabled' | 'okr_enabled' | 'no_modules'>('all');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [managingUsers, setManagingUsers] = useState<Company | null>(null);
@@ -286,7 +287,17 @@ export const CompaniesPage: React.FC = () => {
   const filteredCompanies = companies.filter(company => {
     const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = companyTypeFilter === 'all' || company.company_type === companyTypeFilter;
-    return matchesSearch && matchesType;
+    
+    let matchesModule = true;
+    if (moduleFilter === 'ai_enabled') {
+      matchesModule = company.ai_enabled === true;
+    } else if (moduleFilter === 'okr_enabled') {
+      matchesModule = company.okr_enabled === true;
+    } else if (moduleFilter === 'no_modules') {
+      matchesModule = !company.ai_enabled && !company.okr_enabled;
+    }
+    
+    return matchesSearch && matchesType && matchesModule;
   });
 
   if (!isAdmin) {
@@ -315,33 +326,49 @@ export const CompaniesPage: React.FC = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="flex space-x-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Buscar por nome da empresa..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-background border-input text-foreground"
-              />
+          <div className="flex flex-col gap-2">
+            <div className="flex space-x-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Buscar por nome da empresa..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-background border-input text-foreground"
+                />
+              </div>
+              <Select
+                value={companyTypeFilter}
+                onValueChange={(value: 'all' | 'regular' | 'startup') => setCompanyTypeFilter(value)}
+              >
+                <SelectTrigger className="w-48 bg-background border-input text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border text-popover-foreground">
+                  <SelectItem value="all">Todos os Tipos</SelectItem>
+                  <SelectItem value="regular">Empresas Regulares</SelectItem>
+                  <SelectItem value="startup">Startups</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={moduleFilter}
+                onValueChange={(value: 'all' | 'ai_enabled' | 'okr_enabled' | 'no_modules') => setModuleFilter(value)}
+              >
+                <SelectTrigger className="w-48 bg-background border-input text-foreground">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border text-popover-foreground">
+                  <SelectItem value="all">Todos os Módulos</SelectItem>
+                  <SelectItem value="ai_enabled">Com IA</SelectItem>
+                  <SelectItem value="okr_enabled">Com OKR</SelectItem>
+                  <SelectItem value="no_modules">Sem Módulos</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button onClick={() => setShowCreateForm(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Empresa
+              </Button>
             </div>
-            <Select
-              value={companyTypeFilter}
-              onValueChange={(value: 'all' | 'regular' | 'startup') => setCompanyTypeFilter(value)}
-            >
-              <SelectTrigger className="w-48 bg-background border-input text-foreground">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border-border text-popover-foreground">
-                <SelectItem value="all">Todos os Tipos</SelectItem>
-                <SelectItem value="regular">Empresas Regulares</SelectItem>
-                <SelectItem value="startup">Startups</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={() => setShowCreateForm(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Empresa
-            </Button>
           </div>
 
           {loading.overall ? (

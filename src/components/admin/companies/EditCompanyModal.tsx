@@ -5,7 +5,6 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save, X, Building2, Settings } from 'lucide-react';
@@ -13,6 +12,7 @@ import { Company } from '@/types/admin';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { ImageCropUpload } from '@/components/ui/ImageCropUpload';
+import { ModuleToggleList } from './ModuleToggleList';
 
 interface EditCompanyModalProps {
   company: Company;
@@ -44,6 +44,13 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
     setEditedCompany({
       ...editedCompany,
       values: editedCompany.values?.filter((_, i) => i !== index)
+    });
+  };
+
+  const handleModuleToggle = (moduleField: string, enabled: boolean) => {
+    setEditedCompany({
+      ...editedCompany,
+      [moduleField]: enabled
     });
   };
 
@@ -206,39 +213,25 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
           </TabsContent>
 
           <TabsContent value="parameters" className="space-y-6 mt-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="ai-enabled">Acesso à IA</Label>
-                <Switch
-                  id="ai-enabled"
-                  checked={editedCompany.ai_enabled || false}
-                  onCheckedChange={(checked) => 
-                    setEditedCompany({ ...editedCompany, ai_enabled: checked })
-                  }
-                />
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-foreground mb-3">Módulos Habilitados</h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Selecione quais módulos estarão disponíveis para esta empresa. 
+                  Módulos desabilitados ocultam seus dados (mas não os deletam).
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Habilita o Copilot AI e o botão flutuante de chat para usuários desta empresa
-              </p>
-            </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="okr-enabled">Módulo OKR Execution</Label>
-                <Switch
-                  id="okr-enabled"
-                  checked={editedCompany.okr_enabled || false}
-                  onCheckedChange={(checked) => 
-                    setEditedCompany({ ...editedCompany, okr_enabled: checked })
-                  }
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Habilita o módulo OKR Execution com gestão de objetivos, KRs e iniciativas
-              </p>
+              <ModuleToggleList
+                companyId={editedCompany.id}
+                enabledModules={{
+                  ai_enabled: editedCompany.ai_enabled || false,
+                  okr_enabled: editedCompany.okr_enabled || false
+                }}
+                onModuleToggle={handleModuleToggle}
+                disabled={isLoading}
+              />
             </div>
-
-            {/* Futuros parâmetros de configuração por empresa devem ser adicionados aqui */}
           </TabsContent>
         </Tabs>
 
