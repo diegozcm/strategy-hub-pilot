@@ -43,6 +43,8 @@ import { GoldenCirclePage } from "@/components/golden-circle/GoldenCirclePage";
 import { ToolsPage } from "@/components/tools/ToolsPage";
 import { StartupHubPage } from "@/components/startup-hub/StartupHubPage";
 import { ModuleBasedRedirect } from "@/components/ModuleBasedRedirect";
+import { ModuleProtectedRoute } from "@/components/ui/ModuleProtectedRoute";
+import OKRPlanningPage from "@/pages/OKRPlanningPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -109,6 +111,14 @@ const App = () => (
                 <Route path="golden-circle" element={<Navigate to="/app/tools" replace />} />
                 <Route path="tools" element={<ToolsPage />} />
                   <Route path="startup-hub" element={<StartupHubPage />} />
+                  <Route 
+                    path="okr-planning" 
+                    element={
+                      <ModuleProtectedRoute requiredModule="okr-planning">
+                        <OKRPlanningPage />
+                      </ModuleProtectedRoute>
+                    } 
+                  />
                 </Route>
 
                 {/* Admin routes - Start Together Admin */}
