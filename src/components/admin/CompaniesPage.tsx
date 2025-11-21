@@ -81,6 +81,16 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
             <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
               {company.status === 'active' ? 'Ativa' : 'Inativa'}
             </Badge>
+            {company.ai_enabled && (
+              <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/20">
+                IA
+              </Badge>
+            )}
+            {company.okr_enabled && (
+              <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">
+                OKR
+              </Badge>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
@@ -169,7 +179,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
 
 
 export const CompaniesPage: React.FC = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, company: currentCompany, switchCompany } = useAuth();
   const { toast } = useToast();
   // Usar o hook customizado para carregamento de dados
   const {
@@ -385,15 +395,25 @@ export const CompaniesPage: React.FC = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-col gap-2">
                             <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
                               {company.status === 'active' ? 'Ativa' : 'Inativa'}
                             </Badge>
-                            {company.okr_enabled && (
-                              <Badge variant="outline" className="text-xs">
-                                OKR
-                              </Badge>
-                            )}
+                            <div className="flex items-center gap-1">
+                              {company.ai_enabled && (
+                                <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/20">
+                                  IA
+                                </Badge>
+                              )}
+                              {company.okr_enabled && (
+                                <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">
+                                  OKR
+                                </Badge>
+                              )}
+                              {!company.ai_enabled && !company.okr_enabled && (
+                                <span className="text-xs text-muted-foreground">Sem módulos</span>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -521,9 +541,17 @@ export const CompaniesPage: React.FC = () => {
         {selectedCompany && isEditDialogOpen && (
           <EditCompanyModal
             company={selectedCompany}
-            onSave={() => {
+            onSave={async (editedCompany) => {
               setIsEditDialogOpen(false);
-              loadAllData();
+              
+              // Recarregar lista de empresas
+              await loadAllData();
+              
+              // Se a empresa editada for a atual do contexto, forçar reload
+              if (currentCompany?.id === editedCompany.id && switchCompany) {
+                console.log('🔄 Reloading current company context after edit');
+                await switchCompany(editedCompany.id);
+              }
             }}
             onCancel={() => setIsEditDialogOpen(false)}
           />

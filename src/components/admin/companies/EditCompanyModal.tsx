@@ -16,7 +16,7 @@ import { ImageCropUpload } from '@/components/ui/ImageCropUpload';
 
 interface EditCompanyModalProps {
   company: Company;
-  onSave: (company: Company) => void;
+  onSave: (company: Company) => void | Promise<void>;
   onCancel: () => void;
 }
 
@@ -69,6 +69,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
           logo_url: editedCompany.logo_url || null,
           status: editedCompany.status,
           ai_enabled: editedCompany.ai_enabled || false,
+          okr_enabled: editedCompany.okr_enabled || false,
           updated_at: new Date().toISOString()
         })
         .eq('id', editedCompany.id);
@@ -218,6 +219,22 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
               </div>
               <p className="text-xs text-muted-foreground">
                 Habilita o Copilot AI e o botão flutuante de chat para usuários desta empresa
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="okr-enabled">Módulo OKR Execution</Label>
+                <Switch
+                  id="okr-enabled"
+                  checked={editedCompany.okr_enabled || false}
+                  onCheckedChange={(checked) => 
+                    setEditedCompany({ ...editedCompany, okr_enabled: checked })
+                  }
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Habilita o módulo OKR Execution com gestão de objetivos, KRs e iniciativas
               </p>
             </div>
 
