@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Target } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useOKRYears } from '@/hooks/useOKRYears';
 import { useOKRQuarters } from '@/hooks/useOKRQuarters';
 import { useOKRObjectives } from '@/hooks/useOKRObjectives';
@@ -11,6 +12,7 @@ import {
   OKRObjectivesGrid,
   OKRObjectiveModal,
   OKRObjectiveForm,
+  OKRYearFormModal,
 } from '@/components/okr-planning';
 import { OKRObjective } from '@/types/okr';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -19,11 +21,12 @@ export const OKRPlanningPage: React.FC = () => {
   const { years, currentYear, setCurrentYear, fetchYears, loading: yearsLoading } = useOKRYears();
   const { quarters, currentQuarter, setCurrentQuarter } = useOKRQuarters(currentYear?.id || null);
   const { objectives, createObjective, loading: objectivesLoading } = useOKRObjectives(currentQuarter?.id || null);
-  const { isInModule } = useOKRPermissions();
+  const { isInModule, canCreateYear } = useOKRPermissions();
   
   const [selectedObjective, setSelectedObjective] = useState<OKRObjective | null>(null);
   const [showObjectiveModal, setShowObjectiveModal] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showYearForm, setShowYearForm] = useState(false);
 
   if (!isInModule) {
     return (
@@ -80,6 +83,11 @@ export const OKRPlanningPage: React.FC = () => {
             <p className="text-muted-foreground mb-4">
               Para começar, crie um ano OKR e defina seus trimestres
             </p>
+            {canCreateYear && (
+              <Button onClick={() => setShowYearForm(true)}>
+                Criar Ano OKR
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -139,6 +147,15 @@ export const OKRPlanningPage: React.FC = () => {
         onClose={() => {
           setShowObjectiveModal(false);
           setSelectedObjective(null);
+        }}
+      />
+
+      <OKRYearFormModal
+        open={showYearForm}
+        onClose={() => setShowYearForm(false)}
+        onSuccess={() => {
+          setShowYearForm(false);
+          fetchYears();
         }}
       />
     </div>
