@@ -83,6 +83,9 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
       });
 
       onSave(editedCompany);
+      
+      // Força reload da página para atualizar o contexto de auth/company
+      window.location.reload();
     } catch (error) {
       console.error('Erro ao atualizar empresa:', error);
       toast({
