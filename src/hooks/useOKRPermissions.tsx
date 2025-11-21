@@ -1,16 +1,37 @@
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useModulePermissions } from '@/hooks/useModulePermissions';
+import { useModules } from '@/hooks/useModules';
+import { useUserModuleRoles } from '@/hooks/useUserModuleRoles';
 
 export const useOKRPermissions = () => {
   const { profile } = useAuth();
-  const { isInModule, canAccessModule } = useModulePermissions();
+  const { canAccessModule } = useModulePermissions();
+  const { availableModules } = useModules();
+  const { getRolesForModuleId, loading: rolesLoading } = useUserModuleRoles();
 
+  // Find the OKR Planning module
+  const okrModule = availableModules.find(m => m.slug === 'okr-planning');
+  
+  // Get user's roles for OKR Planning module specifically
+  const okrModuleRoles = getRolesForModuleId(okrModule?.id);
+  
   const isInOKRModule = canAccessModule('okr-planning');
   
-  // Check if user has admin role in any company
-  const isAdmin = profile?.role === 'admin';
-  const isGestor = profile?.role === 'manager';
+  // Check if user has specific roles within the OKR Planning module
+  const isAdmin = okrModuleRoles.includes('admin');
+  const isGestor = okrModuleRoles.includes('manager');
   const isMembro = isInOKRModule && !isAdmin && !isGestor;
+
+  // Debug log for troubleshooting
+  console.log('[OKR Permissions]', {
+    okrModuleId: okrModule?.id,
+    okrModuleRoles,
+    isInOKRModule,
+    isAdmin,
+    isGestor,
+    isMembro,
+    rolesLoading
+  });
 
   return {
     // Ano
