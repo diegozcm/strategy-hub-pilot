@@ -5,3 +5,4 @@ export { EditCompanyModal } from './EditCompanyModal';
 export { ManageUsersModal } from './ManageUsersModal';
 export { StartupUsersModal } from './StartupUsersModal';
 export { DeleteCompanyModal } from './DeleteCompanyModal';
+export { ModuleToggleList } from './ModuleToggleList';
