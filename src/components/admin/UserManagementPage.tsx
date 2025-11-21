@@ -743,11 +743,13 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 
               {activeTab === 'modules' && (
                 <div className="space-y-3">
-                  {modules.map((module) => {
-                    const isStartupHub = module.slug === 'startup-hub';
-                    const checked = moduleAccess[module.id] || false;
-                    return (
-                      <ModuleAccessRow
+                  {modules
+                    .filter((m) => m.slug !== 'ai' && m.slug !== 'okr-execution')
+                    .map((module) => {
+                      const isStartupHub = module.slug === 'startup-hub';
+                      const checked = moduleAccess[module.id] || false;
+                      return (
+                        <ModuleAccessRow
                         key={module.id}
                         module={module}
                         checked={checked}
