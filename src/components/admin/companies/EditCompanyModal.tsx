@@ -66,6 +66,14 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
 
     setIsLoading(true);
     try {
+      // Extrair todos os campos *_enabled do objeto editedCompany
+      const moduleFields: any = {};
+      Object.keys(editedCompany).forEach(key => {
+        if (key.endsWith('_enabled')) {
+          moduleFields[key] = (editedCompany as any)[key] || false;
+        }
+      });
+
       const { error } = await supabase
         .from('companies')
         .update({
@@ -75,8 +83,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
           values: editedCompany.values || null,
           logo_url: editedCompany.logo_url || null,
           status: editedCompany.status,
-          ai_enabled: editedCompany.ai_enabled || false,
-          okr_enabled: editedCompany.okr_enabled || false,
+          ...moduleFields,
           updated_at: new Date().toISOString()
         })
         .eq('id', editedCompany.id);
@@ -226,7 +233,9 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
                 companyId={editedCompany.id}
                 enabledModules={{
                   ai_enabled: editedCompany.ai_enabled || false,
-                  okr_enabled: editedCompany.okr_enabled || false
+                  okr_enabled: editedCompany.okr_enabled || false,
+                  strategic_planning_enabled: (editedCompany as any).strategic_planning_enabled || false,
+                  startup_hub_enabled: (editedCompany as any).startup_hub_enabled || false
                 }}
                 onModuleToggle={handleModuleToggle}
                 disabled={isLoading}
