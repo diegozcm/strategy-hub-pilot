@@ -81,16 +81,6 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
             <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
               {company.status === 'active' ? 'Ativa' : 'Inativa'}
             </Badge>
-            {company.ai_enabled && (
-              <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/20">
-                IA
-              </Badge>
-            )}
-            {company.okr_enabled && (
-              <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">
-                OKR
-              </Badge>
-            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
@@ -179,7 +169,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
 
 
 export const CompaniesPage: React.FC = () => {
-  const { user, profile, company: currentCompany, switchCompany } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   // Usar o hook customizado para carregamento de dados
   const {
@@ -194,7 +184,6 @@ export const CompaniesPage: React.FC = () => {
   } = useCompanyDataLoader();
   const [searchTerm, setSearchTerm] = useState('');
   const [companyTypeFilter, setCompanyTypeFilter] = useState<'all' | 'regular' | 'startup'>('all');
-  const [moduleFilter, setModuleFilter] = useState<'all' | 'ai_enabled' | 'okr_enabled' | 'no_modules'>('all');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [managingUsers, setManagingUsers] = useState<Company | null>(null);
@@ -287,17 +276,7 @@ export const CompaniesPage: React.FC = () => {
   const filteredCompanies = companies.filter(company => {
     const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = companyTypeFilter === 'all' || company.company_type === companyTypeFilter;
-    
-    let matchesModule = true;
-    if (moduleFilter === 'ai_enabled') {
-      matchesModule = company.ai_enabled === true;
-    } else if (moduleFilter === 'okr_enabled') {
-      matchesModule = company.okr_enabled === true;
-    } else if (moduleFilter === 'no_modules') {
-      matchesModule = !company.ai_enabled && !company.okr_enabled;
-    }
-    
-    return matchesSearch && matchesType && matchesModule;
+    return matchesSearch && matchesType;
   });
 
   if (!isAdmin) {
@@ -326,49 +305,33 @@ export const CompaniesPage: React.FC = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="flex flex-col gap-2">
-            <div className="flex space-x-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                <Input
-                  placeholder="Buscar por nome da empresa..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-background border-input text-foreground"
-                />
-              </div>
-              <Select
-                value={companyTypeFilter}
-                onValueChange={(value: 'all' | 'regular' | 'startup') => setCompanyTypeFilter(value)}
-              >
-                <SelectTrigger className="w-48 bg-background border-input text-foreground">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border text-popover-foreground">
-                  <SelectItem value="all">Todos os Tipos</SelectItem>
-                  <SelectItem value="regular">Empresas Regulares</SelectItem>
-                  <SelectItem value="startup">Startups</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={moduleFilter}
-                onValueChange={(value: 'all' | 'ai_enabled' | 'okr_enabled' | 'no_modules') => setModuleFilter(value)}
-              >
-                <SelectTrigger className="w-48 bg-background border-input text-foreground">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-popover border-border text-popover-foreground">
-                  <SelectItem value="all">Todos os Módulos</SelectItem>
-                  <SelectItem value="ai_enabled">Com IA</SelectItem>
-                  <SelectItem value="okr_enabled">Com OKR</SelectItem>
-                  <SelectItem value="no_modules">Sem Módulos</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button onClick={() => setShowCreateForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Empresa
-              </Button>
+          <div className="flex space-x-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Buscar por nome da empresa..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-background border-input text-foreground"
+              />
             </div>
+            <Select
+              value={companyTypeFilter}
+              onValueChange={(value: 'all' | 'regular' | 'startup') => setCompanyTypeFilter(value)}
+            >
+              <SelectTrigger className="w-48 bg-background border-input text-foreground">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border-border text-popover-foreground">
+                <SelectItem value="all">Todos os Tipos</SelectItem>
+                <SelectItem value="regular">Empresas Regulares</SelectItem>
+                <SelectItem value="startup">Startups</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={() => setShowCreateForm(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Empresa
+            </Button>
           </div>
 
           {loading.overall ? (
@@ -422,26 +385,9 @@ export const CompaniesPage: React.FC = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-col gap-2">
-                            <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
-                              {company.status === 'active' ? 'Ativa' : 'Inativa'}
-                            </Badge>
-                            <div className="flex items-center gap-1">
-                              {company.ai_enabled && (
-                                <Badge variant="outline" className="text-xs bg-blue-500/10 text-blue-600 border-blue-500/20">
-                                  IA
-                                </Badge>
-                              )}
-                              {company.okr_enabled && (
-                                <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 border-green-500/20">
-                                  OKR
-                                </Badge>
-                              )}
-                              {!company.ai_enabled && !company.okr_enabled && (
-                                <span className="text-xs text-muted-foreground">Sem módulos</span>
-                              )}
-                            </div>
-                          </div>
+                          <Badge variant={company.status === 'active' ? 'default' : 'secondary'}>
+                            {company.status === 'active' ? 'Ativa' : 'Inativa'}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -568,17 +514,9 @@ export const CompaniesPage: React.FC = () => {
         {selectedCompany && isEditDialogOpen && (
           <EditCompanyModal
             company={selectedCompany}
-            onSave={async (editedCompany) => {
+            onSave={() => {
               setIsEditDialogOpen(false);
-              
-              // Recarregar lista de empresas
-              await loadAllData();
-              
-              // Se a empresa editada for a atual do contexto, forçar reload
-              if (currentCompany?.id === editedCompany.id && switchCompany) {
-                console.log('🔄 Reloading current company context after edit');
-                await switchCompany(editedCompany.id);
-              }
+              loadAllData();
             }}
             onCancel={() => setIsEditDialogOpen(false)}
           />

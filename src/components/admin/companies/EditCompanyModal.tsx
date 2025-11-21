@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save, X, Building2, Settings } from 'lucide-react';
@@ -12,11 +13,10 @@ import { Company } from '@/types/admin';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { ImageCropUpload } from '@/components/ui/ImageCropUpload';
-import { ModuleToggleList } from './ModuleToggleList';
 
 interface EditCompanyModalProps {
   company: Company;
-  onSave: (company: Company) => void | Promise<void>;
+  onSave: (company: Company) => void;
   onCancel: () => void;
 }
 
@@ -47,13 +47,6 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
     });
   };
 
-  const handleModuleToggle = (moduleField: string, enabled: boolean) => {
-    setEditedCompany({
-      ...editedCompany,
-      [moduleField]: enabled
-    });
-  };
-
   const handleSave = async () => {
     if (!editedCompany.name.trim()) {
       toast({
@@ -66,14 +59,6 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
 
     setIsLoading(true);
     try {
-      // Extrair todos os campos *_enabled do objeto editedCompany
-      const moduleFields: any = {};
-      Object.keys(editedCompany).forEach(key => {
-        if (key.endsWith('_enabled')) {
-          moduleFields[key] = (editedCompany as any)[key] || false;
-        }
-      });
-
       const { error } = await supabase
         .from('companies')
         .update({
@@ -83,7 +68,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
           values: editedCompany.values || null,
           logo_url: editedCompany.logo_url || null,
           status: editedCompany.status,
-          ...moduleFields,
+          ai_enabled: editedCompany.ai_enabled || false,
           updated_at: new Date().toISOString()
         })
         .eq('id', editedCompany.id);
@@ -220,27 +205,23 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
           </TabsContent>
 
           <TabsContent value="parameters" className="space-y-6 mt-4">
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium text-foreground mb-3">Módulos Habilitados</h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Selecione quais módulos estarão disponíveis para esta empresa. 
-                  Módulos desabilitados ocultam seus dados (mas não os deletam).
-                </p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="ai-enabled">Acesso à IA</Label>
+                <Switch
+                  id="ai-enabled"
+                  checked={editedCompany.ai_enabled || false}
+                  onCheckedChange={(checked) => 
+                    setEditedCompany({ ...editedCompany, ai_enabled: checked })
+                  }
+                />
               </div>
-
-              <ModuleToggleList
-                companyId={editedCompany.id}
-                enabledModules={{
-                  ai_enabled: editedCompany.ai_enabled || false,
-                  okr_enabled: editedCompany.okr_enabled || false,
-                  strategic_planning_enabled: (editedCompany as any).strategic_planning_enabled || false,
-                  startup_hub_enabled: (editedCompany as any).startup_hub_enabled || false
-                }}
-                onModuleToggle={handleModuleToggle}
-                disabled={isLoading}
-              />
+              <p className="text-xs text-muted-foreground">
+                Habilita o Copilot AI e o botão flutuante de chat para usuários desta empresa
+              </p>
             </div>
+
+            {/* Futuros parâmetros de configuração por empresa devem ser adicionados aqui */}
           </TabsContent>
         </Tabs>
 
