@@ -5,7 +5,7 @@ import { OKRYearSelector } from "@/components/okr-planning/OKRYearSelector";
 import { useOKRYears } from "@/hooks/useOKRYears";
 import { useOKRObjectives } from "@/hooks/useOKRObjectives";
 import { useOKRPermissions } from "@/hooks/useOKRPermissions";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useMultiTenant";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,8 +14,8 @@ import { Progress } from "@/components/ui/progress";
 
 export function OKRKeyResultsPage() {
   const { company } = useAuth();
-  const { currentYear, loading: yearsLoading } = useOKRYears();
-  const { objectives, loading: objectivesLoading, fetchObjectives } = useOKRObjectives(null);
+  const { years, currentYear, setCurrentYear, loading: yearsLoading } = useOKRYears();
+  const { objectives, loading: objectivesLoading, fetchObjectives } = useOKRObjectives();
   const { canCreateKeyResult } = useOKRPermissions();
 
   const [selectedObjectiveId, setSelectedObjectiveId] = useState<string>("all");
@@ -68,7 +68,12 @@ export function OKRKeyResultsPage() {
       </div>
 
       {/* Year Selector */}
-      <OKRYearSelector />
+      <OKRYearSelector 
+        years={years}
+        currentYear={currentYear}
+        onYearChange={setCurrentYear}
+        loading={yearsLoading}
+      />
 
       {/* Filters */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -19,17 +19,7 @@ export const useOKRObjectives = (pillarId?: string | null) => {
       let query = supabase
         .from('okr_objectives')
         .select(`
-          *,
-          sponsor:profiles!okr_objectives_sponsor_id_fkey(user_id, first_name, last_name, email),
-          owner:profiles!okr_objectives_owner_id_fkey(user_id, first_name, last_name, email),
-          key_results:okr_key_results(
-            *,
-            owner:profiles!okr_key_results_owner_id_fkey(user_id, first_name, last_name, email),
-            actions:okr_actions(
-              *,
-              assigned_user:profiles!okr_actions_assigned_to_fkey(user_id, first_name, last_name, email)
-            )
-          )
+          *
         `)
         .order('created_at', { ascending: false });
       

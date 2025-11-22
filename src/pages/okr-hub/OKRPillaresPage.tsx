@@ -36,7 +36,7 @@ export function OKRPillaresPage() {
     if (currentYear?.id && company?.id) {
       fetchPillars(currentYear.id);
     }
-  }, [currentYear?.id, company?.id]);
+  }, [currentYear?.id, company?.id, fetchPillars]);
 
   const handleCreatePillar = () => {
     setEditingPillar(null);

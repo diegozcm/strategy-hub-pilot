@@ -8,16 +8,16 @@ import { useOKRYears } from "@/hooks/useOKRYears";
 import { useOKRPillars } from "@/hooks/useOKRPillars";
 import { useOKRObjectives } from "@/hooks/useOKRObjectives";
 import { useOKRPermissions } from "@/hooks/useOKRPermissions";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/useMultiTenant";
 import { OKRObjective } from "@/types/okr";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
 export function OKRObjetivosPage() {
   const { company } = useAuth();
-  const { currentYear, loading: yearsLoading } = useOKRYears();
+  const { years, currentYear, setCurrentYear, loading: yearsLoading } = useOKRYears();
   const { pillars, loading: pillarsLoading, fetchPillars } = useOKRPillars();
-  const { objectives, loading: objectivesLoading, fetchObjectives } = useOKRObjectives(null);
+  const { objectives, loading: objectivesLoading, fetchObjectives } = useOKRObjectives();
   const { canCreateObjective } = useOKRPermissions();
 
   const [selectedPillarId, setSelectedPillarId] = useState<string>("all");
@@ -81,7 +81,12 @@ export function OKRObjetivosPage() {
       </div>
 
       {/* Year Selector */}
-      <OKRYearSelector />
+      <OKRYearSelector 
+        years={years}
+        currentYear={currentYear}
+        onYearChange={setCurrentYear}
+        loading={yearsLoading}
+      />
 
       {/* Pillar Filter */}
       {pillars.length > 0 && (
@@ -139,7 +144,7 @@ export function OKRObjetivosPage() {
         <OKRObjectivesGrid
           objectives={filteredObjectives}
           onObjectiveClick={handleObjectiveClick}
-          onCreateObjective={handleCreateObjective}
+          onCreateClick={handleCreateObjective}
         />
       )}
 
@@ -152,7 +157,6 @@ export function OKRObjetivosPage() {
             setSelectedObjective(null);
           }}
           objective={selectedObjective}
-          pillars={pillars}
         />
       )}
     </div>

@@ -43,7 +43,8 @@ export const useOKRPermissions = () => {
     canCreatePillar: isAdmin,
     canEditPillar: (sponsorId: string) => 
       isAdmin || sponsorId === profile?.user_id,
-    canDeletePillar: isAdmin,
+    canUpdatePillar: (pillarId: string) => isAdmin || isGestor,
+    canDeletePillar: (pillarId: string) => isAdmin,
     
     // Objetivo
     canCreateObjective: isAdmin || isGestor,
@@ -53,6 +54,7 @@ export const useOKRPermissions = () => {
       isAdmin || (isGestor && ownerId === profile?.user_id),
     
     // Key Result
+    canCreateKeyResult: isAdmin || isGestor,
     canCreateKR: isAdmin || isGestor,
     canEditKR: (ownerId: string) => 
       isAdmin || (isGestor && ownerId === profile?.user_id),

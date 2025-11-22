@@ -13,8 +13,8 @@ interface OKRPillarCardProps {
 
 export function OKRPillarCard({ pillar, onEdit, onDelete }: OKRPillarCardProps) {
   const permissions = useOKRPermissions();
-  const canUpdate = permissions.canUpdatePillar(pillar.id);
-  const canDelete = permissions.canDeletePillar(pillar.id);
+  const canUpdate = permissions.canUpdatePillar ? permissions.canUpdatePillar(pillar.id) : false;
+  const canDelete = permissions.canDeletePillar ? permissions.canDeletePillar(pillar.id) : false;
 
   const getSponsorName = () => {
     if (!pillar.sponsor) return "Não atribuído";
