@@ -29,10 +29,10 @@ const menuStructure = [
     icon: Target,
     items: [
       { name: 'Dashboard', href: '/app/okr-hub', icon: BarChart3 },
-      { name: 'Pilares', href: '/app/okr-hub/pillars', icon: Zap },
-      { name: 'Objetivos', href: '/app/okr-hub/objectives', icon: Target },
-      { name: 'Resultados-chave', href: '/app/okr-hub/key-results', icon: TrendingUp },
-      { name: 'Ações', href: '/app/okr-hub/actions', icon: Activity }
+      { name: 'Pilares', href: '/app/okr-hub/pilares', icon: Zap },
+      { name: 'Objetivos', href: '/app/okr-hub/objetivos', icon: Target },
+      { name: 'Resultados-chave', href: '/app/okr-hub/resultados-chave', icon: TrendingUp },
+      { name: 'Ações', href: '/app/okr-hub/acoes', icon: Activity }
     ]
   },
   {
