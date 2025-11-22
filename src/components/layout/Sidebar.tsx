@@ -138,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
               // Check if user has startup-hub access
               return hasModuleAccess('startup-hub');
             }
-            if (item.href.includes('/okr-planning')) {
+            if (item.href.includes('/okr-hub')) {
               return hasModuleAccess('okr-planning');
             }
             if (item.href.includes('/dashboard') || item.href.includes('/strategic-map') || item.href.includes('/tools') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
@@ -171,7 +171,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                   let hasAccess = false;
                   if (item.href.includes('/startup-hub')) {
                     hasAccess = hasModuleAccess('startup-hub');
-                  } else if (item.href.includes('/okr-planning')) {
+                  } else if (item.href.includes('/okr-hub')) {
                     hasAccess = hasModuleAccess('okr-planning');
                   } else if (item.href.includes('/dashboard') || item.href.includes('/strategic-map') || item.href.includes('/tools') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
                     hasAccess = hasModuleAccess('strategic-planning');
