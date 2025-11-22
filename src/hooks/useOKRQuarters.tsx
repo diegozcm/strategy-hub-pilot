@@ -18,7 +18,7 @@ export const useOKRQuarters = (yearId: string | null) => {
         .from('okr_quarters')
         .select('*')
         .eq('okr_year_id', yearId)
-        .order('quarter_number', { ascending: true });
+        .order('quarter', { ascending: true });
 
       if (error) throw error;
 
