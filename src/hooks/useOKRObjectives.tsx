@@ -4,22 +4,40 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { OKRObjective } from '@/types/okr';
 
-export const useOKRObjectives = (quarterId: string | null) => {
+export const useOKRObjectives = (pillarId?: string | null) => {
   const [objectives, setObjectives] = useState<OKRObjective[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const { profile } = useAuth();
+  const { profile, company } = useAuth();
 
   const fetchObjectives = useCallback(async () => {
-    if (!quarterId) return;
+    if (!company?.id) return;
     
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      let query = supabase
         .from('okr_objectives')
-        .select('*')
-        .eq('okr_quarter_id', quarterId)
+        .select(`
+          *,
+          sponsor:profiles!okr_objectives_sponsor_id_fkey(user_id, first_name, last_name, email),
+          owner:profiles!okr_objectives_owner_id_fkey(user_id, first_name, last_name, email),
+          key_results:okr_key_results(
+            *,
+            owner:profiles!okr_key_results_owner_id_fkey(user_id, first_name, last_name, email),
+            actions:okr_actions(
+              *,
+              assigned_user:profiles!okr_actions_assigned_to_fkey(user_id, first_name, last_name, email)
+            )
+          )
+        `)
         .order('created_at', { ascending: false });
+      
+      if (pillarId) {
+        query = query.eq('okr_pillar_id', pillarId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -34,7 +52,7 @@ export const useOKRObjectives = (quarterId: string | null) => {
     } finally {
       setLoading(false);
     }
-  }, [quarterId, toast]);
+  }, [company?.id, pillarId, toast]);
 
   const createObjective = useCallback(async (data: Omit<OKRObjective, 'id' | 'created_at' | 'updated_at' | 'owner' | 'key_results' | 'created_by'>) => {
     if (!profile?.user_id) return null;
