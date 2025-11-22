@@ -44,7 +44,7 @@ import { ToolsPage } from "@/components/tools/ToolsPage";
 import { StartupHubPage } from "@/components/startup-hub/StartupHubPage";
 import { ModuleBasedRedirect } from "@/components/ModuleBasedRedirect";
 import { ModuleProtectedRoute } from "@/components/ui/ModuleProtectedRoute";
-import OKRPlanningPage from "@/pages/OKRPlanningPage";
+import OKRDashboardPage from "@/pages/okr-hub/OKRDashboardPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -111,13 +111,14 @@ const App = () => (
                 <Route path="golden-circle" element={<Navigate to="/app/tools" replace />} />
                 <Route path="tools" element={<ToolsPage />} />
                   <Route path="startup-hub" element={<StartupHubPage />} />
+                  <Route path="okr-hub" element={
+                    <ModuleProtectedRoute requiredModule="okr-planning">
+                      <OKRDashboardPage />
+                    </ModuleProtectedRoute>
+                  } />
                   <Route 
                     path="okr-planning" 
-                    element={
-                      <ModuleProtectedRoute requiredModule="okr-planning">
-                        <OKRPlanningPage />
-                      </ModuleProtectedRoute>
-                    } 
+                    element={<Navigate to="/app/okr-hub" replace />}
                   />
                 </Route>
 
