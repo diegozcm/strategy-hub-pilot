@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useMultiTenant';
-import { OKRKeyResult } from '@/types/okr';
+import { OKRKeyResult, ChecklistItem } from '@/types/okr';
 
 export const useOKRKeyResults = (objectiveId: string | null) => {
   const [keyResults, setKeyResults] = useState<OKRKeyResult[]>([]);
@@ -23,7 +23,13 @@ export const useOKRKeyResults = (objectiveId: string | null) => {
 
       if (error) throw error;
 
-      setKeyResults(data || []);
+      // Parse checklist_items from JSONB
+      const parsedData = (data || []).map(kr => ({
+        ...kr,
+        checklist_items: kr.checklist_items ? (typeof kr.checklist_items === 'string' ? JSON.parse(kr.checklist_items) : kr.checklist_items) : null,
+      }));
+
+      setKeyResults(parsedData as OKRKeyResult[]);
     } catch (error) {
       console.error('Error fetching OKR key results:', error);
       toast({
@@ -36,7 +42,7 @@ export const useOKRKeyResults = (objectiveId: string | null) => {
     }
   }, [objectiveId, toast]);
 
-  const createKeyResult = useCallback(async (data: Omit<OKRKeyResult, 'id' | 'created_at' | 'updated_at' | 'owner' | 'created_by'>) => {
+  const createKeyResult = useCallback(async (data: Omit<OKRKeyResult, 'id' | 'created_at' | 'updated_at' | 'owner' | 'created_by' | 'actions' | 'checklist_completed' | 'checklist_total'>) => {
     if (!profile?.user_id) return null;
 
     try {
@@ -45,15 +51,34 @@ export const useOKRKeyResults = (objectiveId: string | null) => {
       const { data: newKR, error } = await supabase
         .from('okr_key_results')
         .insert({
-          ...data,
+          okr_objective_id: data.okr_objective_id,
+          title: data.title,
+          description: data.description,
+          tracking_type: data.tracking_type,
+          quarter: data.quarter,
+          target_value: data.target_value,
+          initial_value: data.initial_value,
+          current_value: data.current_value,
+          unit: data.unit,
+          metric_type: data.metric_type || 'number',
+          target_direction: data.target_direction,
+          checklist_items: data.checklist_items ? JSON.stringify(data.checklist_items) : null,
+          status: data.status,
+          due_date: data.due_date,
+          progress_percentage: data.progress_percentage,
           owner_id: data.owner_id || profile.user_id,
           created_by: profile.user_id,
-          metric_type: 'number',
-        })
+        } as any)
         .select()
         .single();
 
       if (error) throw error;
+
+      // Parse checklist_items if present
+      const parsedKR = {
+        ...newKR,
+        checklist_items: newKR.checklist_items ? (typeof newKR.checklist_items === 'string' ? JSON.parse(newKR.checklist_items) : newKR.checklist_items) : null,
+      };
 
       toast({
         title: 'Sucesso',
@@ -61,7 +86,7 @@ export const useOKRKeyResults = (objectiveId: string | null) => {
       });
 
       await fetchKeyResults();
-      return newKR;
+      return parsedKR as OKRKeyResult;
     } catch (error) {
       console.error('Error creating OKR key result:', error);
       toast({
@@ -79,9 +104,15 @@ export const useOKRKeyResults = (objectiveId: string | null) => {
     try {
       setLoading(true);
       
+      // Prepare updates and stringify checklist_items if present
+      const { owner, actions, ...updateData } = updates as any;
+      if (updateData.checklist_items) {
+        updateData.checklist_items = JSON.stringify(updateData.checklist_items);
+      }
+      
       const { error } = await supabase
         .from('okr_key_results')
-        .update(updates)
+        .update(updateData)
         .eq('id', krId);
 
       if (error) throw error;
@@ -133,6 +164,25 @@ export const useOKRKeyResults = (objectiveId: string | null) => {
     }
   }, [toast, fetchKeyResults]);
 
+  // Method to toggle checklist item
+  const toggleChecklistItem = useCallback(async (krId: string, itemId: string) => {
+    const kr = keyResults.find(k => k.id === krId);
+    if (!kr || kr.tracking_type !== 'checklist' || !kr.checklist_items) return;
+
+    const updatedItems = kr.checklist_items.map(item =>
+      item.id === itemId
+        ? {
+            ...item,
+            completed: !item.completed,
+            completed_at: !item.completed ? new Date().toISOString() : null,
+            completed_by: !item.completed ? profile?.user_id : null,
+          }
+        : item
+    );
+
+    await updateKeyResult(krId, { checklist_items: updatedItems });
+  }, [keyResults, profile?.user_id, updateKeyResult]);
+
   useEffect(() => {
     fetchKeyResults();
   }, [fetchKeyResults]);
@@ -144,5 +194,6 @@ export const useOKRKeyResults = (objectiveId: string | null) => {
     createKeyResult,
     updateKeyResult,
     deleteKeyResult,
+    toggleChecklistItem,
   };
 };

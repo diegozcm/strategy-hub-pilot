@@ -4,23 +4,25 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { OKRYear } from '@/types/okr';
 import { useOKRPermissions } from '@/hooks/useOKRPermissions';
+import { useOKRYears } from '@/hooks/useOKRYears';
 import { OKRYearFormModal } from './OKRYearFormModal';
 
 interface OKRYearSelectorProps {
   years: OKRYear[];
   currentYear: OKRYear | null;
   onYearChange: (year: OKRYear) => void;
-  onYearCreated: () => void;
+  loading?: boolean;
 }
 
 export const OKRYearSelector: React.FC<OKRYearSelectorProps> = ({
   years,
   currentYear,
   onYearChange,
-  onYearCreated,
+  loading,
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { canCreateYear } = useOKRPermissions();
+  const { fetchYears } = useOKRYears();
 
   return (
     <div className="flex items-center gap-4">
@@ -64,7 +66,7 @@ export const OKRYearSelector: React.FC<OKRYearSelectorProps> = ({
         onClose={() => setShowCreateModal(false)}
         onSuccess={() => {
           setShowCreateModal(false);
-          onYearCreated();
+          fetchYears();
         }}
       />
     </div>

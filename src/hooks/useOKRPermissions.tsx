@@ -39,8 +39,11 @@ export const useOKRPermissions = () => {
     canEditYear: isAdmin,
     canDeleteYear: isAdmin,
     
-    // Trimestre
-    canConfigureQuarter: isAdmin,
+    // Pilar
+    canCreatePillar: isAdmin,
+    canEditPillar: (sponsorId: string) => 
+      isAdmin || sponsorId === profile?.user_id,
+    canDeletePillar: isAdmin,
     
     // Objetivo
     canCreateObjective: isAdmin || isGestor,

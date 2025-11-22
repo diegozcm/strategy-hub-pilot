@@ -1859,6 +1859,9 @@ export type Database = {
       }
       okr_key_results: {
         Row: {
+          checklist_completed: number | null
+          checklist_items: Json | null
+          checklist_total: number | null
           created_at: string
           created_by: string
           current_value: number | null
@@ -1870,14 +1873,19 @@ export type Database = {
           okr_objective_id: string
           owner_id: string
           progress_percentage: number | null
+          quarter: number | null
           status: string
           target_direction: string
           target_value: number
           title: string
+          tracking_type: string
           unit: string | null
           updated_at: string
         }
         Insert: {
+          checklist_completed?: number | null
+          checklist_items?: Json | null
+          checklist_total?: number | null
           created_at?: string
           created_by: string
           current_value?: number | null
@@ -1889,14 +1897,19 @@ export type Database = {
           okr_objective_id: string
           owner_id: string
           progress_percentage?: number | null
+          quarter?: number | null
           status?: string
           target_direction?: string
           target_value: number
           title: string
+          tracking_type?: string
           unit?: string | null
           updated_at?: string
         }
         Update: {
+          checklist_completed?: number | null
+          checklist_items?: Json | null
+          checklist_total?: number | null
           created_at?: string
           created_by?: string
           current_value?: number | null
@@ -1908,10 +1921,12 @@ export type Database = {
           okr_objective_id?: string
           owner_id?: string
           progress_percentage?: number | null
+          quarter?: number | null
           status?: string
           target_direction?: string
           target_value?: number
           title?: string
+          tracking_type?: string
           unit?: string | null
           updated_at?: string
         }
@@ -1931,10 +1946,12 @@ export type Database = {
           created_by: string
           description: string | null
           id: string
-          okr_quarter_id: string
+          okr_pillar_id: string | null
+          okr_quarter_id: string | null
           owner_id: string
           priority: string
           progress_percentage: number | null
+          sponsor_id: string | null
           status: string
           title: string
           updated_at: string
@@ -1944,10 +1961,12 @@ export type Database = {
           created_by: string
           description?: string | null
           id?: string
-          okr_quarter_id: string
+          okr_pillar_id?: string | null
+          okr_quarter_id?: string | null
           owner_id: string
           priority?: string
           progress_percentage?: number | null
+          sponsor_id?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -1957,21 +1976,111 @@ export type Database = {
           created_by?: string
           description?: string | null
           id?: string
-          okr_quarter_id?: string
+          okr_pillar_id?: string | null
+          okr_quarter_id?: string | null
           owner_id?: string
           priority?: string
           progress_percentage?: number | null
+          sponsor_id?: string | null
           status?: string
           title?: string
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "okr_objectives_okr_pillar_id_fkey"
+            columns: ["okr_pillar_id"]
+            isOneToOne: false
+            referencedRelation: "okr_pillars"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "okr_objectives_okr_quarter_id_fkey"
             columns: ["okr_quarter_id"]
             isOneToOne: false
             referencedRelation: "okr_quarters"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "okr_objectives_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      okr_pillars: {
+        Row: {
+          color: string | null
+          company_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          okr_year_id: string
+          order_index: number | null
+          sponsor_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          company_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          okr_year_id: string
+          order_index?: number | null
+          sponsor_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          okr_year_id?: string
+          order_index?: number | null
+          sponsor_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "okr_pillars_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "okr_pillars_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "okr_pillars_okr_year_id_fkey"
+            columns: ["okr_year_id"]
+            isOneToOne: false
+            referencedRelation: "okr_years"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "okr_pillars_sponsor_id_fkey"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
