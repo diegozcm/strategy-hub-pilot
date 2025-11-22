@@ -44,7 +44,11 @@ import { ToolsPage } from "@/components/tools/ToolsPage";
 import { StartupHubPage } from "@/components/startup-hub/StartupHubPage";
 import { ModuleBasedRedirect } from "@/components/ModuleBasedRedirect";
 import { ModuleProtectedRoute } from "@/components/ui/ModuleProtectedRoute";
-import OKRDashboardPage from "@/pages/okr-hub/OKRDashboardPage";
+import { OKRDashboardPage } from "@/pages/okr-hub/OKRDashboardPage";
+import { OKRPillaresPage } from "@/pages/okr-hub/OKRPillaresPage";
+import { OKRObjetivosPage } from "@/pages/okr-hub/OKRObjetivosPage";
+import { OKRKeyResultsPage } from "@/pages/okr-hub/OKRKeyResultsPage";
+import { OKRAcoesPage } from "@/pages/okr-hub/OKRAcoesPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -114,6 +118,26 @@ const App = () => (
                   <Route path="okr-hub" element={
                     <ModuleProtectedRoute requiredModule="okr-planning">
                       <OKRDashboardPage />
+                    </ModuleProtectedRoute>
+                  } />
+                  <Route path="okr-hub/pilares" element={
+                    <ModuleProtectedRoute requiredModule="okr-planning">
+                      <OKRPillaresPage />
+                    </ModuleProtectedRoute>
+                  } />
+                  <Route path="okr-hub/objetivos" element={
+                    <ModuleProtectedRoute requiredModule="okr-planning">
+                      <OKRObjetivosPage />
+                    </ModuleProtectedRoute>
+                  } />
+                  <Route path="okr-hub/resultados-chave" element={
+                    <ModuleProtectedRoute requiredModule="okr-planning">
+                      <OKRKeyResultsPage />
+                    </ModuleProtectedRoute>
+                  } />
+                  <Route path="okr-hub/acoes" element={
+                    <ModuleProtectedRoute requiredModule="okr-planning">
+                      <OKRAcoesPage />
                     </ModuleProtectedRoute>
                   } />
                   <Route 

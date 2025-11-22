@@ -8,14 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Plus, Target, Layers, CheckSquare, TrendingUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
-export default function OKRDashboardPage() {
+export function OKRDashboardPage() {
   const { years, currentYear, setCurrentYear, loading: yearsLoading } = useOKRYears();
-  const { pillars, loading: pillarsLoading, fetchPillars } = useOKRPillars(currentYear?.id || null);
+  const { pillars, loading: pillarsLoading, fetchPillars } = useOKRPillars();
   const { canCreateYear, canCreatePillar, isInModule } = useOKRPermissions();
 
   useEffect(() => {
     if (currentYear?.id) {
-      fetchPillars();
+      fetchPillars(currentYear.id);
     }
   }, [currentYear?.id, fetchPillars]);
 

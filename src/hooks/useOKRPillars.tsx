@@ -4,13 +4,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { OKRPillar } from '@/types/okr';
 
-export const useOKRPillars = (yearId: string | null) => {
+export const useOKRPillars = () => {
   const [pillars, setPillars] = useState<OKRPillar[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { profile, company } = useAuth();
 
-  const fetchPillars = useCallback(async () => {
+  const fetchPillars = useCallback(async (yearId: string) => {
     if (!yearId || !company?.id) return;
 
     try {
@@ -37,7 +37,7 @@ export const useOKRPillars = (yearId: string | null) => {
     } finally {
       setLoading(false);
     }
-  }, [yearId, company?.id, toast]);
+  }, [company?.id, toast]);
 
   const createPillar = useCallback(async (
     pillarData: Omit<OKRPillar, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'company_id' | 'order_index'>
@@ -78,7 +78,7 @@ export const useOKRPillars = (yearId: string | null) => {
         description: 'Pilar criado com sucesso',
       });
 
-      await fetchPillars();
+      setPillars((prev) => [...prev, data]);
       return data;
     } catch (error) {
       console.error('Error creating pillar:', error);
@@ -116,7 +116,7 @@ export const useOKRPillars = (yearId: string | null) => {
         description: 'Pilar atualizado com sucesso',
       });
 
-      await fetchPillars();
+      setPillars((prev) => prev.map(p => p.id === pillarId ? { ...p, ...updates } : p));
       return data;
     } catch (error) {
       console.error('Error updating pillar:', error);
@@ -146,7 +146,7 @@ export const useOKRPillars = (yearId: string | null) => {
         description: 'Pilar excluído com sucesso',
       });
 
-      await fetchPillars();
+      setPillars((prev) => prev.filter(p => p.id !== pillarId));
     } catch (error) {
       console.error('Error deleting pillar:', error);
       toast({
@@ -182,7 +182,7 @@ export const useOKRPillars = (yearId: string | null) => {
         description: 'Pilares reordenados com sucesso',
       });
 
-      await fetchPillars();
+      setPillars(reorderedPillars);
     } catch (error) {
       console.error('Error reordering pillars:', error);
       toast({
