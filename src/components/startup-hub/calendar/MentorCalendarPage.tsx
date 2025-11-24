@@ -155,13 +155,13 @@ export const MentorCalendarPage: React.FC = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="calendar" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Calendário
-          </TabsTrigger>
           <TabsTrigger value="list" className="flex items-center gap-2">
             <List className="h-4 w-4" />
             Lista
+          </TabsTrigger>
+          <TabsTrigger value="calendar" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Calendário
           </TabsTrigger>
           <TabsTrigger value="todos" className="flex items-center gap-2">
             <StickyNote className="h-4 w-4" />
