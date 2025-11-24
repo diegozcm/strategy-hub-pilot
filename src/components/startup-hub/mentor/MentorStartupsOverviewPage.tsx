@@ -19,17 +19,19 @@ const maturityLevels = {
 };
 
 const getScoreColor = (score: number): string => {
-  if (score >= 8) return 'text-green-600';
-  if (score >= 6) return 'text-yellow-600';
-  if (score >= 4) return 'text-orange-600';
-  return 'text-red-600';
+  if (score >= 4.3) return 'text-green-600';
+  if (score >= 3.5) return 'text-orange-500';
+  if (score >= 2.7) return 'text-blue-500';
+  if (score >= 1.9) return 'text-yellow-500';
+  return 'text-gray-500';
 };
 
 const getScoreBg = (score: number): string => {
-  if (score >= 8) return 'bg-green-50 border-green-200';
-  if (score >= 6) return 'bg-yellow-50 border-yellow-200';
-  if (score >= 4) return 'bg-orange-50 border-orange-200';
-  return 'bg-red-50 border-red-200';
+  if (score >= 4.3) return 'bg-green-50 border-green-200';
+  if (score >= 3.5) return 'bg-orange-50 border-orange-200';
+  if (score >= 2.7) return 'bg-blue-50 border-blue-200';
+  if (score >= 1.9) return 'bg-yellow-50 border-yellow-200';
+  return 'bg-gray-50 border-gray-200';
 };
 
 export const MentorStartupsOverviewPage: React.FC = () => {
@@ -197,7 +199,7 @@ export const MentorStartupsOverviewPage: React.FC = () => {
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-muted-foreground">Último Score BEEP</span>
                             <span className={`text-sm font-medium ${getScoreColor(startup.latest_beep_assessment.final_score)}`}>
-                              {startup.latest_beep_assessment.final_score.toFixed(1)}/10
+                              {startup.latest_beep_assessment.final_score.toFixed(1)}/5
                             </span>
                           </div>
                           <div className="flex justify-between items-center">
