@@ -778,7 +778,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Sign in for NORMAL USERS ONLY - blocks System Admins
+  // Sign in for NORMAL USERS (system admins are also allowed here; admin-only console uses AdminLoginPage)
   const signInNormalUser = async (email: string, password: string) => {
     try {
       // Reset logout flag at the start of login
@@ -798,30 +798,11 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         return { error };
       }
 
-      // Check if user is System Admin - BLOCK if true
-      logStep('Auth:signIn:checkAdmin:start', { userId: data.user.id });
-      const { data: isAdmin, error: adminError } = await supabase.rpc('is_system_admin', {
-        _user_id: data.user.id
-      });
-
-      logStep('Auth:signIn:checkAdmin:result', { isAdmin, hasError: !!adminError });
-
-      if (adminError) {
-        console.error('❌ Error checking admin status:', adminError);
-        await supabase.auth.signOut();
-        logStep('Auth:signIn:error', { reason: 'admin_check_failed' });
-        return { error: new Error('Erro ao verificar permissões') };
-      }
-
-      if (isAdmin === true) {
-        console.warn('🚫 System Admin blocked from /auth login');
-        await supabase.auth.signOut();
-        logStep('Auth:signIn:blocked', { reason: 'is_admin' });
-        return { error: { code: 'admin_blocked', message: 'Administradores devem usar /admin-login' } };
-      }
-
-      console.log('✅ Normal user sign in successful');
+      // Previously we blocked system admins from /auth here. This caused issues for
+      // multi-company admins like diego@cofound.com.br, so we now allow all users
+      // to authenticate via this flow and rely on routing/impersonation to control access.
       logStep('Auth:signIn:success');
+      console.log('✅ User sign in successful');
       return { error: null };
     } catch (error) {
       console.error('❌ Unexpected sign in error:', error);
@@ -829,7 +810,6 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       return { error };
     }
   };
-
   // Legacy signIn kept for admin usage
   const signIn = async (email: string, password: string) => {
     try {
