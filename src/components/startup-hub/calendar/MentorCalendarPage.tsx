@@ -32,7 +32,7 @@ export const MentorCalendarPage: React.FC = () => {
   const { data: startups } = useMentorStartupDetails();
   const mentorTodosHook = useMentorTodos();
   const [selectedMonth, setSelectedMonth] = useState(new Date());
-  const [activeTab, setActiveTab] = useState('calendar');
+  const [activeTab, setActiveTab] = useState('list');
   
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<MentoringSession | null>(null);
