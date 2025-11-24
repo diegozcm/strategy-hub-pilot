@@ -1,9 +1,0 @@
-export { OKRYearSelector } from './OKRYearSelector';
-export { OKRQuarterTabs } from './OKRQuarterTabs';
-export { OKRObjectivesGrid } from './OKRObjectivesGrid';
-export { OKRObjectiveCard } from './OKRObjectiveCard';
-export { OKRObjectiveModal } from './OKRObjectiveModal';
-export { OKRKeyResultItem } from './OKRKeyResultItem';
-export { OKRObjectiveForm } from './OKRObjectiveForm';
-export { OKRKeyResultForm } from './OKRKeyResultForm';
-export { OKRYearFormModal } from './OKRYearFormModal';
