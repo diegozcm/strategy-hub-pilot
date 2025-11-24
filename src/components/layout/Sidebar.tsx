@@ -191,7 +191,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
 
                   // Special handling for calendar with conditional naming
                   if (item.href.includes('tab=calendar')) {
-                    const calendarName = isStartup ? 'Mentorias' : 'Calendário de Mentorias';
+                    const calendarName = 'Mentorias';
                     return (
                       <NavLink 
                         key="calendar" 
