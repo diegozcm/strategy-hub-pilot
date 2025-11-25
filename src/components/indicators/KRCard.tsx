@@ -12,9 +12,10 @@ interface KRCardProps {
     name: string;
     color: string;
   };
-  selectedPeriod: 'ytd' | 'monthly' | 'yearly';
+  selectedPeriod: 'ytd' | 'monthly' | 'yearly' | 'quarterly';
   selectedMonth?: number;
   selectedYear?: number;
+  selectedQuarter?: 1 | 2 | 3 | 4;
   onClick: () => void;
 }
 
@@ -24,20 +25,25 @@ export const KRCard: React.FC<KRCardProps> = ({
   selectedPeriod,
   selectedMonth,
   selectedYear,
+  selectedQuarter,
   onClick,
 }) => {
   const metrics = useKRMetrics(keyResult, {
     selectedMonth,
     selectedYear,
+    selectedQuarter,
   });
   
   const currentMetrics = 
+    selectedPeriod === 'quarterly' ? metrics.quarterly :
     selectedPeriod === 'monthly' ? metrics.monthly :
     selectedPeriod === 'yearly' ? metrics.yearly :
     metrics.ytd;
   
   const periodLabel = 
-    selectedPeriod === 'monthly' 
+    selectedPeriod === 'quarterly' 
+      ? `Q${selectedQuarter}`
+      : selectedPeriod === 'monthly' 
       ? (selectedMonth && selectedYear 
           ? new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString('pt-BR', { month: 'short' })
             .charAt(0).toUpperCase() + 
