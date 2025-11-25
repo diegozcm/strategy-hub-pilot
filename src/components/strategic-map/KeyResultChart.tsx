@@ -21,7 +21,7 @@ interface KeyResultChartProps {
   onYearChange?: (year: number) => void;
   targetDirection?: TargetDirection;
   aggregationType?: 'sum' | 'average' | 'max' | 'min';
-  selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
+  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly';
 }
 
 export const KeyResultChart = ({ 

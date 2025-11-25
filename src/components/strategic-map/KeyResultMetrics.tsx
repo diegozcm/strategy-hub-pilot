@@ -9,12 +9,17 @@ import { calculateKRStatus } from '@/lib/krHelpers';
 
 interface KeyResultMetricsProps {
   keyResult: KeyResult;
-  selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
+  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly';
   selectedMonth?: number;
   selectedYear?: number;
+  selectedQuarter?: 1 | 2 | 3 | 4;
+  selectedQuarterYear?: number;
   onMonthChange?: (month: number) => void;
   onYearChange?: (year: number) => void;
+  onQuarterChange?: (quarter: 1 | 2 | 3 | 4) => void;
+  onQuarterYearChange?: (year: number) => void;
   monthOptions?: Array<{ value: string; label: string }>;
+  quarterOptions?: Array<{ value: string; label: string; quarter: number; year: number }>;
 }
 
 export const KeyResultMetrics = ({ 
@@ -22,22 +27,30 @@ export const KeyResultMetrics = ({
   selectedPeriod = 'ytd',
   selectedMonth,
   selectedYear,
+  selectedQuarter,
+  selectedQuarterYear,
   onMonthChange,
   onYearChange,
-  monthOptions = []
+  onQuarterChange,
+  onQuarterYearChange,
+  monthOptions = [],
+  quarterOptions = []
 }: KeyResultMetricsProps) => {
   const [isComboOpen, setIsComboOpen] = useState(false);
 
-  // Get metrics from database (with optional custom month)
+  // Get metrics from database (with optional custom month or quarter)
   const metrics = useKRMetrics(keyResult, {
     selectedMonth,
     selectedYear,
+    selectedQuarter,
+    selectedQuarterYear,
   });
   
   // Select appropriate metrics based on period
   const currentMetrics = 
     selectedPeriod === 'monthly' ? metrics.monthly :
     selectedPeriod === 'yearly' ? metrics.yearly :
+    selectedPeriod === 'quarterly' ? metrics.quarterly :
     metrics.ytd;
 
 
@@ -64,6 +77,8 @@ export const KeyResultMetrics = ({
     ? `YTD ${new Date().getFullYear()}`
     : selectedPeriod === 'yearly'
     ? `Ano ${selectedYear || new Date().getFullYear()}`
+    : selectedPeriod === 'quarterly'
+    ? `Q${selectedQuarter || Math.ceil((new Date().getMonth() + 1) / 3)} ${selectedQuarterYear || new Date().getFullYear()}`
     : selectedMonth && selectedYear
     ? new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
     : new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -72,6 +87,8 @@ export const KeyResultMetrics = ({
     ? `Jan-${new Date().toLocaleString('pt-BR', { month: 'short' })}`
     : selectedPeriod === 'yearly'
     ? 'Todos os 12 meses'
+    : selectedPeriod === 'quarterly'
+    ? '3 meses do quarter'
     : 'Mês de referência';
 
   return (
@@ -81,7 +98,10 @@ export const KeyResultMetrics = ({
         <Card className="h-24">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
             <CardTitle className="text-sm font-medium">
-              {selectedPeriod === 'ytd' ? 'Meta YTD' : selectedPeriod === 'yearly' ? 'Meta Anual' : 'Meta Mensal'}
+              {selectedPeriod === 'ytd' ? 'Meta YTD' : 
+               selectedPeriod === 'yearly' ? 'Meta Anual' : 
+               selectedPeriod === 'quarterly' ? 'Meta Quarter' :
+               'Meta Mensal'}
             </CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -95,7 +115,10 @@ export const KeyResultMetrics = ({
         <Card className="h-24">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
             <CardTitle className="text-sm font-medium">
-              {selectedPeriod === 'ytd' ? 'Realizado YTD' : selectedPeriod === 'yearly' ? 'Realizado Anual' : 'Realizado Mensal'}
+              {selectedPeriod === 'ytd' ? 'Realizado YTD' : 
+               selectedPeriod === 'yearly' ? 'Realizado Anual' : 
+               selectedPeriod === 'quarterly' ? 'Realizado Quarter' :
+               'Realizado Mensal'}
             </CardTitle>
             {hasData ? (
               isOverTarget ? (
@@ -115,7 +138,10 @@ export const KeyResultMetrics = ({
       <Card className="h-24">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
           <CardTitle className="text-sm font-medium">
-            {selectedPeriod === 'ytd' ? '% Atingimento YTD' : selectedPeriod === 'yearly' ? '% Atingimento Anual' : '% Atingimento Mensal'}
+            {selectedPeriod === 'ytd' ? '% Atingimento YTD' : 
+             selectedPeriod === 'yearly' ? '% Atingimento Anual' : 
+             selectedPeriod === 'quarterly' ? '% Atingimento Quarter' :
+             '% Atingimento Mensal'}
           </CardTitle>
         </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
@@ -189,6 +215,34 @@ export const KeyResultMetrics = ({
                 {!isComboOpen && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Mês de referência
+                  </p>
+                )}
+              </>
+            ) : selectedPeriod === 'quarterly' && onQuarterChange && onQuarterYearChange ? (
+              <>
+                <Select
+                  value={`${selectedQuarterYear}-Q${selectedQuarter}`}
+                  onValueChange={(value) => {
+                    const [year, q] = value.split('-Q');
+                    onQuarterYearChange(parseInt(year));
+                    onQuarterChange(parseInt(q) as 1 | 2 | 3 | 4);
+                  }}
+                  onOpenChange={setIsComboOpen}
+                >
+                  <SelectTrigger className="w-full h-9 text-base font-bold">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {quarterOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!isComboOpen && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Quarter de referência
                   </p>
                 )}
               </>
