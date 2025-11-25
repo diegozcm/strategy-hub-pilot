@@ -210,7 +210,17 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                     id="start_month"
                     type="month"
                     value={formData.start_month}
-                    onChange={(e) => setFormData({...formData, start_month: e.target.value})}
+                    onChange={(e) => {
+                      const newStartMonth = e.target.value;
+                      setFormData({
+                        ...formData, 
+                        start_month: newStartMonth,
+                        // Limpar mês de fim se for anterior ao novo início
+                        end_month: formData.end_month && formData.end_month < newStartMonth 
+                          ? '' 
+                          : formData.end_month
+                      });
+                    }}
                   />
                 </div>
                 
@@ -220,8 +230,14 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                     id="end_month"
                     type="month"
                     value={formData.end_month}
+                    min={formData.start_month || undefined}
                     onChange={(e) => setFormData({...formData, end_month: e.target.value})}
                   />
+                  {formData.start_month && !formData.end_month && (
+                    <p className="text-xs text-muted-foreground">
+                      Selecione um mês igual ou posterior a {formData.start_month}
+                    </p>
+                  )}
                 </div>
               </div>
 
