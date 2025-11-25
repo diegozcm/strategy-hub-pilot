@@ -31,6 +31,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
   const [savingAggregationType, setSavingAggregationType] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
   // Form states
   const [basicInfo, setBasicInfo] = useState({
@@ -160,6 +161,26 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
     }
   };
 
+  // Validation function
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!basicInfo.title.trim()) {
+      newErrors.title = 'Título é obrigatório';
+    }
+    
+    if (!basicInfo.unit) {
+      newErrors.unit = 'Unidade é obrigatória';
+    }
+    
+    if (!basicInfo.target_direction) {
+      newErrors.target_direction = 'Direcionamento é obrigatório';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   // Initialize form when keyResult changes
   useEffect(() => {
     if (keyResult) {
@@ -176,6 +197,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
       });
       
       setAggregationType(keyResult.aggregation_type || 'sum');
+      setErrors({}); // Clear errors when opening modal
     }
   }, [keyResult]);
 
@@ -199,6 +221,16 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!keyResult || isSaving) return;
+    
+    // Validate before proceeding
+    if (!validateForm()) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsSaving(true);
     
@@ -237,7 +269,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         target_direction: basicInfo.target_direction,
         start_month: basicInfo.start_month || null,
         end_month: basicInfo.end_month || null,
-        assigned_owner_id: basicInfo.assigned_owner_id === 'none' ? null : basicInfo.assigned_owner_id
+        assigned_owner_id: basicInfo.assigned_owner_id === 'none' || basicInfo.assigned_owner_id === '' ? null : basicInfo.assigned_owner_id
       });
 
       toast({
@@ -290,22 +322,36 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Título *</Label>
+                  <Label htmlFor="title" className={errors.title ? 'text-destructive' : ''}>
+                    Título *
+                  </Label>
                   <Input
                     id="title"
                     value={basicInfo.title}
-                    onChange={(e) => setBasicInfo({...basicInfo, title: e.target.value})}
+                    onChange={(e) => {
+                      setBasicInfo({...basicInfo, title: e.target.value});
+                      if (errors.title) setErrors({...errors, title: ''});
+                    }}
+                    className={errors.title ? 'border-destructive' : ''}
                     required
                   />
+                  {errors.title && (
+                    <p className="text-sm text-destructive">{errors.title}</p>
+                  )}
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="unit">Unidade *</Label>
+                  <Label htmlFor="unit" className={errors.unit ? 'text-destructive' : ''}>
+                    Unidade *
+                  </Label>
                   <Select 
                     value={basicInfo.unit} 
-                    onValueChange={(value) => setBasicInfo({...basicInfo, unit: value})}
+                    onValueChange={(value) => {
+                      setBasicInfo({...basicInfo, unit: value});
+                      if (errors.unit) setErrors({...errors, unit: ''});
+                    }}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={errors.unit ? 'border-destructive' : ''}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -317,16 +363,24 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                       <SelectItem value="pontos">Pontos</SelectItem>
                     </SelectContent>
                   </Select>
+                  {errors.unit && (
+                    <p className="text-sm text-destructive">{errors.unit}</p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="target_direction">Direcionamento *</Label>
+                <Label htmlFor="target_direction" className={errors.target_direction ? 'text-destructive' : ''}>
+                  Direcionamento *
+                </Label>
                 <Select 
                   value={basicInfo.target_direction} 
-                  onValueChange={(value: TargetDirection) => setBasicInfo({...basicInfo, target_direction: value})}
+                  onValueChange={(value: TargetDirection) => {
+                    setBasicInfo({...basicInfo, target_direction: value});
+                    if (errors.target_direction) setErrors({...errors, target_direction: ''});
+                  }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.target_direction ? 'border-destructive' : ''}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -344,6 +398,9 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                     </SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.target_direction && (
+                  <p className="text-sm text-destructive">{errors.target_direction}</p>
+                )}
               </div>
 
               <div className="space-y-2">
