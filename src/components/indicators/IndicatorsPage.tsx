@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
+import { useCompanyUsers } from '@/hooks/useCompanyUsers';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 import { KREditModal } from '@/components/strategic-map/KREditModal';
 import { KRUpdateValuesModal } from '@/components/strategic-map/KRUpdateValuesModal';
@@ -38,6 +39,7 @@ interface KeyResultValue {
 export const IndicatorsPage: React.FC = () => {
   const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
+  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(authCompany?.id);
   const [searchParams, setSearchParams] = useSearchParams();
   
   // State management
@@ -72,7 +74,10 @@ export const IndicatorsPage: React.FC = () => {
     description: '',
     unit: '%',
     priority: 'medium',
-    objective_id: 'none'
+    objective_id: 'none',
+    start_month: '',
+    end_month: '',
+    assigned_owner_id: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -241,6 +246,9 @@ export const IndicatorsPage: React.FC = () => {
         monthly_actual: {},
         yearly_target: 0,
         yearly_actual: 0,
+        start_month: formData.start_month || null,
+        end_month: formData.end_month || null,
+        assigned_owner_id: formData.assigned_owner_id || null
       };
 
       const { data, error } = await supabase
@@ -267,7 +275,10 @@ export const IndicatorsPage: React.FC = () => {
         description: '',
         unit: '%',
         priority: 'medium',
-        objective_id: 'none'
+        objective_id: 'none',
+        start_month: '',
+        end_month: '',
+        assigned_owner_id: ''
       });
 
       toast({
@@ -915,6 +926,49 @@ export const IndicatorsPage: React.FC = () => {
                   value={formData.title}
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
                   required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="assigned_owner">Dono do KR *</Label>
+                <Select 
+                  value={formData.assigned_owner_id} 
+                  onValueChange={(value) => setFormData({...formData, assigned_owner_id: value})}
+                  disabled={loadingUsers}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o dono" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum dono</SelectItem>
+                    {companyUsers.map((user) => (
+                      <SelectItem key={user.user_id} value={user.user_id}>
+                        {user.first_name} {user.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="start_month">Mês de Início</Label>
+                <Input
+                  id="start_month"
+                  type="month"
+                  value={formData.start_month}
+                  onChange={(e) => setFormData({...formData, start_month: e.target.value})}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="end_month">Mês de Fim</Label>
+                <Input
+                  id="end_month"
+                  type="month"
+                  value={formData.end_month}
+                  onChange={(e) => setFormData({...formData, end_month: e.target.value})}
                 />
               </div>
             </div>

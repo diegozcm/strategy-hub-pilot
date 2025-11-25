@@ -14,6 +14,8 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { getDirectionLabel, getDirectionDescription, type TargetDirection } from '@/lib/krHelpers';
+import { useAuth } from '@/hooks/useMultiTenant';
+import { useCompanyUsers } from '@/hooks/useCompanyUsers';
 
 interface KREditModalProps {
   keyResult: KeyResult | null;
@@ -25,6 +27,8 @@ interface KREditModalProps {
 
 export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] }: KREditModalProps) => {
   const { toast } = useToast();
+  const { company } = useAuth();
+  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
   const [savingAggregationType, setSavingAggregationType] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -35,7 +39,10 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
     unit: '',
     responsible: '',
     objective_id: '',
-    target_direction: 'maximize' as TargetDirection
+    target_direction: 'maximize' as TargetDirection,
+    start_month: '',
+    end_month: '',
+    assigned_owner_id: ''
   });
   
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
@@ -162,7 +169,10 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         unit: keyResult.unit || '',
         responsible: keyResult.responsible || '',
         objective_id: keyResult.objective_id || 'none',
-        target_direction: (keyResult.target_direction as TargetDirection) || 'maximize'
+        target_direction: (keyResult.target_direction as TargetDirection) || 'maximize',
+        start_month: keyResult.start_month || '',
+        end_month: keyResult.end_month || '',
+        assigned_owner_id: keyResult.assigned_owner_id || ''
       });
       
       setAggregationType(keyResult.aggregation_type || 'sum');
@@ -224,7 +234,10 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         yearly_target: yearlyTarget,
         target_value: yearlyTarget,
         aggregation_type: aggregationType,
-        target_direction: basicInfo.target_direction
+        target_direction: basicInfo.target_direction,
+        start_month: basicInfo.start_month || null,
+        end_month: basicInfo.end_month || null,
+        assigned_owner_id: basicInfo.assigned_owner_id || null
       });
 
       toast({
@@ -341,6 +354,49 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                   onChange={(e) => setBasicInfo({...basicInfo, description: e.target.value})}
                   rows={3}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="assigned_owner">Dono do KR *</Label>
+                <Select 
+                  value={basicInfo.assigned_owner_id} 
+                  onValueChange={(value) => setBasicInfo({...basicInfo, assigned_owner_id: value})}
+                  disabled={loadingUsers}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o dono" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum dono</SelectItem>
+                    {companyUsers.map((user) => (
+                      <SelectItem key={user.user_id} value={user.user_id}>
+                        {user.first_name} {user.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="start_month">Mês de Início</Label>
+                  <Input
+                    id="start_month"
+                    type="month"
+                    value={basicInfo.start_month}
+                    onChange={(e) => setBasicInfo({...basicInfo, start_month: e.target.value})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="end_month">Mês de Fim</Label>
+                  <Input
+                    id="end_month"
+                    type="month"
+                    value={basicInfo.end_month}
+                    onChange={(e) => setBasicInfo({...basicInfo, end_month: e.target.value})}
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

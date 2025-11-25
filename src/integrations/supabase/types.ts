@@ -1096,6 +1096,7 @@ export type Database = {
       key_results: {
         Row: {
           aggregation_type: string | null
+          assigned_owner_id: string | null
           category: string | null
           created_at: string
           current_month_actual: number | null
@@ -1104,6 +1105,7 @@ export type Database = {
           deadline: string | null
           description: string | null
           due_date: string | null
+          end_month: string | null
           frequency: string | null
           id: string
           last_updated: string | null
@@ -1115,6 +1117,7 @@ export type Database = {
           owner_id: string
           priority: string | null
           responsible: string | null
+          start_month: string | null
           target_direction: string | null
           target_value: number
           title: string
@@ -1129,6 +1132,7 @@ export type Database = {
         }
         Insert: {
           aggregation_type?: string | null
+          assigned_owner_id?: string | null
           category?: string | null
           created_at?: string
           current_month_actual?: number | null
@@ -1137,6 +1141,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           due_date?: string | null
+          end_month?: string | null
           frequency?: string | null
           id?: string
           last_updated?: string | null
@@ -1148,6 +1153,7 @@ export type Database = {
           owner_id: string
           priority?: string | null
           responsible?: string | null
+          start_month?: string | null
           target_direction?: string | null
           target_value: number
           title: string
@@ -1162,6 +1168,7 @@ export type Database = {
         }
         Update: {
           aggregation_type?: string | null
+          assigned_owner_id?: string | null
           category?: string | null
           created_at?: string
           current_month_actual?: number | null
@@ -1170,6 +1177,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           due_date?: string | null
+          end_month?: string | null
           frequency?: string | null
           id?: string
           last_updated?: string | null
@@ -1181,6 +1189,7 @@ export type Database = {
           owner_id?: string
           priority?: string | null
           responsible?: string | null
+          start_month?: string | null
           target_direction?: string | null
           target_value?: number
           title?: string
@@ -1194,6 +1203,13 @@ export type Database = {
           ytd_target?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "key_results_assigned_owner_id_fkey"
+            columns: ["assigned_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "key_results_objective_id_fkey"
             columns: ["objective_id"]
