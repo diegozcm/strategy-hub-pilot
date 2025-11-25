@@ -461,7 +461,17 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                     id="start_month"
                     type="month"
                     value={basicInfo.start_month}
-                    onChange={(e) => setBasicInfo({...basicInfo, start_month: e.target.value})}
+                    onChange={(e) => {
+                      const newStartMonth = e.target.value;
+                      setBasicInfo({
+                        ...basicInfo, 
+                        start_month: newStartMonth,
+                        // Limpar mês de fim se for anterior ao novo início
+                        end_month: basicInfo.end_month && basicInfo.end_month < newStartMonth 
+                          ? '' 
+                          : basicInfo.end_month
+                      });
+                    }}
                   />
                 </div>
                 
@@ -471,8 +481,14 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                     id="end_month"
                     type="month"
                     value={basicInfo.end_month}
+                    min={basicInfo.start_month || undefined}
                     onChange={(e) => setBasicInfo({...basicInfo, end_month: e.target.value})}
                   />
+                  {basicInfo.start_month && !basicInfo.end_month && (
+                    <p className="text-xs text-muted-foreground">
+                      Selecione um mês igual ou posterior a {basicInfo.start_month}
+                    </p>
+                  )}
                 </div>
               </div>
 
