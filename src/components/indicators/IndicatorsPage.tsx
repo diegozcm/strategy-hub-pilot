@@ -53,13 +53,14 @@ export const IndicatorsPage: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>('ytd');
   
   // Inicializar com o último mês fechado (mês anterior)
   const previousMonth = new Date();
   previousMonth.setMonth(previousMonth.getMonth() - 1);
   const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
+  const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4);
   
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -418,11 +419,25 @@ export const IndicatorsPage: React.FC = () => {
           actual: kr.yearly_actual ?? 0,
           percentage: kr.yearly_percentage ?? 0,
         },
+        quarterly: {
+          target: selectedQuarter === 1 ? (kr.q1_target ?? 0) :
+                   selectedQuarter === 2 ? (kr.q2_target ?? 0) :
+                   selectedQuarter === 3 ? (kr.q3_target ?? 0) :
+                   (kr.q4_target ?? 0),
+          actual: selectedQuarter === 1 ? (kr.q1_actual ?? 0) :
+                  selectedQuarter === 2 ? (kr.q2_actual ?? 0) :
+                  selectedQuarter === 3 ? (kr.q3_actual ?? 0) :
+                  (kr.q4_actual ?? 0),
+          percentage: selectedQuarter === 1 ? (kr.q1_percentage ?? 0) :
+                      selectedQuarter === 2 ? (kr.q2_percentage ?? 0) :
+                      selectedQuarter === 3 ? (kr.q3_percentage ?? 0) :
+                      (kr.q4_percentage ?? 0),
+        },
       };
       map.set(kr.id, metrics);
     });
     return map;
-  }, [keyResults]);
+  }, [keyResults, selectedQuarter]);
 
   // Recalcular metrics considerando mês customizado
   const customMetricsMap = useMemo(() => {
@@ -463,6 +478,11 @@ export const IndicatorsPage: React.FC = () => {
           actual: kr.yearly_actual ?? 0,
           percentage: kr.yearly_percentage ?? 0,
         },
+        quarterly: krMetricsMap.get(kr.id)?.quarterly ?? {
+          target: 0,
+          actual: 0,
+          percentage: 0,
+        },
       });
     });
     return map;
@@ -492,12 +512,14 @@ export const IndicatorsPage: React.FC = () => {
     const metrics = customMetricsMap.get(keyResultId);
     if (!metrics) return { target: 0, actual: 0, percentage: 0 };
     
-    return selectedPeriod === 'monthly' ? metrics.monthly :
+    return selectedPeriod === 'quarterly' ? metrics.quarterly :
+           selectedPeriod === 'monthly' ? metrics.monthly :
            selectedPeriod === 'yearly' ? metrics.yearly :
            metrics.ytd;
   };
 
   const getPeriodLabel = () => {
+    if (selectedPeriod === 'quarterly') return `Q${selectedQuarter}`;
     if (selectedPeriod === 'ytd') return 'YTD';
     if (selectedPeriod === 'yearly') return 'Ano';
     if (selectedPeriod === 'monthly' && selectedMonth && selectedYear) {
@@ -677,11 +699,54 @@ export const IndicatorsPage: React.FC = () => {
               Ano
             </Button>
             
+            <div className="flex items-center gap-1 border-l border-border/50 pl-2 ml-1">
+              <Button
+                variant={selectedPeriod === 'quarterly' && selectedQuarter === 1 ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => {
+                  setSelectedPeriod('quarterly');
+                  setSelectedQuarter(1);
+                }}
+              >
+                Q1
+              </Button>
+              <Button
+                variant={selectedPeriod === 'quarterly' && selectedQuarter === 2 ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => {
+                  setSelectedPeriod('quarterly');
+                  setSelectedQuarter(2);
+                }}
+              >
+                Q2
+              </Button>
+              <Button
+                variant={selectedPeriod === 'quarterly' && selectedQuarter === 3 ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => {
+                  setSelectedPeriod('quarterly');
+                  setSelectedQuarter(3);
+                }}
+              >
+                Q3
+              </Button>
+              <Button
+                variant={selectedPeriod === 'quarterly' && selectedQuarter === 4 ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => {
+                  setSelectedPeriod('quarterly');
+                  setSelectedQuarter(4);
+                }}
+              >
+                Q4
+              </Button>
+            </div>
+            
             <Button
               variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setSelectedPeriod('monthly')}
-              className="gap-2"
+              className="gap-2 border-l border-border/50 ml-1 pl-2"
             >
               <CalendarDays className="w-4 h-4" />
               Mês
@@ -888,6 +953,7 @@ export const IndicatorsPage: React.FC = () => {
               selectedPeriod={selectedPeriod}
               selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
               selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
+              selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
               onClick={() => openKROverviewModal(keyResult)}
             />
           );
