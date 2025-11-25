@@ -237,7 +237,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
         target_direction: basicInfo.target_direction,
         start_month: basicInfo.start_month || null,
         end_month: basicInfo.end_month || null,
-        assigned_owner_id: basicInfo.assigned_owner_id || null
+        assigned_owner_id: basicInfo.assigned_owner_id === 'none' ? null : basicInfo.assigned_owner_id
       });
 
       toast({
@@ -358,16 +358,16 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
 
               <div className="space-y-2">
                 <Label htmlFor="assigned_owner">Dono do KR *</Label>
-                <Select 
-                  value={basicInfo.assigned_owner_id} 
-                  onValueChange={(value) => setBasicInfo({...basicInfo, assigned_owner_id: value})}
-                  disabled={loadingUsers}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o dono" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Nenhum dono</SelectItem>
+              <Select 
+                value={basicInfo.assigned_owner_id || 'none'} 
+                onValueChange={(value) => setBasicInfo({...basicInfo, assigned_owner_id: value})}
+                disabled={loadingUsers}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o dono" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum dono</SelectItem>
                     {companyUsers.map((user) => (
                       <SelectItem key={user.user_id} value={user.user_id}>
                         {user.first_name} {user.last_name}
