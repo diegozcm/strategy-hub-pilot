@@ -77,6 +77,19 @@ export interface KeyResult {
   current_month_actual?: number;
   monthly_percentage?: number;
   yearly_percentage?: number;
+  // Pre-calculated Quarter metrics from database
+  q1_target?: number;
+  q1_actual?: number;
+  q1_percentage?: number;
+  q2_target?: number;
+  q2_actual?: number;
+  q2_percentage?: number;
+  q3_target?: number;
+  q3_actual?: number;
+  q3_percentage?: number;
+  q4_target?: number;
+  q4_actual?: number;
+  q4_percentage?: number;
   // Quarter (vigência)
   start_month?: string;       // "2024-01"
   end_month?: string;         // "2024-12"

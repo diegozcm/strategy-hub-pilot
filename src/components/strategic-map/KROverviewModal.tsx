@@ -28,12 +28,16 @@ interface KROverviewModalProps {
   onSave: () => void;
   objectives: Array<{ id: string; title: string }>;
   showDeleteButton?: boolean;
-  initialPeriod?: 'ytd' | 'monthly' | 'yearly';
+  initialPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly';
   initialMonth?: number;
   initialYear?: number;
-  onPeriodChange?: (period: 'ytd' | 'monthly' | 'yearly') => void;
+  initialQuarter?: 1 | 2 | 3 | 4;
+  initialQuarterYear?: number;
+  onPeriodChange?: (period: 'ytd' | 'monthly' | 'yearly' | 'quarterly') => void;
   onMonthChange?: (month: number) => void;
   onYearChange?: (year: number) => void;
+  onQuarterChange?: (quarter: 1 | 2 | 3 | 4) => void;
+  onQuarterYearChange?: (year: number) => void;
 }
 
 export const KROverviewModal = ({ 
@@ -48,9 +52,13 @@ export const KROverviewModal = ({
   initialPeriod = 'ytd',
   initialMonth,
   initialYear,
+  initialQuarter,
+  initialQuarterYear,
   onPeriodChange,
   onMonthChange,
-  onYearChange
+  onYearChange,
+  onQuarterChange,
+  onQuarterYearChange
 }: KROverviewModalProps) => {
   const [showFCAModal, setShowFCAModal] = useState(false);
   const [showStatusReportModal, setShowStatusReportModal] = useState(false);
@@ -59,7 +67,12 @@ export const KROverviewModal = ({
   const [showUpdateValuesModal, setShowUpdateValuesModal] = useState(false);
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>(initialPeriod);
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>(initialPeriod);
+  
+  // Quarter state
+  const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4;
+  const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(initialQuarter || currentQuarter);
+  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(initialQuarterYear || new Date().getFullYear());
   
   // Inicializar com o último mês fechado (mês anterior) ou com os valores fornecidos
   const previousMonth = new Date();
@@ -87,6 +100,30 @@ export const KROverviewModal = ({
       options.push({
         value: `${year}-${month.toString().padStart(2, '0')}`,
         label: `${monthName} ${year}`
+      });
+    }
+    
+    return options;
+  };
+
+  // Generate quarter options for the last 8 quarters (2 anos)
+  const generateQuarterOptions = () => {
+    const options = [];
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentQuarter = Math.ceil((currentDate.getMonth() + 1) / 3);
+    
+    for (let i = 0; i < 8; i++) {
+      const yearOffset = Math.floor(i / 4);
+      const quarterIndex = (currentQuarter - 1 - (i % 4) + 4) % 4;
+      const quarter = (quarterIndex + 1) as 1 | 2 | 3 | 4;
+      const year = currentYear - yearOffset;
+      
+      options.push({
+        value: `${year}-Q${quarter}`,
+        label: `Q${quarter} ${year}`,
+        quarter,
+        year
       });
     }
     
@@ -418,6 +455,18 @@ export const KROverviewModal = ({
                   Ano
                 </Button>
                 <Button
+                  variant={selectedPeriod === 'quarterly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => {
+                    setSelectedPeriod('quarterly');
+                    onPeriodChange?.('quarterly');
+                  }}
+                  className="gap-2"
+                >
+                  <Calendar className="w-4 h-4" />
+                  Quarter
+                </Button>
+                <Button
                   variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => {
@@ -443,6 +492,8 @@ export const KROverviewModal = ({
               selectedPeriod={selectedPeriod}
               selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
               selectedYear={selectedPeriod === 'monthly' ? selectedMonthYear : undefined}
+              selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
+              selectedQuarterYear={selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined}
               onMonthChange={(month: number) => {
                 setSelectedMonth(month);
                 onMonthChange?.(month);
@@ -451,7 +502,16 @@ export const KROverviewModal = ({
                 setSelectedMonthYear(year);
                 onYearChange?.(year);
               }}
+              onQuarterChange={(quarter: 1 | 2 | 3 | 4) => {
+                setSelectedQuarter(quarter);
+                onQuarterChange?.(quarter);
+              }}
+              onQuarterYearChange={(year: number) => {
+                setSelectedQuarterYear(year);
+                onQuarterYearChange?.(year);
+              }}
               monthOptions={generateMonthOptions()}
+              quarterOptions={generateQuarterOptions()}
             />
 
             {/* Evolution Chart */}

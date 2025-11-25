@@ -16,6 +16,11 @@ export interface KRMetrics {
     actual: number;
     percentage: number;
   };
+  quarterly: {
+    target: number;
+    actual: number;
+    percentage: number;
+  };
 }
 
 export interface KeyResultWithMetrics {
@@ -31,6 +36,19 @@ export interface KeyResultWithMetrics {
   yearly_target?: number;
   yearly_actual?: number;
   yearly_percentage?: number;
+  // Quarter metrics
+  q1_target?: number;
+  q1_actual?: number;
+  q1_percentage?: number;
+  q2_target?: number;
+  q2_actual?: number;
+  q2_percentage?: number;
+  q3_target?: number;
+  q3_actual?: number;
+  q3_percentage?: number;
+  q4_target?: number;
+  q4_actual?: number;
+  q4_percentage?: number;
   target_direction?: 'maximize' | 'minimize';
   unit?: string;
   // Raw monthly data for custom month selection
@@ -51,6 +69,8 @@ export const useKRMetrics = (
   options?: {
     selectedMonth?: number;
     selectedYear?: number;
+    selectedQuarter?: 1 | 2 | 3 | 4;
+    selectedQuarterYear?: number;
   }
 ): KRMetrics => {
   return useMemo(() => {
@@ -59,6 +79,61 @@ export const useKRMetrics = (
         ytd: { target: 0, actual: 0, percentage: 0 },
         monthly: { target: 0, actual: 0, percentage: 0 },
         yearly: { target: 0, actual: 0, percentage: 0 },
+        quarterly: { target: 0, actual: 0, percentage: 0 },
+      };
+    }
+
+    // If specific quarter is provided, return metrics for that quarter
+    if (options?.selectedQuarter) {
+      const quarter = options.selectedQuarter;
+      let qTarget = 0;
+      let qActual = 0;
+      let qPercentage = 0;
+
+      switch (quarter) {
+        case 1:
+          qTarget = keyResult.q1_target ?? 0;
+          qActual = keyResult.q1_actual ?? 0;
+          qPercentage = keyResult.q1_percentage ?? 0;
+          break;
+        case 2:
+          qTarget = keyResult.q2_target ?? 0;
+          qActual = keyResult.q2_actual ?? 0;
+          qPercentage = keyResult.q2_percentage ?? 0;
+          break;
+        case 3:
+          qTarget = keyResult.q3_target ?? 0;
+          qActual = keyResult.q3_actual ?? 0;
+          qPercentage = keyResult.q3_percentage ?? 0;
+          break;
+        case 4:
+          qTarget = keyResult.q4_target ?? 0;
+          qActual = keyResult.q4_actual ?? 0;
+          qPercentage = keyResult.q4_percentage ?? 0;
+          break;
+      }
+
+      return {
+        ytd: {
+          target: keyResult.ytd_target ?? 0,
+          actual: keyResult.ytd_actual ?? 0,
+          percentage: keyResult.ytd_percentage ?? 0,
+        },
+        monthly: {
+          target: keyResult.current_month_target ?? 0,
+          actual: keyResult.current_month_actual ?? 0,
+          percentage: keyResult.monthly_percentage ?? 0,
+        },
+        yearly: {
+          target: keyResult.yearly_target ?? 0,
+          actual: keyResult.yearly_actual ?? 0,
+          percentage: keyResult.yearly_percentage ?? 0,
+        },
+        quarterly: {
+          target: qTarget,
+          actual: qActual,
+          percentage: qPercentage,
+        },
       };
     }
 
@@ -88,10 +163,44 @@ export const useKRMetrics = (
           actual: keyResult.yearly_actual ?? 0,
           percentage: keyResult.yearly_percentage ?? 0,
         },
+        quarterly: {
+          target: 0,
+          actual: 0,
+          percentage: 0,
+        },
       };
     }
 
     // Default behavior - use pre-calculated fields from database
+    // For quarterly, default to current quarter
+    const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4;
+    let defaultQTarget = 0;
+    let defaultQActual = 0;
+    let defaultQPercentage = 0;
+
+    switch (currentQuarter) {
+      case 1:
+        defaultQTarget = keyResult.q1_target ?? 0;
+        defaultQActual = keyResult.q1_actual ?? 0;
+        defaultQPercentage = keyResult.q1_percentage ?? 0;
+        break;
+      case 2:
+        defaultQTarget = keyResult.q2_target ?? 0;
+        defaultQActual = keyResult.q2_actual ?? 0;
+        defaultQPercentage = keyResult.q2_percentage ?? 0;
+        break;
+      case 3:
+        defaultQTarget = keyResult.q3_target ?? 0;
+        defaultQActual = keyResult.q3_actual ?? 0;
+        defaultQPercentage = keyResult.q3_percentage ?? 0;
+        break;
+      case 4:
+        defaultQTarget = keyResult.q4_target ?? 0;
+        defaultQActual = keyResult.q4_actual ?? 0;
+        defaultQPercentage = keyResult.q4_percentage ?? 0;
+        break;
+    }
+
     return {
       ytd: {
         target: keyResult.ytd_target ?? 0,
@@ -108,8 +217,13 @@ export const useKRMetrics = (
         actual: keyResult.yearly_actual ?? 0,
         percentage: keyResult.yearly_percentage ?? 0,
       },
+      quarterly: {
+        target: defaultQTarget,
+        actual: defaultQActual,
+        percentage: defaultQPercentage,
+      },
     };
-  }, [keyResult, options?.selectedMonth, options?.selectedYear]);
+  }, [keyResult, options?.selectedMonth, options?.selectedYear, options?.selectedQuarter, options?.selectedQuarterYear]);
 };
 
 /**

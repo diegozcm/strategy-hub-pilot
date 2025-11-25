@@ -1116,6 +1116,18 @@ export type Database = {
           objective_id: string
           owner_id: string
           priority: string | null
+          q1_actual: number | null
+          q1_percentage: number | null
+          q1_target: number | null
+          q2_actual: number | null
+          q2_percentage: number | null
+          q2_target: number | null
+          q3_actual: number | null
+          q3_percentage: number | null
+          q3_target: number | null
+          q4_actual: number | null
+          q4_percentage: number | null
+          q4_target: number | null
           responsible: string | null
           start_month: string | null
           target_direction: string | null
@@ -1152,6 +1164,18 @@ export type Database = {
           objective_id: string
           owner_id: string
           priority?: string | null
+          q1_actual?: number | null
+          q1_percentage?: number | null
+          q1_target?: number | null
+          q2_actual?: number | null
+          q2_percentage?: number | null
+          q2_target?: number | null
+          q3_actual?: number | null
+          q3_percentage?: number | null
+          q3_target?: number | null
+          q4_actual?: number | null
+          q4_percentage?: number | null
+          q4_target?: number | null
           responsible?: string | null
           start_month?: string | null
           target_direction?: string | null
@@ -1188,6 +1212,18 @@ export type Database = {
           objective_id?: string
           owner_id?: string
           priority?: string | null
+          q1_actual?: number | null
+          q1_percentage?: number | null
+          q1_target?: number | null
+          q2_actual?: number | null
+          q2_percentage?: number | null
+          q2_target?: number | null
+          q3_actual?: number | null
+          q3_percentage?: number | null
+          q3_target?: number | null
+          q4_actual?: number | null
+          q4_percentage?: number | null
+          q4_target?: number | null
           responsible?: string | null
           start_month?: string | null
           target_direction?: string | null
