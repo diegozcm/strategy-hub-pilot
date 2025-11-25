@@ -3277,6 +3277,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_belongs_to_company: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
       user_has_company_access: {
         Args: { _target_user_id: string }
         Returns: boolean
