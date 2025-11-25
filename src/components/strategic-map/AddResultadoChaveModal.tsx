@@ -102,7 +102,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
         due_date: formData.deadline || null,
         start_month: formData.start_month || null,
         end_month: formData.end_month || null,
-        assigned_owner_id: formData.assigned_owner_id || null
+        assigned_owner_id: formData.assigned_owner_id === 'none' ? null : formData.assigned_owner_id
       };
 
       await onSave(resultadoChaveData);
@@ -164,16 +164,16 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
 
               <div className="space-y-2">
                 <Label htmlFor="assigned_owner">Dono do KR *</Label>
-                <Select 
-                  value={formData.assigned_owner_id} 
-                  onValueChange={(value) => setFormData({...formData, assigned_owner_id: value})}
-                  disabled={loadingUsers}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o dono" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Nenhum dono</SelectItem>
+            <Select 
+              value={formData.assigned_owner_id || 'none'} 
+              onValueChange={(value) => setFormData({...formData, assigned_owner_id: value})}
+              disabled={loadingUsers}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o dono" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhum dono</SelectItem>
                     {companyUsers.map((user) => (
                       <SelectItem key={user.user_id} value={user.user_id}>
                         {user.first_name} {user.last_name}
