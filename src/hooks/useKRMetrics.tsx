@@ -36,6 +36,9 @@ export interface KeyResultWithMetrics {
   // Raw monthly data for custom month selection
   monthly_targets?: Record<string, number>;
   monthly_actual?: Record<string, number>;
+  // Vigência do KR
+  start_month?: string;
+  end_month?: string;
 }
 
 /**

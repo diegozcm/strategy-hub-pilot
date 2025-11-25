@@ -1,4 +1,4 @@
-import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { calculateKRStatus, type TargetDirection } from '@/lib/krHelpers';
 import { formatValueWithUnit } from '@/lib/utils';
 import { KeyResultWithMetrics } from '@/hooks/useKRMetrics';
+import { cn } from '@/lib/utils';
 
 interface KeyResultChartProps {
   keyResult: KeyResultWithMetrics;
@@ -34,6 +35,24 @@ export const KeyResultChart = ({
   aggregationType = 'sum',
   selectedPeriod = 'ytd'
 }: KeyResultChartProps) => {
+  // Helper functions for validity period
+  const isMonthInValidity = (monthKey: string, startMonth?: string, endMonth?: string): boolean => {
+    if (!startMonth || !endMonth) return false;
+    return monthKey >= startMonth && monthKey <= endMonth;
+  };
+
+  const formatValidityPeriod = (startMonth?: string, endMonth?: string): string | null => {
+    if (!startMonth || !endMonth) return null;
+    
+    const formatMonth = (monthKey: string) => {
+      const [year, month] = monthKey.split('-');
+      const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      return `${monthNames[parseInt(month) - 1]}/${year}`;
+    };
+    
+    return `${formatMonth(startMonth)} até ${formatMonth(endMonth)}`;
+  };
+
   // Get aggregation type label
   const getAggregationLabel = (type: string) => {
     switch (type) {
@@ -224,11 +243,31 @@ const normalizedActuals: Record<string, number | null> =
   ];
 
 
+  // Get validity indices for chart highlighting
+  const getValidityIndices = () => {
+    if (!keyResult.start_month || !keyResult.end_month) return null;
+    
+    const startIdx = months.findIndex(m => m.key >= keyResult.start_month!);
+    const endIdx = months.findIndex(m => m.key > keyResult.end_month!);
+    
+    if (startIdx === -1) return null;
+    
+    return {
+      startMonth: months[startIdx]?.name,
+      endMonth: months[endIdx === -1 ? months.length - 1 : endIdx - 1]?.name
+    };
+  };
+
   return (
     <Card className="mb-6">
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
         <div className="flex items-center gap-2">
           <CardTitle className="text-lg">Evolução Mensal - Previsto vs Realizado</CardTitle>
+          {keyResult.start_month && keyResult.end_month && (
+            <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
+              📅 {formatValidityPeriod(keyResult.start_month, keyResult.end_month)}
+            </Badge>
+          )}
           {useDualAxis && (
             <Badge variant="outline" className="text-xs">
               Escalas independentes (3 eixos)
@@ -347,6 +386,20 @@ const normalizedActuals: Record<string, number | null> =
                     );
                   }}
                 />
+                {(() => {
+                  const validity = getValidityIndices();
+                  if (!validity) return null;
+                  return (
+                    <ReferenceArea
+                      x1={validity.startMonth}
+                      x2={validity.endMonth}
+                      yAxisId="left"
+                      fill="hsl(142.1 76.2% 36.3%)"
+                      fillOpacity={0.1}
+                      strokeOpacity={0.3}
+                    />
+                  );
+                })()}
                 <ReferenceLine y={0} yAxisId="left" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
                 {useDualAxis && <ReferenceLine y={0} yAxisId="right" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />}
                 <ReferenceLine y={0} yAxisId="barAxis" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
@@ -409,8 +462,15 @@ const normalizedActuals: Record<string, number | null> =
                   <TableHead className="w-32 sticky left-0 bg-background z-10 border-r">Indicador</TableHead>
                   {months.map(month => {
                     const isCurrentMonth = month.key === currentMonth;
+                    const inValidity = isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month);
                     return (
-                      <TableHead key={month.key} className="text-center min-w-20">
+                      <TableHead 
+                        key={month.key} 
+                        className={cn(
+                          "text-center min-w-20",
+                          inValidity && "bg-green-50 dark:bg-green-900/20 border-b-2 border-green-300 dark:border-green-700"
+                        )}
+                      >
                         {month.name}
                         {isCurrentMonth && (
                           <span className="block text-xs text-primary">(atual)</span>
@@ -428,12 +488,17 @@ const normalizedActuals: Record<string, number | null> =
                   <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Previsto</TableCell>
                   {months.map(month => {
                     const isCurrentMonth = month.key === currentMonth;
+                    const inValidity = isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month);
                     const value = normalizedTargets[month.key];
                     const hasValue = value !== null && value !== undefined && Number.isFinite(Number(value));
                     return (
                       <TableCell 
                         key={month.key} 
-                        className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
+                        className={cn(
+                          "text-center min-w-20",
+                          isCurrentMonth && "bg-blue-50 dark:bg-blue-900/20",
+                          !isCurrentMonth && inValidity && "bg-green-50 dark:bg-green-900/20"
+                        )}
                       >
                         {hasValue ? (
                           <span className={value < 0 ? "text-red-600" : ""}>
@@ -455,13 +520,18 @@ const normalizedActuals: Record<string, number | null> =
                   <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Realizado</TableCell>
                   {months.map(month => {
                     const isCurrentMonth = month.key === currentMonth;
+                    const inValidity = isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month);
                     const value = normalizedActuals[month.key];
                     const hasValue = value !== null && value !== undefined && Number.isFinite(Number(value));
                     
                     return (
                       <TableCell 
                         key={month.key} 
-                        className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
+                        className={cn(
+                          "text-center min-w-20",
+                          isCurrentMonth && "bg-blue-50 dark:bg-blue-900/20",
+                          !isCurrentMonth && inValidity && "bg-green-50 dark:bg-green-900/20"
+                        )}
                       >
                         {hasValue ? (
                           <span className={value < 0 ? "text-red-600 font-semibold" : ""}>
@@ -483,6 +553,7 @@ const normalizedActuals: Record<string, number | null> =
                   <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">% Atingimento</TableCell>
                   {months.map(month => {
                     const isCurrentMonth = month.key === currentMonth;
+                    const inValidity = isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month);
                     const actual = normalizedActuals[month.key];
                     const target = normalizedTargets[month.key];
                     const hasActual = typeof actual === 'number' && Number.isFinite(actual);
@@ -493,7 +564,11 @@ const normalizedActuals: Record<string, number | null> =
                     return (
                       <TableCell 
                         key={month.key} 
-                        className={`text-center min-w-20 ${isCurrentMonth ? "bg-blue-50" : "bg-background"}`}
+                        className={cn(
+                          "text-center min-w-20",
+                          isCurrentMonth && "bg-blue-50 dark:bg-blue-900/20",
+                          !isCurrentMonth && inValidity && "bg-green-50 dark:bg-green-900/20"
+                        )}
                       >
                         {status ? (
                           <span className={`${status.color} font-semibold`}>
