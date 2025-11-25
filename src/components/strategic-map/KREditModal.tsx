@@ -16,6 +16,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { getDirectionLabel, getDirectionDescription, type TargetDirection } from '@/lib/krHelpers';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useCompanyUsers } from '@/hooks/useCompanyUsers';
+import { cn } from '@/lib/utils';
+
+// Função para verificar se um mês está dentro da vigência
+const isMonthInValidity = (monthKey: string, startMonth?: string, endMonth?: string): boolean => {
+  if (!startMonth || !endMonth) return false;
+  return monthKey >= startMonth && monthKey <= endMonth;
+};
+
+// Função para formatar a vigência para exibição
+const formatValidityPeriod = (startMonth?: string, endMonth?: string): string | null => {
+  if (!startMonth || !endMonth) return null;
+  
+  const formatMonth = (monthKey: string) => {
+    const [year, month] = monthKey.split('-');
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    return `${monthNames[parseInt(month) - 1]}/${year}`;
+  };
+  
+  return `${formatMonth(startMonth)} até ${formatMonth(endMonth)}`;
+};
 
 interface KREditModalProps {
   keyResult: KeyResult | null;
@@ -490,6 +510,14 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
 
             {/* Monthly Targets Tab */}
             <TabsContent value="monthly-targets" className="space-y-4 mt-4">
+              {basicInfo.start_month && basicInfo.end_month && (
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                    📅 Vigência: {formatValidityPeriod(basicInfo.start_month, basicInfo.end_month)}
+                  </p>
+                </div>
+              )}
+
               <div className="flex justify-between items-center">
                 <div className="space-y-2">
                   <Label>Metas Mensais ({selectedYear})</Label>
@@ -555,7 +583,14 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                 </div>
                 
                 {months.map((month) => (
-                  <div key={month.key} className="grid grid-cols-4 gap-4 items-center p-3 border rounded-lg">
+                  <div 
+                    key={month.key} 
+                    className={cn(
+                      "grid grid-cols-4 gap-4 items-center p-3 border rounded-lg",
+                      isMonthInValidity(month.key, basicInfo.start_month, basicInfo.end_month) && 
+                        "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                    )}
+                  >
                     <div>
                       <Label className="text-sm font-medium">{month.name}</Label>
                     </div>
