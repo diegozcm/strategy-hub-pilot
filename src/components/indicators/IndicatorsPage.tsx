@@ -744,8 +744,8 @@ export const IndicatorsPage: React.FC = () => {
         </Card>
         
         <Card 
-          className={`cursor-pointer transition-all hover:shadow-lg ${progressFilter === 'warning' ? 'ring-2 ring-yellow-600' : ''}`}
-          onClick={() => setProgressFilter('warning')}
+          className={`cursor-pointer transition-all hover:shadow-lg ${progressFilter === 'attention' ? 'ring-2 ring-yellow-600' : ''}`}
+          onClick={() => setProgressFilter('attention')}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Em Risco</CardTitle>
@@ -758,8 +758,8 @@ export const IndicatorsPage: React.FC = () => {
         </Card>
         
         <Card 
-          className={`cursor-pointer transition-all hover:shadow-lg ${progressFilter === 'danger' ? 'ring-2 ring-red-600' : ''}`}
-          onClick={() => setProgressFilter('danger')}
+          className={`cursor-pointer transition-all hover:shadow-lg ${progressFilter === 'critical' ? 'ring-2 ring-red-600' : ''}`}
+          onClick={() => setProgressFilter('critical')}
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Críticos</CardTitle>
