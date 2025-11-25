@@ -9,6 +9,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KeyResult } from '@/types/strategic-map';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useCompanyUsers } from '@/hooks/useCompanyUsers';
+import { cn } from '@/lib/utils';
+
+// Função para verificar se um mês está dentro da vigência
+const isMonthInValidity = (monthKey: string, startMonth?: string, endMonth?: string): boolean => {
+  if (!startMonth || !endMonth) return false;
+  return monthKey >= startMonth && monthKey <= endMonth;
+};
+
+// Função para formatar a vigência para exibição
+const formatValidityPeriod = (startMonth?: string, endMonth?: string): string | null => {
+  if (!startMonth || !endMonth) return null;
+  
+  const formatMonth = (monthKey: string) => {
+    const [year, month] = monthKey.split('-');
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    return `${monthNames[parseInt(month) - 1]}/${year}`;
+  };
+  
+  return `${formatMonth(startMonth)} até ${formatMonth(endMonth)}`;
+};
 
 interface AddResultadoChaveModalProps {
   objectiveId: string;
@@ -319,6 +339,14 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
             </TabsContent>
 
             <TabsContent value="monthly" className="space-y-4 mt-4">
+              {formData.start_month && formData.end_month && (
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                    📅 Vigência: {formatValidityPeriod(formData.start_month, formData.end_month)}
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Metas Mensais ({currentYear})</Label>
@@ -353,7 +381,15 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
 
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {months.map((month) => (
-                  <div key={month.key} className="space-y-2">
+                  <div 
+                    key={month.key} 
+                    className={cn(
+                      "space-y-2 p-2 rounded-lg border",
+                      isMonthInValidity(month.key, formData.start_month, formData.end_month) 
+                        ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                        : "border-transparent"
+                    )}
+                  >
                     <Label htmlFor={month.key} className="text-sm font-medium">
                       {month.short}
                     </Label>
