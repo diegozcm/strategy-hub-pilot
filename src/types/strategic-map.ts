@@ -77,6 +77,18 @@ export interface KeyResult {
   current_month_actual?: number;
   monthly_percentage?: number;
   yearly_percentage?: number;
+  // Quarter (vigência)
+  start_month?: string;       // "2024-01"
+  end_month?: string;         // "2024-12"
+  // Dono do KR
+  assigned_owner_id?: string; // UUID do dono
+  assigned_owner?: {          // Dados do dono (para exibição)
+    user_id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    avatar_url?: string;
+  };
 }
 
 export interface StrategicProject {

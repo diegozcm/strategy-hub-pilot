@@ -7,6 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KeyResult } from '@/types/strategic-map';
+import { useAuth } from '@/hooks/useMultiTenant';
+import { useCompanyUsers } from '@/hooks/useCompanyUsers';
 
 interface AddResultadoChaveModalProps {
   objectiveId: string;
@@ -16,6 +18,8 @@ interface AddResultadoChaveModalProps {
 }
 
 export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: AddResultadoChaveModalProps) => {
+  const { company } = useAuth();
+  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -28,7 +32,10 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
     deadline: '',
     category: '',
     priority: 'medium',
-    frequency: 'monthly'
+    frequency: 'monthly',
+    start_month: '',
+    end_month: '',
+    assigned_owner_id: ''
   });
 
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
@@ -92,7 +99,10 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
         monthly_actual: {},
         aggregation_type: aggregationType,
         status: 'not_started',
-        due_date: formData.deadline || null
+        due_date: formData.deadline || null,
+        start_month: formData.start_month || null,
+        end_month: formData.end_month || null,
+        assigned_owner_id: formData.assigned_owner_id || null
       };
 
       await onSave(resultadoChaveData);
@@ -109,7 +119,10 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
         deadline: '',
         category: '',
         priority: 'medium',
-        frequency: 'monthly'
+        frequency: 'monthly',
+        start_month: '',
+        end_month: '',
+        assigned_owner_id: ''
       });
       
       onClose();
@@ -147,6 +160,49 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="assigned_owner">Dono do KR *</Label>
+                <Select 
+                  value={formData.assigned_owner_id} 
+                  onValueChange={(value) => setFormData({...formData, assigned_owner_id: value})}
+                  disabled={loadingUsers}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o dono" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum dono</SelectItem>
+                    {companyUsers.map((user) => (
+                      <SelectItem key={user.user_id} value={user.user_id}>
+                        {user.first_name} {user.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="start_month">Mês de Início</Label>
+                  <Input
+                    id="start_month"
+                    type="month"
+                    value={formData.start_month}
+                    onChange={(e) => setFormData({...formData, start_month: e.target.value})}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="end_month">Mês de Fim</Label>
+                  <Input
+                    id="end_month"
+                    type="month"
+                    value={formData.end_month}
+                    onChange={(e) => setFormData({...formData, end_month: e.target.value})}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
