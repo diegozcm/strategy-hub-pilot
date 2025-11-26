@@ -51,7 +51,7 @@ export const CreateUserPage = () => {
 
   // Estados para módulos e permissões
   const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
-  const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole[]>>({});
+  const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole | null>>({});
   const [startupHubOptions, setStartupHubOptions] = useState<{ startup: boolean; mentor: boolean }>({ 
     startup: false, 
     mentor: false 
@@ -312,9 +312,9 @@ export const CreateUserPage = () => {
 
       // Prepare module roles JSON
       const moduleRolesJson: Record<string, string[]> = {};
-      for (const [moduleId, roles] of Object.entries(moduleRoles)) {
-        if (roles.length > 0) {
-          moduleRolesJson[moduleId] = roles;
+      for (const [moduleId, role] of Object.entries(moduleRoles)) {
+        if (role) {
+          moduleRolesJson[moduleId] = [role];
         }
       }
 
@@ -623,25 +623,25 @@ export const CreateUserPage = () => {
               modules.map((module) => {
                 const isStartupHub = module.slug === 'startup-hub';
                 const checked = moduleAccess[module.id] || false;
-                const roles = moduleRoles[module.id] || [];
+                const role = moduleRoles[module.id] || null;
                 
                 return (
                   <ModuleAccessRow
                     key={module.id}
                     module={module}
                     checked={checked}
-                    roles={roles}
+                    role={role}
                     onAccessChange={(hasAccess) => {
                       setModuleAccess(prev => ({
                         ...prev,
                         [module.id]: hasAccess
                       }));
                       
-                      // Reset roles when access is removed
+                      // Reset role when access is removed
                       if (!hasAccess) {
                         setModuleRoles(prev => ({
                           ...prev,
-                          [module.id]: []
+                          [module.id]: null
                         }));
                         
                         // Reset startup hub options if it's the startup hub module
@@ -650,15 +650,10 @@ export const CreateUserPage = () => {
                         }
                       }
                     }}
-                    onRoleToggle={(role) => {
-                      const currentRoles = moduleRoles[module.id] || [];
-                      const hasRole = currentRoles.includes(role);
-                      
+                    onRoleChange={(role) => {
                       setModuleRoles(prev => ({
                         ...prev,
-                        [module.id]: hasRole 
-                          ? currentRoles.filter(r => r !== role)
-                          : [...currentRoles, role]
+                        [module.id]: role
                       }));
                     }}
                     startupOptions={isStartupHub ? startupHubOptions : undefined}

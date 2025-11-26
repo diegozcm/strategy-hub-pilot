@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import type { UserRole } from '@/types/auth';
 
@@ -14,9 +15,9 @@ interface SystemModule {
 interface ModuleAccessRowProps {
   module: SystemModule;
   checked: boolean;
-  roles: UserRole[];
+  role: UserRole | null;
   onAccessChange: (checked: boolean) => void;
-  onRoleToggle: (role: UserRole) => void;
+  onRoleChange: (role: UserRole | null) => void;
   startupOptions?: { startup: boolean; mentor: boolean };
   onStartupOptionToggle?: (option: 'startup' | 'mentor') => void;
 }
@@ -24,9 +25,9 @@ interface ModuleAccessRowProps {
 export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
   module,
   checked,
-  roles,
+  role,
   onAccessChange,
-  onRoleToggle,
+  onRoleChange,
   startupOptions,
   onStartupOptionToggle,
 }) => {
@@ -50,29 +51,34 @@ export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
         </div>
       </div>
 
-      {/* Renderizar roles padrão sempre (mesmo quando desabilitado) se NÃO for Startup HUB */}
+      {/* Renderizar roles padrão usando RadioGroup se NÃO for Startup HUB */}
       {!isStartupHub && (
-        <div className="grid grid-cols-3 gap-3 pl-7 sm:pl-0">
-          {roleList.map((role) => {
-            const roleId = `role-${module.id}-${role}`;
-            const checkedRole = roles.includes(role);
-            return (
-              <div key={role} className="flex items-center gap-2">
-                <Checkbox
-                  id={roleId}
-                  checked={checkedRole}
-                  onCheckedChange={() => onRoleToggle(role)}
-                  disabled={isDisabled}
-                />
-                <Label 
-                  htmlFor={roleId} 
-                  className={`cursor-pointer ${isDisabled ? 'text-muted-foreground opacity-60' : ''}`}
-                >
-                  {role === 'admin' ? 'Admin' : role === 'manager' ? 'Gestor' : 'Membro'}
-                </Label>
-              </div>
-            );
-          })}
+        <div className="pl-7 sm:pl-0">
+          <RadioGroup 
+            value={role || ''} 
+            onValueChange={(value) => onRoleChange(value as UserRole)}
+            disabled={isDisabled}
+            className="flex gap-3"
+          >
+            {roleList.map((r) => {
+              const roleId = `role-${module.id}-${r}`;
+              return (
+                <div key={r} className="flex items-center gap-2">
+                  <RadioGroupItem 
+                    id={roleId}
+                    value={r}
+                    disabled={isDisabled}
+                  />
+                  <Label 
+                    htmlFor={roleId} 
+                    className={`cursor-pointer ${isDisabled ? 'text-muted-foreground opacity-60' : ''}`}
+                  >
+                    {r === 'admin' ? 'Admin' : r === 'manager' ? 'Gestor' : 'Membro'}
+                  </Label>
+                </div>
+              );
+            })}
+          </RadioGroup>
         </div>
       )}
 
