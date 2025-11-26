@@ -919,6 +919,25 @@ export const ObjectivesPage: React.FC = () => {
               Quarter
             </Button>
             
+            {/* Select de Quarter - Aparece dentro do container quando quarterly está selecionado */}
+            {selectedPeriod === 'quarterly' && (
+              <Select
+                value={selectedQuarter.toString()}
+                onValueChange={(value) => setSelectedQuarter(parseInt(value) as 1 | 2 | 3 | 4)}
+              >
+                <SelectTrigger className="h-9 w-[100px] gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Q1</SelectItem>
+                  <SelectItem value="2">Q2</SelectItem>
+                  <SelectItem value="3">Q3</SelectItem>
+                  <SelectItem value="4">Q4</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            
             <Button
               variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
               size="sm"
@@ -929,25 +948,6 @@ export const ObjectivesPage: React.FC = () => {
               Mês
             </Button>
           </div>
-          
-          {/* Select de Quarter - Aparece ao lado quando quarterly está selecionado */}
-          {selectedPeriod === 'quarterly' && (
-            <Select
-              value={selectedQuarter.toString()}
-              onValueChange={(value) => setSelectedQuarter(parseInt(value) as 1 | 2 | 3 | 4)}
-            >
-              <SelectTrigger className="h-9 w-[100px] gap-2">
-                <Calendar className="w-4 h-4" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Q1</SelectItem>
-                <SelectItem value="2">Q2</SelectItem>
-                <SelectItem value="3">Q3</SelectItem>
-                <SelectItem value="4">Q4</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
           
           {/* Select de Mês - Aparece ao lado quando monthly está selecionado */}
           {selectedPeriod === 'monthly' && (
