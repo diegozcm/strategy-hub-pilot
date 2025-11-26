@@ -18,6 +18,10 @@ export const RumoDashboard = () => {
   previousMonth.setMonth(previousMonth.getMonth() - 1);
   const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
+  const now = new Date();
+  const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
+    Math.ceil((now.getMonth() + 1) / 3) as 1 | 2 | 3 | 4
+  );
   
   const { pillars, objectives, keyResults, loading } = useStrategicMap();
   
@@ -60,7 +64,11 @@ export const RumoDashboard = () => {
     objectives, 
     keyResults, 
     periodType,
-    periodType === 'monthly' ? { selectedMonth, selectedYear } : undefined
+    periodType === 'monthly' 
+      ? { selectedMonth, selectedYear } 
+      : periodType === 'quarterly'
+      ? { selectedQuarter }
+      : undefined
   );
 
   if (loading) {
@@ -129,11 +137,42 @@ export const RumoDashboard = () => {
             <Target className="w-4 h-4" />
             Ano
           </Button>
+
+          {/* Quarter */}
+          <Button
+            variant={periodType === 'quarterly' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setPeriodType('quarterly')}
+            className="gap-2 border-l border-border/50 ml-1 pl-2"
+          >
+            <Calendar className="w-4 h-4" />
+            Quarter
+          </Button>
+
+          {periodType === 'quarterly' && (
+            <Select
+              value={selectedQuarter.toString()}
+              onValueChange={(value) => setSelectedQuarter(parseInt(value) as 1 | 2 | 3 | 4)}
+            >
+              <SelectTrigger className="h-9 w-[100px] gap-2">
+                <Calendar className="w-4 h-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Q1</SelectItem>
+                <SelectItem value="2">Q2</SelectItem>
+                <SelectItem value="3">Q3</SelectItem>
+                <SelectItem value="4">Q4</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+
+          {/* Mês */}
           <Button
             variant={periodType === 'monthly' ? 'default' : 'ghost'}
             size="sm"
             onClick={() => setPeriodType('monthly')}
-            className="gap-2"
+            className="gap-2 border-l border-border/50 ml-1 pl-2"
           >
             <Calendar className="w-4 h-4" />
             Mês
@@ -199,16 +238,17 @@ export const RumoDashboard = () => {
                         const objProgress = objectiveProgress.get(objective.id) || 0;
                         
                         return (
-                          <RumoObjectiveBlock
-                            key={objective.id}
-                            objective={objective}
-                            progress={objProgress}
-                            keyResults={keyResults}
-                            krProgress={krProgress}
-                            selectedPeriod={periodType}
-                            selectedMonth={periodType === 'monthly' ? selectedMonth : undefined}
-                            selectedYear={periodType === 'monthly' ? selectedYear : undefined}
-                          />
+                  <RumoObjectiveBlock
+                    key={objective.id}
+                    objective={objective}
+                    progress={objProgress}
+                    keyResults={keyResults}
+                    krProgress={krProgress}
+                    selectedPeriod={periodType}
+                    selectedMonth={periodType === 'monthly' ? selectedMonth : undefined}
+                    selectedYear={periodType === 'monthly' ? selectedYear : undefined}
+                    selectedQuarter={periodType === 'quarterly' ? selectedQuarter : undefined}
+                  />
                         );
                       })}
                     </div>
