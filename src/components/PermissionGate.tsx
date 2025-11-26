@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { useCurrentModuleRole } from '@/hooks/useCurrentModuleRole';
 import { UserRole } from '@/types/auth';
 
 interface PermissionGateProps {
@@ -11,6 +12,9 @@ interface PermissionGateProps {
   fallback?: React.ReactNode;
 }
 
+/**
+ * PermissionGate - usa user_module_roles como fonte de verdade
+ */
 export const PermissionGate: React.FC<PermissionGateProps> = ({
   children,
   requiredRole,
@@ -19,33 +23,37 @@ export const PermissionGate: React.FC<PermissionGateProps> = ({
   requiresAdmin = false,
   fallback = null
 }) => {
-  const { profile, permissions } = useAuth();
+  const { profile } = useAuth();
+  const { highestRole, canEdit, canDelete, canAdmin } = useCurrentModuleRole();
 
   if (!profile) {
     return <>{fallback}</>;
   }
 
-  // Check specific role requirement
-  if (requiredRole) {
+  // Check specific role requirement using module role
+  if (requiredRole && highestRole) {
     const roleHierarchy: UserRole[] = ['member', 'manager', 'admin'];
-    const userRoleIndex = roleHierarchy.indexOf(profile.role);
+    const userRoleIndex = roleHierarchy.indexOf(highestRole);
     const requiredRoleIndex = roleHierarchy.indexOf(requiredRole);
     
     if (userRoleIndex < requiredRoleIndex) {
       return <>{fallback}</>;
     }
-  }
-
-  // Check specific permission requirements
-  if (requiresWrite && !permissions.write) {
+  } else if (requiredRole && !highestRole) {
+    // No role in current module
     return <>{fallback}</>;
   }
 
-  if (requiresDelete && !permissions.delete) {
+  // Check specific permission requirements using module permissions
+  if (requiresWrite && !canEdit) {
     return <>{fallback}</>;
   }
 
-  if (requiresAdmin && !permissions.admin) {
+  if (requiresDelete && !canDelete) {
+    return <>{fallback}</>;
+  }
+
+  if (requiresAdmin && !canAdmin) {
     return <>{fallback}</>;
   }
 

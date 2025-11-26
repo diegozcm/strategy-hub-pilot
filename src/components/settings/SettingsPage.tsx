@@ -10,6 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { useCurrentModuleRole } from '@/hooks/useCurrentModuleRole';
+import { useIsSystemAdmin } from '@/hooks/useIsSystemAdmin';
 import { UserManagementPage } from '@/components/admin/UserManagementPage';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { PasswordChangeForm } from './PasswordChangeForm';
@@ -17,9 +19,12 @@ import { ModulesSettingsTab } from './ModulesSettingsTab';
 
 export const SettingsPage: React.FC = () => {
   const { user, profile } = useAuth();
+  const { isModuleManager, isModuleAdmin } = useCurrentModuleRole();
+  const { data: isSystemAdmin } = useIsSystemAdmin();
 
-  const isAdmin = profile?.role === 'admin';
-  const isManagerOrAdmin = profile?.role === 'manager' || profile?.role === 'admin';
+  // Permissões baseadas no papel do módulo atual
+  const isManagerOrAdmin = isModuleManager || isModuleAdmin;
+  const showUsersTab = isSystemAdmin; // Apenas System Admin vê aba Usuários
 
   const getRoleLabel = (role: string) => {
     switch (role) {
@@ -41,7 +46,7 @@ export const SettingsPage: React.FC = () => {
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="security">Segurança</TabsTrigger>
           {isManagerOrAdmin && <TabsTrigger value="modules">Módulos</TabsTrigger>}
-          {isAdmin && <TabsTrigger value="users">Usuários</TabsTrigger>}
+          {showUsersTab && <TabsTrigger value="users">Usuários</TabsTrigger>}
         </TabsList>
 
         {/* General Settings */}
@@ -85,7 +90,7 @@ export const SettingsPage: React.FC = () => {
 
         {/* Security Settings */}
         <TabsContent value="security">
-          <PasswordChangeForm isAdmin={isAdmin} />
+          <PasswordChangeForm isAdmin={isModuleAdmin} />
         </TabsContent>
 
         {/* Modules Settings (Manager & Admin Only) */}
@@ -95,8 +100,8 @@ export const SettingsPage: React.FC = () => {
           </TabsContent>
         )}
 
-        {/* User Management (Admin Only) */}
-        {isAdmin && (
+        {/* User Management (System Admin Only) */}
+        {showUsersTab && (
           <TabsContent value="users">
             <UserManagementPage />
           </TabsContent>

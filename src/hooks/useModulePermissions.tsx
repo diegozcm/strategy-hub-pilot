@@ -1,9 +1,21 @@
 import { useModules } from '@/hooks/useModules';
-import { useAuth } from '@/hooks/useMultiTenant';
+import { useCurrentModuleRole } from '@/hooks/useCurrentModuleRole';
 
+/**
+ * Hook de permissões de módulo - usa user_module_roles como fonte de verdade
+ */
 export const useModulePermissions = () => {
   const { currentModule, hasModuleAccess } = useModules();
-  const { permissions, canEdit, canDelete, canAdmin } = useAuth();
+  const { 
+    canEdit, 
+    canDelete, 
+    canAdmin,
+    isModuleManager,
+    isModuleAdmin,
+    highestRole,
+    currentModuleRoles,
+    loading
+  } = useCurrentModuleRole();
 
   const canAccessModule = (moduleSlug: string) => {
     return hasModuleAccess(moduleSlug);
@@ -25,6 +37,14 @@ export const useModulePermissions = () => {
     return currentModule?.slug === moduleSlug;
   };
 
+  // Permissões derivadas do papel do módulo
+  const permissions = {
+    read: currentModuleRoles.length > 0,
+    write: canEdit,
+    delete: canDelete,
+    admin: canAdmin
+  };
+
   return {
     currentModule,
     canAccessModule,
@@ -32,6 +52,10 @@ export const useModulePermissions = () => {
     canDeleteInCurrentModule,
     canAdminInCurrentModule,
     isInModule,
-    permissions
+    permissions,
+    isModuleManager,
+    isModuleAdmin,
+    highestRole,
+    loading
   };
 };
