@@ -13,11 +13,13 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { UserManagementPage } from '@/components/admin/UserManagementPage';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { PasswordChangeForm } from './PasswordChangeForm';
+import { ModulesSettingsTab } from './ModulesSettingsTab';
 
 export const SettingsPage: React.FC = () => {
   const { user, profile } = useAuth();
 
   const isAdmin = profile?.role === 'admin';
+  const isManagerOrAdmin = profile?.role === 'manager' || profile?.role === 'admin';
 
   const getRoleLabel = (role: string) => {
     switch (role) {
@@ -38,6 +40,7 @@ export const SettingsPage: React.FC = () => {
         <TabsList>
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="security">Segurança</TabsTrigger>
+          {isManagerOrAdmin && <TabsTrigger value="modules">Módulos</TabsTrigger>}
           {isAdmin && <TabsTrigger value="users">Usuários</TabsTrigger>}
         </TabsList>
 
@@ -84,6 +87,13 @@ export const SettingsPage: React.FC = () => {
         <TabsContent value="security">
           <PasswordChangeForm isAdmin={isAdmin} />
         </TabsContent>
+
+        {/* Modules Settings (Manager & Admin Only) */}
+        {isManagerOrAdmin && (
+          <TabsContent value="modules">
+            <ModulesSettingsTab />
+          </TabsContent>
+        )}
 
         {/* User Management (Admin Only) */}
         {isAdmin && (
