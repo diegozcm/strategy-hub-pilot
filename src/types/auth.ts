@@ -66,16 +66,47 @@ export interface AuthContextType {
   profile: UserProfile | null;
   company: Company | null;
   loading: boolean;
+  
+  /**
+   * @deprecated Global permissions are deprecated. Use module-specific hooks instead:
+   * - useCurrentModuleRole() for current module permissions
+   * - useModulePermissions() for advanced module permission checks
+   * - useIsSystemAdmin() for system admin checks
+   */
   permissions: Permission;
+  
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInNormalUser?: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: any }>;
+  
+  /**
+   * @deprecated Use useCurrentModuleRole() for module-specific permissions.
+   * These now only return true for system admins.
+   */
   canEdit: boolean;
+  /**
+   * @deprecated Use useCurrentModuleRole() for module-specific permissions.
+   * These now only return true for system admins.
+   */
   canDelete: boolean;
+  /**
+   * @deprecated Use useCurrentModuleRole() for module-specific permissions.
+   * These now only return true for system admins.
+   */
   canAdmin: boolean;
+  
+  /**
+   * True if user is a system administrator (checked via is_system_admin() database function).
+   * For module-specific admin checks, use useCurrentModuleRole().isModuleAdmin
+   */
   isSystemAdmin: boolean;
+  
+  /**
+   * @deprecated Use useIsSystemAdmin() hook instead. This now returns the same value as isSystemAdmin.
+   */
   isCompanyAdmin: boolean;
+  
   switchCompany?: (companyId: string) => Promise<void>;
   clearCompanySelection?: (reason?: string) => void;
   fetchCompaniesByType?: (companyType: 'startup' | 'regular') => Promise<any[]>;
