@@ -25,6 +25,7 @@ import { KeyResult, StrategicObjective } from '@/types/strategic-map';
 import { useSearchParams } from 'react-router-dom';
 import { KRCard } from './KRCard';
 import { useKRMetrics } from '@/hooks/useKRMetrics';
+import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 
 interface KeyResultValue {
   id: string;
@@ -40,6 +41,7 @@ export const IndicatorsPage: React.FC = () => {
   const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(authCompany?.id);
+  const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
   const [searchParams, setSearchParams] = useSearchParams();
   
   // State management
@@ -61,6 +63,7 @@ export const IndicatorsPage: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4);
+  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(new Date().getFullYear());
   
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -556,6 +559,22 @@ export const IndicatorsPage: React.FC = () => {
       .reverse();
   };
 
+  // Função auxiliar para verificar se um KR está no quarter selecionado
+  const isKRInQuarter = (kr: KeyResult, quarter: 1 | 2 | 3 | 4, year: number): boolean => {
+    // KRs sem vigência definida são sempre mostrados
+    if (!kr.start_month || !kr.end_month) return true;
+    
+    // Calcular início e fim do quarter no formato YYYY-MM
+    const quarterStartMonth = ((quarter - 1) * 3) + 1;
+    const quarterEndMonth = quarter * 3;
+    
+    const quarterStart = `${year}-${quarterStartMonth.toString().padStart(2, '0')}`;
+    const quarterEnd = `${year}-${quarterEndMonth.toString().padStart(2, '0')}`;
+    
+    // Verificar interseção: KR.start <= quarterEnd AND KR.end >= quarterStart
+    return kr.start_month <= quarterEnd && kr.end_month >= quarterStart;
+  };
+
   // Filter logic
   const filteredKeyResults = keyResults.filter(keyResult => {
     const matchesSearch = keyResult.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -588,7 +607,13 @@ export const IndicatorsPage: React.FC = () => {
       }
     }
     
-    return matchesSearch && matchesPriority && matchesObjective && matchesPillar && matchesProgress;
+    // Check validity match (apenas quando vigência está ativa e quarter está selecionado)
+    let matchesValidity = true;
+    if (validityEnabled && selectedPeriod === 'quarterly') {
+      matchesValidity = isKRInQuarter(keyResult, selectedQuarter, selectedQuarterYear);
+    }
+    
+    return matchesSearch && matchesPriority && matchesObjective && matchesPillar && matchesProgress && matchesValidity;
   }).sort((a, b) => {
     // Sort by pillar index (following the filter order, same as Dashboard)
     const objectiveA = objectiveById.get(a.objective_id);
@@ -710,21 +735,39 @@ export const IndicatorsPage: React.FC = () => {
             </Button>
 
             {selectedPeriod === 'quarterly' && (
-              <Select
-                value={selectedQuarter.toString()}
-                onValueChange={(value) => setSelectedQuarter(parseInt(value) as 1 | 2 | 3 | 4)}
-              >
-                <SelectTrigger className="h-9 w-[100px] gap-2">
-                  <Calendar className="w-4 h-4" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Q1</SelectItem>
-                  <SelectItem value="2">Q2</SelectItem>
-                  <SelectItem value="3">Q3</SelectItem>
-                  <SelectItem value="4">Q4</SelectItem>
-                </SelectContent>
-              </Select>
+              <>
+                <Select
+                  value={selectedQuarter.toString()}
+                  onValueChange={(value) => setSelectedQuarter(parseInt(value) as 1 | 2 | 3 | 4)}
+                >
+                  <SelectTrigger className="h-9 w-[100px] gap-2">
+                    <Calendar className="w-4 h-4" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Q1</SelectItem>
+                    <SelectItem value="2">Q2</SelectItem>
+                    <SelectItem value="3">Q3</SelectItem>
+                    <SelectItem value="4">Q4</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select
+                  value={selectedQuarterYear.toString()}
+                  onValueChange={(value) => setSelectedQuarterYear(parseInt(value))}
+                >
+                  <SelectTrigger className="h-9 w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
             )}
             
             <Button
