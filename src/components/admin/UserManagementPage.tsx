@@ -183,6 +183,22 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
         const roles = (row.roles || []) as UserRole[];
         rolesMap[row.module_id] = roles.length > 0 ? roles[0] : null;
       });
+      
+      // Buscar perfil do Startup HUB separadamente
+      const startupModule = modules.find(m => m.slug === 'startup-hub');
+      if (startupModule) {
+        const { data: shProfile } = await supabase
+          .from('startup_hub_profiles')
+          .select('type')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .maybeSingle();
+        
+        if (shProfile?.type) {
+          rolesMap[startupModule.id] = shProfile.type as UserRole;
+        }
+      }
+      
       setModuleRoles(rolesMap);
     } catch (e) {
       console.error('Erro ao carregar perfis por módulo:', e);
