@@ -1251,16 +1251,24 @@ export const ObjectivesPage: React.FC = () => {
                             <span className="text-sm font-bold text-foreground">{calculateObjectiveProgress(
                               objectiveKeyResults, 
                               selectedPeriod,
-                              selectedPeriod === 'monthly' ? { selectedMonth, selectedYear } : undefined
+                              selectedPeriod === 'monthly' 
+                                ? { selectedMonth, selectedYear } 
+                                : selectedPeriod === 'quarterly'
+                                ? { selectedQuarter }
+                                : undefined
                             )}%</span>
                           </div>
                           <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
                             {(() => {
-                              const progress = calculateObjectiveProgress(
-                                objectiveKeyResults, 
-                                selectedPeriod,
-                                selectedPeriod === 'monthly' ? { selectedMonth, selectedYear } : undefined
-                              );
+                            const progress = calculateObjectiveProgress(
+                              objectiveKeyResults, 
+                              selectedPeriod,
+                              selectedPeriod === 'monthly' 
+                                ? { selectedMonth, selectedYear } 
+                                : selectedPeriod === 'quarterly'
+                                ? { selectedQuarter }
+                                : undefined
+                            );
                               return (
                                 <div 
                                   className={`h-full transition-all duration-300 rounded-full ${
