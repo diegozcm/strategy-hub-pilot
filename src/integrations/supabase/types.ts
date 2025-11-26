@@ -905,6 +905,50 @@ export type Database = {
         }
         Relationships: []
       }
+      company_module_settings: {
+        Row: {
+          company_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          module_slug: string
+          settings: Json | null
+          updated_at: string | null
+          updated_by: string | null
+          validity_enabled: boolean | null
+        }
+        Insert: {
+          company_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          module_slug: string
+          settings?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+          validity_enabled?: boolean | null
+        }
+        Update: {
+          company_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          module_slug?: string
+          settings?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+          validity_enabled?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_module_settings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       database_cleanup_logs: {
         Row: {
           admin_user_id: string
