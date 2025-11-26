@@ -15,9 +15,10 @@ interface RumoObjectiveBlockProps {
   progress: number;
   keyResults: KeyResult[];
   krProgress: Map<string, number>;
-  selectedPeriod: 'ytd' | 'monthly' | 'yearly';
+  selectedPeriod: 'ytd' | 'monthly' | 'yearly' | 'quarterly';
   selectedMonth?: number;
   selectedYear?: number;
+  selectedQuarter?: 1 | 2 | 3 | 4;
 }
 
 export const RumoObjectiveBlock = ({ 
@@ -27,7 +28,8 @@ export const RumoObjectiveBlock = ({
   krProgress,
   selectedPeriod,
   selectedMonth,
-  selectedYear
+  selectedYear,
+  selectedQuarter
 }: RumoObjectiveBlockProps) => {
   const performance = getPerformanceColor(progress);
   const styles = getPerformanceStyles(performance);
@@ -218,6 +220,7 @@ export const RumoObjectiveBlock = ({
         selectedPeriod={selectedPeriod}
         selectedMonth={selectedMonth}
         selectedYear={selectedYear}
+        selectedQuarter={selectedQuarter}
       />
 
       {/* KR Overview Modal */}
@@ -243,6 +246,7 @@ export const RumoObjectiveBlock = ({
         initialPeriod={selectedPeriod}
         initialMonth={selectedMonth}
         initialYear={selectedYear}
+        initialQuarter={selectedQuarter}
       />
     </>
   );

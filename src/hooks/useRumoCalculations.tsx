@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { StrategicPillar, StrategicObjective, KeyResult } from '@/types/strategic-map';
 import { calculateKRStatus } from '@/lib/krHelpers';
 
-export type PeriodType = 'monthly' | 'ytd' | 'yearly';
+export type PeriodType = 'monthly' | 'ytd' | 'yearly' | 'quarterly';
 
 interface RumoCalculations {
   pillarProgress: Map<string, number>;
@@ -20,6 +20,7 @@ export const useRumoCalculations = (
   options?: {
     selectedMonth?: number;
     selectedYear?: number;
+    selectedQuarter?: 1 | 2 | 3 | 4;
   }
 ): RumoCalculations => {
   return useMemo(() => {
@@ -63,6 +64,14 @@ export const useRumoCalculations = (
         progress = kr.ytd_percentage || 0;
       } else if (periodType === 'yearly') {
         progress = kr.yearly_percentage || 0;
+      } else if (periodType === 'quarterly') {
+        const quarter = options?.selectedQuarter || 1;
+        switch (quarter) {
+          case 1: progress = kr.q1_percentage || 0; break;
+          case 2: progress = kr.q2_percentage || 0; break;
+          case 3: progress = kr.q3_percentage || 0; break;
+          case 4: progress = kr.q4_percentage || 0; break;
+        }
       }
 
       krProgress.set(kr.id, Math.max(0, progress));
@@ -114,7 +123,7 @@ export const useRumoCalculations = (
       finalScore,
       hasData,
     };
-  }, [pillars, objectives, keyResults, periodType, options?.selectedMonth, options?.selectedYear]);
+  }, [pillars, objectives, keyResults, periodType, options?.selectedMonth, options?.selectedYear, options?.selectedQuarter]);
 };
 
 export const getPerformanceColor = (progress: number): string => {
