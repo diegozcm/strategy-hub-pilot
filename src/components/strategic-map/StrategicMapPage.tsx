@@ -68,13 +68,18 @@ export const StrategicMapPage = () => {
   const [targetObjectiveId, setTargetObjectiveId] = useState<string>('');
 
   // Period selection states
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>('ytd');
   
   // Inicializar com o último mês fechado (mês anterior)
   const previousMonth = new Date();
   previousMonth.setMonth(previousMonth.getMonth() - 1);
   const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
+  
+  // Quarter state - inicializado com o trimestre atual
+  const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
+    Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4
+  );
 
   // Check URL parameters on component mount and when search params change
   React.useEffect(() => {
@@ -291,10 +296,39 @@ export const StrategicMapPage = () => {
             </Button>
             
             <Button
+              variant={selectedPeriod === 'quarterly' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('quarterly')}
+              className="gap-2 border-l border-border/50 ml-1 pl-2"
+            >
+              <Calendar className="w-4 h-4" />
+              Quarter
+            </Button>
+            
+            {/* Select de Quarter - DENTRO do container */}
+            {selectedPeriod === 'quarterly' && (
+              <Select
+                value={selectedQuarter.toString()}
+                onValueChange={(value) => setSelectedQuarter(parseInt(value) as 1 | 2 | 3 | 4)}
+              >
+                <SelectTrigger className="h-9 w-[100px] gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Q1</SelectItem>
+                  <SelectItem value="2">Q2</SelectItem>
+                  <SelectItem value="3">Q3</SelectItem>
+                  <SelectItem value="4">Q4</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            
+            <Button
               variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setSelectedPeriod('monthly')}
-              className="gap-2"
+              className="gap-2 border-l border-border/50 ml-1 pl-2"
             >
               <CalendarDays className="w-4 h-4" />
               Mês
@@ -412,7 +446,11 @@ export const StrategicMapPage = () => {
                     const progress = calculatePillarProgress(
                       pillar.id, 
                       selectedPeriod,
-                      selectedPeriod === 'monthly' ? { selectedMonth, selectedYear } : undefined
+                      selectedPeriod === 'monthly' 
+                        ? { selectedMonth, selectedYear } 
+                        : selectedPeriod === 'quarterly'
+                        ? { selectedQuarter }
+                        : undefined
                     );
                     const pillarObjectives = objectives.filter(obj => obj.pillar_id === pillar.id);
 
@@ -495,6 +533,7 @@ export const StrategicMapPage = () => {
                                   selectedPeriod={selectedPeriod}
                                   selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
                                   selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
+                                  selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
                                   onPeriodChange={setSelectedPeriod}
                                   onMonthChange={setSelectedMonth}
                                   onYearChange={setSelectedYear}

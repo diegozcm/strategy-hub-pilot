@@ -22,10 +22,11 @@ interface ObjectiveCardProps {
   pillar?: { id: string; name: string; color: string; } | null;
   onAddResultadoChave?: (resultadoChaveData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onRefreshData?: () => void;
-  selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
+  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly';
   selectedMonth?: number;
   selectedYear?: number;
-  onPeriodChange?: (period: 'ytd' | 'monthly' | 'yearly') => void;
+  selectedQuarter?: 1 | 2 | 3 | 4;
+  onPeriodChange?: (period: 'ytd' | 'monthly' | 'yearly' | 'quarterly') => void;
   onMonthChange?: (month: number) => void;
   onYearChange?: (year: number) => void;
 }
@@ -39,10 +40,11 @@ const getProgressColor = (progress: number) => {
 
 const calculateObjectiveProgress = (
   keyResults: KeyResult[], 
-  period: 'ytd' | 'monthly' | 'yearly' = 'ytd',
+  period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' = 'ytd',
   options?: {
     selectedMonth?: number;
     selectedYear?: number;
+    selectedQuarter?: 1 | 2 | 3 | 4;
   }
 ) => {
   if (keyResults.length === 0) return 0;
@@ -51,6 +53,15 @@ const calculateObjectiveProgress = (
     let percentage = 0;
     
     switch (period) {
+      case 'quarterly':
+        const quarter = options?.selectedQuarter || 1;
+        switch (quarter) {
+          case 1: percentage = kr.q1_percentage || 0; break;
+          case 2: percentage = kr.q2_percentage || 0; break;
+          case 3: percentage = kr.q3_percentage || 0; break;
+          case 4: percentage = kr.q4_percentage || 0; break;
+        }
+        break;
       case 'monthly':
         // Se mês customizado foi fornecido, recalcular
         if (options?.selectedMonth && options?.selectedYear) {
@@ -99,6 +110,7 @@ export const ObjectiveCard = ({
   selectedPeriod = 'ytd',
   selectedMonth,
   selectedYear,
+  selectedQuarter,
   onPeriodChange,
   onMonthChange,
   onYearChange
@@ -116,7 +128,11 @@ export const ObjectiveCard = ({
   const progressPercentage = calculateObjectiveProgress(
     keyResults, 
     selectedPeriod,
-    selectedPeriod === 'monthly' ? { selectedMonth, selectedYear } : undefined
+    selectedPeriod === 'monthly' 
+      ? { selectedMonth, selectedYear }
+      : selectedPeriod === 'quarterly'
+      ? { selectedQuarter }
+      : undefined
   );
 
   // Fetch pillars and plans for the modal
