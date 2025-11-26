@@ -313,10 +313,11 @@ export const useStrategicMap = () => {
   // Calculate progress
   const calculateObjectiveProgress = (
     objectiveId: string,
-    period: 'ytd' | 'monthly' | 'yearly' = 'ytd',
+    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' = 'ytd',
     options?: {
       selectedMonth?: number;
       selectedYear?: number;
+      selectedQuarter?: 1 | 2 | 3 | 4;
     }
   ): number => {
     const objectiveKRs = keyResults.filter(kr => kr.objective_id === objectiveId);
@@ -326,6 +327,15 @@ export const useStrategicMap = () => {
       let percentage = 0;
       
       switch (period) {
+        case 'quarterly':
+          const quarter = options?.selectedQuarter || 1;
+          switch (quarter) {
+            case 1: percentage = kr.q1_percentage || 0; break;
+            case 2: percentage = kr.q2_percentage || 0; break;
+            case 3: percentage = kr.q3_percentage || 0; break;
+            case 4: percentage = kr.q4_percentage || 0; break;
+          }
+          break;
         case 'monthly':
           // Se mês customizado foi fornecido, recalcular
           if (options?.selectedMonth && options?.selectedYear) {
@@ -366,10 +376,11 @@ export const useStrategicMap = () => {
 
   const calculatePillarProgress = (
     pillarId: string,
-    period: 'ytd' | 'monthly' | 'yearly' = 'ytd',
+    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' = 'ytd',
     options?: {
       selectedMonth?: number;
       selectedYear?: number;
+      selectedQuarter?: 1 | 2 | 3 | 4;
     }
   ): number => {
     const pillarObjectives = objectives.filter(obj => obj.pillar_id === pillarId);
