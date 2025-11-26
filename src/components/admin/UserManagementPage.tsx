@@ -95,7 +95,6 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   const [userModules, setUserModules] = useState<UserModuleAccess[]>([]);
   const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
   const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole | null>>({});
-  const [startupHubOptions, setStartupHubOptions] = useState<{ startup: boolean; mentor: boolean }>({ startup: false, mentor: false });
   const [activeTab, setActiveTab] = useState('personal');
 
   useEffect(() => {
@@ -164,14 +163,6 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 
       // Load module roles
       await loadUserModuleRoles(user.user_id);
-
-      // Load startup hub options
-      const startupModule = modules.find(m => m.slug === 'startup-hub');
-      if (startupModule && currentAccess[startupModule.id]) {
-        await loadStartupHubOptions(user.user_id);
-      } else {
-        resetStartupHubOptions();
-      }
     } catch (error) {
       console.error('Erro ao carregar dados do usuário:', error);
       toast({
@@ -199,33 +190,6 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     }
   };
 
-  const resetStartupHubOptions = () => {
-    setStartupHubOptions({ startup: false, mentor: false });
-  };
-
-  const loadStartupHubOptions = async (userId: string) => {
-    try {
-      const startupModule = modules.find(m => m.slug === 'startup-hub');
-      if (!startupModule) {
-        resetStartupHubOptions();
-        return;
-      }
-      const { data, error } = await supabase
-        .from('startup_hub_profiles')
-        .select('type, status')
-        .eq('user_id', userId)
-        .eq('status', 'active');
-      if (error) throw error;
-      const types = (data || []).map((row: any) => row.type as 'startup' | 'mentor');
-      setStartupHubOptions({
-        startup: types.includes('startup'),
-        mentor: types.includes('mentor'),
-      });
-    } catch (e) {
-      console.error('Erro ao carregar perfis Startup HUB:', e);
-      resetStartupHubOptions();
-    }
-  };
 
   const saveAllChanges = async () => {
     if (!editedUser || !currentUser) return;
@@ -298,49 +262,40 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
       const startupModule = modules.find((m) => m.slug === 'startup-hub');
       if (startupModule) {
         const hasStartupAccess = moduleAccess[startupModule.id];
+        const startupRole = moduleRoles[startupModule.id];
 
-        if (hasStartupAccess) {
-          const isStartup = startupHubOptions.startup;
-          const isMentor = startupHubOptions.mentor;
+        if (hasStartupAccess && startupRole) {
+          const selectedType: 'startup' | 'mentor' = (startupRole as string) === 'startup' ? 'startup' : 'mentor';
           
-          if (isStartup || isMentor) {
-            const selectedType = isStartup ? 'startup' : 'mentor';
-            
-            const { data: existing, error: existingErr } = await supabase
-              .from('startup_hub_profiles')
-              .select('id, type, status')
-              .eq('user_id', editedUser.user_id)
-              .maybeSingle();
-            if (existingErr) throw existingErr;
+          const { data: existing, error: existingErr } = await supabase
+            .from('startup_hub_profiles')
+            .select('id, type, status')
+            .eq('user_id', editedUser.user_id)
+            .maybeSingle();
+          if (existingErr) throw existingErr;
 
-            if (existing) {
-              const { error: updErr } = await supabase
-                .from('startup_hub_profiles')
-                .update({ 
-                  type: selectedType,
-                  status: 'active',
-                  updated_at: new Date().toISOString()
-                })
-                .eq('id', existing.id as string);
-              if (updErr) throw updErr;
-            } else {
-              const { error: insErr } = await supabase
-                .from('startup_hub_profiles')
-                .insert({
-                  user_id: editedUser.user_id,
-                  type: selectedType,
-                  status: 'active',
-                });
-              if (insErr) throw insErr;
-            }
-          } else {
-            const { error: deactErr } = await supabase
+          if (existing) {
+            const { error: updErr } = await supabase
               .from('startup_hub_profiles')
-              .update({ status: 'inactive' })
-              .eq('user_id', editedUser.user_id);
-            if (deactErr && deactErr.code !== 'PGRST116') throw deactErr;
+              .update({ 
+                type: selectedType,
+                status: 'active',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existing.id as string);
+            if (updErr) throw updErr;
+          } else {
+            const { error: insErr } = await supabase
+              .from('startup_hub_profiles')
+              .insert({
+                user_id: editedUser.user_id,
+                type: selectedType,
+                status: 'active',
+              });
+            if (insErr) throw insErr;
           }
         } else {
+          // Deactivate profile if access removed or no role selected
           const { error: deactErr } = await supabase
             .from('startup_hub_profiles')
             .update({ status: 'inactive' })
@@ -763,24 +718,10 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                           if (!v) {
                             setModuleRoles((prev) => ({ ...prev, [module.id]: null }));
                           }
-                          if (isStartupHub) {
-                            if (!!v && user) {
-                              loadStartupHubOptions(user.user_id);
-                            } else {
-                              resetStartupHubOptions();
-                            }
-                          }
                         }}
                         onRoleChange={(role) => {
                           setModuleRoles((prev) => ({ ...prev, [module.id]: role }));
                         }}
-                        {...(isStartupHub
-                          ? {
-                              startupOptions: startupHubOptions,
-                              onStartupOptionToggle: (opt: 'startup' | 'mentor') =>
-                                setStartupHubOptions((prev) => ({ ...prev, [opt]: !prev[opt] })),
-                            }
-                          : {})}
                       />
                     );
                   })}

@@ -18,8 +18,6 @@ interface ModuleAccessRowProps {
   role: UserRole | null;
   onAccessChange: (checked: boolean) => void;
   onRoleChange: (role: UserRole | null) => void;
-  startupOptions?: { startup: boolean; mentor: boolean };
-  onStartupOptionToggle?: (option: 'startup' | 'mentor') => void;
 }
 
 export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
@@ -28,12 +26,13 @@ export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
   role,
   onAccessChange,
   onRoleChange,
-  startupOptions,
-  onStartupOptionToggle,
 }) => {
-  const roleList: UserRole[] = ['admin', 'manager', 'member'];
-  const isDisabled = !checked;
+  const isStrategyHub = module.slug === 'strategic-planning';
   const isStartupHub = module.slug === 'startup-hub';
+  
+  // Strategy HUB only has manager and member roles
+  const roleList: UserRole[] = isStrategyHub ? ['manager', 'member'] : ['admin', 'manager', 'member'];
+  const isDisabled = !checked;
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-md border p-3">
@@ -51,16 +50,47 @@ export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
         </div>
       </div>
 
-      {/* Renderizar roles padrão usando RadioGroup se NÃO for Startup HUB */}
-      {!isStartupHub && (
-        <div className="pl-7 sm:pl-0">
-          <RadioGroup 
-            value={role || ''} 
-            onValueChange={(value) => onRoleChange(value as UserRole)}
-            disabled={isDisabled}
-            className="flex gap-3"
-          >
-            {roleList.map((r) => {
+      {/* Renderizar roles usando RadioGroup */}
+      <div className="pl-7 sm:pl-0">
+        <RadioGroup 
+          value={role || ''} 
+          onValueChange={(value) => onRoleChange(value as UserRole)}
+          disabled={isDisabled}
+          className="flex gap-3"
+        >
+          {isStartupHub ? (
+            // Startup HUB: apenas Startup ou Mentor
+            <>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem 
+                  id={`role-${module.id}-startup`}
+                  value="startup"
+                  disabled={isDisabled}
+                />
+                <Label 
+                  htmlFor={`role-${module.id}-startup`}
+                  className={`cursor-pointer ${isDisabled ? 'text-muted-foreground opacity-60' : ''}`}
+                >
+                  Startup
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem 
+                  id={`role-${module.id}-mentor`}
+                  value="mentor"
+                  disabled={isDisabled}
+                />
+                <Label 
+                  htmlFor={`role-${module.id}-mentor`}
+                  className={`cursor-pointer ${isDisabled ? 'text-muted-foreground opacity-60' : ''}`}
+                >
+                  Mentor
+                </Label>
+              </div>
+            </>
+          ) : (
+            // Outros módulos: roles padrão (Strategy HUB sem admin)
+            roleList.map((r) => {
               const roleId = `role-${module.id}-${r}`;
               return (
                 <div key={r} className="flex items-center gap-2">
@@ -77,35 +107,10 @@ export const ModuleAccessRow: React.FC<ModuleAccessRowProps> = ({
                   </Label>
                 </div>
               );
-            })}
-          </RadioGroup>
-        </div>
-      )}
-
-      {/* Renderizar opções Startup/Mentor sempre para Startup HUB (mesmo quando desabilitado) */}
-      {isStartupHub && (
-        <div className="grid grid-cols-2 gap-3 pl-7 sm:pl-0">
-          {(['startup', 'mentor'] as const).map((opt) => {
-            const optId = `sh-${module.id}-${opt}`;
-            return (
-              <div key={opt} className="flex items-center gap-2">
-                <Checkbox
-                  id={optId}
-                  checked={checked && startupOptions ? startupOptions[opt] : false}
-                  onCheckedChange={() => onStartupOptionToggle && onStartupOptionToggle(opt)}
-                  disabled={isDisabled}
-                />
-                <Label 
-                  htmlFor={optId}
-                  className={`cursor-pointer ${isDisabled ? 'text-muted-foreground opacity-60' : ''}`}
-                >
-                  {opt === 'startup' ? 'Startup' : 'Mentor'}
-                </Label>
-              </div>
-            );
-          })}
-        </div>
-      )}
+            })
+          )}
+        </RadioGroup>
+      </div>
     </div>
   );
 };
