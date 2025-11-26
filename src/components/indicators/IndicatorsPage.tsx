@@ -699,48 +699,33 @@ export const IndicatorsPage: React.FC = () => {
               Ano
             </Button>
             
-            <div className="flex items-center gap-1 border-l border-border/50 pl-2 ml-1">
-              <Button
-                variant={selectedPeriod === 'quarterly' && selectedQuarter === 1 ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => {
-                  setSelectedPeriod('quarterly');
-                  setSelectedQuarter(1);
-                }}
+            <Button
+              variant={selectedPeriod === 'quarterly' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('quarterly')}
+              className="gap-2 border-l border-border/50 ml-1 pl-2"
+            >
+              <Calendar className="w-4 h-4" />
+              Quarter
+            </Button>
+
+            {selectedPeriod === 'quarterly' && (
+              <Select
+                value={selectedQuarter.toString()}
+                onValueChange={(value) => setSelectedQuarter(parseInt(value) as 1 | 2 | 3 | 4)}
               >
-                Q1
-              </Button>
-              <Button
-                variant={selectedPeriod === 'quarterly' && selectedQuarter === 2 ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => {
-                  setSelectedPeriod('quarterly');
-                  setSelectedQuarter(2);
-                }}
-              >
-                Q2
-              </Button>
-              <Button
-                variant={selectedPeriod === 'quarterly' && selectedQuarter === 3 ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => {
-                  setSelectedPeriod('quarterly');
-                  setSelectedQuarter(3);
-                }}
-              >
-                Q3
-              </Button>
-              <Button
-                variant={selectedPeriod === 'quarterly' && selectedQuarter === 4 ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => {
-                  setSelectedPeriod('quarterly');
-                  setSelectedQuarter(4);
-                }}
-              >
-                Q4
-              </Button>
-            </div>
+                <SelectTrigger className="h-9 w-[100px] gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Q1</SelectItem>
+                  <SelectItem value="2">Q2</SelectItem>
+                  <SelectItem value="3">Q3</SelectItem>
+                  <SelectItem value="4">Q4</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             
             <Button
               variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
