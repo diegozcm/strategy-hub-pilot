@@ -36,28 +36,33 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   
   const navigate = useNavigate();
 
-  // Calculate permissions based on role
-  const getPermissions = (role: UserRole): Permission => {
-    switch (role) {
-      case 'admin':
-        return { read: true, write: true, delete: true, admin: true };
-      case 'manager':
-        return { read: true, write: true, delete: true };
-      case 'member':
-        return { read: true, write: false, delete: false };
-      default:
-        return { read: false, write: false, delete: false };
-    }
-  };
-
   // State for system admin check
   const [isSystemAdmin, setIsSystemAdmin] = useState(false);
   
-  const permissions = profile ? getPermissions(profile.role) : { read: false, write: false, delete: false };
-  const canEdit = permissions.write;
-  const canDelete = permissions.delete;
-  const canAdmin = permissions.admin || false;
-  const isCompanyAdmin = profile?.role === 'admin';
+  /**
+   * DEPRECATED: Global permissions based on profiles.role
+   * 
+   * For module-specific permissions, use:
+   * - useCurrentModuleRole() for current module permissions
+   * - useModulePermissions() for advanced module permission checks
+   * - useIsSystemAdmin() for system admin checks
+   * 
+   * These global permissions are now derived only from isSystemAdmin.
+   * Non-admin users should use module-specific hooks for proper permission checks.
+   */
+  const permissions: Permission = isSystemAdmin 
+    ? { read: true, write: true, delete: true, admin: true }
+    : { read: false, write: false, delete: false };
+  
+  const canEdit = isSystemAdmin;
+  const canDelete = isSystemAdmin;
+  const canAdmin = isSystemAdmin;
+  
+  /**
+   * DEPRECATED: Use useIsSystemAdmin() hook instead
+   * This is kept for backwards compatibility but always returns false for non-admins
+   */
+  const isCompanyAdmin = isSystemAdmin;
 
   // Handle first login password change
   const handleFirstLoginPasswordChange = () => {
