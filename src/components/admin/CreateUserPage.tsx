@@ -52,10 +52,6 @@ export const CreateUserPage = () => {
   // Estados para módulos e permissões
   const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
   const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole | null>>({});
-  const [startupHubOptions, setStartupHubOptions] = useState<{ startup: boolean; mentor: boolean }>({ 
-    startup: false, 
-    mentor: false 
-  });
 
   // Carregar módulos do sistema e empresas
   useEffect(() => {
@@ -322,9 +318,10 @@ export const CreateUserPage = () => {
       let startupHubOptionsJson = {};
       const startupModule = modules.find(m => m.slug === 'startup-hub');
       if (startupModule && moduleAccess[startupModule.id]) {
-        if (startupHubOptions.startup) {
+        const startupRole = moduleRoles[startupModule.id];
+        if ((startupRole as string) === 'startup') {
           startupHubOptionsJson = { type: 'startup' };
-        } else if (startupHubOptions.mentor) {
+        } else if ((startupRole as string) === 'mentor') {
           startupHubOptionsJson = { type: 'mentor' };
         }
       }
@@ -443,7 +440,6 @@ export const CreateUserPage = () => {
                 setSelectedCompanyId('');
                 setModuleAccess({});
                 setModuleRoles({});
-                setStartupHubOptions({ startup: false, mentor: false });
               }}>
                 Criar Outro Usuário
               </Button>
@@ -643,11 +639,6 @@ export const CreateUserPage = () => {
                           ...prev,
                           [module.id]: null
                         }));
-                        
-                        // Reset startup hub options if it's the startup hub module
-                        if (isStartupHub) {
-                          setStartupHubOptions({ startup: false, mentor: false });
-                        }
                       }
                     }}
                     onRoleChange={(role) => {
@@ -656,16 +647,6 @@ export const CreateUserPage = () => {
                         [module.id]: role
                       }));
                     }}
-                    startupOptions={isStartupHub ? startupHubOptions : undefined}
-                    onStartupOptionToggle={isStartupHub ? (option) => {
-                      setStartupHubOptions(prev => ({
-                        ...prev,
-                        [option]: !prev[option],
-                        // Ensure only one option is selected
-                        ...(option === 'startup' && !prev[option] ? { mentor: false } : {}),
-                        ...(option === 'mentor' && !prev[option] ? { startup: false } : {})
-                      }));
-                    } : undefined}
                   />
                 );
               })
