@@ -94,7 +94,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   const [userCompanies, setUserCompanies] = useState<CompanyUser[]>([]);
   const [userModules, setUserModules] = useState<UserModuleAccess[]>([]);
   const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
-  const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole[]>>({});
+  const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole | null>>({});
   const [startupHubOptions, setStartupHubOptions] = useState<{ startup: boolean; mentor: boolean }>({ startup: false, mentor: false });
   const [activeTab, setActiveTab] = useState('personal');
 
@@ -186,9 +186,11 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     try {
       const { data, error } = await supabase.rpc('get_user_module_roles', { _user_id: userId });
       if (error) throw error;
-      const rolesMap: Record<string, UserRole[]> = {};
+      const rolesMap: Record<string, UserRole | null> = {};
       (data || []).forEach((row: any) => {
-        rolesMap[row.module_id] = (row.roles || []) as UserRole[];
+        // Pegar apenas a primeira role (ou null se não houver)
+        const roles = (row.roles || []) as UserRole[];
+        rolesMap[row.module_id] = roles.length > 0 ? roles[0] : null;
       });
       setModuleRoles(rolesMap);
     } catch (e) {
@@ -281,7 +283,8 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
       for (const mod of modules) {
         if (mod.slug === 'startup-hub') continue;
 
-        const roles = moduleRoles[mod.id] || [];
+        const role = moduleRoles[mod.id];
+        const roles = role ? [role] : [];
         const { error: rolesErr } = await supabase.rpc('set_user_module_roles', {
           _admin_id: currentUser.id,
           _user_id: editedUser.user_id,
@@ -753,9 +756,13 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                         key={module.id}
                         module={module}
                         checked={checked}
-                        roles={moduleRoles[module.id] || []}
+                        role={moduleRoles[module.id] || null}
                         onAccessChange={(v) => {
                           setModuleAccess((prev) => ({ ...prev, [module.id]: !!v }));
+                          // Reset role when access is removed
+                          if (!v) {
+                            setModuleRoles((prev) => ({ ...prev, [module.id]: null }));
+                          }
                           if (isStartupHub) {
                             if (!!v && user) {
                               loadStartupHubOptions(user.user_id);
@@ -764,13 +771,8 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                             }
                           }
                         }}
-                        onRoleToggle={(role) => {
-                          setModuleRoles((prev) => {
-                            const current = prev[module.id] || [];
-                            const has = current.includes(role);
-                            const next = has ? current.filter((r) => r !== role) : [...current, role];
-                            return { ...prev, [module.id]: next };
-                          });
+                        onRoleChange={(role) => {
+                          setModuleRoles((prev) => ({ ...prev, [module.id]: role }));
                         }}
                         {...(isStartupHub
                           ? {
