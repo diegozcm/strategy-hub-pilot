@@ -456,8 +456,8 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden p-0">
-        <DialogHeader className="px-6 py-4 border-b">
+      <DialogContent className="max-w-7xl w-[95vw] h-[85vh] overflow-hidden p-0 flex flex-col">
+        <DialogHeader className="px-6 py-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Users className="w-5 h-5" />
             Gerenciar Usuário: {editedUser.first_name} {editedUser.last_name}
@@ -467,9 +467,9 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden min-h-0">
           {/* Sidebar */}
-          <div className="w-64 bg-sidebar border-r flex flex-col">
+          <div className="w-64 bg-sidebar border-r flex flex-col shrink-0">
             <div className="p-4">
               <nav className="space-y-1">
                 {sidebarItems.map((item) => {
@@ -495,7 +495,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           </div>
 
           {/* Content */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden min-h-0">
             <ScrollArea className="flex-1">
               <div className="p-6">
                 {activeTab === 'personal' && (
@@ -638,27 +638,30 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                   {userCompanies.length > 0 ? (
                     <div className="space-y-2">
                       <Label>Empresas Associadas</Label>
-                      {userCompanies.map((companyUser) => (
-                        <div key={companyUser.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <Building2 className="w-4 h-4 text-muted-foreground" />
-                            <div>
-                              <p className="font-medium">{companyUser.company_name}</p>
-                              <Badge variant="secondary" className="text-xs">
-                                {companyUser.role === 'admin' ? 'Administrador' : 
-                                 companyUser.role === 'manager' ? 'Gerente' : 'Membro'}
-                              </Badge>
+                      <ScrollArea className="h-[400px] pr-2">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                          {userCompanies.map((companyUser) => (
+                            <div key={companyUser.id} className="flex items-center gap-2 p-2 border rounded-md bg-muted/30 group hover:bg-muted/50 transition-colors">
+                              <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm truncate">{companyUser.company_name}</p>
+                                <Badge variant="secondary" className="text-xs mt-0.5">
+                                  {companyUser.role === 'admin' ? 'Admin' : 
+                                   companyUser.role === 'manager' ? 'Gerente' : 'Membro'}
+                                </Badge>
+                              </div>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleRemoveCompany(companyUser.company_id!)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
                             </div>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleRemoveCompany(companyUser.company_id!)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          ))}
                         </div>
-                      ))}
+                      </ScrollArea>
                     </div>
                   ) : (
                     <p className="text-muted-foreground text-center py-4">
@@ -894,7 +897,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           </ScrollArea>
 
           {/* Footer com botão de salvar */}
-          <div className="border-t p-4 bg-background">
+          <div className="border-t p-4 bg-background shrink-0">
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={() => onOpenChange(false)}>
                   Cancelar
