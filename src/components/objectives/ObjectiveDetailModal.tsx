@@ -64,9 +64,10 @@ interface ObjectiveDetailModalProps {
   onOpenKeyResultDetails: (kr: KeyResult) => void;
   pillars: StrategicPillar[];
   progressPercentage: number;
-  selectedPeriod?: 'ytd' | 'monthly' | 'yearly';
+  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly';
   selectedMonth?: number;
   selectedYear?: number;
+  selectedQuarter?: 1 | 2 | 3 | 4;
 }
 
 export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
@@ -84,6 +85,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
   selectedPeriod = 'ytd',
   selectedMonth,
   selectedYear,
+  selectedQuarter,
 }) => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
@@ -100,7 +102,15 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
     if (keyResults.length === 0) return 0;
     
     const percentages = keyResults.map(kr => {
-      if (selectedPeriod === 'monthly') {
+      if (selectedPeriod === 'quarterly') {
+        const quarter = selectedQuarter || 1;
+        switch (quarter) {
+          case 1: return kr.q1_percentage || 0;
+          case 2: return kr.q2_percentage || 0;
+          case 3: return kr.q3_percentage || 0;
+          case 4: return kr.q4_percentage || 0;
+        }
+      } else if (selectedPeriod === 'monthly') {
         return kr.monthly_percentage || 0;
       } else if (selectedPeriod === 'yearly') {
         return kr.yearly_percentage || 0;
@@ -321,6 +331,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                       selectedPeriod={selectedPeriod}
                       selectedMonth={selectedMonth}
                       selectedYear={selectedYear}
+                      selectedQuarter={selectedQuarter}
                     />
                   ))}
                   {keyResults.length === 0 && (

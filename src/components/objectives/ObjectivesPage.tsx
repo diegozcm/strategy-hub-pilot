@@ -62,13 +62,18 @@ export const ObjectivesPage: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>('ytd');
   
   // Inicializar com o último mês fechado (mês anterior)
   const previousMonth = new Date();
   previousMonth.setMonth(previousMonth.getMonth() - 1);
   const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
+  
+  // Quarter state - inicializado com o trimestre atual
+  const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
+    Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4
+  );
   
   const [isCreateObjectiveOpen, setIsCreateObjectiveOpen] = useState(false);
   const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
@@ -424,10 +429,11 @@ export const ObjectivesPage: React.FC = () => {
 
   const calculateObjectiveProgress = (
     keyResults: any[], 
-    period: 'ytd' | 'monthly' | 'yearly' = 'ytd',
+    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' = 'ytd',
     options?: {
       selectedMonth?: number;
       selectedYear?: number;
+      selectedQuarter?: 1 | 2 | 3 | 4;
     }
   ) => {
     if (keyResults.length === 0) return 0;
@@ -436,6 +442,15 @@ export const ObjectivesPage: React.FC = () => {
       let percentage = 0;
       
       switch (period) {
+        case 'quarterly':
+          const quarter = options?.selectedQuarter || 1;
+          switch (quarter) {
+            case 1: percentage = kr.q1_percentage || 0; break;
+            case 2: percentage = kr.q2_percentage || 0; break;
+            case 3: percentage = kr.q3_percentage || 0; break;
+            case 4: percentage = kr.q4_percentage || 0; break;
+          }
+          break;
         case 'monthly':
           // Se mês customizado foi fornecido, recalcular
           if (options?.selectedMonth && options?.selectedYear) {
@@ -478,7 +493,11 @@ export const ObjectivesPage: React.FC = () => {
       const progress = calculateObjectiveProgress(
         objectiveKeyResults, 
         selectedPeriod,
-        selectedPeriod === 'monthly' ? { selectedMonth, selectedYear } : undefined
+        selectedPeriod === 'monthly' 
+          ? { selectedMonth, selectedYear } 
+          : selectedPeriod === 'quarterly'
+          ? { selectedQuarter }
+          : undefined
       );
       if (statusFilter === 'excellent') {
         matchesStatus = progress > 105;
@@ -884,22 +903,51 @@ export const ObjectivesPage: React.FC = () => {
               variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setSelectedPeriod('yearly')}
-              className="gap-2"
+              className="gap-2 border-l border-border/50 ml-1 pl-2"
             >
               <Target className="w-4 h-4" />
               Ano
             </Button>
             
             <Button
+              variant={selectedPeriod === 'quarterly' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('quarterly')}
+              className="gap-2 border-l border-border/50 ml-1 pl-2"
+            >
+              <Calendar className="w-4 h-4" />
+              Quarter
+            </Button>
+            
+            <Button
               variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setSelectedPeriod('monthly')}
-              className="gap-2"
+              className="gap-2 border-l border-border/50 ml-1 pl-2"
             >
               <CalendarDays className="w-4 h-4" />
               Mês
             </Button>
           </div>
+          
+          {/* Select de Quarter - Aparece ao lado quando quarterly está selecionado */}
+          {selectedPeriod === 'quarterly' && (
+            <Select
+              value={selectedQuarter.toString()}
+              onValueChange={(value) => setSelectedQuarter(parseInt(value) as 1 | 2 | 3 | 4)}
+            >
+              <SelectTrigger className="h-9 w-[100px] gap-2">
+                <Calendar className="w-4 h-4" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Q1</SelectItem>
+                <SelectItem value="2">Q2</SelectItem>
+                <SelectItem value="3">Q3</SelectItem>
+                <SelectItem value="4">Q4</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
           
           {/* Select de Mês - Aparece ao lado quando monthly está selecionado */}
           {selectedPeriod === 'monthly' && (
@@ -1251,11 +1299,16 @@ export const ObjectivesPage: React.FC = () => {
           progressPercentage={selectedObjective ? calculateObjectiveProgress(
             getObjectiveKeyResults(selectedObjective.id), 
             selectedPeriod,
-            selectedPeriod === 'monthly' ? { selectedMonth, selectedYear } : undefined
+            selectedPeriod === 'monthly' 
+              ? { selectedMonth, selectedYear }
+              : selectedPeriod === 'quarterly'
+              ? { selectedQuarter }
+              : undefined
           ) : 0}
           selectedPeriod={selectedPeriod}
           selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
           selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
+          selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
         />
 
 
