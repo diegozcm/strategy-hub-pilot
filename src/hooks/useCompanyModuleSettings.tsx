@@ -47,42 +47,26 @@ export const useCompanyModuleSettings = (moduleSlug: string) => {
         throw new Error('Company or user not found');
       }
 
-      const settingsData = {
-        company_id: company.id,
-        module_slug: moduleSlug,
-        validity_enabled: validityEnabled,
-        updated_by: user.id,
-      };
+      // Use UPSERT to avoid race conditions and duplicate key errors
+      const { data, error } = await supabase
+        .from('company_module_settings')
+        .upsert({
+          company_id: company.id,
+          module_slug: moduleSlug,
+          validity_enabled: validityEnabled,
+          updated_by: user.id,
+          updated_at: new Date().toISOString(),
+          // created_by is only set on first insert, not updated
+          ...(settings?.id ? {} : { created_by: user.id }),
+        }, {
+          onConflict: 'company_id,module_slug',
+          ignoreDuplicates: false,
+        })
+        .select()
+        .single();
 
-      if (settings?.id) {
-        // Update existing
-        const { data, error } = await supabase
-          .from('company_module_settings')
-          .update({
-            validity_enabled: validityEnabled,
-            updated_by: user.id,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', settings.id)
-          .select()
-          .single();
-
-        if (error) throw error;
-        return data;
-      } else {
-        // Insert new
-        const { data, error } = await supabase
-          .from('company_module_settings')
-          .insert({
-            ...settingsData,
-            created_by: user.id,
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-        return data;
-      }
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
