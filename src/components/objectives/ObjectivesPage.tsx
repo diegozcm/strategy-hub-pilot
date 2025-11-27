@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Target, Clock, AlertTriangle, Calendar, CalendarDays } from 'lucide-react';
+import { Plus, Search, Target, Clock, AlertTriangle, Calendar, CalendarDays, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -569,36 +569,41 @@ export const ObjectivesPage: React.FC = () => {
         {/* Period Selector */}
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-sm font-medium text-muted-foreground">Período:</span>
-          <div className="flex items-center rounded-md border border-border bg-background overflow-hidden">
+          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
             <Button
               variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setSelectedPeriod('ytd')}
+              className="gap-2"
             >
+              <TrendingUp className="w-4 h-4" />
               YTD
             </Button>
             <Button
               variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setSelectedPeriod('yearly')}
-              className="border-l border-border/50"
+              className="gap-2"
             >
+              <Target className="w-4 h-4" />
               Ano
             </Button>
             <Button
               variant={selectedPeriod === 'quarterly' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setSelectedPeriod('quarterly')}
-              className="border-l border-border/50"
+              className="gap-2 border-l border-border/50 ml-1 pl-2"
             >
+              <Calendar className="w-4 h-4" />
               Quarter
             </Button>
             <Button
               variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setSelectedPeriod('monthly')}
-              className="border-l border-border/50"
+              className="gap-2 border-l border-border/50 ml-1 pl-2"
             >
+              <CalendarDays className="w-4 h-4" />
               Mês
             </Button>
           </div>
