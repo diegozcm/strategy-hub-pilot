@@ -27,6 +27,21 @@ import { KRCard } from './KRCard';
 import { useKRMetrics } from '@/hooks/useKRMetrics';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 
+// Converte quarter + ano para start_month e end_month
+const quarterToMonths = (quarter: 1 | 2 | 3 | 4, year: number): { start_month: string; end_month: string } => {
+  const quarterRanges = {
+    1: { start: '01', end: '03' },
+    2: { start: '04', end: '06' },
+    3: { start: '07', end: '09' },
+    4: { start: '10', end: '12' }
+  };
+  const range = quarterRanges[quarter];
+  return {
+    start_month: `${year}-${range.start}`,
+    end_month: `${year}-${range.end}`
+  };
+};
+
 interface KeyResultValue {
   id: string;
   key_result_id: string;
@@ -83,6 +98,10 @@ export const IndicatorsPage: React.FC = () => {
     end_month: '',
     assigned_owner_id: ''
   });
+
+  // Estados para vigência do novo KR (Quarter + Ano)
+  const [newKRValidityQuarter, setNewKRValidityQuarter] = useState<1 | 2 | 3 | 4 | null>(null);
+  const [newKRValidityYear, setNewKRValidityYear] = useState<number>(new Date().getFullYear());
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -284,6 +303,8 @@ export const IndicatorsPage: React.FC = () => {
         end_month: '',
         assigned_owner_id: ''
       });
+      setNewKRValidityQuarter(null);
+      setNewKRValidityYear(new Date().getFullYear());
 
       toast({
         title: "Sucesso",
@@ -1045,26 +1066,60 @@ export const IndicatorsPage: React.FC = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start_month">Mês de Início</Label>
-                <Input
-                  id="start_month"
-                  type="month"
-                  value={formData.start_month}
-                  onChange={(e) => setFormData({...formData, start_month: e.target.value})}
-                />
+            <div className="space-y-2">
+              <Label>Vigência</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <Select 
+                  value={newKRValidityQuarter?.toString() || 'none'} 
+                  onValueChange={(value) => {
+                    if (value === 'none') {
+                      setNewKRValidityQuarter(null);
+                      setFormData({ ...formData, start_month: '', end_month: '' });
+                      return;
+                    }
+                    const q = parseInt(value) as 1 | 2 | 3 | 4;
+                    setNewKRValidityQuarter(q);
+                    const { start_month, end_month } = quarterToMonths(q, newKRValidityYear);
+                    setFormData({ ...formData, start_month, end_month });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o Quarter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem vigência definida</SelectItem>
+                    <SelectItem value="1">Q1 (Jan - Mar)</SelectItem>
+                    <SelectItem value="2">Q2 (Abr - Jun)</SelectItem>
+                    <SelectItem value="3">Q3 (Jul - Set)</SelectItem>
+                    <SelectItem value="4">Q4 (Out - Dez)</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select 
+                  value={newKRValidityYear.toString()} 
+                  onValueChange={(value) => {
+                    const y = parseInt(value);
+                    setNewKRValidityYear(y);
+                    if (newKRValidityQuarter) {
+                      const { start_month, end_month } = quarterToMonths(newKRValidityQuarter, y);
+                      setFormData({ ...formData, start_month, end_month });
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[...Array(6)].map((_, i) => {
+                      const year = new Date().getFullYear() - 1 + i;
+                      return <SelectItem key={year} value={year.toString()}>{year}</SelectItem>;
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="end_month">Mês de Fim</Label>
-                <Input
-                  id="end_month"
-                  type="month"
-                  value={formData.end_month}
-                  onChange={(e) => setFormData({...formData, end_month: e.target.value})}
-                />
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Selecione o quarter e o ano da vigência deste resultado-chave
+              </p>
             </div>
             
             <div className="space-y-2">
