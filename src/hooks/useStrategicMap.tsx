@@ -46,18 +46,17 @@ export const useStrategicMap = () => {
     }
   };
 
-  // Load strategic plan
+  // Load strategic plan - ONLY ACTIVE PLAN
   const loadStrategicPlan = async (companyId: string) => {
     try {
       const { data, error } = await supabase
         .from('strategic_plans')
         .select('*')
         .eq('company_id', companyId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .eq('status', 'active')
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error loading strategic plan:', error);
         return;
       }
@@ -134,13 +133,19 @@ export const useStrategicMap = () => {
     }
   };
 
-  // Load objectives
+  // Load objectives - FILTER BY ACTIVE PLAN
   const loadObjectives = async (pillarIds: string[]) => {
+    if (!strategicPlan?.id) {
+      setObjectives([]);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('strategic_objectives')
         .select('*')
-        .in('pillar_id', pillarIds);
+        .in('pillar_id', pillarIds)
+        .eq('plan_id', strategicPlan.id);
 
       if (error) {
         console.error('Error loading objectives:', error);
