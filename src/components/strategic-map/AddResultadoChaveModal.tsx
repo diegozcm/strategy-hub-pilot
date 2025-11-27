@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { KeyResult } from '@/types/strategic-map';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useCompanyUsers } from '@/hooks/useCompanyUsers';
+import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { cn } from '@/lib/utils';
 
 // Função para verificar se um mês está dentro da vigência
@@ -55,6 +56,7 @@ interface AddResultadoChaveModalProps {
 export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: AddResultadoChaveModalProps) => {
   const { company } = useAuth();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
+  const { quarterOptions } = usePlanPeriodOptions();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -76,9 +78,8 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
   const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
   
-  // Estados para vigência (Quarter + Ano)
-  const [validityQuarter, setValidityQuarter] = useState<1 | 2 | 3 | 4 | null>(null);
-  const [validityYear, setValidityYear] = useState<number>(new Date().getFullYear());
+  // Estado unificado para vigência (formato: "2025-Q1" ou "none")
+  const [selectedValidityQuarter, setSelectedValidityQuarter] = useState<string>('none');
 
   const currentYear = new Date().getFullYear();
   const months = [
@@ -224,59 +225,35 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
 
               <div className="space-y-2">
                 <Label>Vigência</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <Select 
-                    value={validityQuarter?.toString() || 'none'} 
-                    onValueChange={(value) => {
-                      if (value === 'none') {
-                        setValidityQuarter(null);
-                        setFormData({ ...formData, start_month: '', end_month: '' });
-                        return;
-                      }
-                      const q = parseInt(value) as 1 | 2 | 3 | 4;
-                      setValidityQuarter(q);
-                      // Atualizar automaticamente start_month e end_month
-                      const { start_month, end_month } = quarterToMonths(q, validityYear);
-                      setFormData({ ...formData, start_month, end_month });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o Quarter" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sem vigência definida</SelectItem>
-                      <SelectItem value="1">Q1 (Jan - Mar)</SelectItem>
-                      <SelectItem value="2">Q2 (Abr - Jun)</SelectItem>
-                      <SelectItem value="3">Q3 (Jul - Set)</SelectItem>
-                      <SelectItem value="4">Q4 (Out - Dez)</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select 
-                    value={validityYear.toString()} 
-                    onValueChange={(value) => {
-                      const y = parseInt(value);
-                      setValidityYear(y);
-                      // Se já tem quarter selecionado, atualizar meses
-                      if (validityQuarter) {
-                        const { start_month, end_month } = quarterToMonths(validityQuarter, y);
-                        setFormData({ ...formData, start_month, end_month });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[...Array(6)].map((_, i) => {
-                        const year = currentYear - 1 + i;
-                        return <SelectItem key={year} value={year.toString()}>{year}</SelectItem>;
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Select 
+                  value={selectedValidityQuarter}
+                  onValueChange={(value) => {
+                    setSelectedValidityQuarter(value);
+                    if (value === 'none') {
+                      setFormData({ ...formData, start_month: '', end_month: '' });
+                      return;
+                    }
+                    // Extrair quarter e ano do value "2025-Q1"
+                    const [year, q] = value.split('-Q');
+                    const quarter = parseInt(q) as 1 | 2 | 3 | 4;
+                    const { start_month, end_month } = quarterToMonths(quarter, parseInt(year));
+                    setFormData({ ...formData, start_month, end_month });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a vigência" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem vigência definida</SelectItem>
+                    {quarterOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
-                  Selecione o quarter e o ano da vigência deste resultado-chave
+                  Selecione o quarter da vigência deste resultado-chave
                 </p>
               </div>
 
