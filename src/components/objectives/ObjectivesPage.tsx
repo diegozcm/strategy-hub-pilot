@@ -13,6 +13,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { useHealthMonitor } from '@/hooks/useHealthMonitor';
+import { useObjectivesData } from '@/hooks/useObjectivesData';
+import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
@@ -20,7 +22,6 @@ import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 import { KeyResult, StrategicObjective } from '@/types/strategic-map';
 import { ObjectiveDetailModal } from './ObjectiveDetailModal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { EditKeyResultModal } from '@/components/strategic-map/EditKeyResultModal';
 import { ActivePlanCard } from './ActivePlanCard';
 
@@ -51,6 +52,7 @@ export const ObjectivesPage: React.FC = () => {
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
     Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4
   );
+  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(new Date().getFullYear());
   
   const [isCreateObjectiveOpen, setIsCreateObjectiveOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -82,6 +84,7 @@ export const ObjectivesPage: React.FC = () => {
 
   // Health monitoring hooks
   const { logRenderCycle } = useHealthMonitor();
+  const { quarterOptions, monthOptions } = usePlanPeriodOptions();
   
   // Log render cycle for monitoring
   useEffect(() => {
@@ -245,26 +248,6 @@ export const ObjectivesPage: React.FC = () => {
   const getObjectiveKeyResults = (objectiveId: string) => {
     return keyResults.filter(kr => kr.objective_id === objectiveId);
   };
-
-  // Gerar lista de meses disponíveis (últimos 24 meses)
-  const monthOptions = React.useMemo(() => {
-    const options = [];
-    const now = new Date();
-    
-    for (let i = 0; i < 24; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      
-      options.push({
-        value: `${year}-${month.toString().padStart(2, '0')}`,
-        label: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-          .replace(/^\w/, c => c.toUpperCase())
-      });
-    }
-    
-    return options;
-  }, []);
 
   const calculateObjectiveProgress = (
     keyResults: any[], 
@@ -600,17 +583,22 @@ export const ObjectivesPage: React.FC = () => {
             
             {selectedPeriod === 'quarterly' && (
               <Select
-                value={selectedQuarter.toString()}
-                onValueChange={(value) => setSelectedQuarter(parseInt(value) as 1 | 2 | 3 | 4)}
+                value={`${selectedQuarterYear}-Q${selectedQuarter}`}
+                onValueChange={(value) => {
+                  const [year, q] = value.split('-Q');
+                  setSelectedQuarterYear(parseInt(year));
+                  setSelectedQuarter(parseInt(q) as 1 | 2 | 3 | 4);
+                }}
               >
-                <SelectTrigger className="h-9 w-[100px]">
+                <SelectTrigger className="h-9 w-[130px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Q1</SelectItem>
-                  <SelectItem value="2">Q2</SelectItem>
-                  <SelectItem value="3">Q3</SelectItem>
-                  <SelectItem value="4">Q4</SelectItem>
+                  {quarterOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             )}
