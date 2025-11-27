@@ -78,14 +78,14 @@ export const useObjectivesData = () => {
       return;
     }
 
-    // Se não houver plano ativo, limpar dados
+    // Se não houver plano ativo, limpar OEs e KRs mas manter planos visíveis
     if (!planLoading && !hasActivePlan) {
       setObjectives([]);
       setKeyResults([]);
       setPillars([]);
-      setPlans([]);
+      // NÃO limpar planos - usuário precisa ver para poder ativar
       setLoading(false);
-      return;
+      // Continua para carregar todos os planos
     }
 
     startOperation(operationId, 'Carregando dados dos objetivos');
@@ -101,13 +101,13 @@ export const useObjectivesData = () => {
     try {
       console.log('🔄 Loading objectives data for company:', authCompany?.id);
 
-      // Load all data in parallel with performance tracking - FILTER BY ACTIVE PLAN
+      // Load all data in parallel with performance tracking - Load ALL plans for management
       const [plansResponse, pillarsResponse] = await Promise.all([
         supabase
           .from('strategic_plans')
           .select('*')
           .eq('company_id', authCompany?.id)
-          .eq('status', 'active'),
+          .order('created_at', { ascending: false }),
         
         supabase
           .from('strategic_pillars')
