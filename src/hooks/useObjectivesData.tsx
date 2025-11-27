@@ -202,8 +202,10 @@ export const useObjectivesData = () => {
 
   // Auto-reload data when user or company changes
   useEffect(() => {
-    loadData();
-  }, [user?.id, authCompany?.id]);
+    if (!planLoading) {
+      loadData();
+    }
+  }, [user?.id, authCompany?.id, activePlan?.id, planLoading]);
 
   // Invalidate and reload data after mutations
   const invalidateAndReload = useCallback(async () => {

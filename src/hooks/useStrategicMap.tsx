@@ -35,8 +35,8 @@ export const useStrategicMap = () => {
 
       if (data) {
         setCompany(data);
-        await loadStrategicPlan(data.id);
-        await loadPillars(data.id);
+        const plan = await loadStrategicPlan(data.id);
+        await loadPillars(data.id, plan);
         await loadProjects(data.id);
       } else {
         setCompany(null);
@@ -58,16 +58,19 @@ export const useStrategicMap = () => {
 
       if (error) {
         console.error('Error loading strategic plan:', error);
-        return;
+        return null;
       }
 
       if (data) {
         setStrategicPlan(data);
+        return data;
       } else {
         setStrategicPlan(null);
+        return null;
       }
     } catch (error) {
       console.error('Error loading strategic plan:', error);
+      return null;
     }
   };
 
@@ -109,7 +112,7 @@ export const useStrategicMap = () => {
   };
 
   // Load pillars
-  const loadPillars = async (companyId: string) => {
+  const loadPillars = async (companyId: string, plan?: any) => {
     try {
       const { data, error } = await supabase
         .from('strategic_pillars')
@@ -126,7 +129,7 @@ export const useStrategicMap = () => {
       
       // Load objectives for each pillar
       if (data && data.length > 0) {
-        await loadObjectives(data.map(p => p.id));
+        await loadObjectives(data.map(p => p.id), plan);
       }
     } catch (error) {
       console.error('Error loading pillars:', error);
@@ -134,8 +137,9 @@ export const useStrategicMap = () => {
   };
 
   // Load objectives - FILTER BY ACTIVE PLAN
-  const loadObjectives = async (pillarIds: string[]) => {
-    if (!strategicPlan?.id) {
+  const loadObjectives = async (pillarIds: string[], plan?: any) => {
+    const currentPlan = plan || strategicPlan;
+    if (!currentPlan?.id) {
       setObjectives([]);
       return;
     }
@@ -145,7 +149,7 @@ export const useStrategicMap = () => {
         .from('strategic_objectives')
         .select('*')
         .in('pillar_id', pillarIds)
-        .eq('plan_id', strategicPlan.id);
+        .eq('plan_id', currentPlan.id);
 
       if (error) {
         console.error('Error loading objectives:', error);
@@ -420,8 +424,10 @@ export const useStrategicMap = () => {
     
     console.log('🔄 [StrategicMap] Soft refresh started - background data reload');
     try {
+      // Reload strategic plan first to ensure we have the active one
+      const plan = await loadStrategicPlan(company.id);
       // Reload pillars (which cascades to objectives and key results)
-      await loadPillars(company.id);
+      await loadPillars(company.id, plan);
       // Reload projects if needed
       await loadProjects(company.id);
       console.log('✅ [StrategicMap] Soft refresh completed successfully');
