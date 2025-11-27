@@ -597,6 +597,24 @@ export const ObjectivesPage: React.FC = () => {
               <Calendar className="w-4 h-4" />
               Quarter
             </Button>
+            
+            {selectedPeriod === 'quarterly' && (
+              <Select
+                value={selectedQuarter.toString()}
+                onValueChange={(value) => setSelectedQuarter(parseInt(value) as 1 | 2 | 3 | 4)}
+              >
+                <SelectTrigger className="h-9 w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Q1</SelectItem>
+                  <SelectItem value="2">Q2</SelectItem>
+                  <SelectItem value="3">Q3</SelectItem>
+                  <SelectItem value="4">Q4</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+            
             <Button
               variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
               size="sm"
@@ -606,49 +624,30 @@ export const ObjectivesPage: React.FC = () => {
               <CalendarDays className="w-4 h-4" />
               Mês
             </Button>
+            
+            {selectedPeriod === 'monthly' && (
+              <Select
+                value={`${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`}
+                onValueChange={(value) => {
+                  const [year, month] = value.split('-');
+                  setSelectedYear(parseInt(year));
+                  setSelectedMonth(parseInt(month));
+                }}
+              >
+                <SelectTrigger className="h-9 w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {monthOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
-
-          {selectedPeriod === 'quarterly' && (
-            <Select
-              value={selectedQuarter.toString()}
-              onValueChange={(value) => setSelectedQuarter(parseInt(value) as 1 | 2 | 3 | 4)}
-            >
-              <SelectTrigger className="h-9 w-[100px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">Q1</SelectItem>
-                <SelectItem value="2">Q2</SelectItem>
-                <SelectItem value="3">Q3</SelectItem>
-                <SelectItem value="4">Q4</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-
-          {selectedPeriod === 'monthly' && (
-            <Select
-              value={`${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`}
-              onValueChange={(value) => {
-                const [year, month] = value.split('-');
-                setSelectedYear(parseInt(year));
-                setSelectedMonth(parseInt(month));
-              }}
-            >
-              <SelectTrigger className="h-9 w-[180px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {monthOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
         </div>
-
-        {/* Objectives Section */}
         <div className="space-y-4">
           {/* Filters and Search */}
           <div className="flex flex-col sm:flex-row gap-4 justify-between">
