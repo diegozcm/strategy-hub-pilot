@@ -472,7 +472,7 @@ export const IndicatorsPage: React.FC = () => {
     const map = new Map();
     keyResults.forEach(kr => {
       // Para monthly com mês customizado, precisamos recalcular
-      const monthKey = selectedMonth.toString();
+      const monthKey = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
       const target = kr.monthly_targets?.[monthKey] ?? 0;
       const actual = kr.monthly_actual?.[monthKey] ?? 0;
       
