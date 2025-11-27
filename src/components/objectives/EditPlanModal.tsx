@@ -108,24 +108,6 @@ export const EditPlanModal: React.FC<EditPlanModalProps> = ({
             />
           </div>
           
-          <div className="grid gap-2">
-            <Label htmlFor="status">Status</Label>
-            <Select
-              value={formData.status}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Ativo</SelectItem>
-                <SelectItem value="draft">Rascunho</SelectItem>
-                <SelectItem value="completed">Concluído</SelectItem>
-                <SelectItem value="paused">Pausado</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="period_start">Data de Início *</Label>
