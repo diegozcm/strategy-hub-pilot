@@ -28,6 +28,7 @@ import { useKRMetrics } from '@/hooks/useKRMetrics';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 
 // Converte quarter + ano para start_month e end_month
 const quarterToMonths = (quarter: 1 | 2 | 3 | 4, year: number): { start_month: string; end_month: string } => {
@@ -92,6 +93,8 @@ export const IndicatorsPage: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4);
   const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(new Date().getFullYear());
+  
+  const { quarterOptions, monthOptions } = usePlanPeriodOptions();
   
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -432,26 +435,6 @@ export const IndicatorsPage: React.FC = () => {
     return map;
   }, [keyResults, selectedPeriod, selectedMonth, selectedYear, krMetricsMap]);
 
-  // Gerar lista de meses disponíveis (últimos 24 meses)
-  const monthOptions = useMemo(() => {
-    const options = [];
-    const now = new Date();
-    
-    for (let i = 0; i < 24; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      
-      options.push({
-        value: `${year}-${month.toString().padStart(2, '0')}`,
-        label: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-          .replace(/^\w/, c => c.toUpperCase())
-      });
-    }
-    
-    return options;
-  }, []);
-
   const getMetricsByPeriod = (keyResultId: string) => {
     const metrics = customMetricsMap.get(keyResultId);
     if (!metrics) return { target: 0, actual: 0, percentage: 0 };
@@ -713,39 +696,25 @@ export const IndicatorsPage: React.FC = () => {
             </Button>
 
             {selectedPeriod === 'quarterly' && (
-              <>
-                <Select
-                  value={selectedQuarter.toString()}
-                  onValueChange={(value) => setSelectedQuarter(parseInt(value) as 1 | 2 | 3 | 4)}
-                >
-                  <SelectTrigger className="h-9 w-[100px] gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Q1</SelectItem>
-                    <SelectItem value="2">Q2</SelectItem>
-                    <SelectItem value="3">Q3</SelectItem>
-                    <SelectItem value="4">Q4</SelectItem>
-                  </SelectContent>
-                </Select>
-                
-                <Select
-                  value={selectedQuarterYear.toString()}
-                  onValueChange={(value) => setSelectedQuarterYear(parseInt(value))}
-                >
-                  <SelectTrigger className="h-9 w-[100px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((year) => (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </>
+              <Select
+                value={`${selectedQuarterYear}-Q${selectedQuarter}`}
+                onValueChange={(value) => {
+                  const [year, q] = value.split('-Q');
+                  setSelectedQuarterYear(parseInt(year));
+                  setSelectedQuarter(parseInt(q) as 1 | 2 | 3 | 4);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[130px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {quarterOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
             
             <Button

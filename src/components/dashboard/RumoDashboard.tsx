@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { useRumoCalculations, PeriodType, getPerformanceColor, getPerformanceStyles } from '@/hooks/useRumoCalculations';
+import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { RumoPillarBlock } from './RumoPillarBlock';
 import { RumoObjectiveBlock } from './RumoObjectiveBlock';
 import { RumoLegend } from './RumoLegend';
@@ -22,8 +23,10 @@ export const RumoDashboard = () => {
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
     Math.ceil((now.getMonth() + 1) / 3) as 1 | 2 | 3 | 4
   );
+  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(new Date().getFullYear());
   
   const { pillars, objectives, keyResults, loading } = useStrategicMap();
+  const { quarterOptions, monthOptions } = usePlanPeriodOptions();
   
   // Processar dados para aninhar objetivos dentro dos pilares
   const pillarsWithObjectives = useMemo(() => {
@@ -33,25 +36,6 @@ export const RumoDashboard = () => {
     }));
   }, [pillars, objectives]);
   
-  // Gerar lista de meses disponíveis (últimos 24 meses)
-  const monthOptions = useMemo(() => {
-    const options = [];
-    const now = new Date();
-    
-    for (let i = 0; i < 24; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      
-      options.push({
-        value: `${year}-${month.toString().padStart(2, '0')}`,
-        label: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-          .replace(/^\w/, c => c.toUpperCase())
-      });
-    }
-    
-    return options;
-  }, []);
   
   const { 
     pillarProgress, 
@@ -151,18 +135,22 @@ export const RumoDashboard = () => {
 
           {periodType === 'quarterly' && (
             <Select
-              value={selectedQuarter.toString()}
-              onValueChange={(value) => setSelectedQuarter(parseInt(value) as 1 | 2 | 3 | 4)}
+              value={`${selectedQuarterYear}-Q${selectedQuarter}`}
+              onValueChange={(value) => {
+                const [year, q] = value.split('-Q');
+                setSelectedQuarterYear(parseInt(year));
+                setSelectedQuarter(parseInt(q) as 1 | 2 | 3 | 4);
+              }}
             >
-              <SelectTrigger className="h-9 w-[100px] gap-2">
-                <Calendar className="w-4 h-4" />
+              <SelectTrigger className="h-9 w-[130px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">Q1</SelectItem>
-                <SelectItem value="2">Q2</SelectItem>
-                <SelectItem value="3">Q3</SelectItem>
-                <SelectItem value="4">Q4</SelectItem>
+                {quarterOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           )}
