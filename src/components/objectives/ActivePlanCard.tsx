@@ -53,51 +53,27 @@ export const ActivePlanCard: React.FC<ActivePlanCardProps> = ({ plan, objectives
 
   return (
     <Card>
-      <CardHeader>
+      <CardContent className="py-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Target className="h-5 w-5 text-primary" />
-            Plano Estratégico Ativo
-          </CardTitle>
-          <Badge variant="default">Ativo</Badge>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div>
-            <h3 className="font-semibold text-lg mb-2">{plan.name}</h3>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <span>
-                {format(new Date(plan.period_start), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })} 
-                {' - '}
-                {format(new Date(plan.period_end), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-              </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-base">Plano Estratégico Ativo</span>
+                <Badge variant="default" className="text-xs">Ativo</Badge>
+              </div>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                <span className="font-medium">{plan.name}</span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {format(new Date(plan.period_start), "dd/MM/yyyy")} - {format(new Date(plan.period_end), "dd/MM/yyyy")}
+                </span>
+              </div>
             </div>
           </div>
-
-          {(plan.vision || plan.mission) && (
-            <div className="grid gap-3">
-              {plan.vision && (
-                <div>
-                  <p className="text-sm font-medium mb-1">Visão</p>
-                  <p className="text-sm text-muted-foreground">{plan.vision}</p>
-                </div>
-              )}
-              {plan.mission && (
-                <div>
-                  <p className="text-sm font-medium mb-1">Missão</p>
-                  <p className="text-sm text-muted-foreground">{plan.mission}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="pt-3 border-t">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Objetivos vinculados</span>
-              <span className="font-semibold">{objectivesCount}</span>
-            </div>
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground">Objetivos vinculados</p>
+            <p className="text-2xl font-semibold">{objectivesCount}</p>
           </div>
         </div>
       </CardContent>
