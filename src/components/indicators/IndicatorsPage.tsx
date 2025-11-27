@@ -714,9 +714,17 @@ export const IndicatorsPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Resultados-Chave</h1>
-          <p className="text-muted-foreground mt-2">
-            Acompanhe resultados-chave e métricas estratégicas em tempo real
-          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <p className="text-muted-foreground">
+              Acompanhe resultados-chave e métricas estratégicas em tempo real
+            </p>
+            {validityEnabled && (
+              <Badge variant="secondary" className="gap-1">
+                <Calendar className="w-3 h-3" />
+                Vigência Ativa
+              </Badge>
+            )}
+          </div>
         </div>
         
         {/* Right side: Only New KR Button */}
