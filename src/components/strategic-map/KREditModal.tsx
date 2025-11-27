@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getDirectionLabel, getDirectionDescription, type TargetDirection } from '@/lib/krHelpers';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useCompanyUsers } from '@/hooks/useCompanyUsers';
+import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { cn } from '@/lib/utils';
 
 // Função para verificar se um mês está dentro da vigência
@@ -79,6 +80,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
   const { toast } = useToast();
   const { company } = useAuth();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
+  const { quarterOptions } = usePlanPeriodOptions();
   const [savingAggregationType, setSavingAggregationType] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -103,9 +105,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
   
-  // Estados para vigência (Quarter + Ano)
-  const [validityQuarter, setValidityQuarter] = useState<1 | 2 | 3 | 4 | null>(null);
-  const [validityYear, setValidityYear] = useState<number>(new Date().getFullYear());
+  // Estado unificado para vigência (formato: "2025-Q1" ou "none")
+  const [selectedValidityQuarter, setSelectedValidityQuarter] = useState<string>('none');
 
   const currentYear = new Date().getFullYear();
   const months = [
@@ -252,16 +253,16 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
       
       setAggregationType(keyResult.aggregation_type || 'sum');
       
-      // Inicializar validityQuarter e validityYear a partir do start_month
+      // Inicializar selectedValidityQuarter a partir do start_month
       if (keyResult.start_month) {
         const parsed = monthsToQuarter(keyResult.start_month);
         if (parsed) {
-          setValidityQuarter(parsed.quarter);
-          setValidityYear(parsed.year);
+          setSelectedValidityQuarter(`${parsed.year}-Q${parsed.quarter}`);
+        } else {
+          setSelectedValidityQuarter('none');
         }
       } else {
-        setValidityQuarter(null);
-        setValidityYear(new Date().getFullYear());
+        setSelectedValidityQuarter('none');
       }
       
       setErrors({}); // Clear errors when opening modal
@@ -503,58 +504,35 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
 
               <div className="space-y-2">
                 <Label>Vigência</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <Select 
-                    value={validityQuarter?.toString() || 'none'} 
-                    onValueChange={(value) => {
-                      if (value === 'none') {
-                        setValidityQuarter(null);
-                        setBasicInfo({ ...basicInfo, start_month: '', end_month: '' });
-                        return;
-                      }
-                      const q = parseInt(value) as 1 | 2 | 3 | 4;
-                      setValidityQuarter(q);
-                      // Atualizar automaticamente start_month e end_month
-                      const { start_month, end_month } = quarterToMonths(q, validityYear);
-                      setBasicInfo({ ...basicInfo, start_month, end_month });
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o Quarter" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Sem vigência definida</SelectItem>
-                      <SelectItem value="1">Q1 (Jan - Mar)</SelectItem>
-                      <SelectItem value="2">Q2 (Abr - Jun)</SelectItem>
-                      <SelectItem value="3">Q3 (Jul - Set)</SelectItem>
-                      <SelectItem value="4">Q4 (Out - Dez)</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select 
-                    value={validityYear.toString()} 
-                    onValueChange={(value) => {
-                      const y = parseInt(value);
-                      setValidityYear(y);
-                      // Se já tem quarter selecionado, atualizar meses
-                      if (validityQuarter) {
-                        const { start_month, end_month } = quarterToMonths(validityQuarter, y);
-                        setBasicInfo({ ...basicInfo, start_month, end_month });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {yearOptions.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Select 
+                  value={selectedValidityQuarter}
+                  onValueChange={(value) => {
+                    setSelectedValidityQuarter(value);
+                    if (value === 'none') {
+                      setBasicInfo({ ...basicInfo, start_month: '', end_month: '' });
+                      return;
+                    }
+                    // Extrair quarter e ano do value "2025-Q1"
+                    const [year, q] = value.split('-Q');
+                    const quarter = parseInt(q) as 1 | 2 | 3 | 4;
+                    const { start_month, end_month } = quarterToMonths(quarter, parseInt(year));
+                    setBasicInfo({ ...basicInfo, start_month, end_month });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a vigência" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem vigência definida</SelectItem>
+                    {quarterOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">
-                  Selecione o quarter e o ano da vigência deste resultado-chave
+                  Selecione o quarter da vigência deste resultado-chave
                 </p>
               </div>
 
