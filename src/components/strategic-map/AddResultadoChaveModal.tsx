@@ -30,6 +30,21 @@ const formatValidityPeriod = (startMonth?: string, endMonth?: string): string | 
   return `${formatMonth(startMonth)} até ${formatMonth(endMonth)}`;
 };
 
+// Converte quarter + ano para start_month e end_month
+const quarterToMonths = (quarter: 1 | 2 | 3 | 4, year: number): { start_month: string; end_month: string } => {
+  const quarterRanges = {
+    1: { start: '01', end: '03' },
+    2: { start: '04', end: '06' },
+    3: { start: '07', end: '09' },
+    4: { start: '10', end: '12' }
+  };
+  const range = quarterRanges[quarter];
+  return {
+    start_month: `${year}-${range.start}`,
+    end_month: `${year}-${range.end}`
+  };
+};
+
 interface AddResultadoChaveModalProps {
   objectiveId: string;
   open: boolean;
@@ -60,6 +75,10 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
 
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
   const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
+  
+  // Estados para vigência (Quarter + Ano)
+  const [validityQuarter, setValidityQuarter] = useState<1 | 2 | 3 | 4 | null>(null);
+  const [validityYear, setValidityYear] = useState<number>(new Date().getFullYear());
 
   const currentYear = new Date().getFullYear();
   const months = [
@@ -203,42 +222,62 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                 </Select>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="start_month">Mês de Início</Label>
-                  <Input
-                    id="start_month"
-                    type="month"
-                    value={formData.start_month}
-                    onChange={(e) => {
-                      const newStartMonth = e.target.value;
-                      setFormData({
-                        ...formData, 
-                        start_month: newStartMonth,
-                        // Limpar mês de fim se for anterior ao novo início
-                        end_month: formData.end_month && formData.end_month < newStartMonth 
-                          ? '' 
-                          : formData.end_month
-                      });
+              <div className="space-y-2">
+                <Label>Vigência</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <Select 
+                    value={validityQuarter?.toString() || 'none'} 
+                    onValueChange={(value) => {
+                      if (value === 'none') {
+                        setValidityQuarter(null);
+                        setFormData({ ...formData, start_month: '', end_month: '' });
+                        return;
+                      }
+                      const q = parseInt(value) as 1 | 2 | 3 | 4;
+                      setValidityQuarter(q);
+                      // Atualizar automaticamente start_month e end_month
+                      const { start_month, end_month } = quarterToMonths(q, validityYear);
+                      setFormData({ ...formData, start_month, end_month });
                     }}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o Quarter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sem vigência definida</SelectItem>
+                      <SelectItem value="1">Q1 (Jan - Mar)</SelectItem>
+                      <SelectItem value="2">Q2 (Abr - Jun)</SelectItem>
+                      <SelectItem value="3">Q3 (Jul - Set)</SelectItem>
+                      <SelectItem value="4">Q4 (Out - Dez)</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select 
+                    value={validityYear.toString()} 
+                    onValueChange={(value) => {
+                      const y = parseInt(value);
+                      setValidityYear(y);
+                      // Se já tem quarter selecionado, atualizar meses
+                      if (validityQuarter) {
+                        const { start_month, end_month } = quarterToMonths(validityQuarter, y);
+                        setFormData({ ...formData, start_month, end_month });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[...Array(6)].map((_, i) => {
+                        const year = currentYear - 1 + i;
+                        return <SelectItem key={year} value={year.toString()}>{year}</SelectItem>;
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="end_month">Mês de Fim</Label>
-                  <Input
-                    id="end_month"
-                    type="month"
-                    value={formData.end_month}
-                    min={formData.start_month || undefined}
-                    onChange={(e) => setFormData({...formData, end_month: e.target.value})}
-                  />
-                  {formData.start_month && !formData.end_month && (
-                    <p className="text-xs text-muted-foreground">
-                      Selecione um mês igual ou posterior a {formData.start_month}
-                    </p>
-                  )}
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Selecione o quarter e o ano da vigência deste resultado-chave
+                </p>
               </div>
 
               <div className="space-y-2">
