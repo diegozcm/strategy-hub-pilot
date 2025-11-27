@@ -49,7 +49,7 @@ export const usePlanPeriodOptions = () => {
       currentDate.setMonth(currentDate.getMonth() + 1);
     }
     
-    return options;
+    return options.reverse(); // Ordem decrescente - mais recente primeiro
   }, [activePlan]);
 
   const monthOptions = useMemo<MonthOption[]>(() => {
@@ -77,7 +77,7 @@ export const usePlanPeriodOptions = () => {
       currentDate.setMonth(currentDate.getMonth() + 1);
     }
     
-    return options;
+    return options.reverse(); // Ordem decrescente - mais recente primeiro
   }, [activePlan]);
 
   return { quarterOptions, monthOptions };
