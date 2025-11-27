@@ -818,7 +818,23 @@ export const ObjectivesPage: React.FC = () => {
           onUpdate={handleUpdateObjective}
           onDelete={handleDeleteObjective}
           keyResults={selectedObjective ? getObjectiveKeyResults(selectedObjective.id) : []}
+          pillar={selectedObjective ? pillars.find(p => p.id === selectedObjective.pillar_id) || null : null}
+          plan={selectedObjective ? plans.find(p => p.id === selectedObjective.plan_id) || null : null}
+          onOpenKeyResultDetails={handleOpenKeyResultDetails}
           pillars={pillars}
+          progressPercentage={selectedObjective ? calculateObjectiveProgress(
+            getObjectiveKeyResults(selectedObjective.id),
+            selectedPeriod,
+            selectedPeriod === 'monthly' 
+              ? { selectedMonth, selectedYear } 
+              : selectedPeriod === 'quarterly'
+              ? { selectedQuarter }
+              : undefined
+          ) : 0}
+          selectedPeriod={selectedPeriod}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          selectedQuarter={selectedQuarter}
         />
 
         {/* Edit Key Result Modal */}
