@@ -156,7 +156,7 @@ export const ObjectivesPage: React.FC = () => {
         .insert([{
           ...planForm,
           company_id: authCompany.id,
-          status: 'draft'
+          status: 'inactive'
         }])
         .select()
         .single();
@@ -171,7 +171,7 @@ export const ObjectivesPage: React.FC = () => {
       
       toast({
         title: "Sucesso",
-        description: "Plano estratégico criado como rascunho. Ative-o para começar a usar.",
+        description: "Plano estratégico criado como inativo. Ative-o para começar a usar.",
       });
 
       // Reload data to ensure consistency
@@ -196,7 +196,7 @@ export const ObjectivesPage: React.FC = () => {
       // 1. Desativar todos os planos da empresa
       await supabase
         .from('strategic_plans')
-        .update({ status: 'draft' })
+        .update({ status: 'inactive' })
         .eq('company_id', authCompany.id);
       
       // 2. Ativar apenas o plano selecionado
