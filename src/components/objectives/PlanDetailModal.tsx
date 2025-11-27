@@ -32,33 +32,17 @@ export const PlanDetailModal: React.FC<PlanDetailModalProps> = ({
   if (!plan) return null;
 
   const getStatusConfig = (status: string) => {
-    switch (status) {
-      case 'active':
-        return {
-          className: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300',
-          label: 'Ativo'
-        };
-      case 'draft':
-        return {
-          className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300',
-          label: 'Rascunho'
-        };
-      case 'completed':
-        return {
-          className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300',
-          label: 'Concluído'
-        };
-      case 'paused':
-        return {
-          className: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300',
-          label: 'Pausado'
-        };
-      default:
-        return {
-          className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300',
-          label: status
-        };
+    if (status === 'active') {
+      return {
+        className: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300',
+        label: 'Ativo'
+      };
     }
+    // Todos os outros status são "Inativo"
+    return {
+      className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300',
+      label: 'Inativo'
+    };
   };
 
   const statusConfig = getStatusConfig(plan.status);
