@@ -36,6 +36,8 @@ export const useActivePlan = () => {
           .select('*')
           .eq('company_id', company.id)
           .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
           .maybeSingle();
 
         if (error) {

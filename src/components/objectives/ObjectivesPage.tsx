@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X, Trash2, Layout, MoreVertical, Calendar, CalendarDays } from 'lucide-react';
+import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X, Trash2, Layout, MoreVertical, Calendar, CalendarDays, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -88,9 +88,11 @@ export const ObjectivesPage: React.FC = () => {
   const [selectedPlanForDetail, setSelectedPlanForDetail] = useState<StrategicPlan | null>(null);
   const [selectedPlanForEdit, setSelectedPlanForEdit] = useState<StrategicPlan | null>(null);
   const [selectedPlanForDelete, setSelectedPlanForDelete] = useState<StrategicPlan | null>(null);
+  const [selectedPlanForActivate, setSelectedPlanForActivate] = useState<StrategicPlan | null>(null);
   const [isPlanDetailOpen, setIsPlanDetailOpen] = useState(false);
   const [isPlanEditOpen, setIsPlanEditOpen] = useState(false);
   const [isPlanDeleteOpen, setIsPlanDeleteOpen] = useState(false);
+  const [isPlanActivateConfirmOpen, setIsPlanActivateConfirmOpen] = useState(false);
 
   // Key Result modal states
   const [selectedKeyResultForEdit, setSelectedKeyResultForEdit] = useState<KeyResult | null>(null);
@@ -154,7 +156,7 @@ export const ObjectivesPage: React.FC = () => {
         .insert([{
           ...planForm,
           company_id: authCompany.id,
-          status: 'active'
+          status: 'draft'
         }])
         .select()
         .single();
@@ -169,7 +171,7 @@ export const ObjectivesPage: React.FC = () => {
       
       toast({
         title: "Sucesso",
-        description: "Plano estratégico criado com sucesso!",
+        description: "Plano estratégico criado como rascunho. Ative-o para começar a usar.",
       });
 
       // Reload data to ensure consistency
@@ -179,6 +181,43 @@ export const ObjectivesPage: React.FC = () => {
       handleError(error, 'criar plano estratégico');
       // Revert optimistic update if needed
       await refreshData();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const activatePlan = async () => {
+    if (!selectedPlanForActivate || !authCompany || isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      console.log('🔄 Activating plan:', selectedPlanForActivate.id);
+      
+      // 1. Desativar todos os planos da empresa
+      await supabase
+        .from('strategic_plans')
+        .update({ status: 'draft' })
+        .eq('company_id', authCompany.id);
+      
+      // 2. Ativar apenas o plano selecionado
+      const { error } = await supabase
+        .from('strategic_plans')
+        .update({ status: 'active' })
+        .eq('id', selectedPlanForActivate.id);
+      
+      if (error) throw error;
+      
+      toast({ 
+        title: "Sucesso", 
+        description: "Plano ativado com sucesso! Agora os OEs e KRs deste plano serão exibidos." 
+      });
+      
+      setIsPlanActivateConfirmOpen(false);
+      setSelectedPlanForActivate(null);
+      await invalidateAndReload();
+      console.log('✅ Plan activated successfully');
+    } catch (error) {
+      handleError(error, 'ativar plano');
     } finally {
       setIsSubmitting(false);
     }
@@ -632,6 +671,11 @@ export const ObjectivesPage: React.FC = () => {
     setIsPlanDeleteOpen(true);
   };
 
+  const handlePlanActivate = (plan: StrategicPlan) => {
+    setSelectedPlanForActivate(plan);
+    setIsPlanActivateConfirmOpen(true);
+  };
+
   const getObjectivesCountForPlan = (planId: string) => {
     return objectives.filter(obj => obj.plan_id === planId).length;
   };
@@ -1083,6 +1127,12 @@ export const ObjectivesPage: React.FC = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
+                                {plan.status !== 'active' && (
+                                  <DropdownMenuItem onClick={() => handlePlanActivate(plan)}>
+                                    <Play className="h-4 w-4 mr-2" />
+                                    Ativar
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem onClick={() => handlePlanView(plan)}>
                                   <Eye className="h-4 w-4 mr-2" />
                                   Ver Detalhes
@@ -1373,6 +1423,30 @@ export const ObjectivesPage: React.FC = () => {
           onDelete={deletePlan}
           objectivesCount={selectedPlanForDelete ? getObjectivesCountForPlan(selectedPlanForDelete.id) : 0}
         />
+
+        {/* Activate Plan Confirmation Modal */}
+        <AlertDialog open={isPlanActivateConfirmOpen} onOpenChange={setIsPlanActivateConfirmOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Ativar Plano Estratégico</AlertDialogTitle>
+              <AlertDialogDescription>
+                Ao ativar o plano "{selectedPlanForActivate?.name}", todos os outros planos da empresa serão desativados.
+                {' '}Os Objetivos Estratégicos (OEs) e Resultados-Chave (KRs) do novo plano ativo serão exibidos em todas as telas.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setIsPlanActivateConfirmOpen(false);
+                setSelectedPlanForActivate(null);
+              }}>
+                Cancelar
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={activatePlan} disabled={isSubmitting}>
+                {isSubmitting ? 'Ativando...' : 'Ativar Plano'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Edit Key Result Modal */}
         {selectedKeyResultForEdit && (
