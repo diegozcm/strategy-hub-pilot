@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { KeyResult, StrategicObjective, StrategicPillar } from '@/types/strategic-map';
 import { useHealthMonitor } from './useHealthMonitor';
 import { useOperationState } from './useOperationState';
+import { useActivePlan } from './useActivePlan';
 
 interface StrategicPlan {
   id: string;
@@ -20,6 +21,7 @@ interface StrategicPlan {
 
 export const useObjectivesData = () => {
   const { user, company: authCompany } = useAuth();
+  const { activePlan, loading: planLoading, hasActivePlan } = useActivePlan();
   const { toast } = useToast();
   const { logPerformance, logRenderCycle } = useHealthMonitor();
   const { 
@@ -76,6 +78,16 @@ export const useObjectivesData = () => {
       return;
     }
 
+    // Se não houver plano ativo, limpar dados
+    if (!planLoading && !hasActivePlan) {
+      setObjectives([]);
+      setKeyResults([]);
+      setPillars([]);
+      setPlans([]);
+      setLoading(false);
+      return;
+    }
+
     startOperation(operationId, 'Carregando dados dos objetivos');
 
     // Only show loading on initial load or force reload
@@ -89,13 +101,13 @@ export const useObjectivesData = () => {
     try {
       console.log('🔄 Loading objectives data for company:', authCompany?.id);
 
-      // Load all data in parallel with performance tracking
+      // Load all data in parallel with performance tracking - FILTER BY ACTIVE PLAN
       const [plansResponse, pillarsResponse] = await Promise.all([
         supabase
           .from('strategic_plans')
           .select('*')
           .eq('company_id', authCompany?.id)
-          .order('created_at', { ascending: false }),
+          .eq('status', 'active'),
         
         supabase
           .from('strategic_pillars')
@@ -117,15 +129,14 @@ export const useObjectivesData = () => {
       setPlans(loadedPlans);
       setPillars(loadedPillars);
 
-      // Load objectives if we have plans
-      if (loadedPlans.length > 0) {
-        const planIds = loadedPlans.map(p => p.id);
+      // Load objectives if we have active plan
+      if (activePlan && loadedPlans.length > 0) {
         const objectivesStartTime = Date.now();
         
         const objectivesResponse = await supabase
           .from('strategic_objectives')
           .select('*')
-          .in('plan_id', planIds)
+          .eq('plan_id', activePlan.id)
           .order('created_at', { ascending: false });
 
         logPerformance('Load objectives', objectivesStartTime);
@@ -173,7 +184,8 @@ export const useObjectivesData = () => {
       setLoading(false);
     }
   }, [
-    user?.id, authCompany?.id, handleError, objectives.length,
+    user?.id, authCompany?.id, activePlan, hasActivePlan, planLoading,
+    handleError, objectives.length,
     startOperation, completeOperation, failOperation,
     logPerformance, logRenderCycle
   ]);
@@ -205,8 +217,12 @@ export const useObjectivesData = () => {
     plans,
     pillars,
     keyResults,
-    loading: loading || isAnyLoading(),
+    loading: loading || isAnyLoading() || planLoading,
     error,
+    
+    // Active plan info
+    activePlan,
+    hasActivePlan,
     
     // Setters for optimistic updates
     setObjectives,

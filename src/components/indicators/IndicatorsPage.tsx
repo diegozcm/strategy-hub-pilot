@@ -26,6 +26,8 @@ import { useSearchParams } from 'react-router-dom';
 import { KRCard } from './KRCard';
 import { useKRMetrics } from '@/hooks/useKRMetrics';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
+import { useObjectivesData } from '@/hooks/useObjectivesData';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 // Converte quarter + ano para start_month e end_month
 const quarterToMonths = (quarter: 1 | 2 | 3 | 4, year: number): { start_month: string; end_month: string } => {
@@ -58,6 +60,17 @@ export const IndicatorsPage: React.FC = () => {
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(authCompany?.id);
   const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Use objetivos data hook que já filtra por plano ativo
+  const { 
+    objectives: objectivesData, 
+    pillars: pillarsData, 
+    keyResults: keyResultsData, 
+    loading: dataLoading,
+    hasActivePlan,
+    activePlan,
+    refreshData
+  } = useObjectivesData();
   
   // State management
   const [keyResults, setKeyResults] = useState<KeyResult[]>([]);
@@ -118,106 +131,13 @@ export const IndicatorsPage: React.FC = () => {
     return map;
   }, [pillars]);
 
-  // Load data
-  const loadData = async () => {
-    if (!authCompany?.id) return;
-
-    try {
-      // Only show loading spinner if we don't have any data yet (initial load)
-      if (keyResults.length === 0) {
-        setLoading(true);
-      }
-      
-      // Load strategic plans and objectives
-      const { data: plansData, error: plansError } = await supabase
-        .from('strategic_plans')
-        .select('*')
-        .eq('company_id', authCompany.id);
-
-      if (plansError) throw plansError;
-
-      if (plansData && plansData.length > 0) {
-        const planIds = plansData.map(plan => plan.id);
-        
-        const { data: objectivesData, error: objectivesError } = await supabase
-          .from('strategic_objectives')
-          .select('*')
-          .in('plan_id', planIds);
-
-        if (objectivesError) throw objectivesError;
-        setObjectives(objectivesData || []);
-
-        // Load strategic pillars
-        const { data: pillarsData, error: pillarsError } = await supabase
-          .from('strategic_pillars')
-          .select('*')
-          .eq('company_id', authCompany.id)
-          .order('order_index');
-
-        if (pillarsError) throw pillarsError;
-        setPillars(pillarsData || []);
-      }
-
-      // Load key results - filter by company through strategic objectives and plans
-      const { data: keyResultsData, error: keyResultsError } = await supabase
-        .from('key_results')
-        .select(`
-          *,
-          strategic_objectives!inner (
-            id,
-            plan_id,
-            strategic_plans!inner (
-              id,
-              company_id
-            )
-          )
-        `)
-        .eq('strategic_objectives.strategic_plans.company_id', authCompany.id)
-        .order('created_at', { ascending: false });
-
-      if (keyResultsError) throw keyResultsError;
-      
-      // Cast aggregation_type to the correct union type
-      const processedKeyResults = (keyResultsData || []).map(kr => ({
-        ...kr,
-        aggregation_type: (kr.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum',
-        target_direction: (kr.target_direction as 'maximize' | 'minimize') || 'maximize'
-      }));
-      
-      setKeyResults(processedKeyResults);
-
-      // Load key result values
-      if (keyResultsData && keyResultsData.length > 0) {
-        const keyResultIds = keyResultsData.map(kr => kr.id);
-        
-        const { data: valuesData, error: valuesError } = await supabase
-          .from('key_result_values')
-          .select('*')
-          .in('key_result_id', keyResultIds)
-          .order('created_at', { ascending: false });
-
-        if (valuesError) throw valuesError;
-        setKeyResultValues(valuesData || []);
-      }
-
-    } catch (error) {
-      console.error('Error loading data:', error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar dados. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
+  // Sincronizar dados do hook com state local
   useEffect(() => {
-    if (user?.id && authCompany?.id) {
-      loadData();
-    }
-  }, [user?.id, authCompany?.id]);
+    setObjectives(objectivesData);
+    setPillars(pillarsData);
+    setKeyResults(keyResultsData);
+    setLoading(dataLoading);
+  }, [objectivesData, pillarsData, keyResultsData, dataLoading]);
 
   // Handle URL parameters for opening modals
   useEffect(() => {
@@ -706,6 +626,30 @@ export const IndicatorsPage: React.FC = () => {
   // Block access if no company is associated
   if (!authCompany) {
     return <NoCompanyMessage />;
+  }
+
+  // Show message if no active plan
+  if (!hasActivePlan) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <Card className="p-8 max-w-md">
+          <div className="text-center space-y-4">
+            <div className="flex justify-center">
+              <Calendar className="w-16 h-16 text-muted-foreground" />
+            </div>
+            <h2 className="text-2xl font-bold">Nenhum Plano Ativo</h2>
+            <p className="text-muted-foreground">
+              Não há um plano estratégico ativo no momento. Configure um plano estratégico ativo para visualizar os resultados-chave.
+            </p>
+            {activePlan && (
+              <p className="text-sm text-muted-foreground">
+                Plano atual: {activePlan.name} ({activePlan.status})
+              </p>
+            )}
+          </div>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -1218,7 +1162,7 @@ export const IndicatorsPage: React.FC = () => {
             setIsDeleteConfirmOpen(true);
           }}
           onSave={async () => {
-            await loadData();
+            await refreshData();
           }}
           objectives={objectives.map(obj => ({ id: obj.id, title: obj.title }))}
         />
