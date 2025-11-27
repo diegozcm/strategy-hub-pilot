@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X, Trash2, Layout, MoreVertical, Calendar, CalendarDays, Play } from 'lucide-react';
+import { Plus, Search, Filter, Target, TrendingUp, Clock, AlertTriangle, Edit, Eye, Save, X, Trash2, Layout, MoreVertical, Calendar, CalendarDays, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -218,6 +218,34 @@ export const ObjectivesPage: React.FC = () => {
       console.log('✅ Plan activated successfully');
     } catch (error) {
       handleError(error, 'ativar plano');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePlanDeactivate = async (plan: StrategicPlan) => {
+    if (!authCompany || isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      console.log('🔄 Deactivating plan:', plan.id);
+      
+      const { error } = await supabase
+        .from('strategic_plans')
+        .update({ status: 'inactive' })
+        .eq('id', plan.id);
+      
+      if (error) throw error;
+      
+      toast({ 
+        title: "Plano inativado", 
+        description: "O plano foi inativado. Nenhum plano está ativo agora." 
+      });
+      
+      await invalidateAndReload();
+      console.log('✅ Plan deactivated successfully');
+    } catch (error) {
+      handleError(error, 'inativar plano');
     } finally {
       setIsSubmitting(false);
     }
@@ -1058,33 +1086,17 @@ export const ObjectivesPage: React.FC = () => {
                   <TableBody>
                     {plans.map((plan) => {
                       const getStatusConfig = (status: string) => {
-                        switch (status) {
-                          case 'active':
-                            return {
-                              className: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300',
-                              label: 'Ativo'
-                            };
-                          case 'draft':
-                            return {
-                              className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300',
-                              label: 'Rascunho'
-                            };
-                          case 'completed':
-                            return {
-                              className: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300',
-                              label: 'Concluído'
-                            };
-                          case 'paused':
-                            return {
-                              className: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300',
-                              label: 'Pausado'
-                            };
-                          default:
-                            return {
-                              className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300',
-                              label: status
-                            };
+                        if (status === 'active') {
+                          return {
+                            className: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300',
+                            label: 'Ativo'
+                          };
                         }
+                        // Todos os outros status são "Inativo"
+                        return {
+                          className: 'bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-300',
+                          label: 'Inativo'
+                        };
                       };
 
                       const statusConfig = getStatusConfig(plan.status);
@@ -1131,6 +1143,12 @@ export const ObjectivesPage: React.FC = () => {
                                   <DropdownMenuItem onClick={() => handlePlanActivate(plan)}>
                                     <Play className="h-4 w-4 mr-2" />
                                     Ativar
+                                  </DropdownMenuItem>
+                                )}
+                                {plan.status === 'active' && (
+                                  <DropdownMenuItem onClick={() => handlePlanDeactivate(plan)}>
+                                    <Pause className="h-4 w-4 mr-2" />
+                                    Inativar
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuItem onClick={() => handlePlanView(plan)}>
