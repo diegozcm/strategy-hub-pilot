@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, Edit, Eye, Trash2, Calendar, Target } from 'lucide-react';
+import { MoreVertical, Edit, Eye, Trash2, Calendar, Target, Play } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -23,6 +23,7 @@ interface PlanCardProps {
   onView: (plan: StrategicPlan) => void;
   onEdit: (plan: StrategicPlan) => void;
   onDelete: (plan: StrategicPlan) => void;
+  onActivate?: (plan: StrategicPlan) => void;
 }
 
 export const PlanCard: React.FC<PlanCardProps> = ({
@@ -30,7 +31,8 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   objectivesCount,
   onView,
   onEdit,
-  onDelete
+  onDelete,
+  onActivate
 }) => {
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -97,6 +99,12 @@ export const PlanCard: React.FC<PlanCardProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                {plan.status !== 'active' && onActivate && (
+                  <DropdownMenuItem onClick={() => onActivate(plan)}>
+                    <Play className="h-4 w-4 mr-2" />
+                    Ativar
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => onView(plan)}>
                   <Eye className="h-4 w-4 mr-2" />
                   Ver Detalhes
