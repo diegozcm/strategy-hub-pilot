@@ -596,8 +596,8 @@ export const IndicatorsPage: React.FC = () => {
     return kr.start_month <= quarterEnd && kr.end_month >= quarterStart;
   };
 
-  // Filter logic
-  const filteredKeyResults = keyResults.filter(keyResult => {
+  // Context filtered KRs (search, pillar, objective, quarter/validity - used for statistics)
+  const contextFilteredKeyResults = keyResults.filter(keyResult => {
     const matchesSearch = keyResult.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          keyResult.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPriority = priorityFilter === 'all' || priorityFilter === 'medium'; // Default to medium
@@ -612,6 +612,17 @@ export const IndicatorsPage: React.FC = () => {
       }
     }
     
+    // Check validity match (apenas quando vigência está ativa e quarter está selecionado)
+    let matchesValidity = true;
+    if (validityEnabled && selectedPeriod === 'quarterly') {
+      matchesValidity = isKRInQuarter(keyResult, selectedQuarter, selectedQuarterYear);
+    }
+    
+    return matchesSearch && matchesPriority && matchesObjective && matchesPillar && matchesValidity;
+  });
+
+  // Final filtered KRs (adds progress filter on top of context filters)
+  const filteredKeyResults = contextFilteredKeyResults.filter(keyResult => {
     // Check progress match
     let matchesProgress = progressFilter === 'all';
     if (!matchesProgress) {
@@ -628,13 +639,7 @@ export const IndicatorsPage: React.FC = () => {
       }
     }
     
-    // Check validity match (apenas quando vigência está ativa e quarter está selecionado)
-    let matchesValidity = true;
-    if (validityEnabled && selectedPeriod === 'quarterly') {
-      matchesValidity = isKRInQuarter(keyResult, selectedQuarter, selectedQuarterYear);
-    }
-    
-    return matchesSearch && matchesPriority && matchesObjective && matchesPillar && matchesProgress && matchesValidity;
+    return matchesProgress;
   }).sort((a, b) => {
     // Sort by pillar index (following the filter order, same as Dashboard)
     const objectiveA = objectiveById.get(a.objective_id);
@@ -652,19 +657,19 @@ export const IndicatorsPage: React.FC = () => {
     return a.title.localeCompare(b.title, 'pt-BR');
   });
 
-  // Calculate summary statistics based on selected period
-  const totalKeyResults = keyResults.length;
-  const onTargetKeyResults = keyResults.filter(kr => {
+  // Calculate summary statistics from context-filtered KRs (respects quarter filter)
+  const totalKeyResults = contextFilteredKeyResults.length;
+  const onTargetKeyResults = contextFilteredKeyResults.filter(kr => {
     const metrics = getMetricsByPeriod(kr.id);
     const p = metrics.percentage;
     return p >= 100 && p <= 105;
   }).length;
-  const atRiskKeyResults = keyResults.filter(kr => {
+  const atRiskKeyResults = contextFilteredKeyResults.filter(kr => {
     const metrics = getMetricsByPeriod(kr.id);
     const p = metrics.percentage;
     return p >= 71 && p < 100;
   }).length;
-  const criticalKeyResults = keyResults.filter(kr => {
+  const criticalKeyResults = contextFilteredKeyResults.filter(kr => {
     const metrics = getMetricsByPeriod(kr.id);
     return metrics.percentage < 71;
   }).length;
