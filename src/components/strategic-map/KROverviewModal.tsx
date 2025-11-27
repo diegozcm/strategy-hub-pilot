@@ -17,6 +17,7 @@ import { formatValueWithUnit, cn } from '@/lib/utils';
 import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket, CalendarDays } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
+import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { supabase } from '@/integrations/supabase/client';
 
 interface KROverviewModalProps {
@@ -81,54 +82,7 @@ export const KROverviewModal = ({
   const [selectedMonthYear, setSelectedMonthYear] = useState<number>(initialYear || previousMonth.getFullYear());
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
-
-  // Generate month options for the last 24 months (formato resumido)
-  const generateMonthOptions = () => {
-    const options = [];
-    const currentDate = new Date();
-    
-    for (let i = 0; i < 24; i++) {
-      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      
-      // Formato resumido: "Nov 2024"
-      const monthName = date.toLocaleDateString('pt-BR', { month: 'short' })
-        .replace(/^\w/, (c) => c.toUpperCase())
-        .replace('.', ''); // Remove ponto se houver
-      
-      options.push({
-        value: `${year}-${month.toString().padStart(2, '0')}`,
-        label: `${monthName} ${year}`
-      });
-    }
-    
-    return options;
-  };
-
-  // Generate quarter options for the last 8 quarters (2 anos)
-  const generateQuarterOptions = () => {
-    const options = [];
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentQuarter = Math.ceil((currentDate.getMonth() + 1) / 3);
-    
-    for (let i = 0; i < 8; i++) {
-      const yearOffset = Math.floor(i / 4);
-      const quarterIndex = (currentQuarter - 1 - (i % 4) + 4) % 4;
-      const quarter = (quarterIndex + 1) as 1 | 2 | 3 | 4;
-      const year = currentYear - yearOffset;
-      
-      options.push({
-        value: `${year}-Q${quarter}`,
-        label: `Q${quarter} ${year}`,
-        quarter,
-        year
-      });
-    }
-    
-    return options;
-  };
+  const { quarterOptions, monthOptions } = usePlanPeriodOptions();
 
   // Update local state when keyResult prop changes
   useEffect(() => {
@@ -510,8 +464,8 @@ export const KROverviewModal = ({
                 setSelectedQuarterYear(year);
                 onQuarterYearChange?.(year);
               }}
-              monthOptions={generateMonthOptions()}
-              quarterOptions={generateQuarterOptions()}
+              monthOptions={monthOptions}
+              quarterOptions={quarterOptions}
             />
 
             {/* Evolution Chart */}
