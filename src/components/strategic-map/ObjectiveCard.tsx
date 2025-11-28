@@ -86,7 +86,29 @@ const calculateObjectiveProgress = (
         }
         break;
       case 'yearly':
-        percentage = kr.yearly_percentage || 0;
+        // Se ano customizado foi fornecido, recalcular
+        if (options?.selectedYear) {
+          const monthKeys = [];
+          for (let m = 1; m <= 12; m++) {
+            monthKeys.push(`${options.selectedYear}-${m.toString().padStart(2, '0')}`);
+          }
+          
+          const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
+          const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+          
+          const totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
+          const totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+          
+          if (totalTarget > 0 && totalActual > 0) {
+            if (kr.target_direction === 'minimize') {
+              percentage = ((totalTarget - totalActual) / totalTarget) * 100 + 100;
+            } else {
+              percentage = (totalActual / totalTarget) * 100;
+            }
+          }
+        } else {
+          percentage = kr.yearly_percentage || 0;
+        }
         break;
       case 'ytd':
       default:
@@ -132,6 +154,8 @@ export const ObjectiveCard = ({
       ? { selectedMonth, selectedYear }
       : selectedPeriod === 'quarterly'
       ? { selectedQuarter }
+      : selectedPeriod === 'yearly'
+      ? { selectedYear }
       : undefined
   );
 
@@ -293,7 +317,7 @@ export const ObjectiveCard = ({
           progressPercentage={progressPercentage}
           selectedPeriod={selectedPeriod}
           selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-          selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
+          selectedYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
         />
 
         {/* KR Overview Modal (compact mode) */}
@@ -316,9 +340,9 @@ export const ObjectiveCard = ({
           }}
           objectives={[{ id: objective.id, title: objective.title }]}
           showDeleteButton={false}
-          initialPeriod={selectedPeriod}
-          initialMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-          initialYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
+        initialPeriod={selectedPeriod}
+        initialMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
+        initialYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
           onPeriodChange={onPeriodChange}
           onMonthChange={onMonthChange}
           onYearChange={onYearChange}
@@ -483,7 +507,7 @@ export const ObjectiveCard = ({
         showDeleteButton={false}
         initialPeriod={selectedPeriod}
         initialMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-        initialYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
+        initialYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
         onPeriodChange={onPeriodChange}
         onMonthChange={onMonthChange}
         onYearChange={onYearChange}
