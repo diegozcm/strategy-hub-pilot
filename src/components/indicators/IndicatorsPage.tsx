@@ -1001,7 +1001,7 @@ export const IndicatorsPage: React.FC = () => {
               pillar={pillar}
               selectedPeriod={selectedPeriod}
               selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-              selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
+              selectedYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
               selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
               onClick={() => openKROverviewModal(keyResult)}
             />
