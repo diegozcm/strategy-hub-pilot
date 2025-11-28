@@ -51,6 +51,7 @@ export interface KeyResultWithMetrics {
   q4_percentage?: number;
   target_direction?: 'maximize' | 'minimize';
   unit?: string;
+  aggregation_type?: 'sum' | 'average' | 'max' | 'min';
   // Raw monthly data for custom month selection
   monthly_targets?: Record<string, number>;
   monthly_actual?: Record<string, number>;
@@ -146,9 +147,38 @@ export const useKRMetrics = (
       
       const monthlyTargets = (keyResult.monthly_targets as Record<string, number>) || {};
       const monthlyActual = (keyResult.monthly_actual as Record<string, number>) || {};
+      const aggregationType = keyResult.aggregation_type || 'sum';
       
-      const totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
-      const totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+      // Collect values
+      const targetValues = monthKeys.map(key => monthlyTargets[key] || 0);
+      const actualValues = monthKeys.map(key => monthlyActual[key] || 0);
+      
+      // Calculate based on aggregation type
+      let totalTarget = 0;
+      let totalActual = 0;
+      
+      switch (aggregationType) {
+        case 'sum':
+          totalTarget = targetValues.reduce((sum, v) => sum + v, 0);
+          totalActual = actualValues.reduce((sum, v) => sum + v, 0);
+          break;
+        case 'average':
+          const validTargets = targetValues.filter(v => v > 0);
+          const validActuals = actualValues.filter(v => v > 0);
+          totalTarget = validTargets.length > 0 ? validTargets.reduce((sum, v) => sum + v, 0) / validTargets.length : 0;
+          totalActual = validActuals.length > 0 ? validActuals.reduce((sum, v) => sum + v, 0) / validActuals.length : 0;
+          break;
+        case 'max':
+          totalTarget = targetValues.length > 0 ? Math.max(...targetValues) : 0;
+          totalActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
+          break;
+        case 'min':
+          const nonZeroTargets = targetValues.filter(v => v > 0);
+          const nonZeroActuals = actualValues.filter(v => v > 0);
+          totalTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
+          totalActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
+          break;
+      }
       
       let yearlyPercentage = 0;
       if (totalTarget > 0 && totalActual > 0) {
