@@ -87,7 +87,7 @@ export const KRCard: React.FC<KRCardProps> = ({
         {/* Atingimento da Meta */}
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs font-medium text-muted-foreground">Atingimento {periodLabel}</span>
-          <span className="text-xs font-bold text-foreground">{Math.round(progress)}%</span>
+          <span className="text-xs font-bold text-foreground">{progress.toFixed(1)}%</span>
         </div>
 
         {/* Barra de progresso */}
