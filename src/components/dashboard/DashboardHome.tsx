@@ -14,6 +14,7 @@ import { RumoDashboard } from './RumoDashboard';
 import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 import { calculateKRStatus } from '@/lib/krHelpers';
+import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 
 interface KeyResultWithPillar {
   id: string;
@@ -111,7 +112,7 @@ export const DashboardHome: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
-  const [periodType, setPeriodType] = useState<'ytd' | 'monthly' | 'yearly'>('ytd');
+  const [periodType, setPeriodType] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>('ytd');
 
   // Month/Year selection states
   const previousMonth = new Date();
@@ -119,28 +120,18 @@ export const DashboardHome: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
   const [selectedMonthYear, setSelectedMonthYear] = useState<number>(previousMonth.getFullYear());
 
+  // Quarter selection states
+  const now = new Date();
+  const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
+    Math.ceil((now.getMonth() + 1) / 3) as 1 | 2 | 3 | 4
+  );
+  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(now.getFullYear());
+
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
   const currentYear = new Date().getFullYear();
   
-  // Gerar lista de meses disponíveis (últimos 24 meses)
-  const monthOptions = useMemo(() => {
-    const options = [];
-    const now = new Date();
-    
-    for (let i = 0; i < 24; i++) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      
-      options.push({
-        value: `${year}-${month.toString().padStart(2, '0')}`,
-        label: date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
-          .replace(/^\w/, c => c.toUpperCase())
-      });
-    }
-    
-    return options;
-  }, []);
+  // Use hook to get period options from active plan
+  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
 
   // Calculate progress function
   const calculateProgress = (keyResult: KeyResultWithPillar): number => {
@@ -427,6 +418,27 @@ export const DashboardHome: React.FC = () => {
   };
 
   const getSelectedAchievement = (kr: KeyResultWithPillar) => {
+    if (periodType === 'quarterly') {
+      const startMonth = (selectedQuarter - 1) * 3 + 1;
+      const endMonth = selectedQuarter * 3;
+      
+      const monthKeys = [];
+      for (let m = startMonth; m <= endMonth; m++) {
+        monthKeys.push(`${selectedQuarterYear}-${m.toString().padStart(2, '0')}`);
+      }
+      
+      const targets = monthKeys.map(key => kr.monthly_targets?.[key] || 0);
+      const actuals = monthKeys.map(key => kr.monthly_actual?.[key] || 0);
+      
+      const totalTarget = calculateAggregatedValue(targets, kr.aggregation_type || 'sum');
+      const totalActual = calculateAggregatedValue(actuals, kr.aggregation_type || 'sum');
+      
+      if (totalTarget > 0) {
+        return calculateKRStatus(totalActual, totalTarget, kr.target_direction || 'maximize').percentage;
+      }
+      return 0;
+    }
+    
     if (periodType === 'monthly') {
       // Se mês customizado foi selecionado
       if (selectedMonth && selectedMonthYear) {
@@ -461,6 +473,19 @@ export const DashboardHome: React.FC = () => {
   };
 
   const getSelectedActualValue = (kr: KeyResultWithPillar) => {
+    if (periodType === 'quarterly') {
+      const startMonth = (selectedQuarter - 1) * 3 + 1;
+      const endMonth = selectedQuarter * 3;
+      
+      const monthKeys = [];
+      for (let m = startMonth; m <= endMonth; m++) {
+        monthKeys.push(`${selectedQuarterYear}-${m.toString().padStart(2, '0')}`);
+      }
+      
+      const actuals = monthKeys.map(key => kr.monthly_actual?.[key] || 0);
+      return calculateAggregatedValue(actuals, kr.aggregation_type || 'sum');
+    }
+    
     if (periodType === 'monthly') {
       // Se mês customizado foi selecionado
       if (selectedMonth && selectedMonthYear) {
@@ -705,18 +730,54 @@ export const DashboardHome: React.FC = () => {
                 <Target className="w-4 h-4" />
                 Ano
               </Button>
+              
+              {/* Quarter - Botão */}
+              <Button
+                variant={periodType === 'quarterly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setPeriodType('quarterly')}
+                className="gap-2 border-l border-border/50 ml-1 pl-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Quarter
+              </Button>
+
+              {/* Quarter - Combo (dentro do container, ao lado do botão) */}
+              {periodType === 'quarterly' && (
+                <Select
+                  value={`${selectedQuarterYear}-Q${selectedQuarter}`}
+                  onValueChange={(value) => {
+                    const [year, q] = value.split('-Q');
+                    setSelectedQuarterYear(parseInt(year));
+                    setSelectedQuarter(parseInt(q) as 1 | 2 | 3 | 4);
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-[130px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {quarterOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {/* Mês - Botão */}
               <Button
                 variant={periodType === 'monthly' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setPeriodType('monthly')}
-                className="gap-2"
+                className="gap-2 border-l border-border/50 ml-1 pl-2"
               >
                 <Calendar className="w-4 h-4" />
                 Mês
               </Button>
             </div>
               
-              {/* Select de Mês - Aparece ao lado quando monthly está selecionado */}
+              {/* Select de Mês - Aparece fora do container quando monthly está selecionado */}
               {periodType === 'monthly' && (
                 <Select
                   value={`${selectedMonthYear}-${selectedMonth.toString().padStart(2, '0')}`}
@@ -944,15 +1005,17 @@ export const DashboardHome: React.FC = () => {
                                 <div className="flex items-center gap-2">
                                   {getStatusIcon(selectedAchievement)}
                                   <div className="flex flex-col items-end">
-                                    <span className={`text-sm font-medium ${getStatusColor(selectedAchievement)}`}>
-                                      {selectedAchievement.toFixed(1)}% {
-                                        periodType === 'monthly' 
-                                          ? `em ${new Date(selectedMonthYear, selectedMonth - 1).toLocaleDateString('pt-BR', { month: 'long' })}` 
-                                          : periodType === 'ytd' 
-                                          ? 'YTD' 
-                                          : 'no ano'
-                                      }
-                                    </span>
+                                     <span className={`text-sm font-medium ${getStatusColor(selectedAchievement)}`}>
+                                       {selectedAchievement.toFixed(1)}% {
+                                         periodType === 'monthly' 
+                                           ? `em ${new Date(selectedMonthYear, selectedMonth - 1).toLocaleDateString('pt-BR', { month: 'long' })}` 
+                                           : periodType === 'quarterly'
+                                           ? `no Q${selectedQuarter} ${selectedQuarterYear}`
+                                           : periodType === 'ytd' 
+                                           ? 'YTD' 
+                                           : 'no ano'
+                                       }
+                                     </span>
                                     <span className="text-xs text-muted-foreground">
                                       Atual: {Number(selectedActualValue).toFixed(1)}{kr.unit ? ` ${kr.unit}` : ''}
                                     </span>
