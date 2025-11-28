@@ -228,7 +228,18 @@ export const useKRMetrics = (
       
       const monthTarget = monthlyTargets[monthKey] || 0;
       const monthActual = monthlyActual[monthKey] || 0;
-      const monthPercentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
+      
+      // Calculate percentage considering target_direction
+      let monthPercentage = 0;
+      if (monthTarget > 0 && monthActual > 0) {
+        if (keyResult.target_direction === 'minimize') {
+          // For minimize: lower actual compared to target is better
+          monthPercentage = ((monthTarget - monthActual) / monthTarget) * 100 + 100;
+        } else {
+          // For maximize: actual / target
+          monthPercentage = (monthActual / monthTarget) * 100;
+        }
+      }
       
       return {
         ytd: {
