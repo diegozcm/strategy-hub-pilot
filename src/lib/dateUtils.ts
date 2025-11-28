@@ -1,3 +1,13 @@
+import { parseISO } from 'date-fns';
+
+/**
+ * Parseia uma data ISO string de forma segura, evitando problemas de timezone.
+ * Usa parseISO do date-fns que interpreta a data corretamente.
+ */
+export function parseLocalDate(dateString: string): Date {
+  return parseISO(dateString);
+}
+
 /**
  * Converte uma data para o formato correto do banco de dados.
  * String vazia ou undefined vira null, caso contrário mantém o valor.

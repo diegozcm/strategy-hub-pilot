@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { parseISO } from 'date-fns';
 import { useActivePlan } from './useActivePlan';
 
 interface QuarterOption {
@@ -24,8 +25,8 @@ export const usePlanPeriodOptions = () => {
   const quarterOptions = useMemo<QuarterOption[]>(() => {
     if (!activePlan) return [];
     
-    const startDate = new Date(activePlan.period_start);
-    const endDate = new Date(activePlan.period_end);
+    const startDate = parseISO(activePlan.period_start);
+    const endDate = parseISO(activePlan.period_end);
     const options: QuarterOption[] = [];
     
     let currentDate = new Date(startDate);
@@ -60,8 +61,8 @@ export const usePlanPeriodOptions = () => {
   const monthOptions = useMemo<MonthOption[]>(() => {
     if (!activePlan) return [];
     
-    const startDate = new Date(activePlan.period_start);
-    const endDate = new Date(activePlan.period_end);
+    const startDate = parseISO(activePlan.period_start);
+    const endDate = parseISO(activePlan.period_end);
     const options: MonthOption[] = [];
     
     let currentDate = new Date(startDate);
@@ -88,8 +89,8 @@ export const usePlanPeriodOptions = () => {
   const yearOptions = useMemo<YearOption[]>(() => {
     if (!activePlan) return [];
     
-    const startYear = new Date(activePlan.period_start).getFullYear();
-    const endYear = new Date(activePlan.period_end).getFullYear();
+    const startYear = parseISO(activePlan.period_start).getFullYear();
+    const endYear = parseISO(activePlan.period_end).getFullYear();
     const options: YearOption[] = [];
     
     for (let year = endYear; year >= startYear; year--) {

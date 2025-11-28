@@ -17,7 +17,7 @@ import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { EditPlanModal } from '@/components/objectives/EditPlanModal';
 import { DeletePlanModal } from '@/components/objectives/DeletePlanModal';
 import { PlanDetailModal } from '@/components/objectives/PlanDetailModal';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface StrategicPlan {
@@ -365,7 +365,7 @@ export const StrategicPlansManagement: React.FC = () => {
                     <TableRow key={plan.id}>
                       <TableCell className="font-medium">{plan.name}</TableCell>
                       <TableCell>
-                        {format(new Date(plan.period_start), 'MMM yyyy', { locale: ptBR })} - {format(new Date(plan.period_end), 'MMM yyyy', { locale: ptBR })}
+                        {format(parseISO(plan.period_start), 'MMM yyyy', { locale: ptBR })} - {format(parseISO(plan.period_end), 'MMM yyyy', { locale: ptBR })}
                       </TableCell>
                       <TableCell>{objectivesCount}</TableCell>
                       <TableCell>

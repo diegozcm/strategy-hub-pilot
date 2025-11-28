@@ -2,7 +2,7 @@ import React from 'react';
 import { Calendar, Target, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,7 @@ export const ActivePlanCard: React.FC<ActivePlanCardProps> = ({ plan, objectives
                 <span className="font-medium">{plan.name}</span>
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3.5 w-3.5" />
-                  {format(new Date(plan.period_start), "dd/MM/yyyy")} - {format(new Date(plan.period_end), "dd/MM/yyyy")}
+                  {format(parseISO(plan.period_start), "dd/MM/yyyy")} - {format(parseISO(plan.period_end), "dd/MM/yyyy")}
                 </span>
               </div>
             </div>
