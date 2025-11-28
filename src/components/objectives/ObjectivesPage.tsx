@@ -806,6 +806,8 @@ export const ObjectivesPage: React.FC = () => {
                                 ? { selectedMonth, selectedYear } 
                                 : selectedPeriod === 'quarterly'
                                 ? { selectedQuarter }
+                                : selectedPeriod === 'yearly'
+                                ? { selectedYear }
                                 : undefined
                             )}%</span>
                           </div>
@@ -818,6 +820,8 @@ export const ObjectivesPage: React.FC = () => {
                                   ? { selectedMonth, selectedYear } 
                                   : selectedPeriod === 'quarterly'
                                   ? { selectedQuarter }
+                                  : selectedPeriod === 'yearly'
+                                  ? { selectedYear }
                                   : undefined
                               );
                               return (

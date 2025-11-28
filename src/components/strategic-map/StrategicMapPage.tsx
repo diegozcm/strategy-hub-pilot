@@ -457,6 +457,8 @@ export const StrategicMapPage = () => {
                         ? { selectedMonth, selectedYear } 
                         : selectedPeriod === 'quarterly'
                         ? { selectedQuarter }
+                        : selectedPeriod === 'yearly'
+                        ? { selectedYear }
                         : undefined
                     );
                     const pillarObjectives = objectives.filter(obj => obj.pillar_id === pillar.id);
@@ -539,7 +541,7 @@ export const StrategicMapPage = () => {
                                   onRefreshData={refreshData}
                                   selectedPeriod={selectedPeriod}
                                   selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-                                  selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
+                                  selectedYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
                                   selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
                                   onPeriodChange={setSelectedPeriod}
                                   onMonthChange={setSelectedMonth}
