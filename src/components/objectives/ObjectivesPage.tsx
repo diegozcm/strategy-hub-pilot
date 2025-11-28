@@ -84,7 +84,7 @@ export const ObjectivesPage: React.FC = () => {
 
   // Health monitoring hooks
   const { logRenderCycle } = useHealthMonitor();
-  const { quarterOptions, monthOptions } = usePlanPeriodOptions();
+  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
   
   // Log render cycle for monitoring
   useEffect(() => {
@@ -562,15 +562,33 @@ export const ObjectivesPage: React.FC = () => {
               <TrendingUp className="w-4 h-4" />
               YTD
             </Button>
-            <Button
-              variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedPeriod('yearly')}
-              className="gap-2"
-            >
-              <Target className="w-4 h-4" />
-              Ano
-            </Button>
+                <Button
+                  variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedPeriod('yearly')}
+                  className="gap-2"
+                >
+                  <Target className="w-4 h-4" />
+                  Ano
+                </Button>
+
+                {selectedPeriod === 'yearly' && (
+                  <Select
+                    value={selectedYear.toString()}
+                    onValueChange={(value) => setSelectedYear(parseInt(value))}
+                  >
+                    <SelectTrigger className="h-9 w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {yearOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value.toString()}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
             <Button
               variant={selectedPeriod === 'quarterly' ? 'default' : 'ghost'}
               size="sm"
