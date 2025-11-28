@@ -229,9 +229,17 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
     return Object.keys(newErrors).length === 0;
   };
 
-  // Initialize form when keyResult changes
+  // Initialize form when modal opens
   useEffect(() => {
-    if (keyResult) {
+    // Só reinicializar quando o modal for aberto E tiver keyResult
+    if (open && keyResult) {
+      console.log('[KREditModal] Inicializando formulário', {
+        open,
+        keyResultId: keyResult?.id,
+        start_month: keyResult?.start_month,
+        end_month: keyResult?.end_month
+      });
+      
       setBasicInfo({
         title: keyResult.title,
         description: keyResult.description || '',
@@ -260,11 +268,11 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
       
       setErrors({}); // Clear errors when opening modal
     }
-  }, [keyResult]);
+  }, [open, keyResult]);
 
   // Filtrar dados do ano selecionado quando o ano mudar
   useEffect(() => {
-    if (keyResult) {
+    if (open && keyResult) {
       // Filtrar monthly_targets para o ano selecionado
       const filteredTargets: Record<string, number> = {};
       if (keyResult.monthly_targets) {
@@ -277,11 +285,17 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
       
       setMonthlyTargets(filteredTargets);
     }
-  }, [selectedYear, keyResult]);
+  }, [open, selectedYear, keyResult]);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!keyResult || isSaving) return;
+    
+    console.log('[KREditModal] Salvando', {
+      basicInfo_start_month: basicInfo.start_month,
+      basicInfo_end_month: basicInfo.end_month,
+      keyResultId: keyResult.id
+    });
     
     // Validate before proceeding
     if (!validateForm()) {
