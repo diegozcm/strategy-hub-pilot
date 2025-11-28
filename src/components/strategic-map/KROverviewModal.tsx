@@ -68,6 +68,7 @@ export const KROverviewModal = ({
   const [showUpdateValuesModal, setShowUpdateValuesModal] = useState(false);
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedYearlyYear, setSelectedYearlyYear] = useState<number>(new Date().getFullYear());
   const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>(initialPeriod);
   
   // Quarter state
@@ -445,7 +446,8 @@ export const KROverviewModal = ({
               keyResult={currentKeyResult}
               selectedPeriod={selectedPeriod}
               selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-              selectedYear={selectedPeriod === 'monthly' ? selectedMonthYear : undefined}
+              selectedYear={selectedPeriod === 'monthly' ? selectedMonthYear : 
+                            selectedPeriod === 'yearly' ? selectedYearlyYear : undefined}
               selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
               selectedQuarterYear={selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined}
               onMonthChange={(month: number) => {
@@ -464,8 +466,15 @@ export const KROverviewModal = ({
                 setSelectedQuarterYear(year);
                 onQuarterYearChange?.(year);
               }}
+              onYearlyYearChange={(year: number) => {
+                setSelectedYearlyYear(year);
+                setSelectedYear(year); // Manter sincronizado com o gráfico
+                onYearChange?.(year);
+              }}
               monthOptions={monthOptions}
               quarterOptions={quarterOptions}
+              yearOptions={yearOptions}
+              selectedYearlyYear={selectedYearlyYear}
             />
 
             {/* Evolution Chart */}
