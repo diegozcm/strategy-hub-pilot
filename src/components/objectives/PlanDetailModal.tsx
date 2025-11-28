@@ -2,7 +2,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Target, Eye } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface StrategicPlan {
@@ -72,7 +72,7 @@ export const PlanDetailModal: React.FC<PlanDetailModalProps> = ({
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="h-4 w-4" />
                 <span>
-                  <strong>Período:</strong> {format(new Date(plan.period_start), 'dd/MM/yyyy', { locale: ptBR })} - {format(new Date(plan.period_end), 'dd/MM/yyyy', { locale: ptBR })}
+                  <strong>Período:</strong> {format(parseISO(plan.period_start), 'dd/MM/yyyy', { locale: ptBR })} - {format(parseISO(plan.period_end), 'dd/MM/yyyy', { locale: ptBR })}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">

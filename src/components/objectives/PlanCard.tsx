@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { MoreVertical, Edit, Eye, Trash2, Calendar, Target, Play } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface StrategicPlan {
@@ -63,7 +63,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                {format(new Date(plan.period_start), 'MM/yyyy', { locale: ptBR })} - {format(new Date(plan.period_end), 'MM/yyyy', { locale: ptBR })}
+                {format(parseISO(plan.period_start), 'MM/yyyy', { locale: ptBR })} - {format(parseISO(plan.period_end), 'MM/yyyy', { locale: ptBR })}
               </div>
               <div className="flex items-center gap-1">
                 <Target className="h-3 w-3" />
