@@ -10,8 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 import { RumoDashboard } from './RumoDashboard';
 import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
+import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 import { calculateKRStatus } from '@/lib/krHelpers';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
@@ -90,6 +92,7 @@ const getDynamicStats = (stats: DashboardStats) => [{
 
 export const DashboardHome: React.FC = () => {
   const { company } = useAuth();
+  const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
   const [activeTab, setActiveTab] = useState('rumo');
   const [keyResults, setKeyResults] = useState<KeyResultWithPillar[]>([]);
   const [filteredKeyResults, setFilteredKeyResults] = useState<KeyResultWithPillar[]>([]);
@@ -144,9 +147,24 @@ export const DashboardHome: React.FC = () => {
     return Math.min(pct, 100);
   };
 
+  // Apply validity filtering first (use unknown cast to handle type differences)
+  const validityFilteredKRs = useMemo(() => {
+    return filterKRsByValidity(
+      keyResults as any[],
+      validityEnabled,
+      periodType,
+      {
+        selectedQuarter,
+        selectedQuarterYear,
+        selectedYear,
+        selectedMonth: selectedMonth,
+      }
+    ) as unknown as KeyResultWithPillar[];
+  }, [keyResults, validityEnabled, periodType, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth]);
+
   // Filter and sort logic
   useEffect(() => {
-    const filtered = keyResults.filter(keyResult => {
+    const filtered = validityFilteredKRs.filter(keyResult => {
       const matchesSearch = keyResult.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            keyResult.description?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesPriority = priorityFilter === 'all' || keyResult.priority === priorityFilter;
@@ -185,7 +203,7 @@ export const DashboardHome: React.FC = () => {
     });
     
     setFilteredKeyResults(sorted);
-  }, [keyResults, searchTerm, priorityFilter, objectiveFilter, pillarFilter, progressFilter, pillars]);
+  }, [validityFilteredKRs, searchTerm, priorityFilter, objectiveFilter, pillarFilter, progressFilter, pillars]);
 
   useEffect(() => {
     if (company?.id) {

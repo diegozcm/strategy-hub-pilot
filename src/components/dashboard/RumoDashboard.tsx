@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { useRumoCalculations, PeriodType, getPerformanceColor, getPerformanceStyles } from '@/hooks/useRumoCalculations';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
+import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
+import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { RumoPillarBlock } from './RumoPillarBlock';
 import { RumoObjectiveBlock } from './RumoObjectiveBlock';
 import { RumoLegend } from './RumoLegend';
@@ -27,7 +29,23 @@ export const RumoDashboard = () => {
   
   const { pillars, objectives, keyResults, loading } = useStrategicMap();
   const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
+  const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
   
+  // Filtrar KRs por vigência
+  const filteredKeyResults = useMemo(() => {
+    return filterKRsByValidity(
+      keyResults,
+      validityEnabled,
+      periodType,
+      {
+        selectedQuarter,
+        selectedQuarterYear,
+        selectedYear,
+        selectedMonth
+      }
+    );
+  }, [keyResults, validityEnabled, periodType, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth]);
+
   // Processar dados para aninhar objetivos dentro dos pilares
   const pillarsWithObjectives = useMemo(() => {
     return pillars.map(pillar => ({
@@ -36,8 +54,7 @@ export const RumoDashboard = () => {
     }));
   }, [pillars, objectives]);
   
-  
-  const { 
+  const {
     pillarProgress, 
     objectiveProgress, 
     krProgress, 
@@ -46,7 +63,7 @@ export const RumoDashboard = () => {
   } = useRumoCalculations(
     pillarsWithObjectives, 
     objectives, 
-    keyResults, 
+    filteredKeyResults,  // Usar KRs filtrados por vigência
     periodType,
     periodType === 'monthly' 
       ? { selectedMonth, selectedYear } 
@@ -250,7 +267,7 @@ export const RumoDashboard = () => {
                     key={objective.id}
                     objective={objective}
                     progress={objProgress}
-                    keyResults={keyResults}
+                    keyResults={filteredKeyResults}  // Passar KRs filtrados
                     krProgress={krProgress}
                     selectedPeriod={periodType}
                     selectedMonth={periodType === 'monthly' ? selectedMonth : undefined}

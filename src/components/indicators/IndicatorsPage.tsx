@@ -26,6 +26,7 @@ import { useSearchParams } from 'react-router-dom';
 import { KRCard } from './KRCard';
 import { useKRMetrics } from '@/hooks/useKRMetrics';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
+import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
@@ -539,24 +540,23 @@ export const IndicatorsPage: React.FC = () => {
       .reverse();
   };
 
-  // Função auxiliar para verificar se um KR está no quarter selecionado
-  const isKRInQuarter = (kr: KeyResult, quarter: 1 | 2 | 3 | 4, year: number): boolean => {
-    // KRs sem vigência definida são sempre mostrados
-    if (!kr.start_month || !kr.end_month) return true;
-    
-    // Calcular início e fim do quarter no formato YYYY-MM
-    const quarterStartMonth = ((quarter - 1) * 3) + 1;
-    const quarterEndMonth = quarter * 3;
-    
-    const quarterStart = `${year}-${quarterStartMonth.toString().padStart(2, '0')}`;
-    const quarterEnd = `${year}-${quarterEndMonth.toString().padStart(2, '0')}`;
-    
-    // Verificar interseção: KR.start <= quarterEnd AND KR.end >= quarterStart
-    return kr.start_month <= quarterEnd && kr.end_month >= quarterStart;
-  };
+  // Aplicar filtro de vigência usando o helper centralizado
+  const validityFilteredKeyResults = useMemo(() => {
+    return filterKRsByValidity(
+      keyResults,
+      validityEnabled,
+      selectedPeriod,
+      {
+        selectedQuarter,
+        selectedQuarterYear,
+        selectedYear,
+        selectedMonth
+      }
+    );
+  }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth]);
 
-  // Context filtered KRs (search, pillar, objective, quarter/validity - used for statistics)
-  const contextFilteredKeyResults = keyResults.filter(keyResult => {
+  // Context filtered KRs (search, pillar, objective - used for statistics)
+  const contextFilteredKeyResults = validityFilteredKeyResults.filter(keyResult => {
     const matchesSearch = keyResult.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          keyResult.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPriority = priorityFilter === 'all' || priorityFilter === 'medium'; // Default to medium
@@ -571,13 +571,7 @@ export const IndicatorsPage: React.FC = () => {
       }
     }
     
-    // Check validity match (apenas quando vigência está ativa e quarter está selecionado)
-    let matchesValidity = true;
-    if (validityEnabled && selectedPeriod === 'quarterly') {
-      matchesValidity = isKRInQuarter(keyResult, selectedQuarter, selectedQuarterYear);
-    }
-    
-    return matchesSearch && matchesPriority && matchesObjective && matchesPillar && matchesValidity;
+    return matchesSearch && matchesPriority && matchesObjective && matchesPillar;
   });
 
   // Final filtered KRs (adds progress filter on top of context filters)
