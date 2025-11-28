@@ -1208,6 +1208,11 @@ export const IndicatorsPage: React.FC = () => {
             await refreshData();
           }}
           objectives={objectives.map(obj => ({ id: obj.id, title: obj.title }))}
+          initialPeriod={selectedPeriod}
+          initialMonth={selectedMonth}
+          initialYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
+          initialQuarter={selectedQuarter}
+          initialQuarterYear={selectedQuarterYear}
         />
       )}
 
