@@ -84,59 +84,66 @@ export const useKRMetrics = (
       };
     }
 
-    // If specific quarter is provided, return metrics for that quarter
-    if (options?.selectedQuarter) {
-      const quarter = options.selectedQuarter;
-      let qTarget = 0;
-      let qActual = 0;
-      let qPercentage = 0;
+  // If specific quarter is provided, return metrics for that quarter
+  if (options?.selectedQuarter) {
+    const quarter = options.selectedQuarter;
+    let qTarget = 0;
+    let qActual = 0;
 
-      switch (quarter) {
-        case 1:
-          qTarget = keyResult.q1_target ?? 0;
-          qActual = keyResult.q1_actual ?? 0;
-          qPercentage = keyResult.q1_percentage ?? 0;
-          break;
-        case 2:
-          qTarget = keyResult.q2_target ?? 0;
-          qActual = keyResult.q2_actual ?? 0;
-          qPercentage = keyResult.q2_percentage ?? 0;
-          break;
-        case 3:
-          qTarget = keyResult.q3_target ?? 0;
-          qActual = keyResult.q3_actual ?? 0;
-          qPercentage = keyResult.q3_percentage ?? 0;
-          break;
-        case 4:
-          qTarget = keyResult.q4_target ?? 0;
-          qActual = keyResult.q4_actual ?? 0;
-          qPercentage = keyResult.q4_percentage ?? 0;
-          break;
-      }
-
-      return {
-        ytd: {
-          target: keyResult.ytd_target ?? 0,
-          actual: keyResult.ytd_actual ?? 0,
-          percentage: keyResult.ytd_percentage ?? 0,
-        },
-        monthly: {
-          target: keyResult.current_month_target ?? 0,
-          actual: keyResult.current_month_actual ?? 0,
-          percentage: keyResult.monthly_percentage ?? 0,
-        },
-        yearly: {
-          target: keyResult.yearly_target ?? 0,
-          actual: keyResult.yearly_actual ?? 0,
-          percentage: keyResult.yearly_percentage ?? 0,
-        },
-        quarterly: {
-          target: qTarget,
-          actual: qActual,
-          percentage: qPercentage,
-        },
-      };
+    switch (quarter) {
+      case 1:
+        qTarget = keyResult.q1_target ?? 0;
+        qActual = keyResult.q1_actual ?? 0;
+        break;
+      case 2:
+        qTarget = keyResult.q2_target ?? 0;
+        qActual = keyResult.q2_actual ?? 0;
+        break;
+      case 3:
+        qTarget = keyResult.q3_target ?? 0;
+        qActual = keyResult.q3_actual ?? 0;
+        break;
+      case 4:
+        qTarget = keyResult.q4_target ?? 0;
+        qActual = keyResult.q4_actual ?? 0;
+        break;
     }
+
+    // Recalculate percentage dynamically based on target_direction
+    let qPercentage = 0;
+    if (qTarget > 0 && qActual > 0) {
+      if (keyResult.target_direction === 'minimize') {
+        // For minimize: lower actual compared to target is better
+        qPercentage = ((qTarget - qActual) / qTarget) * 100 + 100;
+      } else {
+        // For maximize: actual / target
+        qPercentage = (qActual / qTarget) * 100;
+      }
+    }
+
+    return {
+      ytd: {
+        target: keyResult.ytd_target ?? 0,
+        actual: keyResult.ytd_actual ?? 0,
+        percentage: keyResult.ytd_percentage ?? 0,
+      },
+      monthly: {
+        target: keyResult.current_month_target ?? 0,
+        actual: keyResult.current_month_actual ?? 0,
+        percentage: keyResult.monthly_percentage ?? 0,
+      },
+      yearly: {
+        target: keyResult.yearly_target ?? 0,
+        actual: keyResult.yearly_actual ?? 0,
+        percentage: keyResult.yearly_percentage ?? 0,
+      },
+      quarterly: {
+        target: qTarget,
+        actual: qActual,
+        percentage: qPercentage,
+      },
+    };
+  }
 
     // If specific year is provided (without month), calculate yearly dynamically
     if (options?.selectedYear && !options?.selectedMonth) {
