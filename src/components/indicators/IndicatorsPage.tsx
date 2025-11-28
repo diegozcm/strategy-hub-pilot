@@ -480,6 +480,12 @@ export const IndicatorsPage: React.FC = () => {
             percentage: 0,
           },
         });
+      } else {
+        // Se não precisa recalcular, usar valores do map original
+        const originalMetrics = krMetricsMap.get(kr.id);
+        if (originalMetrics) {
+          map.set(kr.id, originalMetrics);
+        }
       }
     });
     return map;
