@@ -502,14 +502,14 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                   onValueChange={(value) => {
                     setSelectedValidityQuarter(value);
                     if (value === 'none') {
-                      setBasicInfo({ ...basicInfo, start_month: '', end_month: '' });
+                      setBasicInfo(prev => ({ ...prev, start_month: '', end_month: '' }));
                       return;
                     }
                     // Extrair quarter e ano do value "2025-Q1"
                     const [year, q] = value.split('-Q');
                     const quarter = parseInt(q) as 1 | 2 | 3 | 4;
                     const { start_month, end_month } = quarterToMonths(quarter, parseInt(year));
-                    setBasicInfo({ ...basicInfo, start_month, end_month });
+                    setBasicInfo(prev => ({ ...prev, start_month, end_month }));
                   }}
                 >
                   <SelectTrigger>
