@@ -80,7 +80,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
   const { toast } = useToast();
   const { company } = useAuth();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
-  const { quarterOptions } = usePlanPeriodOptions();
+  const { quarterOptions, yearOptions } = usePlanPeriodOptions();
   const [savingAggregationType, setSavingAggregationType] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -108,7 +108,6 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
   // Estado unificado para vigência (formato: "2025-Q1" ou "none")
   const [selectedValidityQuarter, setSelectedValidityQuarter] = useState<string>('none');
 
-  const currentYear = new Date().getFullYear();
   const months = [
     { key: `${selectedYear}-01`, name: 'Janeiro', short: 'Jan' },
     { key: `${selectedYear}-02`, name: 'Fevereiro', short: 'Fev' },
@@ -123,12 +122,6 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
     { key: `${selectedYear}-11`, name: 'Novembro', short: 'Nov' },
     { key: `${selectedYear}-12`, name: 'Dezembro', short: 'Dez' },
   ];
-
-  // Generate year options (from 2020 to current year + 5)
-  const yearOptions = [];
-  for (let year = 2020; year <= currentYear + 5; year++) {
-    yearOptions.push(year);
-  }
 
   // Calculate functions
   const calculateYearlyTarget = (targets: Record<string, number>) => {
@@ -592,13 +585,13 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      {yearOptions.map((year) => (
-                        <SelectItem key={year} value={year.toString()}>
-                          {year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                      <SelectContent>
+                        {yearOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value.toString()}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                   </Select>
                 </div>
               </div>
