@@ -229,14 +229,14 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                   onValueChange={(value) => {
                     setSelectedValidityQuarter(value);
                     if (value === 'none') {
-                      setFormData({ ...formData, start_month: '', end_month: '' });
+                      setFormData(prev => ({ ...prev, start_month: '', end_month: '' }));
                       return;
                     }
                     // Extrair quarter e ano do value "2025-Q1"
                     const [year, q] = value.split('-Q');
                     const quarter = parseInt(q) as 1 | 2 | 3 | 4;
                     const { start_month, end_month } = quarterToMonths(quarter, parseInt(year));
-                    setFormData({ ...formData, start_month, end_month });
+                    setFormData(prev => ({ ...prev, start_month, end_month }));
                   }}
                 >
                   <SelectTrigger>

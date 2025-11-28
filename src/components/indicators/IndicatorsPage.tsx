@@ -1068,13 +1068,13 @@ export const IndicatorsPage: React.FC = () => {
                   onValueChange={(value) => {
                     if (value === 'none') {
                       setNewKRValidityQuarter(null);
-                      setFormData({ ...formData, start_month: '', end_month: '' });
+                      setFormData(prev => ({ ...prev, start_month: '', end_month: '' }));
                       return;
                     }
                     const q = parseInt(value) as 1 | 2 | 3 | 4;
                     setNewKRValidityQuarter(q);
                     const { start_month, end_month } = quarterToMonths(q, newKRValidityYear);
-                    setFormData({ ...formData, start_month, end_month });
+                    setFormData(prev => ({ ...prev, start_month, end_month }));
                   }}
                 >
                   <SelectTrigger>
@@ -1096,7 +1096,7 @@ export const IndicatorsPage: React.FC = () => {
                     setNewKRValidityYear(y);
                     if (newKRValidityQuarter) {
                       const { start_month, end_month } = quarterToMonths(newKRValidityQuarter, y);
-                      setFormData({ ...formData, start_month, end_month });
+                      setFormData(prev => ({ ...prev, start_month, end_month }));
                     }
                   }}
                 >
