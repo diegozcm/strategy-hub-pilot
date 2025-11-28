@@ -37,6 +37,14 @@ export const KeyResultChart = ({
   selectedPeriod = 'ytd',
   yearOptions: propYearOptions
 }: KeyResultChartProps) => {
+  // Debug log to track validity data
+  console.log('[KeyResultChart] Renderizando com:', {
+    kr_id: keyResult.id,
+    start_month: keyResult.start_month,
+    end_month: keyResult.end_month,
+    has_validity: !!(keyResult.start_month && keyResult.end_month)
+  });
+
   // Helper functions for validity period
   const isMonthInValidity = (monthKey: string, startMonth?: string, endMonth?: string): boolean => {
     if (!startMonth || !endMonth) return false;
