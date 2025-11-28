@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { X } from 'lucide-react';
 import { calculateKRStatus } from '@/lib/krHelpers';
 import { cn } from '@/lib/utils';
+import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 
 // Função para verificar se um mês está dentro da vigência
 const isMonthInValidity = (monthKey: string, startMonth?: string | null, endMonth?: string | null): boolean => {
@@ -38,6 +39,7 @@ interface KRUpdateValuesModalProps {
 
 export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpdateValuesModalProps) => {
   const { toast } = useToast();
+  const { yearOptions } = usePlanPeriodOptions();
   const [isSaving, setIsSaving] = useState(false);
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
@@ -62,7 +64,6 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
     return isNaN(num) ? null : num;
   };
 
-  const currentYear = new Date().getFullYear();
   const months = [
     { key: `${selectedYear}-01`, name: 'Janeiro', short: 'Jan' },
     { key: `${selectedYear}-02`, name: 'Fevereiro', short: 'Fev' },
@@ -77,12 +78,6 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
     { key: `${selectedYear}-11`, name: 'Novembro', short: 'Nov' },
     { key: `${selectedYear}-12`, name: 'Dezembro', short: 'Dez' },
   ];
-
-  // Generate year options (from 2020 to current year + 5)
-  const yearOptions = [];
-  for (let year = 2020; year <= currentYear + 5; year++) {
-    yearOptions.push(year);
-  }
 
   // Calculate yearly actual based on aggregation type
   const calculateYearlyActual = (actuals: Record<string, number>) => {
@@ -197,9 +192,9 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {yearOptions.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
+                  {yearOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value.toString()}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

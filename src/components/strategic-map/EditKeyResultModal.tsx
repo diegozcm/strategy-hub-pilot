@@ -14,6 +14,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatValueWithUnit } from '@/lib/utils';
+import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 
 interface EditKeyResultModalProps {
   keyResult: KeyResult;
@@ -25,6 +26,7 @@ interface EditKeyResultModalProps {
 
 export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggregationTypeChange }: EditKeyResultModalProps) => {
   const { toast } = useToast();
+  const { yearOptions } = usePlanPeriodOptions();
   const [loading, setLoading] = useState(false);
   const [savingAggregationType, setSavingAggregationType] = useState(false);
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
@@ -36,7 +38,6 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
   const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
   const [editMode, setEditMode] = useState<boolean>(false);
 
-  const currentYear = new Date().getFullYear();
   const months = [
     { key: `${selectedYear}-01`, name: 'Janeiro', short: 'Jan' },
     { key: `${selectedYear}-02`, name: 'Fevereiro', short: 'Fev' },
@@ -51,12 +52,6 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
     { key: `${selectedYear}-11`, name: 'Novembro', short: 'Nov' },
     { key: `${selectedYear}-12`, name: 'Dezembro', short: 'Dez' },
   ];
-
-  // Generate year options (from 2020 to current year + 5)
-  const yearOptions = [];
-  for (let year = 2020; year <= currentYear + 5; year++) {
-    yearOptions.push(year);
-  }
 
   // Função para calcular a meta anual baseada no tipo de agregação
   const calculateYearlyTarget = (targets: Record<string, number>) => {
@@ -339,9 +334,9 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {yearOptions.map((year) => (
-                          <SelectItem key={year} value={year.toString()}>
-                            {year}
+                        {yearOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value.toString()}>
+                            {option.label}
                           </SelectItem>
                         ))}
                       </SelectContent>

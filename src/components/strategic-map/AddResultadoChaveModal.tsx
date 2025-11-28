@@ -56,7 +56,7 @@ interface AddResultadoChaveModalProps {
 export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: AddResultadoChaveModalProps) => {
   const { company } = useAuth();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
-  const { quarterOptions } = usePlanPeriodOptions();
+  const { quarterOptions, yearOptions } = usePlanPeriodOptions();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -77,24 +77,23 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
 
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
   const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   
   // Estado unificado para vigência (formato: "2025-Q1" ou "none")
   const [selectedValidityQuarter, setSelectedValidityQuarter] = useState<string>('none');
-
-  const currentYear = new Date().getFullYear();
   const months = [
-    { key: `${currentYear}-01`, name: 'Janeiro', short: 'Jan' },
-    { key: `${currentYear}-02`, name: 'Fevereiro', short: 'Fev' },
-    { key: `${currentYear}-03`, name: 'Março', short: 'Mar' },
-    { key: `${currentYear}-04`, name: 'Abril', short: 'Abr' },
-    { key: `${currentYear}-05`, name: 'Maio', short: 'Mai' },
-    { key: `${currentYear}-06`, name: 'Junho', short: 'Jun' },
-    { key: `${currentYear}-07`, name: 'Julho', short: 'Jul' },
-    { key: `${currentYear}-08`, name: 'Agosto', short: 'Ago' },
-    { key: `${currentYear}-09`, name: 'Setembro', short: 'Set' },
-    { key: `${currentYear}-10`, name: 'Outubro', short: 'Out' },
-    { key: `${currentYear}-11`, name: 'Novembro', short: 'Nov' },
-    { key: `${currentYear}-12`, name: 'Dezembro', short: 'Dez' },
+    { key: `${selectedYear}-01`, name: 'Janeiro', short: 'Jan' },
+    { key: `${selectedYear}-02`, name: 'Fevereiro', short: 'Fev' },
+    { key: `${selectedYear}-03`, name: 'Março', short: 'Mar' },
+    { key: `${selectedYear}-04`, name: 'Abril', short: 'Abr' },
+    { key: `${selectedYear}-05`, name: 'Maio', short: 'Mai' },
+    { key: `${selectedYear}-06`, name: 'Junho', short: 'Jun' },
+    { key: `${selectedYear}-07`, name: 'Julho', short: 'Jul' },
+    { key: `${selectedYear}-08`, name: 'Agosto', short: 'Ago' },
+    { key: `${selectedYear}-09`, name: 'Setembro', short: 'Set' },
+    { key: `${selectedYear}-10`, name: 'Outubro', short: 'Out' },
+    { key: `${selectedYear}-11`, name: 'Novembro', short: 'Nov' },
+    { key: `${selectedYear}-12`, name: 'Dezembro', short: 'Dez' },
   ];
 
   // Função para calcular a meta anual baseada no tipo de agregação
@@ -380,11 +379,29 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
               )}
 
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Metas Mensais ({currentYear})</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Configure as metas específicas para cada mês e como calcular a meta anual.
-                  </p>
+                <div className="flex justify-between items-start gap-6">
+                  <div className="space-y-2 flex-1">
+                    <Label>Metas Mensais ({selectedYear})</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Configure as metas específicas para cada mês e como calcular a meta anual.
+                    </p>
+                  </div>
+                  
+                  <div className="w-32">
+                    <Label className="text-sm font-medium">Ano</Label>
+                    <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {yearOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value.toString()}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="p-4 border rounded-lg bg-muted/50">
