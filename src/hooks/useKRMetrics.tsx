@@ -109,16 +109,12 @@ export const useKRMetrics = (
         break;
     }
 
-    // Recalculate percentage dynamically based on target_direction
+    // Calculate percentage using database formula
     let qPercentage = 0;
-    if (qTarget > 0 && qActual > 0) {
-      if (keyResult.target_direction === 'minimize') {
-        // For minimize: lower actual compared to target is better
-        qPercentage = ((qTarget - qActual) / qTarget) * 100 + 100;
-      } else {
-        // For maximize: actual / target
-        qPercentage = (qActual / qTarget) * 100;
-      }
+    if (keyResult.target_direction === 'minimize') {
+      qPercentage = qActual > 0 ? (qTarget / qActual) * 100 : (qTarget === 0 ? 100 : 0);
+    } else {
+      qPercentage = qTarget > 0 ? (qActual / qTarget) * 100 : 0;
     }
 
     return {
@@ -187,13 +183,12 @@ export const useKRMetrics = (
           break;
       }
       
+      // Calculate percentage using database formula
       let yearlyPercentage = 0;
-      if (totalTarget > 0 && totalActual > 0) {
-        if (keyResult.target_direction === 'minimize') {
-          yearlyPercentage = ((totalTarget - totalActual) / totalTarget) * 100 + 100;
-        } else {
-          yearlyPercentage = (totalActual / totalTarget) * 100;
-        }
+      if (keyResult.target_direction === 'minimize') {
+        yearlyPercentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
+      } else {
+        yearlyPercentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
       }
       
       return {
@@ -229,16 +224,12 @@ export const useKRMetrics = (
       const monthTarget = monthlyTargets[monthKey] || 0;
       const monthActual = monthlyActual[monthKey] || 0;
       
-      // Calculate percentage considering target_direction
+      // Calculate percentage using database formula
       let monthPercentage = 0;
-      if (monthTarget > 0 && monthActual > 0) {
-        if (keyResult.target_direction === 'minimize') {
-          // For minimize: lower actual compared to target is better
-          monthPercentage = ((monthTarget - monthActual) / monthTarget) * 100 + 100;
-        } else {
-          // For maximize: actual / target
-          monthPercentage = (monthActual / monthTarget) * 100;
-        }
+      if (keyResult.target_direction === 'minimize') {
+        monthPercentage = monthActual > 0 ? (monthTarget / monthActual) * 100 : (monthTarget === 0 ? 100 : 0);
+      } else {
+        monthPercentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
       }
       
       return {
@@ -265,75 +256,56 @@ export const useKRMetrics = (
       };
     }
 
-    // Default behavior - recalculate percentages dynamically based on target_direction
+    // Default behavior - use pre-calculated fields from database
     const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4;
-
-    // Quarter values
+    
     let defaultQTarget = 0;
     let defaultQActual = 0;
+    let defaultQPercentage = 0;
+
     switch (currentQuarter) {
       case 1:
         defaultQTarget = keyResult.q1_target ?? 0;
         defaultQActual = keyResult.q1_actual ?? 0;
+        defaultQPercentage = keyResult.q1_percentage ?? 0;
         break;
       case 2:
         defaultQTarget = keyResult.q2_target ?? 0;
         defaultQActual = keyResult.q2_actual ?? 0;
+        defaultQPercentage = keyResult.q2_percentage ?? 0;
         break;
       case 3:
         defaultQTarget = keyResult.q3_target ?? 0;
         defaultQActual = keyResult.q3_actual ?? 0;
+        defaultQPercentage = keyResult.q3_percentage ?? 0;
         break;
       case 4:
         defaultQTarget = keyResult.q4_target ?? 0;
         defaultQActual = keyResult.q4_actual ?? 0;
+        defaultQPercentage = keyResult.q4_percentage ?? 0;
         break;
     }
 
-    // Helper to calculate percentage based on target_direction
-    const calculatePercentage = (actual: number, target: number): number => {
-      if (target <= 0 || actual <= 0) return 0;
-      if (keyResult.target_direction === 'minimize') {
-        return ((target - actual) / target) * 100 + 100;
-      }
-      return (actual / target) * 100;
-    };
-
-    // Recalculate all percentages dynamically
-    const ytdTarget = keyResult.ytd_target ?? 0;
-    const ytdActual = keyResult.ytd_actual ?? 0;
-    const ytdPercentage = calculatePercentage(ytdActual, ytdTarget);
-
-    const monthlyTarget = keyResult.current_month_target ?? 0;
-    const monthlyActual = keyResult.current_month_actual ?? 0;
-    const monthlyPercentage = calculatePercentage(monthlyActual, monthlyTarget);
-
-    const yearlyTarget = keyResult.yearly_target ?? 0;
-    const yearlyActual = keyResult.yearly_actual ?? 0;
-    const yearlyPercentage = calculatePercentage(yearlyActual, yearlyTarget);
-
-    const quarterlyPercentage = calculatePercentage(defaultQActual, defaultQTarget);
-
     return {
       ytd: {
-        target: ytdTarget,
-        actual: ytdActual,
-        percentage: ytdPercentage,
+        target: keyResult.ytd_target ?? 0,
+        actual: keyResult.ytd_actual ?? 0,
+        percentage: keyResult.ytd_percentage ?? 0,
       },
       monthly: {
-        target: monthlyTarget,
-        actual: monthlyActual,
-        percentage: monthlyPercentage,
+        target: keyResult.current_month_target ?? 0,
+        actual: keyResult.current_month_actual ?? 0,
+        percentage: keyResult.monthly_percentage ?? 0,
       },
       yearly: {
-        target: yearlyTarget,
-        actual: yearlyActual,
-        percentage: yearlyPercentage,
+        target: keyResult.yearly_target ?? 0,
+        actual: keyResult.yearly_actual ?? 0,
+        percentage: keyResult.yearly_percentage ?? 0,
       },
       quarterly: {
         target: defaultQTarget,
         actual: defaultQActual,
-        percentage: quarterlyPercentage,
+        percentage: defaultQPercentage,
       },
     };
   }, [keyResult, options?.selectedMonth, options?.selectedYear, options?.selectedQuarter, options?.selectedQuarterYear]);

@@ -23,19 +23,17 @@ export const calculateKRStatus = (
   let percentage: number;
   
   if (direction === 'minimize') {
-    // For minimization KRs, invert the logic
-    // If target is 100 and actual is 50, it's 100% better (50% less)
-    // If target is 100 and actual is 150, it's -50% (50% worse)
-    if (target > 0) {
-      // Calculate how much better/worse compared to target
-      // actual < target = good (saved/reduced)
-      // actual > target = bad (exceeded/increased)
-      percentage = ((target - actual) / target) * 100 + 100;
+    // Fórmula do banco: (target / actual) * 100
+    // Se actual < target = bom (>100%), se actual > target = ruim (<100%)
+    if (actual > 0) {
+      percentage = (target / actual) * 100;
+    } else if (target === 0) {
+      percentage = 100; // Meta 0, realizado 0 = 100%
     } else {
       percentage = 0;
     }
   } else {
-    // Current logic for maximization
+    // Para maximize: actual / target * 100
     percentage = target > 0 ? (actual / target) * 100 : 0;
   }
   
