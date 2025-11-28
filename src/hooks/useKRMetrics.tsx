@@ -137,6 +137,52 @@ export const useKRMetrics = (
       };
     }
 
+    // If specific year is provided (without month), calculate yearly dynamically
+    if (options?.selectedYear && !options?.selectedMonth) {
+      const monthKeys = [];
+      for (let m = 1; m <= 12; m++) {
+        monthKeys.push(`${options.selectedYear}-${m.toString().padStart(2, '0')}`);
+      }
+      
+      const monthlyTargets = (keyResult.monthly_targets as Record<string, number>) || {};
+      const monthlyActual = (keyResult.monthly_actual as Record<string, number>) || {};
+      
+      const totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
+      const totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+      
+      let yearlyPercentage = 0;
+      if (totalTarget > 0 && totalActual > 0) {
+        if (keyResult.target_direction === 'minimize') {
+          yearlyPercentage = ((totalTarget - totalActual) / totalTarget) * 100 + 100;
+        } else {
+          yearlyPercentage = (totalActual / totalTarget) * 100;
+        }
+      }
+      
+      return {
+        ytd: {
+          target: keyResult.ytd_target ?? 0,
+          actual: keyResult.ytd_actual ?? 0,
+          percentage: keyResult.ytd_percentage ?? 0,
+        },
+        monthly: {
+          target: keyResult.current_month_target ?? 0,
+          actual: keyResult.current_month_actual ?? 0,
+          percentage: keyResult.monthly_percentage ?? 0,
+        },
+        yearly: {
+          target: totalTarget,
+          actual: totalActual,
+          percentage: yearlyPercentage,
+        },
+        quarterly: {
+          target: 0,
+          actual: 0,
+          percentage: 0,
+        },
+      };
+    }
+
     // If specific month is provided, calculate metrics for that month
     if (options?.selectedMonth && options?.selectedYear) {
       const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
