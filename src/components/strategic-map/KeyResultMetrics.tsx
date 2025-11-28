@@ -18,8 +18,11 @@ interface KeyResultMetricsProps {
   onYearChange?: (year: number) => void;
   onQuarterChange?: (quarter: 1 | 2 | 3 | 4) => void;
   onQuarterYearChange?: (year: number) => void;
+  onYearlyYearChange?: (year: number) => void;
   monthOptions?: Array<{ value: string; label: string }>;
   quarterOptions?: Array<{ value: string; label: string; quarter: number; year: number }>;
+  yearOptions?: Array<{ value: number; label: string }>;
+  selectedYearlyYear?: number;
 }
 
 export const KeyResultMetrics = ({ 
@@ -33,8 +36,11 @@ export const KeyResultMetrics = ({
   onYearChange,
   onQuarterChange,
   onQuarterYearChange,
+  onYearlyYearChange,
   monthOptions = [],
-  quarterOptions = []
+  quarterOptions = [],
+  yearOptions = [],
+  selectedYearlyYear
 }: KeyResultMetricsProps) => {
   const [isComboOpen, setIsComboOpen] = useState(false);
 
@@ -243,6 +249,32 @@ export const KeyResultMetrics = ({
                 {!isComboOpen && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Quarter de referência
+                  </p>
+                )}
+              </>
+            ) : selectedPeriod === 'yearly' && onYearlyYearChange && yearOptions && yearOptions.length > 0 ? (
+              <>
+                <Select
+                  value={selectedYearlyYear?.toString()}
+                  onValueChange={(value) => {
+                    onYearlyYearChange(parseInt(value));
+                  }}
+                  onOpenChange={setIsComboOpen}
+                >
+                  <SelectTrigger className="w-full h-9 text-base font-bold">
+                    <SelectValue placeholder="Selecione o ano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yearOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value.toString()}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!isComboOpen && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Todos os 12 meses
                   </p>
                 )}
               </>
