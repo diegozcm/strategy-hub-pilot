@@ -122,6 +122,13 @@ export const KROverviewModal = ({
 
       if (error) throw error;
       if (data) {
+        console.log('[KROverviewModal] Dados recarregados do banco:', {
+          kr_id: data.id,
+          title: data.title,
+          start_month: data.start_month,
+          end_month: data.end_month,
+          has_validity: !!(data.start_month && data.end_month)
+        });
         setCurrentKeyResult(data as KeyResult);
       }
     } catch (error) {
