@@ -327,9 +327,11 @@ export const useStrategicMap = () => {
       selectedMonth?: number;
       selectedYear?: number;
       selectedQuarter?: 1 | 2 | 3 | 4;
-    }
+    },
+    filteredKRs?: KeyResult[]  // Aceitar KRs já filtrados (opcional)
   ): number => {
-    const objectiveKRs = keyResults.filter(kr => kr.objective_id === objectiveId);
+    const krsToUse = filteredKRs || keyResults;
+    const objectiveKRs = krsToUse.filter(kr => kr.objective_id === objectiveId);
     if (objectiveKRs.length === 0) return 0;
     
     const totalProgress = objectiveKRs.reduce((sum, kr) => {
@@ -412,13 +414,14 @@ export const useStrategicMap = () => {
       selectedMonth?: number;
       selectedYear?: number;
       selectedQuarter?: 1 | 2 | 3 | 4;
-    }
+    },
+    filteredKRs?: KeyResult[]  // Aceitar KRs já filtrados (opcional)
   ): number => {
     const pillarObjectives = objectives.filter(obj => obj.pillar_id === pillarId);
     if (pillarObjectives.length === 0) return 0;
     
     const totalProgress = pillarObjectives.reduce((sum, obj) => {
-      return sum + calculateObjectiveProgress(obj.id, period, options);
+      return sum + calculateObjectiveProgress(obj.id, period, options, filteredKRs);
     }, 0);
     
     return Math.round(totalProgress / pillarObjectives.length);

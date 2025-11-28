@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
+import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
+import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { CompanySetupModal } from './CompanySetupModal';
 import { PillarFormModal } from './PillarFormModal';
 import { ObjectiveCard } from './ObjectiveCard';
@@ -84,6 +86,22 @@ export const StrategicMapPage = () => {
   const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(new Date().getFullYear());
 
   const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
+  const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
+
+  // Filtrar KRs por vigência
+  const filteredKeyResults = React.useMemo(() => {
+    return filterKRsByValidity(
+      keyResults,
+      validityEnabled,
+      selectedPeriod,
+      {
+        selectedQuarter,
+        selectedQuarterYear,
+        selectedYear,
+        selectedMonth
+      }
+    );
+  }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth]);
 
   // Check URL parameters on component mount and when search params change
   React.useEffect(() => {
@@ -529,7 +547,7 @@ export const StrategicMapPage = () => {
                           {pillarObjectives.length > 0 ? (
                             <div className="space-y-2">
                               {pillarObjectives.slice(0, 3).map((objective) => {
-                                const objectiveKRs = keyResults.filter(kr => kr.objective_id === objective.id);
+                                const objectiveKRs = filteredKeyResults.filter(kr => kr.objective_id === objective.id);
                                 return (
                                 <ObjectiveCard
                                   key={objective.id}
