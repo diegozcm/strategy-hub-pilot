@@ -52,6 +52,8 @@ export const RumoDashboard = () => {
       ? { selectedMonth, selectedYear } 
       : periodType === 'quarterly'
       ? { selectedQuarter }
+      : periodType === 'yearly'
+      ? { selectedYear }
       : undefined
   );
 
