@@ -82,7 +82,7 @@ export const KROverviewModal = ({
   const [selectedMonthYear, setSelectedMonthYear] = useState<number>(initialYear || previousMonth.getFullYear());
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
-  const { quarterOptions, monthOptions } = usePlanPeriodOptions();
+  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
 
   // Update local state when keyResult prop changes
   useEffect(() => {
@@ -478,6 +478,7 @@ export const KROverviewModal = ({
               onYearChange={setSelectedYear}
               targetDirection={(currentKeyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
               aggregationType={currentKeyResult.aggregation_type || 'sum'}
+              yearOptions={yearOptions}
               selectedPeriod={selectedPeriod}
             />
           </div>

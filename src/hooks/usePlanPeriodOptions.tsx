@@ -13,6 +13,11 @@ interface MonthOption {
   label: string;        // "Janeiro 2025"
 }
 
+interface YearOption {
+  value: number;
+  label: string;        // "2025"
+}
+
 export const usePlanPeriodOptions = () => {
   const { activePlan } = useActivePlan();
   
@@ -80,5 +85,22 @@ export const usePlanPeriodOptions = () => {
     return options.reverse(); // Ordem decrescente - mais recente primeiro
   }, [activePlan]);
 
-  return { quarterOptions, monthOptions };
+  const yearOptions = useMemo<YearOption[]>(() => {
+    if (!activePlan) return [];
+    
+    const startYear = new Date(activePlan.period_start).getFullYear();
+    const endYear = new Date(activePlan.period_end).getFullYear();
+    const options: YearOption[] = [];
+    
+    for (let year = endYear; year >= startYear; year--) {
+      options.push({
+        value: year,
+        label: year.toString()
+      });
+    }
+    
+    return options; // Já em ordem decrescente
+  }, [activePlan]);
+
+  return { quarterOptions, monthOptions, yearOptions };
 };

@@ -22,6 +22,7 @@ interface KeyResultChartProps {
   targetDirection?: TargetDirection;
   aggregationType?: 'sum' | 'average' | 'max' | 'min';
   selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly';
+  yearOptions?: Array<{ value: number; label: string }>;
 }
 
 export const KeyResultChart = ({ 
@@ -33,7 +34,8 @@ export const KeyResultChart = ({
   onYearChange,
   targetDirection = 'maximize',
   aggregationType = 'sum',
-  selectedPeriod = 'ytd'
+  selectedPeriod = 'ytd',
+  yearOptions: propYearOptions
 }: KeyResultChartProps) => {
   // Helper functions for validity period
   const isMonthInValidity = (monthKey: string, startMonth?: string, endMonth?: string): boolean => {
@@ -65,12 +67,10 @@ export const KeyResultChart = ({
   };
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
   
-  // Generate year options (from 2020 to current year + 5)
-  const currentYear = new Date().getFullYear();
-  const yearOptions = [];
-  for (let year = 2020; year <= currentYear + 5; year++) {
-    yearOptions.push(year);
-  }
+  // Use year options from props or fallback to current year
+  const finalYearOptions = propYearOptions && propYearOptions.length > 0
+    ? propYearOptions
+    : [{ value: new Date().getFullYear(), label: new Date().getFullYear().toString() }];
   
   const months = [
     { key: `${selectedYear}-01`, name: 'Jan' },
@@ -285,9 +285,9 @@ const normalizedActuals: Record<string, number | null> =
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {yearOptions.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
+                {finalYearOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value.toString()}>
+                    {option.label}
                   </SelectItem>
                 ))}
               </SelectContent>
