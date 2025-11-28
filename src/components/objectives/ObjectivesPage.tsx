@@ -391,6 +391,23 @@ export const ObjectivesPage: React.FC = () => {
     }
   };
 
+  // Sincronizar selectedKeyResultForOverview com a lista atualizada
+  useEffect(() => {
+    if (selectedKeyResultForOverview && keyResults.length > 0) {
+      const updatedKR = keyResults.find(kr => kr.id === selectedKeyResultForOverview.id);
+      if (updatedKR) {
+        if (JSON.stringify(updatedKR) !== JSON.stringify(selectedKeyResultForOverview)) {
+          console.log('[ObjectivesPage] Sincronizando selectedKeyResultForOverview:', {
+            id: updatedKR.id,
+            start_month: updatedKR.start_month,
+            end_month: updatedKR.end_month
+          });
+          setSelectedKeyResultForOverview(updatedKR);
+        }
+      }
+    }
+  }, [keyResults]);
+
   // Get active plan
   const activePlan = plans.find(p => p.status === 'active');
   const activePlanObjectivesCount = activePlan ? objectives.filter(obj => obj.plan_id === activePlan.id).length : 0;

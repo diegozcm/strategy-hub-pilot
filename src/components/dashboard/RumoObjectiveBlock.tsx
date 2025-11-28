@@ -66,6 +66,23 @@ export const RumoObjectiveBlock = ({
     fetchData();
   }, [company?.id, objective.pillar_id, isObjectiveDetailModalOpen]);
 
+  // Sincronizar selectedKeyResultForOverview com a lista atualizada
+  useEffect(() => {
+    if (selectedKeyResultForOverview && keyResults.length > 0) {
+      const updatedKR = keyResults.find(kr => kr.id === selectedKeyResultForOverview.id);
+      if (updatedKR) {
+        if (JSON.stringify(updatedKR) !== JSON.stringify(selectedKeyResultForOverview)) {
+          console.log('[RumoObjectiveBlock] Sincronizando selectedKeyResultForOverview:', {
+            id: updatedKR.id,
+            start_month: updatedKR.start_month,
+            end_month: updatedKR.end_month
+          });
+          setSelectedKeyResultForOverview(updatedKR);
+        }
+      }
+    }
+  }, [keyResults]);
+
   const handleUpdateObjective = async (data: Partial<StrategicObjective>) => {
     try {
       const { error } = await supabase

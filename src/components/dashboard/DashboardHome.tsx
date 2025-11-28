@@ -205,6 +205,23 @@ export const DashboardHome: React.FC = () => {
     setFilteredKeyResults(sorted);
   }, [validityFilteredKRs, searchTerm, priorityFilter, objectiveFilter, pillarFilter, progressFilter, pillars]);
 
+  // Sincronizar selectedKRForModal com a lista atualizada
+  useEffect(() => {
+    if (selectedKRForModal && keyResults.length > 0) {
+      const updatedKR = keyResults.find(kr => kr.id === selectedKRForModal.id);
+      if (updatedKR) {
+        if (JSON.stringify(updatedKR) !== JSON.stringify(selectedKRForModal)) {
+          console.log('[DashboardHome] Sincronizando selectedKRForModal:', {
+            id: updatedKR.id,
+            start_month: (updatedKR as any).start_month,
+            end_month: (updatedKR as any).end_month
+          });
+          setSelectedKRForModal(updatedKR);
+        }
+      }
+    }
+  }, [keyResults]);
+
   useEffect(() => {
     if (company?.id) {
       fetchDashboardData();

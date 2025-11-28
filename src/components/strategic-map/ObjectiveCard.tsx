@@ -174,6 +174,23 @@ export const ObjectiveCard = ({
     };
     fetchData();
   }, [company?.id]);
+
+  // Sincronizar selectedKeyResultForOverview com a lista atualizada
+  useEffect(() => {
+    if (selectedKeyResultForOverview && keyResults.length > 0) {
+      const updatedKR = keyResults.find(kr => kr.id === selectedKeyResultForOverview.id);
+      if (updatedKR) {
+        if (JSON.stringify(updatedKR) !== JSON.stringify(selectedKeyResultForOverview)) {
+          console.log('[ObjectiveCard] Sincronizando selectedKeyResultForOverview:', {
+            id: updatedKR.id,
+            start_month: updatedKR.start_month,
+            end_month: updatedKR.end_month
+          });
+          setSelectedKeyResultForOverview(updatedKR);
+        }
+      }
+    }
+  }, [keyResults]);
   
   const handleAddResultadoChave = async (resultadoChaveData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => {
     if (onAddResultadoChave) {

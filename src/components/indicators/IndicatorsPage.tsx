@@ -143,6 +143,24 @@ export const IndicatorsPage: React.FC = () => {
     setLoading(dataLoading);
   }, [objectivesData, pillarsData, keyResultsData, dataLoading]);
 
+  // Sincronizar selectedKeyResult com a lista atualizada de keyResults
+  useEffect(() => {
+    if (selectedKeyResult && keyResults.length > 0) {
+      const updatedKR = keyResults.find(kr => kr.id === selectedKeyResult.id);
+      if (updatedKR) {
+        // Só atualiza se os dados forem diferentes para evitar re-renders desnecessários
+        if (JSON.stringify(updatedKR) !== JSON.stringify(selectedKeyResult)) {
+          console.log('[IndicatorsPage] Sincronizando selectedKeyResult:', {
+            id: updatedKR.id,
+            start_month: updatedKR.start_month,
+            end_month: updatedKR.end_month
+          });
+          setSelectedKeyResult(updatedKR);
+        }
+      }
+    }
+  }, [keyResults]); // Não incluir selectedKeyResult para evitar loop infinito
+
   // Handle URL parameters for opening modals
   useEffect(() => {
     const editId = searchParams.get('edit');
