@@ -112,13 +112,13 @@ export const KRCard: React.FC<KRCardProps> = ({
         <div className="flex justify-between pt-2">
           <div>
             <p className="text-xs text-muted-foreground">Indicador {periodLabel}</p>
-            <p className="text-base font-semibold">
+            <p className="text-xs font-semibold">
               {formatValueWithUnit(currentMetrics.actual, keyResult.unit)}
             </p>
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground">Meta {periodLabel}</p>
-            <p className="text-base font-semibold">
+            <p className="text-xs font-semibold">
               {formatValueWithUnit(currentMetrics.target, keyResult.unit)}
             </p>
           </div>
