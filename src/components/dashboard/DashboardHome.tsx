@@ -721,15 +721,33 @@ export const DashboardHome: React.FC = () => {
                 <TrendingUp className="w-4 h-4" />
                 YTD
               </Button>
-              <Button
-                variant={periodType === 'yearly' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setPeriodType('yearly')}
-                className="gap-2"
-              >
-                <Target className="w-4 h-4" />
-                Ano
-              </Button>
+  <Button
+    variant={periodType === 'yearly' ? 'default' : 'ghost'}
+    size="sm"
+    onClick={() => setPeriodType('yearly')}
+    className="gap-2"
+  >
+    <Target className="w-4 h-4" />
+    Ano
+  </Button>
+
+  {periodType === 'yearly' && (
+    <Select
+      value={selectedYear.toString()}
+      onValueChange={(value) => setSelectedYear(parseInt(value))}
+    >
+      <SelectTrigger className="h-9 w-[100px]">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {yearOptions.map((option) => (
+          <SelectItem key={option.value} value={option.value.toString()}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )}
               
               {/* Quarter - Botão */}
               <Button

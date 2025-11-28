@@ -94,7 +94,7 @@ export const IndicatorsPage: React.FC = () => {
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4);
   const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(new Date().getFullYear());
   
-  const { quarterOptions, monthOptions } = usePlanPeriodOptions();
+  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
   
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -675,15 +675,33 @@ export const IndicatorsPage: React.FC = () => {
               YTD
             </Button>
             
-            <Button
-              variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedPeriod('yearly')}
-              className="gap-2"
-            >
-              <Target className="w-4 h-4" />
-              Ano
-            </Button>
+              <Button
+                variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setSelectedPeriod('yearly')}
+                className="gap-2"
+              >
+                <Target className="w-4 h-4" />
+                Ano
+              </Button>
+
+              {selectedPeriod === 'yearly' && (
+                <Select
+                  value={selectedYear.toString()}
+                  onValueChange={(value) => setSelectedYear(parseInt(value))}
+                >
+                  <SelectTrigger className="h-9 w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yearOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value.toString()}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             
             <Button
               variant={selectedPeriod === 'quarterly' ? 'default' : 'ghost'}

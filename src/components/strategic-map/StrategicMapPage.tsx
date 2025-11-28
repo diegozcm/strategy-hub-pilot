@@ -83,7 +83,7 @@ export const StrategicMapPage = () => {
   );
   const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(new Date().getFullYear());
 
-  const { quarterOptions, monthOptions } = usePlanPeriodOptions();
+  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
 
   // Check URL parameters on component mount and when search params change
   React.useEffect(() => {
@@ -270,15 +270,33 @@ export const StrategicMapPage = () => {
               YTD
             </Button>
             
-            <Button
-              variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedPeriod('yearly')}
-              className="gap-2"
-            >
-              <Target className="w-4 h-4" />
-              Ano
-            </Button>
+                <Button
+                  variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSelectedPeriod('yearly')}
+                  className="gap-2"
+                >
+                  <Target className="w-4 h-4" />
+                  Ano
+                </Button>
+
+                {selectedPeriod === 'yearly' && (
+                  <Select
+                    value={selectedYear.toString()}
+                    onValueChange={(value) => setSelectedYear(parseInt(value))}
+                  >
+                    <SelectTrigger className="h-9 w-[100px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {yearOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value.toString()}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
             
             <Button
               variant={selectedPeriod === 'quarterly' ? 'default' : 'ghost'}
