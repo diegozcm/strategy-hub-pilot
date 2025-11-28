@@ -467,7 +467,28 @@ export const DashboardHome: React.FC = () => {
       if (typeof kr.ytd_percentage === 'number') return kr.ytd_percentage;
       return 0;
     }
-    // yearly
+    // yearly - calcular para o ano selecionado
+    if (periodType === 'yearly') {
+      const monthKeys = [];
+      for (let m = 1; m <= 12; m++) {
+        monthKeys.push(`${selectedYear}-${m.toString().padStart(2, '0')}`);
+      }
+      
+      const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
+      const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+      
+      const targets = monthKeys.map(key => monthlyTargets[key] || 0);
+      const actuals = monthKeys.map(key => monthlyActual[key] || 0);
+      
+      const totalTarget = calculateAggregatedValue(targets, kr.aggregation_type || 'sum');
+      const totalActual = calculateAggregatedValue(actuals, kr.aggregation_type || 'sum');
+      
+      if (totalTarget > 0) {
+        return calculateKRStatus(totalActual, totalTarget, kr.target_direction || 'maximize').percentage;
+      }
+      return 0;
+    }
+    
     if (typeof kr.yearly_percentage === 'number') return kr.yearly_percentage;
     return 0;
   };
@@ -498,6 +519,18 @@ export const DashboardHome: React.FC = () => {
     if (periodType === 'ytd') {
       return kr.ytd_actual ?? 0;
     }
+    // yearly - calcular para o ano selecionado
+    if (periodType === 'yearly') {
+      const monthKeys = [];
+      for (let m = 1; m <= 12; m++) {
+        monthKeys.push(`${selectedYear}-${m.toString().padStart(2, '0')}`);
+      }
+      
+      const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+      const actuals = monthKeys.map(key => monthlyActual[key] || 0);
+      return calculateAggregatedValue(actuals, kr.aggregation_type || 'sum');
+    }
+    
     return kr.yearly_actual ?? kr.current_value ?? 0;
   };
 

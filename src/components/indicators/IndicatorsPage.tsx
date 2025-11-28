@@ -386,51 +386,101 @@ export const IndicatorsPage: React.FC = () => {
     return map;
   }, [keyResults, selectedQuarter]);
 
-  // Recalcular metrics considerando mês customizado
+  // Recalcular metrics considerando mês customizado OU ano customizado
   const customMetricsMap = useMemo(() => {
-    if (selectedPeriod !== 'monthly' || !selectedMonth || !selectedYear) {
+    const needsRecalculation = 
+      (selectedPeriod === 'monthly' && selectedMonth && selectedYear) ||
+      (selectedPeriod === 'yearly' && selectedYear);
+      
+    if (!needsRecalculation) {
       return krMetricsMap;
     }
     
     const map = new Map();
     keyResults.forEach(kr => {
-      // Para monthly com mês customizado, precisamos recalcular
-      const monthKey = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
-      const target = kr.monthly_targets?.[monthKey] ?? 0;
-      const actual = kr.monthly_actual?.[monthKey] ?? 0;
-      
-      // Calcular percentage usando a mesma lógica do banco
-      let percentage = 0;
-      if (target > 0 && actual > 0) {
-        if (kr.target_direction === 'minimize') {
-          percentage = ((target - actual) / target) * 100 + 100;
-        } else {
-          percentage = (actual / target) * 100;
+      if (selectedPeriod === 'monthly' && selectedMonth && selectedYear) {
+        // Para monthly com mês customizado, precisamos recalcular
+        const monthKey = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
+        const target = kr.monthly_targets?.[monthKey] ?? 0;
+        const actual = kr.monthly_actual?.[monthKey] ?? 0;
+        
+        // Calcular percentage usando a mesma lógica do banco
+        let percentage = 0;
+        if (target > 0 && actual > 0) {
+          if (kr.target_direction === 'minimize') {
+            percentage = ((target - actual) / target) * 100 + 100;
+          } else {
+            percentage = (actual / target) * 100;
+          }
         }
+        
+        map.set(kr.id, {
+          ytd: {
+            target: kr.ytd_target ?? 0,
+            actual: kr.ytd_actual ?? 0,
+            percentage: kr.ytd_percentage ?? 0,
+          },
+          monthly: {
+            target,
+            actual,
+            percentage,
+          },
+          yearly: {
+            target: kr.yearly_target ?? 0,
+            actual: kr.yearly_actual ?? 0,
+            percentage: kr.yearly_percentage ?? 0,
+          },
+          quarterly: krMetricsMap.get(kr.id)?.quarterly ?? {
+            target: 0,
+            actual: 0,
+            percentage: 0,
+          },
+        });
+      } else if (selectedPeriod === 'yearly' && selectedYear) {
+        // Para yearly com ano customizado, recalcular
+        const monthKeys = [];
+        for (let m = 1; m <= 12; m++) {
+          monthKeys.push(`${selectedYear}-${m.toString().padStart(2, '0')}`);
+        }
+        
+        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
+        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+        
+        const totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
+        const totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+        
+        let percentage = 0;
+        if (totalTarget > 0 && totalActual > 0) {
+          if (kr.target_direction === 'minimize') {
+            percentage = ((totalTarget - totalActual) / totalTarget) * 100 + 100;
+          } else {
+            percentage = (totalActual / totalTarget) * 100;
+          }
+        }
+        
+        map.set(kr.id, {
+          ytd: {
+            target: kr.ytd_target ?? 0,
+            actual: kr.ytd_actual ?? 0,
+            percentage: kr.ytd_percentage ?? 0,
+          },
+          monthly: {
+            target: kr.current_month_target ?? 0,
+            actual: kr.current_month_actual ?? 0,
+            percentage: kr.monthly_percentage ?? 0,
+          },
+          yearly: {
+            target: totalTarget,
+            actual: totalActual,
+            percentage,
+          },
+          quarterly: krMetricsMap.get(kr.id)?.quarterly ?? {
+            target: 0,
+            actual: 0,
+            percentage: 0,
+          },
+        });
       }
-      
-      map.set(kr.id, {
-        ytd: {
-          target: kr.ytd_target ?? 0,
-          actual: kr.ytd_actual ?? 0,
-          percentage: kr.ytd_percentage ?? 0,
-        },
-        monthly: {
-          target,
-          actual,
-          percentage,
-        },
-        yearly: {
-          target: kr.yearly_target ?? 0,
-          actual: kr.yearly_actual ?? 0,
-          percentage: kr.yearly_percentage ?? 0,
-        },
-        quarterly: krMetricsMap.get(kr.id)?.quarterly ?? {
-          target: 0,
-          actual: 0,
-          percentage: 0,
-        },
-      });
     });
     return map;
   }, [keyResults, selectedPeriod, selectedMonth, selectedYear, krMetricsMap]);

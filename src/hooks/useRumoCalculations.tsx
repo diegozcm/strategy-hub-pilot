@@ -63,7 +63,25 @@ export const useRumoCalculations = (
       } else if (periodType === 'ytd') {
         progress = kr.ytd_percentage || 0;
       } else if (periodType === 'yearly') {
-        progress = kr.yearly_percentage || 0;
+        const year = options?.selectedYear ?? now.getFullYear();
+        const monthKeys = [];
+        for (let m = 1; m <= 12; m++) {
+          monthKeys.push(`${year}-${m.toString().padStart(2, '0')}`);
+        }
+        
+        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
+        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+        
+        const totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
+        const totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+        
+        if (totalTarget > 0 && totalActual > 0) {
+          if (kr.target_direction === 'minimize') {
+            progress = ((totalTarget - totalActual) / totalTarget) * 100 + 100;
+          } else {
+            progress = (totalActual / totalTarget) * 100;
+          }
+        }
       } else if (periodType === 'quarterly') {
         const quarter = options?.selectedQuarter || 1;
         switch (quarter) {
