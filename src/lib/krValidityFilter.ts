@@ -8,8 +8,8 @@ export const isKRInQuarter = (
   quarter: 1 | 2 | 3 | 4, 
   year: number
 ): boolean => {
-  // KRs sem vigência definida são sempre mostrados
-  if (!kr.start_month || !kr.end_month) return true;
+  // KRs sem vigência definida NÃO são mostrados quando filtro de quarter está ativo
+  if (!kr.start_month || !kr.end_month) return false;
   
   const quarterStartMonth = ((quarter - 1) * 3) + 1;
   const quarterEndMonth = quarter * 3;
@@ -25,7 +25,8 @@ export const isKRInQuarter = (
  * Verifica se um KR está dentro de um ano específico
  */
 export const isKRInYear = (kr: KeyResult, year: number): boolean => {
-  if (!kr.start_month || !kr.end_month) return true;
+  // KRs sem vigência definida NÃO são mostrados quando filtro de ano está ativo
+  if (!kr.start_month || !kr.end_month) return false;
   
   const yearStart = `${year}-01`;
   const yearEnd = `${year}-12`;
@@ -41,7 +42,8 @@ export const isKRInMonth = (
   month: number, 
   year: number
 ): boolean => {
-  if (!kr.start_month || !kr.end_month) return true;
+  // KRs sem vigência definida NÃO são mostrados quando filtro de mês está ativo
+  if (!kr.start_month || !kr.end_month) return false;
   
   const monthKey = `${year}-${month.toString().padStart(2, '0')}`;
   
@@ -87,7 +89,8 @@ export const filterKRsByValidity = (
         );
       
       case 'ytd':
-        // Para YTD, verificar se o KR tem vigência no ano atual
+        // Para YTD, KRs sem vigência são mostrados (comportamento especial)
+        if (!kr.start_month || !kr.end_month) return true;
         return isKRInYear(kr, currentYear);
       
       default:
