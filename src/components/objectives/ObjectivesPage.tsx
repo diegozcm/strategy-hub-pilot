@@ -353,11 +353,11 @@ export const ObjectivesPage: React.FC = () => {
           break;
       }
       
-      return sum + percentage;
-    }, 0);
-    
-    return Math.round(totalProgress / keyResults.length);
-  };
+    return sum + percentage;
+  }, 0);
+  
+  return totalProgress / keyResults.length;
+};
 
   const filteredObjectives = objectives.filter(objective => {
     const matchesSearch = objective.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -863,7 +863,7 @@ export const ObjectivesPage: React.FC = () => {
                                 : selectedPeriod === 'yearly'
                                 ? { selectedYear }
                                 : undefined
-                            )}%</span>
+                            ).toFixed(1).replace('.', ',')}%</span>
                           </div>
                           <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
                             {(() => {
