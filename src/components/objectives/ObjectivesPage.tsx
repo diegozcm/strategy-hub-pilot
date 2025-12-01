@@ -249,6 +249,7 @@ export const ObjectivesPage: React.FC = () => {
     return keyResults.filter(kr => kr.objective_id === objectiveId);
   };
 
+  // Usa a mesma lógica do useKRMetrics para garantir consistência
   const calculateObjectiveProgress = (
     keyResults: any[], 
     period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' = 'ytd',
@@ -273,6 +274,7 @@ export const ObjectivesPage: React.FC = () => {
             case 4: percentage = kr.q4_percentage || 0; break;
           }
           break;
+          
         case 'monthly':
           if (options?.selectedMonth && options?.selectedYear) {
             const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
@@ -281,11 +283,18 @@ export const ObjectivesPage: React.FC = () => {
             
             const monthTarget = monthlyTargets[monthKey] || 0;
             const monthActual = monthlyActual[monthKey] || 0;
-            percentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
+            
+            // Aplicar fórmula baseada em target_direction
+            if (kr.target_direction === 'minimize') {
+              percentage = monthActual > 0 ? (monthTarget / monthActual) * 100 : (monthTarget === 0 ? 100 : 0);
+            } else {
+              percentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
+            }
           } else {
             percentage = kr.monthly_percentage || 0;
           }
           break;
+          
         case 'yearly':
           if (options?.selectedYear) {
             const monthKeys = [];
@@ -295,21 +304,49 @@ export const ObjectivesPage: React.FC = () => {
             
             const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
             const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+            const aggregationType = kr.aggregation_type || 'sum';
             
-            const totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
-            const totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+            const targetValues = monthKeys.map(key => monthlyTargets[key] || 0);
+            const actualValues = monthKeys.map(key => monthlyActual[key] || 0);
             
-            if (totalTarget > 0 && totalActual > 0) {
-              if (kr.target_direction === 'minimize') {
-                percentage = ((totalTarget - totalActual) / totalTarget) * 100 + 100;
-              } else {
-                percentage = (totalActual / totalTarget) * 100;
-              }
+            let totalTarget = 0;
+            let totalActual = 0;
+            
+            // Calcular baseado no tipo de agregação
+            switch (aggregationType) {
+              case 'sum':
+                totalTarget = targetValues.reduce((sum, v) => sum + v, 0);
+                totalActual = actualValues.reduce((sum, v) => sum + v, 0);
+                break;
+              case 'average':
+                const validTargets = targetValues.filter(v => v > 0);
+                const validActuals = actualValues.filter(v => v > 0);
+                totalTarget = validTargets.length > 0 ? validTargets.reduce((sum, v) => sum + v, 0) / validTargets.length : 0;
+                totalActual = validActuals.length > 0 ? validActuals.reduce((sum, v) => sum + v, 0) / validActuals.length : 0;
+                break;
+              case 'max':
+                totalTarget = targetValues.length > 0 ? Math.max(...targetValues) : 0;
+                totalActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
+                break;
+              case 'min':
+                const nonZeroTargets = targetValues.filter(v => v > 0);
+                const nonZeroActuals = actualValues.filter(v => v > 0);
+                totalTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
+                totalActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
+                break;
+            }
+            
+            // Aplicar fórmula baseada em target_direction
+            if (kr.target_direction === 'minimize') {
+              percentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
+            } else {
+              percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
             }
           } else {
             percentage = kr.yearly_percentage || 0;
           }
           break;
+          
         case 'ytd':
         default:
           percentage = kr.ytd_percentage || 0;
