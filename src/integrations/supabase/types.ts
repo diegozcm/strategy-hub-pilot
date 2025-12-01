@@ -3251,6 +3251,16 @@ export type Database = {
         }[]
       }
       generate_temporary_password: { Args: never; Returns: string }
+      get_company_users: {
+        Args: { _company_id: string }
+        Returns: {
+          avatar_url: string
+          email: string
+          first_name: string
+          last_name: string
+          user_id: string
+        }[]
+      }
       get_monthly_objective_achievement: {
         Args: { objective_id: string; target_month: string }
         Returns: {

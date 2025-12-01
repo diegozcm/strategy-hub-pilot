@@ -31,36 +31,26 @@ export const useCompanyUsers = (companyId?: string) => {
         console.log('[useCompanyUsers] Fetching users for company:', companyId);
         setLoading(true);
         
+        // Use RPC with SECURITY DEFINER to bypass RLS recursion issues
         const { data, error } = await supabase
-          .from('user_company_relations')
-          .select(`
-            user_id,
-            profiles!inner(
-              user_id,
-              first_name,
-              last_name,
-              email,
-              avatar_url
-            )
-          `)
-          .eq('company_id', companyId);
+          .rpc('get_company_users', { _company_id: companyId });
         
         if (error) throw error;
         
         console.log('[useCompanyUsers] Fetched users:', data?.length || 0, 'for company:', companyId);
         
-        // Flatten the structure
-        const flattenedUsers: CompanyUser[] = (data || []).map((item: any) => ({
-          user_id: item.profiles.user_id,
-          first_name: item.profiles.first_name || '',
-          last_name: item.profiles.last_name || '',
-          email: item.profiles.email || '',
-          avatar_url: item.profiles.avatar_url
+        // Data already comes in the correct format from RPC
+        const companyUsers: CompanyUser[] = (data || []).map((user: any) => ({
+          user_id: user.user_id,
+          first_name: user.first_name || '',
+          last_name: user.last_name || '',
+          email: user.email || '',
+          avatar_url: user.avatar_url
         }));
         
-        console.log('[useCompanyUsers] Flattened users:', flattenedUsers.map(u => `${u.first_name} ${u.last_name}`).join(', '));
+        console.log('[useCompanyUsers] Company users:', companyUsers.map(u => `${u.first_name} ${u.last_name}`).join(', '));
         
-        setUsers(flattenedUsers);
+        setUsers(companyUsers);
       } catch (error) {
         console.error('[useCompanyUsers] Error loading company users:', error);
         setUsers([]);
