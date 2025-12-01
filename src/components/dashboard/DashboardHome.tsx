@@ -643,33 +643,6 @@ export const DashboardHome: React.FC = () => {
     };
   };
 
-  const getMonthlyPerformance = (kr: KeyResultWithPillar, monthKey: string) => {
-    const target = kr.monthly_targets?.[monthKey];
-    const actual = kr.monthly_actual?.[monthKey];
-    
-    const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
-    const hasActual = typeof actual === 'number' && Number.isFinite(actual);
-    
-    // Se não há target válido ou actual, não há dados para calcular
-    if (!hasTarget || !hasActual) {
-      return {
-        target: hasTarget ? target : null,
-        actual: hasActual ? actual : null,
-        percentage: null
-      };
-    }
-    
-    const percentage = Math.round(
-      calculateKRStatus(actual, target, kr.target_direction || 'maximize').percentage
-    );
-    
-    return {
-      target,
-      actual,
-      percentage
-    };
-  };
-
   const getAggregationTypeLabel = (aggregationType: string) => {
     switch (aggregationType) {
       case 'sum':
@@ -1066,9 +1039,9 @@ export const DashboardHome: React.FC = () => {
                                            : 'no ano'
                                        }
                                      </span>
-                                    <span className="text-xs text-muted-foreground">
-                                      Atual: {Number(selectedActualValue).toFixed(1)}{kr.unit ? ` ${kr.unit}` : ''}
-                                    </span>
+                                     <span className="text-xs text-muted-foreground">
+                                       Atual: {Number(totals.actual).toFixed(1)}{kr.unit ? ` ${kr.unit}` : ''}
+                                     </span>
                                   </div>
                                 </div>
                                 <Button
