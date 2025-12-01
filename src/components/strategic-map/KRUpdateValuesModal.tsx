@@ -165,8 +165,15 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
 
   const monthlyTargets = keyResult.monthly_targets as Record<string, number> || {};
 
+  const handleClose = () => {
+    // Reset estados internos ao fechar
+    setEditingField(null);
+    setTempValue('');
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
       <DialogContent className="sm:max-w-[920px] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Atualizar Valores - {keyResult.title}</DialogTitle>
