@@ -3022,12 +3022,30 @@ export type Database = {
         Returns: number
       }
       calculate_kr_metrics: { Args: { kr_id: string }; Returns: undefined }
-      calculate_kr_metrics_for_month: {
-        Args: { p_kr_id: string; p_month: number; p_year: number }
+      calculate_kr_metrics_for_month:
+        | { Args: { kr_id: string; month_key: string }; Returns: undefined }
+        | {
+            Args: { p_kr_id: string; p_month: number; p_year: number }
+            Returns: {
+              month_actual: number
+              month_percentage: number
+              month_target: number
+            }[]
+          }
+      calculate_kr_metrics_for_quarter: {
+        Args: { kr_id: string; target_quarter: number; target_year: number }
         Returns: {
-          month_actual: number
-          month_percentage: number
-          month_target: number
+          quarter_actual: number
+          quarter_percentage: number
+          quarter_target: number
+        }[]
+      }
+      calculate_kr_metrics_for_year: {
+        Args: { kr_id: string; target_year: number }
+        Returns: {
+          year_actual: number
+          year_percentage: number
+          year_target: number
         }[]
       }
       calculate_kr_progress: {
