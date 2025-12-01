@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, CalendarDays, User, Target, AlertTriangle, CheckCircle, Activity, Trash2, Save, X, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -104,6 +104,9 @@ export const IndicatorsPage: React.FC = () => {
     getDefaultMonth 
   } = usePlanPeriodOptions();
   
+  // Ref para controlar se os filtros já foram inicializados
+  const hasInitializedFilters = useRef(false);
+  
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isKROverviewModalOpen, setIsKROverviewModalOpen] = useState(false);
@@ -127,9 +130,11 @@ export const IndicatorsPage: React.FC = () => {
   const [newKRValidityQuarter, setNewKRValidityQuarter] = useState<1 | 2 | 3 | 4 | null>(null);
   const [newKRValidityYear, setNewKRValidityYear] = useState<number>(new Date().getFullYear());
 
-  // Sincronizar período inicial com o plano ativo
+  // Sincronizar período inicial com o plano ativo (apenas uma vez)
   useEffect(() => {
-    if (activePlan && yearOptions.length > 0) {
+    if (activePlan && yearOptions.length > 0 && !hasInitializedFilters.current) {
+      hasInitializedFilters.current = true;
+      
       // Ano para filtro anual e criação de KR
       const defaultYear = getDefaultYear();
       setSelectedYear(defaultYear);
@@ -148,7 +153,12 @@ export const IndicatorsPage: React.FC = () => {
         setSelectedYear(defaultMonth.year);
       }
     }
-  }, [activePlan, yearOptions.length, getDefaultYear, getDefaultQuarter, getDefaultMonth]);
+  }, [activePlan, yearOptions.length, getDefaultYear, getDefaultQuarter, getDefaultMonth, selectedPeriod]);
+
+  // Resetar flag quando o plano ativo mudar
+  useEffect(() => {
+    hasInitializedFilters.current = false;
+  }, [activePlan?.id]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 

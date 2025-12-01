@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { parseISO } from 'date-fns';
 import { useActivePlan } from './useActivePlan';
 
@@ -104,16 +104,16 @@ export const usePlanPeriodOptions = () => {
   }, [activePlan]);
 
   // Funções que determinam o período padrão inteligente
-  const getDefaultYear = (): number => {
+  const getDefaultYear = useCallback((): number => {
     const currentYear = new Date().getFullYear();
     // Se o ano atual está no plano, usa ele
     const hasCurrentYear = yearOptions.some(opt => opt.value === currentYear);
     if (hasCurrentYear) return currentYear;
     // Senão, retorna o primeiro ano do plano (mais recente)
     return yearOptions.length > 0 ? yearOptions[0].value : currentYear;
-  };
+  }, [yearOptions]);
 
-  const getDefaultQuarter = (): { quarter: 1 | 2 | 3 | 4, year: number } => {
+  const getDefaultQuarter = useCallback((): { quarter: 1 | 2 | 3 | 4, year: number } => {
     const now = new Date();
     const currentQuarter = Math.ceil((now.getMonth() + 1) / 3) as 1 | 2 | 3 | 4;
     const currentYear = now.getFullYear();
@@ -133,9 +133,9 @@ export const usePlanPeriodOptions = () => {
     }
     
     return { quarter: currentQuarter, year: currentYear };
-  };
+  }, [quarterOptions]);
 
-  const getDefaultMonth = (): { month: number, year: number } => {
+  const getDefaultMonth = useCallback((): { month: number, year: number } => {
     const now = new Date();
     // Usar mês anterior como padrão (último mês fechado)
     const previousMonth = new Date(now);
@@ -159,7 +159,7 @@ export const usePlanPeriodOptions = () => {
     }
     
     return { month: targetMonth, year: targetYear };
-  };
+  }, [monthOptions]);
 
   return { 
     quarterOptions, 
