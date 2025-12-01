@@ -271,8 +271,13 @@ export const RumoDashboard = () => {
                     krProgress={krProgress}
                     selectedPeriod={periodType}
                     selectedMonth={periodType === 'monthly' ? selectedMonth : undefined}
-                    selectedYear={periodType === 'monthly' ? selectedYear : undefined}
+                    selectedYear={
+                      periodType === 'monthly' ? selectedYear : 
+                      periodType === 'yearly' ? selectedYear : 
+                      undefined
+                    }
                     selectedQuarter={periodType === 'quarterly' ? selectedQuarter : undefined}
+                    selectedQuarterYear={periodType === 'quarterly' ? selectedQuarterYear : undefined}
                   />
                         );
                       })}

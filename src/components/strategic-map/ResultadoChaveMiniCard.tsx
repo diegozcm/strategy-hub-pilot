@@ -13,6 +13,7 @@ interface ResultadoChaveMiniCardProps {
   selectedMonth?: number;
   selectedYear?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;
+  selectedQuarterYear?: number;
 }
 
 export const ResultadoChaveMiniCard = ({ 
@@ -23,25 +24,20 @@ export const ResultadoChaveMiniCard = ({
   selectedPeriod = 'ytd',
   selectedMonth,
   selectedYear,
-  selectedQuarter
+  selectedQuarter,
+  selectedQuarterYear
 }: ResultadoChaveMiniCardProps) => {
   // Usar useKRMetrics para obter valores corretos baseado no período e mês/ano selecionados
   const metrics = useKRMetrics(resultadoChave, { 
     selectedMonth, 
-    selectedYear 
+    selectedYear,
+    selectedQuarter,
+    selectedQuarterYear
   });
   
   // Calcular progresso baseado no período selecionado
   const currentValue = selectedPeriod === 'quarterly'
-    ? (() => {
-        const quarter = selectedQuarter || 1;
-        switch (quarter) {
-          case 1: return resultadoChave.q1_actual || 0;
-          case 2: return resultadoChave.q2_actual || 0;
-          case 3: return resultadoChave.q3_actual || 0;
-          case 4: return resultadoChave.q4_actual || 0;
-        }
-      })()
+    ? metrics.quarterly.actual
     : selectedPeriod === 'monthly' 
     ? metrics.monthly.actual
     : selectedPeriod === 'yearly'
@@ -49,15 +45,7 @@ export const ResultadoChaveMiniCard = ({
     : metrics.ytd.actual;
     
   const targetValue = selectedPeriod === 'quarterly'
-    ? (() => {
-        const quarter = selectedQuarter || 1;
-        switch (quarter) {
-          case 1: return resultadoChave.q1_target || 0;
-          case 2: return resultadoChave.q2_target || 0;
-          case 3: return resultadoChave.q3_target || 0;
-          case 4: return resultadoChave.q4_target || 0;
-        }
-      })()
+    ? metrics.quarterly.target
     : selectedPeriod === 'monthly'
     ? metrics.monthly.target
     : selectedPeriod === 'yearly'
@@ -65,15 +53,7 @@ export const ResultadoChaveMiniCard = ({
     : metrics.ytd.target;
   
   const percentage = selectedPeriod === 'quarterly'
-    ? (() => {
-        const quarter = selectedQuarter || 1;
-        switch (quarter) {
-          case 1: return resultadoChave.q1_percentage || 0;
-          case 2: return resultadoChave.q2_percentage || 0;
-          case 3: return resultadoChave.q3_percentage || 0;
-          case 4: return resultadoChave.q4_percentage || 0;
-        }
-      })()
+    ? metrics.quarterly.percentage
     : selectedPeriod === 'monthly'
     ? metrics.monthly.percentage
     : selectedPeriod === 'yearly'

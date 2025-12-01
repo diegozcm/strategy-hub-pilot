@@ -84,7 +84,86 @@ export const useKRMetrics = (
       };
     }
 
-  // If specific quarter is provided, return metrics for that quarter
+  // If specific quarter is provided, calculate dynamically using monthly data
+  if (options?.selectedQuarter && options?.selectedQuarterYear) {
+    const quarter = options.selectedQuarter;
+    const year = options.selectedQuarterYear;
+    
+    const quarterMonths = {
+      1: [1, 2, 3],
+      2: [4, 5, 6],
+      3: [7, 8, 9],
+      4: [10, 11, 12]
+    };
+    const months = quarterMonths[quarter];
+    const monthKeys = months.map(m => `${year}-${m.toString().padStart(2, '0')}`);
+    
+    const monthlyTargets = (keyResult.monthly_targets as Record<string, number>) || {};
+    const monthlyActual = (keyResult.monthly_actual as Record<string, number>) || {};
+    const aggregationType = keyResult.aggregation_type || 'sum';
+    
+    const targetValues = monthKeys.map(key => monthlyTargets[key] || 0);
+    const actualValues = monthKeys.map(key => monthlyActual[key] || 0);
+    
+    let qTarget = 0;
+    let qActual = 0;
+    
+    switch (aggregationType) {
+      case 'sum':
+        qTarget = targetValues.reduce((sum, v) => sum + v, 0);
+        qActual = actualValues.reduce((sum, v) => sum + v, 0);
+        break;
+      case 'average':
+        const validTargets = targetValues.filter(v => v > 0);
+        const validActuals = actualValues.filter(v => v > 0);
+        qTarget = validTargets.length > 0 ? validTargets.reduce((sum, v) => sum + v, 0) / validTargets.length : 0;
+        qActual = validActuals.length > 0 ? validActuals.reduce((sum, v) => sum + v, 0) / validActuals.length : 0;
+        break;
+      case 'max':
+        qTarget = targetValues.length > 0 ? Math.max(...targetValues) : 0;
+        qActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
+        break;
+      case 'min':
+        const nonZeroTargets = targetValues.filter(v => v > 0);
+        const nonZeroActuals = actualValues.filter(v => v > 0);
+        qTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
+        qActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
+        break;
+    }
+    
+    // Calculate percentage using database formula
+    let qPercentage = 0;
+    if (keyResult.target_direction === 'minimize') {
+      qPercentage = qActual > 0 ? (qTarget / qActual) * 100 : (qTarget === 0 ? 100 : 0);
+    } else {
+      qPercentage = qTarget > 0 ? (qActual / qTarget) * 100 : 0;
+    }
+
+    return {
+      ytd: {
+        target: keyResult.ytd_target ?? 0,
+        actual: keyResult.ytd_actual ?? 0,
+        percentage: keyResult.ytd_percentage ?? 0,
+      },
+      monthly: {
+        target: keyResult.current_month_target ?? 0,
+        actual: keyResult.current_month_actual ?? 0,
+        percentage: keyResult.monthly_percentage ?? 0,
+      },
+      yearly: {
+        target: keyResult.yearly_target ?? 0,
+        actual: keyResult.yearly_actual ?? 0,
+        percentage: keyResult.yearly_percentage ?? 0,
+      },
+      quarterly: {
+        target: qTarget,
+        actual: qActual,
+        percentage: qPercentage,
+      },
+    };
+  }
+
+  // If specific quarter is provided (without year), use pre-calculated values
   if (options?.selectedQuarter) {
     const quarter = options.selectedQuarter;
     let qTarget = 0;

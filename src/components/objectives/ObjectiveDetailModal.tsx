@@ -68,6 +68,7 @@ interface ObjectiveDetailModalProps {
   selectedMonth?: number;
   selectedYear?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;
+  selectedQuarterYear?: number;
 }
 
 export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
@@ -86,6 +87,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
   selectedMonth,
   selectedYear,
   selectedQuarter,
+  selectedQuarterYear,
 }) => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
@@ -103,14 +105,54 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
     if (keyResults.length === 0) return 0;
     
     const percentages = keyResults.map(kr => {
-      // Para período trimestral
-      if (selectedPeriod === 'quarterly' && selectedQuarter) {
-        const quarter = selectedQuarter;
-        switch (quarter) {
-          case 1: return kr.q1_percentage || 0;
-          case 2: return kr.q2_percentage || 0;
-          case 3: return kr.q3_percentage || 0;
-          case 4: return kr.q4_percentage || 0;
+      // Para período trimestral - calcular dinamicamente usando os meses do quarter
+      if (selectedPeriod === 'quarterly' && selectedQuarter && selectedQuarterYear) {
+        const quarterMonths = {
+          1: [1, 2, 3],
+          2: [4, 5, 6],
+          3: [7, 8, 9],
+          4: [10, 11, 12]
+        };
+        const months = quarterMonths[selectedQuarter];
+        const monthKeys = months.map(m => `${selectedQuarterYear}-${m.toString().padStart(2, '0')}`);
+        
+        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
+        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+        const aggregationType = kr.aggregation_type || 'sum';
+        
+        const targetValues = monthKeys.map(key => monthlyTargets[key] || 0);
+        const actualValues = monthKeys.map(key => monthlyActual[key] || 0);
+        
+        let totalTarget = 0;
+        let totalActual = 0;
+        
+        switch (aggregationType) {
+          case 'sum':
+            totalTarget = targetValues.reduce((sum, v) => sum + v, 0);
+            totalActual = actualValues.reduce((sum, v) => sum + v, 0);
+            break;
+          case 'average':
+            const validTargets = targetValues.filter(v => v > 0);
+            const validActuals = actualValues.filter(v => v > 0);
+            totalTarget = validTargets.length > 0 ? validTargets.reduce((sum, v) => sum + v, 0) / validTargets.length : 0;
+            totalActual = validActuals.length > 0 ? validActuals.reduce((sum, v) => sum + v, 0) / validActuals.length : 0;
+            break;
+          case 'max':
+            totalTarget = targetValues.length > 0 ? Math.max(...targetValues) : 0;
+            totalActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
+            break;
+          case 'min':
+            const nonZeroTargets = targetValues.filter(v => v > 0);
+            const nonZeroActuals = actualValues.filter(v => v > 0);
+            totalTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
+            totalActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
+            break;
+        }
+        
+        if (kr.target_direction === 'minimize') {
+          return totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
+        } else {
+          return totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
         }
       }
       
