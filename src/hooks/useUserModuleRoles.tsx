@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 
@@ -57,10 +57,12 @@ export const useUserModuleRoles = () => {
     fetchUserModuleRoles();
   }, [user?.id]);
 
-  const getRolesForModuleId = (moduleId: string | undefined): UserRole[] => {
+  const getRolesForModuleId = useCallback((moduleId: string | undefined): UserRole[] => {
     if (!moduleId) return [];
     return moduleRoles[moduleId] || [];
-  };
+  }, [moduleRoles]);
+
+  console.log('[useUserModuleRoles] moduleRoles updated:', moduleRoles);
 
   return {
     moduleRoles,
