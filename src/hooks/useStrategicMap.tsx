@@ -419,11 +419,11 @@ export const useStrategicMap = () => {
           break;
       }
       
-      return sum + percentage;
-    }, 0);
-    
-    return Math.round(totalProgress / objectiveKRs.length);
-  };
+    return sum + percentage;
+  }, 0);
+  
+  return totalProgress / objectiveKRs.length;
+};
 
   const calculatePillarProgress = (
     pillarId: string,
@@ -442,7 +442,7 @@ export const useStrategicMap = () => {
       return sum + calculateObjectiveProgress(obj.id, period, options, filteredKRs);
     }, 0);
     
-    return Math.round(totalProgress / pillarObjectives.length);
+    return totalProgress / pillarObjectives.length;
   };
 
   // Initialize data
