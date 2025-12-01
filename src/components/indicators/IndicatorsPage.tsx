@@ -61,7 +61,7 @@ export const IndicatorsPage: React.FC = () => {
   const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(authCompany?.id);
-  const { validityEnabled, membersCanViewAll } = useCompanyModuleSettings('strategic-planning');
+  const { validityEnabled, membersCanViewAll, loading: settingsLoading } = useCompanyModuleSettings('strategic-planning');
   const [searchParams, setSearchParams] = useSearchParams();
   const { canCreateKR, canSelectOwner, canEditAnyKR, canDeleteKR, currentUserId, isMemberOnly, canViewAllKRs } = useKRPermissions();
   
@@ -631,8 +631,8 @@ export const IndicatorsPage: React.FC = () => {
 
   // Aplicar filtro de visibilidade para membros
   const visibilityFilteredKeyResults = useMemo(() => {
-    // Se não for membro, ou se membro pode ver todos, retorna todos
-    if (!isMemberOnly || canViewAllKRs) {
+    // Se não for membro, settings carregando, ou pode ver todos, mostrar todos
+    if (!isMemberOnly || settingsLoading || canViewAllKRs) {
       return validityFilteredKeyResults;
     }
     
@@ -640,7 +640,7 @@ export const IndicatorsPage: React.FC = () => {
     return validityFilteredKeyResults.filter(kr => 
       kr.assigned_owner_id === currentUserId
     );
-  }, [validityFilteredKeyResults, isMemberOnly, canViewAllKRs, currentUserId]);
+  }, [validityFilteredKeyResults, isMemberOnly, canViewAllKRs, currentUserId, settingsLoading]);
 
   // Context filtered KRs (search, pillar, objective - used for statistics)
   const contextFilteredKeyResults = visibilityFilteredKeyResults.filter(keyResult => {
