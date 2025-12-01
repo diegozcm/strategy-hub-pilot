@@ -17,6 +17,7 @@ import { getDirectionLabel, getDirectionDescription, type TargetDirection } from
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useCompanyUsers } from '@/hooks/useCompanyUsers';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
+import { useKRPermissions } from '@/hooks/useKRPermissions';
 import { cn } from '@/lib/utils';
 
 // Função para verificar se um mês está dentro da vigência
@@ -81,6 +82,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
   const { company } = useAuth();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
   const { quarterOptions, yearOptions } = usePlanPeriodOptions();
+  const { canSelectOwner } = useKRPermissions();
   const [savingAggregationType, setSavingAggregationType] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -488,26 +490,31 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="assigned_owner">Dono do KR *</Label>
-              <Select 
-                value={basicInfo.assigned_owner_id || 'none'} 
-                onValueChange={(value) => setBasicInfo({...basicInfo, assigned_owner_id: value})}
-                disabled={loadingUsers}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o dono" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum dono</SelectItem>
-                    {companyUsers.map((user) => (
-                      <SelectItem key={user.user_id} value={user.user_id}>
-                        {user.first_name} {user.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {canSelectOwner && (
+                <div className="space-y-2">
+                  <Label htmlFor="assigned_owner">Dono do KR *</Label>
+                  <Select 
+                    value={basicInfo.assigned_owner_id || 'none'} 
+                    onValueChange={(value) => setBasicInfo({...basicInfo, assigned_owner_id: value})}
+                    disabled={loadingUsers}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={loadingUsers ? "Carregando usuários..." : "Selecione o dono"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum dono</SelectItem>
+                      {companyUsers.length === 0 && !loadingUsers && (
+                        <SelectItem value="empty" disabled>Nenhum usuário encontrado</SelectItem>
+                      )}
+                      {companyUsers.map((user) => (
+                        <SelectItem key={user.user_id} value={user.user_id}>
+                          {user.first_name} {user.last_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label>Vigência</Label>

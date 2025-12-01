@@ -1114,10 +1114,13 @@ export const IndicatorsPage: React.FC = () => {
                     disabled={loadingUsers}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o dono" />
+                      <SelectValue placeholder={loadingUsers ? "Carregando usuários..." : "Selecione o dono"} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Nenhum dono</SelectItem>
+                      {companyUsers.length === 0 && !loadingUsers && (
+                        <SelectItem value="empty" disabled>Nenhum usuário encontrado</SelectItem>
+                      )}
                       {companyUsers.map((user) => (
                         <SelectItem key={user.user_id} value={user.user_id}>
                           {user.first_name} {user.last_name}
