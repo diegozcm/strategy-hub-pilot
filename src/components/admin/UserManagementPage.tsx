@@ -951,6 +951,7 @@ export const UserManagementPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [userModules, setUserModules] = useState<UserModuleAccess[]>([]);
+  const [userModuleRoles, setUserModuleRoles] = useState<Record<string, Record<string, string | null>>>({});
   const [confirmingEmail, setConfirmingEmail] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
@@ -1027,6 +1028,49 @@ export const UserManagementPage: React.FC = () => {
 
       console.log(`✅ ${userModulesData?.length || 0} acessos de módulos carregados`);
 
+      // Carregar roles de todos os usuários
+      const rolesMap: Record<string, Record<string, string | null>> = {};
+      
+      // Buscar roles de user_module_roles
+      const { data: allUserModuleRoles, error: rolesError } = await supabase
+        .from('user_module_roles')
+        .select(`
+          user_id,
+          module_id,
+          role,
+          system_modules!inner(id, slug)
+        `)
+        .eq('active', true);
+
+      if (!rolesError && allUserModuleRoles) {
+        allUserModuleRoles.forEach((userRole: any) => {
+          if (!rolesMap[userRole.user_id]) {
+            rolesMap[userRole.user_id] = {};
+          }
+          rolesMap[userRole.user_id][userRole.module_id] = userRole.role;
+        });
+      }
+
+      // Buscar perfis do Startup HUB separadamente
+      const startupModule = modulesData?.find(m => m.slug === 'startup-hub');
+      if (startupModule) {
+        const { data: startupProfiles } = await supabase
+          .from('startup_hub_profiles')
+          .select('user_id, type')
+          .eq('status', 'active');
+        
+        if (startupProfiles) {
+          startupProfiles.forEach((profile: any) => {
+            if (!rolesMap[profile.user_id]) {
+              rolesMap[profile.user_id] = {};
+            }
+            rolesMap[profile.user_id][startupModule.id] = profile.type;
+          });
+        }
+      }
+
+      console.log(`✅ Roles carregadas para ${Object.keys(rolesMap).length} usuários`);
+
       const companiesTyped = (companiesData || []).map(company => ({
         ...company,
         status: company.status as 'active' | 'inactive'
@@ -1036,6 +1080,7 @@ export const UserManagementPage: React.FC = () => {
       setCompanies(companiesTyped);
       setModules(modulesData || []);
       setUserModules(userModulesData || []);
+      setUserModuleRoles(rolesMap);
       
       console.log('✅ Todos os dados carregados com sucesso');
       
@@ -1054,6 +1099,22 @@ export const UserManagementPage: React.FC = () => {
 
   const getUserModuleCount = (userId: string) => {
     return userModules.filter(um => um.user_id === userId && um.active).length;
+  };
+
+  const getRoleLabel = (role: string, moduleSlug: string): string => {
+    if (moduleSlug === 'startup-hub') {
+      return role === 'startup' ? 'Startup' : role === 'mentor' ? 'Mentor' : role;
+    }
+    switch (role) {
+      case 'admin': return 'Admin';
+      case 'manager': return 'Gestor';
+      case 'member': return 'Membro';
+      default: return role;
+    }
+  };
+
+  const getUserRoleForModule = (userId: string, moduleId: string): string | null => {
+    return userModuleRoles[userId]?.[moduleId] || null;
   };
 
   const confirmUserEmail = async (userId: string) => {
@@ -1189,7 +1250,11 @@ export const UserManagementPage: React.FC = () => {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>E-mail</TableHead>
-                    <TableHead className="hidden sm:table-cell">Módulos Ativos</TableHead>
+                    {modules.map((module) => (
+                      <TableHead key={module.id} className="hidden md:table-cell text-center">
+                        {module.name.replace(' HUB', '')}
+                      </TableHead>
+                    ))}
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -1211,22 +1276,25 @@ export const UserManagementPage: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="min-w-0">
-                          <p className="truncate">{user.email}</p>
-                          <Badge 
-                            variant={user.role === 'admin' ? 'destructive' : user.role === 'manager' ? 'default' : 'secondary'}
-                            className="mt-1 text-xs"
-                          >
-                            {user.role === 'admin' ? 'Admin' : 
-                             user.role === 'manager' ? 'Gerente' : 'Membro'}
-                          </Badge>
-                        </div>
+                        <p className="truncate">{user.email}</p>
                       </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Badge variant="outline" className="text-xs">
-                          {getUserModuleCount(user.user_id)} de {modules.length}
-                        </Badge>
-                      </TableCell>
+                      {modules.map((module) => {
+                        const role = getUserRoleForModule(user.user_id, module.id);
+                        return (
+                          <TableCell key={module.id} className="hidden md:table-cell text-center">
+                            {role ? (
+                              <Badge 
+                                variant={role === 'admin' ? 'destructive' : role === 'manager' ? 'default' : 'secondary'}
+                                className="text-xs"
+                              >
+                                {getRoleLabel(role, module.slug)}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">-</span>
+                            )}
+                          </TableCell>
+                        );
+                      })}
                       <TableCell>
                         <Badge 
                           variant={
