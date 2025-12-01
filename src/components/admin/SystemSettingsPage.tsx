@@ -31,6 +31,7 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { RecalculateKRMetricsButton } from './RecalculateKRMetricsButton';
 
 interface SystemSetting {
   id: string;
@@ -354,6 +355,32 @@ export const SystemSettingsPage: React.FC = () => {
                       </p>
                     </div>
                     <ThemeToggle />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Seção de Manutenção de Dados */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Database className="h-4 w-4" />
+                    <span>Manutenção de Dados</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Ferramentas para manutenção e recálculo de dados do sistema
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-sm font-medium">
+                        Recalcular Métricas dos Resultados-Chave
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Força o recálculo de todas as métricas agregadas (YTD, trimestral, mensal, anual) de todos os KRs no banco de dados
+                      </p>
+                    </div>
+                    <RecalculateKRMetricsButton />
                   </div>
                 </CardContent>
               </Card>
