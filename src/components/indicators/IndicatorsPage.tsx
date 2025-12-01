@@ -68,9 +68,12 @@ export const IndicatorsPage: React.FC = () => {
   console.log('[IndicatorsPage] Dono do KR Debug:', {
     canSelectOwner,
     companyUsersCount: companyUsers.length,
+    companyUsersList: companyUsers.map(u => `${u.first_name} ${u.last_name}`),
     loadingUsers,
     isMemberOnly,
-    companyId: authCompany?.id
+    companyId: authCompany?.id,
+    companyName: authCompany?.name,
+    authCompanyExists: !!authCompany
   });
   
   // Use objetivos data hook que já filtra por plano ativo
@@ -1119,10 +1122,14 @@ export const IndicatorsPage: React.FC = () => {
                   <Select 
                     value={formData.assigned_owner_id || 'none'} 
                     onValueChange={(value) => setFormData({...formData, assigned_owner_id: value})}
-                    disabled={loadingUsers}
+                    disabled={loadingUsers || !authCompany}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={loadingUsers ? "Carregando usuários..." : "Selecione o dono"} />
+                      <SelectValue placeholder={
+                        !authCompany ? "Carregando empresa..." :
+                        loadingUsers ? "Carregando usuários..." : 
+                        "Selecione o dono"
+                      } />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Nenhum dono</SelectItem>

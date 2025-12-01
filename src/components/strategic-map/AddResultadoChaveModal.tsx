@@ -212,10 +212,14 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                   <Select 
                     value={formData.assigned_owner_id || 'none'} 
                     onValueChange={(value) => setFormData({...formData, assigned_owner_id: value})}
-                    disabled={loadingUsers}
+                    disabled={loadingUsers || !company}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={loadingUsers ? "Carregando usuários..." : "Selecione o dono"} />
+                      <SelectValue placeholder={
+                        !company ? "Carregando empresa..." :
+                        loadingUsers ? "Carregando usuários..." : 
+                        "Selecione o dono"
+                      } />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Nenhum dono</SelectItem>
