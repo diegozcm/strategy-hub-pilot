@@ -1116,35 +1116,33 @@ export const IndicatorsPage: React.FC = () => {
                 />
               </div>
               
-              {canSelectOwner && (
-                <div className="space-y-2">
-                  <Label htmlFor="assigned_owner">Dono do KR *</Label>
-                  <Select 
-                    value={formData.assigned_owner_id || 'none'} 
-                    onValueChange={(value) => setFormData({...formData, assigned_owner_id: value})}
-                    disabled={loadingUsers || !authCompany}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={
-                        !authCompany ? "Carregando empresa..." :
-                        loadingUsers ? "Carregando usuários..." : 
-                        "Selecione o dono"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum dono</SelectItem>
-                      {companyUsers.length === 0 && !loadingUsers && (
-                        <SelectItem value="empty" disabled>Nenhum usuário encontrado</SelectItem>
-                      )}
-                      {companyUsers.map((user) => (
-                        <SelectItem key={user.user_id} value={user.user_id}>
-                          {user.first_name} {user.last_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="assigned_owner">Dono do KR *</Label>
+                <Select 
+                  value={isMemberOnly ? (currentUserId || 'none') : (formData.assigned_owner_id || 'none')} 
+                  onValueChange={(value) => setFormData({...formData, assigned_owner_id: value})}
+                  disabled={!canSelectOwner || loadingUsers || !authCompany}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={
+                      !authCompany ? "Carregando empresa..." :
+                      loadingUsers ? "Carregando usuários..." : 
+                      "Selecione o dono"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum dono</SelectItem>
+                    {companyUsers.length === 0 && !loadingUsers && (
+                      <SelectItem value="empty" disabled>Nenhum usuário encontrado</SelectItem>
+                    )}
+                    {companyUsers.map((user) => (
+                      <SelectItem key={user.user_id} value={user.user_id}>
+                        {user.first_name} {user.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
             <div className="space-y-2">

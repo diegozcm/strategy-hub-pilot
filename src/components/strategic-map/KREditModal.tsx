@@ -490,35 +490,33 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                 />
               </div>
 
-              {canSelectOwner && (
-                <div className="space-y-2">
-                  <Label htmlFor="assigned_owner">Dono do KR *</Label>
-                  <Select 
-                    value={basicInfo.assigned_owner_id || 'none'} 
-                    onValueChange={(value) => setBasicInfo({...basicInfo, assigned_owner_id: value})}
-                    disabled={loadingUsers || !company}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={
-                        !company ? "Carregando empresa..." :
-                        loadingUsers ? "Carregando usuários..." : 
-                        "Selecione o dono"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum dono</SelectItem>
-                      {companyUsers.length === 0 && !loadingUsers && (
-                        <SelectItem value="empty" disabled>Nenhum usuário encontrado</SelectItem>
-                      )}
-                      {companyUsers.map((user) => (
-                        <SelectItem key={user.user_id} value={user.user_id}>
-                          {user.first_name} {user.last_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="assigned_owner">Dono do KR *</Label>
+                <Select 
+                  value={basicInfo.assigned_owner_id || 'none'} 
+                  onValueChange={(value) => setBasicInfo({...basicInfo, assigned_owner_id: value})}
+                  disabled={!canSelectOwner || loadingUsers || !company}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={
+                      !company ? "Carregando empresa..." :
+                      loadingUsers ? "Carregando usuários..." : 
+                      "Selecione o dono"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum dono</SelectItem>
+                    {companyUsers.length === 0 && !loadingUsers && (
+                      <SelectItem value="empty" disabled>Nenhum usuário encontrado</SelectItem>
+                    )}
+                    {companyUsers.map((user) => (
+                      <SelectItem key={user.user_id} value={user.user_id}>
+                        {user.first_name} {user.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="space-y-2">
                 <Label>Vigência</Label>
