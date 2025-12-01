@@ -69,6 +69,8 @@ interface ObjectiveDetailModalProps {
   selectedYear?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;
   selectedQuarterYear?: number;
+  canEditObjective?: boolean;
+  canDeleteObjective?: boolean;
 }
 
 export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
@@ -88,6 +90,8 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
   selectedYear,
   selectedQuarter,
   selectedQuarterYear,
+  canEditObjective = true,
+  canDeleteObjective = true,
 }) => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
@@ -191,30 +195,32 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2">
-              {!isEditing && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+            {!isEditing && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {canEditObjective && (
                     <DropdownMenuItem onClick={() => setIsEditing(true)}>
                       <Edit className="w-4 h-4 mr-2" />
                       Editar
                     </DropdownMenuItem>
-                    {onDelete && (
-                      <DropdownMenuItem 
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Excluir
-                      </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+                  )}
+                  {onDelete && canDeleteObjective && (
+                    <DropdownMenuItem 
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Excluir
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
               {isEditing && (
                 <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
                   <X className="w-4 h-4 mr-1" />

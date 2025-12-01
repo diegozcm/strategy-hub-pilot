@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useHealthMonitor } from '@/hooks/useHealthMonitor';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
+import { useKRPermissions } from '@/hooks/useKRPermissions';
 
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
@@ -85,6 +86,7 @@ export const ObjectivesPage: React.FC = () => {
   // Health monitoring hooks
   const { logRenderCycle } = useHealthMonitor();
   const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
+  const { canCreateObjective, canEditObjective, canDeleteObjective } = useKRPermissions();
   
   // Log render cycle for monitoring
   useEffect(() => {
@@ -525,12 +527,20 @@ export const ObjectivesPage: React.FC = () => {
             </div>
           </div>
           <Dialog open={isCreateObjectiveOpen} onOpenChange={setIsCreateObjectiveOpen}>
-            <DialogTrigger asChild>
-              <Button disabled={!activePlan}>
+            {canCreateObjective && (
+              <DialogTrigger asChild>
+                <Button disabled={!activePlan}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Objetivo
+                </Button>
+              </DialogTrigger>
+            )}
+            {!canCreateObjective && (
+              <Button disabled>
                 <Plus className="w-4 h-4 mr-2" />
                 Novo Objetivo
               </Button>
-            </DialogTrigger>
+            )}
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Criar Objetivo Estratégico</DialogTitle>
@@ -926,6 +936,8 @@ export const ObjectivesPage: React.FC = () => {
           selectedMonth={selectedMonth}
           selectedYear={selectedYear}
           selectedQuarter={selectedQuarter}
+          canEditObjective={canEditObjective}
+          canDeleteObjective={canDeleteObjective}
         />
 
         {/* Edit Key Result Modal */}
