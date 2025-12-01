@@ -72,11 +72,15 @@ export const KROverviewModal = ({
   const [selectedYearlyYear, setSelectedYearlyYear] = useState<number>(new Date().getFullYear());
   const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>(initialPeriod);
   
-  const { canEditAnyKR, canDeleteKR, currentUserId } = useKRPermissions();
+  const { 
+    canEditAnyKR, 
+    canDeleteKR,
+    canUpdateKRValues,
+    currentUserId 
+  } = useKRPermissions();
   
-  // Verificar se o usuário pode editar este KR específico
-  const canEditThisKR = canEditAnyKR || currentKeyResult?.assigned_owner_id === currentUserId;
-  const canDeleteThisKR = canDeleteKR;
+  // Check if user can edit this specific KR (somente managers/admins)
+  const canEditThisKR = canEditAnyKR;
   
   // Quarter state
   const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4;
@@ -336,7 +340,7 @@ export const KROverviewModal = ({
                       <Edit className="h-4 w-4" />
                     </Button>
                   )}
-                  {showDeleteButton && canDeleteThisKR && (
+                  {showDeleteButton && canDeleteKR && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -362,15 +366,17 @@ export const KROverviewModal = ({
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center justify-between gap-2 py-4 flex-shrink-0 px-6">
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowUpdateValuesModal(true)}
-                className="text-cyan-600 border-cyan-200 hover:bg-cyan-100 hover:border-cyan-300 hover:text-cyan-600"
-              >
-                <FileEdit className="h-4 w-4 mr-2" />
-                Atualizar Valores
-              </Button>
+              {canUpdateKRValues && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowUpdateValuesModal(true)}
+                  className="text-cyan-600 border-cyan-200 hover:bg-cyan-100 hover:border-cyan-300 hover:text-cyan-600"
+                >
+                  <FileEdit className="h-4 w-4 mr-2" />
+                  Atualizar Valores
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"

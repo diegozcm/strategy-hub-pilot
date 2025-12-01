@@ -12,6 +12,7 @@ import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
+import { useKRPermissions } from '@/hooks/useKRPermissions';
 import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { CompanySetupModal } from './CompanySetupModal';
 import { PillarFormModal } from './PillarFormModal';
@@ -87,6 +88,7 @@ export const StrategicMapPage = () => {
 
   const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
   const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
+  const { canCreatePillar, canEditPillar, canDeletePillar } = useKRPermissions();
 
   // Filtrar KRs por vigência
   const filteredKeyResults = React.useMemo(() => {
@@ -423,10 +425,12 @@ export const StrategicMapPage = () => {
           <>
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Pilares Estratégicos</h2>
-              <Button onClick={() => setShowPillarForm(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Adicionar Pilar
-              </Button>
+              {canCreatePillar && (
+                <Button onClick={() => setShowPillarForm(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Adicionar Pilar
+                </Button>
+              )}
             </div>
 
             {pillars.length === 0 ? (
@@ -504,17 +508,21 @@ export const StrategicMapPage = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setEditingPillar(pillar)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  className="text-destructive"
-                                  onClick={() => setDeletingPillar(pillar)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Excluir
-                                </DropdownMenuItem>
+                                {canEditPillar && (
+                                  <DropdownMenuItem onClick={() => setEditingPillar(pillar)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                )}
+                                {canDeletePillar && (
+                                  <DropdownMenuItem 
+                                    className="text-destructive"
+                                    onClick={() => setDeletingPillar(pillar)}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Excluir
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>

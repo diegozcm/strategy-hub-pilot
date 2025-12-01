@@ -23,13 +23,22 @@ export const useKRPermissions = () => {
   return {
     // Permissões de criação
     canCreateKR: isManagerOrAdmin,
+    canCreateObjective: isManagerOrAdmin,
+    canCreatePillar: isManagerOrAdmin,
     
     // Permissões de exclusão
     canDeleteKR: isManagerOrAdmin,
+    canDeleteObjective: isManagerOrAdmin,
+    canDeletePillar: isManagerOrAdmin,
     
     // Permissões de edição
     canEditAnyKR: isManagerOrAdmin, // Pode editar qualquer KR
-    canEditOwnKR: true, // Todos podem editar seus próprios KRs (check-in)
+    canEditOwnKR: false, // Membros NÃO podem mais editar seus KRs
+    canEditObjective: isManagerOrAdmin,
+    canEditPillar: isManagerOrAdmin,
+    
+    // Permissão de atualizar valores (check-in)
+    canUpdateKRValues: isManagerOrAdmin,
     
     // Permissão de selecionar dono
     canSelectOwner: isManagerOrAdmin, // Apenas managers/admins podem escolher dono
