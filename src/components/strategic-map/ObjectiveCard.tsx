@@ -26,6 +26,7 @@ interface ObjectiveCardProps {
   selectedMonth?: number;
   selectedYear?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;
+  selectedQuarterYear?: number;
   onPeriodChange?: (period: 'ytd' | 'monthly' | 'yearly' | 'quarterly') => void;
   onMonthChange?: (month: number) => void;
   onYearChange?: (year: number) => void;
@@ -45,6 +46,7 @@ const calculateObjectiveProgress = (
     selectedMonth?: number;
     selectedYear?: number;
     selectedQuarter?: 1 | 2 | 3 | 4;
+    selectedQuarterYear?: number;
   }
 ) => {
   if (keyResults.length === 0) return 0;
@@ -55,11 +57,65 @@ const calculateObjectiveProgress = (
     switch (period) {
       case 'quarterly':
         const quarter = options?.selectedQuarter || 1;
-        switch (quarter) {
-          case 1: percentage = kr.q1_percentage || 0; break;
-          case 2: percentage = kr.q2_percentage || 0; break;
-          case 3: percentage = kr.q3_percentage || 0; break;
-          case 4: percentage = kr.q4_percentage || 0; break;
+        const quarterYear = options?.selectedQuarterYear || new Date().getFullYear();
+        
+        // Calcular dinamicamente para quarter customizado
+        if (options?.selectedQuarter && options?.selectedQuarterYear) {
+          const quarterMonths = {
+            1: [1, 2, 3],
+            2: [4, 5, 6],
+            3: [7, 8, 9],
+            4: [10, 11, 12]
+          };
+          const months = quarterMonths[quarter];
+          const monthKeys = months.map(m => `${quarterYear}-${m.toString().padStart(2, '0')}`);
+          
+          const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
+          const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+          
+          let totalTarget = 0;
+          let totalActual = 0;
+          
+          // Aplicar agregação baseada no tipo
+          if (kr.aggregation_type === 'average') {
+            // Pegar apenas os meses que têm dados de actual
+            const monthsWithActual = monthKeys.filter(key => (monthlyActual[key] || 0) !== 0);
+            
+            const targets = monthsWithActual.map(key => monthlyTargets[key] || 0);
+            const actuals = monthsWithActual.map(key => monthlyActual[key] || 0);
+            
+            totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
+            totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
+          } else if (kr.aggregation_type === 'max') {
+            const targets = monthKeys.map(key => monthlyTargets[key] || 0);
+            const actuals = monthKeys.map(key => monthlyActual[key] || 0);
+            totalTarget = targets.length > 0 ? Math.max(...targets) : 0;
+            totalActual = actuals.length > 0 ? Math.max(...actuals) : 0;
+          } else if (kr.aggregation_type === 'min') {
+            const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
+            const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
+            totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
+            totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
+          } else {
+            // sum (default)
+            totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
+            totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+          }
+          
+          // Calcular percentage com fórmula correta
+          if (kr.target_direction === 'minimize') {
+            percentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
+          } else {
+            percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
+          }
+        } else {
+          // Usar valor pré-calculado
+          switch (quarter) {
+            case 1: percentage = kr.q1_percentage || 0; break;
+            case 2: percentage = kr.q2_percentage || 0; break;
+            case 3: percentage = kr.q3_percentage || 0; break;
+            case 4: percentage = kr.q4_percentage || 0; break;
+          }
         }
         break;
       case 'monthly':
@@ -72,12 +128,12 @@ const calculateObjectiveProgress = (
           const monthTarget = monthlyTargets[monthKey] || 0;
           const monthActual = monthlyActual[monthKey] || 0;
           
-          // Usar mesma lógica do banco para calcular percentage
-          if (monthTarget > 0 && monthActual > 0) {
+          // Usar fórmula correta para minimize
+          if (monthTarget > 0 || monthActual > 0) {
             if (kr.target_direction === 'minimize') {
-              percentage = ((monthTarget - monthActual) / monthTarget) * 100 + 100;
+              percentage = monthActual > 0 ? (monthTarget / monthActual) * 100 : (monthTarget === 0 ? 100 : 0);
             } else {
-              percentage = (monthActual / monthTarget) * 100;
+              percentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
             }
           }
         } else {
@@ -96,15 +152,40 @@ const calculateObjectiveProgress = (
           const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
           const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
           
-          const totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
-          const totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+          let totalTarget = 0;
+          let totalActual = 0;
           
-          if (totalTarget > 0 && totalActual > 0) {
-            if (kr.target_direction === 'minimize') {
-              percentage = ((totalTarget - totalActual) / totalTarget) * 100 + 100;
-            } else {
-              percentage = (totalActual / totalTarget) * 100;
-            }
+          // Aplicar agregação baseada no tipo
+          if (kr.aggregation_type === 'average') {
+            // Pegar apenas os meses que têm dados de actual
+            const monthsWithActual = monthKeys.filter(key => (monthlyActual[key] || 0) !== 0);
+            
+            const targets = monthsWithActual.map(key => monthlyTargets[key] || 0);
+            const actuals = monthsWithActual.map(key => monthlyActual[key] || 0);
+            
+            totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
+            totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
+          } else if (kr.aggregation_type === 'max') {
+            const targets = monthKeys.map(key => monthlyTargets[key] || 0);
+            const actuals = monthKeys.map(key => monthlyActual[key] || 0);
+            totalTarget = targets.length > 0 ? Math.max(...targets) : 0;
+            totalActual = actuals.length > 0 ? Math.max(...actuals) : 0;
+          } else if (kr.aggregation_type === 'min') {
+            const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
+            const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
+            totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
+            totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
+          } else {
+            // sum (default)
+            totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
+            totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+          }
+          
+          // Calcular percentage com fórmula correta
+          if (kr.target_direction === 'minimize') {
+            percentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
+          } else {
+            percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
           }
         } else {
           percentage = kr.yearly_percentage || 0;
@@ -133,6 +214,7 @@ export const ObjectiveCard = ({
   selectedMonth,
   selectedYear,
   selectedQuarter,
+  selectedQuarterYear,
   onPeriodChange,
   onMonthChange,
   onYearChange
@@ -153,7 +235,7 @@ export const ObjectiveCard = ({
     selectedPeriod === 'monthly' 
       ? { selectedMonth, selectedYear }
       : selectedPeriod === 'quarterly'
-      ? { selectedQuarter }
+      ? { selectedQuarter, selectedQuarterYear }
       : selectedPeriod === 'yearly'
       ? { selectedYear }
       : undefined
@@ -335,6 +417,8 @@ export const ObjectiveCard = ({
           selectedPeriod={selectedPeriod}
           selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
           selectedYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
+          selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
+          selectedQuarterYear={selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined}
         />
 
         {/* KR Overview Modal (compact mode) */}
@@ -357,9 +441,11 @@ export const ObjectiveCard = ({
           }}
           objectives={[{ id: objective.id, title: objective.title }]}
           showDeleteButton={false}
-        initialPeriod={selectedPeriod}
-        initialMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-        initialYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
+          initialPeriod={selectedPeriod}
+          initialMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
+          initialYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
+          initialQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
+          initialQuarterYear={selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined}
           onPeriodChange={onPeriodChange}
           onMonthChange={onMonthChange}
           onYearChange={onYearChange}
@@ -525,6 +611,8 @@ export const ObjectiveCard = ({
         initialPeriod={selectedPeriod}
         initialMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
         initialYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
+        initialQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
+        initialQuarterYear={selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined}
         onPeriodChange={onPeriodChange}
         onMonthChange={onMonthChange}
         onYearChange={onYearChange}
@@ -545,7 +633,9 @@ export const ObjectiveCard = ({
         progressPercentage={progressPercentage}
         selectedPeriod={selectedPeriod}
         selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-        selectedYear={selectedPeriod === 'monthly' ? selectedYear : undefined}
+        selectedYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
+        selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
+        selectedQuarterYear={selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined}
       />
     </>
   );

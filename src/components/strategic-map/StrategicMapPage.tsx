@@ -561,6 +561,7 @@ export const StrategicMapPage = () => {
                                   selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
                                   selectedYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
                                   selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
+                                  selectedQuarterYear={selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined}
                                   onPeriodChange={setSelectedPeriod}
                                   onMonthChange={setSelectedMonth}
                                   onYearChange={setSelectedYear}
