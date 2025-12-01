@@ -113,7 +113,7 @@ export const IndicatorsPage: React.FC = () => {
     objective_id: 'none',
     start_month: '',
     end_month: '',
-    assigned_owner_id: ''
+    assigned_owner_id: 'none'
   });
 
   // Estados para vigência do novo KR (Quarter + Ano)
@@ -204,7 +204,7 @@ export const IndicatorsPage: React.FC = () => {
         target_value: 0, // Will be calculated from monthly targets
         current_value: 0,
         owner_id: user.id,
-        objective_id: formData.objective_id === 'none' ? null : formData.objective_id,
+        objective_id: (formData.objective_id === 'none' || formData.objective_id === '') ? null : formData.objective_id,
         metric_type: 'number',
         frequency: 'monthly',
         monthly_targets: {},
@@ -213,7 +213,7 @@ export const IndicatorsPage: React.FC = () => {
         yearly_actual: 0,
         start_month: formData.start_month || null,
         end_month: formData.end_month || null,
-        assigned_owner_id: formData.assigned_owner_id === 'none' ? null : formData.assigned_owner_id
+        assigned_owner_id: (formData.assigned_owner_id === 'none' || formData.assigned_owner_id === '') ? null : formData.assigned_owner_id
       };
 
       const { data, error } = await supabase
@@ -243,7 +243,7 @@ export const IndicatorsPage: React.FC = () => {
         objective_id: 'none',
         start_month: '',
         end_month: '',
-        assigned_owner_id: ''
+        assigned_owner_id: 'none'
       });
       setNewKRValidityQuarter(null);
       setNewKRValidityYear(new Date().getFullYear());
