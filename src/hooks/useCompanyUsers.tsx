@@ -12,16 +12,19 @@ interface CompanyUser {
 
 export const useCompanyUsers = (companyId?: string) => {
   const [users, setUsers] = useState<CompanyUser[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!companyId) {
+      console.log('[useCompanyUsers] No companyId provided, skipping fetch');
       setUsers([]);
+      setLoading(false);
       return;
     }
     
     const loadUsers = async () => {
       try {
+        console.log('[useCompanyUsers] Fetching users for company:', companyId);
         setLoading(true);
         
         const { data, error } = await supabase
@@ -41,6 +44,8 @@ export const useCompanyUsers = (companyId?: string) => {
         
         if (error) throw error;
         
+        console.log('[useCompanyUsers] Fetched users:', data?.length || 0);
+        
         // Flatten the structure
         const flattenedUsers: CompanyUser[] = (data || []).map((item: any) => ({
           user_id: item.profiles.user_id,
@@ -53,7 +58,7 @@ export const useCompanyUsers = (companyId?: string) => {
         
         setUsers(flattenedUsers);
       } catch (error) {
-        console.error('Error loading company users:', error);
+        console.error('[useCompanyUsers] Error loading company users:', error);
         setUsers([]);
       } finally {
         setLoading(false);
