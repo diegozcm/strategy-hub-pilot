@@ -313,8 +313,10 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                     </Badge>
                   )}
                   <Badge variant="outline">
-                    {selectedPeriod === 'yearly' 
-                      ? '📅 Ano' 
+                    {selectedPeriod === 'quarterly' && selectedQuarter && selectedQuarterYear
+                      ? `📈 Q${selectedQuarter} ${selectedQuarterYear}`
+                      : selectedPeriod === 'yearly' && selectedYear
+                      ? `📅 Ano ${selectedYear}`
                       : selectedPeriod === 'monthly' 
                       ? (selectedMonth && selectedYear
                           ? `📆 ${new Date(selectedYear, selectedMonth - 1, 1)
@@ -322,7 +324,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                               .charAt(0).toUpperCase() + 
                               new Date(selectedYear, selectedMonth - 1, 1)
                               .toLocaleDateString('pt-BR', { month: 'long' })
-                              .slice(1)}`
+                              .slice(1)} ${selectedYear}`
                           : `📆 ${format(new Date(), 'MMMM', { locale: ptBR }).charAt(0).toUpperCase() + format(new Date(), 'MMMM', { locale: ptBR }).slice(1)}`)
                       : '📊 YTD'}
                   </Badge>

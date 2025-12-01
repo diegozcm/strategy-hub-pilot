@@ -21,6 +21,7 @@ export const useRumoCalculations = (
     selectedMonth?: number;
     selectedYear?: number;
     selectedQuarter?: 1 | 2 | 3 | 4;
+    selectedQuarterYear?: number;
   }
 ): RumoCalculations => {
   return useMemo(() => {
@@ -49,9 +50,9 @@ export const useRumoCalculations = (
           const monthActual = monthlyActual[monthKey] || 0;
           
           // Usar mesma lógica do banco para calcular percentage
-          if (monthTarget > 0 && monthActual > 0) {
+          if (monthTarget > 0) {
             if (kr.target_direction === 'minimize') {
-              progress = ((monthTarget - monthActual) / monthTarget) * 100 + 100;
+              progress = monthActual > 0 ? (monthTarget / monthActual) * 100 : (monthTarget === 0 ? 100 : 0);
             } else {
               progress = (monthActual / monthTarget) * 100;
             }
@@ -72,23 +73,82 @@ export const useRumoCalculations = (
         const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
         const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
         
-        const totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
-        const totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+        let totalTarget = 0;
+        let totalActual = 0;
         
-        if (totalTarget > 0 && totalActual > 0) {
+        // Aplicar agregação baseada no tipo
+        if (kr.aggregation_type === 'average') {
+          const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
+          const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
+          totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
+          totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
+        } else if (kr.aggregation_type === 'max') {
+          totalTarget = Math.max(...monthKeys.map(key => monthlyTargets[key] || 0), 0);
+          totalActual = Math.max(...monthKeys.map(key => monthlyActual[key] || 0), 0);
+        } else if (kr.aggregation_type === 'min') {
+          const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
+          const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
+          totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
+          totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
+        } else {
+          // sum (default)
+          totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
+          totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+        }
+        
+        if (totalTarget > 0) {
           if (kr.target_direction === 'minimize') {
-            progress = ((totalTarget - totalActual) / totalTarget) * 100 + 100;
+            progress = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
           } else {
             progress = (totalActual / totalTarget) * 100;
           }
         }
       } else if (periodType === 'quarterly') {
         const quarter = options?.selectedQuarter || 1;
-        switch (quarter) {
-          case 1: progress = kr.q1_percentage || 0; break;
-          case 2: progress = kr.q2_percentage || 0; break;
-          case 3: progress = kr.q3_percentage || 0; break;
-          case 4: progress = kr.q4_percentage || 0; break;
+        const year = options?.selectedQuarterYear ?? now.getFullYear();
+        
+        // Calcular dinamicamente usando dados mensais
+        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
+        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+        
+        const quarterMonths = {
+          1: [1, 2, 3],
+          2: [4, 5, 6],
+          3: [7, 8, 9],
+          4: [10, 11, 12]
+        }[quarter];
+        
+        const monthKeys = quarterMonths.map(m => `${year}-${m.toString().padStart(2, '0')}`);
+        
+        let totalTarget = 0;
+        let totalActual = 0;
+        
+        // Aplicar agregação baseada no tipo
+        if (kr.aggregation_type === 'average') {
+          const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
+          const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
+          totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
+          totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
+        } else if (kr.aggregation_type === 'max') {
+          totalTarget = Math.max(...monthKeys.map(key => monthlyTargets[key] || 0), 0);
+          totalActual = Math.max(...monthKeys.map(key => monthlyActual[key] || 0), 0);
+        } else if (kr.aggregation_type === 'min') {
+          const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
+          const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
+          totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
+          totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
+        } else {
+          // sum (default)
+          totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
+          totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+        }
+        
+        if (totalTarget > 0) {
+          if (kr.target_direction === 'minimize') {
+            progress = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
+          } else {
+            progress = (totalActual / totalTarget) * 100;
+          }
         }
       }
 
@@ -141,7 +201,7 @@ export const useRumoCalculations = (
       finalScore,
       hasData,
     };
-  }, [pillars, objectives, keyResults, periodType, options?.selectedMonth, options?.selectedYear, options?.selectedQuarter]);
+  }, [pillars, objectives, keyResults, periodType, options?.selectedMonth, options?.selectedYear, options?.selectedQuarter, options?.selectedQuarterYear]);
 };
 
 export const getPerformanceColor = (progress: number): string => {
