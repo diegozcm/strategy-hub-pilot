@@ -19,6 +19,7 @@ interface RumoObjectiveBlockProps {
   selectedMonth?: number;
   selectedYear?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;
+  selectedQuarterYear?: number;
 }
 
 export const RumoObjectiveBlock = ({ 
@@ -29,7 +30,8 @@ export const RumoObjectiveBlock = ({
   selectedPeriod,
   selectedMonth,
   selectedYear,
-  selectedQuarter
+  selectedQuarter,
+  selectedQuarterYear
 }: RumoObjectiveBlockProps) => {
   const performance = getPerformanceColor(progress);
   const styles = getPerformanceStyles(performance);
@@ -264,6 +266,7 @@ export const RumoObjectiveBlock = ({
         initialMonth={selectedMonth}
         initialYear={selectedYear}
         initialQuarter={selectedQuarter}
+        initialQuarterYear={selectedQuarterYear}
       />
     </>
   );

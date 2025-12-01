@@ -21,6 +21,7 @@ export const useRumoCalculations = (
     selectedMonth?: number;
     selectedYear?: number;
     selectedQuarter?: 1 | 2 | 3 | 4;
+    selectedQuarterYear?: number;
   }
 ): RumoCalculations => {
   return useMemo(() => {
@@ -28,34 +29,126 @@ export const useRumoCalculations = (
     const objectiveProgress = new Map<string, number>();
     const pillarProgress = new Map<string, number>();
 
-    // Get current month/year OR use selected month/year
-    const now = new Date();
-    const currentMonth = options?.selectedMonth ?? (now.getMonth() + 1);
-    const currentYear = options?.selectedYear ?? now.getFullYear();
-    const monthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
-
-    // Calculate KR progress using ONLY pre-calculated database fields
+    // Calculate KR progress dynamically based on period selection
     keyResults.forEach(kr => {
       let progress = 0;
       
-      // Use pre-calculated percentages from database based on period type
-      if (periodType === 'monthly') {
-        // Usar valor pré-calculado do mês atual do banco
-        progress = kr.monthly_percentage || 0;
-      } else if (periodType === 'ytd') {
-        // Usar valor pré-calculado YTD do banco
+      if (periodType === 'ytd') {
+        // YTD sempre usa valor pré-calculado do banco
         progress = kr.ytd_percentage || 0;
-      } else if (periodType === 'yearly') {
-        // Usar valor pré-calculado anual do banco
-        progress = kr.yearly_percentage || 0;
-      } else if (periodType === 'quarterly') {
-        // Usar valores pré-calculados de trimestre do banco
-        const quarter = options?.selectedQuarter || 1;
-        switch (quarter) {
-          case 1: progress = kr.q1_percentage || 0; break;
-          case 2: progress = kr.q2_percentage || 0; break;
-          case 3: progress = kr.q3_percentage || 0; break;
-          case 4: progress = kr.q4_percentage || 0; break;
+      } else if (periodType === 'monthly' && options?.selectedMonth && options?.selectedYear) {
+        // Calcular dinamicamente o mês específico selecionado
+        const monthKey = `${options.selectedYear}-${String(options.selectedMonth).padStart(2, '0')}`;
+        const target = kr.monthly_targets?.[monthKey];
+        const actual = kr.monthly_actual?.[monthKey];
+        
+        if (typeof target === 'number' && target > 0 && typeof actual === 'number') {
+          const direction = kr.target_direction || 'maximize';
+          if (direction === 'minimize') {
+            progress = (target / actual) * 100;
+          } else {
+            progress = (actual / target) * 100;
+          }
+        }
+      } else if (periodType === 'yearly' && options?.selectedYear) {
+        // Calcular dinamicamente o ano específico selecionado
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        
+        // Se é o ano atual, usar valor pré-calculado
+        if (options.selectedYear === currentYear) {
+          progress = kr.yearly_percentage || 0;
+        } else {
+          // Para anos anteriores, agregar os 12 meses do ano selecionado
+          const aggregationType = kr.aggregation_type || 'sum';
+          let totalTarget = 0;
+          let totalActual = 0;
+          let hasData = false;
+          
+          for (let month = 1; month <= 12; month++) {
+            const monthKey = `${options.selectedYear}-${String(month).padStart(2, '0')}`;
+            const target = kr.monthly_targets?.[monthKey];
+            const actual = kr.monthly_actual?.[monthKey];
+            
+            if (typeof target === 'number' && typeof actual === 'number') {
+              hasData = true;
+              if (aggregationType === 'sum') {
+                totalTarget += target;
+                totalActual += actual;
+              } else if (aggregationType === 'average') {
+                totalTarget += target;
+                totalActual += actual;
+              }
+            }
+          }
+          
+          if (hasData && totalTarget > 0) {
+            if (aggregationType === 'average') {
+              totalTarget = totalTarget / 12;
+              totalActual = totalActual / 12;
+            }
+            
+            const direction = kr.target_direction || 'maximize';
+            if (direction === 'minimize') {
+              progress = (totalTarget / totalActual) * 100;
+            } else {
+              progress = (totalActual / totalTarget) * 100;
+            }
+          }
+        }
+      } else if (periodType === 'quarterly' && options?.selectedQuarter && options?.selectedQuarterYear) {
+        // Calcular dinamicamente o trimestre específico selecionado
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
+        
+        // Se é o trimestre atual do ano atual, usar valor pré-calculado
+        if (options.selectedQuarterYear === currentYear && options.selectedQuarter === currentQuarter) {
+          switch (options.selectedQuarter) {
+            case 1: progress = kr.q1_percentage || 0; break;
+            case 2: progress = kr.q2_percentage || 0; break;
+            case 3: progress = kr.q3_percentage || 0; break;
+            case 4: progress = kr.q4_percentage || 0; break;
+          }
+        } else {
+          // Para outros trimestres, agregar os 3 meses do trimestre
+          const aggregationType = kr.aggregation_type || 'sum';
+          const quarterStartMonth = (options.selectedQuarter - 1) * 3 + 1;
+          let totalTarget = 0;
+          let totalActual = 0;
+          let hasData = false;
+          
+          for (let i = 0; i < 3; i++) {
+            const month = quarterStartMonth + i;
+            const monthKey = `${options.selectedQuarterYear}-${String(month).padStart(2, '0')}`;
+            const target = kr.monthly_targets?.[monthKey];
+            const actual = kr.monthly_actual?.[monthKey];
+            
+            if (typeof target === 'number' && typeof actual === 'number') {
+              hasData = true;
+              if (aggregationType === 'sum') {
+                totalTarget += target;
+                totalActual += actual;
+              } else if (aggregationType === 'average') {
+                totalTarget += target;
+                totalActual += actual;
+              }
+            }
+          }
+          
+          if (hasData && totalTarget > 0) {
+            if (aggregationType === 'average') {
+              totalTarget = totalTarget / 3;
+              totalActual = totalActual / 3;
+            }
+            
+            const direction = kr.target_direction || 'maximize';
+            if (direction === 'minimize') {
+              progress = (totalTarget / totalActual) * 100;
+            } else {
+              progress = (totalActual / totalTarget) * 100;
+            }
+          }
         }
       }
 
@@ -108,7 +201,7 @@ export const useRumoCalculations = (
       finalScore,
       hasData,
     };
-  }, [pillars, objectives, keyResults, periodType, options?.selectedMonth, options?.selectedYear, options?.selectedQuarter]);
+  }, [pillars, objectives, keyResults, periodType, options?.selectedMonth, options?.selectedYear, options?.selectedQuarter, options?.selectedQuarterYear]);
 };
 
 export const getPerformanceColor = (progress: number): string => {
