@@ -357,13 +357,11 @@ export const useStrategicMap = () => {
             const monthTarget = monthlyTargets[monthKey] || 0;
             const monthActual = monthlyActual[monthKey] || 0;
             
-            // Usar mesma lógica do banco para calcular percentage
-            if (monthTarget > 0 && monthActual > 0) {
-              if (kr.target_direction === 'minimize') {
-                percentage = ((monthTarget - monthActual) / monthTarget) * 100 + 100;
-              } else {
-                percentage = (monthActual / monthTarget) * 100;
-              }
+            // Usar fórmula correta alinhada com o banco de dados
+            if (kr.target_direction === 'minimize') {
+              percentage = monthActual > 0 ? (monthTarget / monthActual) * 100 : (monthTarget === 0 ? 100 : 0);
+            } else {
+              percentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
             }
           } else {
             // Usar valor pré-calculado do mês atual
@@ -381,15 +379,35 @@ export const useStrategicMap = () => {
             const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
             const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
             
-            const totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
-            const totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+            // Aplicar agregação baseada no tipo
+            let totalTarget = 0;
+            let totalActual = 0;
             
-            if (totalTarget > 0 && totalActual > 0) {
-              if (kr.target_direction === 'minimize') {
-                percentage = ((totalTarget - totalActual) / totalTarget) * 100 + 100;
-              } else {
-                percentage = (totalActual / totalTarget) * 100;
-              }
+            if (kr.aggregation_type === 'average') {
+              const monthsWithActual = monthKeys.filter(key => (monthlyActual[key] || 0) !== 0);
+              const targets = monthsWithActual.map(key => monthlyTargets[key] || 0);
+              const actuals = monthsWithActual.map(key => monthlyActual[key] || 0);
+              totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
+              totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
+            } else if (kr.aggregation_type === 'max') {
+              totalTarget = Math.max(...monthKeys.map(key => monthlyTargets[key] || 0));
+              totalActual = Math.max(...monthKeys.map(key => monthlyActual[key] || 0));
+            } else if (kr.aggregation_type === 'min') {
+              const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
+              const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
+              totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
+              totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
+            } else {
+              // sum (default)
+              totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
+              totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+            }
+            
+            // Usar fórmula correta alinhada com o banco de dados
+            if (kr.target_direction === 'minimize') {
+              percentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
+            } else {
+              percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
             }
           } else {
             percentage = kr.yearly_percentage || 0;
