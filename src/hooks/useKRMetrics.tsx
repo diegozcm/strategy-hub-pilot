@@ -134,7 +134,7 @@ export const useKRMetrics = (
     // Calculate percentage using database formula
     let qPercentage = 0;
     if (keyResult.target_direction === 'minimize') {
-      qPercentage = qActual > 0 ? (qTarget / qActual) * 100 : (qTarget === 0 ? 100 : 0);
+      qPercentage = qActual > 0 ? (qTarget / qActual) * 100 : (qTarget === 0 ? 100 : 9999);
     } else {
       qPercentage = qTarget > 0 ? (qActual / qTarget) * 100 : 0;
     }
@@ -191,7 +191,7 @@ export const useKRMetrics = (
     // Calculate percentage using database formula
     let qPercentage = 0;
     if (keyResult.target_direction === 'minimize') {
-      qPercentage = qActual > 0 ? (qTarget / qActual) * 100 : (qTarget === 0 ? 100 : 0);
+      qPercentage = qActual > 0 ? (qTarget / qActual) * 100 : (qTarget === 0 ? 100 : 9999);
     } else {
       qPercentage = qTarget > 0 ? (qActual / qTarget) * 100 : 0;
     }
@@ -265,7 +265,7 @@ export const useKRMetrics = (
       // Calculate percentage using database formula
       let yearlyPercentage = 0;
       if (keyResult.target_direction === 'minimize') {
-        yearlyPercentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
+        yearlyPercentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 9999);
       } else {
         yearlyPercentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
       }
@@ -306,7 +306,7 @@ export const useKRMetrics = (
       // Calculate percentage using database formula
       let monthPercentage = 0;
       if (keyResult.target_direction === 'minimize') {
-        monthPercentage = monthActual > 0 ? (monthTarget / monthActual) * 100 : (monthTarget === 0 ? 100 : 0);
+        monthPercentage = monthActual > 0 ? (monthTarget / monthActual) * 100 : (monthTarget === 0 ? 100 : 9999);
       } else {
         monthPercentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
       }

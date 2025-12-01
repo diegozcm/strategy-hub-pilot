@@ -30,7 +30,8 @@ export const calculateKRStatus = (
     } else if (target === 0) {
       percentage = 100; // Meta 0, realizado 0 = 100%
     } else {
-      percentage = 0;
+      // actual = 0 e target > 0: superou completamente a meta
+      percentage = 9999; // Performance excelente - melhor que a meta
     }
   } else {
     // Para maximize: actual / target * 100
