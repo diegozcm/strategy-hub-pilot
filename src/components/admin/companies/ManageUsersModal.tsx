@@ -259,31 +259,31 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
                 </div>
               ) : companyUsers.length === 0 ? (
                 <div className="text-center py-8">
-                  <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-white mb-2">
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">
                     Nenhum usuário associado
                   </h3>
-                  <p className="text-slate-400">
+                  <p className="text-muted-foreground">
                     Adicione usuários para começar a gerenciar a empresa.
                   </p>
                 </div>
               ) : (
                   <Table>
                   <TableHeader>
-                    <TableRow className="border-slate-600">
-                      <TableHead className="text-slate-300">Usuário</TableHead>
-                      <TableHead className="text-slate-300">Email</TableHead>
-                      <TableHead className="text-slate-300">Status</TableHead>
-                      <TableHead className="text-slate-300 w-20">Ações</TableHead>
+                    <TableRow className="border-border">
+                      <TableHead className="text-foreground font-semibold">Usuário</TableHead>
+                      <TableHead className="text-foreground font-semibold">Email</TableHead>
+                      <TableHead className="text-foreground font-semibold">Status</TableHead>
+                      <TableHead className="text-foreground font-semibold w-20">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {companyUsers.map((user) => (
-                      <TableRow key={user.user_id} className="border-slate-600">
-                        <TableCell className="text-white">
+                      <TableRow key={user.user_id} className="border-border">
+                        <TableCell className="text-foreground font-medium">
                           {user.first_name} {user.last_name}
                         </TableCell>
-                        <TableCell className="text-slate-300">
+                        <TableCell className="text-muted-foreground">
                           {user.email}
                         </TableCell>
                         <TableCell>
@@ -310,7 +310,7 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
           </Card>
         </div>
 
-        <div className="flex justify-end pt-4 border-t border-slate-600">
+        <div className="flex justify-end pt-4 border-t border-border">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Fechar
           </Button>
