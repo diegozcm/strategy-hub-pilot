@@ -3343,15 +3343,25 @@ export type Database = {
         }
         Returns: Json
       }
-      set_user_module_roles: {
-        Args: {
-          _admin_id: string
-          _module_id: string
-          _roles: Database["public"]["Enums"]["app_role"][]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      set_user_module_roles:
+        | {
+            Args: {
+              _admin_id: string
+              _module_id: string
+              _roles: Database["public"]["Enums"]["app_role"][]
+              _user_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              _active?: boolean
+              _module_id: string
+              _role: Database["public"]["Enums"]["app_role"]
+              _user_id: string
+            }
+            Returns: undefined
+          }
       start_impersonation: {
         Args: { _admin_id: string; _target_user_id: string }
         Returns: string
