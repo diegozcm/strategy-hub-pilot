@@ -9,7 +9,7 @@ import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 export const useKRPermissions = () => {
   const { user } = useAuth();
   const { isModuleAdmin, isModuleManager, isModuleMember, loading } = useCurrentModuleRole();
-  const { membersCanViewAll } = useCompanyModuleSettings('strategic-planning');
+  const { membersCanViewAll, loading: settingsLoading } = useCompanyModuleSettings('strategic-planning');
 
   const isManagerOrAdmin = isModuleAdmin || isModuleManager;
   const isMemberOnly = isModuleMember && !isModuleManager && !isModuleAdmin;
@@ -20,6 +20,8 @@ export const useKRPermissions = () => {
     isModuleManager,
     isModuleMember,
     isManagerOrAdmin,
+    membersCanViewAll,
+    settingsLoading,
     loading
   });
 
@@ -55,7 +57,8 @@ export const useKRPermissions = () => {
     canSelectOwner: isManagerOrAdmin, // Apenas managers/admins podem escolher dono
     
     // Visualização - agora considera configuração da empresa
-    canViewAllKRs: isManagerOrAdmin || (isMemberOnly && membersCanViewAll),
+    // Enquanto settings carrega, não aplicar restrição para membros
+    canViewAllKRs: isManagerOrAdmin || (isMemberOnly && (settingsLoading || membersCanViewAll)),
     
     // Flags de status
     isManagerOrAdmin,
