@@ -10,6 +10,15 @@ export const useKRPermissions = () => {
   const { isModuleAdmin, isModuleManager, isModuleMember, loading } = useCurrentModuleRole();
 
   const isManagerOrAdmin = isModuleAdmin || isModuleManager;
+  
+  console.log('[useKRPermissions] Debug:', {
+    userId: user?.id,
+    isModuleAdmin,
+    isModuleManager,
+    isModuleMember,
+    isManagerOrAdmin,
+    loading
+  });
 
   return {
     // Permissões de criação

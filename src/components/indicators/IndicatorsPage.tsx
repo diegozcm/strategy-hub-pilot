@@ -65,6 +65,14 @@ export const IndicatorsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { canCreateKR, canSelectOwner, canEditAnyKR, canDeleteKR, currentUserId, isMemberOnly } = useKRPermissions();
   
+  console.log('[IndicatorsPage] Dono do KR Debug:', {
+    canSelectOwner,
+    companyUsersCount: companyUsers.length,
+    loadingUsers,
+    isMemberOnly,
+    companyId: authCompany?.id
+  });
+  
   // Use objetivos data hook que já filtra por plano ativo
   const { 
     objectives: objectivesData, 

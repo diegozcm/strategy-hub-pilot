@@ -10,9 +10,17 @@ export const useCurrentModuleRole = () => {
   const { currentModule } = useModules();
   const { getRolesForModuleId, loading } = useUserModuleRoles();
   
+  console.log('[useCurrentModuleRole] Current module:', {
+    moduleId: currentModule?.id,
+    moduleName: currentModule?.name,
+    moduleSlug: currentModule?.slug
+  });
+  
   // Obter papéis do usuário no módulo atual
   const currentModuleRoles = useMemo(() => {
-    return currentModule?.id ? getRolesForModuleId(currentModule.id) : [];
+    const roles = currentModule?.id ? getRolesForModuleId(currentModule.id) : [];
+    console.log('[useCurrentModuleRole] Roles for current module:', roles);
+    return roles;
   }, [currentModule?.id, getRolesForModuleId]);
   
   // Helper para determinar o papel mais alto na hierarquia
