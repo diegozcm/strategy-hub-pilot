@@ -16,63 +16,13 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { kr_id, recalculate_all } = await req.json();
+    const { company_id } = await req.json();
 
-    if (recalculate_all) {
-      console.log('Recalculating all key results...');
-      
-      const { data: allKRs, error: fetchError } = await supabaseClient
-        .from('key_results')
-        .select('id');
-
-      if (fetchError) throw fetchError;
-
-      let successCount = 0;
-      let errorCount = 0;
-
-      for (const kr of allKRs || []) {
-        const { error } = await supabaseClient.rpc('calculate_kr_metrics', {
-          kr_id: kr.id,
-        });
-
-        if (error) {
-          console.error(`Error calculating KR ${kr.id}:`, error);
-          errorCount++;
-        } else {
-          successCount++;
-        }
-      }
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: `Recalculated ${successCount} key results successfully, ${errorCount} errors`,
-          successCount,
-          errorCount,
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else if (kr_id) {
-      console.log(`Recalculating key result: ${kr_id}`);
-
-      const { error } = await supabaseClient.rpc('calculate_kr_metrics', {
-        kr_id,
-      });
-
-      if (error) throw error;
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'Key result metrics recalculated successfully',
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    } else {
+    if (!company_id) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'Missing kr_id or recalculate_all parameter',
+          error: 'company_id é obrigatório',
         }),
         {
           status: 400,
@@ -80,6 +30,60 @@ Deno.serve(async (req) => {
         }
       );
     }
+
+    console.log(`Recalculating KRs for company: ${company_id}`);
+    
+    // Get all KRs for this company through strategic plans
+    const { data: allKRs, error: fetchError } = await supabaseClient
+      .from('key_results')
+      .select(`
+        id,
+        objectives:strategic_objectives!inner(
+          id,
+          plans:strategic_plans!inner(
+            id,
+            company_id
+          )
+        )
+      `)
+      .eq('objectives.plans.company_id', company_id);
+
+    if (fetchError) {
+      console.error('Error fetching KRs:', fetchError);
+      throw fetchError;
+    }
+
+    const totalKRs = allKRs?.length || 0;
+    console.log(`Found ${totalKRs} KRs to recalculate`);
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const kr of allKRs || []) {
+      const { error } = await supabaseClient.rpc('calculate_kr_metrics', {
+        kr_id: kr.id,
+      });
+
+      if (error) {
+        console.error(`Error calculating KR ${kr.id}:`, error);
+        errorCount++;
+      } else {
+        successCount++;
+      }
+    }
+
+    console.log(`Recalculation complete: ${successCount} success, ${errorCount} errors`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `Recalculado ${successCount} KRs com sucesso, ${errorCount} erros`,
+        totalKRs,
+        successCount,
+        errorCount,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   } catch (error) {
     console.error('Error:', error);
     return new Response(
