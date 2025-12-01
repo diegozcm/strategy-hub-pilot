@@ -76,11 +76,16 @@ export const KROverviewModal = ({
     canEditAnyKR, 
     canDeleteKR,
     canUpdateKRValues,
-    currentUserId 
+    canCheckInKR,
+    currentUserId,
+    isMemberOnly
   } = useKRPermissions();
   
   // Check if user can edit this specific KR (somente managers/admins)
   const canEditThisKR = canEditAnyKR;
+  
+  // Check if user can do check-in on this specific KR
+  const canCheckIn = canCheckInKR(currentKeyResult?.assigned_owner_id || null);
   
   // Quarter state
   const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4;
@@ -366,7 +371,7 @@ export const KROverviewModal = ({
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center justify-between gap-2 py-4 flex-shrink-0 px-6">
             <div className="flex flex-wrap items-center gap-2">
-              {canUpdateKRValues && (
+              {canCheckIn && (
                 <Button
                   variant="outline"
                   size="sm"

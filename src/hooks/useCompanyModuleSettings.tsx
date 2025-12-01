@@ -42,9 +42,17 @@ export const useCompanyModuleSettings = (moduleSlug: string) => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (validityEnabled: boolean) => {
+    mutationFn: async (updates: { validity_enabled?: boolean; members_can_view_all?: boolean }) => {
       if (!company?.id || !user?.id) {
         throw new Error('Company or user not found');
+      }
+
+      // Merge existing settings with new updates
+      const currentSettings = settings?.settings || {};
+      const newSettings = { ...currentSettings };
+      
+      if (updates.members_can_view_all !== undefined) {
+        newSettings.members_can_view_all = updates.members_can_view_all;
       }
 
       // Use UPSERT to avoid race conditions and duplicate key errors
@@ -53,7 +61,8 @@ export const useCompanyModuleSettings = (moduleSlug: string) => {
         .upsert({
           company_id: company.id,
           module_slug: moduleSlug,
-          validity_enabled: validityEnabled,
+          validity_enabled: updates.validity_enabled !== undefined ? updates.validity_enabled : settings?.validity_enabled,
+          settings: newSettings,
           updated_by: user.id,
           updated_at: new Date().toISOString(),
           // created_by is only set on first insert, not updated
@@ -81,14 +90,20 @@ export const useCompanyModuleSettings = (moduleSlug: string) => {
   });
 
   const toggleValidity = (enabled: boolean) => {
-    updateMutation.mutate(enabled);
+    updateMutation.mutate({ validity_enabled: enabled });
+  };
+
+  const toggleMembersCanViewAll = (enabled: boolean) => {
+    updateMutation.mutate({ members_can_view_all: enabled });
   };
 
   return {
     settings,
     loading: isLoading,
     validityEnabled: settings?.validity_enabled ?? false,
+    membersCanViewAll: (settings?.settings as any)?.members_can_view_all ?? false,
     toggleValidity,
+    toggleMembersCanViewAll,
     isUpdating: updateMutation.isPending,
   };
 };

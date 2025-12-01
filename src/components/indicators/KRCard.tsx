@@ -3,8 +3,9 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { KeyResult } from '@/types/strategic-map';
 import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
-import { formatValueWithUnit } from '@/lib/utils';
+import { formatValueWithUnit, cn } from '@/lib/utils';
 import { useKRMetrics } from '@/hooks/useKRMetrics';
+import { User } from 'lucide-react';
 
 interface KRCardProps {
   keyResult: KeyResult;
@@ -17,6 +18,7 @@ interface KRCardProps {
   selectedYear?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;
   onClick: () => void;
+  isOwned?: boolean;
 }
 
 export const KRCard: React.FC<KRCardProps> = ({
@@ -27,6 +29,7 @@ export const KRCard: React.FC<KRCardProps> = ({
   selectedYear,
   selectedQuarter,
   onClick,
+  isOwned = false,
 }) => {
   const metrics = useKRMetrics(keyResult, {
     selectedMonth,
@@ -64,14 +67,23 @@ export const KRCard: React.FC<KRCardProps> = ({
 
   return (
     <Card 
-      className="h-full cursor-pointer hover:shadow-lg transition-all overflow-hidden"
+      className={cn(
+        "h-full cursor-pointer hover:shadow-lg transition-all overflow-hidden",
+        isOwned && "ring-2 ring-primary ring-offset-2"
+      )}
       onClick={onClick}
     >
       {/* Header com cor do pilar */}
       <div 
         style={{ backgroundColor: pillar.color }}
-        className="p-3"
+        className="p-3 relative"
       >
+        {isOwned && (
+          <Badge className="absolute top-2 right-2 bg-white/90 text-primary hover:bg-white">
+            <User className="w-3 h-3 mr-1" />
+            Meu KR
+          </Badge>
+        )}
         <div className="flex-1 min-w-0 space-y-2">
           <h3 className="text-white font-semibold text-base leading-tight">
             {keyResult.title}
