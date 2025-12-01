@@ -511,6 +511,7 @@ export const CompaniesPage: React.FC = () => {
         {selectedCompany && isEditDialogOpen && (
           <EditCompanyModal
             company={selectedCompany}
+            isOpen={isEditDialogOpen}
             onSave={() => {
               setIsEditDialogOpen(false);
               loadAllData();

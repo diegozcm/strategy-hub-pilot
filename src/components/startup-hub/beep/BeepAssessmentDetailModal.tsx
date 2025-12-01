@@ -127,7 +127,7 @@ export const BeepAssessmentDetailModal: React.FC<BeepAssessmentDetailModalProps>
   const currentLevel = maturityLevels[maturityLevel as keyof typeof maturityLevels] || maturityLevels['idealizando'];
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Detalhamento da Avaliação BEEP</DialogTitle>

@@ -238,7 +238,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
       <DialogContent className="sm:max-w-[900px] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Atualizar Resultado-Chave</DialogTitle>

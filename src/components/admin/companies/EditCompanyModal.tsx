@@ -18,12 +18,14 @@ interface EditCompanyModalProps {
   company: Company;
   onSave: (company: Company) => void;
   onCancel: () => void;
+  isOpen: boolean;
 }
 
 export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
   company,
   onSave,
-  onCancel
+  onCancel,
+  isOpen
 }) => {
   const [editedCompany, setEditedCompany] = useState<Company>({ ...company });
   const [newValue, setNewValue] = useState('');
@@ -99,7 +101,7 @@ export const EditCompanyModal: React.FC<EditCompanyModalProps> = ({
   };
 
   return (
-    <Dialog open={true} onOpenChange={onCancel}>
+    <Dialog open={isOpen} onOpenChange={(isOpen) => { if (!isOpen) onCancel(); }}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Empresa</DialogTitle>
