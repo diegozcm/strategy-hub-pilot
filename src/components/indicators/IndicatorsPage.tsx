@@ -229,6 +229,35 @@ export const IndicatorsPage: React.FC = () => {
     }
   }, [searchParams, keyResults, setSearchParams]);
 
+  // Recalculate all KRs metrics
+  const handleRecalculateAllKRs = async () => {
+    try {
+      setIsSubmitting(true);
+      const { data, error } = await supabase.functions.invoke('recalculate-kr-metrics', {
+        body: { recalculate_all: true }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Sucesso",
+        description: "Métricas recalculadas com sucesso! Atualizando dados...",
+      });
+      
+      // Refresh the data
+      refreshData();
+    } catch (error: any) {
+      console.error('Error recalculating metrics:', error);
+      toast({
+        title: "Erro",
+        description: 'Erro ao recalcular métricas: ' + (error.message || 'Erro desconhecido'),
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // Create key result
   const handleCreateKeyResult = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -762,11 +791,22 @@ export const IndicatorsPage: React.FC = () => {
           </div>
         </div>
         
-        {/* Right side: Only New KR Button */}
-        <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Novo Resultado-Chave
-        </Button>
+        {/* Right side: Action Buttons */}
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={handleRecalculateAllKRs} 
+            variant="outline"
+            disabled={isSubmitting}
+            className="flex items-center gap-2"
+          >
+            <Activity className="w-4 h-4" />
+            Recalcular Métricas
+          </Button>
+          <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Novo Resultado-Chave
+          </Button>
+        </div>
       </div>
 
         {/* Period Selector - Below Description */}
