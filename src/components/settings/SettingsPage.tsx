@@ -1,11 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Settings, 
   Users, 
-  Palette,
-  Wrench,
-  Database
+  Palette
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,14 +16,11 @@ import { UserManagementPage } from '@/components/admin/UserManagementPage';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { PasswordChangeForm } from './PasswordChangeForm';
 import { ModulesSettingsTab } from './ModulesSettingsTab';
-import { RecalculateMetricsModal } from './RecalculateMetricsModal';
-import { Button } from '@/components/ui/button';
 
 export const SettingsPage: React.FC = () => {
-  const { user, profile, company } = useAuth();
+  const { user, profile } = useAuth();
   const { isModuleManager, isModuleAdmin } = useCurrentModuleRole();
   const { data: isSystemAdmin } = useIsSystemAdmin();
-  const [showRecalculateModal, setShowRecalculateModal] = useState(false);
 
   // Permissões baseadas no papel do módulo atual
   const isManagerOrAdmin = isModuleManager || isModuleAdmin;
@@ -51,7 +46,6 @@ export const SettingsPage: React.FC = () => {
           <TabsTrigger value="general">Geral</TabsTrigger>
           <TabsTrigger value="security">Segurança</TabsTrigger>
           {isManagerOrAdmin && <TabsTrigger value="modules">Módulos</TabsTrigger>}
-          {isManagerOrAdmin && <TabsTrigger value="maintenance">Manutenção</TabsTrigger>}
           {showUsersTab && <TabsTrigger value="users">Usuários</TabsTrigger>}
         </TabsList>
 
@@ -106,53 +100,6 @@ export const SettingsPage: React.FC = () => {
           </TabsContent>
         )}
 
-        {/* Maintenance Tab (Manager & Admin Only) */}
-        {isManagerOrAdmin && (
-          <TabsContent value="maintenance">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Wrench className="h-5 w-5" />
-                  <span>Manutenção de Dados</span>
-                </CardTitle>
-                <CardDescription>
-                  Ferramentas de manutenção para a empresa atual
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Recalcular Métricas Section */}
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex items-center space-x-2">
-                        <Database className="h-4 w-4 text-muted-foreground" />
-                        <h3 className="text-sm font-medium">Recalcular Métricas dos Resultados-Chave</h3>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Força o recálculo de todas as métricas agregadas (YTD, trimestral, mensal, anual) 
-                        dos KRs da empresa atual.
-                      </p>
-                      {company && (
-                        <div className="flex items-center space-x-2 text-sm">
-                          <span className="text-muted-foreground">Empresa:</span>
-                          <span className="font-medium">{company.name}</span>
-                        </div>
-                      )}
-                    </div>
-                    <Button 
-                      onClick={() => setShowRecalculateModal(true)}
-                      variant="outline"
-                      disabled={!company}
-                    >
-                      Recalcular Métricas
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-
         {/* User Management (System Admin Only) */}
         {showUsersTab && (
           <TabsContent value="users">
@@ -160,16 +107,6 @@ export const SettingsPage: React.FC = () => {
           </TabsContent>
         )}
       </Tabs>
-
-      {/* Recalculate Metrics Modal */}
-      {company && (
-        <RecalculateMetricsModal
-          open={showRecalculateModal}
-          onOpenChange={setShowRecalculateModal}
-          companyId={company.id}
-          companyName={company.name}
-        />
-      )}
     </div>
   );
 };

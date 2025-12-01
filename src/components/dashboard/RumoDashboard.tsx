@@ -65,12 +65,13 @@ export const RumoDashboard = () => {
     objectives, 
     filteredKeyResults,  // Usar KRs filtrados por vigência
     periodType,
-    {
-      selectedMonth: periodType === 'monthly' ? selectedMonth : undefined,
-      selectedYear: periodType === 'monthly' || periodType === 'yearly' ? selectedYear : undefined,
-      selectedQuarter: periodType === 'quarterly' ? selectedQuarter : undefined,
-      selectedQuarterYear: periodType === 'quarterly' ? selectedQuarterYear : undefined,
-    }
+    periodType === 'monthly' 
+      ? { selectedMonth, selectedYear } 
+      : periodType === 'quarterly'
+      ? { selectedQuarter }
+      : periodType === 'yearly'
+      ? { selectedYear }
+      : undefined
   );
 
   if (loading) {
@@ -270,9 +271,8 @@ export const RumoDashboard = () => {
                     krProgress={krProgress}
                     selectedPeriod={periodType}
                     selectedMonth={periodType === 'monthly' ? selectedMonth : undefined}
-                    selectedYear={periodType === 'monthly' || periodType === 'yearly' ? selectedYear : undefined}
+                    selectedYear={periodType === 'monthly' ? selectedYear : undefined}
                     selectedQuarter={periodType === 'quarterly' ? selectedQuarter : undefined}
-                    selectedQuarterYear={periodType === 'quarterly' ? selectedQuarterYear : undefined}
                   />
                         );
                       })}
