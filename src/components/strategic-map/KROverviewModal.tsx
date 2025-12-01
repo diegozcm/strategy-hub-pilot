@@ -18,6 +18,7 @@ import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks,
 import { useState, useEffect } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
+import { useKRPermissions } from '@/hooks/useKRPermissions';
 import { supabase } from '@/integrations/supabase/client';
 
 interface KROverviewModalProps {
@@ -70,6 +71,12 @@ export const KROverviewModal = ({
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedYearlyYear, setSelectedYearlyYear] = useState<number>(new Date().getFullYear());
   const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>(initialPeriod);
+  
+  const { canEditAnyKR, canDeleteKR, currentUserId } = useKRPermissions();
+  
+  // Verificar se o usuário pode editar este KR específico
+  const canEditThisKR = canEditAnyKR || currentKeyResult?.assigned_owner_id === currentUserId;
+  const canDeleteThisKR = canDeleteKR;
   
   // Quarter state
   const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4;
@@ -319,15 +326,17 @@ export const KROverviewModal = ({
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0 pr-8">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowEditModal(true)}
-                    className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  {showDeleteButton && (
+                  {canEditThisKR && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowEditModal(true)}
+                      className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {showDeleteButton && canDeleteThisKR && (
                     <Button
                       variant="ghost"
                       size="icon"

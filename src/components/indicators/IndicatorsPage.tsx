@@ -30,6 +30,7 @@ import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
+import { useKRPermissions } from '@/hooks/useKRPermissions';
 
 // Converte quarter + ano para start_month e end_month
 const quarterToMonths = (quarter: 1 | 2 | 3 | 4, year: number): { start_month: string; end_month: string } => {
@@ -62,6 +63,7 @@ export const IndicatorsPage: React.FC = () => {
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(authCompany?.id);
   const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
   const [searchParams, setSearchParams] = useSearchParams();
+  const { canCreateKR, canSelectOwner, canEditAnyKR, canDeleteKR, currentUserId, isMemberOnly } = useKRPermissions();
   
   // Use objetivos data hook que já filtra por plano ativo
   const { 
@@ -253,7 +255,10 @@ export const IndicatorsPage: React.FC = () => {
         yearly_actual: 0,
         start_month: formData.start_month || null,
         end_month: formData.end_month || null,
-        assigned_owner_id: (formData.assigned_owner_id === 'none' || formData.assigned_owner_id === '') ? null : formData.assigned_owner_id
+        // Se for member, auto-atribuir ao próprio usuário; senão usar o valor do form
+        assigned_owner_id: isMemberOnly 
+          ? currentUserId 
+          : ((formData.assigned_owner_id === 'none' || formData.assigned_owner_id === '') ? null : formData.assigned_owner_id)
       };
 
       const { data, error } = await supabase
@@ -764,10 +769,12 @@ export const IndicatorsPage: React.FC = () => {
         
         {/* Right side: Action Buttons */}
         <div className="flex items-center gap-2">
-          <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Novo Resultado-Chave
-          </Button>
+          {canCreateKR && (
+            <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" />
+              Novo Resultado-Chave
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1098,26 +1105,28 @@ export const IndicatorsPage: React.FC = () => {
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="assigned_owner">Dono do KR *</Label>
-                <Select 
-                  value={formData.assigned_owner_id || 'none'} 
-                  onValueChange={(value) => setFormData({...formData, assigned_owner_id: value})}
-                  disabled={loadingUsers}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o dono" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum dono</SelectItem>
-                    {companyUsers.map((user) => (
-                      <SelectItem key={user.user_id} value={user.user_id}>
-                        {user.first_name} {user.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {canSelectOwner && (
+                <div className="space-y-2">
+                  <Label htmlFor="assigned_owner">Dono do KR *</Label>
+                  <Select 
+                    value={formData.assigned_owner_id || 'none'} 
+                    onValueChange={(value) => setFormData({...formData, assigned_owner_id: value})}
+                    disabled={loadingUsers}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o dono" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum dono</SelectItem>
+                      {companyUsers.map((user) => (
+                        <SelectItem key={user.user_id} value={user.user_id}>
+                          {user.first_name} {user.last_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             
             <div className="space-y-2">

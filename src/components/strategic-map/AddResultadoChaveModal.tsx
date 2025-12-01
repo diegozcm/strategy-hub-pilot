@@ -10,6 +10,7 @@ import { KeyResult } from '@/types/strategic-map';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useCompanyUsers } from '@/hooks/useCompanyUsers';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
+import { useKRPermissions } from '@/hooks/useKRPermissions';
 import { cn } from '@/lib/utils';
 
 // Função para verificar se um mês está dentro da vigência
@@ -57,6 +58,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
   const { company } = useAuth();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
   const { quarterOptions, yearOptions } = usePlanPeriodOptions();
+  const { canSelectOwner, isMemberOnly, currentUserId } = useKRPermissions();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -141,7 +143,10 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
         due_date: formData.deadline || null,
         start_month: formData.start_month || null,
         end_month: formData.end_month || null,
-        assigned_owner_id: formData.assigned_owner_id === 'none' ? null : formData.assigned_owner_id
+        // Se for member, auto-atribuir ao próprio usuário; senão usar o valor do form
+        assigned_owner_id: isMemberOnly 
+          ? currentUserId || null
+          : (formData.assigned_owner_id === 'none' ? null : formData.assigned_owner_id)
       };
 
       await onSave(resultadoChaveData);
@@ -201,26 +206,28 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="assigned_owner">Dono do KR *</Label>
-            <Select 
-              value={formData.assigned_owner_id || 'none'} 
-              onValueChange={(value) => setFormData({...formData, assigned_owner_id: value})}
-              disabled={loadingUsers}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o dono" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum dono</SelectItem>
-                    {companyUsers.map((user) => (
-                      <SelectItem key={user.user_id} value={user.user_id}>
-                        {user.first_name} {user.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {canSelectOwner && (
+                <div className="space-y-2">
+                  <Label htmlFor="assigned_owner">Dono do KR *</Label>
+                  <Select 
+                    value={formData.assigned_owner_id || 'none'} 
+                    onValueChange={(value) => setFormData({...formData, assigned_owner_id: value})}
+                    disabled={loadingUsers}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o dono" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum dono</SelectItem>
+                      {companyUsers.map((user) => (
+                        <SelectItem key={user.user_id} value={user.user_id}>
+                          {user.first_name} {user.last_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label>Vigência</Label>
