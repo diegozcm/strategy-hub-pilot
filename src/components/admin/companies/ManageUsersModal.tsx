@@ -46,7 +46,6 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
   const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<string>('');
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'manager' | 'member'>('member');
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
@@ -63,7 +62,7 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
       // Buscar usuários da empresa
       const { data: relations, error: relationsError } = await supabase
         .from('user_company_relations')
-        .select('user_id, role')
+        .select('user_id')
         .eq('company_id', company.id);
 
       if (relationsError) throw relationsError;
@@ -85,7 +84,6 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
             first_name: profile?.first_name,
             last_name: profile?.last_name,
             email: profile?.email,
-            role: relation.role as 'admin' | 'manager' | 'member',
             status: profile?.status as 'active' | 'inactive'
           };
         }).filter(user => user.id);
@@ -128,8 +126,7 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
         .rpc('assign_user_to_company_v2', {
           _user_id: selectedUser,
           _company_id: company.id,
-          _admin_id: currentUser.id,
-          _role: selectedRole
+          _admin_id: currentUser.id
         });
 
       if (error) throw error;
@@ -140,7 +137,6 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
       });
 
       setSelectedUser('');
-      setSelectedRole('member');
       loadUsers();
       onUpdated();
     } catch (error) {
@@ -228,17 +224,6 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
                         {user.first_name} {user.last_name} ({user.email})
                       </SelectItem>
                     ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={selectedRole} onValueChange={(value: 'admin' | 'manager' | 'member') => setSelectedRole(value)}>
-                  <SelectTrigger className="w-40 bg-input border-border text-foreground">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-border text-popover-foreground">
-                    <SelectItem value="member">Membro</SelectItem>
-                    <SelectItem value="manager">Gerente</SelectItem>
-                    <SelectItem value="admin">Administrador</SelectItem>
                   </SelectContent>
                 </Select>
 

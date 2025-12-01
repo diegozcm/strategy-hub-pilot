@@ -2625,7 +2625,6 @@ export type Database = {
           company_id: string
           created_at: string
           id: string
-          role: string | null
           updated_at: string
           user_id: string
         }
@@ -2633,7 +2632,6 @@ export type Database = {
           company_id: string
           created_at?: string
           id?: string
-          role?: string | null
           updated_at?: string
           user_id: string
         }
@@ -2641,7 +2639,6 @@ export type Database = {
           company_id?: string
           created_at?: string
           id?: string
-          role?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -3008,15 +3005,20 @@ export type Database = {
         Args: { _admin_id: string; _company_id: string; _user_id: string }
         Returns: boolean
       }
-      assign_user_to_company_v2: {
-        Args: {
-          _admin_id: string
-          _company_id: string
-          _role?: string
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      assign_user_to_company_v2:
+        | {
+            Args: {
+              _admin_id: string
+              _company_id: string
+              _role?: string
+              _user_id: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: { _admin_id: string; _company_id: string; _user_id: string }
+            Returns: boolean
+          }
       calculate_achievement_percentage: {
         Args: { actual: number; target: number }
         Returns: number

@@ -164,7 +164,6 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           .from('user_company_relations')
           .select(`
             company_id,
-            role,
             companies!inner(
               id,
               name,

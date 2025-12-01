@@ -144,13 +144,10 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
               <p className="text-xs text-muted-foreground font-medium mb-2">Usuários Recentes</p>
               <div className="space-y-1">
                 {users.slice(0, 3).map((user) => (
-                  <div key={user.user_id} className="flex items-center justify-between text-xs">
+                  <div key={user.user_id} className="flex items-center text-xs">
                     <span className="text-foreground truncate">
                       {user.first_name} {user.last_name}
                     </span>
-                    <Badge variant="secondary" className="text-xs">
-                      {user.role}
-                    </Badge>
                   </div>
                 ))}
                 {users.length > 3 && (

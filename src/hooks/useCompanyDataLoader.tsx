@@ -139,7 +139,7 @@ export const useCompanyDataLoader = () => {
         console.log('🔗 [USERS] Buscando relações usuário-empresa...');
         const { data, error } = await supabase
           .from('user_company_relations')
-          .select('user_id, company_id, role')
+          .select('user_id, company_id')
           .in('company_id', companyIds);
 
         if (error) throw error;
@@ -192,7 +192,6 @@ export const useCompanyDataLoader = () => {
             first_name: profile.first_name,
             last_name: profile.last_name,
             email: profile.email,
-            role: relation.role as 'admin' | 'manager' | 'member',
             status: profile.status as 'active' | 'inactive'
           };
           

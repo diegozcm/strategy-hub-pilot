@@ -57,7 +57,6 @@ export const StartupUsersModal: React.FC<StartupUsersModalProps> = ({
   const [companyUsers, setCompanyUsers] = useState<StartupUser[]>([]);
   const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>('');
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'manager' | 'member'>('member');
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
@@ -74,7 +73,7 @@ export const StartupUsersModal: React.FC<StartupUsersModalProps> = ({
       // Buscar usuários da empresa com informações do perfil startup
       const { data: relations, error: relationsError } = await supabase
         .from('user_company_relations')
-        .select('user_id, role')
+        .select('user_id')
         .eq('company_id', company.id);
 
       if (relationsError) throw relationsError;
@@ -109,7 +108,6 @@ export const StartupUsersModal: React.FC<StartupUsersModalProps> = ({
             first_name: profile?.first_name,
             last_name: profile?.last_name,
             email: profile?.email,
-            role: relation.role as 'admin' | 'manager' | 'member',
             status: profile?.status as 'active' | 'inactive',
             company_id: company.id,
             company_name: company.name,
@@ -175,8 +173,7 @@ export const StartupUsersModal: React.FC<StartupUsersModalProps> = ({
         .rpc('assign_user_to_company_v2', {
           _user_id: selectedUser,
           _company_id: company.id,
-          _admin_id: currentUser.id,
-          _role: selectedRole
+          _admin_id: currentUser.id
         });
 
       if (addError) throw addError;
@@ -220,7 +217,6 @@ export const StartupUsersModal: React.FC<StartupUsersModalProps> = ({
       }
 
       setSelectedUser('');
-      setSelectedRole('member');
       loadUsers();
       onUpdated();
     } catch (error) {
@@ -367,17 +363,6 @@ export const StartupUsersModal: React.FC<StartupUsersModalProps> = ({
                   </SelectContent>
                 </Select>
 
-                <Select value={selectedRole} onValueChange={(value: 'admin' | 'manager' | 'member') => setSelectedRole(value)}>
-                  <SelectTrigger className="w-40 bg-input border-border text-foreground">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-border text-popover-foreground">
-                    <SelectItem value="member">Membro</SelectItem>
-                    <SelectItem value="manager">Gerente</SelectItem>  
-                    <SelectItem value="admin">Administrador</SelectItem>
-                  </SelectContent>
-                </Select>
-
                 <Button 
                   onClick={handleAddUser} 
                   disabled={!selectedUser || adding}
@@ -425,7 +410,6 @@ export const StartupUsersModal: React.FC<StartupUsersModalProps> = ({
                     <TableRow className="border-slate-600">
                       <TableHead className="text-slate-300">Usuário</TableHead>
                       <TableHead className="text-slate-300">Email</TableHead>
-                      <TableHead className="text-slate-300">Papel na Empresa</TableHead>
                       <TableHead className="text-slate-300">Perfil Startup</TableHead>
                       <TableHead className="text-slate-300">Status</TableHead>
                       <TableHead className="text-slate-300 w-20">Ações</TableHead>
@@ -439,14 +423,6 @@ export const StartupUsersModal: React.FC<StartupUsersModalProps> = ({
                         </TableCell>
                         <TableCell className="text-slate-300">
                           {user.email}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getRoleIcon(user.role)}
-                            <span className="text-slate-300">
-                              {getRoleLabel(user.role)}
-                            </span>
-                          </div>
                         </TableCell>
                         <TableCell>
                           {getStartupProfileBadge(user)}
