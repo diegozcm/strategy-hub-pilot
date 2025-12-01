@@ -89,7 +89,7 @@ export const ActionItemEditModal = ({
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
+      <Dialog open={isOpen} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>

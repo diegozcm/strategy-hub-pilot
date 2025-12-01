@@ -157,47 +157,45 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                   {progressPercentage.toFixed(1).replace('.', ',')}%
                 </Badge>
               </div>
-              <DialogDescription asChild>
-                <div className="text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2 mt-2">
-                    {pillar && (
-                      <Badge 
-                        variant="secondary" 
-                        style={{ 
-                          backgroundColor: `${pillar.color}20`, 
-                          color: pillar.color 
-                        }}
-                      >
-                        {pillar.name}
-                      </Badge>
-                    )}
-                    {plan && (
-                      <Badge variant="outline">
-                        {plan.name}
-                      </Badge>
-                    )}
-                    <Badge variant="outline">
-                      {selectedPeriod === 'quarterly' && selectedQuarter && selectedQuarterYear
-                        ? `📈 Q${selectedQuarter} ${selectedQuarterYear}`
-                        : selectedPeriod === 'yearly' && selectedYear
-                        ? `📅 Ano ${selectedYear}`
-                        : selectedPeriod === 'monthly' 
-                        ? (selectedMonth && selectedYear
-                            ? `📆 ${new Date(selectedYear, selectedMonth - 1, 1)
-                                .toLocaleDateString('pt-BR', { month: 'long' })
-                                .charAt(0).toUpperCase() + 
-                                new Date(selectedYear, selectedMonth - 1, 1)
-                                .toLocaleDateString('pt-BR', { month: 'long' })
-                                .slice(1)} ${selectedYear}`
-                            : `📆 ${format(new Date(), 'MMMM', { locale: ptBR }).charAt(0).toUpperCase() + format(new Date(), 'MMMM', { locale: ptBR }).slice(1)}`)
-                        : '📊 YTD'}
+              <DialogDescription>
+                <div className="flex items-center gap-2 mt-2">
+                  {pillar && (
+                    <Badge 
+                      variant="secondary" 
+                      style={{ 
+                        backgroundColor: `${pillar.color}20`, 
+                        color: pillar.color 
+                      }}
+                    >
+                      {pillar.name}
                     </Badge>
-                  </div>
+                  )}
+                  {plan && (
+                    <Badge variant="outline">
+                      {plan.name}
+                    </Badge>
+                  )}
+                  <Badge variant="outline">
+                    {selectedPeriod === 'quarterly' && selectedQuarter && selectedQuarterYear
+                      ? `📈 Q${selectedQuarter} ${selectedQuarterYear}`
+                      : selectedPeriod === 'yearly' && selectedYear
+                      ? `📅 Ano ${selectedYear}`
+                      : selectedPeriod === 'monthly' 
+                      ? (selectedMonth && selectedYear
+                          ? `📆 ${new Date(selectedYear, selectedMonth - 1, 1)
+                              .toLocaleDateString('pt-BR', { month: 'long' })
+                              .charAt(0).toUpperCase() + 
+                              new Date(selectedYear, selectedMonth - 1, 1)
+                              .toLocaleDateString('pt-BR', { month: 'long' })
+                              .slice(1)} ${selectedYear}`
+                          : `📆 ${format(new Date(), 'MMMM', { locale: ptBR }).charAt(0).toUpperCase() + format(new Date(), 'MMMM', { locale: ptBR }).slice(1)}`)
+                      : '📊 YTD'}
+                  </Badge>
                 </div>
               </DialogDescription>
             </div>
             <div className="flex items-center gap-2">
-            {!isEditing && (canEditObjective || (onDelete && canDeleteObjective)) && (
+            {!isEditing && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm">

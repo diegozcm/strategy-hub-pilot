@@ -369,16 +369,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
 
   if (!keyResult) return null;
 
-  const handleClose = () => {
-    // Reset estados internos ao fechar
-    setErrors({});
-    setEditingField(null);
-    setTempValue('');
-    onClose();
-  };
-
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[900px] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Resultado-Chave</DialogTitle>

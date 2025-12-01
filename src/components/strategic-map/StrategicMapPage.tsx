@@ -501,32 +501,30 @@ export const StrategicMapPage = () => {
                                 </p>
                               )}
                             </div>
-                            {(canEditPillar || canDeletePillar) && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  {canEditPillar && (
-                                    <DropdownMenuItem onClick={() => setEditingPillar(pillar)}>
-                                      <Edit className="h-4 w-4 mr-2" />
-                                      Editar
-                                    </DropdownMenuItem>
-                                  )}
-                                  {canDeletePillar && (
-                                    <DropdownMenuItem 
-                                      className="text-destructive"
-                                      onClick={() => setDeletingPillar(pillar)}
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-2" />
-                                      Excluir
-                                    </DropdownMenuItem>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {canEditPillar && (
+                                  <DropdownMenuItem onClick={() => setEditingPillar(pillar)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                )}
+                                {canDeletePillar && (
+                                  <DropdownMenuItem 
+                                    className="text-destructive"
+                                    onClick={() => setDeletingPillar(pillar)}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Excluir
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                           <div className="space-y-2 mt-3">
                             <div className="flex items-center justify-between text-sm">

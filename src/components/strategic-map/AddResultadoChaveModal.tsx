@@ -178,7 +178,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Adicionar Resultado-Chave</DialogTitle>

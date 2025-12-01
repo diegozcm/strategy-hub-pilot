@@ -25,7 +25,7 @@ export const DeleteCompanyModal: React.FC<DeleteCompanyModalProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <div className="flex items-center gap-3">
