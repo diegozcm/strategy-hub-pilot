@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  User, 
   Plus, 
   Trash2, 
-  Search,
-  UserCheck,
-  UserX,
-  Crown,
-  Shield,
   Users
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -191,27 +185,6 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
     }
   };
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return <Crown className="w-4 h-4 text-yellow-400" />;
-      case 'manager':
-        return <Shield className="w-4 h-4 text-blue-400" />;
-      default:
-        return <User className="w-4 h-4 text-slate-400" />;
-    }
-  };
-
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'Administrador';
-      case 'manager':
-        return 'Gerente';
-      default:
-        return 'Membro';
-    }
-  };
 
   const filteredAvailableUsers = availableUsers.filter(user =>
     `${user.first_name} ${user.last_name} ${user.email}`
@@ -310,12 +283,11 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
                   </p>
                 </div>
               ) : (
-                <Table>
+                  <Table>
                   <TableHeader>
                     <TableRow className="border-slate-600">
                       <TableHead className="text-slate-300">Usuário</TableHead>
                       <TableHead className="text-slate-300">Email</TableHead>
-                      <TableHead className="text-slate-300">Papel</TableHead>
                       <TableHead className="text-slate-300">Status</TableHead>
                       <TableHead className="text-slate-300 w-20">Ações</TableHead>
                     </TableRow>
@@ -328,14 +300,6 @@ export const ManageUsersModal: React.FC<ManageUsersModalProps> = ({
                         </TableCell>
                         <TableCell className="text-slate-300">
                           {user.email}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {getRoleIcon(user.role)}
-                            <span className="text-slate-300">
-                              {getRoleLabel(user.role)}
-                            </span>
-                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
