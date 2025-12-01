@@ -19,7 +19,6 @@ export interface CompanyUser {
   first_name?: string;
   last_name?: string;
   email?: string;
-  role: 'admin' | 'manager' | 'member';
   status: 'active' | 'inactive' | 'pending';
   company_id?: string;
   company_name?: string;

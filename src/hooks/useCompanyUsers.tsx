@@ -31,7 +31,6 @@ export const useCompanyUsers = (companyId?: string) => {
           .from('user_company_relations')
           .select(`
             user_id,
-            role,
             profiles!inner(
               user_id,
               first_name,
@@ -52,8 +51,7 @@ export const useCompanyUsers = (companyId?: string) => {
           first_name: item.profiles.first_name || '',
           last_name: item.profiles.last_name || '',
           email: item.profiles.email || '',
-          avatar_url: item.profiles.avatar_url,
-          role: item.role
+          avatar_url: item.profiles.avatar_url
         }));
         
         setUsers(flattenedUsers);

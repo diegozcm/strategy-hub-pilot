@@ -114,7 +114,6 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
         .select(`
           id,
           company_id,
-          role,
           companies (
             id,
             name,
@@ -131,7 +130,6 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
-        role: relation.role as 'admin' | 'manager' | 'member',
         status: user.status,
         company_id: relation.company_id,
         company_name: relation.companies?.name || 'Empresa não encontrada'
@@ -339,15 +337,14 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     }
   };
 
-  const handleAddCompany = async (companyId: string, role: string) => {
+  const handleAddCompany = async (companyId: string) => {
     if (!user || !currentUser) return;
 
     try {
       const { error } = await supabase.rpc('assign_user_to_company_v2', {
         _user_id: user.user_id,
         _company_id: companyId,
-        _admin_id: currentUser.id,
-        _role: role
+        _admin_id: currentUser.id
       });
 
       if (error) throw error;
@@ -661,10 +658,6 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                               <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium text-sm truncate">{companyUser.company_name}</p>
-                                <Badge variant="secondary" className="text-xs mt-0.5">
-                                  {companyUser.role === 'admin' ? 'Admin' : 
-                                   companyUser.role === 'manager' ? 'Gerente' : 'Membro'}
-                                </Badge>
                               </div>
                               <Button
                                 size="icon"
@@ -692,7 +685,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                         <Select onValueChange={(companyId) => {
                           const company = companies.find(c => c.id === companyId);
                           if (company) {
-                            handleAddCompany(companyId, 'member');
+                            handleAddCompany(companyId);
                           }
                         }}>
                           <SelectTrigger className="flex-1">
