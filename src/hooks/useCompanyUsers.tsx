@@ -13,12 +13,16 @@ interface CompanyUser {
 export const useCompanyUsers = (companyId?: string) => {
   const [users, setUsers] = useState<CompanyUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchAttempted, setFetchAttempted] = useState(false);
 
   useEffect(() => {
+    // Reset quando companyId muda
+    setFetchAttempted(false);
+    
     if (!companyId) {
-      console.log('[useCompanyUsers] No companyId provided, skipping fetch');
+      console.log('[useCompanyUsers] No companyId provided, waiting...');
       setUsers([]);
-      setLoading(false);
+      // NÃO setamos loading: false aqui - mantemos true até ter companyId válido
       return;
     }
     
@@ -43,7 +47,7 @@ export const useCompanyUsers = (companyId?: string) => {
         
         if (error) throw error;
         
-        console.log('[useCompanyUsers] Fetched users:', data?.length || 0);
+        console.log('[useCompanyUsers] Fetched users:', data?.length || 0, 'for company:', companyId);
         
         // Flatten the structure
         const flattenedUsers: CompanyUser[] = (data || []).map((item: any) => ({
@@ -54,12 +58,15 @@ export const useCompanyUsers = (companyId?: string) => {
           avatar_url: item.profiles.avatar_url
         }));
         
+        console.log('[useCompanyUsers] Flattened users:', flattenedUsers.map(u => `${u.first_name} ${u.last_name}`).join(', '));
+        
         setUsers(flattenedUsers);
       } catch (error) {
         console.error('[useCompanyUsers] Error loading company users:', error);
         setUsers([]);
       } finally {
         setLoading(false);
+        setFetchAttempted(true);
       }
     };
 
