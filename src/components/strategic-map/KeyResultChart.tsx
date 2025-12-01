@@ -155,27 +155,7 @@ const normalizedActuals: Record<string, number | null> =
 
   const monthsForTotal = getMonthsForPeriod();
 
-  // Calculate aggregated value based on aggregation type
-  const calculateAggregation = (data: Record<string, number | null | undefined>, type: string) => {
-    const values = monthsForTotal
-      .map(month => data[month.key])
-      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-    
-    if (values.length === 0) return 0;
-    
-    switch (type) {
-      case 'sum':
-        return values.reduce((sum, v) => sum + v, 0);
-      case 'average':
-        return values.reduce((sum, v) => sum + v, 0) / values.length;
-      case 'max':
-        return Math.max(...values);
-      case 'min':
-        return Math.min(...values);
-      default:
-        return values.reduce((sum, v) => sum + v, 0);
-    }
-  };
+  // NO CALCULATION - Use ONLY pre-calculated values from database below
 
   // Use pre-calculated values from database based on selected period
   const targetTotal = selectedPeriod === 'yearly'

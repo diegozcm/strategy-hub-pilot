@@ -138,120 +138,21 @@ export const KROverviewModal = ({
   
   if (!currentKeyResult) return null;
 
-  // Calculate values using the same logic as EditKeyResultModal
-  const monthlyTargets = currentKeyResult.monthly_targets as Record<string, number> || {};
-  const monthlyActual = currentKeyResult.monthly_actual as Record<string, number> || {};
+  // Use ONLY pre-calculated values from database
   const aggregationType = currentKeyResult.aggregation_type || 'sum';
   
-  // Calculate YTD considering only months with both target and actual data
-  const calculateYTD = (targets: Record<string, number>, actuals: Record<string, number>) => {
-    // Get months that have both valid target and actual data
-    const monthKeys = Object.keys(targets);
-    const validMonths = monthKeys.filter(monthKey => {
-      const target = targets[monthKey];
-      const actual = actuals[monthKey];
-      const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
-      const hasActual = typeof actual === 'number' && Number.isFinite(actual);
-      return hasTarget && hasActual;
-    });
+  // All values come from database pre-calculated fields
+  const yearlyTarget = currentKeyResult.ytd_target || 0;
+  const yearlyActual = currentKeyResult.ytd_actual || 0;
+  const achievementPercentage = currentKeyResult.ytd_percentage || 0;
 
-    if (validMonths.length === 0) return { target: 0, actual: 0 };
+  // Current month values from database
+  const currentMonthTarget = currentKeyResult.current_month_target || 0;
+  const currentMonthActual = currentKeyResult.current_month_actual || 0;
 
-    const targetValues = validMonths.map(key => targets[key]);
-    const actualValues = validMonths.map(key => actuals[key]);
-
-    let ytdTarget = 0;
-    let ytdActual = 0;
-
-    switch (aggregationType) {
-      case 'sum':
-        ytdTarget = targetValues.reduce((sum, value) => sum + value, 0);
-        ytdActual = actualValues.reduce((sum, value) => sum + value, 0);
-        break;
-      case 'average':
-        ytdTarget = targetValues.reduce((sum, value) => sum + value, 0) / targetValues.length;
-        ytdActual = actualValues.reduce((sum, value) => sum + value, 0) / actualValues.length;
-        break;
-      case 'max':
-        ytdTarget = Math.max(...targetValues);
-        ytdActual = Math.max(...actualValues);
-        break;
-      case 'min':
-        ytdTarget = Math.min(...targetValues);
-        ytdActual = Math.min(...actualValues);
-        break;
-      default:
-        ytdTarget = targetValues.reduce((sum, value) => sum + value, 0);
-        ytdActual = actualValues.reduce((sum, value) => sum + value, 0);
-    }
-
-    return { target: ytdTarget, actual: ytdActual };
-  };
-
-  // Calculate yearly values (all 12 months)
-  const calculateYearly = (targets: Record<string, number>, actuals: Record<string, number>, year: number) => {
-    const targetValues: number[] = [];
-    const actualValues: number[] = [];
-
-    // Iterate through all 12 months of the year
-    for (let month = 1; month <= 12; month++) {
-      const monthKey = `${year}-${String(month).padStart(2, '0')}`;
-      const target = targets[monthKey] || 0;
-      const actual = actuals[monthKey] || 0;
-      
-      targetValues.push(target);
-      actualValues.push(actual);
-    }
-
-    let yearlyTarget = 0;
-    let yearlyActual = 0;
-
-    switch (aggregationType) {
-      case 'sum':
-        yearlyTarget = targetValues.reduce((sum, value) => sum + value, 0);
-        yearlyActual = actualValues.reduce((sum, value) => sum + value, 0);
-        break;
-      case 'average':
-        yearlyTarget = targetValues.reduce((sum, value) => sum + value, 0) / 12;
-        yearlyActual = actualValues.reduce((sum, value) => sum + value, 0) / 12;
-        break;
-      case 'max':
-        yearlyTarget = Math.max(...targetValues);
-        yearlyActual = Math.max(...actualValues);
-        break;
-      case 'min':
-        yearlyTarget = Math.min(...targetValues);
-        yearlyActual = Math.min(...actualValues);
-        break;
-      default:
-        yearlyTarget = targetValues.reduce((sum, value) => sum + value, 0);
-        yearlyActual = actualValues.reduce((sum, value) => sum + value, 0);
-    }
-
-    return { target: yearlyTarget, actual: yearlyActual };
-  };
-
-  const ytdValues = calculateYTD(monthlyTargets, monthlyActual);
-  const yearlyTarget = ytdValues.target;
-  const yearlyActual = ytdValues.actual;
-  const achievementPercentage = yearlyTarget > 0 
-    ? calculateKRStatus(
-        yearlyActual, 
-        yearlyTarget, 
-        (currentKeyResult.target_direction as 'maximize' | 'minimize') || 'maximize'
-      ).percentage
-    : 0;
-
-  // Calculate current month values
-  const now = new Date();
-  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const currentMonthTarget = monthlyTargets[currentMonthKey] || 0;
-  const currentMonthActual = monthlyActual[currentMonthKey] || 0;
-
-  // Calculate yearly values (all 12 months)
-  const yearlyFullValues = calculateYearly(monthlyTargets, monthlyActual, selectedYear);
-  const fullYearTarget = yearlyFullValues.target;
-  const fullYearActual = yearlyFullValues.actual;
+  // Yearly values from database
+  const fullYearTarget = currentKeyResult.yearly_target || 0;
+  const fullYearActual = currentKeyResult.yearly_actual || 0;
 
   const getAggregationTypeText = (type: string) => {
     switch (type) {
@@ -487,8 +388,8 @@ export const KROverviewModal = ({
             {/* Evolution Chart */}
           <KeyResultChart
               keyResult={currentKeyResult}
-              monthlyTargets={monthlyTargets}
-              monthlyActual={monthlyActual}
+              monthlyTargets={currentKeyResult.monthly_targets as Record<string, number> || {}}
+              monthlyActual={currentKeyResult.monthly_actual as Record<string, number> || {}}
               unit={currentKeyResult.unit || ''}
               selectedYear={selectedYear}
               onYearChange={setSelectedYear}

@@ -46,6 +46,19 @@ interface KeyResultWithPillar {
   current_month_actual?: number;
   monthly_percentage?: number;
   yearly_percentage?: number;
+  // Quarter metrics
+  q1_target?: number;
+  q1_actual?: number;
+  q1_percentage?: number;
+  q2_target?: number;
+  q2_actual?: number;
+  q2_percentage?: number;
+  q3_target?: number;
+  q3_actual?: number;
+  q3_percentage?: number;
+  q4_target?: number;
+  q4_actual?: number;
+  q4_percentage?: number;
 }
 
 interface DashboardStats {
@@ -328,6 +341,18 @@ export const DashboardHome: React.FC = () => {
           current_month_actual,
           monthly_percentage,
           yearly_percentage,
+          q1_target,
+          q1_actual,
+          q1_percentage,
+          q2_target,
+          q2_actual,
+          q2_percentage,
+          q3_target,
+          q3_actual,
+          q3_percentage,
+          q4_target,
+          q4_actual,
+          q4_percentage,
           strategic_objectives!inner (
             id,
             title,
@@ -375,6 +400,19 @@ export const DashboardHome: React.FC = () => {
         current_month_actual: kr.current_month_actual,
         monthly_percentage: kr.monthly_percentage,
         yearly_percentage: kr.yearly_percentage,
+        // Quarter metrics
+        q1_target: kr.q1_target,
+        q1_actual: kr.q1_actual,
+        q1_percentage: kr.q1_percentage,
+        q2_target: kr.q2_target,
+        q2_actual: kr.q2_actual,
+        q2_percentage: kr.q2_percentage,
+        q3_target: kr.q3_target,
+        q3_actual: kr.q3_actual,
+        q3_percentage: kr.q3_percentage,
+        q4_target: kr.q4_target,
+        q4_actual: kr.q4_actual,
+        q4_percentage: kr.q4_percentage,
       })) || [];
 
       // Calcular estatísticas do dashboard
@@ -453,120 +491,66 @@ export const DashboardHome: React.FC = () => {
   };
 
   const getSelectedAchievement = (kr: KeyResultWithPillar) => {
+    // Use ONLY pre-calculated values from database
     if (periodType === 'quarterly') {
-      const startMonth = (selectedQuarter - 1) * 3 + 1;
-      const endMonth = selectedQuarter * 3;
-      
-      const monthKeys = [];
-      for (let m = startMonth; m <= endMonth; m++) {
-        monthKeys.push(`${selectedQuarterYear}-${m.toString().padStart(2, '0')}`);
+      // Use pre-calculated quarter percentages
+      switch (selectedQuarter) {
+        case 1: return kr.q1_percentage || 0;
+        case 2: return kr.q2_percentage || 0;
+        case 3: return kr.q3_percentage || 0;
+        case 4: return kr.q4_percentage || 0;
+        default: return 0;
       }
-      
-      const targets = monthKeys.map(key => kr.monthly_targets?.[key] || 0);
-      const actuals = monthKeys.map(key => kr.monthly_actual?.[key] || 0);
-      
-      const totalTarget = calculateAggregatedValue(targets, kr.aggregation_type || 'sum');
-      const totalActual = calculateAggregatedValue(actuals, kr.aggregation_type || 'sum');
-      
-      if (totalTarget > 0) {
-        return calculateKRStatus(totalActual, totalTarget, kr.target_direction || 'maximize').percentage;
-      }
-      return 0;
     }
     
     if (periodType === 'monthly') {
-      // Se mês customizado foi selecionado
-      if (selectedMonth && selectedMonthYear) {
-        const monthKey = `${selectedMonthYear}-${selectedMonth.toString().padStart(2, '0')}`;
-        const monthlyTargets = kr.monthly_targets || {};
-        const monthlyActual = kr.monthly_actual || {};
-        
-        const target = monthlyTargets[monthKey] || 0;
-        const actual = monthlyActual[monthKey] || 0;
-        
-        if (target > 0 && actual > 0) {
-          if (kr.target_direction === 'minimize') {
-            return ((target - actual) / target) * 100 + 100;
-          } else {
-            return (actual / target) * 100;
-          }
-        }
-        return 0;
-      }
-      
-      // Usar valor pré-calculado do mês atual
-      if (typeof kr.monthly_percentage === 'number') return kr.monthly_percentage;
-      return 0;
-    }
-    if (periodType === 'ytd') {
-      if (typeof kr.ytd_percentage === 'number') return kr.ytd_percentage;
-      return 0;
-    }
-    // yearly - calcular para o ano selecionado
-    if (periodType === 'yearly') {
-      const monthKeys = [];
-      for (let m = 1; m <= 12; m++) {
-        monthKeys.push(`${selectedYear}-${m.toString().padStart(2, '0')}`);
-      }
-      
-      const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-      const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
-      
-      const targets = monthKeys.map(key => monthlyTargets[key] || 0);
-      const actuals = monthKeys.map(key => monthlyActual[key] || 0);
-      
-      const totalTarget = calculateAggregatedValue(targets, kr.aggregation_type || 'sum');
-      const totalActual = calculateAggregatedValue(actuals, kr.aggregation_type || 'sum');
-      
-      if (totalTarget > 0) {
-        return calculateKRStatus(totalActual, totalTarget, kr.target_direction || 'maximize').percentage;
-      }
-      return 0;
+      // Use pre-calculated monthly percentage from database
+      return kr.monthly_percentage || 0;
     }
     
-    if (typeof kr.yearly_percentage === 'number') return kr.yearly_percentage;
-    return 0;
+    if (periodType === 'yearly') {
+      // Use pre-calculated yearly percentage from database
+      return kr.yearly_percentage || 0;
+    }
+    
+    // Default: YTD - use pre-calculated value
+    return kr.ytd_percentage || 0;
   };
 
-  const getSelectedActualValue = (kr: KeyResultWithPillar) => {
+  // Use ONLY pre-calculated values from database
+  const getAggregatedTotals = (kr: KeyResultWithPillar) => {
     if (periodType === 'quarterly') {
-      const startMonth = (selectedQuarter - 1) * 3 + 1;
-      const endMonth = selectedQuarter * 3;
-      
-      const monthKeys = [];
-      for (let m = startMonth; m <= endMonth; m++) {
-        monthKeys.push(`${selectedQuarterYear}-${m.toString().padStart(2, '0')}`);
+      // Use pre-calculated quarter values
+      switch (selectedQuarter) {
+        case 1: return { target: kr.q1_target || 0, actual: kr.q1_actual || 0 };
+        case 2: return { target: kr.q2_target || 0, actual: kr.q2_actual || 0 };
+        case 3: return { target: kr.q3_target || 0, actual: kr.q3_actual || 0 };
+        case 4: return { target: kr.q4_target || 0, actual: kr.q4_actual || 0 };
+        default: return { target: 0, actual: 0 };
       }
-      
-      const actuals = monthKeys.map(key => kr.monthly_actual?.[key] || 0);
-      return calculateAggregatedValue(actuals, kr.aggregation_type || 'sum');
     }
     
     if (periodType === 'monthly') {
-      // Se mês customizado foi selecionado
-      if (selectedMonth && selectedMonthYear) {
-        const monthKey = `${selectedMonthYear}-${selectedMonth.toString().padStart(2, '0')}`;
-        return kr.monthly_actual?.[monthKey] ?? 0;
-      }
-      // Usar mês atual
-      return kr.current_month_actual ?? 0;
-    }
-    if (periodType === 'ytd') {
-      return kr.ytd_actual ?? 0;
-    }
-    // yearly - calcular para o ano selecionado
-    if (periodType === 'yearly') {
-      const monthKeys = [];
-      for (let m = 1; m <= 12; m++) {
-        monthKeys.push(`${selectedYear}-${m.toString().padStart(2, '0')}`);
-      }
-      
-      const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
-      const actuals = monthKeys.map(key => monthlyActual[key] || 0);
-      return calculateAggregatedValue(actuals, kr.aggregation_type || 'sum');
+      // Use pre-calculated monthly values
+      return {
+        target: kr.current_month_target || 0,
+        actual: kr.current_month_actual || 0,
+      };
     }
     
-    return kr.yearly_actual ?? kr.current_value ?? 0;
+    if (periodType === 'yearly') {
+      // Use pre-calculated yearly values
+      return {
+        target: kr.yearly_target || 0,
+        actual: kr.yearly_actual || 0,
+      };
+    }
+    
+    // YTD - use pre-calculated values
+    return {
+      target: kr.ytd_target || 0,
+      actual: kr.ytd_actual || 0,
+    };
   };
 
   const handleOpenKRModal = (kr: KeyResultWithPillar) => {
@@ -659,50 +643,30 @@ export const DashboardHome: React.FC = () => {
     };
   };
 
-  const calculateAggregatedValue = (values: number[], aggregationType: string) => {
-    if (!values.length) return 0;
+  const getMonthlyPerformance = (kr: KeyResultWithPillar, monthKey: string) => {
+    const target = kr.monthly_targets?.[monthKey];
+    const actual = kr.monthly_actual?.[monthKey];
     
-    switch (aggregationType) {
-      case 'sum':
-        return values.reduce((sum, val) => sum + val, 0);
-      case 'average':
-        return values.reduce((sum, val) => sum + val, 0) / values.length;
-      case 'min':
-        return Math.min(...values);
-      case 'max':
-        return Math.max(...values);
-      default:
-        return values.reduce((sum, val) => sum + val, 0);
+    const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
+    const hasActual = typeof actual === 'number' && Number.isFinite(actual);
+    
+    // Se não há target válido ou actual, não há dados para calcular
+    if (!hasTarget || !hasActual) {
+      return {
+        target: hasTarget ? target : null,
+        actual: hasActual ? actual : null,
+        percentage: null
+      };
     }
-  };
-
-  const getAggregatedTotals = (kr: KeyResultWithPillar) => {
-    const months = getMonthsOfYear();
-    const aggregationType = kr.aggregation_type || 'sum';
     
-    // Coletar apenas valores mensais com targets definidos E actual presente
-    const monthsWithData = months.filter(month => {
-      const target = kr.monthly_targets?.[month.key];
-      const actual = kr.monthly_actual?.[month.key];
-      const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
-      const hasActual = typeof actual === 'number' && Number.isFinite(actual);
-      return hasTarget && hasActual;
-    });
-    
-    const targetValues = monthsWithData.map(month => kr.monthly_targets?.[month.key] || 0);
-    const actualValues = monthsWithData.map(month => kr.monthly_actual?.[month.key] || 0);
-    
-    const totalTarget = calculateAggregatedValue(targetValues, aggregationType);
-    const totalActual = calculateAggregatedValue(actualValues, aggregationType);
-    const totalPercentage = totalTarget > 0 
-      ? calculateKRStatus(totalActual, totalTarget, kr.target_direction || 'maximize').percentage
-      : null;
+    const percentage = Math.round(
+      calculateKRStatus(actual, target, kr.target_direction || 'maximize').percentage
+    );
     
     return {
-      target: totalTarget,
-      actual: totalActual,
-      percentage: totalPercentage,
-      aggregationType
+      target,
+      actual,
+      percentage
     };
   };
 
@@ -1048,7 +1012,7 @@ export const DashboardHome: React.FC = () => {
                   {filteredKeyResults.map(kr => {
                     const months = getMonthsOfYear();
                     const selectedAchievement = getSelectedAchievement(kr);
-                    const selectedActualValue = getSelectedActualValue(kr);
+                    const totals = getAggregatedTotals(kr);
                     
                     return (
                       <div key={kr.id} className="border rounded-lg overflow-hidden group">

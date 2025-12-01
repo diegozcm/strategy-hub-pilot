@@ -34,55 +34,22 @@ export const useRumoCalculations = (
     const currentYear = options?.selectedYear ?? now.getFullYear();
     const monthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
 
-    // Calculate KR progress using pre-calculated database fields
+    // Calculate KR progress using ONLY pre-calculated database fields
     keyResults.forEach(kr => {
       let progress = 0;
       
       // Use pre-calculated percentages from database based on period type
       if (periodType === 'monthly') {
-        // Se mês customizado foi fornecido, recalcular
-        if (options?.selectedMonth && options?.selectedYear) {
-          const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-          const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
-          
-          const monthTarget = monthlyTargets[monthKey] || 0;
-          const monthActual = monthlyActual[monthKey] || 0;
-          
-          // Usar mesma lógica do banco para calcular percentage
-          if (monthTarget > 0 && monthActual > 0) {
-            if (kr.target_direction === 'minimize') {
-              progress = ((monthTarget - monthActual) / monthTarget) * 100 + 100;
-            } else {
-              progress = (monthActual / monthTarget) * 100;
-            }
-          }
-        } else {
-          // Usar valor pré-calculado do mês atual
-          progress = kr.monthly_percentage || 0;
-        }
+        // Usar valor pré-calculado do mês atual do banco
+        progress = kr.monthly_percentage || 0;
       } else if (periodType === 'ytd') {
+        // Usar valor pré-calculado YTD do banco
         progress = kr.ytd_percentage || 0;
       } else if (periodType === 'yearly') {
-        const year = options?.selectedYear ?? now.getFullYear();
-        const monthKeys = [];
-        for (let m = 1; m <= 12; m++) {
-          monthKeys.push(`${year}-${m.toString().padStart(2, '0')}`);
-        }
-        
-        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
-        
-        const totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
-        const totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
-        
-        if (totalTarget > 0 && totalActual > 0) {
-          if (kr.target_direction === 'minimize') {
-            progress = ((totalTarget - totalActual) / totalTarget) * 100 + 100;
-          } else {
-            progress = (totalActual / totalTarget) * 100;
-          }
-        }
+        // Usar valor pré-calculado anual do banco
+        progress = kr.yearly_percentage || 0;
       } else if (periodType === 'quarterly') {
+        // Usar valores pré-calculados de trimestre do banco
         const quarter = options?.selectedQuarter || 1;
         switch (quarter) {
           case 1: progress = kr.q1_percentage || 0; break;
