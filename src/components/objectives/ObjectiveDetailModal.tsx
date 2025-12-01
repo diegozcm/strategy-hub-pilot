@@ -99,148 +99,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
     pillar_id: '',
   });
 
-  // Calcular percentual do objetivo baseado no período selecionado
-  // Usa a mesma lógica do useKRMetrics para garantir consistência
-  const calculateObjectiveProgress = () => {
-    if (keyResults.length === 0) return 0;
-    
-    const percentages = keyResults.map(kr => {
-      // Para período trimestral - calcular dinamicamente usando os meses do quarter
-      if (selectedPeriod === 'quarterly' && selectedQuarter && selectedQuarterYear) {
-        const quarterMonths = {
-          1: [1, 2, 3],
-          2: [4, 5, 6],
-          3: [7, 8, 9],
-          4: [10, 11, 12]
-        };
-        const months = quarterMonths[selectedQuarter];
-        const monthKeys = months.map(m => `${selectedQuarterYear}-${m.toString().padStart(2, '0')}`);
-        
-        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
-        const aggregationType = kr.aggregation_type || 'sum';
-        
-        const targetValues = monthKeys.map(key => monthlyTargets[key] || 0);
-        const actualValues = monthKeys.map(key => monthlyActual[key] || 0);
-        
-        let totalTarget = 0;
-        let totalActual = 0;
-        
-        switch (aggregationType) {
-          case 'sum':
-            totalTarget = targetValues.reduce((sum, v) => sum + v, 0);
-            totalActual = actualValues.reduce((sum, v) => sum + v, 0);
-            break;
-          case 'average':
-            const validTargets = targetValues.filter(v => v > 0);
-            const validActuals = actualValues.filter(v => v > 0);
-            totalTarget = validTargets.length > 0 ? validTargets.reduce((sum, v) => sum + v, 0) / validTargets.length : 0;
-            totalActual = validActuals.length > 0 ? validActuals.reduce((sum, v) => sum + v, 0) / validActuals.length : 0;
-            break;
-          case 'max':
-            totalTarget = targetValues.length > 0 ? Math.max(...targetValues) : 0;
-            totalActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
-            break;
-          case 'min':
-            const nonZeroTargets = targetValues.filter(v => v > 0);
-            const nonZeroActuals = actualValues.filter(v => v > 0);
-            totalTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
-            totalActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
-            break;
-        }
-        
-        if (kr.target_direction === 'minimize') {
-          return totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
-        } else {
-          return totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
-        }
-      }
-      
-      // Para período mensal com mês específico
-      if (selectedPeriod === 'monthly' && selectedMonth && selectedYear) {
-        const monthKey = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`;
-        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
-        
-        const monthTarget = monthlyTargets[monthKey] || 0;
-        const monthActual = monthlyActual[monthKey] || 0;
-        
-        // Aplicar fórmula baseada em target_direction
-        if (kr.target_direction === 'minimize') {
-          return monthActual > 0 ? (monthTarget / monthActual) * 100 : (monthTarget === 0 ? 100 : 0);
-        } else {
-          return monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
-        }
-      }
-      
-      // Para período anual com ano específico - calcular dinamicamente
-      if (selectedPeriod === 'yearly' && selectedYear) {
-        const monthKeys = [];
-        for (let m = 1; m <= 12; m++) {
-          monthKeys.push(`${selectedYear}-${m.toString().padStart(2, '0')}`);
-        }
-        
-        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
-        const aggregationType = kr.aggregation_type || 'sum';
-        
-        const targetValues = monthKeys.map(key => monthlyTargets[key] || 0);
-        const actualValues = monthKeys.map(key => monthlyActual[key] || 0);
-        
-        let totalTarget = 0;
-        let totalActual = 0;
-        
-        // Calcular baseado no tipo de agregação
-        switch (aggregationType) {
-          case 'sum':
-            totalTarget = targetValues.reduce((sum, v) => sum + v, 0);
-            totalActual = actualValues.reduce((sum, v) => sum + v, 0);
-            break;
-          case 'average':
-            const validTargets = targetValues.filter(v => v > 0);
-            const validActuals = actualValues.filter(v => v > 0);
-            totalTarget = validTargets.length > 0 ? validTargets.reduce((sum, v) => sum + v, 0) / validTargets.length : 0;
-            totalActual = validActuals.length > 0 ? validActuals.reduce((sum, v) => sum + v, 0) / validActuals.length : 0;
-            break;
-          case 'max':
-            totalTarget = targetValues.length > 0 ? Math.max(...targetValues) : 0;
-            totalActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
-            break;
-          case 'min':
-            const nonZeroTargets = targetValues.filter(v => v > 0);
-            const nonZeroActuals = actualValues.filter(v => v > 0);
-            totalTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
-            totalActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
-            break;
-        }
-        
-        // Aplicar fórmula baseada em target_direction
-        if (kr.target_direction === 'minimize') {
-          return totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
-        } else {
-          return totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
-        }
-      }
-      
-      // Período mensal (mês atual) - usar valor pré-calculado
-      if (selectedPeriod === 'monthly') {
-        return kr.monthly_percentage || 0;
-      }
-      
-      // Período anual (ano atual) - usar valor pré-calculado
-      if (selectedPeriod === 'yearly') {
-        return kr.yearly_percentage || 0;
-      }
-      
-      // YTD (padrão)
-      return kr.ytd_percentage || 0;
-    });
-    
-    const sum = percentages.reduce((acc, p) => acc + p, 0);
-    return sum / percentages.length;
-  };
-
-  const currentProgress = calculateObjectiveProgress();
+  // Usar o percentual já calculado pelo componente pai para garantir consistência
 
   useEffect(() => {
     if (objective) {
@@ -285,13 +144,13 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                 </DialogTitle>
                 <Badge 
                   className={`font-semibold text-xl ${
-                    currentProgress > 105 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
-                    currentProgress >= 100 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
-                    currentProgress >= 71 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                    progressPercentage > 105 ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' :
+                    progressPercentage >= 100 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' :
+                    progressPercentage >= 71 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' :
                     'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
                   }`}
                 >
-                  {currentProgress.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
+                  {Math.round(progressPercentage)}%
                 </Badge>
               </div>
               <DialogDescription>
