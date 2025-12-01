@@ -120,6 +120,13 @@ export const IndicatorsPage: React.FC = () => {
   const [newKRValidityQuarter, setNewKRValidityQuarter] = useState<1 | 2 | 3 | 4 | null>(null);
   const [newKRValidityYear, setNewKRValidityYear] = useState<number>(new Date().getFullYear());
 
+  // Sincronizar ano inicial com o plano ativo
+  useEffect(() => {
+    if (yearOptions.length > 0 && activePlan) {
+      setNewKRValidityYear(yearOptions[0].value);
+    }
+  }, [yearOptions, activePlan]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Create memoized maps for efficient lookup and sorting
@@ -246,7 +253,7 @@ export const IndicatorsPage: React.FC = () => {
         assigned_owner_id: 'none'
       });
       setNewKRValidityQuarter(null);
-      setNewKRValidityYear(new Date().getFullYear());
+      setNewKRValidityYear(yearOptions.length > 0 ? yearOptions[0].value : new Date().getFullYear());
 
       toast({
         title: "Sucesso",
@@ -1121,12 +1128,19 @@ export const IndicatorsPage: React.FC = () => {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    {[...Array(6)].map((_, i) => {
-                      const year = new Date().getFullYear() - 1 + i;
-                      return <SelectItem key={year} value={year.toString()}>{year}</SelectItem>;
-                    })}
-                  </SelectContent>
+                        <SelectContent>
+                          {yearOptions.length > 0 ? (
+                            yearOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value.toString()}>
+                                {option.label}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value={new Date().getFullYear().toString()}>
+                              {new Date().getFullYear()}
+                            </SelectItem>
+                          )}
+                        </SelectContent>
                 </Select>
               </div>
               <p className="text-xs text-muted-foreground">
