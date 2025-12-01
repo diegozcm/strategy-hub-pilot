@@ -84,13 +84,10 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({
                   <h4 className="font-medium text-sm text-muted-foreground mb-2">Usuários Recentes</h4>
                   <div className="space-y-1">
                     {users.slice(0, 3).map((user) => (
-                      <div key={user.user_id} className="flex items-center justify-between text-xs">
+                      <div key={user.user_id} className="flex items-center text-xs">
                         <span className="truncate">
                           {user.first_name} {user.last_name}
                         </span>
-                        <Badge variant={user.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                          {user.role}
-                        </Badge>
                       </div>
                     ))}
                     {users.length > 3 && (
