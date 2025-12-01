@@ -185,7 +185,7 @@ export const useObjectivesData = () => {
     }
   }, [
     user?.id, authCompany?.id, activePlan, hasActivePlan, planLoading,
-    handleError, objectives.length,
+    handleError,
     startOperation, completeOperation, failOperation,
     logPerformance, logRenderCycle
   ]);

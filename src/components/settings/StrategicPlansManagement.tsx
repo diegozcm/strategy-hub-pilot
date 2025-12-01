@@ -195,6 +195,9 @@ export const StrategicPlansManagement: React.FC = () => {
         title: "Sucesso",
         description: "Plano estratégico atualizado com sucesso!",
       });
+
+      // Recarregar dados globais para manter sincronização
+      await invalidateAndReload();
     } catch (error) {
       console.error('Error updating plan:', error);
       toast({
