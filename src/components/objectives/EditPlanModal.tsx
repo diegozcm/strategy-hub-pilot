@@ -88,7 +88,9 @@ export const EditPlanModal: React.FC<EditPlanModalProps> = ({
   if (!plan) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) handleClose();
+    }}>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
