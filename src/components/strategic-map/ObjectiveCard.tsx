@@ -200,7 +200,7 @@ const calculateObjectiveProgress = (
     return sum + percentage;
   }, 0);
   
-  return Math.round(totalProgress / keyResults.length);
+  return totalProgress / keyResults.length;
 };
 
 export const ObjectiveCard = ({ 
@@ -395,13 +395,13 @@ export const ObjectiveCard = ({
                     <span className="truncate max-w-20">{objective.responsible}</span>
                   </div>
                 )}
-              </div>
-            </div>
-            <div className="text-right ml-2">
-              <div className="text-xs font-medium">{progressPercentage}%</div>
             </div>
           </div>
+          <div className="text-right ml-2">
+            <div className="text-xs font-medium">{progressPercentage.toFixed(1).replace('.', ',')}%</div>
+          </div>
         </div>
+      </div>
 
         <ObjectiveDetailModal
           objective={objective}
