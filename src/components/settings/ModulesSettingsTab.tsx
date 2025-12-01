@@ -30,19 +30,36 @@ export const ModulesSettingsTab: React.FC = () => {
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="flex items-center justify-between rounded-lg border p-4">
-              <div className="space-y-1">
-                <Label htmlFor="strategy-validity">Vigência</Label>
-                <p className="text-sm text-muted-foreground">
-                  Ativar controle de vigência para esta empresa
-                </p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label htmlFor="strategy-validity">Vigência</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Ativar controle de vigência para esta empresa
+                  </p>
+                </div>
+                <Switch
+                  id="strategy-validity"
+                  checked={strategySettings.validityEnabled}
+                  onCheckedChange={strategySettings.toggleValidity}
+                  disabled={strategySettings.isUpdating}
+                />
               </div>
-              <Switch
-                id="strategy-validity"
-                checked={strategySettings.validityEnabled}
-                onCheckedChange={strategySettings.toggleValidity}
-                disabled={strategySettings.isUpdating}
-              />
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-1">
+                  <Label htmlFor="members-view-all">Visibilidade de KRs para Membros</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Permitir que usuários com perfil Membro vejam todos os KRs da empresa (somente leitura)
+                  </p>
+                </div>
+                <Switch
+                  id="members-view-all"
+                  checked={strategySettings.membersCanViewAll}
+                  onCheckedChange={strategySettings.toggleMembersCanViewAll}
+                  disabled={strategySettings.isUpdating}
+                />
+              </div>
             </div>
           )}
         </CardContent>

@@ -61,9 +61,9 @@ export const IndicatorsPage: React.FC = () => {
   const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(authCompany?.id);
-  const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
+  const { validityEnabled, membersCanViewAll } = useCompanyModuleSettings('strategic-planning');
   const [searchParams, setSearchParams] = useSearchParams();
-  const { canCreateKR, canSelectOwner, canEditAnyKR, canDeleteKR, currentUserId, isMemberOnly } = useKRPermissions();
+  const { canCreateKR, canSelectOwner, canEditAnyKR, canDeleteKR, currentUserId, isMemberOnly, canViewAllKRs } = useKRPermissions();
   
   console.log('[IndicatorsPage] Dono do KR Debug:', {
     canSelectOwner,
@@ -629,8 +629,21 @@ export const IndicatorsPage: React.FC = () => {
     );
   }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth]);
 
+  // Aplicar filtro de visibilidade para membros
+  const visibilityFilteredKeyResults = useMemo(() => {
+    // Se não for membro, ou se membro pode ver todos, retorna todos
+    if (!isMemberOnly || canViewAllKRs) {
+      return validityFilteredKeyResults;
+    }
+    
+    // Membro só pode ver seus próprios KRs
+    return validityFilteredKeyResults.filter(kr => 
+      kr.assigned_owner_id === currentUserId
+    );
+  }, [validityFilteredKeyResults, isMemberOnly, canViewAllKRs, currentUserId]);
+
   // Context filtered KRs (search, pillar, objective - used for statistics)
-  const contextFilteredKeyResults = validityFilteredKeyResults.filter(keyResult => {
+  const contextFilteredKeyResults = visibilityFilteredKeyResults.filter(keyResult => {
     const matchesSearch = keyResult.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          keyResult.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPriority = priorityFilter === 'all' || priorityFilter === 'medium'; // Default to medium
@@ -668,7 +681,14 @@ export const IndicatorsPage: React.FC = () => {
     
     return matchesProgress;
   }).sort((a, b) => {
-    // Sort by pillar index (following the filter order, same as Dashboard)
+    // Primeiro, KRs onde o usuário é dono vêm primeiro
+    const aIsOwned = a.assigned_owner_id === currentUserId;
+    const bIsOwned = b.assigned_owner_id === currentUserId;
+    
+    if (aIsOwned && !bIsOwned) return -1;
+    if (!aIsOwned && bIsOwned) return 1;
+    
+    // Depois, ordenar por pillar index
     const objectiveA = objectiveById.get(a.objective_id);
     const objectiveB = objectiveById.get(b.objective_id);
     
@@ -1065,6 +1085,7 @@ export const IndicatorsPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredKeyResults.map((keyResult) => {
           const pillar = getKeyResultPillar(keyResult);
+          const isOwned = keyResult.assigned_owner_id === currentUserId;
           
           return (
             <KRCard
@@ -1076,6 +1097,7 @@ export const IndicatorsPage: React.FC = () => {
               selectedYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
               selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
               onClick={() => openKROverviewModal(keyResult)}
+              isOwned={isOwned}
             />
           );
         })}
