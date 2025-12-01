@@ -95,7 +95,14 @@ export const IndicatorsPage: React.FC = () => {
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4);
   const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(new Date().getFullYear());
   
-  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
+  const { 
+    quarterOptions, 
+    monthOptions, 
+    yearOptions,
+    getDefaultYear,
+    getDefaultQuarter,
+    getDefaultMonth 
+  } = usePlanPeriodOptions();
   
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -120,12 +127,28 @@ export const IndicatorsPage: React.FC = () => {
   const [newKRValidityQuarter, setNewKRValidityQuarter] = useState<1 | 2 | 3 | 4 | null>(null);
   const [newKRValidityYear, setNewKRValidityYear] = useState<number>(new Date().getFullYear());
 
-  // Sincronizar ano inicial com o plano ativo
+  // Sincronizar período inicial com o plano ativo
   useEffect(() => {
-    if (yearOptions.length > 0 && activePlan) {
-      setNewKRValidityYear(yearOptions[0].value);
+    if (activePlan && yearOptions.length > 0) {
+      // Ano para filtro anual e criação de KR
+      const defaultYear = getDefaultYear();
+      setSelectedYear(defaultYear);
+      setNewKRValidityYear(defaultYear);
+      
+      // Quarter para filtro trimestral
+      const defaultQuarter = getDefaultQuarter();
+      setSelectedQuarter(defaultQuarter.quarter);
+      setSelectedQuarterYear(defaultQuarter.year);
+      
+      // Mês para filtro mensal
+      const defaultMonth = getDefaultMonth();
+      setSelectedMonth(defaultMonth.month);
+      // Para filtro mensal, ajustar o ano se necessário
+      if (selectedPeriod === 'monthly') {
+        setSelectedYear(defaultMonth.year);
+      }
     }
-  }, [yearOptions, activePlan]);
+  }, [activePlan, yearOptions.length, getDefaultYear, getDefaultQuarter, getDefaultMonth]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -253,7 +276,7 @@ export const IndicatorsPage: React.FC = () => {
         assigned_owner_id: 'none'
       });
       setNewKRValidityQuarter(null);
-      setNewKRValidityYear(yearOptions.length > 0 ? yearOptions[0].value : new Date().getFullYear());
+      setNewKRValidityYear(getDefaultYear());
 
       toast({
         title: "Sucesso",

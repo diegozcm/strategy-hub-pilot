@@ -103,5 +103,70 @@ export const usePlanPeriodOptions = () => {
     return options; // Já em ordem decrescente
   }, [activePlan]);
 
-  return { quarterOptions, monthOptions, yearOptions };
+  // Funções que determinam o período padrão inteligente
+  const getDefaultYear = (): number => {
+    const currentYear = new Date().getFullYear();
+    // Se o ano atual está no plano, usa ele
+    const hasCurrentYear = yearOptions.some(opt => opt.value === currentYear);
+    if (hasCurrentYear) return currentYear;
+    // Senão, retorna o primeiro ano do plano (mais recente)
+    return yearOptions.length > 0 ? yearOptions[0].value : currentYear;
+  };
+
+  const getDefaultQuarter = (): { quarter: 1 | 2 | 3 | 4, year: number } => {
+    const now = new Date();
+    const currentQuarter = Math.ceil((now.getMonth() + 1) / 3) as 1 | 2 | 3 | 4;
+    const currentYear = now.getFullYear();
+    
+    // Verifica se o quarter atual está no plano
+    const hasCurrentQuarter = quarterOptions.some(
+      opt => opt.quarter === currentQuarter && opt.year === currentYear
+    );
+    
+    if (hasCurrentQuarter) {
+      return { quarter: currentQuarter, year: currentYear };
+    }
+    
+    // Senão, retorna o primeiro quarter do plano
+    if (quarterOptions.length > 0) {
+      return { quarter: quarterOptions[0].quarter, year: quarterOptions[0].year };
+    }
+    
+    return { quarter: currentQuarter, year: currentYear };
+  };
+
+  const getDefaultMonth = (): { month: number, year: number } => {
+    const now = new Date();
+    // Usar mês anterior como padrão (último mês fechado)
+    const previousMonth = new Date(now);
+    previousMonth.setMonth(previousMonth.getMonth() - 1);
+    
+    const targetMonth = previousMonth.getMonth() + 1;
+    const targetYear = previousMonth.getFullYear();
+    const monthValue = `${targetYear}-${targetMonth.toString().padStart(2, '0')}`;
+    
+    // Verifica se o mês está no plano
+    const hasTargetMonth = monthOptions.some(opt => opt.value === monthValue);
+    
+    if (hasTargetMonth) {
+      return { month: targetMonth, year: targetYear };
+    }
+    
+    // Senão, retorna o primeiro mês do plano
+    if (monthOptions.length > 0) {
+      const [year, month] = monthOptions[0].value.split('-');
+      return { month: parseInt(month), year: parseInt(year) };
+    }
+    
+    return { month: targetMonth, year: targetYear };
+  };
+
+  return { 
+    quarterOptions, 
+    monthOptions, 
+    yearOptions,
+    getDefaultYear,
+    getDefaultQuarter,
+    getDefaultMonth
+  };
 };
