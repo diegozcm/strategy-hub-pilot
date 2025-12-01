@@ -78,8 +78,12 @@ export const useRumoCalculations = (
         
         // Aplicar agregação baseada no tipo
         if (kr.aggregation_type === 'average') {
-          const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
-          const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
+          // Pegar apenas os meses que têm dados de actual
+          const monthsWithActual = monthKeys.filter(key => (monthlyActual[key] || 0) !== 0);
+          
+          const targets = monthsWithActual.map(key => monthlyTargets[key] || 0);
+          const actuals = monthsWithActual.map(key => monthlyActual[key] || 0);
+          
           totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
           totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
         } else if (kr.aggregation_type === 'max') {
@@ -125,8 +129,12 @@ export const useRumoCalculations = (
         
         // Aplicar agregação baseada no tipo
         if (kr.aggregation_type === 'average') {
-          const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
-          const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
+          // Pegar apenas os meses que têm dados de actual
+          const monthsWithActual = monthKeys.filter(key => (monthlyActual[key] || 0) !== 0);
+          
+          const targets = monthsWithActual.map(key => monthlyTargets[key] || 0);
+          const actuals = monthsWithActual.map(key => monthlyActual[key] || 0);
+          
           totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
           totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
         } else if (kr.aggregation_type === 'max') {
