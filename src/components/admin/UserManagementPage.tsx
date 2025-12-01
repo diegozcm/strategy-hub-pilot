@@ -232,6 +232,8 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           user_id: editedUser.user_id,
           role: editedUser.role,
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,role'
         });
 
       if (roleError) {
