@@ -1113,6 +1113,24 @@ export const UserManagementPage: React.FC = () => {
     }
   };
 
+  const getRoleBadgeVariant = (role: string, moduleSlug: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
+    if (moduleSlug === 'startup-hub') {
+      return role === 'startup' ? 'destructive' : 'default'; // Startup: vermelho, Mentor: verde (default será customizado)
+    }
+    // Gestor: amarelo (outline será customizado), Membro: azul (secondary será customizado)
+    return role === 'manager' ? 'outline' : 'secondary';
+  };
+
+  const getRoleBadgeClasses = (role: string, moduleSlug: string): string => {
+    if (moduleSlug === 'startup-hub') {
+      if (role === 'startup') return 'bg-red-500 hover:bg-red-600 text-white border-transparent';
+      if (role === 'mentor') return 'bg-green-500 hover:bg-green-600 text-white border-transparent';
+    }
+    if (role === 'manager') return 'bg-yellow-500 hover:bg-yellow-600 text-white border-transparent';
+    if (role === 'member') return 'bg-blue-500 hover:bg-blue-600 text-white border-transparent';
+    return '';
+  };
+
   const getUserRoleForModule = (userId: string, moduleId: string): string | null => {
     return userModuleRoles[userId]?.[moduleId] || null;
   };
@@ -1284,8 +1302,8 @@ export const UserManagementPage: React.FC = () => {
                           <TableCell key={module.id} className="hidden md:table-cell text-center">
                             {role ? (
                               <Badge 
-                                variant={role === 'admin' ? 'destructive' : role === 'manager' ? 'default' : 'secondary'}
-                                className="text-xs"
+                                variant={getRoleBadgeVariant(role, module.slug)}
+                                className={`text-xs ${getRoleBadgeClasses(role, module.slug)}`}
                               >
                                 {getRoleLabel(role, module.slug)}
                               </Badge>
