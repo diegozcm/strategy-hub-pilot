@@ -23,7 +23,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { KRMonthlyAction } from '@/types/strategic-map';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface ActionCardProps {
@@ -89,13 +89,13 @@ export const ActionCard: React.FC<ActionCardProps> = ({
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Não definido';
     try {
-      return format(new Date(dateString), 'dd/MMM', { locale: ptBR });
+      return format(parseISO(dateString), 'dd/MMM', { locale: ptBR });
     } catch {
       return 'Data inválida';
     }
   };
 
-  const isOverdue = action.end_date && new Date(action.end_date) < new Date() && action.status !== 'completed';
+  const isOverdue = action.end_date && parseISO(action.end_date) < new Date() && action.status !== 'completed';
 
   return (
     <Card className={`transition-all hover:shadow-md ${isOverdue ? 'border-red-300 bg-red-50/50' : ''}`}>

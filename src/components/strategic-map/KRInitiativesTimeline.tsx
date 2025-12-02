@@ -2,7 +2,7 @@ import { KRInitiative } from '@/types/strategic-map';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Calendar, User } from 'lucide-react';
-import { format, differenceInDays, isAfter, isBefore } from 'date-fns';
+import { format, differenceInDays, isAfter, isBefore, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface KRInitiativesTimelineProps {
@@ -30,22 +30,22 @@ export const KRInitiativesTimeline = ({ initiatives }: KRInitiativesTimelineProp
 
   // Sort initiatives by start date
   const sortedInitiatives = [...initiatives].sort((a, b) => 
-    new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+    parseISO(a.start_date).getTime() - parseISO(b.start_date).getTime()
   );
 
   // Calculate timeline bounds
-  const earliestDate = new Date(sortedInitiatives[0].start_date);
+  const earliestDate = parseISO(sortedInitiatives[0].start_date);
   const latestDate = sortedInitiatives.reduce((latest, init) => {
-    const endDate = new Date(init.end_date);
+    const endDate = parseISO(init.end_date);
     return isAfter(endDate, latest) ? endDate : latest;
-  }, new Date(sortedInitiatives[0].end_date));
+  }, parseISO(sortedInitiatives[0].end_date));
 
   const totalDays = differenceInDays(latestDate, earliestDate);
   const today = new Date();
 
   const getPositionAndWidth = (initiative: KRInitiative) => {
-    const startDate = new Date(initiative.start_date);
-    const endDate = new Date(initiative.end_date);
+    const startDate = parseISO(initiative.start_date);
+    const endDate = parseISO(initiative.end_date);
     
     const startOffset = differenceInDays(startDate, earliestDate);
     const duration = differenceInDays(endDate, startDate);
@@ -112,7 +112,7 @@ export const KRInitiativesTimeline = ({ initiatives }: KRInitiativesTimelineProp
                       )}
                     </div>
                     <div className="text-muted-foreground">
-                      {format(new Date(initiative.start_date), 'dd/MM', { locale: ptBR })} - {format(new Date(initiative.end_date), 'dd/MM', { locale: ptBR })}
+                      {format(parseISO(initiative.start_date), 'dd/MM', { locale: ptBR })} - {format(parseISO(initiative.end_date), 'dd/MM', { locale: ptBR })}
                     </div>
                   </div>
                   

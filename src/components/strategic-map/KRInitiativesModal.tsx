@@ -13,7 +13,7 @@ import { KeyResult, KRInitiative, InitiativeStatus, InitiativePriority } from '@
 import { useState } from 'react';
 import { Plus, Calendar, Target, AlertCircle, Edit, Trash2, User, DollarSign, Clock } from 'lucide-react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/hooks/useMultiTenant';
 
@@ -143,7 +143,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
   };
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
+    return format(parseISO(dateString), 'dd/MM/yyyy', { locale: ptBR });
   };
 
   const getStatusBadge = (status: InitiativeStatus) => (
