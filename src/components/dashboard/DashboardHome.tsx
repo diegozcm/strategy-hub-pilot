@@ -8,15 +8,19 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
+import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
 import { RumoDashboard } from './RumoDashboard';
 import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
 import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 import { calculateKRStatus } from '@/lib/krHelpers';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface KeyResultWithPillar {
   id: string;
@@ -93,6 +97,7 @@ const getDynamicStats = (stats: DashboardStats) => [{
 export const DashboardHome: React.FC = () => {
   const { company } = useAuth();
   const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
+  const { isYTDApplicable, defaultPeriod, ytdWarningMessage, planFirstYear } = usePeriodApplicability();
   const [activeTab, setActiveTab] = useState('rumo');
   const [keyResults, setKeyResults] = useState<KeyResultWithPillar[]>([]);
   const [filteredKeyResults, setFilteredKeyResults] = useState<KeyResultWithPillar[]>([]);
@@ -107,7 +112,7 @@ export const DashboardHome: React.FC = () => {
     filledTools: 0
   });
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(isYTDApplicable ? new Date().getFullYear() : planFirstYear);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,7 +120,7 @@ export const DashboardHome: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
-  const [periodType, setPeriodType] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>('ytd');
+  const [periodType, setPeriodType] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>(defaultPeriod);
 
   // Month/Year selection states
   const previousMonth = new Date();
@@ -128,13 +133,32 @@ export const DashboardHome: React.FC = () => {
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
     Math.ceil((now.getMonth() + 1) / 3) as 1 | 2 | 3 | 4
   );
-  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(now.getFullYear());
+  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDApplicable ? now.getFullYear() : planFirstYear);
 
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
   const currentYear = new Date().getFullYear();
   
   // Use hook to get period options from active plan
   const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
+
+  // Atualizar período padrão quando isYTDApplicable mudar
+  useEffect(() => {
+    if (!isYTDApplicable && periodType === 'ytd') {
+      setPeriodType('yearly');
+      setSelectedYear(planFirstYear);
+    }
+  }, [isYTDApplicable, periodType, planFirstYear]);
+  
+  // Handler para clique no botão YTD
+  const handleYTDClick = () => {
+    if (isYTDApplicable) {
+      setPeriodType('ytd');
+    } else {
+      setPeriodType('yearly');
+      setSelectedYear(planFirstYear);
+      toast.info(ytdWarningMessage || 'YTD não disponível para este plano');
+    }
+  };
 
   // Calculate progress function
   const calculateProgress = (keyResult: KeyResultWithPillar): number => {
@@ -158,9 +182,10 @@ export const DashboardHome: React.FC = () => {
         selectedQuarterYear,
         selectedYear,
         selectedMonth: selectedMonth,
+        planFirstYear
       }
     ) as unknown as KeyResultWithPillar[];
-  }, [keyResults, validityEnabled, periodType, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth]);
+  }, [keyResults, validityEnabled, periodType, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, planFirstYear]);
 
   // Filter and sort logic
   useEffect(() => {
@@ -780,15 +805,27 @@ export const DashboardHome: React.FC = () => {
             <div className="flex items-center gap-4">
               {/* Period Filter */}
             <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-              <Button
-                variant={periodType === 'ytd' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setPeriodType('ytd')}
-                className="gap-2"
-              >
-                <TrendingUp className="w-4 h-4" />
-                YTD
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={periodType === 'ytd' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={handleYTDClick}
+                      className={cn("gap-2", !isYTDApplicable && "opacity-60")}
+                    >
+                      <TrendingUp className="w-4 h-4" />
+                      YTD
+                      {!isYTDApplicable && <AlertCircle className="w-3 h-3 text-amber-500" />}
+                    </Button>
+                  </TooltipTrigger>
+                  {!isYTDApplicable && (
+                    <TooltipContent>
+                      <p className="max-w-xs">{ytdWarningMessage}</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
   <Button
     variant={periodType === 'yearly' ? 'default' : 'ghost'}
     size="sm"

@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { useRumoCalculations, PeriodType, getPerformanceColor, getPerformanceStyles } from '@/hooks/useRumoCalculations';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
+import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
 import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { RumoPillarBlock } from './RumoPillarBlock';
 import { RumoObjectiveBlock } from './RumoObjectiveBlock';
@@ -10,22 +11,34 @@ import { RumoLegend } from './RumoLegend';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Compass, Calendar, TrendingUp, Target } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Compass, Calendar, TrendingUp, Target, AlertCircle } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 export const RumoDashboard = () => {
-  const [periodType, setPeriodType] = useState<PeriodType>('ytd');
+  const { isYTDApplicable, defaultPeriod, ytdWarningMessage, planFirstYear } = usePeriodApplicability();
+  const [periodType, setPeriodType] = useState<PeriodType>(defaultPeriod);
   
   // Inicializar com o último mês fechado (mês anterior)
   const previousMonth = new Date();
   previousMonth.setMonth(previousMonth.getMonth() - 1);
   const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
+  const [selectedYear, setSelectedYear] = useState<number>(isYTDApplicable ? previousMonth.getFullYear() : planFirstYear);
   const now = new Date();
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
     Math.ceil((now.getMonth() + 1) / 3) as 1 | 2 | 3 | 4
   );
-  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(new Date().getFullYear());
+  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDApplicable ? now.getFullYear() : planFirstYear);
+  
+  // Atualizar período padrão quando isYTDApplicable mudar
+  useEffect(() => {
+    if (!isYTDApplicable && periodType === 'ytd') {
+      setPeriodType('yearly');
+      setSelectedYear(planFirstYear);
+    }
+  }, [isYTDApplicable, periodType, planFirstYear]);
   
   const { pillars, objectives, keyResults, loading } = useStrategicMap();
   const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
@@ -41,10 +54,22 @@ export const RumoDashboard = () => {
         selectedQuarter,
         selectedQuarterYear,
         selectedYear,
-        selectedMonth
+        selectedMonth,
+        planFirstYear // Passar ano do plano para YTD inteligente
       }
     );
-  }, [keyResults, validityEnabled, periodType, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth]);
+  }, [keyResults, validityEnabled, periodType, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, planFirstYear]);
+  
+  // Handler para clique no botão YTD
+  const handleYTDClick = () => {
+    if (isYTDApplicable) {
+      setPeriodType('ytd');
+    } else {
+      setPeriodType('yearly');
+      setSelectedYear(planFirstYear);
+      toast.info(ytdWarningMessage || 'YTD não disponível para este plano');
+    }
+  };
 
   // Processar dados para aninhar objetivos dentro dos pilares
   const pillarsWithObjectives = useMemo(() => {
@@ -122,15 +147,27 @@ export const RumoDashboard = () => {
         <div className="flex items-center gap-4">
           {/* Period Filter */}
           <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-          <Button
-            variant={periodType === 'ytd' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setPeriodType('ytd')}
-            className="gap-2"
-          >
-            <TrendingUp className="w-4 h-4" />
-            YTD
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={periodType === 'ytd' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={handleYTDClick}
+                  className={cn("gap-2", !isYTDApplicable && "opacity-60")}
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  YTD
+                  {!isYTDApplicable && <AlertCircle className="w-3 h-3 text-amber-500" />}
+                </Button>
+              </TooltipTrigger>
+              {!isYTDApplicable && (
+                <TooltipContent>
+                  <p className="max-w-xs">{ytdWarningMessage}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
             <Button
               variant={periodType === 'yearly' ? 'default' : 'ghost'}
               size="sm"

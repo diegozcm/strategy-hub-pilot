@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, CalendarDays, User, Target, AlertTriangle, CheckCircle, Activity, Trash2, Save, X, MoreVertical } from 'lucide-react';
+import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, CalendarDays, User, Target, AlertTriangle, CheckCircle, Activity, Trash2, Save, X, MoreVertical, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -12,10 +12,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 import { useCompanyUsers } from '@/hooks/useCompanyUsers';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
@@ -26,11 +28,13 @@ import { useSearchParams } from 'react-router-dom';
 import { KRCard } from './KRCard';
 import { useKRMetrics } from '@/hooks/useKRMetrics';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
+import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
 import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { useKRPermissions } from '@/hooks/useKRPermissions';
+import { cn } from '@/lib/utils';
 
 // Converte quarter + ano para start_month e end_month
 const quarterToMonths = (quarter: 1 | 2 | 3 | 4, year: number): { start_month: string; end_month: string } => {
@@ -62,6 +66,7 @@ export const IndicatorsPage: React.FC = () => {
   const { toast } = useToast();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(authCompany?.id);
   const { validityEnabled, membersCanViewAll, loading: settingsLoading } = useCompanyModuleSettings('strategic-planning');
+  const { isYTDApplicable, defaultPeriod, ytdWarningMessage, planFirstYear } = usePeriodApplicability();
   const [searchParams, setSearchParams] = useSearchParams();
   const { canCreateKR, canSelectOwner, canEditAnyKR, canDeleteKR, currentUserId, isMemberOnly, canViewAllKRs } = useKRPermissions();
   
@@ -98,15 +103,15 @@ export const IndicatorsPage: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>('ytd');
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>(defaultPeriod);
   
   // Inicializar com o último mês fechado (mês anterior)
   const previousMonth = new Date();
   previousMonth.setMonth(previousMonth.getMonth() - 1);
   const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
+  const [selectedYear, setSelectedYear] = useState<number>(isYTDApplicable ? previousMonth.getFullYear() : planFirstYear);
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4);
-  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(new Date().getFullYear());
+  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDApplicable ? new Date().getFullYear() : planFirstYear);
   
   const { 
     quarterOptions, 
@@ -172,6 +177,25 @@ export const IndicatorsPage: React.FC = () => {
   useEffect(() => {
     hasInitializedFilters.current = false;
   }, [activePlan?.id]);
+
+  // Atualizar período padrão quando isYTDApplicable mudar
+  useEffect(() => {
+    if (!isYTDApplicable && selectedPeriod === 'ytd') {
+      setSelectedPeriod('yearly');
+      setSelectedYear(planFirstYear);
+    }
+  }, [isYTDApplicable, selectedPeriod, planFirstYear]);
+  
+  // Handler para clique no botão YTD
+  const handleYTDClick = () => {
+    if (isYTDApplicable) {
+      setSelectedPeriod('ytd');
+    } else {
+      setSelectedPeriod('yearly');
+      setSelectedYear(planFirstYear);
+      sonnerToast.info(ytdWarningMessage || 'YTD não disponível para este plano');
+    }
+  };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -624,10 +648,11 @@ export const IndicatorsPage: React.FC = () => {
         selectedQuarter,
         selectedQuarterYear,
         selectedYear,
-        selectedMonth
+        selectedMonth,
+        planFirstYear // Passa o primeiro ano do plano para YTD inteligente
       }
     );
-  }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth]);
+  }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, planFirstYear]);
 
   // Aplicar filtro de visibilidade para membros
   const visibilityFilteredKeyResults = useMemo(() => {
@@ -813,15 +838,27 @@ export const IndicatorsPage: React.FC = () => {
         <div className="flex items-center gap-2">
           {/* Botões de Período - Sempre visíveis */}
           <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-            <Button
-              variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedPeriod('ytd')}
-              className="gap-2"
-            >
-              <TrendingUp className="w-4 h-4" />
-              YTD
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={handleYTDClick}
+                    className={cn("gap-2", !isYTDApplicable && "opacity-60")}
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                    YTD
+                    {!isYTDApplicable && <AlertCircle className="w-3 h-3 text-amber-500" />}
+                  </Button>
+                </TooltipTrigger>
+                {!isYTDApplicable && (
+                  <TooltipContent>
+                    <p className="max-w-xs">{ytdWarningMessage}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
             
               <Button
                 variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}

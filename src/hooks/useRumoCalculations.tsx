@@ -200,7 +200,8 @@ export const useRumoCalculations = (
       finalScore = totalProgress / pillars.length;
     }
 
-    const hasData = keyResults.length > 0 && objectives.length > 0 && pillars.length > 0;
+    // Mostrar estrutura mesmo sem KRs filtrados (pilares e objetivos com 0%)
+    const hasData = pillars.length > 0;
 
     return {
       pillarProgress,

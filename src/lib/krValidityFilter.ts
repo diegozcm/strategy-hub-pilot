@@ -53,6 +53,10 @@ export const isKRInMonth = (
 /**
  * Filtra KRs com base no período selecionado e vigência
  */
+/**
+ * Filtra KRs com base no período selecionado e vigência
+ * @param planFirstYear - Primeiro ano do plano ativo (usado para YTD de planos futuros)
+ */
 export const filterKRsByValidity = (
   keyResults: KeyResult[],
   validityEnabled: boolean,
@@ -62,6 +66,7 @@ export const filterKRsByValidity = (
     selectedQuarterYear?: number;
     selectedYear?: number;
     selectedMonth?: number;
+    planFirstYear?: number; // Primeiro ano do plano (para YTD inteligente)
   }
 ): KeyResult[] => {
   // Se vigência não está ativa, retornar todos os KRs
@@ -89,9 +94,13 @@ export const filterKRsByValidity = (
         );
       
       case 'ytd':
+        // YTD usa o ano do plano quando o ano atual não está no plano
+        const ytdYear = options?.planFirstYear && options.planFirstYear > currentYear 
+          ? options.planFirstYear 
+          : currentYear;
         // Para YTD, KRs sem vigência são mostrados (comportamento especial)
         if (!kr.start_month || !kr.end_month) return true;
-        return isKRInYear(kr, currentYear);
+        return isKRInYear(kr, ytdYear);
       
       default:
         return true;
