@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -107,35 +107,53 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
   const [editMode, setEditMode] = useState<boolean>(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
+  
+  // Ref para rastrear o último initialYear processado (evita travamento do select)
+  const lastInitialYearRef = useRef<number | undefined>(undefined);
 
-  // Sincronizar selectedYear com yearOptions disponíveis e initialYear
+  // Reset do ref quando o modal fecha
+  useEffect(() => {
+    if (!open) {
+      lastInitialYearRef.current = undefined;
+    }
+  }, [open]);
+
+  // Sincronizar selectedYear com yearOptions e initialYear (apenas quando initialYear muda)
   useEffect(() => {
     if (yearOptions.length === 0) return;
     
-    // Prioriza o initialYear se for válido nas opções
-    if (initialYear && yearOptions.some(opt => opt.value === initialYear)) {
-      if (selectedYear !== initialYear) {
+    // Apenas sincronizar quando initialYear MUDAR (modal reabriu com novo ano)
+    if (initialYear && initialYear !== lastInitialYearRef.current) {
+      if (yearOptions.some(opt => opt.value === initialYear)) {
         setSelectedYear(initialYear);
+        lastInitialYearRef.current = initialYear;
+        return;
       }
-      return;
     }
     
-    // Fallback: encontra o ano mais próximo do atual
-    const currentYr = new Date().getFullYear();
-    const hasCurrentYear = yearOptions.some(opt => opt.value === currentYr);
-    const closestYear = yearOptions.reduce((closest, opt) => {
-      return Math.abs(opt.value - currentYr) < Math.abs(closest - currentYr) 
-        ? opt.value 
-        : closest;
-    }, yearOptions[0].value);
+    // Marcar inicialização como feita
+    if (!lastInitialYearRef.current && initialYear) {
+      lastInitialYearRef.current = initialYear;
+    }
     
-    const validYear = yearOptions.length === 1 
-      ? yearOptions[0].value 
-      : (hasCurrentYear ? currentYr : closestYear);
-    
+    // Apenas validar se o ano selecionado é válido nas opções
     const isYearValid = yearOptions.some(opt => opt.value === selectedYear);
-    if (!isYearValid) setSelectedYear(validYear);
-  }, [yearOptions, selectedYear, initialYear]);
+    if (!isYearValid) {
+      const currentYr = new Date().getFullYear();
+      const hasCurrentYear = yearOptions.some(opt => opt.value === currentYr);
+      const closestYear = yearOptions.reduce((closest, opt) => {
+        return Math.abs(opt.value - currentYr) < Math.abs(closest - currentYr) 
+          ? opt.value 
+          : closest;
+      }, yearOptions[0].value);
+      
+      const validYear = yearOptions.length === 1 
+        ? yearOptions[0].value 
+        : (hasCurrentYear ? currentYr : closestYear);
+      
+      setSelectedYear(validYear);
+    }
+  }, [yearOptions, initialYear]);
   
   // Estado unificado para vigência (formato: "2025-Q1" ou "none")
   const [selectedValidityQuarter, setSelectedValidityQuarter] = useState<string>('none');
