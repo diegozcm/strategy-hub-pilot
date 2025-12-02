@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Building2, Target, Users, TrendingUp, Lightbulb, Heart, Edit, Trash2, MoreVertical, CalendarDays, Calendar } from 'lucide-react';
+import { Plus, Building2, Target, Users, TrendingUp, Lightbulb, Heart, Edit, Trash2, MoreVertical, CalendarDays, Calendar, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,11 +8,13 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 import { useKRPermissions } from '@/hooks/useKRPermissions';
+import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
 import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { CompanySetupModal } from './CompanySetupModal';
 import { PillarFormModal } from './PillarFormModal';
@@ -27,6 +29,8 @@ import { StrategicPillar, Company, KeyResult } from '@/types/strategic-map';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 import { supabase } from '@/integrations/supabase/client';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
+import { toast as sonnerToast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 const defaultPillars = [
   { name: 'Econômico & Financeiro', color: '#22C55E', icon: TrendingUp },
@@ -72,23 +76,43 @@ export const StrategicMapPage = () => {
   const [targetObjectiveId, setTargetObjectiveId] = useState<string>('');
 
   // Period selection states
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>('ytd');
+  const { isYTDApplicable, defaultPeriod, ytdWarningMessage, planFirstYear } = usePeriodApplicability();
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>(defaultPeriod);
   
   // Inicializar com o último mês fechado (mês anterior)
   const previousMonth = new Date();
   previousMonth.setMonth(previousMonth.getMonth() - 1);
   const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
+  const [selectedYear, setSelectedYear] = useState<number>(isYTDApplicable ? previousMonth.getFullYear() : planFirstYear);
   
-  // Quarter state - inicializado com o trimestre atual
+  // Quarter state - inicializado com o trimestre atual ou do plano
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
     Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4
   );
-  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(new Date().getFullYear());
+  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDApplicable ? new Date().getFullYear() : planFirstYear);
+
+  // Atualizar período padrão quando isYTDApplicable mudar
+  React.useEffect(() => {
+    if (!isYTDApplicable && selectedPeriod === 'ytd') {
+      setSelectedPeriod('yearly');
+      setSelectedYear(planFirstYear);
+    }
+  }, [isYTDApplicable, selectedPeriod, planFirstYear]);
 
   const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
   const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
   const { canCreatePillar, canEditPillar, canDeletePillar } = useKRPermissions();
+  
+  // Handler para clique no botão YTD
+  const handleYTDClick = () => {
+    if (isYTDApplicable) {
+      setSelectedPeriod('ytd');
+    } else {
+      setSelectedPeriod('yearly');
+      setSelectedYear(planFirstYear);
+      sonnerToast.info(ytdWarningMessage || 'YTD não disponível para este plano');
+    }
+  };
 
   // Filtrar KRs por vigência
   const filteredKeyResults = React.useMemo(() => {
@@ -100,10 +124,11 @@ export const StrategicMapPage = () => {
         selectedQuarter,
         selectedQuarterYear,
         selectedYear,
-        selectedMonth
+        selectedMonth,
+        planFirstYear
       }
     );
-  }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth]);
+  }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, planFirstYear]);
 
   // Check URL parameters on component mount and when search params change
   React.useEffect(() => {
@@ -280,15 +305,27 @@ export const StrategicMapPage = () => {
         <div className="flex items-center gap-2">
           {/* Botões de Período - Sempre visíveis */}
           <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-            <Button
-              variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedPeriod('ytd')}
-              className="gap-2"
-            >
-              <TrendingUp className="w-4 h-4" />
-              YTD
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={handleYTDClick}
+                    className={cn("gap-2", !isYTDApplicable && "opacity-60")}
+                  >
+                    <TrendingUp className="w-4 h-4" />
+                    YTD
+                    {!isYTDApplicable && <AlertCircle className="w-3 h-3 text-amber-500" />}
+                  </Button>
+                </TooltipTrigger>
+                {!isYTDApplicable && (
+                  <TooltipContent>
+                    <p className="max-w-xs">{ytdWarningMessage}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
             
                 <Button
                   variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
