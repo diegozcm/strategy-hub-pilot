@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info } from 'lucide-react';
+import { Info, X } from 'lucide-react';
 import { KeyResult } from '@/types/strategic-map';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
@@ -663,7 +663,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
               </div>
 
               <div className="space-y-3">
-                <div className="grid grid-cols-4 gap-4 p-3 bg-muted/30 rounded-lg font-medium text-sm">
+                <div className="grid grid-cols-[150px_1fr_180px_80px] gap-4 p-3 bg-muted/30 rounded-lg font-medium text-sm">
                   <div>Mês</div>
                   <div className="text-center">Meta</div>
                   <div className="text-center">Meta Anual Calculada</div>
@@ -674,7 +674,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                   <div 
                     key={month.key} 
                     className={cn(
-                      "grid grid-cols-4 gap-4 items-center p-3 border rounded-lg",
+                      "grid grid-cols-[150px_1fr_180px_80px] gap-4 items-center p-3 border rounded-lg",
                       isMonthInValidity(month.key, basicInfo.start_month, basicInfo.end_month) && 
                         "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
                     )}
@@ -682,7 +682,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                     <div>
                       <Label className="text-sm font-medium">{month.name}</Label>
                     </div>
-                    <div>
+                    <div className="flex gap-1 items-center">
                       <Input
                         type="text"
                         placeholder="0,00"
@@ -703,8 +703,24 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
                           setEditingField(null);
                           setTempValue('');
                         }}
-                        className="text-right font-mono"
+                        className="flex-1 text-right font-mono"
                       />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        onClick={() => {
+                          setMonthlyTargets(prev => {
+                            const newTargets = { ...prev };
+                            delete newTargets[month.key];
+                            return newTargets;
+                          });
+                        }}
+                        title="Limpar meta"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
                     <div className="text-center text-sm font-medium">
                       {formatBrazilianNumber(calculateYearlyTarget(monthlyTargets))}
