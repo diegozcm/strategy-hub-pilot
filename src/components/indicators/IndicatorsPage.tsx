@@ -30,7 +30,7 @@ import { useKRMetrics } from '@/hooks/useKRMetrics';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
 import { useYearSynchronization } from '@/hooks/useValidatedYear';
-import { filterKRsByValidity } from '@/lib/krValidityFilter';
+import { filterKRsByValidity, getPopulatedQuarters } from '@/lib/krValidityFilter';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
@@ -122,6 +122,11 @@ export const IndicatorsPage: React.FC = () => {
     getDefaultQuarter,
     getDefaultMonth 
   } = usePlanPeriodOptions();
+  
+  // Filtrar quarters para mostrar apenas os que têm KRs registrados
+  const filteredQuarterOptions = useMemo(() => {
+    return getPopulatedQuarters(keyResults, quarterOptions);
+  }, [keyResults, quarterOptions]);
   
   // Ref para controlar se os filtros já foram inicializados
   const hasInitializedFilters = useRef(false);
@@ -922,11 +927,17 @@ export const IndicatorsPage: React.FC = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {quarterOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
+                  {filteredQuarterOptions.length > 0 ? (
+                    filteredQuarterOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="empty" disabled>
+                      Nenhum quarter com KRs
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             )}

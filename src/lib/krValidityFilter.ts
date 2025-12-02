@@ -1,5 +1,81 @@
 import { KeyResult } from '@/types/strategic-map';
 
+interface QuarterOption {
+  value: string;
+  label: string;
+  quarter: 1 | 2 | 3 | 4;
+  year: number;
+}
+
+/**
+ * Retorna quarters que têm pelo menos um KR com vigência nesse período
+ */
+export const getPopulatedQuarters = (
+  keyResults: KeyResult[],
+  allQuarterOptions: QuarterOption[]
+): QuarterOption[] => {
+  if (keyResults.length === 0 || allQuarterOptions.length === 0) return [];
+  
+  return allQuarterOptions.filter(quarter => {
+    const quarterStart = `${quarter.year}-${String(((quarter.quarter - 1) * 3) + 1).padStart(2, '0')}`;
+    const quarterEnd = `${quarter.year}-${String(quarter.quarter * 3).padStart(2, '0')}`;
+    
+    return keyResults.some(kr => {
+      // Se KR não tem vigência, verificar se tem dados nos meses do quarter
+      if (!kr.start_month || !kr.end_month) {
+        const monthlyTargets = (kr.monthly_targets || {}) as Record<string, number>;
+        const monthlyActual = (kr.monthly_actual || {}) as Record<string, number>;
+        
+        // Verificar se há dados em qualquer mês do quarter
+        for (let m = ((quarter.quarter - 1) * 3) + 1; m <= quarter.quarter * 3; m++) {
+          const monthKey = `${quarter.year}-${String(m).padStart(2, '0')}`;
+          if (monthlyTargets[monthKey] || monthlyActual[monthKey]) {
+            return true;
+          }
+        }
+        return false;
+      }
+      
+      // KR tem vigência: interseção entre KR e quarter
+      return kr.start_month <= quarterEnd && kr.end_month >= quarterStart;
+    });
+  });
+};
+
+/**
+ * Retorna quarters dentro da vigência de um KR específico
+ */
+export const getKRQuarters = (
+  keyResult: KeyResult,
+  allQuarterOptions: QuarterOption[]
+): QuarterOption[] => {
+  if (allQuarterOptions.length === 0) return [];
+  
+  if (!keyResult.start_month || !keyResult.end_month) {
+    // KR sem vigência: retornar quarters com dados
+    const monthlyTargets = (keyResult.monthly_targets || {}) as Record<string, number>;
+    const monthlyActual = (keyResult.monthly_actual || {}) as Record<string, number>;
+    
+    return allQuarterOptions.filter(quarter => {
+      for (let m = ((quarter.quarter - 1) * 3) + 1; m <= quarter.quarter * 3; m++) {
+        const monthKey = `${quarter.year}-${String(m).padStart(2, '0')}`;
+        if (monthlyTargets[monthKey] || monthlyActual[monthKey]) {
+          return true;
+        }
+      }
+      return false;
+    });
+  }
+  
+  // KR com vigência: retornar quarters dentro do período
+  return allQuarterOptions.filter(quarter => {
+    const quarterStart = `${quarter.year}-${String(((quarter.quarter - 1) * 3) + 1).padStart(2, '0')}`;
+    const quarterEnd = `${quarter.year}-${String(quarter.quarter * 3).padStart(2, '0')}`;
+    
+    return keyResult.start_month! <= quarterEnd && keyResult.end_month! >= quarterStart;
+  });
+};
+
 /**
  * Verifica se um KR está dentro de um quarter específico
  */
