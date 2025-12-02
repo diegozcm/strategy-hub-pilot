@@ -177,6 +177,22 @@ export const KROverviewModal = ({
     }
   }, [initialYear]);
 
+  // Auto-selecionar primeiro quarter disponível quando seleção atual não é válida
+  useEffect(() => {
+    if (krQuarterOptions.length === 0) return;
+    
+    const currentSelection = `${selectedQuarterYear}-Q${selectedQuarter}`;
+    const isSelectionValid = krQuarterOptions.some(opt => opt.value === currentSelection);
+    
+    if (!isSelectionValid) {
+      const firstQuarter = krQuarterOptions[0];
+      setSelectedQuarter(firstQuarter.quarter as 1 | 2 | 3 | 4);
+      setSelectedQuarterYear(firstQuarter.year);
+      onQuarterChange?.(firstQuarter.quarter as 1 | 2 | 3 | 4);
+      onQuarterYearChange?.(firstQuarter.year);
+    }
+  }, [krQuarterOptions, selectedQuarter, selectedQuarterYear, onQuarterChange, onQuarterYearChange]);
+
   // Function to refresh key result data from database
   const refreshKeyResult = async () => {
     if (!keyResult?.id) return;
