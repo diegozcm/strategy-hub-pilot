@@ -234,21 +234,28 @@ export const KeyResultMetrics = ({
                     onQuarterChange(parseInt(q) as 1 | 2 | 3 | 4);
                   }}
                   onOpenChange={setIsComboOpen}
+                  disabled={quarterOptions.length === 0}
                 >
                   <SelectTrigger className="w-full h-9 text-base font-bold">
-                    <SelectValue />
+                    <SelectValue placeholder={quarterOptions.length === 0 ? "Sem quarters" : undefined} />
                   </SelectTrigger>
                   <SelectContent>
-                    {quarterOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
+                    {quarterOptions.length > 0 ? (
+                      quarterOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="empty" disabled>
+                        Nenhum quarter disponível
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
                 {!isComboOpen && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Quarter de referência
+                    {quarterOptions.length === 0 ? "KR sem vigência neste período" : "Quarter de referência"}
                   </p>
                 )}
               </>

@@ -14,9 +14,10 @@ import { KREditModal } from './KREditModal';
 import { KRUpdateValuesModal } from './KRUpdateValuesModal';
 import { getDirectionLabel, calculateKRStatus } from '@/lib/krHelpers';
 import { formatValueWithUnit, cn } from '@/lib/utils';
+import { getKRQuarters } from '@/lib/krValidityFilter';
 
 import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket, CalendarDays, AlertCircle } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
@@ -75,6 +76,12 @@ export const KROverviewModal = ({
   const { toast } = useToast();
   const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
   const { isYTDApplicable, ytdWarningMessage, planFirstYear } = usePeriodApplicability();
+  
+  // Filtrar quarters para mostrar apenas os dentro da vigência do KR atual
+  const krQuarterOptions = useMemo(() => {
+    if (!currentKeyResult) return quarterOptions;
+    return getKRQuarters(currentKeyResult, quarterOptions);
+  }, [currentKeyResult, quarterOptions]);
   
   // Determinar período inicial inteligente
   const effectiveInitialPeriod = initialPeriod === 'ytd' && !isYTDApplicable ? 'yearly' : initialPeriod;
@@ -568,7 +575,7 @@ export const KROverviewModal = ({
                 onYearChange?.(year);
               }}
               monthOptions={monthOptions}
-              quarterOptions={quarterOptions}
+              quarterOptions={krQuarterOptions}
               yearOptions={yearOptions}
               selectedYearlyYear={selectedYearlyYear}
             />
