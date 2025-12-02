@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultMetrics } from './KeyResultMetrics';
 import { KeyResultChart } from './KeyResultChart';
@@ -14,11 +15,13 @@ import { KRUpdateValuesModal } from './KRUpdateValuesModal';
 import { getDirectionLabel, calculateKRStatus } from '@/lib/krHelpers';
 import { formatValueWithUnit, cn } from '@/lib/utils';
 
-import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket, CalendarDays } from 'lucide-react';
+import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket, CalendarDays, AlertCircle } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
+import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
 import { useKRPermissions } from '@/hooks/useKRPermissions';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 interface KROverviewModalProps {
@@ -68,9 +71,20 @@ export const KROverviewModal = ({
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUpdateValuesModal, setShowUpdateValuesModal] = useState(false);
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [selectedYearlyYear, setSelectedYearlyYear] = useState<number>(new Date().getFullYear());
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>(initialPeriod);
+  
+  const { toast } = useToast();
+  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
+  const { isYTDApplicable, ytdWarningMessage, planFirstYear } = usePeriodApplicability();
+  
+  // Determinar período inicial inteligente
+  const effectiveInitialPeriod = initialPeriod === 'ytd' && !isYTDApplicable ? 'yearly' : initialPeriod;
+  
+  // Determinar ano inicial: usa initialYear se fornecido, senão planFirstYear para evitar ano vazio
+  const effectiveInitialYear = initialYear || planFirstYear;
+  
+  const [selectedYear, setSelectedYear] = useState<number>(effectiveInitialYear);
+  const [selectedYearlyYear, setSelectedYearlyYear] = useState<number>(effectiveInitialYear);
+  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>(effectiveInitialPeriod);
   
   const { 
     canEditAnyKR, 
@@ -90,16 +104,15 @@ export const KROverviewModal = ({
   // Quarter state
   const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4;
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(initialQuarter || currentQuarter);
-  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(initialQuarterYear || new Date().getFullYear());
+  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(initialQuarterYear || effectiveInitialYear);
   
   // Inicializar com o último mês fechado (mês anterior) ou com os valores fornecidos
   const previousMonth = new Date();
   previousMonth.setMonth(previousMonth.getMonth() - 1);
   const [selectedMonth, setSelectedMonth] = useState<number>(initialMonth || previousMonth.getMonth() + 1);
-  const [selectedMonthYear, setSelectedMonthYear] = useState<number>(initialYear || previousMonth.getFullYear());
+  const [selectedMonthYear, setSelectedMonthYear] = useState<number>(initialYear || effectiveInitialYear);
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
-  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
 
   // Sincronizar anos com yearOptions disponíveis
   const syncYear = useCallback(() => {
@@ -126,10 +139,22 @@ export const KROverviewModal = ({
     setCurrentKeyResult(keyResult);
   }, [keyResult]);
 
-  // Update selected period when initialPeriod changes
+  // Update selected period when initialPeriod changes (respeitando YTD applicability)
   useEffect(() => {
-    setSelectedPeriod(initialPeriod);
-  }, [initialPeriod]);
+    const effectivePeriod = initialPeriod === 'ytd' && !isYTDApplicable ? 'yearly' : initialPeriod;
+    setSelectedPeriod(effectivePeriod);
+  }, [initialPeriod, isYTDApplicable]);
+  
+  // Redirecionar automaticamente se YTD não é aplicável
+  useEffect(() => {
+    if (!isYTDApplicable && selectedPeriod === 'ytd') {
+      setSelectedPeriod('yearly');
+      setSelectedYear(planFirstYear);
+      setSelectedYearlyYear(planFirstYear);
+      onPeriodChange?.('yearly');
+      onYearChange?.(planFirstYear);
+    }
+  }, [isYTDApplicable, selectedPeriod, planFirstYear, onPeriodChange, onYearChange]);
 
   // Update selected month when initialMonth changes
   useEffect(() => {
@@ -432,18 +457,42 @@ export const KROverviewModal = ({
             </div>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-                <Button
-                  variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => {
-                    setSelectedPeriod('ytd');
-                    onPeriodChange?.('ytd');
-                  }}
-                  className="gap-2"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  YTD
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => {
+                          if (isYTDApplicable) {
+                            setSelectedPeriod('ytd');
+                            onPeriodChange?.('ytd');
+                          } else {
+                            setSelectedPeriod('yearly');
+                            setSelectedYear(planFirstYear);
+                            setSelectedYearlyYear(planFirstYear);
+                            onPeriodChange?.('yearly');
+                            onYearChange?.(planFirstYear);
+                            toast({
+                              title: "YTD não disponível",
+                              description: ytdWarningMessage,
+                            });
+                          }
+                        }}
+                        className={cn("gap-2", !isYTDApplicable && "opacity-50")}
+                      >
+                        <TrendingUp className="w-4 h-4" />
+                        YTD
+                        {!isYTDApplicable && <AlertCircle className="w-3 h-3" />}
+                      </Button>
+                    </TooltipTrigger>
+                    {!isYTDApplicable && ytdWarningMessage && (
+                      <TooltipContent>
+                        <p>{ytdWarningMessage}</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
                 <Button
                   variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
                   size="sm"
