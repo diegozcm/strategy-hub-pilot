@@ -75,9 +75,10 @@ interface KREditModalProps {
   onClose: () => void;
   onSave: (keyResultData: Partial<KeyResult>) => Promise<any>;
   objectives?: Array<{ id: string; title: string; }>;
+  initialYear?: number;
 }
 
-export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] }: KREditModalProps) => {
+export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [], initialYear }: KREditModalProps) => {
   const { toast } = useToast();
   const { company } = useAuth();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
@@ -101,23 +102,40 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
   });
   
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState<number>(initialYear || new Date().getFullYear());
   const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
   const [editMode, setEditMode] = useState<boolean>(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
 
-  // Sincronizar selectedYear com yearOptions disponíveis
+  // Sincronizar selectedYear com yearOptions disponíveis e initialYear
   useEffect(() => {
     if (yearOptions.length === 0) return;
+    
+    // Prioriza o initialYear se for válido nas opções
+    if (initialYear && yearOptions.some(opt => opt.value === initialYear)) {
+      if (selectedYear !== initialYear) {
+        setSelectedYear(initialYear);
+      }
+      return;
+    }
+    
+    // Fallback: encontra o ano mais próximo do atual
     const currentYr = new Date().getFullYear();
     const hasCurrentYear = yearOptions.some(opt => opt.value === currentYr);
+    const closestYear = yearOptions.reduce((closest, opt) => {
+      return Math.abs(opt.value - currentYr) < Math.abs(closest - currentYr) 
+        ? opt.value 
+        : closest;
+    }, yearOptions[0].value);
+    
     const validYear = yearOptions.length === 1 
       ? yearOptions[0].value 
-      : (hasCurrentYear ? currentYr : yearOptions[0].value);
+      : (hasCurrentYear ? currentYr : closestYear);
+    
     const isYearValid = yearOptions.some(opt => opt.value === selectedYear);
     if (!isYearValid) setSelectedYear(validYear);
-  }, [yearOptions, selectedYear]);
+  }, [yearOptions, selectedYear, initialYear]);
   
   // Estado unificado para vigência (formato: "2025-Q1" ou "none")
   const [selectedValidityQuarter, setSelectedValidityQuarter] = useState<string>('none');

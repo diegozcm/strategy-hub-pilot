@@ -618,6 +618,7 @@ export const KROverviewModal = ({
           keyResult={currentKeyResult}
           open={showEditModal}
           onClose={() => setShowEditModal(false)}
+          initialYear={selectedYearlyYear}
           onSave={async (updates) => {
             try {
               // Persistir os dados no banco antes de fechar o modal
