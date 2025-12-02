@@ -109,8 +109,18 @@ export const usePlanPeriodOptions = () => {
     // Se o ano atual está no plano, usa ele
     const hasCurrentYear = yearOptions.some(opt => opt.value === currentYear);
     if (hasCurrentYear) return currentYear;
-    // Senão, retorna o primeiro ano do plano (mais recente)
-    return yearOptions.length > 0 ? yearOptions[0].value : currentYear;
+    
+    // Selecionar o ano mais próximo do ano atual
+    if (yearOptions.length > 0) {
+      const closestYear = yearOptions.reduce((closest, opt) => {
+        return Math.abs(opt.value - currentYear) < Math.abs(closest - currentYear) 
+          ? opt.value 
+          : closest;
+      }, yearOptions[0].value);
+      return closestYear;
+    }
+    
+    return currentYear;
   }, [yearOptions]);
 
   const getDefaultQuarter = useCallback((): { quarter: 1 | 2 | 3 | 4, year: number } => {
