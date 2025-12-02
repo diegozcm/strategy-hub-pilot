@@ -6,10 +6,22 @@ interface UseValidatedYearOptions {
   preferredYear?: number;
 }
 
+// Função auxiliar para encontrar o ano mais próximo do atual
+const getClosestYear = (yearOptions: Array<{ value: number }>, currentYear: number): number => {
+  if (yearOptions.length === 0) return currentYear;
+  if (yearOptions.length === 1) return yearOptions[0].value;
+  
+  return yearOptions.reduce((closest, opt) => {
+    return Math.abs(opt.value - currentYear) < Math.abs(closest - currentYear) 
+      ? opt.value 
+      : closest;
+  }, yearOptions[0].value);
+};
+
 /**
  * Hook que retorna um selectedYear garantidamente válido dentro das opções do plano.
  * - Se apenas 1 ano disponível: seleciona automaticamente
- * - Se múltiplos anos: prioriza ano atual, senão primeiro do plano
+ * - Se múltiplos anos: prioriza ano atual, senão ano mais próximo do atual
  */
 export const useValidatedYear = (options?: UseValidatedYearOptions) => {
   const { yearOptions } = usePlanPeriodOptions();
@@ -31,9 +43,9 @@ export const useValidatedYear = (options?: UseValidatedYearOptions) => {
         return;
       }
       
-      // Se múltiplos anos, prioriza ano atual
+      // Se múltiplos anos, prioriza ano atual, senão o mais próximo
       const hasCurrentYear = yearOptions.some(opt => opt.value === currentYear);
-      setSelectedYear(hasCurrentYear ? currentYear : yearOptions[0].value);
+      setSelectedYear(hasCurrentYear ? currentYear : getClosestYear(yearOptions, currentYear));
     }
   }, [yearOptions, selectedYear, currentYear]);
 
@@ -57,14 +69,10 @@ export const useYearSynchronization = (
 
   const getValidYear = useCallback(() => {
     if (yearOptions.length === 0) return currentYear;
+    if (yearOptions.length === 1) return yearOptions[0].value;
     
     const hasCurrentYear = yearOptions.some(opt => opt.value === currentYear);
-    
-    if (yearOptions.length === 1) {
-      return yearOptions[0].value;
-    }
-    
-    return hasCurrentYear ? currentYear : yearOptions[0].value;
+    return hasCurrentYear ? currentYear : getClosestYear(yearOptions, currentYear);
   }, [yearOptions, currentYear]);
 
   useEffect(() => {
