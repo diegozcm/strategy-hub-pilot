@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
+import { useYearSynchronization } from '@/hooks/useValidatedYear';
 import { RumoDashboard } from './RumoDashboard';
 import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
 import { filterKRsByValidity } from '@/lib/krValidityFilter';
@@ -140,6 +141,17 @@ export const DashboardHome: React.FC = () => {
   
   // Use hook to get period options from active plan
   const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
+
+  // Sincronizar anos com yearOptions disponíveis
+  useYearSynchronization(
+    yearOptions,
+    setSelectedYear,
+    setSelectedQuarterYear,
+    setSelectedMonthYear,
+    selectedYear,
+    selectedQuarterYear,
+    selectedMonthYear
+  );
 
   // Atualizar período padrão quando isYTDApplicable mudar
   useEffect(() => {

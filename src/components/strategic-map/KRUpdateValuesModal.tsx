@@ -46,6 +46,17 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
 
+  // Sincronizar selectedYear com yearOptions disponíveis
+  useEffect(() => {
+    if (yearOptions.length === 0) return;
+    const currentYr = new Date().getFullYear();
+    const hasCurrentYear = yearOptions.some(opt => opt.value === currentYr);
+    const validYear = yearOptions.length === 1 
+      ? yearOptions[0].value 
+      : (hasCurrentYear ? currentYr : yearOptions[0].value);
+    const isYearValid = yearOptions.some(opt => opt.value === selectedYear);
+    if (!isYearValid) setSelectedYear(validYear);
+  }, [yearOptions, selectedYear]);
   // Formata número para padrão brasileiro (xxx.xxx.xxx,xx)
   const formatBrazilianNumber = (value: number | null | undefined): string => {
     if (value === null || value === undefined) return '';

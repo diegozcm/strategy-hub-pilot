@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -106,6 +106,18 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [] 
   const [editMode, setEditMode] = useState<boolean>(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
+
+  // Sincronizar selectedYear com yearOptions disponíveis
+  useEffect(() => {
+    if (yearOptions.length === 0) return;
+    const currentYr = new Date().getFullYear();
+    const hasCurrentYear = yearOptions.some(opt => opt.value === currentYr);
+    const validYear = yearOptions.length === 1 
+      ? yearOptions[0].value 
+      : (hasCurrentYear ? currentYr : yearOptions[0].value);
+    const isYearValid = yearOptions.some(opt => opt.value === selectedYear);
+    if (!isYearValid) setSelectedYear(validYear);
+  }, [yearOptions, selectedYear]);
   
   // Estado unificado para vigência (formato: "2025-Q1" ou "none")
   const [selectedValidityQuarter, setSelectedValidityQuarter] = useState<string>('none');

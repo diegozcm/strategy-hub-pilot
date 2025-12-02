@@ -15,7 +15,7 @@ import { getDirectionLabel, calculateKRStatus } from '@/lib/krHelpers';
 import { formatValueWithUnit, cn } from '@/lib/utils';
 
 import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket, CalendarDays } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { useKRPermissions } from '@/hooks/useKRPermissions';
@@ -100,6 +100,26 @@ export const KROverviewModal = ({
   
   const { initiatives } = useKRInitiatives(keyResult?.id);
   const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
+
+  // Sincronizar anos com yearOptions disponíveis
+  const syncYear = useCallback(() => {
+    if (yearOptions.length === 0) return;
+    const currentYr = new Date().getFullYear();
+    const hasCurrentYear = yearOptions.some(opt => opt.value === currentYr);
+    const validYear = yearOptions.length === 1 
+      ? yearOptions[0].value 
+      : (hasCurrentYear ? currentYr : yearOptions[0].value);
+    
+    const isYearValid = yearOptions.some(opt => opt.value === selectedYear);
+    if (!isYearValid) setSelectedYear(validYear);
+    
+    const isYearlyYearValid = yearOptions.some(opt => opt.value === selectedYearlyYear);
+    if (!isYearlyYearValid) setSelectedYearlyYear(validYear);
+  }, [yearOptions, selectedYear, selectedYearlyYear]);
+
+  useEffect(() => {
+    syncYear();
+  }, [syncYear]);
 
   // Update local state when keyResult prop changes
   useEffect(() => {
