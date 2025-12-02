@@ -4,6 +4,7 @@ import { useRumoCalculations, PeriodType, getPerformanceColor, getPerformanceSty
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
+import { useYearSynchronization } from '@/hooks/useValidatedYear';
 import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { RumoPillarBlock } from './RumoPillarBlock';
 import { RumoObjectiveBlock } from './RumoObjectiveBlock';
@@ -32,6 +33,20 @@ export const RumoDashboard = () => {
   );
   const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDApplicable ? now.getFullYear() : planFirstYear);
   
+  const { pillars, objectives, keyResults, loading } = useStrategicMap();
+  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
+  const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
+
+  // Sincronizar anos com yearOptions disponíveis
+  useYearSynchronization(
+    yearOptions,
+    setSelectedYear,
+    setSelectedQuarterYear,
+    undefined,
+    selectedYear,
+    selectedQuarterYear
+  );
+
   // Atualizar período padrão quando isYTDApplicable mudar
   useEffect(() => {
     if (!isYTDApplicable && periodType === 'ytd') {
@@ -39,10 +54,6 @@ export const RumoDashboard = () => {
       setSelectedYear(planFirstYear);
     }
   }, [isYTDApplicable, periodType, planFirstYear]);
-  
-  const { pillars, objectives, keyResults, loading } = useStrategicMap();
-  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
-  const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
   
   // Filtrar KRs por vigência
   const filteredKeyResults = useMemo(() => {

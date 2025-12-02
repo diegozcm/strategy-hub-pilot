@@ -29,6 +29,7 @@ import { KRCard } from './KRCard';
 import { useKRMetrics } from '@/hooks/useKRMetrics';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
+import { useYearSynchronization } from '@/hooks/useValidatedYear';
 import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -177,6 +178,16 @@ export const IndicatorsPage: React.FC = () => {
   useEffect(() => {
     hasInitializedFilters.current = false;
   }, [activePlan?.id]);
+
+  // Sincronizar anos com yearOptions disponíveis
+  useYearSynchronization(
+    yearOptions,
+    setSelectedYear,
+    setSelectedQuarterYear,
+    undefined,
+    selectedYear,
+    selectedQuarterYear
+  );
 
   // Atualizar período padrão quando isYTDApplicable mudar
   useEffect(() => {

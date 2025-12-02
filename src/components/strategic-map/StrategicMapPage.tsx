@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 import { useKRPermissions } from '@/hooks/useKRPermissions';
 import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
+import { useYearSynchronization } from '@/hooks/useValidatedYear';
 import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { CompanySetupModal } from './CompanySetupModal';
 import { PillarFormModal } from './PillarFormModal';
@@ -91,6 +92,18 @@ export const StrategicMapPage = () => {
   );
   const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDApplicable ? new Date().getFullYear() : planFirstYear);
 
+  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
+  
+  // Sincronizar anos com yearOptions disponíveis
+  useYearSynchronization(
+    yearOptions,
+    setSelectedYear,
+    setSelectedQuarterYear,
+    undefined,
+    selectedYear,
+    selectedQuarterYear
+  );
+
   // Atualizar período padrão quando isYTDApplicable mudar
   React.useEffect(() => {
     if (!isYTDApplicable && selectedPeriod === 'ytd') {
@@ -98,8 +111,6 @@ export const StrategicMapPage = () => {
       setSelectedYear(planFirstYear);
     }
   }, [isYTDApplicable, selectedPeriod, planFirstYear]);
-
-  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
   const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
   const { canCreatePillar, canEditPillar, canDeletePillar } = useKRPermissions();
   

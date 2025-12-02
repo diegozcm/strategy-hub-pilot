@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -80,6 +80,18 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
   const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
+  // Sincronizar selectedYear com yearOptions disponíveis
+  useEffect(() => {
+    if (yearOptions.length === 0) return;
+    const currentYr = new Date().getFullYear();
+    const hasCurrentYear = yearOptions.some(opt => opt.value === currentYr);
+    const validYear = yearOptions.length === 1 
+      ? yearOptions[0].value 
+      : (hasCurrentYear ? currentYr : yearOptions[0].value);
+    const isYearValid = yearOptions.some(opt => opt.value === selectedYear);
+    if (!isYearValid) setSelectedYear(validYear);
+  }, [yearOptions, selectedYear]);
   
   // Estado unificado para vigência (formato: "2025-Q1" ou "none")
   const [selectedValidityQuarter, setSelectedValidityQuarter] = useState<string>('none');

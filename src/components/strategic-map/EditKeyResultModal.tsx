@@ -38,6 +38,18 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
   const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
   const [editMode, setEditMode] = useState<boolean>(false);
 
+  // Sincronizar selectedYear com yearOptions disponíveis
+  useEffect(() => {
+    if (yearOptions.length === 0) return;
+    const currentYr = new Date().getFullYear();
+    const hasCurrentYear = yearOptions.some(opt => opt.value === currentYr);
+    const validYear = yearOptions.length === 1 
+      ? yearOptions[0].value 
+      : (hasCurrentYear ? currentYr : yearOptions[0].value);
+    const isYearValid = yearOptions.some(opt => opt.value === selectedYear);
+    if (!isYearValid) setSelectedYear(validYear);
+  }, [yearOptions, selectedYear]);
+
   const months = [
     { key: `${selectedYear}-01`, name: 'Janeiro', short: 'Jan' },
     { key: `${selectedYear}-02`, name: 'Fevereiro', short: 'Fev' },

@@ -16,6 +16,8 @@ import { useHealthMonitor } from '@/hooks/useHealthMonitor';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { useKRPermissions } from '@/hooks/useKRPermissions';
+import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
+import { useYearSynchronization } from '@/hooks/useValidatedYear';
 
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
@@ -87,6 +89,17 @@ export const ObjectivesPage: React.FC = () => {
   const { logRenderCycle } = useHealthMonitor();
   const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
   const { canCreateObjective, canEditObjective, canDeleteObjective } = useKRPermissions();
+  const { isYTDApplicable, planFirstYear } = usePeriodApplicability();
+  
+  // Sincronizar anos com yearOptions disponíveis
+  useYearSynchronization(
+    yearOptions,
+    setSelectedYear,
+    setSelectedQuarterYear,
+    undefined,
+    selectedYear,
+    selectedQuarterYear
+  );
   
   // Log render cycle for monitoring
   useEffect(() => {
