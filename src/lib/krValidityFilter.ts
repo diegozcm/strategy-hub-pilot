@@ -197,13 +197,10 @@ export const filterKRsByValidity = (
         );
       
       case 'ytd':
-        // YTD usa o ano do plano quando o ano atual não está no plano
-        const ytdYear = options?.planFirstYear && options.planFirstYear > currentYear 
-          ? options.planFirstYear 
-          : currentYear;
-        // Para YTD, KRs sem vigência são mostrados (comportamento especial)
-        if (!kr.start_month || !kr.end_month) return true;
-        return isKRInYear(kr, ytdYear);
+        // YTD agora mostra todos os KRs do plano, sem filtro de ano
+        // Métricas serão 0% naturalmente para KRs de anos futuros
+        // Isso permite visualizar toda a estrutura estratégica
+        return true;
       
       default:
         return true;
