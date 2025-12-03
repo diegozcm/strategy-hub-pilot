@@ -11,11 +11,48 @@ import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { KeyResult, KRInitiative, InitiativeStatus, InitiativePriority } from '@/types/strategic-map';
 import { useState } from 'react';
-import { Plus, Calendar, Target, AlertCircle, Edit, Trash2, User, DollarSign, Clock } from 'lucide-react';
+import { Plus, Calendar, Target, AlertCircle, Edit, Trash2, User, DollarSign } from 'lucide-react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
-import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { parseISO } from 'date-fns';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
+
+// Helper: Converter quarter para datas de início e fim
+const quarterToDates = (quarter: 1 | 2 | 3 | 4, year: number) => {
+  const startMonths = { 1: '01', 2: '04', 3: '07', 4: '10' };
+  const endMonths = { 1: '03', 2: '06', 3: '09', 4: '12' };
+  const endDays = { 1: '31', 2: '30', 3: '30', 4: '31' };
+  
+  return {
+    start_date: `${year}-${startMonths[quarter]}-01`,
+    end_date: `${year}-${endMonths[quarter]}-${endDays[quarter]}`
+  };
+};
+
+// Helper: Detectar quarter a partir de uma data
+const dateToQuarter = (dateString: string): { quarter: 1 | 2 | 3 | 4, year: number } | null => {
+  if (!dateString) return null;
+  const date = parseISO(dateString);
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+  const quarter = Math.ceil(month / 3) as 1 | 2 | 3 | 4;
+  return { quarter, year };
+};
+
+// Helper: Formatar quarter para exibição "Q1 (jan-mar) 2026"
+const formatQuarterDisplay = (startDate: string): string => {
+  const quarterInfo = dateToQuarter(startDate);
+  if (!quarterInfo) return startDate;
+  
+  const quarterLabels: Record<number, string> = {
+    1: 'Q1 (jan-mar)',
+    2: 'Q2 (abr-jun)',
+    3: 'Q3 (jul-set)',
+    4: 'Q4 (out-dez)'
+  };
+  
+  return `${quarterLabels[quarterInfo.quarter]} ${quarterInfo.year}`;
+};
 
 interface KRInitiativesModalProps {
   keyResult: KeyResult | null;
@@ -48,6 +85,7 @@ const statusColors: Record<InitiativeStatus, string> = {
 export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesModalProps) => {
   const { company } = useAuth();
   const { initiatives, loading, createInitiative, updateInitiative, deleteInitiative, getInitiativeStats } = useKRInitiatives(keyResult?.id);
+  const { quarterOptions } = usePlanPeriodOptions();
   
   const [showNewForm, setShowNewForm] = useState(false);
   const [editingInitiative, setEditingInitiative] = useState<KRInitiative | null>(null);
@@ -56,6 +94,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
   // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [selectedQuarter, setSelectedQuarter] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState<InitiativeStatus>('planned');
@@ -72,6 +111,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
   const resetForm = () => {
     setTitle('');
     setDescription('');
+    setSelectedQuarter('');
     setStartDate('');
     setEndDate('');
     setStatus('planned');
@@ -118,6 +158,15 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
     setEditingInitiative(initiative);
     setTitle(initiative.title);
     setDescription(initiative.description || '');
+    
+    // Detectar quarter da iniciativa existente
+    const quarterInfo = dateToQuarter(initiative.start_date);
+    if (quarterInfo) {
+      setSelectedQuarter(`${quarterInfo.year}-Q${quarterInfo.quarter}`);
+    } else {
+      setSelectedQuarter('');
+    }
+    
     setStartDate(initiative.start_date);
     setEndDate(initiative.end_date);
     setStatus(initiative.status);
@@ -142,9 +191,6 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
     await updateInitiative(initiativeId, { progress_percentage: newProgress });
   };
 
-  const formatDate = (dateString: string) => {
-    return format(parseISO(dateString), 'dd/MM/yyyy', { locale: ptBR });
-  };
 
   const getStatusBadge = (status: InitiativeStatus) => (
     <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status]}`}>
@@ -245,24 +291,32 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="start-date">Data de Início *</Label>
-                    <Input
-                      id="start-date"
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="end-date">Data de Término *</Label>
-                    <Input
-                      id="end-date"
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                    />
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="quarter">Período (Quarter) *</Label>
+                    <Select 
+                      value={selectedQuarter} 
+                      onValueChange={(value) => {
+                        setSelectedQuarter(value);
+                        const [year, q] = value.split('-Q');
+                        const dates = quarterToDates(parseInt(q) as 1 | 2 | 3 | 4, parseInt(year));
+                        setStartDate(dates.start_date);
+                        setEndDate(dates.end_date);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o quarter..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {quarterOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      O período define automaticamente as datas de início e término
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -388,7 +442,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                           <CardTitle className="text-base">{initiative.title}</CardTitle>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="h-3 w-3" />
-                            {formatDate(initiative.start_date)} - {formatDate(initiative.end_date)}
+                            {formatQuarterDisplay(initiative.start_date)}
                             {initiative.responsible && (
                               <>
                                 <User className="h-3 w-3 ml-2" />
