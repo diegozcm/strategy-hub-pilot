@@ -57,7 +57,7 @@ interface AddResultadoChaveModalProps {
 export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: AddResultadoChaveModalProps) => {
   const { company } = useAuth();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
-  const { quarterOptions, yearOptions } = usePlanPeriodOptions();
+  const { quarterOptions, yearOptions, yearValidityOptions } = usePlanPeriodOptions();
   const { canSelectOwner, isMemberOnly, currentUserId } = useKRPermissions();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -256,6 +256,16 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                       setFormData(prev => ({ ...prev, start_month: '', end_month: '' }));
                       return;
                     }
+                    // Verificar se é ano inteiro (ex: "2026-YEAR")
+                    if (value.endsWith('-YEAR')) {
+                      const year = parseInt(value.replace('-YEAR', ''));
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        start_month: `${year}-01`, 
+                        end_month: `${year}-12` 
+                      }));
+                      return;
+                    }
                     // Extrair quarter e ano do value "2025-Q1"
                     const [year, q] = value.split('-Q');
                     const quarter = parseInt(q) as 1 | 2 | 3 | 4;
@@ -268,15 +278,34 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Sem vigência definida</SelectItem>
-                    {quarterOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
+                    {yearValidityOptions.length > 0 && (
+                      <>
+                        <SelectItem value="_header_years" disabled className="text-xs text-muted-foreground font-semibold bg-muted">
+                          — Anos completos —
+                        </SelectItem>
+                        {yearValidityOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                    {quarterOptions.length > 0 && (
+                      <>
+                        <SelectItem value="_header_quarters" disabled className="text-xs text-muted-foreground font-semibold bg-muted">
+                          — Quarters —
+                        </SelectItem>
+                        {quarterOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Selecione o quarter da vigência deste resultado-chave
+                  Selecione um ano completo ou quarter específico
                 </p>
               </div>
 

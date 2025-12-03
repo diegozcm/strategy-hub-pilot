@@ -19,6 +19,14 @@ interface YearOption {
   label: string;        // "2025"
 }
 
+interface YearValidityOption {
+  value: string;        // "2026-YEAR"
+  label: string;        // "2026 (Ano todo)"
+  year: number;
+  start_month: string;  // "2026-01"
+  end_month: string;    // "2026-12"
+}
+
 export const usePlanPeriodOptions = () => {
   const { activePlan } = useActivePlan();
   
@@ -103,6 +111,17 @@ export const usePlanPeriodOptions = () => {
     return options; // Já em ordem decrescente
   }, [activePlan]);
 
+  // Opções de ano completo para vigência de KRs
+  const yearValidityOptions = useMemo<YearValidityOption[]>(() => {
+    return yearOptions.map(opt => ({
+      value: `${opt.value}-YEAR`,
+      label: `${opt.value} (Ano todo)`,
+      year: opt.value,
+      start_month: `${opt.value}-01`,
+      end_month: `${opt.value}-12`
+    }));
+  }, [yearOptions]);
+
   // Funções que determinam o período padrão inteligente
   const getDefaultYear = useCallback((): number => {
     const currentYear = new Date().getFullYear();
@@ -175,6 +194,7 @@ export const usePlanPeriodOptions = () => {
     quarterOptions, 
     monthOptions, 
     yearOptions,
+    yearValidityOptions,
     getDefaultYear,
     getDefaultQuarter,
     getDefaultMonth

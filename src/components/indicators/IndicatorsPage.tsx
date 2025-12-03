@@ -1237,6 +1237,16 @@ export const IndicatorsPage: React.FC = () => {
                       setFormData(prev => ({ ...prev, start_month: '', end_month: '' }));
                       return;
                     }
+                    // Verificar se é ano inteiro
+                    if (value === 'year') {
+                      setNewKRValidityQuarter(null);
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        start_month: `${newKRValidityYear}-01`, 
+                        end_month: `${newKRValidityYear}-12` 
+                      }));
+                      return;
+                    }
                     const q = parseInt(value) as 1 | 2 | 3 | 4;
                     setNewKRValidityQuarter(q);
                     const { start_month, end_month } = quarterToMonths(q, newKRValidityYear);
@@ -1244,10 +1254,11 @@ export const IndicatorsPage: React.FC = () => {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o Quarter" />
+                    <SelectValue placeholder="Selecione o período" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Sem vigência definida</SelectItem>
+                    <SelectItem value="year">Ano todo</SelectItem>
                     <SelectItem value="1">Q1 (Jan - Mar)</SelectItem>
                     <SelectItem value="2">Q2 (Abr - Jun)</SelectItem>
                     <SelectItem value="3">Q3 (Jul - Set)</SelectItem>
@@ -1260,32 +1271,40 @@ export const IndicatorsPage: React.FC = () => {
                   onValueChange={(value) => {
                     const y = parseInt(value);
                     setNewKRValidityYear(y);
+                    // Atualizar vigência se houver seleção de quarter ou ano todo
                     if (newKRValidityQuarter) {
                       const { start_month, end_month } = quarterToMonths(newKRValidityQuarter, y);
                       setFormData(prev => ({ ...prev, start_month, end_month }));
+                    } else if (formData.start_month && formData.start_month.endsWith('-01') && formData.end_month?.endsWith('-12')) {
+                      // Se era "ano todo", manter ano todo com novo ano
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        start_month: `${y}-01`, 
+                        end_month: `${y}-12` 
+                      }));
                     }
                   }}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                        <SelectContent>
-                          {yearOptions.length > 0 ? (
-                            yearOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value.toString()}>
-                                {option.label}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <SelectItem value={new Date().getFullYear().toString()}>
-                              {new Date().getFullYear()}
-                            </SelectItem>
-                          )}
-                        </SelectContent>
+                  <SelectContent>
+                    {yearOptions.length > 0 ? (
+                      yearOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value.toString()}>
+                          {option.label}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value={new Date().getFullYear().toString()}>
+                        {new Date().getFullYear()}
+                      </SelectItem>
+                    )}
+                  </SelectContent>
                 </Select>
               </div>
               <p className="text-xs text-muted-foreground">
-                Selecione o quarter e o ano da vigência deste resultado-chave
+                Selecione um ano inteiro ou quarter específico
               </p>
             </div>
             
