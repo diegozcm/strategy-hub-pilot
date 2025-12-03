@@ -108,16 +108,22 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // Sync selectedYear with available yearOptions
+  // Sync selectedYear with available yearOptions - select closest to current year
   useEffect(() => {
     if (yearOptions.length === 0) return;
     const currentYr = new Date().getFullYear();
-    const hasCurrentYear = yearOptions.some(opt => opt.value === currentYr);
-    const validYear = yearOptions.length === 1 
-      ? yearOptions[0].value 
-      : (hasCurrentYear ? currentYr : yearOptions[0].value);
     const isYearValid = yearOptions.some(opt => opt.value === selectedYear);
-    if (!isYearValid) setSelectedYear(validYear);
+    
+    if (!isYearValid) {
+      // Find closest year to current year
+      const closestYear = yearOptions.reduce((closest, opt) => {
+        const closestDiff = Math.abs(closest.value - currentYr);
+        const optDiff = Math.abs(opt.value - currentYr);
+        return optDiff < closestDiff ? opt : closest;
+      }, yearOptions[0]);
+      
+      setSelectedYear(closestYear.value);
+    }
   }, [yearOptions, selectedYear]);
 
   // Auto-update dates when quarter or year changes
