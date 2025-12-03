@@ -1,6 +1,5 @@
 import { KRInitiative } from '@/types/strategic-map';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Card } from '@/components/ui/card';
 import { Calendar, User } from 'lucide-react';
 import { format, differenceInDays, isAfter, isBefore, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -15,6 +14,23 @@ const statusColors: Record<KRInitiative['status'], string> = {
   completed: 'bg-green-500',
   cancelled: 'bg-red-500',
   on_hold: 'bg-gray-500'
+};
+
+// Helper: Formatar quarter para exibição "Q1 (jan-mar) 2026"
+const formatQuarterLabel = (startDate: string): string => {
+  const date = parseISO(startDate);
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+  const quarter = Math.ceil(month / 3);
+  
+  const quarterLabels: Record<number, string> = {
+    1: 'Q1 (jan-mar)',
+    2: 'Q2 (abr-jun)',
+    3: 'Q3 (jul-set)',
+    4: 'Q4 (out-dez)'
+  };
+  
+  return `${quarterLabels[quarter]} ${year}`;
 };
 
 export const KRInitiativesTimeline = ({ initiatives }: KRInitiativesTimelineProps) => {
@@ -112,7 +128,7 @@ export const KRInitiativesTimeline = ({ initiatives }: KRInitiativesTimelineProp
                       )}
                     </div>
                     <div className="text-muted-foreground">
-                      {format(parseISO(initiative.start_date), 'dd/MM', { locale: ptBR })} - {format(parseISO(initiative.end_date), 'dd/MM', { locale: ptBR })}
+                      {formatQuarterLabel(initiative.start_date)}
                     </div>
                   </div>
                   
