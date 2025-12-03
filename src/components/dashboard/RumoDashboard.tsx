@@ -19,19 +19,19 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 export const RumoDashboard = () => {
-  const { isYTDApplicable, defaultPeriod, ytdWarningMessage, planFirstYear } = usePeriodApplicability();
+  const { isYTDCalculable, defaultPeriod, ytdInfoMessage, planFirstYear } = usePeriodApplicability();
   const [periodType, setPeriodType] = useState<PeriodType>(defaultPeriod);
   
   // Inicializar com o último mês fechado (mês anterior)
   const previousMonth = new Date();
   previousMonth.setMonth(previousMonth.getMonth() - 1);
   const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(isYTDApplicable ? previousMonth.getFullYear() : planFirstYear);
+  const [selectedYear, setSelectedYear] = useState<number>(isYTDCalculable ? previousMonth.getFullYear() : planFirstYear);
   const now = new Date();
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
     Math.ceil((now.getMonth() + 1) / 3) as 1 | 2 | 3 | 4
   );
-  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDApplicable ? now.getFullYear() : planFirstYear);
+  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDCalculable ? now.getFullYear() : planFirstYear);
   
   const { pillars, objectives, keyResults, loading } = useStrategicMap();
   const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
@@ -47,14 +47,6 @@ export const RumoDashboard = () => {
     selectedQuarterYear
   );
 
-  // Atualizar período padrão quando isYTDApplicable mudar
-  useEffect(() => {
-    if (!isYTDApplicable && periodType === 'ytd') {
-      setPeriodType('yearly');
-      setSelectedYear(planFirstYear);
-    }
-  }, [isYTDApplicable, periodType, planFirstYear]);
-  
   // Filtrar KRs por vigência
   const filteredKeyResults = useMemo(() => {
     return filterKRsByValidity(
@@ -71,14 +63,11 @@ export const RumoDashboard = () => {
     );
   }, [keyResults, validityEnabled, periodType, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, planFirstYear]);
   
-  // Handler para clique no botão YTD
+  // Handler para clique no botão YTD - sempre permite selecionar
   const handleYTDClick = () => {
-    if (isYTDApplicable) {
-      setPeriodType('ytd');
-    } else {
-      setPeriodType('yearly');
-      setSelectedYear(planFirstYear);
-      toast.info(ytdWarningMessage || 'YTD não disponível para este plano');
+    setPeriodType('ytd');
+    if (!isYTDCalculable && ytdInfoMessage) {
+      toast.info(ytdInfoMessage);
     }
   };
 
@@ -165,16 +154,16 @@ export const RumoDashboard = () => {
                   variant={periodType === 'ytd' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={handleYTDClick}
-                  className={cn("gap-2", !isYTDApplicable && "opacity-60")}
+                  className="gap-2"
                 >
                   <TrendingUp className="w-4 h-4" />
                   YTD
-                  {!isYTDApplicable && <AlertCircle className="w-3 h-3 text-amber-500" />}
+                  {!isYTDCalculable && <AlertCircle className="w-3 h-3 text-blue-400" />}
                 </Button>
               </TooltipTrigger>
-              {!isYTDApplicable && (
+              {!isYTDCalculable && ytdInfoMessage && (
                 <TooltipContent>
-                  <p className="max-w-xs">{ytdWarningMessage}</p>
+                  <p className="max-w-xs">{ytdInfoMessage}</p>
                 </TooltipContent>
               )}
             </Tooltip>

@@ -5,25 +5,34 @@ import { useActivePlan } from './useActivePlan';
 export type PeriodType = 'ytd' | 'monthly' | 'yearly' | 'quarterly';
 
 interface PeriodApplicability {
-  /** Se YTD é aplicável (ano atual está dentro do plano) */
-  isYTDApplicable: boolean;
+  /** Se YTD pode ser calculado (ano atual está dentro do plano) */
+  isYTDCalculable: boolean;
+  /** Se YTD pode ser selecionado (sempre true - permite visualizar estrutura) */
+  isYTDSelectable: boolean;
   /** Período padrão inteligente */
   defaultPeriod: PeriodType;
-  /** Mensagem de aviso quando YTD não é aplicável */
-  ytdWarningMessage: string | null;
+  /** Mensagem informativa sobre YTD */
+  ytdInfoMessage: string | null;
   /** Primeiro ano do plano ativo */
   planFirstYear: number;
   /** Ano atual */
   currentYear: number;
   /** Se existe um plano ativo */
   hasActivePlan: boolean;
+  
+  // Aliases para compatibilidade (deprecated)
+  /** @deprecated Use isYTDCalculable */
+  isYTDApplicable: boolean;
+  /** @deprecated Use ytdInfoMessage */
+  ytdWarningMessage: string | null;
 }
 
 /**
- * Hook para determinar se YTD é aplicável baseado no plano estratégico ativo.
- * YTD (Year-to-Date) só faz sentido quando o ano atual está dentro do período do plano.
+ * Hook para determinar se YTD pode ser calculado baseado no plano estratégico ativo.
+ * YTD é sempre selecionável para visualizar a estrutura, mas métricas só são calculadas
+ * quando o ano atual está dentro do período do plano.
  * 
- * Ex: Em 2025, um plano de 2026 não tem YTD aplicável.
+ * Ex: Em 2025, um plano de 2026 pode ser visualizado em YTD, mas métricas serão 0%.
  */
 export const usePeriodApplicability = (): PeriodApplicability => {
   const { activePlan, hasActivePlan } = useActivePlan();
@@ -39,38 +48,45 @@ export const usePeriodApplicability = (): PeriodApplicability => {
     return parseISO(activePlan.period_end).getFullYear();
   }, [activePlan?.period_end, currentYear]);
 
-  // YTD só é aplicável se o ano atual está dentro do período do plano
-  const isYTDApplicable = useMemo(() => {
+  // YTD só pode ser calculado se o ano atual está dentro do período do plano
+  const isYTDCalculable = useMemo(() => {
     if (!hasActivePlan) return false;
     return currentYear >= planFirstYear && currentYear <= planLastYear;
   }, [hasActivePlan, currentYear, planFirstYear, planLastYear]);
   
+  // YTD sempre pode ser selecionado para visualizar estrutura
+  const isYTDSelectable = true;
+  
   // Período padrão inteligente
   const defaultPeriod = useMemo<PeriodType>(() => {
-    if (isYTDApplicable) return 'ytd';
-    return 'yearly'; // Redireciona para visão anual quando YTD não é aplicável
-  }, [isYTDApplicable]);
+    if (isYTDCalculable) return 'ytd';
+    return 'yearly'; // Redireciona para visão anual quando YTD não é calculável
+  }, [isYTDCalculable]);
   
-  // Mensagem explicativa
-  const ytdWarningMessage = useMemo(() => {
-    if (isYTDApplicable) return null;
+  // Mensagem informativa
+  const ytdInfoMessage = useMemo(() => {
+    if (isYTDCalculable) return null;
     if (!hasActivePlan) return 'Nenhum plano estratégico ativo.';
     
     if (currentYear < planFirstYear) {
-      return `YTD não disponível: o plano inicia em ${planFirstYear}. Exibindo visão anual.`;
+      return `Visualizando estrutura do plano ${planFirstYear}. Métricas YTD serão calculadas quando o plano iniciar.`;
     }
     if (currentYear > planLastYear) {
-      return `YTD não disponível: o plano terminou em ${planLastYear}. Exibindo visão anual.`;
+      return `O plano terminou em ${planLastYear}. Exibindo últimos dados disponíveis.`;
     }
     return null;
-  }, [hasActivePlan, isYTDApplicable, currentYear, planFirstYear, planLastYear]);
+  }, [hasActivePlan, isYTDCalculable, currentYear, planFirstYear, planLastYear]);
 
   return {
-    isYTDApplicable,
+    isYTDCalculable,
+    isYTDSelectable,
     defaultPeriod,
-    ytdWarningMessage,
+    ytdInfoMessage,
     planFirstYear,
     currentYear,
     hasActivePlan,
+    // Aliases para compatibilidade
+    isYTDApplicable: isYTDCalculable,
+    ytdWarningMessage: ytdInfoMessage,
   };
 };

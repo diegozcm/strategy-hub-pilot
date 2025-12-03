@@ -98,7 +98,7 @@ const getDynamicStats = (stats: DashboardStats) => [{
 export const DashboardHome: React.FC = () => {
   const { company } = useAuth();
   const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
-  const { isYTDApplicable, defaultPeriod, ytdWarningMessage, planFirstYear } = usePeriodApplicability();
+  const { isYTDCalculable, defaultPeriod, ytdInfoMessage, planFirstYear } = usePeriodApplicability();
   const [activeTab, setActiveTab] = useState('rumo');
   const [keyResults, setKeyResults] = useState<KeyResultWithPillar[]>([]);
   const [filteredKeyResults, setFilteredKeyResults] = useState<KeyResultWithPillar[]>([]);
@@ -113,7 +113,7 @@ export const DashboardHome: React.FC = () => {
     filledTools: 0
   });
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState(isYTDApplicable ? new Date().getFullYear() : planFirstYear);
+  const [selectedYear, setSelectedYear] = useState(isYTDCalculable ? new Date().getFullYear() : planFirstYear);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -134,7 +134,7 @@ export const DashboardHome: React.FC = () => {
   const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
     Math.ceil((now.getMonth() + 1) / 3) as 1 | 2 | 3 | 4
   );
-  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDApplicable ? now.getFullYear() : planFirstYear);
+  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDCalculable ? now.getFullYear() : planFirstYear);
 
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
   const currentYear = new Date().getFullYear();
@@ -153,22 +153,11 @@ export const DashboardHome: React.FC = () => {
     selectedMonthYear
   );
 
-  // Atualizar período padrão quando isYTDApplicable mudar
-  useEffect(() => {
-    if (!isYTDApplicable && periodType === 'ytd') {
-      setPeriodType('yearly');
-      setSelectedYear(planFirstYear);
-    }
-  }, [isYTDApplicable, periodType, planFirstYear]);
-  
-  // Handler para clique no botão YTD
+  // Handler para clique no botão YTD - sempre permite selecionar
   const handleYTDClick = () => {
-    if (isYTDApplicable) {
-      setPeriodType('ytd');
-    } else {
-      setPeriodType('yearly');
-      setSelectedYear(planFirstYear);
-      toast.info(ytdWarningMessage || 'YTD não disponível para este plano');
+    setPeriodType('ytd');
+    if (!isYTDCalculable && ytdInfoMessage) {
+      toast.info(ytdInfoMessage);
     }
   };
 
@@ -824,16 +813,16 @@ export const DashboardHome: React.FC = () => {
                       variant={periodType === 'ytd' ? 'default' : 'ghost'}
                       size="sm"
                       onClick={handleYTDClick}
-                      className={cn("gap-2", !isYTDApplicable && "opacity-60")}
+                      className="gap-2"
                     >
                       <TrendingUp className="w-4 h-4" />
                       YTD
-                      {!isYTDApplicable && <AlertCircle className="w-3 h-3 text-amber-500" />}
+                      {!isYTDCalculable && <AlertCircle className="w-3 h-3 text-blue-400" />}
                     </Button>
                   </TooltipTrigger>
-                  {!isYTDApplicable && (
+                  {!isYTDCalculable && ytdInfoMessage && (
                     <TooltipContent>
-                      <p className="max-w-xs">{ytdWarningMessage}</p>
+                      <p className="max-w-xs">{ytdInfoMessage}</p>
                     </TooltipContent>
                   )}
                 </Tooltip>
