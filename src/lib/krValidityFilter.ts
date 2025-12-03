@@ -84,16 +84,26 @@ export const isKRInQuarter = (
   quarter: 1 | 2 | 3 | 4, 
   year: number
 ): boolean => {
-  // KRs sem vigência definida NÃO são mostrados quando filtro de quarter está ativo
-  if (!kr.start_month || !kr.end_month) return false;
-  
   const quarterStartMonth = ((quarter - 1) * 3) + 1;
   const quarterEndMonth = quarter * 3;
   
+  // KRs sem vigência definida: verificar se têm dados no quarter
+  if (!kr.start_month || !kr.end_month) {
+    const monthlyTargets = (kr.monthly_targets || {}) as Record<string, number>;
+    const monthlyActual = (kr.monthly_actual || {}) as Record<string, number>;
+    
+    for (let m = quarterStartMonth; m <= quarterEndMonth; m++) {
+      const monthKey = `${year}-${String(m).padStart(2, '0')}`;
+      if (monthlyTargets[monthKey] || monthlyActual[monthKey]) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  // KR com vigência: verificar interseção com o quarter
   const quarterStart = `${year}-${quarterStartMonth.toString().padStart(2, '0')}`;
   const quarterEnd = `${year}-${quarterEndMonth.toString().padStart(2, '0')}`;
-  
-  // Interseção: KR.start <= quarterEnd AND KR.end >= quarterStart
   return kr.start_month <= quarterEnd && kr.end_month >= quarterStart;
 };
 
@@ -101,12 +111,23 @@ export const isKRInQuarter = (
  * Verifica se um KR está dentro de um ano específico
  */
 export const isKRInYear = (kr: KeyResult, year: number): boolean => {
-  // KRs sem vigência definida NÃO são mostrados quando filtro de ano está ativo
-  if (!kr.start_month || !kr.end_month) return false;
+  // KRs sem vigência definida: verificar se têm dados no ano
+  if (!kr.start_month || !kr.end_month) {
+    const monthlyTargets = (kr.monthly_targets || {}) as Record<string, number>;
+    const monthlyActual = (kr.monthly_actual || {}) as Record<string, number>;
+    
+    for (let m = 1; m <= 12; m++) {
+      const monthKey = `${year}-${String(m).padStart(2, '0')}`;
+      if (monthlyTargets[monthKey] || monthlyActual[monthKey]) {
+        return true;
+      }
+    }
+    return false;
+  }
   
+  // KR com vigência: verificar interseção com o ano
   const yearStart = `${year}-01`;
   const yearEnd = `${year}-12`;
-  
   return kr.start_month <= yearEnd && kr.end_month >= yearStart;
 };
 
@@ -118,11 +139,17 @@ export const isKRInMonth = (
   month: number, 
   year: number
 ): boolean => {
-  // KRs sem vigência definida NÃO são mostrados quando filtro de mês está ativo
-  if (!kr.start_month || !kr.end_month) return false;
-  
   const monthKey = `${year}-${month.toString().padStart(2, '0')}`;
   
+  // KRs sem vigência definida: verificar se têm dados no mês
+  if (!kr.start_month || !kr.end_month) {
+    const monthlyTargets = (kr.monthly_targets || {}) as Record<string, number>;
+    const monthlyActual = (kr.monthly_actual || {}) as Record<string, number>;
+    
+    return !!(monthlyTargets[monthKey] || monthlyActual[monthKey]);
+  }
+  
+  // KR com vigência: verificar se mês está dentro da vigência
   return kr.start_month <= monthKey && kr.end_month >= monthKey;
 };
 
