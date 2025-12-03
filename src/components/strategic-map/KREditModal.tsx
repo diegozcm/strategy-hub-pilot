@@ -54,19 +54,27 @@ const quarterToMonths = (quarter: 1 | 2 | 3 | 4, year: number): { start_month: s
   };
 };
 
-// Converte start_month para quarter + ano (para carregar dados existentes)
-const monthsToQuarter = (startMonth: string): { quarter: 1 | 2 | 3 | 4; year: number } | null => {
-  if (!startMonth) return null;
-  const [year, month] = startMonth.split('-');
-  const monthNum = parseInt(month);
+// Converte start_month/end_month para valor do seletor de vigência
+const monthsToValidity = (startMonth: string, endMonth: string): string => {
+  if (!startMonth || !endMonth) return 'none';
   
+  const [startYear, startM] = startMonth.split('-');
+  const [endYear, endM] = endMonth.split('-');
+  
+  // Verificar se é ano completo (jan-dez do mesmo ano)
+  if (startM === '01' && endM === '12' && startYear === endYear) {
+    return `${startYear}-YEAR`;
+  }
+  
+  // Tentar identificar como quarter
+  const monthNum = parseInt(startM);
   let quarter: 1 | 2 | 3 | 4;
   if (monthNum >= 1 && monthNum <= 3) quarter = 1;
   else if (monthNum >= 4 && monthNum <= 6) quarter = 2;
   else if (monthNum >= 7 && monthNum <= 9) quarter = 3;
   else quarter = 4;
   
-  return { quarter, year: parseInt(year) };
+  return `${startYear}-Q${quarter}`;
 };
 
 interface KREditModalProps {
@@ -82,7 +90,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
   const { toast } = useToast();
   const { company } = useAuth();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
-  const { quarterOptions, yearOptions } = usePlanPeriodOptions();
+  const { quarterOptions, yearOptions, yearValidityOptions } = usePlanPeriodOptions();
   const { canSelectOwner } = useKRPermissions();
   const [savingAggregationType, setSavingAggregationType] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -304,17 +312,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
       
       setAggregationType(keyResult.aggregation_type || 'sum');
       
-      // Inicializar selectedValidityQuarter a partir do start_month
-      if (keyResult.start_month) {
-        const parsed = monthsToQuarter(keyResult.start_month);
-        if (parsed) {
-          setSelectedValidityQuarter(`${parsed.year}-Q${parsed.quarter}`);
-        } else {
-          setSelectedValidityQuarter('none');
-        }
-      } else {
-        setSelectedValidityQuarter('none');
-      }
+      // Inicializar selectedValidityQuarter a partir do start_month/end_month
+      setSelectedValidityQuarter(monthsToValidity(keyResult.start_month || '', keyResult.end_month || ''));
       
       setErrors({}); // Clear errors when opening modal
     }
@@ -576,6 +575,16 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                       setBasicInfo(prev => ({ ...prev, start_month: '', end_month: '' }));
                       return;
                     }
+                    // Verificar se é ano inteiro (ex: "2026-YEAR")
+                    if (value.endsWith('-YEAR')) {
+                      const year = parseInt(value.replace('-YEAR', ''));
+                      setBasicInfo(prev => ({ 
+                        ...prev, 
+                        start_month: `${year}-01`, 
+                        end_month: `${year}-12` 
+                      }));
+                      return;
+                    }
                     // Extrair quarter e ano do value "2025-Q1"
                     const [year, q] = value.split('-Q');
                     const quarter = parseInt(q) as 1 | 2 | 3 | 4;
@@ -588,15 +597,34 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Sem vigência definida</SelectItem>
-                    {quarterOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
+                    {yearValidityOptions.length > 0 && (
+                      <>
+                        <SelectItem value="_header_years" disabled className="text-xs text-muted-foreground font-semibold bg-muted">
+                          — Anos completos —
+                        </SelectItem>
+                        {yearValidityOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                    {quarterOptions.length > 0 && (
+                      <>
+                        <SelectItem value="_header_quarters" disabled className="text-xs text-muted-foreground font-semibold bg-muted">
+                          — Quarters —
+                        </SelectItem>
+                        {quarterOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  Selecione o quarter da vigência deste resultado-chave
+                  Selecione um ano completo ou quarter específico
                 </p>
               </div>
 
