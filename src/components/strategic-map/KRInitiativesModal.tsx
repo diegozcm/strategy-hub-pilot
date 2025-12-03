@@ -16,6 +16,7 @@ import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { parseISO } from 'date-fns';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
+import { useEffect } from 'react';
 
 // Helper: Converter quarter para datas de início e fim
 const quarterToDates = (quarter: 1 | 2 | 3 | 4, year: number) => {
@@ -82,10 +83,18 @@ const statusColors: Record<InitiativeStatus, string> = {
   on_hold: 'bg-muted text-muted-foreground'
 };
 
+// Quarter options for display
+const quarterSelectOptions = [
+  { value: '1', label: 'Q1 (Jan - Mar)' },
+  { value: '2', label: 'Q2 (Abr - Jun)' },
+  { value: '3', label: 'Q3 (Jul - Set)' },
+  { value: '4', label: 'Q4 (Out - Dez)' }
+];
+
 export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesModalProps) => {
   const { company } = useAuth();
   const { initiatives, loading, createInitiative, updateInitiative, deleteInitiative, getInitiativeStats } = useKRInitiatives(keyResult?.id);
-  const { quarterOptions } = usePlanPeriodOptions();
+  const { yearOptions } = usePlanPeriodOptions();
   
   const [showNewForm, setShowNewForm] = useState(false);
   const [editingInitiative, setEditingInitiative] = useState<KRInitiative | null>(null);
@@ -94,9 +103,31 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
   // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedQuarter, setSelectedQuarter] = useState('');
+  const [selectedQuarterNum, setSelectedQuarterNum] = useState<string>('');
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+
+  // Sync selectedYear with available yearOptions
+  useEffect(() => {
+    if (yearOptions.length === 0) return;
+    const currentYr = new Date().getFullYear();
+    const hasCurrentYear = yearOptions.some(opt => opt.value === currentYr);
+    const validYear = yearOptions.length === 1 
+      ? yearOptions[0].value 
+      : (hasCurrentYear ? currentYr : yearOptions[0].value);
+    const isYearValid = yearOptions.some(opt => opt.value === selectedYear);
+    if (!isYearValid) setSelectedYear(validYear);
+  }, [yearOptions, selectedYear]);
+
+  // Auto-update dates when quarter or year changes
+  useEffect(() => {
+    if (selectedQuarterNum && selectedYear) {
+      const dates = quarterToDates(parseInt(selectedQuarterNum) as 1 | 2 | 3 | 4, selectedYear);
+      setStartDate(dates.start_date);
+      setEndDate(dates.end_date);
+    }
+  }, [selectedQuarterNum, selectedYear]);
   const [status, setStatus] = useState<InitiativeStatus>('planned');
   const [priority, setPriority] = useState<InitiativePriority>('medium');
   const [responsible, setResponsible] = useState('');
@@ -111,7 +142,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setSelectedQuarter('');
+    setSelectedQuarterNum('');
     setStartDate('');
     setEndDate('');
     setStatus('planned');
@@ -162,9 +193,10 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
     // Detectar quarter da iniciativa existente
     const quarterInfo = dateToQuarter(initiative.start_date);
     if (quarterInfo) {
-      setSelectedQuarter(`${quarterInfo.year}-Q${quarterInfo.quarter}`);
+      setSelectedQuarterNum(quarterInfo.quarter.toString());
+      setSelectedYear(quarterInfo.year);
     } else {
-      setSelectedQuarter('');
+      setSelectedQuarterNum('');
     }
     
     setStartDate(initiative.start_date);
@@ -291,32 +323,42 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                     />
                   </div>
 
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="quarter">Período (Quarter) *</Label>
+                  <div className="space-y-2">
+                    <Label>Quarter *</Label>
                     <Select 
-                      value={selectedQuarter} 
-                      onValueChange={(value) => {
-                        setSelectedQuarter(value);
-                        const [year, q] = value.split('-Q');
-                        const dates = quarterToDates(parseInt(q) as 1 | 2 | 3 | 4, parseInt(year));
-                        setStartDate(dates.start_date);
-                        setEndDate(dates.end_date);
-                      }}
+                      value={selectedQuarterNum} 
+                      onValueChange={(value) => setSelectedQuarterNum(value)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione o quarter..." />
+                        <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {quarterOptions.map((opt) => (
+                        {quarterSelectOptions.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      O período define automaticamente as datas de início e término
-                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Ano *</Label>
+                    <Select 
+                      value={selectedYear.toString()} 
+                      onValueChange={(value) => setSelectedYear(parseInt(value))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {yearOptions.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value.toString()}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
