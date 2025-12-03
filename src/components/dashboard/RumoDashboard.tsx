@@ -5,7 +5,7 @@ import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
 import { useYearSynchronization } from '@/hooks/useValidatedYear';
-import { filterKRsByValidity } from '@/lib/krValidityFilter';
+import { filterKRsByValidity, getPopulatedQuarters } from '@/lib/krValidityFilter';
 import { RumoPillarBlock } from './RumoPillarBlock';
 import { RumoObjectiveBlock } from './RumoObjectiveBlock';
 import { RumoLegend } from './RumoLegend';
@@ -46,6 +46,11 @@ export const RumoDashboard = () => {
     selectedYear,
     selectedQuarterYear
   );
+
+  // Filtrar quarters para mostrar apenas os que têm KRs registrados
+  const filteredQuarterOptions = useMemo(() => {
+    return getPopulatedQuarters(keyResults, quarterOptions);
+  }, [keyResults, quarterOptions]);
 
   // Filtrar KRs por vigência
   const filteredKeyResults = useMemo(() => {
@@ -220,7 +225,7 @@ export const RumoDashboard = () => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {quarterOptions.map((option) => (
+                {filteredQuarterOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>

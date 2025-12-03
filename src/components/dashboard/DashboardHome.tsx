@@ -16,7 +16,7 @@ import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
 import { useYearSynchronization } from '@/hooks/useValidatedYear';
 import { RumoDashboard } from './RumoDashboard';
 import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
-import { filterKRsByValidity } from '@/lib/krValidityFilter';
+import { filterKRsByValidity, getPopulatedQuarters } from '@/lib/krValidityFilter';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 import { calculateKRStatus } from '@/lib/krHelpers';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
@@ -171,6 +171,11 @@ export const DashboardHome: React.FC = () => {
     ).percentage;
     return Math.min(pct, 100);
   };
+
+  // Filtrar quarters para mostrar apenas os que têm KRs registrados
+  const filteredQuarterOptions = useMemo(() => {
+    return getPopulatedQuarters(keyResults as any[], quarterOptions);
+  }, [keyResults, quarterOptions]);
 
   // Apply validity filtering first (use unknown cast to handle type differences)
   const validityFilteredKRs = useMemo(() => {
@@ -880,7 +885,7 @@ export const DashboardHome: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {quarterOptions.map((option) => (
+                    {filteredQuarterOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
