@@ -1,13 +1,13 @@
 project_id = "pdpzxjlnaqwlyqoyoyhr"
 
 [functions.ai-chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.notify-admin-new-user]
 verify_jwt = false
 
 [functions.create-user-admin]
-verify_jwt = false
+verify_jwt = true
 
 [functions.backup-system]
 verify_jwt = true
@@ -16,7 +16,7 @@ verify_jwt = true
 verify_jwt = false
 
 [functions.send-user-credentials]
-verify_jwt = false
+verify_jwt = true
 
 [functions.reset-user-password]
 verify_jwt = true
@@ -28,4 +28,13 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.recalculate-kr-metrics]
+verify_jwt = true
+
+[functions.database-cleanup]
+verify_jwt = true
+
+[functions.generate-insights]
+verify_jwt = true
+
+[functions.restore-system]
 verify_jwt = true
