@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import DOMPurify from 'dompurify';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,12 +41,22 @@ export const EmailTemplatesPage = () => {
     if (!editedBody) return '';
     
     // Replace variables with example data for preview
-    return editedBody
+    const rawHtml = editedBody
       .replace(/\{\{userName\}\}/g, 'João Silva')
       .replace(/\{\{email\}\}/g, 'joao.silva@example.com')
       .replace(/\{\{temporaryPassword\}\}/g, 'ABC123')
       .replace(/\{\{companyName\}\}/g, 'Empresa Exemplo')
       .replace(/\{\{loginUrl\}\}/g, window.location.origin + '/auth');
+    
+    // Sanitize HTML to prevent XSS attacks
+    return DOMPurify.sanitize(rawHtml, {
+      ALLOWED_TAGS: ['div', 'span', 'p', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
+                     'strong', 'b', 'em', 'i', 'u', 'a', 'img', 'table', 'thead', 
+                     'tbody', 'tr', 'th', 'td', 'ul', 'ol', 'li', 'hr', 'blockquote'],
+      ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'style', 'class', 'target', 
+                     'width', 'height', 'border', 'cellpadding', 'cellspacing', 'align'],
+      ALLOW_DATA_ATTR: false,
+    });
   };
 
   if (isLoading) {

@@ -32,13 +32,91 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Missing Supabase configuration');
     }
 
-    // Create admin client
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    // Verify JWT token from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('❌ No authorization header provided');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Autenticação necessária' 
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+
+    // Create admin client for privileged operations
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false
       }
     });
+
+    // Create client with user token to verify identity
+    const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    });
+
+    // Get the authenticated user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    if (userError || !user) {
+      console.error('❌ Invalid token or user not found:', userError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Token inválido ou usuário não encontrado' 
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    console.log(`🔐 Authenticated user: ${user.id} (${user.email})`);
+
+    // Verify user is a system admin using the is_system_admin function
+    const { data: isAdmin, error: adminCheckError } = await supabaseAdmin
+      .rpc('is_system_admin', { _user_id: user.id });
+
+    if (adminCheckError) {
+      console.error('❌ Error checking admin status:', adminCheckError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Erro ao verificar permissões' 
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    if (!isAdmin) {
+      console.error(`❌ User ${user.email} is not a system admin`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Permissão negada. Somente administradores do sistema podem criar usuários.' 
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    console.log(`✅ User ${user.email} authorized as system admin`);
 
     const {
       email,
@@ -55,8 +133,8 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Creating user with email:', email);
 
     // Check if user already exists
-    const { data: existingUser } = await supabase.auth.admin.listUsers();
-    const userExists = existingUser?.users?.some(user => user.email === email);
+    const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
+    const userExists = existingUser?.users?.some(u => u.email === email);
     
     if (userExists) {
       console.log('User already exists:', email);
@@ -66,14 +144,14 @@ const handler = async (req: Request): Promise<Response> => {
           error: 'Usuário com este email já existe' 
         }),
         {
-          status: 422, // Unprocessable Entity ao invés de 400
+          status: 422,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
     // Create user using admin API
-    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
@@ -98,6 +176,15 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log('Auth user created successfully:', authUser.user.id);
+
+    // Log the admin action for audit
+    await supabaseAdmin.from('database_cleanup_logs').insert({
+      admin_user_id: user.id,
+      cleanup_category: 'user_creation',
+      records_deleted: 0,
+      success: true,
+      notes: `Created user ${email} (${authUser.user.id}) by admin ${user.email}`
+    }).catch(err => console.warn('Failed to log admin action:', err));
 
     return new Response(
       JSON.stringify({ 

@@ -10,8 +10,68 @@ serve(async (req) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    // Verify JWT token from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('❌ No authorization header provided');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'authentication_required',
+          response: 'Autenticação necessária para usar o chat de IA.' 
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+
+    // Create client with user token to verify identity
+    const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    });
+
+    // Get the authenticated user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    
+    if (userError || !user) {
+      console.error('❌ Invalid token or user not found:', userError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'invalid_token',
+          response: 'Sessão expirada. Por favor, faça login novamente.' 
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const authenticatedUserId = user.id;
+    console.log(`🔐 Authenticated user: ${authenticatedUserId} (${user.email})`);
+
     const { message, session_id, user_id, company_id } = await req.json();
-    console.log(`🤖 AI Chat - user: ${user_id}, company: ${company_id}`);
+
+    // Verify the user_id in request matches the authenticated user
+    if (user_id && user_id !== authenticatedUserId) {
+      console.error(`❌ User ID mismatch: request=${user_id}, authenticated=${authenticatedUserId}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'forbidden',
+          response: 'Você não tem permissão para esta ação.' 
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Use authenticated user ID for all operations
+    const validUserId = authenticatedUserId;
+    console.log(`🤖 AI Chat - user: ${validUserId}, company: ${company_id}`);
 
     if (!LOVABLE_API_KEY) {
       console.error('❌ LOVABLE_API_KEY não configurada');
@@ -25,9 +85,28 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Create admin client for database operations
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Verify user belongs to the company
+    const { data: userCompanyRelation, error: relationError } = await supabase
+      .from('user_company_relations')
+      .select('id')
+      .eq('user_id', validUserId)
+      .eq('company_id', company_id)
+      .single();
+
+    if (relationError || !userCompanyRelation) {
+      console.error(`❌ User ${validUserId} is not a member of company ${company_id}`);
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          error: 'forbidden',
+          response: 'Você não tem acesso a esta empresa.' 
+        }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Verificar se a empresa tem AI habilitado e buscar nome
     const { data: companyData } = await supabase
@@ -217,7 +296,7 @@ Responda de forma clara, objetiva e acionável, baseando-se EXCLUSIVAMENTE nos d
 
     // Log de analytics
     await supabase.from('ai_analytics').insert({
-      user_id,
+      user_id: validUserId,
       event_type: 'chat_completion',
       event_data: {
         company_id,
