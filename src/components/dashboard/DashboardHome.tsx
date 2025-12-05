@@ -627,9 +627,99 @@ export const DashboardHome: React.FC = () => {
     }
   };
 
+  // Atualiza apenas o KR específico na lista sem mostrar loading
+  const refreshKeyResultInList = async (krId: string) => {
+    try {
+      const { data: updatedKR, error } = await supabase
+        .from('key_results')
+        .select(`
+          id, 
+          title,
+          description,
+          due_date, 
+          current_value, 
+          target_value,
+          yearly_target,
+          yearly_actual,
+          monthly_targets,
+          monthly_actual,
+          target_direction,
+          aggregation_type,
+          objective_id,
+          unit,
+          ytd_target,
+          ytd_actual,
+          ytd_percentage,
+          current_month_target,
+          current_month_actual,
+          monthly_percentage,
+          yearly_percentage,
+          start_month,
+          end_month,
+          strategic_objectives!inner (
+            id,
+            title,
+            pillar_id,
+            strategic_pillars!inner (
+              name,
+              color
+            )
+          )
+        `)
+        .eq('id', krId)
+        .single();
+
+      if (error) throw error;
+      if (!updatedKR) return;
+
+      // Atualizar o KR na lista local (sem mostrar loading)
+      setKeyResults(prevKRs => 
+        prevKRs.map(kr => {
+          if (kr.id === krId) {
+            return {
+              id: updatedKR.id,
+              title: updatedKR.title,
+              description: updatedKR.description,
+              monthly_targets: updatedKR.monthly_targets as Record<string, number> || {},
+              monthly_actual: updatedKR.monthly_actual as Record<string, number> || {},
+              yearly_target: updatedKR.yearly_target || updatedKR.target_value || 0,
+              yearly_actual: updatedKR.yearly_actual || updatedKR.current_value || 0,
+              current_value: updatedKR.current_value || 0,
+              target_value: updatedKR.target_value || 0,
+              due_date: updatedKR.due_date,
+              pillar_name: updatedKR.strategic_objectives.strategic_pillars.name,
+              pillar_color: updatedKR.strategic_objectives.strategic_pillars.color,
+              objective_title: updatedKR.strategic_objectives.title,
+              objective_id: updatedKR.objective_id,
+              pillar_id: updatedKR.strategic_objectives.pillar_id,
+              aggregation_type: updatedKR.aggregation_type || 'sum',
+              target_direction: (updatedKR.target_direction as 'maximize' | 'minimize') || 'maximize',
+              priority: 'medium',
+              unit: updatedKR.unit,
+              ytd_target: updatedKR.ytd_target,
+              ytd_actual: updatedKR.ytd_actual,
+              ytd_percentage: updatedKR.ytd_percentage,
+              current_month_target: updatedKR.current_month_target,
+              current_month_actual: updatedKR.current_month_actual,
+              monthly_percentage: updatedKR.monthly_percentage,
+              yearly_percentage: updatedKR.yearly_percentage,
+            };
+          }
+          return kr;
+        })
+      );
+    } catch (error) {
+      console.error('Erro ao atualizar KR na lista:', error);
+      // Em caso de erro, fazer refresh completo como fallback
+      await fetchDashboardData();
+    }
+  };
+
   const handleSaveKR = async () => {
-    // Refresh data after save
-    await fetchDashboardData();
+    // Atualizar apenas o KR editado sem mostrar loading
+    if (selectedKRForModal?.id) {
+      await refreshKeyResultInList(selectedKRForModal.id);
+    }
   };
 
   const getStatusColor = (percentage: number) => {
