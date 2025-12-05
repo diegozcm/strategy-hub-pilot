@@ -774,6 +774,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                         variant="ghost"
                         size="icon"
                         className="h-9 w-9 shrink-0"
+                        tabIndex={-1}
                         onClick={() => {
                           setMonthlyTargets(prev => {
                             const newTargets = { ...prev };
