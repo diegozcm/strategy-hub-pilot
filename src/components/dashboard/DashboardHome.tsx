@@ -633,43 +633,24 @@ export const DashboardHome: React.FC = () => {
       const { data: updatedKR, error } = await supabase
         .from('key_results')
         .select(`
-          id, 
-          title,
-          description,
-          due_date, 
-          current_value, 
-          target_value,
-          yearly_target,
-          yearly_actual,
-          monthly_targets,
-          monthly_actual,
-          target_direction,
-          aggregation_type,
-          objective_id,
-          unit,
-          ytd_target,
-          ytd_actual,
-          ytd_percentage,
-          current_month_target,
-          current_month_actual,
-          monthly_percentage,
-          yearly_percentage,
-          start_month,
-          end_month,
-          strategic_objectives!inner (
-            id,
-            title,
-            pillar_id,
-            strategic_pillars!inner (
-              name,
-              color
-            )
+          id, title, description, due_date, current_value, target_value,
+          yearly_target, yearly_actual, monthly_targets, monthly_actual,
+          target_direction, aggregation_type, objective_id, unit,
+          ytd_target, ytd_actual, ytd_percentage,
+          current_month_target, current_month_actual,
+          monthly_percentage, yearly_percentage, start_month, end_month,
+          strategic_objectives (
+            id, title, pillar_id,
+            strategic_pillars (name, color)
           )
         `)
         .eq('id', krId)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar KR atualizado:', error);
+        return;
+      }
       if (!updatedKR) return;
 
       // Atualizar o KR na lista local (sem mostrar loading)
@@ -687,11 +668,11 @@ export const DashboardHome: React.FC = () => {
               current_value: updatedKR.current_value || 0,
               target_value: updatedKR.target_value || 0,
               due_date: updatedKR.due_date,
-              pillar_name: updatedKR.strategic_objectives.strategic_pillars.name,
-              pillar_color: updatedKR.strategic_objectives.strategic_pillars.color,
-              objective_title: updatedKR.strategic_objectives.title,
+              pillar_name: updatedKR.strategic_objectives?.strategic_pillars?.name || kr.pillar_name,
+              pillar_color: updatedKR.strategic_objectives?.strategic_pillars?.color || kr.pillar_color,
+              objective_title: updatedKR.strategic_objectives?.title || kr.objective_title,
               objective_id: updatedKR.objective_id,
-              pillar_id: updatedKR.strategic_objectives.pillar_id,
+              pillar_id: updatedKR.strategic_objectives?.pillar_id || kr.pillar_id,
               aggregation_type: updatedKR.aggregation_type || 'sum',
               target_direction: (updatedKR.target_direction as 'maximize' | 'minimize') || 'maximize',
               priority: 'medium',
@@ -710,8 +691,7 @@ export const DashboardHome: React.FC = () => {
       );
     } catch (error) {
       console.error('Erro ao atualizar KR na lista:', error);
-      // Em caso de erro, fazer refresh completo como fallback
-      await fetchDashboardData();
+      // Não chamar fetchDashboardData para evitar loading flash
     }
   };
 
