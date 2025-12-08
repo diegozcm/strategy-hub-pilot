@@ -28,8 +28,7 @@ import { useSearchParams } from 'react-router-dom';
 import { KRCard } from './KRCard';
 import { useKRMetrics } from '@/hooks/useKRMetrics';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
-import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
-import { useYearSynchronization } from '@/hooks/useValidatedYear';
+import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 import { filterKRsByValidity, getPopulatedQuarters } from '@/lib/krValidityFilter';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -67,9 +66,23 @@ export const IndicatorsPage: React.FC = () => {
   const { toast } = useToast();
   const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(authCompany?.id);
   const { validityEnabled, membersCanViewAll, loading: settingsLoading } = useCompanyModuleSettings('strategic-planning');
-  const { isYTDCalculable, defaultPeriod, ytdInfoMessage, planFirstYear } = usePeriodApplicability();
   const [searchParams, setSearchParams] = useSearchParams();
   const { canCreateKR, canSelectOwner, canEditAnyKR, canDeleteKR, currentUserId, isMemberOnly, canViewAllKRs } = useKRPermissions();
+  
+  // Use global period filter context
+  const {
+    periodType: selectedPeriod, setPeriodType: setSelectedPeriod,
+    selectedYear, setSelectedYear,
+    selectedMonth, setSelectedMonth,
+    selectedQuarter, setSelectedQuarter,
+    selectedQuarterYear, setSelectedQuarterYear,
+    isYTDCalculable, ytdInfoMessage, planFirstYear,
+    quarterOptions, monthOptions, yearOptions,
+    handleYTDClick: contextHandleYTDClick
+  } = usePeriodFilter();
+  
+  // Get additional functions from usePlanPeriodOptions
+  const { getDefaultYear, getDefaultQuarter, getDefaultMonth } = usePlanPeriodOptions();
   
   console.log('[IndicatorsPage] Dono do KR Debug:', {
     canSelectOwner,
@@ -104,24 +117,6 @@ export const IndicatorsPage: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>(defaultPeriod);
-  
-  // Inicializar com o último mês fechado (mês anterior)
-  const previousMonth = new Date();
-  previousMonth.setMonth(previousMonth.getMonth() - 1);
-  const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(isYTDCalculable ? previousMonth.getFullYear() : planFirstYear);
-  const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4);
-  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDCalculable ? new Date().getFullYear() : planFirstYear);
-  
-  const { 
-    quarterOptions, 
-    monthOptions, 
-    yearOptions,
-    getDefaultYear,
-    getDefaultQuarter,
-    getDefaultMonth 
-  } = usePlanPeriodOptions();
   
   // Filtrar quarters para mostrar apenas os que têm KRs registrados
   const filteredQuarterOptions = useMemo(() => {
@@ -152,51 +147,11 @@ export const IndicatorsPage: React.FC = () => {
 
   // Estados para vigência do novo KR (Quarter + Ano)
   const [newKRValidityQuarter, setNewKRValidityQuarter] = useState<1 | 2 | 3 | 4 | null>(null);
-  const [newKRValidityYear, setNewKRValidityYear] = useState<number>(new Date().getFullYear());
-
-  // Sincronizar período inicial com o plano ativo (apenas uma vez)
-  useEffect(() => {
-    if (activePlan && yearOptions.length > 0 && !hasInitializedFilters.current) {
-      hasInitializedFilters.current = true;
-      
-      // Ano para filtro anual e criação de KR
-      const defaultYear = getDefaultYear();
-      setSelectedYear(defaultYear);
-      setNewKRValidityYear(defaultYear);
-      
-      // Quarter para filtro trimestral
-      const defaultQuarter = getDefaultQuarter();
-      setSelectedQuarter(defaultQuarter.quarter);
-      setSelectedQuarterYear(defaultQuarter.year);
-      
-      // Mês para filtro mensal
-      const defaultMonth = getDefaultMonth();
-      setSelectedMonth(defaultMonth.month);
-      // Para filtro mensal, ajustar o ano se necessário
-      if (selectedPeriod === 'monthly') {
-        setSelectedYear(defaultMonth.year);
-      }
-    }
-  }, [activePlan, yearOptions.length, getDefaultYear, getDefaultQuarter, getDefaultMonth, selectedPeriod]);
-
-  // Resetar flag quando o plano ativo mudar
-  useEffect(() => {
-    hasInitializedFilters.current = false;
-  }, [activePlan?.id]);
-
-  // Sincronizar anos com yearOptions disponíveis
-  useYearSynchronization(
-    yearOptions,
-    setSelectedYear,
-    setSelectedQuarterYear,
-    undefined,
-    selectedYear,
-    selectedQuarterYear
-  );
+  const [newKRValidityYear, setNewKRValidityYear] = useState<number>(getDefaultYear());
 
   // Handler para clique no botão YTD - sempre permite selecionar
   const handleYTDClick = () => {
-    setSelectedPeriod('ytd');
+    contextHandleYTDClick();
     if (!isYTDCalculable && ytdInfoMessage) {
       sonnerToast.info(ytdInfoMessage);
     }

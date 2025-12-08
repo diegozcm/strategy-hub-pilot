@@ -14,8 +14,7 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 import { useKRPermissions } from '@/hooks/useKRPermissions';
-import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
-import { useYearSynchronization } from '@/hooks/useValidatedYear';
+import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { CompanySetupModal } from './CompanySetupModal';
 import { PillarFormModal } from './PillarFormModal';
@@ -29,7 +28,6 @@ import { PermissionGate } from '@/components/PermissionGate';
 import { StrategicPillar, Company, KeyResult } from '@/types/strategic-map';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 import { supabase } from '@/integrations/supabase/client';
-import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { toast as sonnerToast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -76,40 +74,24 @@ export const StrategicMapPage = () => {
   const [showAddKRModal, setShowAddKRModal] = useState(false);
   const [targetObjectiveId, setTargetObjectiveId] = useState<string>('');
 
-  // Period selection states
-  const { isYTDCalculable, defaultPeriod, ytdInfoMessage, planFirstYear } = usePeriodApplicability();
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>(defaultPeriod);
-  
-  // Inicializar com o último mês fechado (mês anterior)
-  const previousMonth = new Date();
-  previousMonth.setMonth(previousMonth.getMonth() - 1);
-  const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(isYTDCalculable ? previousMonth.getFullYear() : planFirstYear);
-  
-  // Quarter state - inicializado com o trimestre atual ou do plano
-  const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
-    Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4
-  );
-  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDCalculable ? new Date().getFullYear() : planFirstYear);
-
-  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
-  
-  // Sincronizar anos com yearOptions disponíveis
-  useYearSynchronization(
-    yearOptions,
-    setSelectedYear,
-    setSelectedQuarterYear,
-    undefined,
-    selectedYear,
-    selectedQuarterYear
-  );
+  // Use global period filter context
+  const {
+    periodType: selectedPeriod, setPeriodType: setSelectedPeriod,
+    selectedYear, setSelectedYear,
+    selectedMonth, setSelectedMonth,
+    selectedQuarter, setSelectedQuarter,
+    selectedQuarterYear, setSelectedQuarterYear,
+    isYTDCalculable, ytdInfoMessage, planFirstYear,
+    quarterOptions, monthOptions, yearOptions,
+    handleYTDClick: contextHandleYTDClick
+  } = usePeriodFilter();
 
   const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
   const { canCreatePillar, canEditPillar, canDeletePillar } = useKRPermissions();
   
   // Handler para clique no botão YTD - sempre permite selecionar
   const handleYTDClick = () => {
-    setSelectedPeriod('ytd');
+    contextHandleYTDClick();
     if (!isYTDCalculable && ytdInfoMessage) {
       sonnerToast.info(ytdInfoMessage);
     }

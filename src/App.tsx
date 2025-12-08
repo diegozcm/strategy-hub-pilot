@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { MultiTenantAuthProvider } from "@/hooks/useMultiTenant";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { ModulesProvider } from "@/hooks/useModules";
+import { PeriodFilterProvider } from "@/contexts/PeriodFilterContext";
 import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
 import { AuthStateDebugger } from "@/components/ui/AuthStateDebugger";
 import { LoadingStateMonitor } from "@/components/ui/LoadingStateMonitor";
@@ -93,7 +94,9 @@ const App = () => (
                 {/* Protected app routes */}
                 <Route path="/app" element={
                   <ProtectedRoute>
-                    <AppLayout />
+                    <PeriodFilterProvider>
+                      <AppLayout />
+                    </PeriodFilterProvider>
                   </ProtectedRoute>
                 }>
                   <Route index element={<ModuleBasedRedirect />} />
