@@ -14,10 +14,8 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { useHealthMonitor } from '@/hooks/useHealthMonitor';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
-import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { useKRPermissions } from '@/hooks/useKRPermissions';
-import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
-import { useYearSynchronization } from '@/hooks/useValidatedYear';
+import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
@@ -40,22 +38,20 @@ export const ObjectivesPage: React.FC = () => {
     refreshData, softReload, invalidateAndReload, handleError, clearError
   } = useObjectivesData();
   
+  // Use global period filter context
+  const {
+    periodType: selectedPeriod, setPeriodType: setSelectedPeriod,
+    selectedYear, setSelectedYear,
+    selectedMonth, setSelectedMonth,
+    selectedQuarter, setSelectedQuarter,
+    selectedQuarterYear, setSelectedQuarterYear,
+    isYTDCalculable, planFirstYear,
+    quarterOptions, monthOptions, yearOptions
+  } = usePeriodFilter();
+  
   const [selectedPlan, setSelectedPlan] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>('ytd');
-  
-  // Inicializar com o último mês fechado (mês anterior)
-  const previousMonth = new Date();
-  previousMonth.setMonth(previousMonth.getMonth() - 1);
-  const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(previousMonth.getFullYear());
-  
-  // Quarter state - inicializado com o trimestre atual
-  const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
-    Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4
-  );
-  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(new Date().getFullYear());
   
   const [isCreateObjectiveOpen, setIsCreateObjectiveOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -87,19 +83,7 @@ export const ObjectivesPage: React.FC = () => {
 
   // Health monitoring hooks
   const { logRenderCycle } = useHealthMonitor();
-  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
   const { canCreateObjective, canEditObjective, canDeleteObjective } = useKRPermissions();
-  const { isYTDApplicable, planFirstYear } = usePeriodApplicability();
-  
-  // Sincronizar anos com yearOptions disponíveis
-  useYearSynchronization(
-    yearOptions,
-    setSelectedYear,
-    setSelectedQuarterYear,
-    undefined,
-    selectedYear,
-    selectedQuarterYear
-  );
   
   // Log render cycle for monitoring
   useEffect(() => {

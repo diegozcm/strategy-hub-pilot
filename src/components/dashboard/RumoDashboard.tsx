@@ -1,10 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
 import { useRumoCalculations, PeriodType, getPerformanceColor, getPerformanceStyles } from '@/hooks/useRumoCalculations';
-import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
-import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
-import { useYearSynchronization } from '@/hooks/useValidatedYear';
+import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 import { filterKRsByValidity, getPopulatedQuarters } from '@/lib/krValidityFilter';
 import { RumoPillarBlock } from './RumoPillarBlock';
 import { RumoObjectiveBlock } from './RumoObjectiveBlock';
@@ -19,40 +17,33 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 export const RumoDashboard = () => {
-  const { isYTDCalculable, defaultPeriod, ytdInfoMessage, planFirstYear } = usePeriodApplicability();
-  const [periodType, setPeriodType] = useState<PeriodType>(defaultPeriod);
-  
-  // Inicializar com o último mês fechado (mês anterior)
-  const previousMonth = new Date();
-  previousMonth.setMonth(previousMonth.getMonth() - 1);
-  const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(isYTDCalculable ? previousMonth.getFullYear() : planFirstYear);
-  const now = new Date();
-  const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
-    Math.ceil((now.getMonth() + 1) / 3) as 1 | 2 | 3 | 4
-  );
-  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDCalculable ? now.getFullYear() : planFirstYear);
+  // Use global period filter context
+  const {
+    periodType, setPeriodType,
+    selectedYear, setSelectedYear,
+    selectedMonth, setSelectedMonth,
+    selectedQuarter, setSelectedQuarter,
+    selectedQuarterYear, setSelectedQuarterYear,
+    isYTDCalculable, ytdInfoMessage, planFirstYear,
+    quarterOptions, monthOptions, yearOptions,
+    handleYTDClick: contextHandleYTDClick
+  } = usePeriodFilter();
   
   const { pillars, objectives, keyResults, loading } = useStrategicMap();
-  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
   const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
 
-  // Sincronizar anos com yearOptions disponíveis
-  useYearSynchronization(
-    yearOptions,
-    setSelectedYear,
-    setSelectedQuarterYear,
-    undefined,
-    selectedYear,
-    selectedQuarterYear
-  );
+  // Handler para clique no botão YTD - sempre permite selecionar
+  const handleYTDClick = () => {
+    contextHandleYTDClick();
+    if (!isYTDCalculable && ytdInfoMessage) {
+      toast.info(ytdInfoMessage);
+    }
+  };
 
   // Filtrar quarters para mostrar apenas os que têm KRs registrados
   const filteredQuarterOptions = useMemo(() => {
     return getPopulatedQuarters(keyResults, quarterOptions);
   }, [keyResults, quarterOptions]);
-
-  // Filtrar KRs por vigência
   const filteredKeyResults = useMemo(() => {
     return filterKRsByValidity(
       keyResults,
@@ -67,14 +58,6 @@ export const RumoDashboard = () => {
       }
     );
   }, [keyResults, validityEnabled, periodType, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, planFirstYear]);
-  
-  // Handler para clique no botão YTD - sempre permite selecionar
-  const handleYTDClick = () => {
-    setPeriodType('ytd');
-    if (!isYTDCalculable && ytdInfoMessage) {
-      toast.info(ytdInfoMessage);
-    }
-  };
 
   // Processar dados para aninhar objetivos dentro dos pilares
   const pillarsWithObjectives = useMemo(() => {

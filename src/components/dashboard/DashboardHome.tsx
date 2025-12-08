@@ -12,14 +12,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
-import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
-import { useYearSynchronization } from '@/hooks/useValidatedYear';
+import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 import { RumoDashboard } from './RumoDashboard';
 import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
 import { filterKRsByValidity, getPopulatedQuarters } from '@/lib/krValidityFilter';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 import { calculateKRStatus } from '@/lib/krHelpers';
-import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -98,7 +96,20 @@ const getDynamicStats = (stats: DashboardStats) => [{
 export const DashboardHome: React.FC = () => {
   const { company } = useAuth();
   const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
-  const { isYTDCalculable, defaultPeriod, ytdInfoMessage, planFirstYear } = usePeriodApplicability();
+  
+  // Use global period filter context
+  const {
+    periodType, setPeriodType,
+    selectedYear, setSelectedYear,
+    selectedMonth, setSelectedMonth,
+    selectedQuarter, setSelectedQuarter,
+    selectedQuarterYear, setSelectedQuarterYear,
+    selectedMonthYear, setSelectedMonthYear,
+    isYTDCalculable, ytdInfoMessage, planFirstYear,
+    quarterOptions, monthOptions, yearOptions,
+    handleYTDClick: contextHandleYTDClick
+  } = usePeriodFilter();
+  
   const [activeTab, setActiveTab] = useState('rumo');
   const [keyResults, setKeyResults] = useState<KeyResultWithPillar[]>([]);
   const [filteredKeyResults, setFilteredKeyResults] = useState<KeyResultWithPillar[]>([]);
@@ -113,7 +124,6 @@ export const DashboardHome: React.FC = () => {
     filledTools: 0
   });
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState(isYTDCalculable ? new Date().getFullYear() : planFirstYear);
   
   // Filter states
   const [searchTerm, setSearchTerm] = useState('');
@@ -121,41 +131,13 @@ export const DashboardHome: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
-  const [periodType, setPeriodType] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>(defaultPeriod);
-
-  // Month/Year selection states
-  const previousMonth = new Date();
-  previousMonth.setMonth(previousMonth.getMonth() - 1);
-  const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
-  const [selectedMonthYear, setSelectedMonthYear] = useState<number>(previousMonth.getFullYear());
-
-  // Quarter selection states
-  const now = new Date();
-  const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(
-    Math.ceil((now.getMonth() + 1) / 3) as 1 | 2 | 3 | 4
-  );
-  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDCalculable ? now.getFullYear() : planFirstYear);
 
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
   const currentYear = new Date().getFullYear();
-  
-  // Use hook to get period options from active plan
-  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
-
-  // Sincronizar anos com yearOptions disponíveis
-  useYearSynchronization(
-    yearOptions,
-    setSelectedYear,
-    setSelectedQuarterYear,
-    setSelectedMonthYear,
-    selectedYear,
-    selectedQuarterYear,
-    selectedMonthYear
-  );
 
   // Handler para clique no botão YTD - sempre permite selecionar
   const handleYTDClick = () => {
-    setPeriodType('ytd');
+    contextHandleYTDClick();
     if (!isYTDCalculable && ytdInfoMessage) {
       toast.info(ytdInfoMessage);
     }
