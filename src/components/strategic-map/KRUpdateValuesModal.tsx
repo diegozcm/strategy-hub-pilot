@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { X } from 'lucide-react';
 import { calculateKRStatus } from '@/lib/krHelpers';
 import { cn } from '@/lib/utils';
-import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
+import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 
 // Função para verificar se um mês está dentro da vigência
 const isMonthInValidity = (monthKey: string, startMonth?: string | null, endMonth?: string | null): boolean => {
@@ -39,24 +39,39 @@ interface KRUpdateValuesModalProps {
 
 export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpdateValuesModalProps) => {
   const { toast } = useToast();
-  const { yearOptions } = usePlanPeriodOptions();
+  const { selectedYear, setSelectedYear, yearOptions } = usePeriodFilter();
   const [isSaving, setIsSaving] = useState(false);
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
+  const hasInitialized = useRef(false);
 
-  // Sincronizar selectedYear com yearOptions disponíveis
+  // Inicialização inteligente: usar o ano da vigência do KR quando o modal abre
   useEffect(() => {
-    if (yearOptions.length === 0) return;
-    const currentYr = new Date().getFullYear();
-    const hasCurrentYear = yearOptions.some(opt => opt.value === currentYr);
-    const validYear = yearOptions.length === 1 
-      ? yearOptions[0].value 
-      : (hasCurrentYear ? currentYr : yearOptions[0].value);
-    const isYearValid = yearOptions.some(opt => opt.value === selectedYear);
-    if (!isYearValid) setSelectedYear(validYear);
-  }, [yearOptions, selectedYear]);
+    if (!open) {
+      hasInitialized.current = false;
+      return;
+    }
+    
+    if (hasInitialized.current || yearOptions.length === 0) return;
+    
+    // Prioridade: ano da vigência do KR > ano selecionado atual
+    if (keyResult?.start_month) {
+      const krYear = parseInt(keyResult.start_month.split('-')[0]);
+      if (yearOptions.some(opt => opt.value === krYear)) {
+        setSelectedYear(krYear);
+        hasInitialized.current = true;
+        return;
+      }
+    }
+    
+    // Fallback: verificar se o ano atual do context é válido
+    if (!yearOptions.some(opt => opt.value === selectedYear)) {
+      setSelectedYear(yearOptions[0].value);
+    }
+    
+    hasInitialized.current = true;
+  }, [open, keyResult?.start_month, yearOptions, selectedYear, setSelectedYear]);
   // Formata número para padrão brasileiro (xxx.xxx.xxx,xx)
   const formatBrazilianNumber = (value: number | null | undefined): string => {
     if (value === null || value === undefined) return '';
