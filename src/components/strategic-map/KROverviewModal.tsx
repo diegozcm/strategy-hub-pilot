@@ -17,10 +17,9 @@ import { formatValueWithUnit, cn } from '@/lib/utils';
 import { getKRQuarters } from '@/lib/krValidityFilter';
 
 import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket, CalendarDays, AlertCircle } from 'lucide-react';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
-import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
-import { usePeriodApplicability } from '@/hooks/usePeriodApplicability';
+import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 import { useKRPermissions } from '@/hooks/useKRPermissions';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -74,24 +73,39 @@ export const KROverviewModal = ({
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
   
   const { toast } = useToast();
-  const { quarterOptions, monthOptions, yearOptions } = usePlanPeriodOptions();
-  const { isYTDApplicable, ytdWarningMessage, planFirstYear } = usePeriodApplicability();
+  
+  // Usar context global de filtros de período
+  const { 
+    periodType: selectedPeriod, 
+    setPeriodType: setSelectedPeriod,
+    selectedYear: contextSelectedYear, 
+    setSelectedYear: setContextSelectedYear,
+    selectedMonth, 
+    setSelectedMonth,
+    selectedQuarter, 
+    setSelectedQuarter,
+    selectedQuarterYear, 
+    setSelectedQuarterYear,
+    selectedMonthYear,
+    setSelectedMonthYear,
+    quarterOptions, 
+    monthOptions, 
+    yearOptions,
+    isYTDCalculable: isYTDApplicable,
+    ytdInfoMessage: ytdWarningMessage,
+    planFirstYear
+  } = usePeriodFilter();
+  
+  // Estados locais para sincronização do ano do gráfico e métricas
+  const [selectedYear, setSelectedYear] = useState<number>(contextSelectedYear);
+  const [selectedYearlyYear, setSelectedYearlyYear] = useState<number>(contextSelectedYear);
+  const hasInitialized = useRef(false);
   
   // Filtrar quarters para mostrar apenas os dentro da vigência do KR atual
   const krQuarterOptions = useMemo(() => {
     if (!currentKeyResult) return quarterOptions;
     return getKRQuarters(currentKeyResult, quarterOptions);
   }, [currentKeyResult, quarterOptions]);
-  
-  // Determinar período inicial inteligente
-  const effectiveInitialPeriod = initialPeriod === 'ytd' && !isYTDApplicable ? 'yearly' : initialPeriod;
-  
-  // Determinar ano inicial: usa initialYear se fornecido, senão planFirstYear para evitar ano vazio
-  const effectiveInitialYear = initialYear || planFirstYear;
-  
-  const [selectedYear, setSelectedYear] = useState<number>(effectiveInitialYear);
-  const [selectedYearlyYear, setSelectedYearlyYear] = useState<number>(effectiveInitialYear);
-  const [selectedPeriod, setSelectedPeriod] = useState<'ytd' | 'monthly' | 'yearly' | 'quarterly'>(effectiveInitialPeriod);
   
   const { 
     canEditAnyKR, 
@@ -108,74 +122,35 @@ export const KROverviewModal = ({
   // Check if user can do check-in on this specific KR
   const canCheckIn = canCheckInKR(currentKeyResult?.assigned_owner_id || null);
   
-  // Quarter state
-  const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4;
-  const [selectedQuarter, setSelectedQuarter] = useState<1 | 2 | 3 | 4>(initialQuarter || currentQuarter);
-  const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(initialQuarterYear || effectiveInitialYear);
-  
-  // Inicializar com o último mês fechado (mês anterior) ou com os valores fornecidos
-  const previousMonth = new Date();
-  previousMonth.setMonth(previousMonth.getMonth() - 1);
-  const [selectedMonth, setSelectedMonth] = useState<number>(initialMonth || previousMonth.getMonth() + 1);
-  const [selectedMonthYear, setSelectedMonthYear] = useState<number>(initialYear || effectiveInitialYear);
-  
   const { initiatives } = useKRInitiatives(keyResult?.id);
 
-  // Sincronizar anos com yearOptions disponíveis
-  const syncYear = useCallback(() => {
-    if (yearOptions.length === 0) return;
-    const currentYr = new Date().getFullYear();
-    const hasCurrentYear = yearOptions.some(opt => opt.value === currentYr);
-    const validYear = yearOptions.length === 1 
-      ? yearOptions[0].value 
-      : (hasCurrentYear ? currentYr : yearOptions[0].value);
-    
-    const isYearValid = yearOptions.some(opt => opt.value === selectedYear);
-    if (!isYearValid) setSelectedYear(validYear);
-    
-    const isYearlyYearValid = yearOptions.some(opt => opt.value === selectedYearlyYear);
-    if (!isYearlyYearValid) setSelectedYearlyYear(validYear);
-  }, [yearOptions, selectedYear, selectedYearlyYear]);
-
+  // Sincronizar anos locais com o context global quando o modal abre
   useEffect(() => {
-    syncYear();
-  }, [syncYear]);
+    if (!open) {
+      hasInitialized.current = false;
+      return;
+    }
+    
+    if (hasInitialized.current) return;
+    
+    // Sincronizar anos locais com o context
+    setSelectedYear(contextSelectedYear);
+    setSelectedYearlyYear(contextSelectedYear);
+    hasInitialized.current = true;
+  }, [open, contextSelectedYear]);
 
   // Update local state when keyResult prop changes
   useEffect(() => {
     setCurrentKeyResult(keyResult);
   }, [keyResult]);
 
-  // Update selected period when initialPeriod changes (respeitando YTD applicability)
-  useEffect(() => {
-    const effectivePeriod = initialPeriod === 'ytd' && !isYTDApplicable ? 'yearly' : initialPeriod;
-    setSelectedPeriod(effectivePeriod);
-  }, [initialPeriod, isYTDApplicable]);
-  
-  // Redirecionar automaticamente se YTD não é aplicável
-  useEffect(() => {
-    if (!isYTDApplicable && selectedPeriod === 'ytd') {
-      setSelectedPeriod('yearly');
-      setSelectedYear(planFirstYear);
-      setSelectedYearlyYear(planFirstYear);
-      onPeriodChange?.('yearly');
-      onYearChange?.(planFirstYear);
-    }
-  }, [isYTDApplicable, selectedPeriod, planFirstYear, onPeriodChange, onYearChange]);
-
-  // Update selected month when initialMonth changes
-  useEffect(() => {
-    if (initialMonth) {
-      setSelectedMonth(initialMonth);
-    }
-  }, [initialMonth]);
-
-  // Update selected year when initialYear changes
-  useEffect(() => {
-    if (initialYear) {
-      setSelectedMonthYear(initialYear);
-    }
-  }, [initialYear]);
+  // Sincronização bidirecional: quando o ano local muda, atualizar o context
+  const handleYearChange = useCallback((year: number) => {
+    setSelectedYear(year);
+    setSelectedYearlyYear(year);
+    setContextSelectedYear(year);
+    onYearChange?.(year);
+  }, [setContextSelectedYear, onYearChange]);
 
   // Auto-selecionar primeiro quarter disponível quando seleção atual não é válida
   useEffect(() => {
@@ -188,10 +163,8 @@ export const KROverviewModal = ({
       const firstQuarter = krQuarterOptions[0];
       setSelectedQuarter(firstQuarter.quarter as 1 | 2 | 3 | 4);
       setSelectedQuarterYear(firstQuarter.year);
-      onQuarterChange?.(firstQuarter.quarter as 1 | 2 | 3 | 4);
-      onQuarterYearChange?.(firstQuarter.year);
     }
-  }, [krQuarterOptions, selectedQuarter, selectedQuarterYear, onQuarterChange, onQuarterYearChange]);
+  }, [krQuarterOptions, selectedQuarter, selectedQuarterYear, setSelectedQuarter, setSelectedQuarterYear]);
 
   // Function to refresh key result data from database
   const refreshKeyResult = async () => {
@@ -586,9 +559,7 @@ export const KROverviewModal = ({
                 onQuarterYearChange?.(year);
               }}
               onYearlyYearChange={(year: number) => {
-                setSelectedYearlyYear(year);
-                setSelectedYear(year); // Manter sincronizado com o gráfico
-                onYearChange?.(year);
+                handleYearChange(year);
               }}
               monthOptions={monthOptions}
               quarterOptions={krQuarterOptions}
@@ -603,7 +574,7 @@ export const KROverviewModal = ({
               monthlyActual={monthlyActual}
               unit={currentKeyResult.unit || ''}
               selectedYear={selectedYear}
-              onYearChange={setSelectedYear}
+              onYearChange={handleYearChange}
               targetDirection={(currentKeyResult.target_direction as 'maximize' | 'minimize') || 'maximize'}
               aggregationType={currentKeyResult.aggregation_type || 'sum'}
               yearOptions={yearOptions}
