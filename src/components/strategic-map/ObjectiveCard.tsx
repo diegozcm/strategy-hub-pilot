@@ -103,8 +103,9 @@ const calculateObjectiveProgress = (
           }
           
           // Calcular percentage com fórmula correta
+          // Para minimize: sem dados (actual=0) = 0%, não 100%
           if (kr.target_direction === 'minimize') {
-            percentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
+            percentage = (totalActual > 0 && totalTarget > 0) ? (totalTarget / totalActual) * 100 : 0;
           } else {
             percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
           }
@@ -129,12 +130,11 @@ const calculateObjectiveProgress = (
           const monthActual = monthlyActual[monthKey] || 0;
           
           // Usar fórmula correta para minimize
-          if (monthTarget > 0 || monthActual > 0) {
-            if (kr.target_direction === 'minimize') {
-              percentage = monthActual > 0 ? (monthTarget / monthActual) * 100 : (monthTarget === 0 ? 100 : 0);
-            } else {
-              percentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
-            }
+          // Para minimize: sem dados (actual=0) = 0%, não 100%
+          if (kr.target_direction === 'minimize') {
+            percentage = (monthActual > 0 && monthTarget > 0) ? (monthTarget / monthActual) * 100 : 0;
+          } else {
+            percentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
           }
         } else {
           // Usar valor pré-calculado do mês atual
@@ -182,8 +182,9 @@ const calculateObjectiveProgress = (
           }
           
           // Calcular percentage com fórmula correta
+          // Para minimize: sem dados (actual=0) = 0%, não 100%
           if (kr.target_direction === 'minimize') {
-            percentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
+            percentage = (totalActual > 0 && totalTarget > 0) ? (totalTarget / totalActual) * 100 : 0;
           } else {
             percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
           }
