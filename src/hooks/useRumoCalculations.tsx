@@ -50,12 +50,11 @@ export const useRumoCalculations = (
           const monthActual = monthlyActual[monthKey] || 0;
           
           // Usar mesma lógica do banco para calcular percentage
-          if (monthTarget > 0) {
-            if (kr.target_direction === 'minimize') {
-              progress = monthActual > 0 ? (monthTarget / monthActual) * 100 : (monthTarget === 0 ? 100 : 0);
-            } else {
-              progress = (monthActual / monthTarget) * 100;
-            }
+          // Para minimize: sem dados (actual=0) = 0%, não 100%
+          if (kr.target_direction === 'minimize') {
+            progress = (monthActual > 0 && monthTarget > 0) ? (monthTarget / monthActual) * 100 : 0;
+          } else if (monthTarget > 0) {
+            progress = (monthActual / monthTarget) * 100;
           }
         } else {
           // Usar valor pré-calculado do mês atual
@@ -100,12 +99,11 @@ export const useRumoCalculations = (
           totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
         }
         
-        if (totalTarget > 0) {
-          if (kr.target_direction === 'minimize') {
-            progress = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
-          } else {
-            progress = (totalActual / totalTarget) * 100;
-          }
+        // Para minimize: sem dados (actual=0) = 0%, não 100%
+        if (kr.target_direction === 'minimize') {
+          progress = (totalActual > 0 && totalTarget > 0) ? (totalTarget / totalActual) * 100 : 0;
+        } else if (totalTarget > 0) {
+          progress = (totalActual / totalTarget) * 100;
         }
       } else if (periodType === 'quarterly') {
         const quarter = options?.selectedQuarter || 1;
@@ -151,12 +149,11 @@ export const useRumoCalculations = (
           totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
         }
         
-        if (totalTarget > 0) {
-          if (kr.target_direction === 'minimize') {
-            progress = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
-          } else {
-            progress = (totalActual / totalTarget) * 100;
-          }
+        // Para minimize: sem dados (actual=0) = 0%, não 100%
+        if (kr.target_direction === 'minimize') {
+          progress = (totalActual > 0 && totalTarget > 0) ? (totalTarget / totalActual) * 100 : 0;
+        } else if (totalTarget > 0) {
+          progress = (totalActual / totalTarget) * 100;
         }
       }
 
