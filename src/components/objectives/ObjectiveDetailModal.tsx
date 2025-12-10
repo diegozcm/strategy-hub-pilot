@@ -65,7 +65,7 @@ interface ObjectiveDetailModalProps {
   onOpenKeyResultDetails: (kr: KeyResult) => void;
   pillars: StrategicPillar[];
   progressPercentage: number;
-  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly';
+  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly';
   selectedMonth?: number;
   selectedYear?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;
