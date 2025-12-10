@@ -110,25 +110,30 @@ const formatValue = (value: number, unit: string = '%'): string => {
   return value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 };
 
+// Performance legend colors based on efficiency percentage
+// < 71% = Crítico (Red)
+// 71-99% = Atenção (Yellow)
+// 100-105% = No Alvo (Green)
+// > 105% = Excelente (Blue)
 const getEfficiencyColor = (efficiency: number): string => {
-  if (efficiency >= 100) return 'text-emerald-600 dark:text-emerald-400';
-  if (efficiency >= 80) return 'text-amber-600 dark:text-amber-400';
-  if (efficiency >= 50) return 'text-orange-600 dark:text-orange-400';
+  if (efficiency > 105) return 'text-blue-600 dark:text-blue-400';
+  if (efficiency >= 100) return 'text-green-600 dark:text-green-400';
+  if (efficiency >= 71) return 'text-yellow-600 dark:text-yellow-400';
   return 'text-red-600 dark:text-red-400';
 };
 
 const getEfficiencyBgColor = (efficiency: number): string => {
-  if (efficiency >= 100) return 'bg-emerald-100 dark:bg-emerald-900/30';
-  if (efficiency >= 80) return 'bg-amber-100 dark:bg-amber-900/30';
-  if (efficiency >= 50) return 'bg-orange-100 dark:bg-orange-900/30';
+  if (efficiency > 105) return 'bg-blue-100 dark:bg-blue-900/30';
+  if (efficiency >= 100) return 'bg-green-100 dark:bg-green-900/30';
+  if (efficiency >= 71) return 'bg-yellow-100 dark:bg-yellow-900/30';
   return 'bg-red-100 dark:bg-red-900/30';
 };
 
 const getEfficiencyBadge = (efficiency: number): { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string } => {
-  if (efficiency >= 100) return { label: 'Atingiu', variant: 'default', className: 'bg-emerald-500 hover:bg-emerald-600 text-white' };
-  if (efficiency >= 80) return { label: 'Bom', variant: 'secondary', className: 'bg-amber-500 hover:bg-amber-600 text-white' };
-  if (efficiency >= 50) return { label: 'Atenção', variant: 'outline', className: 'border-orange-500 text-orange-600 dark:text-orange-400' };
-  return { label: 'Crítico', variant: 'destructive', className: '' };
+  if (efficiency > 105) return { label: 'Excelente', variant: 'default', className: 'bg-blue-500 hover:bg-blue-600 text-white' };
+  if (efficiency >= 100) return { label: 'No Alvo', variant: 'default', className: 'bg-green-500 hover:bg-green-600 text-white' };
+  if (efficiency >= 71) return { label: 'Atenção', variant: 'secondary', className: 'bg-yellow-500 hover:bg-yellow-600 text-white' };
+  return { label: 'Crítico', variant: 'destructive', className: 'bg-red-500 hover:bg-red-600 text-white' };
 };
 
 export const KRTableView: React.FC<KRTableViewProps> = ({
