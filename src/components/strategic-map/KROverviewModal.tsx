@@ -33,7 +33,7 @@ interface KROverviewModalProps {
   onSave: () => void;
   objectives: Array<{ id: string; title: string }>;
   showDeleteButton?: boolean;
-  initialPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly';
+  initialPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly';
   initialMonth?: number;
   initialYear?: number;
   initialQuarter?: 1 | 2 | 3 | 4;

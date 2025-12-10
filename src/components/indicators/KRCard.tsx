@@ -13,7 +13,7 @@ interface KRCardProps {
     name: string;
     color: string;
   };
-  selectedPeriod: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly';
+  selectedPeriod: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly';
   selectedMonth?: number;
   selectedYear?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;

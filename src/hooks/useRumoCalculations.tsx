@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { StrategicPillar, StrategicObjective, KeyResult } from '@/types/strategic-map';
 import { calculateKRStatus } from '@/lib/krHelpers';
 
-export type PeriodType = 'monthly' | 'ytd' | 'yearly' | 'quarterly' | 'semesterly';
+export type PeriodType = 'monthly' | 'ytd' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly';
 
 interface RumoCalculations {
   pillarProgress: Map<string, number>;

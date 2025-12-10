@@ -11,17 +11,23 @@ interface KRTableViewProps {
   keyResults: KeyResult[];
   objectives: StrategicObjective[];
   pillars: { id: string; name: string; color: string }[];
-  periodType: 'ytd' | 'quarterly' | 'monthly' | 'yearly' | 'semesterly';
+  periodType: 'ytd' | 'quarterly' | 'monthly' | 'yearly' | 'semesterly' | 'bimonthly';
   selectedYear?: number;
   selectedMonth?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;
   selectedQuarterYear?: number;
+  selectedSemester?: 1 | 2;
+  selectedSemesterYear?: number;
+  selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
+  selectedBimonthYear?: number;
   onKRClick: (kr: KeyResult) => void;
   customMetricsMap: Map<string, {
     ytd: { target: number; actual: number; percentage: number };
     monthly: { target: number; actual: number; percentage: number };
     yearly: { target: number; actual: number; percentage: number };
     quarterly: { target: number; actual: number; percentage: number };
+    semesterly: { target: number; actual: number; percentage: number };
+    bimonthly: { target: number; actual: number; percentage: number };
   }>;
   // Filter props from parent
   pillarFilter?: string;

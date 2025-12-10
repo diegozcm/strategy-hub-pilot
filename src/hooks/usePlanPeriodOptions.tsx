@@ -28,9 +28,16 @@ interface YearValidityOption {
 }
 
 interface SemesterOption {
-  value: string;        // "2025-B1"
-  label: string;        // "B1 2025 (Jan-Jun)"
+  value: string;        // "2025-S1"
+  label: string;        // "S1 2025 (Jan-Jun)"
   semester: 1 | 2;
+  year: number;
+}
+
+interface BimonthlyOption {
+  value: string;        // "2025-B1"
+  label: string;        // "B1 2025 (Jan-Fev)"
+  bimonth: 1 | 2 | 3 | 4 | 5 | 6;
   year: number;
 }
 
@@ -129,7 +136,7 @@ export const usePlanPeriodOptions = () => {
     }));
   }, [yearOptions]);
 
-  // Opções de semestre (B1 = Jan-Jun, B2 = Jul-Dez)
+  // Opções de semestre (S1 = Jan-Jun, S2 = Jul-Dez)
   const semesterOptions = useMemo<SemesterOption[]>(() => {
     if (!activePlan) return [];
     
@@ -152,9 +159,48 @@ export const usePlanPeriodOptions = () => {
       
       if (!exists) {
         options.push({
-          value: `${year}-B${semester}`,
-          label: `B${semester} ${year} (${semester === 1 ? 'Jan-Jun' : 'Jul-Dez'})`,
+          value: `${year}-S${semester}`,
+          label: `S${semester} ${year} (${semester === 1 ? 'Jan-Jun' : 'Jul-Dez'})`,
           semester: semester as 1 | 2,
+          year
+        });
+      }
+      
+      // Avançar 1 mês
+      currentDate.setMonth(currentDate.getMonth() + 1);
+    }
+    
+    return options.reverse(); // Ordem decrescente - mais recente primeiro
+  }, [activePlan]);
+
+  // Opções de bimestre (B1 = Jan-Fev, B2 = Mar-Abr, ..., B6 = Nov-Dez)
+  const bimonthlyOptions = useMemo<BimonthlyOption[]>(() => {
+    if (!activePlan) return [];
+    
+    const startDate = parseISO(activePlan.period_start);
+    const endDate = parseISO(activePlan.period_end);
+    const options: BimonthlyOption[] = [];
+    
+    const bimonthLabels = ['Jan-Fev', 'Mar-Abr', 'Mai-Jun', 'Jul-Ago', 'Set-Out', 'Nov-Dez'];
+    
+    let currentDate = new Date(startDate);
+    currentDate.setDate(1);
+    
+    while (currentDate <= endDate) {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
+      const bimonth = Math.ceil(month / 2) as 1 | 2 | 3 | 4 | 5 | 6;
+      
+      // Verificar se já existe esse bimestre
+      const exists = options.some(
+        opt => opt.year === year && opt.bimonth === bimonth
+      );
+      
+      if (!exists) {
+        options.push({
+          value: `${year}-B${bimonth}`,
+          label: `B${bimonth} ${year} (${bimonthLabels[bimonth - 1]})`,
+          bimonth,
           year
         });
       }
@@ -257,15 +303,40 @@ export const usePlanPeriodOptions = () => {
     return { semester: currentSemester as 1 | 2, year: currentYear };
   }, [semesterOptions]);
 
+  const getDefaultBimonthly = useCallback((): { bimonth: 1 | 2 | 3 | 4 | 5 | 6, year: number } => {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentBimonth = Math.ceil(currentMonth / 2) as 1 | 2 | 3 | 4 | 5 | 6;
+    const currentYear = now.getFullYear();
+    
+    // Verifica se o bimestre atual está no plano
+    const hasCurrentBimonth = bimonthlyOptions.some(
+      opt => opt.bimonth === currentBimonth && opt.year === currentYear
+    );
+    
+    if (hasCurrentBimonth) {
+      return { bimonth: currentBimonth, year: currentYear };
+    }
+    
+    // Senão, retorna o primeiro bimestre do plano
+    if (bimonthlyOptions.length > 0) {
+      return { bimonth: bimonthlyOptions[0].bimonth, year: bimonthlyOptions[0].year };
+    }
+    
+    return { bimonth: currentBimonth, year: currentYear };
+  }, [bimonthlyOptions]);
+
   return { 
     quarterOptions, 
     monthOptions, 
     yearOptions,
     yearValidityOptions,
     semesterOptions,
+    bimonthlyOptions,
     getDefaultYear,
     getDefaultQuarter,
     getDefaultMonth,
-    getDefaultSemester
+    getDefaultSemester,
+    getDefaultBimonthly
   };
 };

@@ -22,7 +22,7 @@ interface ObjectiveCardProps {
   pillar?: { id: string; name: string; color: string; } | null;
   onAddResultadoChave?: (resultadoChaveData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onRefreshData?: () => void;
-  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly';
+  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly';
   selectedMonth?: number;
   selectedYear?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;

@@ -21,7 +21,7 @@ interface KeyResultChartProps {
   onYearChange?: (year: number) => void;
   targetDirection?: TargetDirection;
   aggregationType?: 'sum' | 'average' | 'max' | 'min' | 'last';
-  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly';
+  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly';
   yearOptions?: Array<{ value: number; label: string }>;
 }
 

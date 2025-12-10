@@ -163,7 +163,7 @@ export const isKRInMonth = (
 export const filterKRsByValidity = (
   keyResults: KeyResult[],
   validityEnabled: boolean,
-  selectedPeriod: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly',
+  selectedPeriod: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly',
   options?: {
     selectedQuarter?: 1 | 2 | 3 | 4;
     selectedQuarterYear?: number;
@@ -171,6 +171,8 @@ export const filterKRsByValidity = (
     selectedMonth?: number;
     selectedSemester?: 1 | 2;
     selectedSemesterYear?: number;
+    selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
+    selectedBimonthYear?: number;
     planFirstYear?: number; // Primeiro ano do plano (para YTD inteligente)
   }
 ): KeyResult[] => {
@@ -203,6 +205,13 @@ export const filterKRsByValidity = (
           kr,
           options?.selectedSemester || 1,
           options?.selectedSemesterYear || currentYear
+        );
+      
+      case 'bimonthly':
+        return isKRInBimonth(
+          kr,
+          options?.selectedBimonth || 1,
+          options?.selectedBimonthYear || currentYear
         );
       
       case 'ytd':
@@ -246,4 +255,35 @@ export const isKRInSemester = (
   const semesterStart = `${year}-${semesterStartMonth.toString().padStart(2, '0')}`;
   const semesterEnd = `${year}-${semesterEndMonth.toString().padStart(2, '0')}`;
   return kr.start_month <= semesterEnd && kr.end_month >= semesterStart;
+};
+
+/**
+ * Verifica se um KR está dentro de um bimestre específico
+ */
+export const isKRInBimonth = (
+  kr: KeyResult,
+  bimonth: 1 | 2 | 3 | 4 | 5 | 6,
+  year: number
+): boolean => {
+  const bimonthStartMonth = (bimonth - 1) * 2 + 1;
+  const bimonthEndMonth = bimonth * 2;
+  
+  // KRs sem vigência definida: verificar se têm dados no bimestre
+  if (!kr.start_month || !kr.end_month) {
+    const monthlyTargets = (kr.monthly_targets || {}) as Record<string, number>;
+    const monthlyActual = (kr.monthly_actual || {}) as Record<string, number>;
+    
+    for (let m = bimonthStartMonth; m <= bimonthEndMonth; m++) {
+      const monthKey = `${year}-${String(m).padStart(2, '0')}`;
+      if (monthlyTargets[monthKey] || monthlyActual[monthKey]) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  // KR com vigência: verificar interseção com o bimestre
+  const bimonthStart = `${year}-${bimonthStartMonth.toString().padStart(2, '0')}`;
+  const bimonthEnd = `${year}-${bimonthEndMonth.toString().padStart(2, '0')}`;
+  return kr.start_month <= bimonthEnd && kr.end_month >= bimonthStart;
 };

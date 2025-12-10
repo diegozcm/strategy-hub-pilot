@@ -12,6 +12,8 @@ export interface PeriodFilterState {
   selectedMonthYear: number;
   selectedSemester: 1 | 2;
   selectedSemesterYear: number;
+  selectedBimonth: 1 | 2 | 3 | 4 | 5 | 6;
+  selectedBimonthYear: number;
 }
 
 export interface PeriodFilterContextType extends PeriodFilterState {
@@ -24,6 +26,8 @@ export interface PeriodFilterContextType extends PeriodFilterState {
   setSelectedMonthYear: (year: number) => void;
   setSelectedSemester: (semester: 1 | 2) => void;
   setSelectedSemesterYear: (year: number) => void;
+  setSelectedBimonth: (bimonth: 1 | 2 | 3 | 4 | 5 | 6) => void;
+  setSelectedBimonthYear: (year: number) => void;
   
   // Batch update
   setFilters: (filters: Partial<PeriodFilterState>) => void;
@@ -39,6 +43,7 @@ export interface PeriodFilterContextType extends PeriodFilterState {
   monthOptions: { value: string; label: string }[];
   yearOptions: { value: number; label: string }[];
   semesterOptions: { value: string; label: string; semester: 1 | 2; year: number }[];
+  bimonthlyOptions: { value: string; label: string; bimonth: 1 | 2 | 3 | 4 | 5 | 6; year: number }[];
   
   // Utility handlers
   handleYTDClick: () => void;
@@ -52,7 +57,7 @@ interface PeriodFilterProviderProps {
 
 export const PeriodFilterProvider: React.FC<PeriodFilterProviderProps> = ({ children }) => {
   const { isYTDCalculable, defaultPeriod, ytdInfoMessage, planFirstYear, hasActivePlan } = usePeriodApplicability();
-  const { quarterOptions, monthOptions, yearOptions, semesterOptions, getDefaultYear, getDefaultQuarter, getDefaultMonth, getDefaultSemester } = usePlanPeriodOptions();
+  const { quarterOptions, monthOptions, yearOptions, semesterOptions, bimonthlyOptions, getDefaultYear, getDefaultQuarter, getDefaultMonth, getDefaultSemester, getDefaultBimonthly } = usePlanPeriodOptions();
   const { activePlan } = useActivePlan();
   
   // Calculate initial values
@@ -63,6 +68,7 @@ export const PeriodFilterProvider: React.FC<PeriodFilterProviderProps> = ({ chil
   
   // State
   const currentSemester = (now.getMonth() + 1) <= 6 ? 1 : 2;
+  const currentBimonth = Math.ceil((now.getMonth() + 1) / 2) as 1 | 2 | 3 | 4 | 5 | 6;
   const [periodType, setPeriodType] = useState<PeriodType>(defaultPeriod);
   const [selectedYear, setSelectedYear] = useState<number>(isYTDCalculable ? previousMonth.getFullYear() : planFirstYear);
   const [selectedMonth, setSelectedMonth] = useState<number>(previousMonth.getMonth() + 1);
@@ -71,6 +77,8 @@ export const PeriodFilterProvider: React.FC<PeriodFilterProviderProps> = ({ chil
   const [selectedQuarterYear, setSelectedQuarterYear] = useState<number>(isYTDCalculable ? now.getFullYear() : planFirstYear);
   const [selectedSemester, setSelectedSemester] = useState<1 | 2>(currentSemester as 1 | 2);
   const [selectedSemesterYear, setSelectedSemesterYear] = useState<number>(isYTDCalculable ? now.getFullYear() : planFirstYear);
+  const [selectedBimonth, setSelectedBimonth] = useState<1 | 2 | 3 | 4 | 5 | 6>(currentBimonth);
+  const [selectedBimonthYear, setSelectedBimonthYear] = useState<number>(isYTDCalculable ? now.getFullYear() : planFirstYear);
   
   // Track if we've initialized with the active plan
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -85,6 +93,7 @@ export const PeriodFilterProvider: React.FC<PeriodFilterProviderProps> = ({ chil
         const defaultQuarter = getDefaultQuarter();
         const defaultMonth = getDefaultMonth();
         const defaultSemester = getDefaultSemester();
+        const defaultBimonth = getDefaultBimonthly();
         
         setSelectedYear(defaultYear);
         setSelectedQuarter(defaultQuarter.quarter);
@@ -93,13 +102,15 @@ export const PeriodFilterProvider: React.FC<PeriodFilterProviderProps> = ({ chil
         setSelectedMonthYear(defaultMonth.year);
         setSelectedSemester(defaultSemester.semester);
         setSelectedSemesterYear(defaultSemester.year);
+        setSelectedBimonth(defaultBimonth.bimonth);
+        setSelectedBimonthYear(defaultBimonth.year);
         setPeriodType(defaultPeriod);
         
         setHasInitialized(true);
         setLastPlanId(activePlan.id);
       }
     }
-  }, [activePlan?.id, yearOptions.length, hasInitialized, lastPlanId, getDefaultYear, getDefaultQuarter, getDefaultMonth, getDefaultSemester, defaultPeriod]);
+  }, [activePlan?.id, yearOptions.length, hasInitialized, lastPlanId, getDefaultYear, getDefaultQuarter, getDefaultMonth, getDefaultSemester, getDefaultBimonthly, defaultPeriod]);
   
   // Validate and sync years with available options
   useEffect(() => {
@@ -142,6 +153,8 @@ export const PeriodFilterProvider: React.FC<PeriodFilterProviderProps> = ({ chil
     if (filters.selectedMonthYear !== undefined) setSelectedMonthYear(filters.selectedMonthYear);
     if (filters.selectedSemester !== undefined) setSelectedSemester(filters.selectedSemester);
     if (filters.selectedSemesterYear !== undefined) setSelectedSemesterYear(filters.selectedSemesterYear);
+    if (filters.selectedBimonth !== undefined) setSelectedBimonth(filters.selectedBimonth);
+    if (filters.selectedBimonthYear !== undefined) setSelectedBimonthYear(filters.selectedBimonthYear);
   }, []);
   
   // YTD click handler with toast notification
@@ -163,6 +176,8 @@ export const PeriodFilterProvider: React.FC<PeriodFilterProviderProps> = ({ chil
     selectedMonthYear,
     selectedSemester,
     selectedSemesterYear,
+    selectedBimonth,
+    selectedBimonthYear,
     
     // Setters
     setPeriodType,
@@ -173,6 +188,8 @@ export const PeriodFilterProvider: React.FC<PeriodFilterProviderProps> = ({ chil
     setSelectedMonthYear,
     setSelectedSemester,
     setSelectedSemesterYear,
+    setSelectedBimonth,
+    setSelectedBimonthYear,
     setFilters,
     
     // Period applicability
@@ -186,6 +203,7 @@ export const PeriodFilterProvider: React.FC<PeriodFilterProviderProps> = ({ chil
     monthOptions,
     yearOptions,
     semesterOptions,
+    bimonthlyOptions,
     
     // Handlers
     handleYTDClick,
@@ -198,6 +216,8 @@ export const PeriodFilterProvider: React.FC<PeriodFilterProviderProps> = ({ chil
     selectedMonthYear,
     selectedSemester,
     selectedSemesterYear,
+    selectedBimonth,
+    selectedBimonthYear,
     setFilters,
     isYTDCalculable,
     ytdInfoMessage,
@@ -207,6 +227,7 @@ export const PeriodFilterProvider: React.FC<PeriodFilterProviderProps> = ({ chil
     monthOptions,
     yearOptions,
     semesterOptions,
+    bimonthlyOptions,
     handleYTDClick,
   ]);
   
