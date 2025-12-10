@@ -787,30 +787,28 @@ export const IndicatorsPage: React.FC = () => {
           </div>
         </div>
         
-        {/* Right side: View Toggle + Action Buttons */}
-        <div className="flex items-center gap-2">
-          {/* View Mode Toggle - Same pattern as Rumo/Instrumentos tabs */}
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'cards' | 'table')} className="w-auto">
-            <TabsList className="grid grid-cols-2">
-              <TabsTrigger value="cards" className="gap-2">
-                <LayoutGrid className="w-4 h-4" />
-                Cards
-              </TabsTrigger>
-              <TabsTrigger value="table" className="gap-2">
-                <Table2 className="w-4 h-4" />
-                Tabela RMRE
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
-          {canCreateKR && (
-            <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Novo Resultado-Chave
-            </Button>
-          )}
-        </div>
+        {/* Right side: Action Button only */}
+        {canCreateKR && (
+          <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Novo Resultado-Chave
+          </Button>
+        )}
       </div>
+
+      {/* View Mode Toggle - Below subtitle, same pattern as Rumo/Instrumentos tabs */}
+      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'cards' | 'table')} className="w-full max-w-md">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="cards" className="gap-2">
+            <LayoutGrid className="w-4 h-4" />
+            Cards
+          </TabsTrigger>
+          <TabsTrigger value="table" className="gap-2">
+            <Table2 className="w-4 h-4" />
+            Tabela RMRE
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
         {/* Period Selector - Below Description */}
         <div className="flex items-center gap-2">
