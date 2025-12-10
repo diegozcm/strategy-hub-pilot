@@ -21,6 +21,16 @@ export interface KRMetrics {
     actual: number;
     percentage: number;
   };
+  semesterly: {
+    target: number;
+    actual: number;
+    percentage: number;
+  };
+  bimonthly: {
+    target: number;
+    actual: number;
+    percentage: number;
+  };
 }
 
 export interface KeyResultWithMetrics {
@@ -73,15 +83,125 @@ export const useKRMetrics = (
     selectedYear?: number;
     selectedQuarter?: 1 | 2 | 3 | 4;
     selectedQuarterYear?: number;
+    selectedSemester?: 1 | 2;
+    selectedSemesterYear?: number;
+    selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
+    selectedBimonthYear?: number;
   }
 ): KRMetrics => {
   return useMemo(() => {
+    const defaultMetrics: KRMetrics = {
+      ytd: { target: 0, actual: 0, percentage: 0 },
+      monthly: { target: 0, actual: 0, percentage: 0 },
+      yearly: { target: 0, actual: 0, percentage: 0 },
+      quarterly: { target: 0, actual: 0, percentage: 0 },
+      semesterly: { target: 0, actual: 0, percentage: 0 },
+      bimonthly: { target: 0, actual: 0, percentage: 0 },
+    };
+
     if (!keyResult) {
+      return defaultMetrics;
+    }
+
+    // Helper function to calculate metrics for a set of months
+    const calculateMetricsForMonths = (monthKeys: string[]) => {
+      const monthlyTargets = (keyResult.monthly_targets as Record<string, number>) || {};
+      const monthlyActual = (keyResult.monthly_actual as Record<string, number>) || {};
+      const aggregationType = keyResult.aggregation_type || 'sum';
+      
+      const targetValues = monthKeys.map(key => monthlyTargets[key] || 0);
+      const actualValues = monthKeys.map(key => monthlyActual[key] || 0);
+      
+      let totalTarget = 0;
+      let totalActual = 0;
+      
+      switch (aggregationType) {
+        case 'sum':
+          totalTarget = targetValues.reduce((sum, v) => sum + v, 0);
+          totalActual = actualValues.reduce((sum, v) => sum + v, 0);
+          break;
+        case 'average':
+          const validTargets = targetValues.filter(v => v > 0);
+          const validActuals = actualValues.filter(v => v > 0);
+          totalTarget = validTargets.length > 0 ? validTargets.reduce((sum, v) => sum + v, 0) / validTargets.length : 0;
+          totalActual = validActuals.length > 0 ? validActuals.reduce((sum, v) => sum + v, 0) / validActuals.length : 0;
+          break;
+        case 'max':
+          totalTarget = targetValues.length > 0 ? Math.max(...targetValues) : 0;
+          totalActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
+          break;
+        case 'min':
+          const nonZeroTargets = targetValues.filter(v => v > 0);
+          const nonZeroActuals = actualValues.filter(v => v > 0);
+          totalTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
+          totalActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
+          break;
+        case 'last':
+          for (let i = monthKeys.length - 1; i >= 0; i--) {
+            if (monthlyTargets[monthKeys[i]] !== undefined) {
+              totalTarget = monthlyTargets[monthKeys[i]];
+              break;
+            }
+          }
+          for (let i = monthKeys.length - 1; i >= 0; i--) {
+            if (monthlyActual[monthKeys[i]] !== undefined) {
+              totalActual = monthlyActual[monthKeys[i]];
+              break;
+            }
+          }
+          break;
+      }
+      
+      // Calculate percentage
+      let percentage = 0;
+      if (keyResult.target_direction === 'minimize') {
+        percentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : 0;
+      } else {
+        percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
+      }
+      
+      return { target: totalTarget, actual: totalActual, percentage };
+    };
+
+    // Calculate semester metrics if selected
+    if (options?.selectedSemester && options?.selectedSemesterYear) {
+      const semesterMonths: Record<number, number[]> = {
+        1: [1, 2, 3, 4, 5, 6],
+        2: [7, 8, 9, 10, 11, 12]
+      };
+      const months = semesterMonths[options.selectedSemester];
+      const monthKeys = months.map(m => `${options.selectedSemesterYear}-${m.toString().padStart(2, '0')}`);
+      const semesterMetrics = calculateMetricsForMonths(monthKeys);
+
       return {
-        ytd: { target: 0, actual: 0, percentage: 0 },
-        monthly: { target: 0, actual: 0, percentage: 0 },
-        yearly: { target: 0, actual: 0, percentage: 0 },
-        quarterly: { target: 0, actual: 0, percentage: 0 },
+        ...defaultMetrics,
+        ytd: {
+          target: keyResult.ytd_target ?? 0,
+          actual: keyResult.ytd_actual ?? 0,
+          percentage: keyResult.ytd_percentage ?? 0,
+        },
+        semesterly: semesterMetrics,
+      };
+    }
+
+    // Calculate bimonthly metrics if selected
+    if (options?.selectedBimonth && options?.selectedBimonthYear) {
+      const bimonthMonths: Record<number, number[]> = {
+        1: [1, 2], 2: [3, 4], 3: [5, 6],
+        4: [7, 8], 5: [9, 10], 6: [11, 12]
+      };
+      const months = bimonthMonths[options.selectedBimonth];
+      const monthKeys = months.map(m => `${options.selectedBimonthYear}-${m.toString().padStart(2, '0')}`);
+      const bimonthMetrics = calculateMetricsForMonths(monthKeys);
+
+      return {
+        ...defaultMetrics,
+        ytd: {
+          target: keyResult.ytd_target ?? 0,
+          actual: keyResult.ytd_actual ?? 0,
+          percentage: keyResult.ytd_percentage ?? 0,
+        },
+        bimonthly: bimonthMetrics,
       };
     }
 
@@ -141,6 +261,7 @@ export const useKRMetrics = (
     }
 
     return {
+      ...defaultMetrics,
       ytd: {
         target: keyResult.ytd_target ?? 0,
         actual: keyResult.ytd_actual ?? 0,
@@ -198,6 +319,7 @@ export const useKRMetrics = (
     }
 
     return {
+      ...defaultMetrics,
       ytd: {
         target: keyResult.ytd_target ?? 0,
         actual: keyResult.ytd_actual ?? 0,
@@ -272,6 +394,7 @@ export const useKRMetrics = (
       }
       
       return {
+        ...defaultMetrics,
         ytd: {
           target: keyResult.ytd_target ?? 0,
           actual: keyResult.ytd_actual ?? 0,
@@ -286,11 +409,6 @@ export const useKRMetrics = (
           target: totalTarget,
           actual: totalActual,
           percentage: yearlyPercentage,
-        },
-        quarterly: {
-          target: 0,
-          actual: 0,
-          percentage: 0,
         },
       };
     }
@@ -313,6 +431,7 @@ export const useKRMetrics = (
       }
       
       return {
+        ...defaultMetrics,
         ytd: {
           target: keyResult.ytd_target ?? 0,
           actual: keyResult.ytd_actual ?? 0,
@@ -327,11 +446,6 @@ export const useKRMetrics = (
           target: keyResult.yearly_target ?? 0,
           actual: keyResult.yearly_actual ?? 0,
           percentage: keyResult.yearly_percentage ?? 0,
-        },
-        quarterly: {
-          target: 0,
-          actual: 0,
-          percentage: 0,
         },
       };
     }
@@ -367,6 +481,7 @@ export const useKRMetrics = (
     }
 
     return {
+      ...defaultMetrics,
       ytd: {
         target: keyResult.ytd_target ?? 0,
         actual: keyResult.ytd_actual ?? 0,
@@ -388,7 +503,7 @@ export const useKRMetrics = (
         percentage: defaultQPercentage,
       },
     };
-  }, [keyResult, options?.selectedMonth, options?.selectedYear, options?.selectedQuarter, options?.selectedQuarterYear]);
+  }, [keyResult, options?.selectedMonth, options?.selectedYear, options?.selectedQuarter, options?.selectedQuarterYear, options?.selectedSemester, options?.selectedSemesterYear, options?.selectedBimonth, options?.selectedBimonthYear]);
 };
 
 /**
