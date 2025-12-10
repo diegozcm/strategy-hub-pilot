@@ -22,12 +22,12 @@ interface ObjectiveCardProps {
   pillar?: { id: string; name: string; color: string; } | null;
   onAddResultadoChave?: (resultadoChaveData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onRefreshData?: () => void;
-  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly';
+  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly';
   selectedMonth?: number;
   selectedYear?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;
   selectedQuarterYear?: number;
-  onPeriodChange?: (period: 'ytd' | 'monthly' | 'yearly' | 'quarterly') => void;
+  onPeriodChange?: (period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly') => void;
   onMonthChange?: (month: number) => void;
   onYearChange?: (year: number) => void;
 }
@@ -41,7 +41,7 @@ const getProgressColor = (progress: number) => {
 
 const calculateObjectiveProgress = (
   keyResults: KeyResult[], 
-  period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' = 'ytd',
+  period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' = 'ytd',
   options?: {
     selectedMonth?: number;
     selectedYear?: number;

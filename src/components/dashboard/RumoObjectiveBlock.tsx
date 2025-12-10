@@ -15,7 +15,7 @@ interface RumoObjectiveBlockProps {
   progress: number;
   keyResults: KeyResult[];
   krProgress: Map<string, number>;
-  selectedPeriod: 'ytd' | 'monthly' | 'yearly' | 'quarterly';
+  selectedPeriod: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly';
   selectedMonth?: number;
   selectedYear?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;

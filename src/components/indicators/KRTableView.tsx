@@ -11,7 +11,7 @@ interface KRTableViewProps {
   keyResults: KeyResult[];
   objectives: StrategicObjective[];
   pillars: { id: string; name: string; color: string }[];
-  periodType: 'ytd' | 'quarterly' | 'monthly' | 'yearly';
+  periodType: 'ytd' | 'quarterly' | 'monthly' | 'yearly' | 'semesterly';
   selectedYear?: number;
   selectedMonth?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;

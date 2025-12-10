@@ -163,12 +163,14 @@ export const isKRInMonth = (
 export const filterKRsByValidity = (
   keyResults: KeyResult[],
   validityEnabled: boolean,
-  selectedPeriod: 'ytd' | 'monthly' | 'yearly' | 'quarterly',
+  selectedPeriod: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly',
   options?: {
     selectedQuarter?: 1 | 2 | 3 | 4;
     selectedQuarterYear?: number;
     selectedYear?: number;
     selectedMonth?: number;
+    selectedSemester?: 1 | 2;
+    selectedSemesterYear?: number;
     planFirstYear?: number; // Primeiro ano do plano (para YTD inteligente)
   }
 ): KeyResult[] => {
@@ -196,6 +198,13 @@ export const filterKRsByValidity = (
           options?.selectedYear || currentYear
         );
       
+      case 'semesterly':
+        return isKRInSemester(
+          kr,
+          options?.selectedSemester || 1,
+          options?.selectedSemesterYear || currentYear
+        );
+      
       case 'ytd':
         // YTD agora mostra todos os KRs do plano, sem filtro de ano
         // Métricas serão 0% naturalmente para KRs de anos futuros
@@ -206,4 +215,35 @@ export const filterKRsByValidity = (
         return true;
     }
   });
+};
+
+/**
+ * Verifica se um KR está dentro de um semestre específico
+ */
+export const isKRInSemester = (
+  kr: KeyResult,
+  semester: 1 | 2,
+  year: number
+): boolean => {
+  const semesterStartMonth = semester === 1 ? 1 : 7;
+  const semesterEndMonth = semester === 1 ? 6 : 12;
+  
+  // KRs sem vigência definida: verificar se têm dados no semestre
+  if (!kr.start_month || !kr.end_month) {
+    const monthlyTargets = (kr.monthly_targets || {}) as Record<string, number>;
+    const monthlyActual = (kr.monthly_actual || {}) as Record<string, number>;
+    
+    for (let m = semesterStartMonth; m <= semesterEndMonth; m++) {
+      const monthKey = `${year}-${String(m).padStart(2, '0')}`;
+      if (monthlyTargets[monthKey] || monthlyActual[monthKey]) {
+        return true;
+      }
+    }
+    return false;
+  }
+  
+  // KR com vigência: verificar interseção com o semestre
+  const semesterStart = `${year}-${semesterStartMonth.toString().padStart(2, '0')}`;
+  const semesterEnd = `${year}-${semesterEndMonth.toString().padStart(2, '0')}`;
+  return kr.start_month <= semesterEnd && kr.end_month >= semesterStart;
 };
