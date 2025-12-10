@@ -119,6 +119,7 @@ export const IndicatorsPage: React.FC = () => {
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [exportModalOpen, setExportModalOpen] = useState(false);
   
   // Filtrar quarters para mostrar apenas os que têm KRs registrados
   const filteredQuarterOptions = useMemo(() => {
@@ -1018,7 +1019,7 @@ export const IndicatorsPage: React.FC = () => {
           />
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-2 lg:gap-4">
+        <div className="flex flex-col sm:flex-row gap-2 lg:gap-4 items-center">
           <Select value={pillarFilter} onValueChange={setPillarFilter}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Todos os pilares" />
@@ -1039,73 +1040,44 @@ export const IndicatorsPage: React.FC = () => {
             </SelectContent>
           </Select>
 
-          <Select value={objectiveFilter} onValueChange={setObjectiveFilter}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Todos os objetivos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os objetivos</SelectItem>
-              {objectives.map((objective) => {
-                const pillar = pillars.find(p => p.id === objective.pillar_id);
-                return (
-                  <SelectItem key={objective.id} value={objective.id}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: pillar?.color || '#6B7280' }}
-                      />
-                      {objective.title}
-                    </div>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-          
-           <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-             <SelectTrigger className="w-full sm:w-36">
-               <SelectValue placeholder="Todas" />
-             </SelectTrigger>
-             <SelectContent>
-               <SelectItem value="all">Todas</SelectItem>
-               <SelectItem value="high">Alta</SelectItem>
-               <SelectItem value="medium">Média</SelectItem>
-               <SelectItem value="low">Baixa</SelectItem>
-             </SelectContent>
-           </Select>
-
            <Select value={progressFilter} onValueChange={setProgressFilter}>
              <SelectTrigger className="w-full sm:w-44">
                <SelectValue placeholder="Todos os status" />
              </SelectTrigger>
              <SelectContent>
                <SelectItem value="all">Todos os status</SelectItem>
-               <SelectItem value="excellent">
+               <SelectItem value="achieved">
                  <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-full bg-blue-500" />
-                   &gt;105% Excelente
-                 </div>
-               </SelectItem>
-               <SelectItem value="success">
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-full bg-green-500" />
-                   100-105% No Alvo
+                   <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                   Atingidos (≥100%)
                  </div>
                </SelectItem>
                <SelectItem value="attention">
                  <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                   71-99% Atenção
+                   <div className="w-3 h-3 rounded-full bg-amber-500" />
+                   Atenção (50-99%)
                  </div>
                </SelectItem>
                <SelectItem value="critical">
                  <div className="flex items-center gap-2">
                    <div className="w-3 h-3 rounded-full bg-red-500" />
-                   &lt;71% Crítico
+                   Críticos (&lt;50%)
                  </div>
                </SelectItem>
              </SelectContent>
            </Select>
+
+           {viewMode === 'table' && (
+             <Button 
+               variant="outline" 
+               size="sm" 
+               className="gap-2"
+               onClick={() => setExportModalOpen(true)}
+             >
+               <Download className="h-4 w-4" />
+               Exportar
+             </Button>
+           )}
         </div>
       </div>
 
@@ -1122,6 +1094,11 @@ export const IndicatorsPage: React.FC = () => {
           selectedQuarterYear={selectedQuarterYear}
           onKRClick={openKROverviewModal}
           customMetricsMap={customMetricsMap}
+          pillarFilter={pillarFilter}
+          statusFilter={progressFilter}
+          searchTerm={searchTerm}
+          exportModalOpen={exportModalOpen}
+          setExportModalOpen={setExportModalOpen}
         />
       ) : (
         <>

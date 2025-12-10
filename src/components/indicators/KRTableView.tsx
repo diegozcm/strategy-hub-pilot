@@ -1,11 +1,8 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, TrendingDown, Target, Activity, AlertCircle, CheckCircle, Calendar, CalendarDays, CalendarClock, Scale, Download, Filter, RotateCcw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, Target, Activity } from 'lucide-react';
 import { KeyResult, StrategicObjective } from '@/types/strategic-map';
 import { cn } from '@/lib/utils';
 import { ExportModal } from './ExportModal';
@@ -26,17 +23,14 @@ interface KRTableViewProps {
     yearly: { target: number; actual: number; percentage: number };
     quarterly: { target: number; actual: number; percentage: number };
   }>;
+  // Filter props from parent
+  pillarFilter?: string;
+  statusFilter?: string;
+  searchTerm?: string;
+  // Export modal control
+  exportModalOpen: boolean;
+  setExportModalOpen: (open: boolean) => void;
 }
-
-type FrequencyType = 'all' | 'monthly' | 'bimonthly' | 'quarterly' | 'semiannual' | 'annual';
-
-const frequencyLabels: Record<string, { label: string; icon: React.ReactNode; short: string }> = {
-  monthly: { label: 'Mensal', icon: <Calendar className="h-3.5 w-3.5" />, short: 'M' },
-  bimonthly: { label: 'Bimestral', icon: <CalendarDays className="h-3.5 w-3.5" />, short: 'B' },
-  quarterly: { label: 'Trimestral', icon: <CalendarDays className="h-3.5 w-3.5" />, short: 'T' },
-  semiannual: { label: 'Semestral', icon: <CalendarClock className="h-3.5 w-3.5" />, short: 'S' },
-  annual: { label: 'Anual', icon: <CalendarClock className="h-3.5 w-3.5" />, short: 'A' },
-};
 
 // Period ranges for each frequency type
 const getPeriodRanges = (frequency: string): number[][] => {
@@ -148,13 +142,12 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
   selectedQuarterYear,
   onKRClick,
   customMetricsMap,
+  pillarFilter = 'all',
+  statusFilter = 'all',
+  searchTerm = '',
+  exportModalOpen,
+  setExportModalOpen,
 }) => {
-  // Filter states
-  const [frequencyFilter, setFrequencyFilter] = useState<FrequencyType>('all');
-  const [pillarFilter, setPillarFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [exportModalOpen, setExportModalOpen] = useState(false);
-  
   // Ref for table export
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -174,8 +167,6 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
     if (periodType === 'ytd') {
       // YTD: from January to current month
       const currentMonth = new Date().getMonth() + 1;
-      const periodMonths = getCurrentPeriodMonths(frequency, currentMonth);
-      // Get all complete periods up to current period
       const ranges = getPeriodRanges(frequency);
       const currentPeriodIdx = getMonthPeriodIndex(currentMonth, frequency);
       for (let i = 0; i <= currentPeriodIdx; i++) {
@@ -189,9 +180,7 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
         3: [7, 8, 9],
         4: [10, 11, 12],
       };
-      const qMonths = quarterMonths[selectedQuarter || 1];
-      // Get the months that belong to complete periods for this frequency within the quarter
-      months = qMonths;
+      months = quarterMonths[selectedQuarter || 1];
     } else if (periodType === 'monthly') {
       // Single month - but need to check if it aligns with frequency period
       months = getCurrentPeriodMonths(frequency, selectedMonth);
@@ -226,7 +215,6 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
 
   // Get metrics for a specific KR - use frequency-based calculation
   const getMetrics = (kr: KeyResult) => {
-    // Use frequency-based aggregation for accurate period data
     return calculateMetricsByFrequency(kr);
   };
 
@@ -256,28 +244,17 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
     return { objective, pillar };
   };
 
-  // Get frequency label for a KR
-  const getFrequencyInfo = (kr: KeyResult) => {
-    const freq = kr.frequency || 'monthly';
-    return frequencyLabels[freq] || frequencyLabels.monthly;
-  };
-
-  // Reset all filters
-  const resetFilters = () => {
-    setFrequencyFilter('all');
-    setPillarFilter('all');
-    setStatusFilter('all');
-  };
-
-  const hasActiveFilters = frequencyFilter !== 'all' || pillarFilter !== 'all' || statusFilter !== 'all';
-
   // Filter and sort KRs
   const filteredAndSortedKRs = useMemo(() => {
     let filtered = [...keyResults];
 
-    // Apply frequency filter
-    if (frequencyFilter !== 'all') {
-      filtered = filtered.filter(kr => (kr.frequency || 'monthly') === frequencyFilter);
+    // Apply search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(kr => 
+        kr.title.toLowerCase().includes(term) ||
+        kr.description?.toLowerCase().includes(term)
+      );
     }
 
     // Apply pillar filter
@@ -314,7 +291,7 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
       
       return a.title.localeCompare(b.title);
     });
-  }, [keyResults, objectives, pillars, frequencyFilter, pillarFilter, statusFilter, selectedYear, selectedMonth, selectedQuarter, selectedQuarterYear, periodType]);
+  }, [keyResults, objectives, pillars, pillarFilter, statusFilter, searchTerm, selectedYear, selectedMonth, selectedQuarter, selectedQuarterYear, periodType]);
 
   // Calculate summary stats
   const summaryStats = useMemo(() => {
@@ -341,19 +318,16 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
     return { total, achieved, attention, critical, weightedAverage };
   }, [filteredAndSortedKRs, selectedYear, selectedMonth, selectedQuarter, selectedQuarterYear, periodType]);
 
-  // Prepare export data
+  // Prepare export data (simplified - no frequency or weight)
   const exportData = useMemo(() => {
     return filteredAndSortedKRs.map(kr => {
       const { real, meta, resultado, eficiencia } = calculateRMRE(kr);
       const { objective, pillar } = getObjectiveInfo(kr.objective_id);
-      const frequencyInfo = getFrequencyInfo(kr);
       
       return {
         krTitle: kr.title,
         objective: objective?.title || '-',
         pillar: pillar?.name || '-',
-        frequency: frequencyInfo.label,
-        krWeight: kr.weight || 1,
         target: meta,
         actual: real,
         result: resultado,
@@ -392,163 +366,13 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
   return (
     <TooltipProvider>
       <div className="space-y-4">
-        {/* Filter Bar */}
-        <div className="flex flex-wrap items-center gap-3 p-4 bg-card rounded-lg border">
-          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-            <Filter className="h-4 w-4" />
-            Filtros:
-          </div>
-
-          {/* Frequency Filter */}
-          <Select value={frequencyFilter} onValueChange={(v) => setFrequencyFilter(v as FrequencyType)}>
-            <SelectTrigger className="w-[160px] h-9 bg-background">
-              <SelectValue placeholder="Frequência" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover">
-              <SelectItem value="all">Todas frequências</SelectItem>
-              <SelectItem value="monthly">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-3.5 w-3.5" />
-                  Mensal
-                </div>
-              </SelectItem>
-              <SelectItem value="bimonthly">
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  Bimestral
-                </div>
-              </SelectItem>
-              <SelectItem value="quarterly">
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  Trimestral
-                </div>
-              </SelectItem>
-              <SelectItem value="semiannual">
-                <div className="flex items-center gap-2">
-                  <CalendarClock className="h-3.5 w-3.5" />
-                  Semestral
-                </div>
-              </SelectItem>
-              <SelectItem value="annual">
-                <div className="flex items-center gap-2">
-                  <CalendarClock className="h-3.5 w-3.5" />
-                  Anual
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Pillar Filter */}
-          <Select value={pillarFilter} onValueChange={setPillarFilter}>
-            <SelectTrigger className="w-[180px] h-9 bg-background">
-              <SelectValue placeholder="Pilar" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover">
-              <SelectItem value="all">Todos os pilares</SelectItem>
-              {pillars.map(pillar => (
-                <SelectItem key={pillar.id} value={pillar.id}>
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: pillar.color }}
-                    />
-                    {pillar.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Status Filter */}
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px] h-9 bg-background">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent className="bg-popover">
-              <SelectItem value="all">Todos status</SelectItem>
-              <SelectItem value="achieved">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
-                  Atingidos
-                </div>
-              </SelectItem>
-              <SelectItem value="attention">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
-                  Atenção
-                </div>
-              </SelectItem>
-              <SelectItem value="critical">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="h-3.5 w-3.5 text-red-500" />
-                  Críticos
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          {hasActiveFilters && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={resetFilters}
-              className="h-9 text-muted-foreground hover:text-foreground"
-            >
-              <RotateCcw className="h-4 w-4 mr-1" />
-              Limpar
-            </Button>
-          )}
-
-          <div className="flex-1" />
-
-          {/* Export Button */}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-9 gap-2"
-            onClick={() => setExportModalOpen(true)}
-          >
-            <Download className="h-4 w-4" />
-            Exportar
-          </Button>
-        </div>
-
         {/* Table */}
         <div ref={tableRef} className="rounded-lg border bg-card overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/60 hover:bg-muted/60">
-                <TableHead className="w-[280px] font-semibold text-foreground">Resultado-Chave</TableHead>
-                <TableHead className="w-[180px] font-semibold text-foreground">
-                  <div className="flex items-center gap-1">
-                    Objetivo
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Scale className="h-3.5 w-3.5 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>Peso do objetivo (P:X)</TooltipContent>
-                    </Tooltip>
-                  </div>
-                </TableHead>
-                <TableHead className="w-[90px] text-center font-semibold text-foreground">
-                  <Tooltip>
-                    <TooltipTrigger className="flex items-center justify-center gap-1 w-full">
-                      <Calendar className="h-4 w-4" />
-                      Freq.
-                    </TooltipTrigger>
-                    <TooltipContent>Frequência de acompanhamento</TooltipContent>
-                  </Tooltip>
-                </TableHead>
-                <TableHead className="w-[70px] text-center font-semibold text-foreground">
-                  <Tooltip>
-                    <TooltipTrigger className="flex items-center justify-center gap-1 w-full">
-                      <Scale className="h-4 w-4" />
-                      Peso
-                    </TooltipTrigger>
-                    <TooltipContent>Peso do Resultado-Chave (1-10)</TooltipContent>
-                  </Tooltip>
-                </TableHead>
+                <TableHead className="w-[300px] font-semibold text-foreground">Resultado-Chave</TableHead>
+                <TableHead className="w-[200px] font-semibold text-foreground">Objetivo</TableHead>
                 <TableHead className="w-[100px] text-right font-semibold text-foreground">
                   <Tooltip>
                     <TooltipTrigger className="flex items-center justify-end gap-1 w-full">
@@ -576,7 +400,7 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
                     <TooltipContent>Diferença entre Real e Meta</TooltipContent>
                   </Tooltip>
                 </TableHead>
-                <TableHead className="w-[160px] text-right font-semibold text-foreground">
+                <TableHead className="w-[180px] text-right font-semibold text-foreground">
                   <Tooltip>
                     <TooltipTrigger className="flex items-center justify-end gap-1 w-full">
                       Eficiência ({getPeriodLabel()})
@@ -591,7 +415,6 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
                 const { real, meta, resultado, eficiencia, isMinimize } = calculateRMRE(kr);
                 const { objective, pillar } = getObjectiveInfo(kr.objective_id);
                 const efficiencyBadge = getEfficiencyBadge(eficiencia);
-                const frequencyInfo = getFrequencyInfo(kr);
                 
                 const isResultadoPositive = isMinimize ? resultado <= 0 : resultado >= 0;
 
@@ -624,45 +447,9 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground line-clamp-2 flex-1">
-                          {objective?.title || '-'}
-                        </span>
-                        {objective && (
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Badge variant="outline" className="text-xs px-1.5 py-0 h-5 shrink-0">
-                                P:{objective.weight || 1}
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent>Peso do objetivo: {objective.weight || 1}</TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Badge variant="outline" className="gap-1 px-2 py-0.5">
-                            {frequencyInfo.icon}
-                            <span className="text-xs">{frequencyInfo.short}</span>
-                          </Badge>
-                        </TooltipTrigger>
-                        <TooltipContent>{frequencyInfo.label}</TooltipContent>
-                      </Tooltip>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <div className={cn(
-                            "inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold",
-                            "bg-primary/10 text-primary"
-                          )}>
-                            {kr.weight || 1}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>Peso do KR: {kr.weight || 1}</TooltipContent>
-                      </Tooltip>
+                      <span className="text-sm text-muted-foreground line-clamp-2">
+                        {objective?.title || '-'}
+                      </span>
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm">
                       {formatValue(meta, kr.unit)}
@@ -721,17 +508,11 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
                 <span className="text-sm font-medium text-foreground">
                   {summaryStats.total} resultado{summaryStats.total !== 1 ? 's' : ''}-chave
                 </span>
-                {hasActiveFilters && (
-                  <Badge variant="secondary" className="text-xs">
-                    Filtrado
-                  </Badge>
-                )}
               </div>
               
               <div className="flex items-center gap-6">
                 {/* Weighted Average */}
                 <div className="flex items-center gap-2">
-                  <Scale className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">Média ponderada:</span>
                   <span className={cn("font-bold text-sm", getEfficiencyColor(summaryStats.weightedAverage))}>
                     {summaryStats.weightedAverage.toFixed(1).replace('.', ',')}%

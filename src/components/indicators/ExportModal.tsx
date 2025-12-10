@@ -21,8 +21,6 @@ interface ExportModalProps {
     krTitle: string;
     objective: string;
     pillar: string;
-    frequency: string;
-    krWeight: number;
     target: number;
     actual: number;
     result: number;
@@ -87,13 +85,31 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       });
       
       const imgData = canvas.toDataURL('image/png');
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
+      // Use A4 size with proper margins
       const pdf = new jsPDF({
-        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
-        unit: 'px',
-        format: [canvas.width, canvas.height]
+        orientation: imgWidth > imgHeight ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: 'a4'
       });
       
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      
+      const availableWidth = pdfWidth - (margin * 2);
+      const availableHeight = pdfHeight - (margin * 2);
+      
+      const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight);
+      const finalWidth = imgWidth * ratio;
+      const finalHeight = imgHeight * ratio;
+      
+      const x = (pdfWidth - finalWidth) / 2;
+      const y = margin;
+      
+      pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
       pdf.save(`${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
       
       toast({ title: 'Sucesso!', description: 'PDF exportado com sucesso' });
@@ -106,21 +122,28 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     }
   };
 
+  const formatValue = (value: number, unit: string): string => {
+    if (unit === '%') {
+      return `${value.toFixed(1)}%`;
+    } else if (unit === 'R$') {
+      return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    }
+    return value.toLocaleString('pt-BR', { minimumFractionDigits: 1 });
+  };
+
   const handleExportXLSX = () => {
     setExporting('xlsx');
     try {
       const worksheetData = [
-        ['Resultado-Chave', 'Objetivo', 'Pilar', 'Frequência', 'Peso KR', 'Meta', 'Real', 'Resultado', 'Eficiência (%)'],
+        ['Resultado-Chave', 'Objetivo', 'Pilar', 'Meta', 'Real', 'Resultado', 'Eficiência (%)'],
         ...exportData.map(row => [
           row.krTitle,
           row.objective,
           row.pillar,
-          row.frequency,
-          row.krWeight,
-          row.target,
-          row.actual,
-          row.result,
-          row.efficiency.toFixed(1)
+          formatValue(row.target, row.unit),
+          formatValue(row.actual, row.unit),
+          formatValue(row.result, row.unit),
+          `${row.efficiency.toFixed(1)}%`
         ])
       ];
       
@@ -130,15 +153,13 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       
       // Ajustar largura das colunas
       worksheet['!cols'] = [
-        { wch: 40 }, // KR
-        { wch: 30 }, // Objetivo
+        { wch: 45 }, // KR
+        { wch: 35 }, // Objetivo
         { wch: 20 }, // Pilar
-        { wch: 12 }, // Frequência
-        { wch: 10 }, // Peso
         { wch: 15 }, // Meta
         { wch: 15 }, // Real
         { wch: 15 }, // Resultado
-        { wch: 12 }, // Eficiência
+        { wch: 15 }, // Eficiência
       ];
       
       XLSX.writeFile(workbook, `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
