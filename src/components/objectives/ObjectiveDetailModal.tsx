@@ -28,6 +28,7 @@ interface ObjectiveData {
   progress: number;
   owner_id: string;
   target_date?: string;
+  weight?: number;
   created_at: string;
   updated_at?: string;
 }
@@ -101,6 +102,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
     description: '',
     target_date: '',
     pillar_id: '',
+    weight: 1,
   });
 
   // Usar o percentual já calculado pelo componente pai para garantir consistência
@@ -112,6 +114,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
         description: objective.description || '',
         target_date: objective.target_date || '',
         pillar_id: objective.pillar_id || '',
+        weight: objective.weight || 1,
       });
     }
   }, [objective]);
@@ -251,7 +254,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                   rows={3}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="edit-target-date">Data Meta</Label>
                   <Input
@@ -275,6 +278,17 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-weight">Peso (1-10)</Label>
+                  <Input
+                    id="edit-weight"
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={editForm.weight}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
+                  />
                 </div>
               </div>
               <div className="flex justify-end space-x-2 pt-4">

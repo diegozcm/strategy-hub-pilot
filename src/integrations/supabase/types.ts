@@ -1179,6 +1179,7 @@ export type Database = {
           title: string
           unit: string
           updated_at: string
+          weight: number
           yearly_actual: number | null
           yearly_percentage: number | null
           yearly_target: number | null
@@ -1227,6 +1228,7 @@ export type Database = {
           title: string
           unit?: string
           updated_at?: string
+          weight?: number
           yearly_actual?: number | null
           yearly_percentage?: number | null
           yearly_target?: number | null
@@ -1275,6 +1277,7 @@ export type Database = {
           title?: string
           unit?: string
           updated_at?: string
+          weight?: number
           yearly_actual?: number | null
           yearly_percentage?: number | null
           yearly_target?: number | null

@@ -33,6 +33,7 @@ const objectiveSchema = z.object({
   responsible: z.string().optional(),
   target_date: z.string().optional(),
   status: z.enum(['not_started', 'in_progress', 'completed', 'suspended']),
+  weight: z.number().min(1).max(10).optional(),
 });
 
 type ObjectiveFormData = z.infer<typeof objectiveSchema>;
@@ -62,6 +63,7 @@ export const ObjectiveFormModal = ({
       responsible: '',
       target_date: '',
       status: 'not_started',
+      weight: 1,
     },
   });
 
@@ -165,29 +167,52 @@ export const ObjectiveFormModal = ({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="not_started">Não Iniciado</SelectItem>
+                        <SelectItem value="in_progress">Em Progresso</SelectItem>
+                        <SelectItem value="completed">Concluído</SelectItem>
+                        <SelectItem value="suspended">Suspenso</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="weight"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Peso (1-10)</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o status" />
-                      </SelectTrigger>
+                      <Input 
+                        type="number" 
+                        min={1} 
+                        max={10} 
+                        placeholder="1"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                      />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="not_started">Não Iniciado</SelectItem>
-                      <SelectItem value="in_progress">Em Progresso</SelectItem>
-                      <SelectItem value="completed">Concluído</SelectItem>
-                      <SelectItem value="suspended">Suspenso</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="flex justify-end gap-2 pt-4">
               <Button type="button" variant="outline" onClick={handleClose}>

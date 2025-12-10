@@ -74,7 +74,8 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
     frequency: 'monthly',
     start_month: '',
     end_month: '',
-    assigned_owner_id: ''
+    assigned_owner_id: '',
+    weight: 1
   });
 
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
@@ -155,6 +156,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
         due_date: formData.deadline || null,
         start_month: formData.start_month || null,
         end_month: formData.end_month || null,
+        weight: formData.weight || 1,
         // Se for member, auto-atribuir ao próprio usuário; senão usar o valor do form
         assigned_owner_id: isMemberOnly 
           ? currentUserId || null
@@ -178,7 +180,8 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
         frequency: 'monthly',
         start_month: '',
         end_month: '',
-        assigned_owner_id: ''
+        assigned_owner_id: '',
+        weight: 1
       });
       
       onClose();
@@ -399,7 +402,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="responsible">Responsável</Label>
                   <Input
@@ -417,6 +420,19 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                     type="date"
                     value={formData.deadline}
                     onChange={(e) => setFormData({...formData, deadline: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="weight">Peso (1-10)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    min={1}
+                    max={10}
+                    placeholder="1"
+                    value={formData.weight}
+                    onChange={(e) => setFormData({...formData, weight: parseInt(e.target.value) || 1})}
                   />
                 </div>
               </div>

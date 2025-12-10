@@ -106,7 +106,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
     target_direction: 'maximize' as TargetDirection,
     start_month: '',
     end_month: '',
-    assigned_owner_id: ''
+    assigned_owner_id: '',
+    weight: 1
   });
   
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
@@ -307,7 +308,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
         target_direction: (keyResult.target_direction as TargetDirection) || 'maximize',
         start_month: keyResult.start_month || '',
         end_month: keyResult.end_month || '',
-        assigned_owner_id: keyResult.assigned_owner_id || ''
+        assigned_owner_id: keyResult.assigned_owner_id || '',
+        weight: keyResult.weight || 1
       });
       
       setAggregationType(keyResult.aggregation_type || 'sum');
@@ -393,7 +395,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
         target_direction: basicInfo.target_direction,
         start_month: basicInfo.start_month || null,
         end_month: basicInfo.end_month || null,
-        assigned_owner_id: basicInfo.assigned_owner_id === 'none' || basicInfo.assigned_owner_id === '' ? null : basicInfo.assigned_owner_id
+        assigned_owner_id: basicInfo.assigned_owner_id === 'none' || basicInfo.assigned_owner_id === '' ? null : basicInfo.assigned_owner_id,
+        weight: basicInfo.weight || 1
       });
 
       toast({
@@ -527,14 +530,32 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
-                <Textarea
-                  id="description"
-                  value={basicInfo.description}
-                  onChange={(e) => setBasicInfo({...basicInfo, description: e.target.value})}
-                  rows={3}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="description">Descrição</Label>
+                  <Textarea
+                    id="description"
+                    value={basicInfo.description}
+                    onChange={(e) => setBasicInfo({...basicInfo, description: e.target.value})}
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="weight">Peso (1-10)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    min={1}
+                    max={10}
+                    placeholder="1"
+                    value={basicInfo.weight}
+                    onChange={(e) => setBasicInfo({...basicInfo, weight: parseInt(e.target.value) || 1})}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Peso do KR para cálculo da média ponderada do objetivo
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-2">
