@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -8,6 +8,7 @@ import { TrendingUp, TrendingDown, Target, Activity, AlertCircle, CheckCircle, C
 import { Button } from '@/components/ui/button';
 import { KeyResult, StrategicObjective } from '@/types/strategic-map';
 import { cn } from '@/lib/utils';
+import { ExportModal } from './ExportModal';
 
 interface KRTableViewProps {
   keyResults: KeyResult[];
@@ -35,6 +36,75 @@ const frequencyLabels: Record<string, { label: string; icon: React.ReactNode; sh
   quarterly: { label: 'Trimestral', icon: <CalendarDays className="h-3.5 w-3.5" />, short: 'T' },
   semiannual: { label: 'Semestral', icon: <CalendarClock className="h-3.5 w-3.5" />, short: 'S' },
   annual: { label: 'Anual', icon: <CalendarClock className="h-3.5 w-3.5" />, short: 'A' },
+};
+
+// Period ranges for each frequency type
+const getPeriodRanges = (frequency: string): number[][] => {
+  switch (frequency) {
+    case 'bimonthly':
+      return [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12]];
+    case 'quarterly':
+      return [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]];
+    case 'semiannual':
+      return [[1, 2, 3, 4, 5, 6], [7, 8, 9, 10, 11, 12]];
+    case 'annual':
+      return [[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]];
+    case 'monthly':
+    default:
+      return [[1], [2], [3], [4], [5], [6], [7], [8], [9], [10], [11], [12]];
+  }
+};
+
+// Get which period a specific month belongs to for a given frequency
+const getMonthPeriodIndex = (month: number, frequency: string): number => {
+  const ranges = getPeriodRanges(frequency);
+  for (let i = 0; i < ranges.length; i++) {
+    if (ranges[i].includes(month)) return i;
+  }
+  return 0;
+};
+
+// Get current period based on frequency
+const getCurrentPeriodMonths = (frequency: string, selectedMonth?: number): number[] => {
+  const currentMonth = selectedMonth || new Date().getMonth() + 1;
+  const periodIndex = getMonthPeriodIndex(currentMonth, frequency);
+  const ranges = getPeriodRanges(frequency);
+  return ranges[periodIndex] || [currentMonth];
+};
+
+// Aggregate monthly values for a specific period range
+const aggregateMonthlyValues = (
+  monthlyData: Record<string, number> | null,
+  months: number[],
+  year: number,
+  aggregationType: string = 'sum'
+): number => {
+  if (!monthlyData) return 0;
+  
+  let values: number[] = [];
+  months.forEach(month => {
+    const key = `${year}-${String(month).padStart(2, '0')}`;
+    const value = monthlyData[key];
+    if (value !== undefined && value !== null) {
+      values.push(value);
+    }
+  });
+
+  if (values.length === 0) return 0;
+
+  switch (aggregationType) {
+    case 'average':
+      return values.reduce((a, b) => a + b, 0) / values.length;
+    case 'max':
+      return Math.max(...values);
+    case 'min':
+      return Math.min(...values);
+    case 'last':
+      return values[values.length - 1];
+    case 'sum':
+    default:
+      return values.reduce((a, b) => a + b, 0);
+  }
 };
 
 const formatValue = (value: number, unit: string = '%'): string => {
@@ -83,26 +153,81 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
   const [frequencyFilter, setFrequencyFilter] = useState<FrequencyType>('all');
   const [pillarFilter, setPillarFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  
+  // Ref for table export
+  const tableRef = useRef<HTMLDivElement>(null);
 
-  // Get metrics for a specific KR based on period type
+  // Calculate metrics by frequency - aggregates monthly data based on KR frequency
+  const calculateMetricsByFrequency = (kr: KeyResult) => {
+    const frequency = kr.frequency || 'monthly';
+    const year = selectedYear || new Date().getFullYear();
+    const aggregationType = kr.aggregation_type || 'sum';
+    const isMinimize = kr.target_direction === 'minimize';
+    
+    const monthlyTargets = kr.monthly_targets as Record<string, number> | null;
+    const monthlyActual = kr.monthly_actual as Record<string, number> | null;
+
+    let months: number[] = [];
+    
+    // Determine which months to aggregate based on period type and frequency
+    if (periodType === 'ytd') {
+      // YTD: from January to current month
+      const currentMonth = new Date().getMonth() + 1;
+      const periodMonths = getCurrentPeriodMonths(frequency, currentMonth);
+      // Get all complete periods up to current period
+      const ranges = getPeriodRanges(frequency);
+      const currentPeriodIdx = getMonthPeriodIndex(currentMonth, frequency);
+      for (let i = 0; i <= currentPeriodIdx; i++) {
+        months = [...months, ...ranges[i]];
+      }
+    } else if (periodType === 'quarterly') {
+      // Map quarter to months
+      const quarterMonths: Record<number, number[]> = {
+        1: [1, 2, 3],
+        2: [4, 5, 6],
+        3: [7, 8, 9],
+        4: [10, 11, 12],
+      };
+      const qMonths = quarterMonths[selectedQuarter || 1];
+      // Get the months that belong to complete periods for this frequency within the quarter
+      months = qMonths;
+    } else if (periodType === 'monthly') {
+      // Single month - but need to check if it aligns with frequency period
+      months = getCurrentPeriodMonths(frequency, selectedMonth);
+    } else if (periodType === 'yearly') {
+      // Full year
+      months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+    }
+
+    const targetYear = periodType === 'quarterly' ? (selectedQuarterYear || year) : year;
+    const target = aggregateMonthlyValues(monthlyTargets, months, targetYear, aggregationType);
+    const actual = aggregateMonthlyValues(monthlyActual, months, targetYear, aggregationType);
+
+    // Calculate percentage based on direction
+    let percentage = 0;
+    if (target > 0 && actual > 0) {
+      if (isMinimize) {
+        percentage = (target / actual) * 100;
+      } else {
+        percentage = (actual / target) * 100;
+      }
+    } else if (target === 0 && actual === 0) {
+      percentage = 100;
+    }
+
+    return {
+      target,
+      actual,
+      percentage,
+      result: actual - target,
+    };
+  };
+
+  // Get metrics for a specific KR - use frequency-based calculation
   const getMetrics = (kr: KeyResult) => {
-    const metrics = customMetricsMap.get(kr.id);
-    if (!metrics) {
-      return { target: 0, actual: 0, percentage: 0 };
-    }
-
-    switch (periodType) {
-      case 'ytd':
-        return metrics.ytd;
-      case 'monthly':
-        return metrics.monthly;
-      case 'yearly':
-        return metrics.yearly;
-      case 'quarterly':
-        return metrics.quarterly;
-      default:
-        return metrics.ytd;
-    }
+    // Use frequency-based aggregation for accurate period data
+    return calculateMetricsByFrequency(kr);
   };
 
   // Calculate resultado (difference) and efficiency
@@ -110,7 +235,7 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
     const metrics = getMetrics(kr);
     const real = metrics.actual;
     const meta = metrics.target;
-    const resultado = real - meta;
+    const resultado = metrics.result;
     const eficiencia = metrics.percentage;
 
     return {
@@ -189,7 +314,7 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
       
       return a.title.localeCompare(b.title);
     });
-  }, [keyResults, objectives, pillars, frequencyFilter, pillarFilter, statusFilter, customMetricsMap]);
+  }, [keyResults, objectives, pillars, frequencyFilter, pillarFilter, statusFilter, selectedYear, selectedMonth, selectedQuarter, selectedQuarterYear, periodType]);
 
   // Calculate summary stats
   const summaryStats = useMemo(() => {
@@ -214,7 +339,29 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
     const weightedAverage = totalWeight > 0 ? totalEfficiency / totalWeight : 0;
 
     return { total, achieved, attention, critical, weightedAverage };
-  }, [filteredAndSortedKRs, customMetricsMap]);
+  }, [filteredAndSortedKRs, selectedYear, selectedMonth, selectedQuarter, selectedQuarterYear, periodType]);
+
+  // Prepare export data
+  const exportData = useMemo(() => {
+    return filteredAndSortedKRs.map(kr => {
+      const { real, meta, resultado, eficiencia } = calculateRMRE(kr);
+      const { objective, pillar } = getObjectiveInfo(kr.objective_id);
+      const frequencyInfo = getFrequencyInfo(kr);
+      
+      return {
+        krTitle: kr.title,
+        objective: objective?.title || '-',
+        pillar: pillar?.name || '-',
+        frequency: frequencyInfo.label,
+        krWeight: kr.weight || 1,
+        target: meta,
+        actual: real,
+        result: resultado,
+        efficiency: eficiencia,
+        unit: kr.unit || '%',
+      };
+    });
+  }, [filteredAndSortedKRs, selectedYear, selectedMonth, selectedQuarter, selectedQuarterYear, periodType]);
 
   // Get period label for header
   const getPeriodLabel = (): string => {
@@ -356,14 +503,19 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
           <div className="flex-1" />
 
           {/* Export Button */}
-          <Button variant="outline" size="sm" className="h-9 gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-9 gap-2"
+            onClick={() => setExportModalOpen(true)}
+          >
             <Download className="h-4 w-4" />
             Exportar
           </Button>
         </div>
 
         {/* Table */}
-        <div className="rounded-lg border bg-card overflow-hidden">
+        <div ref={tableRef} className="rounded-lg border bg-card overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/60 hover:bg-muted/60">
@@ -624,6 +776,15 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Export Modal */}
+        <ExportModal
+          open={exportModalOpen}
+          onOpenChange={setExportModalOpen}
+          tableRef={tableRef}
+          exportData={exportData}
+          title={`Tabela RMRE - ${getPeriodLabel()}`}
+        />
       </div>
     </TooltipProvider>
   );
