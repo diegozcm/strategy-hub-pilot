@@ -151,6 +151,10 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
   selectedMonth,
   selectedQuarter,
   selectedQuarterYear,
+  selectedSemester,
+  selectedSemesterYear,
+  selectedBimonth,
+  selectedBimonthYear,
   onKRClick,
   customMetricsMap,
   pillarFilter = 'all',
@@ -192,6 +196,20 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
         4: [10, 11, 12],
       };
       months = quarterMonths[selectedQuarter || 1];
+    } else if (periodType === 'semesterly') {
+      // S1: Jan-Jun, S2: Jul-Dez
+      const semesterMonths: Record<number, number[]> = {
+        1: [1, 2, 3, 4, 5, 6],
+        2: [7, 8, 9, 10, 11, 12],
+      };
+      months = semesterMonths[selectedSemester || 1];
+    } else if (periodType === 'bimonthly') {
+      // B1-B6: Jan-Fev, Mar-Abr, Mai-Jun, Jul-Ago, Set-Out, Nov-Dez
+      const bimonthMonths: Record<number, number[]> = {
+        1: [1, 2], 2: [3, 4], 3: [5, 6],
+        4: [7, 8], 5: [9, 10], 6: [11, 12],
+      };
+      months = bimonthMonths[selectedBimonth || 1];
     } else if (periodType === 'monthly') {
       // Single month - but need to check if it aligns with frequency period
       months = getCurrentPeriodMonths(frequency, selectedMonth);
@@ -200,7 +218,10 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
       months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     }
 
-    const targetYear = periodType === 'quarterly' ? (selectedQuarterYear || year) : year;
+    const targetYear = periodType === 'quarterly' ? (selectedQuarterYear || year) 
+      : periodType === 'semesterly' ? (selectedSemesterYear || year)
+      : periodType === 'bimonthly' ? (selectedBimonthYear || year)
+      : year;
     const target = aggregateMonthlyValues(monthlyTargets, months, targetYear, aggregationType);
     const actual = aggregateMonthlyValues(monthlyActual, months, targetYear, aggregationType);
 
@@ -213,7 +234,7 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
         percentage = (actual / target) * 100;
       }
     } else if (target === 0 && actual === 0) {
-      percentage = 100;
+      percentage = 0; // Sem dados = 0%, não 100%
     }
 
     return {
@@ -360,6 +381,10 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
         return `Ano ${selectedYear}`;
       case 'quarterly':
         return `Q${selectedQuarter} ${selectedQuarterYear}`;
+      case 'semesterly':
+        return `S${selectedSemester} ${selectedSemesterYear}`;
+      case 'bimonthly':
+        return `B${selectedBimonth} ${selectedBimonthYear}`;
       default:
         return '';
     }

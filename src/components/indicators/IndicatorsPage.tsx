@@ -1309,6 +1309,10 @@ export const IndicatorsPage: React.FC = () => {
           selectedMonth={selectedMonth}
           selectedQuarter={selectedQuarter}
           selectedQuarterYear={selectedQuarterYear}
+          selectedSemester={selectedSemester}
+          selectedSemesterYear={selectedSemesterYear}
+          selectedBimonth={selectedBimonth}
+          selectedBimonthYear={selectedBimonthYear}
           onKRClick={openKROverviewModal}
           customMetricsMap={customMetricsMap}
           pillarFilter={pillarFilter}
