@@ -323,11 +323,13 @@ export const useStrategicMap = () => {
   // Calculate progress
   const calculateObjectiveProgress = (
     objectiveId: string,
-    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' = 'ytd',
+    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly' = 'ytd',
     options?: {
       selectedMonth?: number;
       selectedYear?: number;
       selectedQuarter?: 1 | 2 | 3 | 4;
+      selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
+      selectedBimonthYear?: number;
     },
     filteredKRs?: KeyResult[]  // Aceitar KRs já filtrados (opcional)
   ): number => {
@@ -428,11 +430,13 @@ export const useStrategicMap = () => {
 
   const calculatePillarProgress = (
     pillarId: string,
-    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' = 'ytd',
+    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly' = 'ytd',
     options?: {
       selectedMonth?: number;
       selectedYear?: number;
       selectedQuarter?: 1 | 2 | 3 | 4;
+      selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
+      selectedBimonthYear?: number;
     },
     filteredKRs?: KeyResult[]  // Aceitar KRs já filtrados (opcional)
   ): number => {
