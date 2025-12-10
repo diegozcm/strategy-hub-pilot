@@ -3,7 +3,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Clock, User, MessageSquare, Info } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MentoringSessionWithMentor } from '@/hooks/useStartupSessions';
 import { ActionItemsManager } from './ActionItemsManager';
@@ -71,7 +71,7 @@ export const SessionAccordion: React.FC<SessionAccordionProps> = ({ sessions }) 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
-                    {format(new Date(session.session_date), 'dd/MM/yyyy', { locale: ptBR })}
+                    {format(parseISO(session.session_date), 'dd/MM/yyyy', { locale: ptBR })}
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
@@ -109,7 +109,7 @@ export const SessionAccordion: React.FC<SessionAccordionProps> = ({ sessions }) 
                 <div className="text-sm">
                   <Badge variant="secondary" className="text-xs">
                     <Calendar className="h-3 w-3 mr-1" />
-                    Follow-up: {format(new Date(session.follow_up_date), 'dd/MM/yyyy', { locale: ptBR })}
+                    Follow-up: {format(parseISO(session.follow_up_date), 'dd/MM/yyyy', { locale: ptBR })}
                   </Badge>
                 </div>
               )}
