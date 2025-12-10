@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, MoreVertical, Plus, Eye, Edit, Calendar, Clock, ArrowLeft } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, startOfWeek, endOfWeek } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MentoringSession } from '@/hooks/useMentorSessions';
 import { ActionItemsManager } from '@/components/startup-hub/ActionItemsManager';
@@ -53,7 +53,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   // Get sessions for a specific day
   const getSessionsForDay = (date: Date) => {
     return sessions.filter(session => 
-      isSameDay(new Date(session.session_date), date)
+      isSameDay(parseISO(session.session_date), date)
     );
   };
 
@@ -330,7 +330,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                         </Badge>
                         <div className="flex items-center text-sm text-muted-foreground">
                           <Calendar className="h-4 w-4 mr-1" />
-                          {format(new Date(selectedSession.session_date), 'dd/MM/yyyy', { locale: ptBR })}
+                          {format(parseISO(selectedSession.session_date), 'dd/MM/yyyy', { locale: ptBR })}
                         </div>
                         <div className="flex items-center text-sm text-muted-foreground">
                           <Clock className="h-4 w-4 mr-1" />
@@ -369,7 +369,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                   
                   {selectedSession.follow_up_date && (
                     <div className="text-sm text-muted-foreground mt-4 p-3 bg-muted/50 rounded-lg">
-                      <strong>Follow-up agendado:</strong> {format(new Date(selectedSession.follow_up_date), 'dd/MM/yyyy', { locale: ptBR })}
+                      <strong>Follow-up agendado:</strong> {format(parseISO(selectedSession.follow_up_date), 'dd/MM/yyyy', { locale: ptBR })}
                     </div>
                   )}
                 </CardContent>

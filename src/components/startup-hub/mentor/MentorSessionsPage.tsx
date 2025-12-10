@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { useMentorStartupDetails } from '@/hooks/useMentorStartupDetails';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useMentorSessions, MentoringSession } from '@/hooks/useMentorSessions';
 import { ActionItemsManager } from '../ActionItemsManager';
@@ -67,11 +67,11 @@ export const MentorSessionsPage: React.FC = () => {
     setEditingSession(session);
     setFormData({
       startup_company_id: session.startup_company_id,
-      session_date: format(new Date(session.session_date), 'yyyy-MM-dd'),
+      session_date: format(parseISO(session.session_date), 'yyyy-MM-dd'),
       duration: session.duration || 60,
       session_type: session.session_type,
       notes: session.notes || '',
-      follow_up_date: session.follow_up_date ? format(new Date(session.follow_up_date), 'yyyy-MM-dd') : '',
+      follow_up_date: session.follow_up_date ? format(parseISO(session.follow_up_date), 'yyyy-MM-dd') : '',
       status: session.status || 'completed'
     });
     setIsCreateModalOpen(true);
@@ -325,7 +325,7 @@ export const MentorSessionsPage: React.FC = () => {
                       </Badge>
                       <div className="flex items-center text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4 mr-1" />
-                        {format(new Date(session.session_date), 'dd/MM/yyyy', { locale: ptBR })}
+                        {format(parseISO(session.session_date), 'dd/MM/yyyy', { locale: ptBR })}
                       </div>
                       <div className="flex items-center text-sm text-muted-foreground">
                         <Clock className="h-4 w-4 mr-1" />
@@ -366,7 +366,7 @@ export const MentorSessionsPage: React.FC = () => {
                 
                 {session.follow_up_date && (
                   <div className="text-sm text-muted-foreground mt-4">
-                    <strong>Follow-up agendado:</strong> {format(new Date(session.follow_up_date), 'dd/MM/yyyy', { locale: ptBR })}
+                    <strong>Follow-up agendado:</strong> {format(parseISO(session.follow_up_date), 'dd/MM/yyyy', { locale: ptBR })}
                   </div>
                 )}
               </CardContent>
