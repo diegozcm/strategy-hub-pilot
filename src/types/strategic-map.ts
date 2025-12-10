@@ -188,7 +188,7 @@ export interface KRFCA {
 }
 
 export type MetricType = 'percentage' | 'number' | 'currency' | 'time';
-export type Frequency = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+export type Frequency = 'daily' | 'weekly' | 'bimonthly' | 'monthly' | 'quarterly' | 'semiannual' | 'yearly';
 export type ProjectStatus = 'planning' | 'in_progress' | 'completed' | 'suspended';
 export type ActionStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled';
 export type ActionPriority = 'low' | 'medium' | 'high';

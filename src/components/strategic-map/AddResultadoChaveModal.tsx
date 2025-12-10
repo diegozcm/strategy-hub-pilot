@@ -394,8 +394,10 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                     <SelectContent>
                       <SelectItem value="daily">Diário</SelectItem>
                       <SelectItem value="weekly">Semanal</SelectItem>
+                      <SelectItem value="bimonthly">Bimestral</SelectItem>
                       <SelectItem value="monthly">Mensal</SelectItem>
                       <SelectItem value="quarterly">Trimestral</SelectItem>
+                      <SelectItem value="semiannual">Semestral</SelectItem>
                       <SelectItem value="yearly">Anual</SelectItem>
                     </SelectContent>
                   </Select>
