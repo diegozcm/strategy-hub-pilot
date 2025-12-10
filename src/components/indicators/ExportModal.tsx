@@ -68,6 +68,20 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       }
     });
     
+    // Fix badges - ensure they don't truncate text
+    clone.querySelectorAll('[class*="badge"], [class*="Badge"], [class*="rounded-full"]').forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      if (htmlEl.textContent && htmlEl.textContent.trim().length > 0) {
+        htmlEl.style.whiteSpace = 'nowrap';
+        htmlEl.style.minWidth = 'fit-content';
+        htmlEl.style.display = 'inline-flex';
+        htmlEl.style.alignItems = 'center';
+        htmlEl.style.justifyContent = 'center';
+        htmlEl.style.padding = '4px 10px';
+        htmlEl.style.overflow = 'visible';
+      }
+    });
+    
     // Replace SVG icons with Unicode symbols
     clone.querySelectorAll('svg').forEach((svg) => {
       const span = document.createElement('span');
