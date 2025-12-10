@@ -77,8 +77,10 @@ export const IndicatorsPage: React.FC = () => {
     selectedMonth, setSelectedMonth,
     selectedQuarter, setSelectedQuarter,
     selectedQuarterYear, setSelectedQuarterYear,
+    selectedSemester, setSelectedSemester,
+    selectedSemesterYear, setSelectedSemesterYear,
     isYTDCalculable, ytdInfoMessage, planFirstYear,
-    quarterOptions, monthOptions, yearOptions,
+    quarterOptions, monthOptions, yearOptions, semesterOptions,
     handleYTDClick: contextHandleYTDClick
   } = usePeriodFilter();
   
@@ -449,11 +451,12 @@ export const IndicatorsPage: React.FC = () => {
     return map;
   }, [keyResults, selectedQuarter]);
 
-  // Recalcular metrics considerando mês customizado OU ano customizado
+  // Recalcular metrics considerando mês customizado, ano customizado OU semestre
   const customMetricsMap = useMemo(() => {
     const needsRecalculation = 
       (selectedPeriod === 'monthly' && selectedMonth && selectedYear) ||
-      (selectedPeriod === 'yearly' && selectedYear);
+      (selectedPeriod === 'yearly' && selectedYear) ||
+      (selectedPeriod === 'semesterly' && selectedSemester && selectedSemesterYear);
       
     if (!needsRecalculation) {
       return krMetricsMap;
@@ -471,7 +474,7 @@ export const IndicatorsPage: React.FC = () => {
         let percentage = 0;
         if (target > 0 && actual > 0) {
           if (kr.target_direction === 'minimize') {
-            percentage = ((target - actual) / target) * 100 + 100;
+            percentage = (target / actual) * 100;
           } else {
             percentage = (actual / target) * 100;
           }
@@ -498,6 +501,7 @@ export const IndicatorsPage: React.FC = () => {
             actual: 0,
             percentage: 0,
           },
+          semesterly: { target: 0, actual: 0, percentage: 0 },
         });
       } else if (selectedPeriod === 'yearly' && selectedYear) {
         // Para yearly com ano customizado, recalcular
@@ -515,7 +519,7 @@ export const IndicatorsPage: React.FC = () => {
         let percentage = 0;
         if (totalTarget > 0 && totalActual > 0) {
           if (kr.target_direction === 'minimize') {
-            percentage = ((totalTarget - totalActual) / totalTarget) * 100 + 100;
+            percentage = (totalTarget / totalActual) * 100;
           } else {
             percentage = (totalActual / totalTarget) * 100;
           }
@@ -542,6 +546,60 @@ export const IndicatorsPage: React.FC = () => {
             actual: 0,
             percentage: 0,
           },
+          semesterly: { target: 0, actual: 0, percentage: 0 },
+        });
+      } else if (selectedPeriod === 'semesterly' && selectedSemester && selectedSemesterYear) {
+        // Para semestre, calcular B1 (Jan-Jun) ou B2 (Jul-Dez)
+        const startMonth = selectedSemester === 1 ? 1 : 7;
+        const endMonth = selectedSemester === 1 ? 6 : 12;
+        
+        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
+        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+        
+        let totalTarget = 0;
+        let totalActual = 0;
+        
+        for (let m = startMonth; m <= endMonth; m++) {
+          const monthKey = `${selectedSemesterYear}-${m.toString().padStart(2, '0')}`;
+          totalTarget += monthlyTargets[monthKey] || 0;
+          totalActual += monthlyActual[monthKey] || 0;
+        }
+        
+        let percentage = 0;
+        if (totalTarget > 0 && totalActual > 0) {
+          if (kr.target_direction === 'minimize') {
+            percentage = (totalTarget / totalActual) * 100;
+          } else {
+            percentage = (totalActual / totalTarget) * 100;
+          }
+        }
+        
+        map.set(kr.id, {
+          ytd: {
+            target: kr.ytd_target ?? 0,
+            actual: kr.ytd_actual ?? 0,
+            percentage: kr.ytd_percentage ?? 0,
+          },
+          monthly: {
+            target: kr.current_month_target ?? 0,
+            actual: kr.current_month_actual ?? 0,
+            percentage: kr.monthly_percentage ?? 0,
+          },
+          yearly: {
+            target: kr.yearly_target ?? 0,
+            actual: kr.yearly_actual ?? 0,
+            percentage: kr.yearly_percentage ?? 0,
+          },
+          quarterly: krMetricsMap.get(kr.id)?.quarterly ?? {
+            target: 0,
+            actual: 0,
+            percentage: 0,
+          },
+          semesterly: {
+            target: totalTarget,
+            actual: totalActual,
+            percentage,
+          },
         });
       } else {
         // Se não precisa recalcular, usar valores do map original
@@ -552,7 +610,7 @@ export const IndicatorsPage: React.FC = () => {
       }
     });
     return map;
-  }, [keyResults, selectedPeriod, selectedMonth, selectedYear, krMetricsMap]);
+  }, [keyResults, selectedPeriod, selectedMonth, selectedYear, selectedSemester, selectedSemesterYear, krMetricsMap]);
 
   const getMetricsByPeriod = (keyResultId: string) => {
     const metrics = customMetricsMap.get(keyResultId);
@@ -561,6 +619,7 @@ export const IndicatorsPage: React.FC = () => {
     return selectedPeriod === 'quarterly' ? metrics.quarterly :
            selectedPeriod === 'monthly' ? metrics.monthly :
            selectedPeriod === 'yearly' ? metrics.yearly :
+           selectedPeriod === 'semesterly' ? metrics.semesterly :
            metrics.ytd;
   };
 
@@ -568,6 +627,7 @@ export const IndicatorsPage: React.FC = () => {
     if (selectedPeriod === 'quarterly') return `Q${selectedQuarter}`;
     if (selectedPeriod === 'ytd') return 'YTD';
     if (selectedPeriod === 'yearly') return 'Ano';
+    if (selectedPeriod === 'semesterly') return `B${selectedSemester}`;
     if (selectedPeriod === 'monthly' && selectedMonth && selectedYear) {
       return new Date(selectedYear, selectedMonth - 1, 1)
         .toLocaleDateString('pt-BR', { month: 'long' })
@@ -613,10 +673,12 @@ export const IndicatorsPage: React.FC = () => {
         selectedQuarterYear,
         selectedYear,
         selectedMonth,
+        selectedSemester,
+        selectedSemesterYear,
         planFirstYear // Passa o primeiro ano do plano para YTD inteligente
       }
     );
-  }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, planFirstYear]);
+  }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, selectedSemester, selectedSemesterYear, planFirstYear]);
 
   // Aplicar filtro de visibilidade para membros
   const visibilityFilteredKeyResults = useMemo(() => {
@@ -695,6 +757,10 @@ export const IndicatorsPage: React.FC = () => {
 
   // Calculate summary statistics from context-filtered KRs (respects quarter filter)
   const totalKeyResults = contextFilteredKeyResults.length;
+  const excellentKeyResults = contextFilteredKeyResults.filter(kr => {
+    const metrics = getMetricsByPeriod(kr.id);
+    return metrics.percentage > 105;
+  }).length;
   const onTargetKeyResults = contextFilteredKeyResults.filter(kr => {
     const metrics = getMetricsByPeriod(kr.id);
     const p = metrics.percentage;
@@ -901,6 +967,38 @@ export const IndicatorsPage: React.FC = () => {
                 </SelectContent>
               </Select>
             )}
+
+            <Button
+              variant={selectedPeriod === 'semesterly' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('semesterly')}
+              className="gap-2 border-l border-border/50 ml-1 pl-2"
+            >
+              <Calendar className="w-4 h-4" />
+              Semestre
+            </Button>
+
+            {selectedPeriod === 'semesterly' && (
+              <Select
+                value={`${selectedSemesterYear}-B${selectedSemester}`}
+                onValueChange={(value) => {
+                  const [year, b] = value.split('-B');
+                  setSelectedSemesterYear(parseInt(year));
+                  setSelectedSemester(parseInt(b) as 1 | 2);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[160px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {semesterOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             
             <Button
               variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
@@ -939,7 +1037,7 @@ export const IndicatorsPage: React.FC = () => {
         </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card 
           className={`cursor-pointer transition-all hover:shadow-lg ${progressFilter === 'all' ? 'ring-2 ring-primary' : ''}`}
           onClick={() => setProgressFilter('all')}
@@ -951,6 +1049,20 @@ export const IndicatorsPage: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold">{totalKeyResults}</div>
             <p className="text-xs text-muted-foreground">Resultados-chave</p>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-lg ${progressFilter === 'excellent' ? 'ring-2 ring-blue-600' : ''}`}
+          onClick={() => setProgressFilter('excellent')}
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Excelente</CardTitle>
+            <TrendingUp className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{excellentKeyResults}</div>
+            <p className="text-xs text-muted-foreground">&gt;105% da meta ({getPeriodLabel()})</p>
           </CardContent>
         </Card>
         
@@ -1031,27 +1143,33 @@ export const IndicatorsPage: React.FC = () => {
           </Select>
 
            <Select value={progressFilter} onValueChange={setProgressFilter}>
-             <SelectTrigger className="w-full sm:w-44">
+             <SelectTrigger className="w-full sm:w-48">
                <SelectValue placeholder="Todos os status" />
              </SelectTrigger>
              <SelectContent>
                <SelectItem value="all">Todos os status</SelectItem>
-               <SelectItem value="achieved">
+               <SelectItem value="excellent">
                  <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-full bg-emerald-500" />
-                   Atingidos (≥100%)
+                   <div className="w-3 h-3 rounded-full bg-blue-500" />
+                   Excelente (&gt;105%)
+                 </div>
+               </SelectItem>
+               <SelectItem value="success">
+                 <div className="flex items-center gap-2">
+                   <div className="w-3 h-3 rounded-full bg-green-500" />
+                   No Alvo (100-105%)
                  </div>
                </SelectItem>
                <SelectItem value="attention">
                  <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-full bg-amber-500" />
-                   Atenção (50-99%)
+                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                   Atenção (71-99%)
                  </div>
                </SelectItem>
                <SelectItem value="critical">
                  <div className="flex items-center gap-2">
                    <div className="w-3 h-3 rounded-full bg-red-500" />
-                   Críticos (&lt;50%)
+                   Críticos (&lt;71%)
                  </div>
                </SelectItem>
              </SelectContent>
