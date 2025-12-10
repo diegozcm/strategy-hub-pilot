@@ -514,7 +514,7 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
                           <span className={cn('font-bold text-sm', getEfficiencyColor(eficiencia))}>
                             {eficiencia.toFixed(1).replace('.', ',')}%
                           </span>
-                          <Badge className={cn("text-xs px-2 py-0", efficiencyBadge.className)}>
+                          <Badge className={cn("text-xs px-2.5 py-0.5 whitespace-nowrap", efficiencyBadge.className)}>
                             {efficiencyBadge.label}
                           </Badge>
                         </div>
