@@ -51,6 +51,9 @@ const calculateObjectiveProgress = (
 ) => {
   if (keyResults.length === 0) return 0;
   
+  // Calcular soma dos pesos para média ponderada
+  const totalWeight = keyResults.reduce((sum, kr) => sum + (kr.weight || 1), 0);
+  
   const totalProgress = keyResults.reduce((sum, kr) => {
     let percentage = 0;
     
@@ -198,10 +201,13 @@ const calculateObjectiveProgress = (
         break;
     }
     
-    return sum + percentage;
+    // Aplicar peso do KR
+    const weight = kr.weight || 1;
+    return sum + (percentage * weight);
   }, 0);
   
-  return totalProgress / keyResults.length;
+  // Retornar média ponderada
+  return totalWeight > 0 ? totalProgress / totalWeight : 0;
 };
 
 export const ObjectiveCard = ({ 
