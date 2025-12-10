@@ -39,6 +39,69 @@ export const ExportModal: React.FC<ExportModalProps> = ({
 }) => {
   const [exporting, setExporting] = useState<'png' | 'pdf' | 'xlsx' | null>(null);
 
+  // Prepare element for export - fix text clipping and icon rendering
+  const prepareForExport = (element: HTMLElement): HTMLElement => {
+    const clone = element.cloneNode(true) as HTMLElement;
+    
+    // Apply export-friendly styles to all elements
+    clone.querySelectorAll('*').forEach((el) => {
+      const htmlEl = el as HTMLElement;
+      const computedStyle = window.getComputedStyle(htmlEl);
+      
+      // Fix text clipping issues
+      if (computedStyle.overflow === 'hidden' || computedStyle.textOverflow === 'ellipsis') {
+        htmlEl.style.overflow = 'visible';
+        htmlEl.style.textOverflow = 'unset';
+        htmlEl.style.whiteSpace = 'normal';
+      }
+      
+      // Remove line-clamp
+      if (htmlEl.classList.contains('line-clamp-2') || htmlEl.classList.contains('line-clamp-1')) {
+        htmlEl.style.webkitLineClamp = 'unset';
+        htmlEl.style.display = 'block';
+        htmlEl.style.overflow = 'visible';
+      }
+      
+      // Add padding to table cells
+      if (htmlEl.tagName === 'TD' || htmlEl.tagName === 'TH') {
+        htmlEl.style.padding = '12px 16px';
+      }
+    });
+    
+    // Replace SVG icons with Unicode symbols
+    clone.querySelectorAll('svg').forEach((svg) => {
+      const span = document.createElement('span');
+      span.style.fontSize = '14px';
+      span.style.fontWeight = 'bold';
+      
+      // Check SVG class or parent context
+      const svgClasses = svg.className.baseVal || '';
+      const parentClasses = svg.parentElement?.className || '';
+      
+      if (svgClasses.includes('text-green') || parentClasses.includes('text-green')) {
+        span.textContent = '▲';
+        span.style.color = '#16a34a';
+      } else if (svgClasses.includes('text-red') || parentClasses.includes('text-red')) {
+        span.textContent = '▼';
+        span.style.color = '#dc2626';
+      } else if (svgClasses.includes('text-blue') || parentClasses.includes('text-blue')) {
+        span.textContent = '★';
+        span.style.color = '#2563eb';
+      } else if (svgClasses.includes('text-yellow') || parentClasses.includes('text-yellow')) {
+        span.textContent = '◆';
+        span.style.color = '#ca8a04';
+      } else {
+        // Generic icon replacement
+        span.textContent = '•';
+        span.style.color = '#6b7280';
+      }
+      
+      svg.parentNode?.replaceChild(span, svg);
+    });
+    
+    return clone;
+  };
+
   const handleExportPNG = async () => {
     if (!tableRef.current) {
       toast({ title: 'Erro', description: 'Tabela não encontrada', variant: 'destructive' });
@@ -47,12 +110,27 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     
     setExporting('png');
     try {
-      const canvas = await html2canvas(tableRef.current, {
+      // Prepare clone for better rendering
+      const clone = prepareForExport(tableRef.current);
+      clone.style.position = 'absolute';
+      clone.style.left = '-9999px';
+      clone.style.top = '0';
+      clone.style.width = `${tableRef.current.scrollWidth}px`;
+      clone.style.backgroundColor = '#ffffff';
+      document.body.appendChild(clone);
+      
+      const canvas = await html2canvas(clone, {
         backgroundColor: '#ffffff',
-        scale: 2,
+        scale: 3,
         logging: false,
         useCORS: true,
+        allowTaint: true,
+        windowWidth: clone.scrollWidth,
+        windowHeight: clone.scrollHeight,
       });
+      
+      // Remove clone
+      document.body.removeChild(clone);
       
       const link = document.createElement('a');
       link.download = `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.png`;
@@ -77,20 +155,35 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     
     setExporting('pdf');
     try {
-      const canvas = await html2canvas(tableRef.current, {
+      // Prepare clone for better rendering
+      const clone = prepareForExport(tableRef.current);
+      clone.style.position = 'absolute';
+      clone.style.left = '-9999px';
+      clone.style.top = '0';
+      clone.style.width = `${tableRef.current.scrollWidth}px`;
+      clone.style.backgroundColor = '#ffffff';
+      document.body.appendChild(clone);
+      
+      const canvas = await html2canvas(clone, {
         backgroundColor: '#ffffff',
-        scale: 2,
+        scale: 3,
         logging: false,
         useCORS: true,
+        allowTaint: true,
+        windowWidth: clone.scrollWidth,
+        windowHeight: clone.scrollHeight,
       });
+      
+      // Remove clone
+      document.body.removeChild(clone);
       
       const imgData = canvas.toDataURL('image/png');
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
       
-      // Use A4 size with proper margins
+      // Use A4 size with proper margins - prefer landscape for tables
       const pdf = new jsPDF({
-        orientation: imgWidth > imgHeight ? 'landscape' : 'portrait',
+        orientation: 'landscape',
         unit: 'mm',
         format: 'a4'
       });
