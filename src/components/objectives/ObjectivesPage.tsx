@@ -251,7 +251,7 @@ export const ObjectivesPage: React.FC = () => {
   // Usa a mesma lógica do useKRMetrics para garantir consistência
   const calculateObjectiveProgress = (
     keyResults: any[], 
-    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' = 'ytd',
+    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' = 'ytd',
     options?: {
       selectedMonth?: number;
       selectedYear?: number;

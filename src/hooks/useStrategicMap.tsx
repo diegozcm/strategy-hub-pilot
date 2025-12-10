@@ -323,7 +323,7 @@ export const useStrategicMap = () => {
   // Calculate progress
   const calculateObjectiveProgress = (
     objectiveId: string,
-    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' = 'ytd',
+    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' = 'ytd',
     options?: {
       selectedMonth?: number;
       selectedYear?: number;
@@ -428,7 +428,7 @@ export const useStrategicMap = () => {
 
   const calculatePillarProgress = (
     pillarId: string,
-    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' = 'ytd',
+    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' = 'ytd',
     options?: {
       selectedMonth?: number;
       selectedYear?: number;
