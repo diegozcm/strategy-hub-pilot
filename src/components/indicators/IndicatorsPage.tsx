@@ -789,27 +789,19 @@ export const IndicatorsPage: React.FC = () => {
         
         {/* Right side: View Toggle + Action Buttons */}
         <div className="flex items-center gap-2">
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-muted/50 p-1 rounded-lg">
-            <Button
-              variant={viewMode === 'cards' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('cards')}
-              className="gap-1.5"
-            >
-              <LayoutGrid className="w-4 h-4" />
-              Cards
-            </Button>
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-              className="gap-1.5"
-            >
-              <Table2 className="w-4 h-4" />
-              Tabela RMRE
-            </Button>
-          </div>
+          {/* View Mode Toggle - Same pattern as Rumo/Instrumentos tabs */}
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'cards' | 'table')} className="w-auto">
+            <TabsList className="grid grid-cols-2">
+              <TabsTrigger value="cards" className="gap-2">
+                <LayoutGrid className="w-4 h-4" />
+                Cards
+              </TabsTrigger>
+              <TabsTrigger value="table" className="gap-2">
+                <Table2 className="w-4 h-4" />
+                Tabela RMRE
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
           
           {canCreateKR && (
             <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
