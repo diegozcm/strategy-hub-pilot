@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, CalendarDays, User, Target, AlertTriangle, CheckCircle, Activity, Trash2, Save, X, MoreVertical, AlertCircle } from 'lucide-react';
+import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, CalendarDays, User, Target, AlertTriangle, CheckCircle, Activity, Trash2, Save, X, MoreVertical, AlertCircle, LayoutGrid, Table2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -26,6 +26,7 @@ import { KRUpdateValuesModal } from '@/components/strategic-map/KRUpdateValuesMo
 import { KeyResult, StrategicObjective } from '@/types/strategic-map';
 import { useSearchParams } from 'react-router-dom';
 import { KRCard } from './KRCard';
+import { KRTableView } from './KRTableView';
 import { useKRMetrics } from '@/hooks/useKRMetrics';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 import { usePeriodFilter } from '@/hooks/usePeriodFilter';
@@ -117,6 +118,7 @@ export const IndicatorsPage: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   
   // Filtrar quarters para mostrar apenas os que têm KRs registrados
   const filteredQuarterOptions = useMemo(() => {
@@ -784,8 +786,30 @@ export const IndicatorsPage: React.FC = () => {
           </div>
         </div>
         
-        {/* Right side: Action Buttons */}
+        {/* Right side: View Toggle + Action Buttons */}
         <div className="flex items-center gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center bg-muted/50 p-1 rounded-lg">
+            <Button
+              variant={viewMode === 'cards' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('cards')}
+              className="gap-1.5"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              Cards
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+              className="gap-1.5"
+            >
+              <Table2 className="w-4 h-4" />
+              Tabela RMRE
+            </Button>
+          </div>
+          
           {canCreateKR && (
             <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
               <Plus className="w-4 h-4" />
@@ -1085,39 +1109,56 @@ export const IndicatorsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Key Results Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredKeyResults.map((keyResult) => {
-          const pillar = getKeyResultPillar(keyResult);
-          const isOwned = keyResult.assigned_owner_id === currentUserId;
-          
-          return (
-            <KRCard
-              key={keyResult.id}
-              keyResult={keyResult}
-              pillar={pillar}
-              selectedPeriod={selectedPeriod}
-              selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-              selectedYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
-              selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
-              onClick={() => openKROverviewModal(keyResult)}
-              isOwned={isOwned}
-            />
-          );
-        })}
-      </div>
+      {/* Key Results View - Cards or Table */}
+      {viewMode === 'table' ? (
+        <KRTableView
+          keyResults={filteredKeyResults}
+          objectives={objectives}
+          pillars={pillars}
+          periodType={selectedPeriod}
+          selectedYear={selectedYear}
+          selectedMonth={selectedMonth}
+          selectedQuarter={selectedQuarter}
+          selectedQuarterYear={selectedQuarterYear}
+          onKRClick={openKROverviewModal}
+          customMetricsMap={customMetricsMap}
+        />
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredKeyResults.map((keyResult) => {
+              const pillar = getKeyResultPillar(keyResult);
+              const isOwned = keyResult.assigned_owner_id === currentUserId;
+              
+              return (
+                <KRCard
+                  key={keyResult.id}
+                  keyResult={keyResult}
+                  pillar={pillar}
+                  selectedPeriod={selectedPeriod}
+                  selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
+                  selectedYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
+                  selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
+                  onClick={() => openKROverviewModal(keyResult)}
+                  isOwned={isOwned}
+                />
+              );
+            })}
+          </div>
 
-      {filteredKeyResults.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-8">
-            <Target className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">
-              {searchTerm || priorityFilter !== 'all'
-                ? 'Nenhum resultado-chave encontrado com os filtros aplicados.'
-                : 'Nenhum resultado-chave cadastrado ainda. Crie seu primeiro resultado-chave!'}
-            </p>
-          </CardContent>
-        </Card>
+          {filteredKeyResults.length === 0 && (
+            <Card>
+              <CardContent className="text-center py-8">
+                <Target className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">
+                  {searchTerm || priorityFilter !== 'all'
+                    ? 'Nenhum resultado-chave encontrado com os filtros aplicados.'
+                    : 'Nenhum resultado-chave cadastrado ainda. Crie seu primeiro resultado-chave!'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Add Key Result Modal */}
