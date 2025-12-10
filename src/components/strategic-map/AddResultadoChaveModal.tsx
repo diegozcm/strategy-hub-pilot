@@ -79,7 +79,8 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
   });
 
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
-  const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
+  const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min' | 'last'>('sum');
+  const [comparisonType, setComparisonType] = useState<'cumulative' | 'period'>('cumulative');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
 
   // Sincronizar selectedYear com yearOptions disponíveis
@@ -152,6 +153,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
         monthly_targets: monthlyTargets,
         monthly_actual: {},
         aggregation_type: aggregationType,
+        comparison_type: comparisonType,
         status: 'not_started',
         due_date: formData.deadline || null,
         start_month: formData.start_month || null,
@@ -478,7 +480,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                 <div className="p-4 border rounded-lg bg-muted/50">
                   <div className="space-y-3">
                     <Label className="text-sm font-medium">Como calcular a meta anual?</Label>
-                    <Select value={aggregationType} onValueChange={(value: 'sum' | 'average' | 'max' | 'min') => setAggregationType(value)}>
+                    <Select value={aggregationType} onValueChange={(value: 'sum' | 'average' | 'max' | 'min' | 'last') => setAggregationType(value)}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -487,6 +489,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                         <SelectItem value="average">Calcular a média das metas mensais</SelectItem>
                         <SelectItem value="max">Usar o maior valor entre as metas</SelectItem>
                         <SelectItem value="min">Usar o menor valor entre as metas</SelectItem>
+                        <SelectItem value="last">Usar o último valor registrado</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
@@ -494,6 +497,26 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                       {aggregationType === 'average' && 'A meta anual será a média de todas as metas mensais'}
                       {aggregationType === 'max' && 'A meta anual será o maior valor entre as metas mensais'}
                       {aggregationType === 'min' && 'A meta anual será o menor valor entre as metas mensais'}
+                      {aggregationType === 'last' && 'A meta anual será o último valor registrado'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-4 border rounded-lg bg-muted/50">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Tipo de comparação</Label>
+                    <Select value={comparisonType} onValueChange={(value: 'cumulative' | 'period') => setComparisonType(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cumulative">Acumulado</SelectItem>
+                        <SelectItem value="period">Apurado no período</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {comparisonType === 'cumulative' && 'Compara a soma acumulada até o período atual'}
+                      {comparisonType === 'period' && 'Compara apenas o valor do período específico'}
                     </p>
                   </div>
                 </div>

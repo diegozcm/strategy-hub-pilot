@@ -112,7 +112,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
   
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
   const [selectedYear, setSelectedYear] = useState<number>(initialYear || new Date().getFullYear());
-  const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
+  const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min' | 'last'>('sum');
   const [editMode, setEditMode] = useState<boolean>(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
@@ -237,7 +237,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
   };
 
   // Save aggregation type
-  const saveAggregationType = async (newType: 'sum' | 'average' | 'max' | 'min') => {
+  const saveAggregationType = async (newType: 'sum' | 'average' | 'max' | 'min' | 'last') => {
     if (!keyResult) return;
     
     try {
@@ -723,8 +723,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                     <Select 
                       value={aggregationType} 
                       onValueChange={(value) => {
-                        setAggregationType(value as 'sum' | 'average' | 'max' | 'min');
-                        saveAggregationType(value as 'sum' | 'average' | 'max' | 'min');
+                        setAggregationType(value as 'sum' | 'average' | 'max' | 'min' | 'last');
+                        saveAggregationType(value as 'sum' | 'average' | 'max' | 'min' | 'last');
                       }}
                       disabled={savingAggregationType}
                     >
@@ -736,6 +736,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                         <SelectItem value="average">Calcular a média das metas mensais</SelectItem>
                         <SelectItem value="max">Usar o maior valor entre as metas</SelectItem>
                         <SelectItem value="min">Usar o menor valor entre as metas</SelectItem>
+                        <SelectItem value="last">Usar o último valor registrado</SelectItem>
                       </SelectContent>
                     </Select>
                     {savingAggregationType && (

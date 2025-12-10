@@ -1142,6 +1142,7 @@ export type Database = {
           aggregation_type: string | null
           assigned_owner_id: string | null
           category: string | null
+          comparison_type: string | null
           created_at: string
           current_month_actual: number | null
           current_month_target: number | null
@@ -1191,6 +1192,7 @@ export type Database = {
           aggregation_type?: string | null
           assigned_owner_id?: string | null
           category?: string | null
+          comparison_type?: string | null
           created_at?: string
           current_month_actual?: number | null
           current_month_target?: number | null
@@ -1240,6 +1242,7 @@ export type Database = {
           aggregation_type?: string | null
           assigned_owner_id?: string | null
           category?: string | null
+          comparison_type?: string | null
           created_at?: string
           current_month_actual?: number | null
           current_month_target?: number | null

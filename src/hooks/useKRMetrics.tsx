@@ -51,7 +51,8 @@ export interface KeyResultWithMetrics {
   q4_percentage?: number;
   target_direction?: 'maximize' | 'minimize';
   unit?: string;
-  aggregation_type?: 'sum' | 'average' | 'max' | 'min';
+  aggregation_type?: 'sum' | 'average' | 'max' | 'min' | 'last';
+  comparison_type?: 'cumulative' | 'period';
   // Raw monthly data for custom month selection
   monthly_targets?: Record<string, number>;
   monthly_actual?: Record<string, number>;
