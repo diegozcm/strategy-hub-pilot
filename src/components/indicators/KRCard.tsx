@@ -17,6 +17,10 @@ interface KRCardProps {
   selectedMonth?: number;
   selectedYear?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;
+  selectedSemester?: 1 | 2;
+  selectedSemesterYear?: number;
+  selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
+  selectedBimonthYear?: number;
   onClick: () => void;
   isOwned?: boolean;
 }
@@ -28,6 +32,10 @@ export const KRCard: React.FC<KRCardProps> = ({
   selectedMonth,
   selectedYear,
   selectedQuarter,
+  selectedSemester,
+  selectedSemesterYear,
+  selectedBimonth,
+  selectedBimonthYear,
   onClick,
   isOwned = false,
 }) => {
@@ -35,26 +43,36 @@ export const KRCard: React.FC<KRCardProps> = ({
     selectedMonth,
     selectedYear,
     selectedQuarter,
+    selectedSemester,
+    selectedSemesterYear,
+    selectedBimonth,
+    selectedBimonthYear,
   });
   
   const currentMetrics = 
     selectedPeriod === 'quarterly' ? metrics.quarterly :
     selectedPeriod === 'monthly' ? metrics.monthly :
     selectedPeriod === 'yearly' ? metrics.yearly :
+    selectedPeriod === 'semesterly' ? metrics.semesterly :
+    selectedPeriod === 'bimonthly' ? metrics.bimonthly :
     metrics.ytd;
   
   const periodLabel = 
     selectedPeriod === 'quarterly' 
       ? `Q${selectedQuarter}`
-      : selectedPeriod === 'monthly' 
+    : selectedPeriod === 'semesterly'
+      ? `S${selectedSemester}`
+    : selectedPeriod === 'bimonthly'
+      ? `B${selectedBimonth}`
+    : selectedPeriod === 'monthly' 
       ? (selectedMonth && selectedYear 
           ? new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString('pt-BR', { month: 'short' })
             .charAt(0).toUpperCase() + 
             new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString('pt-BR', { month: 'short' })
             .slice(1)
           : 'Mês')
-      : selectedPeriod === 'yearly' ? 'Anual'
-      : 'YTD';
+    : selectedPeriod === 'yearly' ? 'Anual'
+    : 'YTD';
 
   const progress = currentMetrics.percentage;
 

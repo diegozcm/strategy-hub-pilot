@@ -1337,6 +1337,10 @@ export const IndicatorsPage: React.FC = () => {
                   selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
                   selectedYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
                   selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
+                  selectedSemester={selectedPeriod === 'semesterly' ? selectedSemester : undefined}
+                  selectedSemesterYear={selectedPeriod === 'semesterly' ? selectedSemesterYear : undefined}
+                  selectedBimonth={selectedPeriod === 'bimonthly' ? selectedBimonth : undefined}
+                  selectedBimonthYear={selectedPeriod === 'bimonthly' ? selectedBimonthYear : undefined}
                   onClick={() => openKROverviewModal(keyResult)}
                   isOwned={isOwned}
                 />
