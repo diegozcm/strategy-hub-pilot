@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { parseISO } from 'date-fns';
 import { useActivePlan } from './useActivePlan';
 
-export type PeriodType = 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly';
+export type PeriodType = 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly';
 
 interface PeriodApplicability {
   /** Se YTD pode ser calculado (ano atual está dentro do plano) */
