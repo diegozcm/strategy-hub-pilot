@@ -68,17 +68,36 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       }
     });
     
-    // Fix badges - ensure they don't truncate text
-    clone.querySelectorAll('[class*="badge"], [class*="Badge"], [class*="rounded-full"]').forEach((el) => {
+    // Fix efficiency badges - apply inline styles to prevent text overflow
+    clone.querySelectorAll('[class*="rounded-full"]').forEach((el) => {
       const htmlEl = el as HTMLElement;
-      if (htmlEl.textContent && htmlEl.textContent.trim().length > 0) {
+      const text = htmlEl.textContent?.trim() || '';
+      
+      // Check if this is an efficiency badge by its text content
+      if (['Excelente', 'No Alvo', 'Atenção', 'Crítico'].includes(text)) {
         htmlEl.style.whiteSpace = 'nowrap';
-        htmlEl.style.minWidth = 'fit-content';
+        htmlEl.style.minWidth = 'auto';
+        htmlEl.style.width = 'auto';
         htmlEl.style.display = 'inline-flex';
         htmlEl.style.alignItems = 'center';
         htmlEl.style.justifyContent = 'center';
-        htmlEl.style.padding = '4px 10px';
+        htmlEl.style.padding = '4px 14px';
         htmlEl.style.overflow = 'visible';
+        htmlEl.style.fontSize = '12px';
+        htmlEl.style.fontWeight = '600';
+        htmlEl.style.borderRadius = '9999px';
+        htmlEl.style.color = '#ffffff';
+        
+        // Apply background color based on badge type
+        if (text === 'Excelente') {
+          htmlEl.style.backgroundColor = '#3b82f6'; // blue-500
+        } else if (text === 'No Alvo') {
+          htmlEl.style.backgroundColor = '#22c55e'; // green-500
+        } else if (text === 'Atenção') {
+          htmlEl.style.backgroundColor = '#eab308'; // yellow-500
+        } else if (text === 'Crítico') {
+          htmlEl.style.backgroundColor = '#ef4444'; // red-500
+        }
       }
     });
     
