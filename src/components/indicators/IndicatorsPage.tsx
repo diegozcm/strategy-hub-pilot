@@ -79,8 +79,10 @@ export const IndicatorsPage: React.FC = () => {
     selectedQuarterYear, setSelectedQuarterYear,
     selectedSemester, setSelectedSemester,
     selectedSemesterYear, setSelectedSemesterYear,
+    selectedBimonth, setSelectedBimonth,
+    selectedBimonthYear, setSelectedBimonthYear,
     isYTDCalculable, ytdInfoMessage, planFirstYear,
-    quarterOptions, monthOptions, yearOptions, semesterOptions,
+    quarterOptions, monthOptions, yearOptions, semesterOptions, bimonthlyOptions,
     handleYTDClick: contextHandleYTDClick
   } = usePeriodFilter();
   
@@ -445,18 +447,29 @@ export const IndicatorsPage: React.FC = () => {
                       selectedQuarter === 3 ? (kr.q3_percentage ?? 0) :
                       (kr.q4_percentage ?? 0),
         },
+        semesterly: {
+          target: 0,
+          actual: 0,
+          percentage: 0,
+        },
+        bimonthly: {
+          target: 0,
+          actual: 0,
+          percentage: 0,
+        },
       };
       map.set(kr.id, metrics);
     });
     return map;
   }, [keyResults, selectedQuarter]);
 
-  // Recalcular metrics considerando mês customizado, ano customizado OU semestre
+  // Recalcular metrics considerando mês customizado, ano customizado, semestre OU bimestre
   const customMetricsMap = useMemo(() => {
     const needsRecalculation = 
       (selectedPeriod === 'monthly' && selectedMonth && selectedYear) ||
       (selectedPeriod === 'yearly' && selectedYear) ||
-      (selectedPeriod === 'semesterly' && selectedSemester && selectedSemesterYear);
+      (selectedPeriod === 'semesterly' && selectedSemester && selectedSemesterYear) ||
+      (selectedPeriod === 'bimonthly' && selectedBimonth && selectedBimonthYear);
       
     if (!needsRecalculation) {
       return krMetricsMap;
@@ -502,6 +515,7 @@ export const IndicatorsPage: React.FC = () => {
             percentage: 0,
           },
           semesterly: { target: 0, actual: 0, percentage: 0 },
+          bimonthly: { target: 0, actual: 0, percentage: 0 },
         });
       } else if (selectedPeriod === 'yearly' && selectedYear) {
         // Para yearly com ano customizado, recalcular
@@ -547,9 +561,10 @@ export const IndicatorsPage: React.FC = () => {
             percentage: 0,
           },
           semesterly: { target: 0, actual: 0, percentage: 0 },
+          bimonthly: { target: 0, actual: 0, percentage: 0 },
         });
       } else if (selectedPeriod === 'semesterly' && selectedSemester && selectedSemesterYear) {
-        // Para semestre, calcular B1 (Jan-Jun) ou B2 (Jul-Dez)
+        // Para semestre, calcular S1 (Jan-Jun) ou S2 (Jul-Dez)
         const startMonth = selectedSemester === 1 ? 1 : 7;
         const endMonth = selectedSemester === 1 ? 6 : 12;
         
@@ -600,6 +615,64 @@ export const IndicatorsPage: React.FC = () => {
             actual: totalActual,
             percentage,
           },
+          bimonthly: { target: 0, actual: 0, percentage: 0 },
+        });
+      } else if (selectedPeriod === 'bimonthly' && selectedBimonth && selectedBimonthYear) {
+        // Para bimestre, calcular B1-B6 (Jan-Fev, Mar-Abr, Mai-Jun, Jul-Ago, Set-Out, Nov-Dez)
+        const bimonthMonths: Record<number, [number, number]> = {
+          1: [1, 2], 2: [3, 4], 3: [5, 6],
+          4: [7, 8], 5: [9, 10], 6: [11, 12]
+        };
+        const [startMonth, endMonth] = bimonthMonths[selectedBimonth];
+        
+        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
+        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+        
+        let totalTarget = 0;
+        let totalActual = 0;
+        
+        for (let m = startMonth; m <= endMonth; m++) {
+          const monthKey = `${selectedBimonthYear}-${m.toString().padStart(2, '0')}`;
+          totalTarget += monthlyTargets[monthKey] || 0;
+          totalActual += monthlyActual[monthKey] || 0;
+        }
+        
+        let percentage = 0;
+        if (totalTarget > 0 && totalActual > 0) {
+          if (kr.target_direction === 'minimize') {
+            percentage = (totalTarget / totalActual) * 100;
+          } else {
+            percentage = (totalActual / totalTarget) * 100;
+          }
+        }
+        
+        map.set(kr.id, {
+          ytd: {
+            target: kr.ytd_target ?? 0,
+            actual: kr.ytd_actual ?? 0,
+            percentage: kr.ytd_percentage ?? 0,
+          },
+          monthly: {
+            target: kr.current_month_target ?? 0,
+            actual: kr.current_month_actual ?? 0,
+            percentage: kr.monthly_percentage ?? 0,
+          },
+          yearly: {
+            target: kr.yearly_target ?? 0,
+            actual: kr.yearly_actual ?? 0,
+            percentage: kr.yearly_percentage ?? 0,
+          },
+          quarterly: krMetricsMap.get(kr.id)?.quarterly ?? {
+            target: 0,
+            actual: 0,
+            percentage: 0,
+          },
+          semesterly: { target: 0, actual: 0, percentage: 0 },
+          bimonthly: {
+            target: totalTarget,
+            actual: totalActual,
+            percentage,
+          },
         });
       } else {
         // Se não precisa recalcular, usar valores do map original
@@ -610,7 +683,7 @@ export const IndicatorsPage: React.FC = () => {
       }
     });
     return map;
-  }, [keyResults, selectedPeriod, selectedMonth, selectedYear, selectedSemester, selectedSemesterYear, krMetricsMap]);
+  }, [keyResults, selectedPeriod, selectedMonth, selectedYear, selectedSemester, selectedSemesterYear, selectedBimonth, selectedBimonthYear, krMetricsMap]);
 
   const getMetricsByPeriod = (keyResultId: string) => {
     const metrics = customMetricsMap.get(keyResultId);
@@ -620,6 +693,7 @@ export const IndicatorsPage: React.FC = () => {
            selectedPeriod === 'monthly' ? metrics.monthly :
            selectedPeriod === 'yearly' ? metrics.yearly :
            selectedPeriod === 'semesterly' ? metrics.semesterly :
+           selectedPeriod === 'bimonthly' ? metrics.bimonthly :
            metrics.ytd;
   };
 
@@ -627,7 +701,8 @@ export const IndicatorsPage: React.FC = () => {
     if (selectedPeriod === 'quarterly') return `Q${selectedQuarter}`;
     if (selectedPeriod === 'ytd') return 'YTD';
     if (selectedPeriod === 'yearly') return 'Ano';
-    if (selectedPeriod === 'semesterly') return `B${selectedSemester}`;
+    if (selectedPeriod === 'semesterly') return `S${selectedSemester}`;
+    if (selectedPeriod === 'bimonthly') return `B${selectedBimonth}`;
     if (selectedPeriod === 'monthly' && selectedMonth && selectedYear) {
       return new Date(selectedYear, selectedMonth - 1, 1)
         .toLocaleDateString('pt-BR', { month: 'long' })
@@ -675,10 +750,12 @@ export const IndicatorsPage: React.FC = () => {
         selectedMonth,
         selectedSemester,
         selectedSemesterYear,
+        selectedBimonth,
+        selectedBimonthYear,
         planFirstYear // Passa o primeiro ano do plano para YTD inteligente
       }
     );
-  }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, selectedSemester, selectedSemesterYear, planFirstYear]);
+  }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, selectedSemester, selectedSemesterYear, selectedBimonth, selectedBimonthYear, planFirstYear]);
 
   // Aplicar filtro de visibilidade para membros
   const visibilityFilteredKeyResults = useMemo(() => {
@@ -980,18 +1057,50 @@ export const IndicatorsPage: React.FC = () => {
 
             {selectedPeriod === 'semesterly' && (
               <Select
-                value={`${selectedSemesterYear}-B${selectedSemester}`}
+                value={`${selectedSemesterYear}-S${selectedSemester}`}
                 onValueChange={(value) => {
-                  const [year, b] = value.split('-B');
+                  const [year, s] = value.split('-S');
                   setSelectedSemesterYear(parseInt(year));
-                  setSelectedSemester(parseInt(b) as 1 | 2);
+                  setSelectedSemester(parseInt(s) as 1 | 2);
                 }}
               >
-                <SelectTrigger className="h-9 w-[160px]">
+                <SelectTrigger className="h-9 w-[180px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {semesterOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Button
+              variant={selectedPeriod === 'bimonthly' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setSelectedPeriod('bimonthly')}
+              className="gap-2 border-l border-border/50 ml-1 pl-2"
+            >
+              <Calendar className="w-4 h-4" />
+              Bimestre
+            </Button>
+
+            {selectedPeriod === 'bimonthly' && (
+              <Select
+                value={`${selectedBimonthYear}-B${selectedBimonth}`}
+                onValueChange={(value) => {
+                  const [year, b] = value.split('-B');
+                  setSelectedBimonthYear(parseInt(year));
+                  setSelectedBimonth(parseInt(b) as 1 | 2 | 3 | 4 | 5 | 6);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {bimonthlyOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
