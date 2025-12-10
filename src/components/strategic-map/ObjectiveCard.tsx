@@ -41,12 +41,14 @@ const getProgressColor = (progress: number) => {
 
 const calculateObjectiveProgress = (
   keyResults: KeyResult[], 
-  period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' = 'ytd',
+  period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly' = 'ytd',
   options?: {
     selectedMonth?: number;
     selectedYear?: number;
     selectedQuarter?: 1 | 2 | 3 | 4;
     selectedQuarterYear?: number;
+    selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
+    selectedBimonthYear?: number;
   }
 ) => {
   if (keyResults.length === 0) return 0;
