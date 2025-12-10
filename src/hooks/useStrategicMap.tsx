@@ -183,8 +183,9 @@ export const useStrategicMap = () => {
       // Cast aggregation_type to the correct union type
       const processedData = (data || []).map(kr => ({
         ...kr,
-        aggregation_type: (kr.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum',
-        target_direction: (kr.target_direction as 'maximize' | 'minimize') || 'maximize'
+        aggregation_type: (kr.aggregation_type as 'sum' | 'average' | 'max' | 'min' | 'last') || 'sum',
+        target_direction: (kr.target_direction as 'maximize' | 'minimize') || 'maximize',
+        comparison_type: (kr.comparison_type as 'cumulative' | 'period') || 'cumulative'
       }));
 
       setKeyResults(processedData);
@@ -662,8 +663,9 @@ export const useStrategicMap = () => {
       // Cast aggregation_type to the correct union type
       const processedData = {
         ...data,
-        aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum',
-        target_direction: (data.target_direction as 'maximize' | 'minimize') || 'maximize'
+        aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min' | 'last') || 'sum',
+        target_direction: (data.target_direction as 'maximize' | 'minimize') || 'maximize',
+        comparison_type: (data.comparison_type as 'cumulative' | 'period') || 'cumulative'
       };
 
       setKeyResults(prev => [...prev, processedData]);
@@ -702,8 +704,9 @@ export const useStrategicMap = () => {
       // Cast aggregation_type to the correct union type
       const processedData = {
         ...data,
-        aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum',
-        target_direction: (data.target_direction as 'maximize' | 'minimize') || 'maximize'
+        aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min' | 'last') || 'sum',
+        target_direction: (data.target_direction as 'maximize' | 'minimize') || 'maximize',
+        comparison_type: (data.comparison_type as 'cumulative' | 'period') || 'cumulative'
       };
 
       setKeyResults(prev => prev.map(kr => kr.id === keyResultId ? processedData : kr));
