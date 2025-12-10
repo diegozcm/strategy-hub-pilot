@@ -491,9 +491,9 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
                           <div 
                             className={cn(
                               "h-full transition-all duration-300",
-                              eficiencia >= 100 ? "bg-emerald-500" :
-                              eficiencia >= 80 ? "bg-amber-500" :
-                              eficiencia >= 50 ? "bg-orange-500" : "bg-red-500"
+                              eficiencia > 105 ? "bg-blue-500" :
+                              eficiencia >= 100 ? "bg-green-500" :
+                              eficiencia >= 71 ? "bg-yellow-500" : "bg-red-500"
                             )}
                             style={{ width: `${Math.min(eficiencia, 100)}%` }}
                           />
