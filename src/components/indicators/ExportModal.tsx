@@ -68,35 +68,48 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       }
     });
     
-    // Fix efficiency badges - apply inline styles to prevent text overflow
+    // Replace efficiency badges with simple spans that have explicit inline styles
     clone.querySelectorAll('[class*="rounded-full"]').forEach((el) => {
       const htmlEl = el as HTMLElement;
       const text = htmlEl.textContent?.trim() || '';
       
       // Check if this is an efficiency badge by its text content
       if (['Excelente', 'No Alvo', 'Atenção', 'Crítico'].includes(text)) {
-        htmlEl.style.whiteSpace = 'nowrap';
-        htmlEl.style.minWidth = 'auto';
-        htmlEl.style.width = 'auto';
-        htmlEl.style.display = 'inline-flex';
-        htmlEl.style.alignItems = 'center';
-        htmlEl.style.justifyContent = 'center';
-        htmlEl.style.padding = '4px 14px';
-        htmlEl.style.overflow = 'visible';
-        htmlEl.style.fontSize = '12px';
-        htmlEl.style.fontWeight = '600';
-        htmlEl.style.borderRadius = '9999px';
-        htmlEl.style.color = '#ffffff';
+        // Create a new span element with completely inline styles
+        const newSpan = document.createElement('span');
+        newSpan.textContent = text;
         
-        // Apply background color based on badge type
+        // Determine background color based on badge type
+        let bgColor = '#6b7280'; // gray default
         if (text === 'Excelente') {
-          htmlEl.style.backgroundColor = '#3b82f6'; // blue-500
+          bgColor = '#3b82f6'; // blue-500
         } else if (text === 'No Alvo') {
-          htmlEl.style.backgroundColor = '#22c55e'; // green-500
+          bgColor = '#22c55e'; // green-500
         } else if (text === 'Atenção') {
-          htmlEl.style.backgroundColor = '#eab308'; // yellow-500
+          bgColor = '#eab308'; // yellow-500
         } else if (text === 'Crítico') {
-          htmlEl.style.backgroundColor = '#ef4444'; // red-500
+          bgColor = '#ef4444'; // red-500
+        }
+        
+        // Apply all styles as inline cssText - html2canvas respects this better
+        newSpan.style.cssText = `
+          display: inline-block !important;
+          padding: 4px 12px !important;
+          font-size: 11px !important;
+          font-weight: 600 !important;
+          line-height: 1.2 !important;
+          color: white !important;
+          background-color: ${bgColor} !important;
+          border-radius: 9999px !important;
+          border: none !important;
+          white-space: nowrap !important;
+          text-align: center !important;
+          box-sizing: border-box !important;
+        `;
+        
+        // Replace the original badge element with the new span
+        if (htmlEl.parentNode) {
+          htmlEl.parentNode.replaceChild(newSpan, htmlEl);
         }
       }
     });
