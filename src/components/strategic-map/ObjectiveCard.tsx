@@ -396,7 +396,14 @@ export const ObjectiveCard = ({
         >
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <h4 className="font-medium text-sm truncate">{objective.title}</h4>
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium text-sm truncate">{objective.title}</h4>
+                {(objective.weight || 1) > 1 && (
+                  <Badge variant="secondary" className="text-xs shrink-0">
+                    P:{objective.weight}
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center gap-2 mt-1">
                 {objective.responsible && (
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -471,6 +478,11 @@ export const ObjectiveCard = ({
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-primary" />
               <h3 className="font-semibold text-sm">{objective.title}</h3>
+              {(objective.weight || 1) > 1 && (
+                <Badge variant="secondary" className="text-xs">
+                  P:{objective.weight}
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {onAddResultadoChave && (
