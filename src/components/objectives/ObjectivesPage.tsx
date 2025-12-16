@@ -72,7 +72,7 @@ export const ObjectivesPage: React.FC = () => {
     target_date: '',
     plan_id: '',
     pillar_id: '',
-    weight: 5
+    weight: 1
   });
 
   const [editForm, setEditForm] = useState({
@@ -118,7 +118,7 @@ export const ObjectivesPage: React.FC = () => {
         owner_id: user.id,
         target_date: objectiveForm.target_date ? objectiveForm.target_date : null,
         progress: 0,
-        weight: objectiveForm.weight || 5
+        weight: objectiveForm.weight || 1
       };
 
       const { data, error } = await supabase
@@ -137,7 +137,7 @@ export const ObjectivesPage: React.FC = () => {
         target_date: '', 
         plan_id: '', 
         pillar_id: '',
-        weight: 5
+        weight: 1
       });
       setIsCreateObjectiveOpen(false);
       
