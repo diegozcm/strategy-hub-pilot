@@ -71,7 +71,8 @@ export const ObjectivesPage: React.FC = () => {
     description: '',
     target_date: '',
     plan_id: '',
-    pillar_id: ''
+    pillar_id: '',
+    weight: 5
   });
 
   const [editForm, setEditForm] = useState({
@@ -116,7 +117,8 @@ export const ObjectivesPage: React.FC = () => {
         ...objectiveForm,
         owner_id: user.id,
         target_date: objectiveForm.target_date ? objectiveForm.target_date : null,
-        progress: 0
+        progress: 0,
+        weight: objectiveForm.weight || 5
       };
 
       const { data, error } = await supabase
@@ -134,7 +136,8 @@ export const ObjectivesPage: React.FC = () => {
         description: '', 
         target_date: '', 
         plan_id: '', 
-        pillar_id: ''
+        pillar_id: '',
+        weight: 5
       });
       setIsCreateObjectiveOpen(false);
       
@@ -391,7 +394,7 @@ export const ObjectivesPage: React.FC = () => {
     }
     
     return matchesSearch && matchesPlan && matchesStatus;
-  });
+  }).sort((a, b) => (b.weight || 1) - (a.weight || 1)); // Ordenar por peso (maior primeiro)
 
   const handleEditKeyResult = (keyResult: KeyResult) => {
     setSelectedKeyResultForEdit(keyResult);
@@ -579,6 +582,18 @@ export const ObjectivesPage: React.FC = () => {
                           type="date"
                           value={objectiveForm.target_date}
                           onChange={(e) => setObjectiveForm(prev => ({ ...prev, target_date: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="objective-weight">Peso (1-10)</Label>
+                        <Input
+                          id="objective-weight"
+                          type="number"
+                          min={1}
+                          max={10}
+                          value={objectiveForm.weight}
+                          onChange={(e) => setObjectiveForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 5 }))}
+                          placeholder="5"
                         />
                       </div>
                     </div>
@@ -838,6 +853,11 @@ export const ObjectivesPage: React.FC = () => {
                             <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
                               {plan?.name}
                             </Badge>
+                            {(objective.weight || 1) > 1 && (
+                              <Badge className="bg-white/30 text-white border-white/40 hover:bg-white/40 text-xs font-semibold">
+                                P:{objective.weight}
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>

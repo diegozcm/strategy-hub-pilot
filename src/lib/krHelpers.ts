@@ -91,3 +91,16 @@ export const sortKRsByWeight = <T extends { weight?: number | null }>(krs: T[]):
     return weightB - weightA;
   });
 };
+
+/**
+ * Sorts Objectives by weight (highest weight first - priority 10 at top)
+ * Objectives without weight default to 1
+ */
+export const sortObjectivesByWeight = <T extends { weight?: number | null }>(objectives: T[]): T[] => {
+  return [...objectives].sort((a, b) => {
+    const weightA = a.weight || 1;
+    const weightB = b.weight || 1;
+    // Maior peso primeiro (decrescente)
+    return weightB - weightA;
+  });
+};
