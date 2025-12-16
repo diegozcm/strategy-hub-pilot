@@ -21,7 +21,6 @@ const menuStructure = [
       { name: 'Resultados Chave', href: '/app/indicators', icon: TrendingUp },
       { name: 'Projetos', href: '/app/projects', icon: Briefcase },
       { name: 'Ferramentas', href: '/app/tools', icon: Circle },
-      // { name: 'Relatórios', href: '/app/reports', icon: Activity }
     ]
   },
   {
@@ -34,13 +33,6 @@ const menuStructure = [
       { name: 'Avaliações BEEP', href: '/app/startup-hub?tab=beep-analytics', icon: Activity, requiresMentor: true },
       { name: 'Calendário', href: '/app/startup-hub?tab=calendar', icon: Calendar },
       { name: 'Perfil Startup', href: '/app/startup-hub?tab=profile', icon: Rocket, requiresStartup: true }
-    ]
-  },
-  {
-    name: 'CONFIGURAÇÕES',
-    icon: Settings,
-    items: [
-      { name: 'Configurações', href: '/app/settings', icon: Settings }
     ]
   }
 ];
@@ -124,16 +116,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
           // Check if user has access to at least one item in this group
           const hasAccessToGroup = group.items.some(item => {
             if (item.href.includes('/startup-hub')) {
-              // Check if user has startup-hub access
               return hasModuleAccess('startup-hub');
             }
             if (item.href.includes('/dashboard') || item.href.includes('/strategic-map') || item.href.includes('/tools') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
               return hasModuleAccess('strategic-planning');
             }
-            if (item.href.includes('/settings')) {
-              return true; // Settings is always accessible
-            }
-            return false; // Default deny if not explicitly allowed
+            return false;
           });
 
           if (!hasAccessToGroup) return null;
@@ -159,8 +147,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                     hasAccess = hasModuleAccess('startup-hub');
                   } else if (item.href.includes('/dashboard') || item.href.includes('/strategic-map') || item.href.includes('/tools') || item.href.includes('/objectives') || item.href.includes('/indicators') || item.href.includes('/projects') || item.href.includes('/reports')) {
                     hasAccess = hasModuleAccess('strategic-planning');
-                  } else if (item.href.includes('/settings')) {
-                    hasAccess = true; // Settings is always accessible
                   }
 
                   if (!hasAccess) return null;
@@ -182,9 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                         to={item.href} 
                         className={cn(
                           "flex items-center py-2 rounded-lg transition-colors",
-                          // Indentation for sub-items - always left-aligned on mobile
                           isMobile ? "px-3 ml-4" : (collapsed ? "px-3 justify-center" : "px-3 ml-4"),
-                          // Color scheme: muted by default, accent on hover/active
                           isActive 
                             ? "bg-accent text-accent-foreground font-medium" 
                             : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
@@ -202,9 +186,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                       to={item.href} 
                       className={cn(
                         "flex items-center py-2 rounded-lg transition-colors",
-                        // Indentation for sub-items - always left-aligned on mobile
                         isMobile ? "px-3 ml-4" : (collapsed ? "px-3 justify-center" : "px-3 ml-4"),
-                        // Color scheme: muted by default, accent on hover/active
                         isActive 
                           ? "bg-accent text-accent-foreground font-medium" 
                           : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
@@ -220,6 +202,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
           );
         })}
       </nav>
+
+      {/* Footer - Settings Button */}
+      <div className="border-t border-border p-4 shrink-0">
+        <NavLink 
+          to="/app/settings"
+          className={cn(
+            "flex items-center py-2.5 px-3 rounded-lg transition-colors w-full",
+            isMobile ? "" : (collapsed ? "justify-center" : ""),
+            isRouteActive('/app/settings')
+              ? "bg-accent text-accent-foreground font-medium"
+              : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+          )}
+        >
+          <Settings className={cn("h-4 w-4", (!collapsed || isMobile) && "mr-3")} />
+          {(!collapsed || isMobile) && <span className="text-sm">Configurações</span>}
+        </NavLink>
+      </div>
     </div>
     </>
   );
