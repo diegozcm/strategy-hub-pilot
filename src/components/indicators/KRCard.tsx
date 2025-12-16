@@ -96,12 +96,19 @@ export const KRCard: React.FC<KRCardProps> = ({
         style={{ backgroundColor: pillar.color }}
         className="p-3 relative"
       >
-        {isOwned && (
-          <Badge className="absolute top-2 right-2 bg-white/90 text-primary hover:bg-white">
-            <User className="w-3 h-3 mr-1" />
-            Meu KR
-          </Badge>
-        )}
+        <div className="absolute top-2 right-2 flex items-center gap-1">
+          {(keyResult.weight && keyResult.weight > 1) && (
+            <Badge className="bg-white/90 text-foreground hover:bg-white text-[10px] px-1.5">
+              P:{keyResult.weight}
+            </Badge>
+          )}
+          {isOwned && (
+            <Badge className="bg-white/90 text-primary hover:bg-white">
+              <User className="w-3 h-3 mr-1" />
+              Meu KR
+            </Badge>
+          )}
+        </div>
         <div className="flex-1 min-w-0 space-y-2">
           <h3 className="text-white font-semibold text-base leading-tight">
             {keyResult.title}

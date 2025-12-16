@@ -38,7 +38,9 @@ export const RumoObjectiveBlock = ({
   const { company } = useAuth();
   const { toast } = useToast();
 
-  const objectiveKRs = keyResults.filter(kr => kr.objective_id === objective.id);
+  const objectiveKRs = keyResults
+    .filter(kr => kr.objective_id === objective.id)
+    .sort((a, b) => (b.weight || 1) - (a.weight || 1));
 
   // Modal states
   const [isObjectiveDetailModalOpen, setIsObjectiveDetailModalOpen] = useState(false);

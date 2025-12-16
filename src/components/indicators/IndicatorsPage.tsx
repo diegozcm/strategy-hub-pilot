@@ -817,6 +817,13 @@ export const IndicatorsPage: React.FC = () => {
     if (aIsOwned && !bIsOwned) return -1;
     if (!aIsOwned && bIsOwned) return 1;
     
+    // Segundo, ordenar por peso (maior peso primeiro - prioridade 10 no topo)
+    const weightA = a.weight || 1;
+    const weightB = b.weight || 1;
+    if (weightB !== weightA) {
+      return weightB - weightA;
+    }
+    
     // Depois, ordenar por pillar index
     const objectiveA = objectiveById.get(a.objective_id);
     const objectiveB = objectiveById.get(b.objective_id);

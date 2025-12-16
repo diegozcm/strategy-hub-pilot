@@ -320,7 +320,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                   <h3 className="font-medium">Resultados-Chave</h3>
                 </div>
                 <div className="space-y-2">
-                  {keyResults.map((kr) => (
+                  {[...keyResults].sort((a, b) => (b.weight || 1) - (a.weight || 1)).map((kr) => (
                     <ResultadoChaveMiniCard 
                       key={kr.id} 
                       resultadoChave={kr}
