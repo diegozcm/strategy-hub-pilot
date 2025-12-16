@@ -308,7 +308,7 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
       });
     }
 
-    // Sort by pillar, then objective, then title
+    // Sort by pillar, then objective, then weight (highest first), then title
     return filtered.sort((a, b) => {
       const infoA = getObjectiveInfo(a.objective_id);
       const infoB = getObjectiveInfo(b.objective_id);
@@ -320,6 +320,11 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
       const objTitleA = infoA.objective?.title || '';
       const objTitleB = infoB.objective?.title || '';
       if (objTitleA !== objTitleB) return objTitleA.localeCompare(objTitleB);
+      
+      // Sort by weight (highest first - priority 10 at top)
+      const weightA = a.weight || 1;
+      const weightB = b.weight || 1;
+      if (weightB !== weightA) return weightB - weightA;
       
       return a.title.localeCompare(b.title);
     });

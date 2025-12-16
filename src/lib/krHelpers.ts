@@ -78,3 +78,16 @@ export const getDirectionDescription = (direction: TargetDirection): string => {
     ? 'ex: vendas, satisfação, lucro'
     : 'ex: custos, reclamações, tempo de espera';
 };
+
+/**
+ * Sorts Key Results by weight (highest weight first - priority 10 at top)
+ * KRs without weight default to 1
+ */
+export const sortKRsByWeight = <T extends { weight?: number | null }>(krs: T[]): T[] => {
+  return [...krs].sort((a, b) => {
+    const weightA = a.weight || 1;
+    const weightB = b.weight || 1;
+    // Maior peso primeiro (decrescente)
+    return weightB - weightA;
+  });
+};

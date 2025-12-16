@@ -200,7 +200,7 @@ export const DashboardHome: React.FC = () => {
       return matchesSearch && matchesPriority && matchesObjective && matchesPillar && matchesProgress;
     });
     
-    // Sort by pillar order (as they appear in filter) and then alphabetically
+    // Sort by pillar order, then by weight (highest first), then alphabetically
     const sorted = filtered.sort((a, b) => {
       // Find pillar indices
       const pillarIndexA = pillars.findIndex(p => p.id === a.pillar_id);
@@ -209,6 +209,13 @@ export const DashboardHome: React.FC = () => {
       // Sort by pillar order first
       if (pillarIndexA !== pillarIndexB) {
         return pillarIndexA - pillarIndexB;
+      }
+      
+      // Then sort by weight (highest weight first - priority 10 at top)
+      const weightA = (a as any).weight || 1;
+      const weightB = (b as any).weight || 1;
+      if (weightB !== weightA) {
+        return weightB - weightA;
       }
       
       // Then sort alphabetically by title within the same pillar
