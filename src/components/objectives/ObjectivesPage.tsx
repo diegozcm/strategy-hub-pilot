@@ -16,6 +16,7 @@ import { useHealthMonitor } from '@/hooks/useHealthMonitor';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { useKRPermissions } from '@/hooks/useKRPermissions';
 import { usePeriodFilter } from '@/hooks/usePeriodFilter';
+import { calculateObjectiveProgressWeighted } from '@/lib/krHelpers';
 
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
@@ -251,117 +252,7 @@ export const ObjectivesPage: React.FC = () => {
     return keyResults.filter(kr => kr.objective_id === objectiveId);
   };
 
-  // Usa a mesma lógica do useKRMetrics para garantir consistência
-  const calculateObjectiveProgress = (
-    keyResults: any[], 
-    period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly' = 'ytd',
-    options?: {
-      selectedMonth?: number;
-      selectedYear?: number;
-      selectedQuarter?: 1 | 2 | 3 | 4;
-      selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
-      selectedBimonthYear?: number;
-    }
-  ) => {
-    if (keyResults.length === 0) return 0;
-    
-    const totalProgress = keyResults.reduce((sum, kr) => {
-      let percentage = 0;
-      
-      switch (period) {
-        case 'quarterly':
-          const quarter = options?.selectedQuarter || 1;
-          switch (quarter) {
-            case 1: percentage = kr.q1_percentage || 0; break;
-            case 2: percentage = kr.q2_percentage || 0; break;
-            case 3: percentage = kr.q3_percentage || 0; break;
-            case 4: percentage = kr.q4_percentage || 0; break;
-          }
-          break;
-          
-        case 'monthly':
-          if (options?.selectedMonth && options?.selectedYear) {
-            const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
-            const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-            const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
-            
-            const monthTarget = monthlyTargets[monthKey] || 0;
-            const monthActual = monthlyActual[monthKey] || 0;
-            
-            // Aplicar fórmula baseada em target_direction
-            if (kr.target_direction === 'minimize') {
-              percentage = monthActual > 0 ? (monthTarget / monthActual) * 100 : (monthTarget === 0 ? 100 : 0);
-            } else {
-              percentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
-            }
-          } else {
-            percentage = kr.monthly_percentage || 0;
-          }
-          break;
-          
-        case 'yearly':
-          if (options?.selectedYear) {
-            const monthKeys = [];
-            for (let m = 1; m <= 12; m++) {
-              monthKeys.push(`${options.selectedYear}-${m.toString().padStart(2, '0')}`);
-            }
-            
-            const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-            const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
-            const aggregationType = kr.aggregation_type || 'sum';
-            
-            const targetValues = monthKeys.map(key => monthlyTargets[key] || 0);
-            const actualValues = monthKeys.map(key => monthlyActual[key] || 0);
-            
-            let totalTarget = 0;
-            let totalActual = 0;
-            
-            // Calcular baseado no tipo de agregação
-            switch (aggregationType) {
-              case 'sum':
-                totalTarget = targetValues.reduce((sum, v) => sum + v, 0);
-                totalActual = actualValues.reduce((sum, v) => sum + v, 0);
-                break;
-              case 'average':
-                const validTargets = targetValues.filter(v => v > 0);
-                const validActuals = actualValues.filter(v => v > 0);
-                totalTarget = validTargets.length > 0 ? validTargets.reduce((sum, v) => sum + v, 0) / validTargets.length : 0;
-                totalActual = validActuals.length > 0 ? validActuals.reduce((sum, v) => sum + v, 0) / validActuals.length : 0;
-                break;
-              case 'max':
-                totalTarget = targetValues.length > 0 ? Math.max(...targetValues) : 0;
-                totalActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
-                break;
-              case 'min':
-                const nonZeroTargets = targetValues.filter(v => v > 0);
-                const nonZeroActuals = actualValues.filter(v => v > 0);
-                totalTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
-                totalActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
-                break;
-            }
-            
-            // Aplicar fórmula baseada em target_direction
-            if (kr.target_direction === 'minimize') {
-              percentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
-            } else {
-              percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
-            }
-          } else {
-            percentage = kr.yearly_percentage || 0;
-          }
-          break;
-          
-        case 'ytd':
-        default:
-          percentage = kr.ytd_percentage || 0;
-          break;
-      }
-      
-    return sum + percentage;
-  }, 0);
-  
-  return totalProgress / keyResults.length;
-};
+  // Usa função centralizada de média ponderada
 
   const filteredObjectives = objectives.filter(objective => {
     const matchesSearch = objective.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -371,7 +262,7 @@ export const ObjectivesPage: React.FC = () => {
     let matchesStatus = statusFilter === 'all';
     if (!matchesStatus) {
       const objectiveKeyResults = getObjectiveKeyResults(objective.id);
-      const progress = calculateObjectiveProgress(
+      const progress = calculateObjectiveProgressWeighted(
         objectiveKeyResults, 
         selectedPeriod,
         selectedPeriod === 'monthly' 
@@ -882,7 +773,7 @@ export const ObjectivesPage: React.FC = () => {
                         <div className="mt-3">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium text-muted-foreground">Progresso</span>
-                            <span className="text-sm font-bold text-foreground">{calculateObjectiveProgress(
+                            <span className="text-sm font-bold text-foreground">{calculateObjectiveProgressWeighted(
                               objectiveKeyResults, 
                               selectedPeriod,
                               selectedPeriod === 'monthly' 
@@ -896,7 +787,7 @@ export const ObjectivesPage: React.FC = () => {
                           </div>
                           <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
                             {(() => {
-                              const progress = calculateObjectiveProgress(
+                              const progress = calculateObjectiveProgressWeighted(
                                 objectiveKeyResults, 
                                 selectedPeriod,
                                 selectedPeriod === 'monthly' 
@@ -942,7 +833,7 @@ export const ObjectivesPage: React.FC = () => {
           plan={selectedObjective ? plans.find(p => p.id === selectedObjective.plan_id) || null : null}
           onOpenKeyResultDetails={handleOpenKeyResultDetails}
           pillars={pillars}
-          progressPercentage={selectedObjective ? calculateObjectiveProgress(
+          progressPercentage={selectedObjective ? calculateObjectiveProgressWeighted(
             getObjectiveKeyResults(selectedObjective.id),
             selectedPeriod,
             selectedPeriod === 'monthly' 

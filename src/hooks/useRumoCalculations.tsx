@@ -160,15 +160,21 @@ export const useRumoCalculations = (
       krProgress.set(kr.id, Math.max(0, progress));
     });
 
-    // Calculate Objective progress (average of its KRs)
+    // Calculate Objective progress (weighted average of its KRs)
     objectives.forEach(obj => {
       const objKRs = keyResults.filter(kr => kr.objective_id === obj.id);
       
       if (objKRs.length > 0) {
-        const avgProgress = objKRs.reduce((sum, kr) => {
-          return sum + (krProgress.get(kr.id) || 0);
-        }, 0) / objKRs.length;
+        // Calcular soma dos pesos para média ponderada
+        const totalWeight = objKRs.reduce((sum, kr) => sum + (kr.weight || 1), 0);
         
+        const weightedProgress = objKRs.reduce((sum, kr) => {
+          const progress = krProgress.get(kr.id) || 0;
+          const weight = kr.weight || 1;
+          return sum + (progress * weight);
+        }, 0);
+        
+        const avgProgress = totalWeight > 0 ? weightedProgress / totalWeight : 0;
         objectiveProgress.set(obj.id, avgProgress);
       } else {
         objectiveProgress.set(obj.id, 0);
