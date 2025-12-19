@@ -85,10 +85,9 @@ export const KeyResultMetrics = ({
     selectedPeriod === 'bimonthly' ? metrics.bimonthly :
     metrics.ytd;
 
-
-  // Verificar se há dados realizados para calcular
-  const hasActualData = currentMetrics.actual > 0;
-  const hasTarget = currentMetrics.target > 0;
+  // Verificar se há dados realizados para calcular (incluindo valores negativos e zero)
+  const hasActualData = currentMetrics.actual !== null && currentMetrics.actual !== undefined;
+  const hasTarget = currentMetrics.target !== null && currentMetrics.target !== undefined && currentMetrics.target !== 0;
   const hasData = hasTarget && hasActualData;
 
   const krStatus = hasData
