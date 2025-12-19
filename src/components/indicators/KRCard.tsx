@@ -135,12 +135,14 @@ export const KRCard: React.FC<KRCardProps> = ({
           />
         </div>
 
-        {/* Indicadores mensais */}
+        {/* Indicadores de performance por período */}
         <div className="pt-2">
           <MonthlyPerformanceIndicators
             monthlyTargets={keyResult.monthly_targets}
             monthlyActual={keyResult.monthly_actual}
             targetDirection={keyResult.target_direction || 'maximize'}
+            frequency={keyResult.frequency || 'monthly'}
+            selectedYear={selectedYear}
             size="sm"
           />
         </div>

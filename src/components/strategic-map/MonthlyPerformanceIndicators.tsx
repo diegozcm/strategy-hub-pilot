@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { CheckCircle2, Circle, Triangle, XCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { calculateKRStatus, type TargetDirection } from '@/lib/krHelpers';
+import { getPeriodsForFrequency, type KRFrequency } from '@/lib/krFrequencyHelpers';
 
 interface MonthlyPerformanceIndicatorsProps {
   monthlyTargets?: Record<string, number>;
@@ -9,12 +10,8 @@ interface MonthlyPerformanceIndicatorsProps {
   selectedYear?: number;
   size?: 'sm' | 'md';
   targetDirection?: TargetDirection;
+  frequency?: KRFrequency;
 }
-
-const MONTH_NAMES = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-];
 
 const getMonthPerformanceColor = (progress: number): string => {
   if (progress > 105) return 'blue';    // Excelente (superou a meta)
@@ -48,38 +45,39 @@ export const MonthlyPerformanceIndicators: React.FC<MonthlyPerformanceIndicators
   selectedYear = new Date().getFullYear(),
   size = 'sm',
   targetDirection = 'maximize',
+  frequency = 'monthly',
 }) => {
   const iconSize = size === 'sm' ? 14 : 18;
 
-  const monthlyData = useMemo(() => {
-    // Generate 12 months in YYYY-MM format for the selected year
-    return Array.from({ length: 12 }, (_, i) => {
-      const monthIndex = i + 1;
-      const monthKey = `${selectedYear}-${monthIndex.toString().padStart(2, '0')}`; // e.g., "2025-01"
-      const monthName = MONTH_NAMES[i];
-      
-      const target = monthlyTargets[monthKey] || 0;
-      const actual = monthlyActual[monthKey] || 0;
+  const periodData = useMemo(() => {
+    const periods = getPeriodsForFrequency(frequency, selectedYear);
+    
+    return periods.map(period => {
+      // Para frequências não-mensais, ler do primeiro mês do período
+      const firstMonthKey = period.monthKeys[0];
+      const target = monthlyTargets[firstMonthKey] || 0;
+      const actual = monthlyActual[firstMonthKey] || 0;
       const status = target > 0 ? calculateKRStatus(actual, target, targetDirection) : { percentage: 0 };
       const progress = status.percentage;
       const color = getMonthPerformanceColor(progress);
 
       return {
-        monthKey,
-        monthName,
+        periodKey: period.key,
+        periodLabel: period.label,
+        shortLabel: period.shortLabel,
         target,
         actual,
         progress,
         color,
       };
     });
-  }, [monthlyTargets, monthlyActual, selectedYear, targetDirection]);
+  }, [monthlyTargets, monthlyActual, selectedYear, targetDirection, frequency]);
 
   return (
     <TooltipProvider>
       <div className="flex gap-1 items-center flex-wrap">
-        {monthlyData.map(({ monthKey, monthName, target, actual, progress }) => (
-          <Tooltip key={monthKey}>
+        {periodData.map(({ periodKey, periodLabel, target, actual, progress }) => (
+          <Tooltip key={periodKey}>
             <TooltipTrigger asChild>
               <div className="cursor-help">
                 {getIconByPerformance(progress, iconSize)}
@@ -87,7 +85,7 @@ export const MonthlyPerformanceIndicators: React.FC<MonthlyPerformanceIndicators
             </TooltipTrigger>
             <TooltipContent side="top" className="text-xs">
               <div className="space-y-1">
-                <p className="font-semibold">{monthName}</p>
+                <p className="font-semibold">{periodLabel}</p>
                 {target !== 0 ? (
                   <>
                     <p>Previsto: {Number(target).toFixed(1)}</p>
@@ -95,7 +93,7 @@ export const MonthlyPerformanceIndicators: React.FC<MonthlyPerformanceIndicators
                     <p className="font-semibold">Atingimento: {Number(progress).toFixed(1)}%</p>
                   </>
                 ) : (
-                  <p className="text-muted-foreground">Sem dados para este mês</p>
+                  <p className="text-muted-foreground">Sem dados para este período</p>
                 )}
               </div>
             </TooltipContent>
