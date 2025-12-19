@@ -192,7 +192,10 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
           : (formData.assigned_owner_id === 'none' ? null : formData.assigned_owner_id)
       };
 
-      await onSave(resultadoChaveData);
+      await onSave({
+        ...resultadoChaveData,
+        frequency: resultadoChaveData.frequency as 'monthly' | 'quarterly' | 'semesterly' | 'yearly'
+      });
       
       // Reset form
       setFormData({

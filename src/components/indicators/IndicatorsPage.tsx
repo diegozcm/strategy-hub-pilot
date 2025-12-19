@@ -272,12 +272,13 @@ export const IndicatorsPage: React.FC = () => {
 
       if (error) throw error;
 
-      // Cast aggregation_type to the correct union type
+      // Cast types to the correct union types
       const processedData = {
         ...data,
         aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min' | 'last') || 'sum',
         target_direction: (data.target_direction as 'maximize' | 'minimize') || 'maximize',
-        comparison_type: (data.comparison_type as 'cumulative' | 'period') || 'cumulative'
+        comparison_type: (data.comparison_type as 'cumulative' | 'period') || 'cumulative',
+        frequency: (data.frequency as 'monthly' | 'quarterly' | 'semesterly' | 'yearly') || 'monthly'
       };
 
       setKeyResults(prev => [processedData, ...prev]);

@@ -180,12 +180,13 @@ export const useStrategicMap = () => {
         return;
       }
 
-      // Cast aggregation_type to the correct union type
+      // Cast types to the correct union types
       const processedData = (data || []).map(kr => ({
         ...kr,
         aggregation_type: (kr.aggregation_type as 'sum' | 'average' | 'max' | 'min' | 'last') || 'sum',
         target_direction: (kr.target_direction as 'maximize' | 'minimize') || 'maximize',
-        comparison_type: (kr.comparison_type as 'cumulative' | 'period') || 'cumulative'
+        comparison_type: (kr.comparison_type as 'cumulative' | 'period') || 'cumulative',
+        frequency: (kr.frequency as 'monthly' | 'quarterly' | 'semesterly' | 'yearly') || 'monthly'
       }));
 
       setKeyResults(processedData);
@@ -664,12 +665,13 @@ export const useStrategicMap = () => {
         return null;
       }
 
-      // Cast aggregation_type to the correct union type
+      // Cast types to the correct union types
       const processedData = {
         ...data,
         aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min' | 'last') || 'sum',
         target_direction: (data.target_direction as 'maximize' | 'minimize') || 'maximize',
-        comparison_type: (data.comparison_type as 'cumulative' | 'period') || 'cumulative'
+        comparison_type: (data.comparison_type as 'cumulative' | 'period') || 'cumulative',
+        frequency: (data.frequency as 'monthly' | 'quarterly' | 'semesterly' | 'yearly') || 'monthly'
       };
 
       setKeyResults(prev => [...prev, processedData]);
@@ -705,12 +707,13 @@ export const useStrategicMap = () => {
         return null;
       }
 
-      // Cast aggregation_type to the correct union type
+      // Cast types to the correct union types
       const processedData = {
         ...data,
         aggregation_type: (data.aggregation_type as 'sum' | 'average' | 'max' | 'min' | 'last') || 'sum',
         target_direction: (data.target_direction as 'maximize' | 'minimize') || 'maximize',
-        comparison_type: (data.comparison_type as 'cumulative' | 'period') || 'cumulative'
+        comparison_type: (data.comparison_type as 'cumulative' | 'period') || 'cumulative',
+        frequency: (data.frequency as 'monthly' | 'quarterly' | 'semesterly' | 'yearly') || 'monthly'
       };
 
       setKeyResults(prev => prev.map(kr => kr.id === keyResultId ? processedData : kr));
