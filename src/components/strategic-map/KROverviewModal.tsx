@@ -487,6 +487,7 @@ export const KROverviewModal = ({
               ytdInfoMessage={ytdWarningMessage}
               onYTDClick={handleYTDClick}
               className="flex-wrap"
+              compact={true}
             />
           </div>
           
@@ -502,6 +503,10 @@ export const KROverviewModal = ({
                             selectedPeriod === 'yearly' ? selectedYearlyYear : undefined}
               selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
               selectedQuarterYear={selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined}
+              selectedSemester={selectedPeriod === 'semesterly' ? selectedSemester : undefined}
+              selectedSemesterYear={selectedPeriod === 'semesterly' ? selectedSemesterYear : undefined}
+              selectedBimonth={selectedPeriod === 'bimonthly' ? selectedBimonth : undefined}
+              selectedBimonthYear={selectedPeriod === 'bimonthly' ? selectedBimonthYear : undefined}
               onMonthChange={(month: number) => {
                 setSelectedMonth(month);
                 onMonthChange?.(month);
@@ -521,9 +526,23 @@ export const KROverviewModal = ({
               onYearlyYearChange={(year: number) => {
                 handleYearChange(year);
               }}
+              onSemesterChange={(semester: 1 | 2) => {
+                setSelectedSemester(semester);
+              }}
+              onSemesterYearChange={(year: number) => {
+                setSelectedSemesterYear(year);
+              }}
+              onBimonthChange={(bimonth: 1 | 2 | 3 | 4 | 5 | 6) => {
+                setSelectedBimonth(bimonth);
+              }}
+              onBimonthYearChange={(year: number) => {
+                setSelectedBimonthYear(year);
+              }}
               monthOptions={monthOptions}
               quarterOptions={krQuarterOptions}
               yearOptions={yearOptions}
+              semesterOptions={semesterOptions}
+              bimonthlyOptions={bimonthlyOptions}
               selectedYearlyYear={selectedYearlyYear}
             />
 
