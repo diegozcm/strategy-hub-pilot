@@ -207,31 +207,15 @@ export const KeyResultChart = ({
   const periods = isPeriodBased ? getPeriodsForFrequency(frequency, selectedYear) : [];
   
   const periodChartData = periods.map(period => {
-    let meta = 0;
-    let realizado = 0;
-    let metaCount = 0;
-    let realizadoCount = 0;
-
-    period.monthKeys.forEach(monthKey => {
-      const target = normalizedTargets[monthKey];
-      const actual = normalizedActuals[monthKey];
-      
-      if (target !== null) {
-        meta += target;
-        metaCount++;
-      }
-      if (actual !== null) {
-        realizado += actual;
-        realizadoCount++;
-      }
-    });
-
-    if (aggregationType === 'average' && metaCount > 0) {
-      meta = meta / metaCount;
-    }
-    if (aggregationType === 'average' && realizadoCount > 0) {
-      realizado = realizado / realizadoCount;
-    }
+    // Para frequências não-mensais, os dados estão armazenados no PRIMEIRO mês do período
+    // Ex: Q1 -> dados em 2026-01, Q2 -> dados em 2026-04, etc.
+    const firstMonthKey = period.monthKeys[0];
+    
+    const target = normalizedTargets[firstMonthKey];
+    const actual = normalizedActuals[firstMonthKey];
+    
+    const meta = target !== null ? target : 0;
+    const realizado = actual !== null ? actual : 0;
 
     const percentage = meta > 0 ? (realizado / meta) * 100 : 0;
     const status = calculateKRStatus(realizado, meta, targetDirection);
@@ -239,8 +223,8 @@ export const KeyResultChart = ({
     return {
       period: period.label,
       periodKey: period.key,
-      meta: meta || 0,
-      realizado: realizado || 0,
+      meta,
+      realizado,
       percentage,
       status
     };
