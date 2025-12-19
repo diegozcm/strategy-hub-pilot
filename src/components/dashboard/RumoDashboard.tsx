@@ -1,20 +1,16 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useStrategicMap } from '@/hooks/useStrategicMap';
-import { useRumoCalculations, PeriodType, getPerformanceColor, getPerformanceStyles } from '@/hooks/useRumoCalculations';
+import { useRumoCalculations } from '@/hooks/useRumoCalculations';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 import { usePeriodFilter } from '@/hooks/usePeriodFilter';
-import { filterKRsByValidity, getPopulatedQuarters } from '@/lib/krValidityFilter';
+import { filterKRsByValidity } from '@/lib/krValidityFilter';
 import { RumoPillarBlock } from './RumoPillarBlock';
 import { RumoObjectiveBlock } from './RumoObjectiveBlock';
 import { RumoLegend } from './RumoLegend';
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Compass, Calendar, TrendingUp, Target, AlertCircle } from 'lucide-react';
+import { SmartPeriodSelector } from '@/components/ui/SmartPeriodSelector';
+import { Compass } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 
 export const RumoDashboard = () => {
   // Use global period filter context
@@ -24,26 +20,19 @@ export const RumoDashboard = () => {
     selectedMonth, setSelectedMonth,
     selectedQuarter, setSelectedQuarter,
     selectedQuarterYear, setSelectedQuarterYear,
+    selectedSemester, setSelectedSemester,
+    selectedSemesterYear, setSelectedSemesterYear,
+    selectedBimonth, setSelectedBimonth,
+    selectedBimonthYear, setSelectedBimonthYear,
     isYTDCalculable, ytdInfoMessage, planFirstYear,
     quarterOptions, monthOptions, yearOptions,
-    handleYTDClick: contextHandleYTDClick
+    semesterOptions, bimonthlyOptions,
+    handleYTDClick
   } = usePeriodFilter();
   
   const { pillars, objectives, keyResults, loading } = useStrategicMap();
   const { validityEnabled } = useCompanyModuleSettings('strategic-planning');
 
-  // Handler para clique no botão YTD - sempre permite selecionar
-  const handleYTDClick = () => {
-    contextHandleYTDClick();
-    if (!isYTDCalculable && ytdInfoMessage) {
-      toast.info(ytdInfoMessage);
-    }
-  };
-
-  // Filtrar quarters para mostrar apenas os que têm KRs registrados
-  const filteredQuarterOptions = useMemo(() => {
-    return getPopulatedQuarters(keyResults, quarterOptions);
-  }, [keyResults, quarterOptions]);
   const filteredKeyResults = useMemo(() => {
     return filterKRsByValidity(
       keyResults,
@@ -133,125 +122,34 @@ export const RumoDashboard = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Period Filter */}
-          <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={periodType === 'ytd' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={handleYTDClick}
-                  className="gap-2"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  YTD
-                  {!isYTDCalculable && <AlertCircle className="w-3 h-3 text-blue-400" />}
-                </Button>
-              </TooltipTrigger>
-              {!isYTDCalculable && ytdInfoMessage && (
-                <TooltipContent>
-                  <p className="max-w-xs">{ytdInfoMessage}</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
-            <Button
-              variant={periodType === 'yearly' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setPeriodType('yearly')}
-              className="gap-2"
-            >
-              <Target className="w-4 h-4" />
-              Ano
-            </Button>
-
-            {periodType === 'yearly' && (
-              <Select
-                value={selectedYear.toString()}
-                onValueChange={(value) => setSelectedYear(parseInt(value))}
-              >
-                <SelectTrigger className="h-9 w-[100px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value.toString()}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
-          {/* Quarter */}
-          <Button
-            variant={periodType === 'quarterly' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setPeriodType('quarterly')}
-            className="gap-2 border-l border-border/50 ml-1 pl-2"
-          >
-            <Calendar className="w-4 h-4" />
-            Quarter
-          </Button>
-
-          {periodType === 'quarterly' && (
-            <Select
-              value={`${selectedQuarterYear}-Q${selectedQuarter}`}
-              onValueChange={(value) => {
-                const [year, q] = value.split('-Q');
-                setSelectedQuarterYear(parseInt(year));
-                setSelectedQuarter(parseInt(q) as 1 | 2 | 3 | 4);
-              }}
-            >
-              <SelectTrigger className="h-9 w-[130px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {filteredQuarterOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-
-          {/* Mês */}
-          <Button
-            variant={periodType === 'monthly' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => setPeriodType('monthly')}
-            className="gap-2 border-l border-border/50 ml-1 pl-2"
-          >
-            <Calendar className="w-4 h-4" />
-            Mês
-          </Button>
-          </div>
-          
-          {/* Select de Mês - Aparece ao lado quando monthly está selecionado */}
-          {periodType === 'monthly' && (
-            <Select
-              value={`${selectedYear}-${selectedMonth.toString().padStart(2, '0')}`}
-              onValueChange={(value) => {
-                const [year, month] = value.split('-');
-                setSelectedYear(parseInt(year));
-                setSelectedMonth(parseInt(month));
-              }}
-            >
-              <SelectTrigger className="h-9 w-[200px] gap-2">
-                <Calendar className="w-4 h-4" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {monthOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <SmartPeriodSelector
+            selectedPeriod={periodType}
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
+            selectedQuarter={selectedQuarter}
+            selectedQuarterYear={selectedQuarterYear}
+            selectedSemester={selectedSemester}
+            selectedSemesterYear={selectedSemesterYear}
+            selectedBimonth={selectedBimonth}
+            selectedBimonthYear={selectedBimonthYear}
+            setSelectedPeriod={setPeriodType}
+            setSelectedYear={setSelectedYear}
+            setSelectedMonth={setSelectedMonth}
+            setSelectedQuarter={setSelectedQuarter}
+            setSelectedQuarterYear={setSelectedQuarterYear}
+            setSelectedSemester={setSelectedSemester}
+            setSelectedSemesterYear={setSelectedSemesterYear}
+            setSelectedBimonth={setSelectedBimonth}
+            setSelectedBimonthYear={setSelectedBimonthYear}
+            yearOptions={yearOptions}
+            quarterOptions={quarterOptions}
+            semesterOptions={semesterOptions}
+            bimonthlyOptions={bimonthlyOptions}
+            monthOptions={monthOptions}
+            isYTDCalculable={isYTDCalculable}
+            ytdInfoMessage={ytdInfoMessage ?? undefined}
+            onYTDClick={handleYTDClick}
+          />
 
           {/* Final Score */}
           <Card className={`px-6 py-3 border-2 ${getFinalScoreColor()}`}>
