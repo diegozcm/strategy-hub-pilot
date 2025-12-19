@@ -558,6 +558,68 @@ export const KROverviewModal = ({
               aggregationType={currentKeyResult.aggregation_type || 'sum'}
               yearOptions={yearOptions}
               selectedPeriod={selectedPeriod}
+              // Period highlight props
+              selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
+              selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
+              selectedSemester={selectedPeriod === 'semesterly' ? selectedSemester : undefined}
+              selectedBimonth={selectedPeriod === 'bimonthly' ? selectedBimonth : undefined}
+              periodActual={(() => {
+                // Get current metrics based on selected period
+                if (selectedPeriod === 'monthly' && selectedMonth) {
+                  const monthKey = `${selectedMonthYear}-${String(selectedMonth).padStart(2, '0')}`;
+                  return (monthlyActual as Record<string, number>)[monthKey] ?? 0;
+                }
+                if (selectedPeriod === 'quarterly' && selectedQuarter) {
+                  const quarterKey = `q${selectedQuarter}_actual` as keyof typeof currentKeyResult;
+                  return (currentKeyResult[quarterKey] as number) ?? 0;
+                }
+                if (selectedPeriod === 'semesterly' && selectedSemester) {
+                  // Sum quarters for semester
+                  if (selectedSemester === 1) {
+                    return ((currentKeyResult.q1_actual ?? 0) + (currentKeyResult.q2_actual ?? 0));
+                  } else {
+                    return ((currentKeyResult.q3_actual ?? 0) + (currentKeyResult.q4_actual ?? 0));
+                  }
+                }
+                if (selectedPeriod === 'bimonthly' && selectedBimonth) {
+                  const bimonthMonths: Record<number, [number, number]> = {
+                    1: [1, 2], 2: [3, 4], 3: [5, 6], 4: [7, 8], 5: [9, 10], 6: [11, 12]
+                  };
+                  const [m1, m2] = bimonthMonths[selectedBimonth];
+                  const m1Key = `${selectedBimonthYear}-${String(m1).padStart(2, '0')}`;
+                  const m2Key = `${selectedBimonthYear}-${String(m2).padStart(2, '0')}`;
+                  return ((monthlyActual as Record<string, number>)[m1Key] ?? 0) + ((monthlyActual as Record<string, number>)[m2Key] ?? 0);
+                }
+                return undefined;
+              })()}
+              periodTarget={(() => {
+                // Get target for selected period
+                if (selectedPeriod === 'monthly' && selectedMonth) {
+                  const monthKey = `${selectedMonthYear}-${String(selectedMonth).padStart(2, '0')}`;
+                  return (monthlyTargets as Record<string, number>)[monthKey] ?? 0;
+                }
+                if (selectedPeriod === 'quarterly' && selectedQuarter) {
+                  const quarterKey = `q${selectedQuarter}_target` as keyof typeof currentKeyResult;
+                  return (currentKeyResult[quarterKey] as number) ?? 0;
+                }
+                if (selectedPeriod === 'semesterly' && selectedSemester) {
+                  if (selectedSemester === 1) {
+                    return ((currentKeyResult.q1_target ?? 0) + (currentKeyResult.q2_target ?? 0));
+                  } else {
+                    return ((currentKeyResult.q3_target ?? 0) + (currentKeyResult.q4_target ?? 0));
+                  }
+                }
+                if (selectedPeriod === 'bimonthly' && selectedBimonth) {
+                  const bimonthMonths: Record<number, [number, number]> = {
+                    1: [1, 2], 2: [3, 4], 3: [5, 6], 4: [7, 8], 5: [9, 10], 6: [11, 12]
+                  };
+                  const [m1, m2] = bimonthMonths[selectedBimonth];
+                  const m1Key = `${selectedBimonthYear}-${String(m1).padStart(2, '0')}`;
+                  const m2Key = `${selectedBimonthYear}-${String(m2).padStart(2, '0')}`;
+                  return ((monthlyTargets as Record<string, number>)[m1Key] ?? 0) + ((monthlyTargets as Record<string, number>)[m2Key] ?? 0);
+                }
+                return undefined;
+              })()}
             />
           </div>
         </div>

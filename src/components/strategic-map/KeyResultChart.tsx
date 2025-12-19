@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { BarChart3, TableIcon } from 'lucide-react';
 import { useState } from 'react';
-import { calculateKRStatus, type TargetDirection } from '@/lib/krHelpers';
+import { calculateKRStatus, type TargetDirection, getStatusBackgroundColors } from '@/lib/krHelpers';
 import { formatValueWithUnit } from '@/lib/utils';
 import { KeyResultWithMetrics } from '@/hooks/useKRMetrics';
 import { cn } from '@/lib/utils';
@@ -30,6 +30,13 @@ interface KeyResultChartProps {
   aggregationType?: 'sum' | 'average' | 'max' | 'min' | 'last';
   selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly';
   yearOptions?: Array<{ value: number; label: string }>;
+  // New props for period highlight
+  selectedMonth?: number;
+  selectedQuarter?: 1 | 2 | 3 | 4;
+  selectedSemester?: 1 | 2;
+  selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
+  periodActual?: number;
+  periodTarget?: number;
 }
 
 export const KeyResultChart = ({ 
@@ -42,7 +49,13 @@ export const KeyResultChart = ({
   targetDirection = 'maximize',
   aggregationType = 'sum',
   selectedPeriod = 'ytd',
-  yearOptions: propYearOptions
+  yearOptions: propYearOptions,
+  selectedMonth,
+  selectedQuarter,
+  selectedSemester,
+  selectedBimonth,
+  periodActual,
+  periodTarget
 }: KeyResultChartProps) => {
   // Detect frequency - default to monthly for backward compatibility
   const frequency = (keyResult.frequency as KRFrequency) || 'monthly';
@@ -269,6 +282,52 @@ export const KeyResultChart = ({
       startMonth: months[startIdx]?.name,
       endMonth: months[endIdx === -1 ? months.length - 1 : endIdx - 1]?.name
     };
+  };
+
+  // Get period month range for highlighting selected period
+  const getPeriodMonthRange = () => {
+    if (selectedPeriod === 'monthly' && selectedMonth) {
+      const monthName = months[selectedMonth - 1]?.name;
+      return monthName ? { startMonth: monthName, endMonth: monthName } : null;
+    }
+    
+    if (selectedPeriod === 'bimonthly' && selectedBimonth) {
+      const bimonthMonths: Record<number, [number, number]> = {
+        1: [1, 2], 2: [3, 4], 3: [5, 6], 4: [7, 8], 5: [9, 10], 6: [11, 12]
+      };
+      const [start, end] = bimonthMonths[selectedBimonth];
+      return { startMonth: months[start - 1]?.name, endMonth: months[end - 1]?.name };
+    }
+    
+    if (selectedPeriod === 'quarterly' && selectedQuarter) {
+      const quarterMonths: Record<number, [number, number]> = {
+        1: [1, 3], 2: [4, 6], 3: [7, 9], 4: [10, 12]
+      };
+      const [start, end] = quarterMonths[selectedQuarter];
+      return { startMonth: months[start - 1]?.name, endMonth: months[end - 1]?.name };
+    }
+    
+    if (selectedPeriod === 'semesterly' && selectedSemester) {
+      const semesterMonths: Record<number, [number, number]> = {
+        1: [1, 6], 2: [7, 12]
+      };
+      const [start, end] = semesterMonths[selectedSemester];
+      return { startMonth: months[start - 1]?.name, endMonth: months[end - 1]?.name };
+    }
+    
+    return null; // Para YTD e Anual, não destacar área específica
+  };
+
+  // Get period highlight color based on performance
+  const getPeriodHighlightColor = () => {
+    if (periodActual === undefined || periodTarget === undefined || periodTarget === 0) return null;
+    
+    const { percentage } = calculateKRStatus(periodActual, periodTarget, targetDirection);
+    
+    if (percentage > 105) return 'rgba(59, 130, 246, 0.25)';  // blue
+    if (percentage >= 100) return 'rgba(34, 197, 94, 0.25)';  // green
+    if (percentage >= 71) return 'rgba(234, 179, 8, 0.25)';   // yellow
+    return 'rgba(239, 68, 68, 0.3)';                          // red
   };
 
   // Calculate max value for period chart Y-axis
@@ -550,6 +609,25 @@ export const KeyResultChart = ({
                 fill="hsl(142.1 76.2% 36.3%)"
                 fillOpacity={0.1}
                 strokeOpacity={0.3}
+              />
+            );
+          })()}
+          {/* Period highlight based on selected period and performance */}
+          {(() => {
+            const periodRange = getPeriodMonthRange();
+            const highlightColor = getPeriodHighlightColor();
+            
+            if (!periodRange || !highlightColor) return null;
+            
+            return (
+              <ReferenceArea
+                x1={periodRange.startMonth}
+                x2={periodRange.endMonth}
+                yAxisId="left"
+                fill={highlightColor}
+                fillOpacity={1}
+                stroke={highlightColor.replace('0.25)', '0.6)').replace('0.3)', '0.6)')}
+                strokeWidth={2}
               />
             );
           })()}
