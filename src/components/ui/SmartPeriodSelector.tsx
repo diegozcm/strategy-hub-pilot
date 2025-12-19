@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/tooltip';
 import { TrendingUp, Target, Calendar, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { type KRFrequency } from '@/lib/krFrequencyHelpers';
 
 export type PeriodType = 'ytd' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly' | 'monthly';
 
@@ -63,6 +64,9 @@ interface SmartPeriodSelectorProps {
   
   // Modo compacto: não mostra o select de período específico (usado no modal de KR)
   compact?: boolean;
+  
+  // Frequência do KR - filtra as opções de período disponíveis
+  krFrequency?: KRFrequency;
 }
 
 type GranularPeriodType = 'quarterly' | 'semesterly' | 'bimonthly' | 'monthly';
@@ -73,6 +77,15 @@ const PERIOD_TYPE_OPTIONS: { value: GranularPeriodType; label: string }[] = [
   { value: 'bimonthly', label: 'Bimestre' },
   { value: 'monthly', label: 'Mês' },
 ];
+
+// Ordem de granularidade: quanto maior o índice, maior a granularidade (menos períodos)
+const GRANULARITY_ORDER: Record<string, number> = {
+  'monthly': 0,
+  'bimonthly': 1,
+  'quarterly': 2,
+  'semesterly': 3,
+  'yearly': 4,
+};
 
 export const SmartPeriodSelector: React.FC<SmartPeriodSelectorProps> = ({
   selectedPeriod,
@@ -103,9 +116,25 @@ export const SmartPeriodSelector: React.FC<SmartPeriodSelectorProps> = ({
   onYTDClick,
   className,
   compact = false,
+  krFrequency,
 }) => {
   // Determinar se é um período granular (não YTD nem yearly)
   const isGranularPeriod = ['quarterly', 'semesterly', 'bimonthly', 'monthly'].includes(selectedPeriod);
+  
+  // Filtrar opções de período baseado na frequência do KR
+  const filteredPeriodTypeOptions = useMemo(() => {
+    if (!krFrequency || krFrequency === 'monthly') {
+      return PERIOD_TYPE_OPTIONS; // Todas as opções para KRs mensais
+    }
+    
+    const minGranularity = GRANULARITY_ORDER[krFrequency] ?? 0;
+    
+    // Filtrar para mostrar apenas períodos com granularidade igual ou maior
+    return PERIOD_TYPE_OPTIONS.filter(opt => {
+      const optGranularity = GRANULARITY_ORDER[opt.value] ?? 0;
+      return optGranularity >= minGranularity;
+    });
+  }, [krFrequency]);
   
   // Valor atual do tipo de período granular
   const granularPeriodType: GranularPeriodType = isGranularPeriod 
@@ -225,7 +254,7 @@ export const SmartPeriodSelector: React.FC<SmartPeriodSelectorProps> = ({
             <SelectValue placeholder="Período..." />
           </SelectTrigger>
           <SelectContent>
-            {PERIOD_TYPE_OPTIONS.map((option) => (
+            {filteredPeriodTypeOptions.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>

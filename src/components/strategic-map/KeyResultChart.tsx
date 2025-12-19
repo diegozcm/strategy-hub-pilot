@@ -320,8 +320,16 @@ export const KeyResultChart = ({
 
   // Get period highlight colors based on performance (returns gradient-friendly colors)
   const getPeriodHighlightColors = useMemo(() => {
-    if (periodActual === undefined || periodTarget === undefined || periodTarget === 0) {
-      return null;
+    // Se os valores são nulos/undefined, usar cinza transparente
+    if (periodActual === undefined || periodActual === null || 
+        periodTarget === undefined || periodTarget === null || periodTarget === 0) {
+      return {
+        fill: 'rgba(156, 163, 175, 0.12)',
+        stroke: 'rgba(156, 163, 175, 0.3)',
+        gradientStart: 'rgba(156, 163, 175, 0.18)',
+        gradientEnd: 'rgba(156, 163, 175, 0.05)',
+        id: 'periodHighlightGray'
+      };
     }
     
     const { percentage } = calculateKRStatus(periodActual, periodTarget, targetDirection);
@@ -386,6 +394,25 @@ export const KeyResultChart = ({
     0
   ) * 1.15;
 
+  // Determine selected period key for highlighting in bar chart
+  const getSelectedPeriodLabel = () => {
+    if (selectedPeriod === 'quarterly' && selectedQuarter) {
+      const periodData = periodChartData.find(p => p.periodKey === `Q${selectedQuarter}`);
+      return periodData?.period || null;
+    }
+    if (selectedPeriod === 'semesterly' && selectedSemester) {
+      const periodData = periodChartData.find(p => p.periodKey === `S${selectedSemester}`);
+      return periodData?.period || null;
+    }
+    if (selectedPeriod === 'bimonthly' && selectedBimonth) {
+      const periodData = periodChartData.find(p => p.periodKey === `B${selectedBimonth}`);
+      return periodData?.period || null;
+    }
+    return null;
+  };
+
+  const selectedPeriodLabel = getSelectedPeriodLabel();
+
   // ============== Period-based bar chart rendering ==============
   const renderPeriodChart = () => (
     <div className="h-[300px] w-full">
@@ -395,6 +422,15 @@ export const KeyResultChart = ({
           margin={{ top: 30, right: 30, left: 20, bottom: 20 }}
           barCategoryGap={frequency === 'yearly' ? '40%' : '25%'}
         >
+          {/* Gradient definitions for period highlight */}
+          <defs>
+            {getPeriodHighlightColors && (
+              <linearGradient id={`bar-${getPeriodHighlightColors.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={getPeriodHighlightColors.gradientStart} />
+                <stop offset="100%" stopColor={getPeriodHighlightColors.gradientEnd} />
+              </linearGradient>
+            )}
+          </defs>
           <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
           <XAxis 
             dataKey="period" 
@@ -409,6 +445,23 @@ export const KeyResultChart = ({
             tickLine={false}
             axisLine={false}
           />
+          {/* Period highlight for selected period */}
+          {selectedPeriodLabel && getPeriodHighlightColors && (
+            <ReferenceArea
+              key={animationKey}
+              x1={selectedPeriodLabel}
+              x2={selectedPeriodLabel}
+              fill={`url(#bar-${getPeriodHighlightColors.id})`}
+              fillOpacity={1}
+              stroke={getPeriodHighlightColors.stroke}
+              strokeWidth={1.5}
+              strokeDasharray="4 2"
+              className="animate-fade-in"
+              style={{
+                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            />
+          )}
           <Tooltip 
             cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
             content={({ active, payload, label }) => {
