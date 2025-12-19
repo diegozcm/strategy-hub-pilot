@@ -206,24 +206,6 @@ export const SmartPeriodSelector: React.FC<SmartPeriodSelectorProps> = ({
           <Target className="w-4 h-4" />
           Ano
         </Button>
-
-        {selectedPeriod === 'yearly' && (
-          <Select
-            value={selectedYear.toString()}
-            onValueChange={(value) => setSelectedYear(parseInt(value))}
-          >
-            <SelectTrigger className="h-8 w-[90px] text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {yearOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value.toString()}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
       </div>
 
       {/* Grupo 2: Tipo de Período + Período Específico */}
