@@ -60,6 +60,9 @@ interface SmartPeriodSelectorProps {
   
   // Classes extras
   className?: string;
+  
+  // Modo compacto: não mostra o select de período específico (usado no modal de KR)
+  compact?: boolean;
 }
 
 type GranularPeriodType = 'quarterly' | 'semesterly' | 'bimonthly' | 'monthly';
@@ -99,6 +102,7 @@ export const SmartPeriodSelector: React.FC<SmartPeriodSelectorProps> = ({
   ytdInfoMessage,
   onYTDClick,
   className,
+  compact = false,
 }) => {
   // Determinar se é um período granular (não YTD nem yearly)
   const isGranularPeriod = ['quarterly', 'semesterly', 'bimonthly', 'monthly'].includes(selectedPeriod);
@@ -247,7 +251,8 @@ export const SmartPeriodSelector: React.FC<SmartPeriodSelectorProps> = ({
           </SelectContent>
         </Select>
 
-        {isGranularPeriod && currentPeriodOptions.length > 0 && (
+        {/* Mostra o select de período específico apenas se não estiver em modo compact */}
+        {!compact && isGranularPeriod && currentPeriodOptions.length > 0 && (
           <>
             <div className="h-6 w-px bg-border" />
             <Select
@@ -268,7 +273,7 @@ export const SmartPeriodSelector: React.FC<SmartPeriodSelectorProps> = ({
           </>
         )}
 
-        {isGranularPeriod && currentPeriodOptions.length === 0 && (
+        {!compact && isGranularPeriod && currentPeriodOptions.length === 0 && (
           <span className="text-sm text-muted-foreground px-2">
             Sem dados disponíveis
           </span>

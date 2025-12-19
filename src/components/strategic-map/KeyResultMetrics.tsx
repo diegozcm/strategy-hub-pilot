@@ -14,14 +14,24 @@ interface KeyResultMetricsProps {
   selectedYear?: number;
   selectedQuarter?: 1 | 2 | 3 | 4;
   selectedQuarterYear?: number;
+  selectedSemester?: 1 | 2;
+  selectedSemesterYear?: number;
+  selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
+  selectedBimonthYear?: number;
   onMonthChange?: (month: number) => void;
   onYearChange?: (year: number) => void;
   onQuarterChange?: (quarter: 1 | 2 | 3 | 4) => void;
   onQuarterYearChange?: (year: number) => void;
   onYearlyYearChange?: (year: number) => void;
+  onSemesterChange?: (semester: 1 | 2) => void;
+  onSemesterYearChange?: (year: number) => void;
+  onBimonthChange?: (bimonth: 1 | 2 | 3 | 4 | 5 | 6) => void;
+  onBimonthYearChange?: (year: number) => void;
   monthOptions?: Array<{ value: string; label: string }>;
   quarterOptions?: Array<{ value: string; label: string; quarter: number; year: number }>;
   yearOptions?: Array<{ value: number; label: string }>;
+  semesterOptions?: Array<{ value: string; label: string }>;
+  bimonthlyOptions?: Array<{ value: string; label: string }>;
   selectedYearlyYear?: number;
 }
 
@@ -32,24 +42,38 @@ export const KeyResultMetrics = ({
   selectedYear,
   selectedQuarter,
   selectedQuarterYear,
+  selectedSemester,
+  selectedSemesterYear,
+  selectedBimonth,
+  selectedBimonthYear,
   onMonthChange,
   onYearChange,
   onQuarterChange,
   onQuarterYearChange,
   onYearlyYearChange,
+  onSemesterChange,
+  onSemesterYearChange,
+  onBimonthChange,
+  onBimonthYearChange,
   monthOptions = [],
   quarterOptions = [],
   yearOptions = [],
+  semesterOptions = [],
+  bimonthlyOptions = [],
   selectedYearlyYear
 }: KeyResultMetricsProps) => {
   const [isComboOpen, setIsComboOpen] = useState(false);
 
-  // Get metrics from database (with optional custom month or quarter)
+  // Get metrics from database (with optional custom month, quarter, semester, or bimonth)
   const metrics = useKRMetrics(keyResult, {
     selectedMonth,
     selectedYear,
     selectedQuarter,
     selectedQuarterYear,
+    selectedSemester,
+    selectedSemesterYear,
+    selectedBimonth,
+    selectedBimonthYear,
   });
   
   // Select appropriate metrics based on period
@@ -57,6 +81,8 @@ export const KeyResultMetrics = ({
     selectedPeriod === 'monthly' ? metrics.monthly :
     selectedPeriod === 'yearly' ? metrics.yearly :
     selectedPeriod === 'quarterly' ? metrics.quarterly :
+    selectedPeriod === 'semesterly' ? metrics.semesterly :
+    selectedPeriod === 'bimonthly' ? metrics.bimonthly :
     metrics.ytd;
 
 
@@ -85,6 +111,10 @@ export const KeyResultMetrics = ({
     ? `Ano ${selectedYear || new Date().getFullYear()}`
     : selectedPeriod === 'quarterly'
     ? `Q${selectedQuarter || Math.ceil((new Date().getMonth() + 1) / 3)} ${selectedQuarterYear || new Date().getFullYear()}`
+    : selectedPeriod === 'semesterly'
+    ? `S${selectedSemester || 1} ${selectedSemesterYear || new Date().getFullYear()}`
+    : selectedPeriod === 'bimonthly'
+    ? `B${selectedBimonth || 1} ${selectedBimonthYear || new Date().getFullYear()}`
     : selectedMonth && selectedYear
     ? new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
     : new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -95,6 +125,10 @@ export const KeyResultMetrics = ({
     ? 'Todos os 12 meses'
     : selectedPeriod === 'quarterly'
     ? '3 meses do quarter'
+    : selectedPeriod === 'semesterly'
+    ? '6 meses do semestre'
+    : selectedPeriod === 'bimonthly'
+    ? '2 meses do bimestre'
     : 'Mês de referência';
 
   return (
@@ -107,6 +141,8 @@ export const KeyResultMetrics = ({
               {selectedPeriod === 'ytd' ? 'Meta YTD' : 
                selectedPeriod === 'yearly' ? 'Meta Anual' : 
                selectedPeriod === 'quarterly' ? 'Meta Quarter' :
+               selectedPeriod === 'semesterly' ? 'Meta Semestre' :
+               selectedPeriod === 'bimonthly' ? 'Meta Bimestre' :
                'Meta Mensal'}
             </CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
@@ -124,6 +160,8 @@ export const KeyResultMetrics = ({
               {selectedPeriod === 'ytd' ? 'Realizado YTD' : 
                selectedPeriod === 'yearly' ? 'Realizado Anual' : 
                selectedPeriod === 'quarterly' ? 'Realizado Quarter' :
+               selectedPeriod === 'semesterly' ? 'Realizado Semestre' :
+               selectedPeriod === 'bimonthly' ? 'Realizado Bimestre' :
                'Realizado Mensal'}
             </CardTitle>
             {hasData ? (
@@ -147,6 +185,8 @@ export const KeyResultMetrics = ({
             {selectedPeriod === 'ytd' ? '% Atingimento YTD' : 
              selectedPeriod === 'yearly' ? '% Atingimento Anual' : 
              selectedPeriod === 'quarterly' ? '% Atingimento Quarter' :
+             selectedPeriod === 'semesterly' ? '% Atingimento Semestre' :
+             selectedPeriod === 'bimonthly' ? '% Atingimento Bimestre' :
              '% Atingimento Mensal'}
           </CardTitle>
         </CardHeader>
@@ -282,6 +322,62 @@ export const KeyResultMetrics = ({
                 {!isComboOpen && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Todos os 12 meses
+                  </p>
+                )}
+              </>
+            ) : selectedPeriod === 'semesterly' && onSemesterChange && onSemesterYearChange && semesterOptions.length > 0 ? (
+              <>
+                <Select
+                  value={`${selectedSemesterYear}-S${selectedSemester}`}
+                  onValueChange={(value) => {
+                    const [year, s] = value.split('-S');
+                    onSemesterYearChange(parseInt(year));
+                    onSemesterChange(parseInt(s) as 1 | 2);
+                  }}
+                  onOpenChange={setIsComboOpen}
+                >
+                  <SelectTrigger className="w-full h-9 text-base font-bold">
+                    <SelectValue placeholder="Selecione o semestre" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {semesterOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!isComboOpen && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    6 meses do semestre
+                  </p>
+                )}
+              </>
+            ) : selectedPeriod === 'bimonthly' && onBimonthChange && onBimonthYearChange && bimonthlyOptions.length > 0 ? (
+              <>
+                <Select
+                  value={`${selectedBimonthYear}-B${selectedBimonth}`}
+                  onValueChange={(value) => {
+                    const [year, b] = value.split('-B');
+                    onBimonthYearChange(parseInt(year));
+                    onBimonthChange(parseInt(b) as 1 | 2 | 3 | 4 | 5 | 6);
+                  }}
+                  onOpenChange={setIsComboOpen}
+                >
+                  <SelectTrigger className="w-full h-9 text-base font-bold">
+                    <SelectValue placeholder="Selecione o bimestre" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bimonthlyOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!isComboOpen && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    2 meses do bimestre
                   </p>
                 )}
               </>
