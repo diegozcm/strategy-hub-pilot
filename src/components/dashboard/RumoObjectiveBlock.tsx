@@ -9,30 +9,30 @@ import { MonthlyPerformanceIndicators } from '@/components/strategic-map/Monthly
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
+import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 
 interface RumoObjectiveBlockProps {
   objective: StrategicObjective;
   progress: number;
   keyResults: KeyResult[];
   krProgress: Map<string, number>;
-  selectedPeriod: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly';
-  selectedMonth?: number;
-  selectedYear?: number;
-  selectedQuarter?: 1 | 2 | 3 | 4;
-  selectedQuarterYear?: number;
 }
 
 export const RumoObjectiveBlock = ({ 
   objective, 
   progress, 
   keyResults,
-  krProgress,
-  selectedPeriod,
-  selectedMonth,
-  selectedYear,
-  selectedQuarter,
-  selectedQuarterYear
+  krProgress
 }: RumoObjectiveBlockProps) => {
+  // Consumir período globalmente do contexto
+  const {
+    periodType: selectedPeriod,
+    selectedMonth,
+    selectedYear,
+    selectedQuarter,
+    selectedQuarterYear
+  } = usePeriodFilter();
+
   const performance = getPerformanceColor(progress);
   const styles = getPerformanceStyles(performance);
   const { company } = useAuth();
@@ -238,11 +238,6 @@ export const RumoObjectiveBlock = ({
         onOpenKeyResultDetails={handleOpenKeyResultDetails}
         pillars={pillars}
         progressPercentage={progress}
-        selectedPeriod={selectedPeriod}
-        selectedMonth={selectedMonth}
-        selectedYear={selectedYear}
-        selectedQuarter={selectedQuarter}
-        selectedQuarterYear={selectedQuarterYear}
       />
 
       {/* KR Overview Modal */}
