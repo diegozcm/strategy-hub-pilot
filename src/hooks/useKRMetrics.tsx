@@ -122,8 +122,8 @@ export const useKRMetrics = (
           totalActual = actualValues.reduce((sum, v) => sum + v, 0);
           break;
         case 'average':
-          const validTargets = targetValues.filter(v => v > 0);
-          const validActuals = actualValues.filter(v => v > 0);
+          const validTargets = targetValues.filter(v => v !== null && v !== undefined && v !== 0);
+          const validActuals = actualValues.filter(v => v !== null && v !== undefined);
           totalTarget = validTargets.length > 0 ? validTargets.reduce((sum, v) => sum + v, 0) / validTargets.length : 0;
           totalActual = validActuals.length > 0 ? validActuals.reduce((sum, v) => sum + v, 0) / validActuals.length : 0;
           break;
@@ -132,8 +132,8 @@ export const useKRMetrics = (
           totalActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
           break;
         case 'min':
-          const nonZeroTargets = targetValues.filter(v => v > 0);
-          const nonZeroActuals = actualValues.filter(v => v > 0);
+          const nonZeroTargets = targetValues.filter(v => v !== null && v !== undefined && v !== 0);
+          const nonZeroActuals = actualValues.filter(v => v !== null && v !== undefined);
           totalTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
           totalActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
           break;
@@ -236,8 +236,8 @@ export const useKRMetrics = (
         qActual = actualValues.reduce((sum, v) => sum + v, 0);
         break;
       case 'average':
-        const validTargets = targetValues.filter(v => v > 0);
-        const validActuals = actualValues.filter(v => v > 0);
+        const validTargets = targetValues.filter(v => v !== null && v !== undefined && v !== 0);
+        const validActuals = actualValues.filter(v => v !== null && v !== undefined);
         qTarget = validTargets.length > 0 ? validTargets.reduce((sum, v) => sum + v, 0) / validTargets.length : 0;
         qActual = validActuals.length > 0 ? validActuals.reduce((sum, v) => sum + v, 0) / validActuals.length : 0;
         break;
@@ -246,8 +246,8 @@ export const useKRMetrics = (
         qActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
         break;
       case 'min':
-        const nonZeroTargets = targetValues.filter(v => v > 0);
-        const nonZeroActuals = actualValues.filter(v => v > 0);
+        const nonZeroTargets = targetValues.filter(v => v !== null && v !== undefined && v !== 0);
+        const nonZeroActuals = actualValues.filter(v => v !== null && v !== undefined);
         qTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
         qActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
         break;
@@ -369,20 +369,20 @@ export const useKRMetrics = (
           totalActual = actualValues.reduce((sum, v) => sum + v, 0);
           break;
         case 'average':
-          const validTargets = targetValues.filter(v => v > 0);
-          const validActuals = actualValues.filter(v => v > 0);
-          totalTarget = validTargets.length > 0 ? validTargets.reduce((sum, v) => sum + v, 0) / validTargets.length : 0;
-          totalActual = validActuals.length > 0 ? validActuals.reduce((sum, v) => sum + v, 0) / validActuals.length : 0;
+          const validYearTargets = targetValues.filter(v => v !== null && v !== undefined && v !== 0);
+          const validYearActuals = actualValues.filter(v => v !== null && v !== undefined);
+          totalTarget = validYearTargets.length > 0 ? validYearTargets.reduce((sum, v) => sum + v, 0) / validYearTargets.length : 0;
+          totalActual = validYearActuals.length > 0 ? validYearActuals.reduce((sum, v) => sum + v, 0) / validYearActuals.length : 0;
           break;
         case 'max':
           totalTarget = targetValues.length > 0 ? Math.max(...targetValues) : 0;
           totalActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
           break;
         case 'min':
-          const nonZeroTargets = targetValues.filter(v => v > 0);
-          const nonZeroActuals = actualValues.filter(v => v > 0);
-          totalTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
-          totalActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
+          const nonZeroYearTargets = targetValues.filter(v => v !== null && v !== undefined && v !== 0);
+          const nonZeroYearActuals = actualValues.filter(v => v !== null && v !== undefined);
+          totalTarget = nonZeroYearTargets.length > 0 ? Math.min(...nonZeroYearTargets) : 0;
+          totalActual = nonZeroYearActuals.length > 0 ? Math.min(...nonZeroYearActuals) : 0;
           break;
       }
       
