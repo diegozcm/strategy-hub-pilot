@@ -14,6 +14,7 @@ import { ObjectiveDetailModal } from '@/components/objectives/ObjectiveDetailMod
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 
 interface ObjectiveCardProps {
   objective: StrategicObjective;
@@ -22,14 +23,6 @@ interface ObjectiveCardProps {
   pillar?: { id: string; name: string; color: string; } | null;
   onAddResultadoChave?: (resultadoChaveData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onRefreshData?: () => void;
-  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly';
-  selectedMonth?: number;
-  selectedYear?: number;
-  selectedQuarter?: 1 | 2 | 3 | 4;
-  selectedQuarterYear?: number;
-  onPeriodChange?: (period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly') => void;
-  onMonthChange?: (month: number) => void;
-  onYearChange?: (year: number) => void;
 }
 
 const getProgressColor = (progress: number) => {
@@ -218,16 +211,20 @@ export const ObjectiveCard = ({
   keyResults = [], 
   pillar, 
   onAddResultadoChave, 
-  onRefreshData,
-  selectedPeriod = 'ytd',
-  selectedMonth,
-  selectedYear,
-  selectedQuarter,
-  selectedQuarterYear,
-  onPeriodChange,
-  onMonthChange,
-  onYearChange
+  onRefreshData
 }: ObjectiveCardProps) => {
+  // Consumir período globalmente do contexto
+  const {
+    periodType: selectedPeriod,
+    selectedMonth,
+    selectedYear,
+    selectedQuarter,
+    selectedQuarterYear,
+    setPeriodType,
+    setSelectedMonth,
+    setSelectedYear
+  } = usePeriodFilter();
+
   const [showResultadoChaveForm, setShowResultadoChaveForm] = useState(false);
   const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
   const [isEditKeyResultModalOpen, setIsEditKeyResultModalOpen] = useState(false);
@@ -430,11 +427,6 @@ export const ObjectiveCard = ({
           onOpenKeyResultDetails={handleOpenKeyResultDetails}
           pillars={pillars}
           progressPercentage={progressPercentage}
-          selectedPeriod={selectedPeriod}
-          selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-          selectedYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
-          selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
-          selectedQuarterYear={selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined}
         />
 
         {/* KR Overview Modal (compact mode) */}
@@ -458,13 +450,10 @@ export const ObjectiveCard = ({
           objectives={[{ id: objective.id, title: objective.title }]}
           showDeleteButton={false}
           initialPeriod={selectedPeriod}
-          initialMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-          initialYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
-          initialQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
-          initialQuarterYear={selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined}
-          onPeriodChange={onPeriodChange}
-          onMonthChange={onMonthChange}
-          onYearChange={onYearChange}
+          initialMonth={selectedMonth}
+          initialYear={selectedYear}
+          initialQuarter={selectedQuarter}
+          initialQuarterYear={selectedQuarterYear}
         />
       </>
     );
@@ -574,9 +563,6 @@ export const ObjectiveCard = ({
                       resultadoChave={kr}
                       pillar={pillar}
                       onOpenDetails={handleOpenKeyResultDetails}
-                      selectedPeriod={selectedPeriod}
-                      selectedMonth={selectedMonth}
-                      selectedYear={selectedYear}
                     />
                   ))}
                 </div>
@@ -630,13 +616,10 @@ export const ObjectiveCard = ({
         objectives={[{ id: objective.id, title: objective.title }]}
         showDeleteButton={false}
         initialPeriod={selectedPeriod}
-        initialMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-        initialYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
-        initialQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
-        initialQuarterYear={selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined}
-        onPeriodChange={onPeriodChange}
-        onMonthChange={onMonthChange}
-        onYearChange={onYearChange}
+        initialMonth={selectedMonth}
+        initialYear={selectedYear}
+        initialQuarter={selectedQuarter}
+        initialQuarterYear={selectedQuarterYear}
       />
 
       {/* Objective Detail Modal */}
@@ -652,11 +635,6 @@ export const ObjectiveCard = ({
         onOpenKeyResultDetails={handleOpenKeyResultDetails}
         pillars={pillars}
         progressPercentage={progressPercentage}
-        selectedPeriod={selectedPeriod}
-        selectedMonth={selectedPeriod === 'monthly' ? selectedMonth : undefined}
-        selectedYear={selectedPeriod === 'monthly' || selectedPeriod === 'yearly' ? selectedYear : undefined}
-        selectedQuarter={selectedPeriod === 'quarterly' ? selectedQuarter : undefined}
-        selectedQuarterYear={selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined}
       />
     </>
   );

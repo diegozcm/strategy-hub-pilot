@@ -4,30 +4,30 @@ import { MonthlyPerformanceIndicators } from './MonthlyPerformanceIndicators';
 import { formatValueWithUnit } from '@/lib/utils';
 import { useKRMetrics } from '@/hooks/useKRMetrics';
 import { Badge } from '@/components/ui/badge';
+import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 
 interface ResultadoChaveMiniCardProps {
   resultadoChave: KeyResult;
   pillar?: { name: string; color: string } | null;
   onUpdate?: () => void;
   onOpenDetails?: (keyResult: KeyResult) => void;
-  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly';
-  selectedMonth?: number;
-  selectedYear?: number;
-  selectedQuarter?: 1 | 2 | 3 | 4;
-  selectedQuarterYear?: number;
 }
 
 export const ResultadoChaveMiniCard = ({ 
   resultadoChave, 
   pillar, 
   onUpdate, 
-  onOpenDetails,
-  selectedPeriod = 'ytd',
-  selectedMonth,
-  selectedYear,
-  selectedQuarter,
-  selectedQuarterYear
+  onOpenDetails
 }: ResultadoChaveMiniCardProps) => {
+  // Consumir período globalmente do contexto
+  const {
+    periodType: selectedPeriod,
+    selectedMonth,
+    selectedYear,
+    selectedQuarter,
+    selectedQuarterYear
+  } = usePeriodFilter();
+
   // Usar useKRMetrics para obter valores corretos baseado no período e mês/ano selecionados
   const metrics = useKRMetrics(resultadoChave, { 
     selectedMonth, 

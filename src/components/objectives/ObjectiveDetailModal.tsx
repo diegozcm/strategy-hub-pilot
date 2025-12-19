@@ -15,6 +15,7 @@ import { KeyResult } from '@/types/strategic-map';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { getProgressLevel } from '@/lib/krHelpers';
+import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 
 // Flexible interface for objective to support both ObjectivesPage and StrategicMap
 interface ObjectiveData {
@@ -66,11 +67,6 @@ interface ObjectiveDetailModalProps {
   onOpenKeyResultDetails: (kr: KeyResult) => void;
   pillars: StrategicPillar[];
   progressPercentage: number;
-  selectedPeriod?: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly';
-  selectedMonth?: number;
-  selectedYear?: number;
-  selectedQuarter?: 1 | 2 | 3 | 4;
-  selectedQuarterYear?: number;
   canEditObjective?: boolean;
   canDeleteObjective?: boolean;
 }
@@ -87,15 +83,20 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
   onOpenKeyResultDetails,
   pillars,
   progressPercentage,
-  selectedPeriod = 'ytd',
-  selectedMonth,
-  selectedYear,
-  selectedQuarter,
-  selectedQuarterYear,
   canEditObjective = true,
   canDeleteObjective = true,
 }) => {
   const navigate = useNavigate();
+  
+  // Consumir período globalmente do contexto
+  const {
+    periodType: selectedPeriod,
+    selectedMonth,
+    selectedYear,
+    selectedQuarter,
+    selectedQuarterYear
+  } = usePeriodFilter();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -323,10 +324,6 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                       resultadoChave={kr}
                       pillar={pillar}
                       onOpenDetails={onOpenKeyResultDetails}
-                      selectedPeriod={selectedPeriod}
-                      selectedMonth={selectedMonth}
-                      selectedYear={selectedYear}
-                      selectedQuarter={selectedQuarter}
                     />
                   ))}
                   {keyResults.length === 0 && (

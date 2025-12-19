@@ -842,10 +842,6 @@ export const ObjectivesPage: React.FC = () => {
               ? { selectedQuarter }
               : undefined
           ) : 0}
-          selectedPeriod={selectedPeriod}
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-          selectedQuarter={selectedQuarter}
           canEditObjective={canEditObjective}
           canDeleteObjective={canDeleteObjective}
         />
