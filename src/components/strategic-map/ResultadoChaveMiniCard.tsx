@@ -112,6 +112,7 @@ export const ResultadoChaveMiniCard = ({
                   monthlyTargets={resultadoChave.monthly_targets}
                   monthlyActual={resultadoChave.monthly_actual}
                   targetDirection={resultadoChave.target_direction || 'maximize'}
+                  frequency={resultadoChave.frequency || 'monthly'}
                   size="sm"
                 />
               </div>

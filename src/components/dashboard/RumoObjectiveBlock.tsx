@@ -212,6 +212,7 @@ export const RumoObjectiveBlock = ({
                           monthlyTargets={kr.monthly_targets}
                           monthlyActual={kr.monthly_actual}
                           targetDirection={kr.target_direction || 'maximize'}
+                          frequency={kr.frequency || 'monthly'}
                           size="sm"
                         />
                       </div>
