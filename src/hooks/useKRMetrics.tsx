@@ -36,7 +36,7 @@ export interface KRMetrics {
 export interface KeyResultWithMetrics {
   id: string;
   title: string;
-  frequency?: 'monthly' | 'quarterly' | 'semesterly' | 'yearly';
+  frequency?: 'monthly' | 'bimonthly' | 'quarterly' | 'semesterly' | 'yearly';
   // Campos pré-calculados no banco (via trigger)
   ytd_target?: number;
   ytd_actual?: number;

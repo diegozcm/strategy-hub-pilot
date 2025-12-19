@@ -598,6 +598,14 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                         <span className="text-muted-foreground text-xs">12 metas por ano</span>
                       </div>
                     </SelectItem>
+                    <SelectItem value="bimonthly">
+                      <div className="flex items-center gap-2">
+                        <span className={cn("px-2 py-0.5 rounded text-xs font-medium", getFrequencyBadgeColor('bimonthly'))}>
+                          Bimestral
+                        </span>
+                        <span className="text-muted-foreground text-xs">6 metas por ano (B1-B6)</span>
+                      </div>
+                    </SelectItem>
                     <SelectItem value="quarterly">
                       <div className="flex items-center gap-2">
                         <span className={cn("px-2 py-0.5 rounded text-xs font-medium", getFrequencyBadgeColor('quarterly'))}>

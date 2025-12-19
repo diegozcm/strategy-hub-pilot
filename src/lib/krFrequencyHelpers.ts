@@ -3,7 +3,7 @@
  * Supports: monthly, quarterly, semesterly, yearly
  */
 
-export type KRFrequency = 'monthly' | 'quarterly' | 'semesterly' | 'yearly';
+export type KRFrequency = 'monthly' | 'bimonthly' | 'quarterly' | 'semesterly' | 'yearly';
 
 export interface FrequencyPeriod {
   key: string;       // "2025-Q1", "2025-S1", "2025"
@@ -16,7 +16,7 @@ export interface FrequencyPeriod {
  * Check if frequency is period-based (not monthly)
  */
 export const isFrequencyPeriodBased = (frequency?: string): boolean => {
-  return frequency === 'quarterly' || frequency === 'semesterly' || frequency === 'yearly';
+  return frequency === 'bimonthly' || frequency === 'quarterly' || frequency === 'semesterly' || frequency === 'yearly';
 };
 
 /**
@@ -24,6 +24,7 @@ export const isFrequencyPeriodBased = (frequency?: string): boolean => {
  */
 export const getFrequencyLabel = (frequency?: string): string => {
   switch (frequency) {
+    case 'bimonthly': return 'Bimestral';
     case 'quarterly': return 'Trimestral';
     case 'semesterly': return 'Semestral';
     case 'yearly': return 'Anual';
@@ -37,6 +38,7 @@ export const getFrequencyLabel = (frequency?: string): string => {
  */
 export const getFrequencyBadgeColor = (frequency?: string): string => {
   switch (frequency) {
+    case 'bimonthly': return 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300';
     case 'quarterly': return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
     case 'semesterly': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300';
     case 'yearly': return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300';
@@ -50,6 +52,46 @@ export const getFrequencyBadgeColor = (frequency?: string): string => {
  */
 export const getPeriodsForFrequency = (frequency: KRFrequency, year: number): FrequencyPeriod[] => {
   switch (frequency) {
+    case 'bimonthly':
+      return [
+        {
+          key: `${year}-B1`,
+          label: `B1 ${year}`,
+          shortLabel: 'B1',
+          monthKeys: [`${year}-01`, `${year}-02`]
+        },
+        {
+          key: `${year}-B2`,
+          label: `B2 ${year}`,
+          shortLabel: 'B2',
+          monthKeys: [`${year}-03`, `${year}-04`]
+        },
+        {
+          key: `${year}-B3`,
+          label: `B3 ${year}`,
+          shortLabel: 'B3',
+          monthKeys: [`${year}-05`, `${year}-06`]
+        },
+        {
+          key: `${year}-B4`,
+          label: `B4 ${year}`,
+          shortLabel: 'B4',
+          monthKeys: [`${year}-07`, `${year}-08`]
+        },
+        {
+          key: `${year}-B5`,
+          label: `B5 ${year}`,
+          shortLabel: 'B5',
+          monthKeys: [`${year}-09`, `${year}-10`]
+        },
+        {
+          key: `${year}-B6`,
+          label: `B6 ${year}`,
+          shortLabel: 'B6',
+          monthKeys: [`${year}-11`, `${year}-12`]
+        }
+      ];
+    
     case 'quarterly':
       return [
         {
@@ -170,6 +212,9 @@ export const getMonthPeriodKey = (monthKey: string, frequency: KRFrequency): str
   const month = parseInt(monthStr);
   
   switch (frequency) {
+    case 'bimonthly':
+      const bimonth = Math.ceil(month / 2);
+      return `${year}-B${bimonth}`;
     case 'quarterly':
       const quarter = Math.ceil(month / 3);
       return `${year}-Q${quarter}`;
@@ -214,6 +259,12 @@ export const calculateYearlyFromPeriods = (
  * Get period label for display
  */
 export const getPeriodDisplayLabel = (periodKey: string): string => {
+  // Handle bimonthly: "2025-B1" -> "B1 2025"
+  if (periodKey.includes('-B')) {
+    const [year, b] = periodKey.split('-B');
+    return `B${b} ${year}`;
+  }
+  
   // Handle quarterly: "2025-Q1" -> "Q1 2025"
   if (periodKey.includes('-Q')) {
     const [year, q] = periodKey.split('-Q');
@@ -250,6 +301,15 @@ export const isPeriodInValidity = (
   // For monthly, direct comparison
   if (periodKey.match(/^\d{4}-\d{2}$/)) {
     return periodKey >= startMonth && periodKey <= endMonth;
+  }
+  
+  // For bimonthly: "2025-B1"
+  if (periodKey.includes('-B')) {
+    const [year, b] = periodKey.split('-B');
+    const bimonth = parseInt(b);
+    const bimonthStartMonth = `${year}-${((bimonth - 1) * 2 + 1).toString().padStart(2, '0')}`;
+    const bimonthEndMonth = `${year}-${(bimonth * 2).toString().padStart(2, '0')}`;
+    return bimonthEndMonth >= startMonth && bimonthStartMonth <= endMonth;
   }
   
   // For quarterly: "2025-Q1"
