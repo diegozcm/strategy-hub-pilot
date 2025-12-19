@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { BarChart3, TableIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { calculateKRStatus, type TargetDirection, getStatusBackgroundColors } from '@/lib/krHelpers';
 import { formatValueWithUnit } from '@/lib/utils';
 import { KeyResultWithMetrics } from '@/hooks/useKRMetrics';
@@ -318,17 +318,67 @@ export const KeyResultChart = ({
     return null; // Para YTD e Anual, não destacar área específica
   };
 
-  // Get period highlight color based on performance
-  const getPeriodHighlightColor = () => {
-    if (periodActual === undefined || periodTarget === undefined || periodTarget === 0) return null;
+  // Get period highlight colors based on performance (returns gradient-friendly colors)
+  const getPeriodHighlightColors = useMemo(() => {
+    if (periodActual === undefined || periodTarget === undefined || periodTarget === 0) {
+      return null;
+    }
     
     const { percentage } = calculateKRStatus(periodActual, periodTarget, targetDirection);
     
-    if (percentage > 105) return 'rgba(59, 130, 246, 0.25)';  // blue
-    if (percentage >= 100) return 'rgba(34, 197, 94, 0.25)';  // green
-    if (percentage >= 71) return 'rgba(234, 179, 8, 0.25)';   // yellow
-    return 'rgba(239, 68, 68, 0.3)';                          // red
-  };
+    // Return color config with gradient support and better opacity
+    if (percentage > 105) {
+      return {
+        fill: 'rgba(59, 130, 246, 0.18)',
+        stroke: 'rgba(59, 130, 246, 0.5)',
+        gradientStart: 'rgba(59, 130, 246, 0.25)',
+        gradientEnd: 'rgba(59, 130, 246, 0.08)',
+        id: 'periodHighlightBlue'
+      };
+    }
+    if (percentage >= 100) {
+      return {
+        fill: 'rgba(34, 197, 94, 0.18)',
+        stroke: 'rgba(34, 197, 94, 0.5)',
+        gradientStart: 'rgba(34, 197, 94, 0.25)',
+        gradientEnd: 'rgba(34, 197, 94, 0.08)',
+        id: 'periodHighlightGreen'
+      };
+    }
+    if (percentage >= 71) {
+      return {
+        fill: 'rgba(234, 179, 8, 0.22)',
+        stroke: 'rgba(234, 179, 8, 0.55)',
+        gradientStart: 'rgba(234, 179, 8, 0.3)',
+        gradientEnd: 'rgba(234, 179, 8, 0.1)',
+        id: 'periodHighlightYellow'
+      };
+    }
+    return {
+      fill: 'rgba(239, 68, 68, 0.2)',
+      stroke: 'rgba(239, 68, 68, 0.5)',
+      gradientStart: 'rgba(239, 68, 68, 0.28)',
+      gradientEnd: 'rgba(239, 68, 68, 0.08)',
+      id: 'periodHighlightRed'
+    };
+  }, [periodActual, periodTarget, targetDirection]);
+
+  // Track previous period for animation
+  const prevPeriodRef = useRef<string | null>(null);
+  const [animationKey, setAnimationKey] = useState(0);
+  
+  const currentPeriodKey = useMemo(() => {
+    const range = getPeriodMonthRange();
+    if (!range) return null;
+    return `${range.startMonth}-${range.endMonth}`;
+  }, [selectedPeriod, selectedMonth, selectedQuarter, selectedSemester, selectedBimonth]);
+  
+  useEffect(() => {
+    if (currentPeriodKey !== prevPeriodRef.current) {
+      prevPeriodRef.current = currentPeriodKey;
+      setAnimationKey(prev => prev + 1);
+    }
+  }, [currentPeriodKey]);
 
   // Calculate max value for period chart Y-axis
   const maxPeriodValue = Math.max(
@@ -612,22 +662,36 @@ export const KeyResultChart = ({
               />
             );
           })()}
-          {/* Period highlight based on selected period and performance */}
+          {/* Gradient definitions for period highlight */}
+          <defs>
+            {getPeriodHighlightColors && (
+              <linearGradient id={getPeriodHighlightColors.id} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={getPeriodHighlightColors.gradientStart} />
+                <stop offset="100%" stopColor={getPeriodHighlightColors.gradientEnd} />
+              </linearGradient>
+            )}
+          </defs>
+          {/* Period highlight based on selected period and performance with animation */}
           {(() => {
             const periodRange = getPeriodMonthRange();
-            const highlightColor = getPeriodHighlightColor();
             
-            if (!periodRange || !highlightColor) return null;
+            if (!periodRange || !getPeriodHighlightColors) return null;
             
             return (
               <ReferenceArea
+                key={animationKey}
                 x1={periodRange.startMonth}
                 x2={periodRange.endMonth}
                 yAxisId="left"
-                fill={highlightColor}
+                fill={`url(#${getPeriodHighlightColors.id})`}
                 fillOpacity={1}
-                stroke={highlightColor.replace('0.25)', '0.6)').replace('0.3)', '0.6)')}
-                strokeWidth={2}
+                stroke={getPeriodHighlightColors.stroke}
+                strokeWidth={1.5}
+                strokeDasharray="4 2"
+                className="animate-fade-in"
+                style={{
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                }}
               />
             );
           })()}
