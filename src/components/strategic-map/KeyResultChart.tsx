@@ -229,6 +229,9 @@ export const KeyResultChart = ({
     
     const meta = target !== null ? target : 0;
     const realizado = actual !== null ? actual : 0;
+    
+    // Rastrear se há dados reais (actual não é null)
+    const hasActualData = actual !== null;
 
     const percentage = meta > 0 ? (realizado / meta) * 100 : 0;
     const status = calculateKRStatus(realizado, meta, targetDirection);
@@ -239,7 +242,8 @@ export const KeyResultChart = ({
       meta,
       realizado,
       percentage,
-      status
+      status,
+      hasActualData
     };
   });
 
@@ -420,6 +424,75 @@ export const KeyResultChart = ({
   };
 
   const selectedPeriodLabel = getSelectedPeriodLabel();
+  
+  // Get selected period data for bar chart highlighting
+  const selectedPeriodData = useMemo(() => {
+    if (!selectedPeriodLabel) return null;
+    return periodChartData.find(p => p.period === selectedPeriodLabel) || null;
+  }, [selectedPeriodLabel, periodChartData]);
+
+  // Get highlight colors specifically for the bar chart based on actual period data
+  const getBarChartHighlightColors = useMemo(() => {
+    // Se não há período selecionado, retornar cinza
+    if (!selectedPeriodData) {
+      return {
+        fill: 'rgba(156, 163, 175, 0.12)',
+        stroke: 'rgba(156, 163, 175, 0.3)',
+        gradientStart: 'rgba(156, 163, 175, 0.18)',
+        gradientEnd: 'rgba(156, 163, 175, 0.05)',
+        id: 'periodHighlightGray'
+      };
+    }
+    
+    // Se não há dados reais (actual é null), usar cinza
+    if (!selectedPeriodData.hasActualData) {
+      return {
+        fill: 'rgba(156, 163, 175, 0.12)',
+        stroke: 'rgba(156, 163, 175, 0.3)',
+        gradientStart: 'rgba(156, 163, 175, 0.18)',
+        gradientEnd: 'rgba(156, 163, 175, 0.05)',
+        id: 'periodHighlightGray'
+      };
+    }
+    
+    const percentage = selectedPeriodData.percentage;
+    
+    // Return color config based on percentage
+    if (percentage > 105) {
+      return {
+        fill: 'rgba(59, 130, 246, 0.18)',
+        stroke: 'rgba(59, 130, 246, 0.5)',
+        gradientStart: 'rgba(59, 130, 246, 0.25)',
+        gradientEnd: 'rgba(59, 130, 246, 0.08)',
+        id: 'periodHighlightBlue'
+      };
+    }
+    if (percentage >= 100) {
+      return {
+        fill: 'rgba(34, 197, 94, 0.18)',
+        stroke: 'rgba(34, 197, 94, 0.5)',
+        gradientStart: 'rgba(34, 197, 94, 0.25)',
+        gradientEnd: 'rgba(34, 197, 94, 0.08)',
+        id: 'periodHighlightGreen'
+      };
+    }
+    if (percentage >= 71) {
+      return {
+        fill: 'rgba(234, 179, 8, 0.22)',
+        stroke: 'rgba(234, 179, 8, 0.55)',
+        gradientStart: 'rgba(234, 179, 8, 0.3)',
+        gradientEnd: 'rgba(234, 179, 8, 0.1)',
+        id: 'periodHighlightYellow'
+      };
+    }
+    return {
+      fill: 'rgba(239, 68, 68, 0.2)',
+      stroke: 'rgba(239, 68, 68, 0.5)',
+      gradientStart: 'rgba(239, 68, 68, 0.28)',
+      gradientEnd: 'rgba(239, 68, 68, 0.08)',
+      id: 'periodHighlightRed'
+    };
+  }, [selectedPeriodData]);
 
   // ============== Period-based bar chart rendering ==============
   const renderPeriodChart = () => (
@@ -432,10 +505,10 @@ export const KeyResultChart = ({
         >
           {/* Gradient definitions for period highlight */}
           <defs>
-            {getPeriodHighlightColors && (
-              <linearGradient id={`bar-${getPeriodHighlightColors.id}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={getPeriodHighlightColors.gradientStart} />
-                <stop offset="100%" stopColor={getPeriodHighlightColors.gradientEnd} />
+            {getBarChartHighlightColors && (
+              <linearGradient id={`bar-${getBarChartHighlightColors.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={getBarChartHighlightColors.gradientStart} />
+                <stop offset="100%" stopColor={getBarChartHighlightColors.gradientEnd} />
               </linearGradient>
             )}
           </defs>
@@ -454,14 +527,14 @@ export const KeyResultChart = ({
             axisLine={false}
           />
           {/* Period highlight for selected period */}
-          {selectedPeriodLabel && getPeriodHighlightColors && (
+          {selectedPeriodLabel && getBarChartHighlightColors && (
             <ReferenceArea
               key={animationKey}
               x1={selectedPeriodLabel}
               x2={selectedPeriodLabel}
-              fill={`url(#bar-${getPeriodHighlightColors.id})`}
+              fill={`url(#bar-${getBarChartHighlightColors.id})`}
               fillOpacity={1}
-              stroke={getPeriodHighlightColors.stroke}
+              stroke={getBarChartHighlightColors.stroke}
               strokeWidth={1.5}
               strokeDasharray="4 2"
               className="animate-fade-in"
