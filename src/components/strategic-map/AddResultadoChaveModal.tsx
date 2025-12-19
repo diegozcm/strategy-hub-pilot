@@ -6,12 +6,22 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { KeyResult } from '@/types/strategic-map';
+import { Badge } from '@/components/ui/badge';
+import { KeyResult, Frequency } from '@/types/strategic-map';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useCompanyUsers } from '@/hooks/useCompanyUsers';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { useKRPermissions } from '@/hooks/useKRPermissions';
 import { cn } from '@/lib/utils';
+import { 
+  KRFrequency, 
+  getPeriodsForFrequency, 
+  getFrequencyLabel,
+  getFrequencyBadgeColor,
+  isFrequencyPeriodBased,
+  periodTargetsToMonthly,
+  calculateYearlyFromPeriods
+} from '@/lib/krFrequencyHelpers';
 
 // Função para verificar se um mês está dentro da vigência
 const isMonthInValidity = (monthKey: string, startMonth?: string, endMonth?: string): boolean => {
@@ -79,9 +89,13 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
   });
 
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
+  const [periodTargets, setPeriodTargets] = useState<Record<string, number>>({});
   const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min' | 'last'>('sum');
   const [comparisonType, setComparisonType] = useState<'cumulative' | 'period'>('cumulative');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  
+  const frequency = formData.frequency as KRFrequency;
+  const periods = getPeriodsForFrequency(frequency, selectedYear);
 
   // Sincronizar selectedYear com yearOptions disponíveis
   useEffect(() => {
@@ -141,16 +155,29 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
     try {
       setLoading(true);
       
-      // Calcular meta anual a partir das metas mensais usando o tipo de agregação
-      const monthlyTotal = calculateYearlyTarget(monthlyTargets);
-      const yearlyTarget = monthlyTotal > 0 ? monthlyTotal : parseFloat(formData.target_value);
+      // Calculate targets based on frequency
+      let finalMonthlyTargets: Record<string, number> = {};
+      let yearlyTarget = 0;
+      
+      if (isFrequencyPeriodBased(frequency)) {
+        // Convert period targets to monthly format (stored in first month of period)
+        finalMonthlyTargets = periodTargetsToMonthly(periodTargets, frequency, selectedYear);
+        yearlyTarget = calculateYearlyFromPeriods(periodTargets, aggregationType);
+      } else {
+        finalMonthlyTargets = monthlyTargets;
+        yearlyTarget = calculateYearlyTarget(monthlyTargets);
+      }
+      
+      if (yearlyTarget === 0 && formData.target_value) {
+        yearlyTarget = parseFloat(formData.target_value);
+      }
 
       const resultadoChaveData = {
         ...formData,
         objective_id: objectiveId,
-        target_value: parseFloat(formData.target_value),
+        target_value: parseFloat(formData.target_value) || yearlyTarget,
         yearly_target: yearlyTarget,
-        monthly_targets: monthlyTargets,
+        monthly_targets: finalMonthlyTargets,
         monthly_actual: {},
         aggregation_type: aggregationType,
         comparison_type: comparisonType,
@@ -208,7 +235,9 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
           <Tabs defaultValue="general" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="general">Dados Gerais</TabsTrigger>
-              <TabsTrigger value="monthly">Metas Mensais</TabsTrigger>
+              <TabsTrigger value="monthly">
+                Metas {getFrequencyLabel(formData.frequency as KRFrequency)}
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-4 mt-4">
@@ -388,21 +417,44 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="frequency">Frequência</Label>
+                  <Label htmlFor="frequency">Frequência de Meta</Label>
                   <Select value={formData.frequency} onValueChange={(value) => setFormData({...formData, frequency: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Frequência" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="daily">Diário</SelectItem>
-                      <SelectItem value="weekly">Semanal</SelectItem>
-                      <SelectItem value="bimonthly">Bimestral</SelectItem>
-                      <SelectItem value="monthly">Mensal</SelectItem>
-                      <SelectItem value="quarterly">Trimestral</SelectItem>
-                      <SelectItem value="semiannual">Semestral</SelectItem>
-                      <SelectItem value="yearly">Anual</SelectItem>
+                      <SelectItem value="monthly">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={getFrequencyBadgeColor('monthly')}>M</Badge>
+                          Mensal (12 meses)
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="quarterly">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={getFrequencyBadgeColor('quarterly')}>Q</Badge>
+                          Trimestral (Q1-Q4)
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="semesterly">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={getFrequencyBadgeColor('semesterly')}>S</Badge>
+                          Semestral (S1-S2)
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="yearly">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={getFrequencyBadgeColor('yearly')}>A</Badge>
+                          Anual
+                        </div>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {formData.frequency === 'quarterly' && 'Configure metas por trimestre (Q1, Q2, Q3, Q4)'}
+                    {formData.frequency === 'semesterly' && 'Configure metas por semestre (S1, S2)'}
+                    {formData.frequency === 'yearly' && 'Configure apenas a meta anual'}
+                    {formData.frequency === 'monthly' && 'Configure metas para cada mês'}
+                  </p>
                 </div>
               </div>
 
@@ -454,9 +506,19 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
               <div className="space-y-4">
                 <div className="flex justify-between items-start gap-6">
                   <div className="space-y-2 flex-1">
-                    <Label>Metas Mensais ({selectedYear})</Label>
+                    <div className="flex items-center gap-2">
+                      <Label>Metas {getFrequencyLabel(frequency)} ({selectedYear})</Label>
+                      <Badge variant="outline" className={getFrequencyBadgeColor(frequency)}>
+                        {frequency === 'monthly' ? '12 meses' : 
+                         frequency === 'quarterly' ? '4 trimestres' :
+                         frequency === 'semesterly' ? '2 semestres' : '1 ano'}
+                      </Badge>
+                    </div>
                     <p className="text-sm text-muted-foreground">
-                      Configure as metas específicas para cada mês e como calcular a meta anual.
+                      {frequency === 'monthly' && 'Configure as metas específicas para cada mês.'}
+                      {frequency === 'quarterly' && 'Configure as metas para cada trimestre (Q1, Q2, Q3, Q4).'}
+                      {frequency === 'semesterly' && 'Configure as metas para cada semestre (S1, S2).'}
+                      {frequency === 'yearly' && 'Configure a meta anual única.'}
                     </p>
                   </div>
                   
@@ -485,20 +547,13 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="sum">Somar todas as metas mensais</SelectItem>
-                        <SelectItem value="average">Calcular a média das metas mensais</SelectItem>
-                        <SelectItem value="max">Usar o maior valor entre as metas</SelectItem>
-                        <SelectItem value="min">Usar o menor valor entre as metas</SelectItem>
+                        <SelectItem value="sum">Somar todos os períodos</SelectItem>
+                        <SelectItem value="average">Calcular a média dos períodos</SelectItem>
+                        <SelectItem value="max">Usar o maior valor entre os períodos</SelectItem>
+                        <SelectItem value="min">Usar o menor valor entre os períodos</SelectItem>
                         <SelectItem value="last">Usar o último valor registrado</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      {aggregationType === 'sum' && 'A meta anual será a soma de todas as metas mensais'}
-                      {aggregationType === 'average' && 'A meta anual será a média de todas as metas mensais'}
-                      {aggregationType === 'max' && 'A meta anual será o maior valor entre as metas mensais'}
-                      {aggregationType === 'min' && 'A meta anual será o menor valor entre as metas mensais'}
-                      {aggregationType === 'last' && 'A meta anual será o último valor registrado'}
-                    </p>
                   </div>
                 </div>
 
@@ -514,55 +569,82 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                         <SelectItem value="period">Apurado no período</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground">
-                      {comparisonType === 'cumulative' && 'Compara a soma acumulada até o período atual'}
-                      {comparisonType === 'period' && 'Compara apenas o valor do período específico'}
-                    </p>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {months.map((month) => (
-                  <div 
-                    key={month.key} 
-                    className={cn(
-                      "space-y-2 p-2 rounded-lg border",
-                      isMonthInValidity(month.key, formData.start_month, formData.end_month) 
-                        ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-                        : "border-transparent"
-                    )}
-                  >
-                    <Label htmlFor={month.key} className="text-sm font-medium">
-                      {month.short}
-                    </Label>
-                    <Input
-                      id={month.key}
-                      type="number"
-                      step="0.01"
-                      placeholder="0"
-                      value={monthlyTargets[month.key] || ''}
-                      onChange={(e) => {
-                        const value = e.target.value ? parseFloat(e.target.value) : 0;
-                        setMonthlyTargets(prev => ({
-                          ...prev,
-                          [month.key]: value
-                        }));
-                      }}
-                    />
-                  </div>
-                ))}
+              {/* Dynamic grid based on frequency */}
+              <div className={cn(
+                "grid gap-4",
+                frequency === 'yearly' ? "grid-cols-1" :
+                frequency === 'semesterly' ? "grid-cols-2" :
+                frequency === 'quarterly' ? "grid-cols-2 md:grid-cols-4" :
+                "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+              )}>
+                {periods.map((period) => {
+                  const isInValidity = formData.start_month && formData.end_month && 
+                    period.monthKeys.some(mk => isMonthInValidity(mk, formData.start_month, formData.end_month));
+                  
+                  const currentValue = isFrequencyPeriodBased(frequency) 
+                    ? periodTargets[period.key] 
+                    : monthlyTargets[period.key];
+                  
+                  return (
+                    <div 
+                      key={period.key} 
+                      className={cn(
+                        "space-y-2 p-3 rounded-lg border",
+                        isInValidity 
+                          ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                          : "border-border"
+                      )}
+                    >
+                      <Label htmlFor={period.key} className="text-sm font-medium">
+                        {period.shortLabel}
+                        {frequency !== 'monthly' && frequency !== 'yearly' && (
+                          <span className="text-xs text-muted-foreground ml-1">
+                            ({period.monthKeys.length} meses)
+                          </span>
+                        )}
+                      </Label>
+                      <Input
+                        id={period.key}
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        value={currentValue || ''}
+                        onChange={(e) => {
+                          const value = e.target.value ? parseFloat(e.target.value) : 0;
+                          if (isFrequencyPeriodBased(frequency)) {
+                            setPeriodTargets(prev => ({
+                              ...prev,
+                              [period.key]: value
+                            }));
+                          } else {
+                            setMonthlyTargets(prev => ({
+                              ...prev,
+                              [period.key]: value
+                            }));
+                          }
+                        }}
+                      />
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="p-4 bg-muted rounded-lg">
                 <div className="flex justify-between items-center">
-                  <span className="font-medium">Total das Metas Mensais:</span>
+                  <span className="font-medium">Meta Anual Calculada:</span>
                   <span className="text-lg font-bold">
-                    {calculateYearlyTarget(monthlyTargets).toFixed(2)}
+                    {isFrequencyPeriodBased(frequency)
+                      ? calculateYearlyFromPeriods(periodTargets, aggregationType).toFixed(2)
+                      : calculateYearlyTarget(monthlyTargets).toFixed(2)
+                    }
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Este valor será usado como meta anual se diferente da meta anual informada
+                  Este valor será usado como meta anual
                 </p>
               </div>
             </TabsContent>
