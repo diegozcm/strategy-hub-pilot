@@ -397,15 +397,23 @@ export const KeyResultChart = ({
   // Determine selected period key for highlighting in bar chart
   const getSelectedPeriodLabel = () => {
     if (selectedPeriod === 'quarterly' && selectedQuarter) {
-      const periodData = periodChartData.find(p => p.periodKey === `Q${selectedQuarter}`);
+      // O periodKey usa o formato: ${year}-Q${quarter}
+      const periodData = periodChartData.find(p => p.periodKey === `${selectedYear}-Q${selectedQuarter}`);
       return periodData?.period || null;
     }
     if (selectedPeriod === 'semesterly' && selectedSemester) {
-      const periodData = periodChartData.find(p => p.periodKey === `S${selectedSemester}`);
+      // O periodKey usa o formato: ${year}-S${semester}
+      const periodData = periodChartData.find(p => p.periodKey === `${selectedYear}-S${selectedSemester}`);
       return periodData?.period || null;
     }
     if (selectedPeriod === 'bimonthly' && selectedBimonth) {
-      const periodData = periodChartData.find(p => p.periodKey === `B${selectedBimonth}`);
+      // O periodKey usa o formato: ${year}-B${bimonth}
+      const periodData = periodChartData.find(p => p.periodKey === `${selectedYear}-B${selectedBimonth}`);
+      return periodData?.period || null;
+    }
+    if (frequency === 'yearly') {
+      // Para KRs anuais, o periodKey é apenas o ano
+      const periodData = periodChartData.find(p => p.periodKey === `${selectedYear}`);
       return periodData?.period || null;
     }
     return null;
