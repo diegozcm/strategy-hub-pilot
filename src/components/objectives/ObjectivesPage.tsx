@@ -710,7 +710,11 @@ export const ObjectivesPage: React.FC = () => {
                               selectedPeriod === 'monthly' 
                                 ? { selectedMonth, selectedYear } 
                                 : selectedPeriod === 'quarterly'
-                                ? { selectedQuarter }
+                                ? { selectedQuarter, selectedQuarterYear }
+                                : selectedPeriod === 'semesterly'
+                                ? { selectedSemester, selectedSemesterYear }
+                                : selectedPeriod === 'bimonthly'
+                                ? { selectedBimonth, selectedBimonthYear }
                                 : selectedPeriod === 'yearly'
                                 ? { selectedYear }
                                 : undefined
@@ -724,7 +728,11 @@ export const ObjectivesPage: React.FC = () => {
                                 selectedPeriod === 'monthly' 
                                   ? { selectedMonth, selectedYear } 
                                   : selectedPeriod === 'quarterly'
-                                  ? { selectedQuarter }
+                                  ? { selectedQuarter, selectedQuarterYear }
+                                  : selectedPeriod === 'semesterly'
+                                  ? { selectedSemester, selectedSemesterYear }
+                                  : selectedPeriod === 'bimonthly'
+                                  ? { selectedBimonth, selectedBimonthYear }
                                   : selectedPeriod === 'yearly'
                                   ? { selectedYear }
                                   : undefined

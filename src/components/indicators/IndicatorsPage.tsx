@@ -678,14 +678,31 @@ export const IndicatorsPage: React.FC = () => {
         });
       } else {
         // Se não precisa recalcular, usar valores do map original
-        const originalMetrics = krMetricsMap.get(kr.id);
-        if (originalMetrics) {
-          map.set(kr.id, originalMetrics);
-        }
+        map.set(kr.id, krMetricsMap.get(kr.id));
       }
     });
     return map;
   }, [keyResults, selectedPeriod, selectedMonth, selectedYear, selectedSemester, selectedSemesterYear, selectedBimonth, selectedBimonthYear, krMetricsMap]);
+  
+  // Filter KRs with validity
+  const filteredByValidity = useMemo(() => {
+    return filterKRsByValidity(
+      keyResults,
+      validityEnabled,
+      selectedPeriod,
+      {
+        selectedQuarter,
+        selectedQuarterYear,
+        selectedYear,
+        selectedMonth,
+        selectedSemester,
+        selectedSemesterYear,
+        selectedBimonth,
+        selectedBimonthYear,
+        planFirstYear
+      }
+    );
+  }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, selectedSemester, selectedSemesterYear, selectedBimonth, selectedBimonthYear, planFirstYear]);
 
   const getMetricsByPeriod = (keyResultId: string) => {
     const metrics = customMetricsMap.get(keyResultId);
