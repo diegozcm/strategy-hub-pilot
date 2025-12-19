@@ -104,10 +104,14 @@ export const StrategicMapPage = () => {
         selectedQuarterYear,
         selectedYear,
         selectedMonth,
+        selectedSemester,
+        selectedSemesterYear,
+        selectedBimonth,
+        selectedBimonthYear,
         planFirstYear
       }
     );
-  }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, planFirstYear]);
+  }, [keyResults, validityEnabled, selectedPeriod, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, selectedSemester, selectedSemesterYear, selectedBimonth, selectedBimonthYear, planFirstYear]);
 
   // Check URL parameters on component mount and when search params change
   React.useEffect(() => {
@@ -401,7 +405,11 @@ export const StrategicMapPage = () => {
                       selectedPeriod === 'monthly' 
                         ? { selectedMonth, selectedYear } 
                         : selectedPeriod === 'quarterly'
-                        ? { selectedQuarter }
+                        ? { selectedQuarter, selectedQuarterYear }
+                        : selectedPeriod === 'semesterly'
+                        ? { selectedSemester, selectedSemesterYear }
+                        : selectedPeriod === 'bimonthly'
+                        ? { selectedBimonth, selectedBimonthYear }
                         : selectedPeriod === 'yearly'
                         ? { selectedYear }
                         : undefined

@@ -329,6 +329,9 @@ export const useStrategicMap = () => {
       selectedMonth?: number;
       selectedYear?: number;
       selectedQuarter?: 1 | 2 | 3 | 4;
+      selectedQuarterYear?: number;
+      selectedSemester?: 1 | 2;
+      selectedSemesterYear?: number;
       selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
       selectedBimonthYear?: number;
     },
@@ -340,24 +343,62 @@ export const useStrategicMap = () => {
     
     const totalProgress = objectiveKRs.reduce((sum, kr) => {
       let percentage = 0;
+      const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
+      const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
       
       switch (period) {
         case 'quarterly':
           const quarter = options?.selectedQuarter || 1;
-          switch (quarter) {
-            case 1: percentage = kr.q1_percentage || 0; break;
-            case 2: percentage = kr.q2_percentage || 0; break;
-            case 3: percentage = kr.q3_percentage || 0; break;
-            case 4: percentage = kr.q4_percentage || 0; break;
+          const quarterYear = options?.selectedQuarterYear || new Date().getFullYear();
+          
+          if (options?.selectedQuarter && options?.selectedQuarterYear) {
+            const quarterMonths: Record<number, number[]> = {
+              1: [1, 2, 3], 2: [4, 5, 6], 3: [7, 8, 9], 4: [10, 11, 12]
+            };
+            const months = quarterMonths[quarter];
+            const monthKeys = months.map(m => `${quarterYear}-${m.toString().padStart(2, '0')}`);
+            
+            let totalTarget = 0;
+            let totalActual = 0;
+            
+            if (kr.aggregation_type === 'average') {
+              const monthsWithActual = monthKeys.filter(key => (monthlyActual[key] || 0) !== 0);
+              const targets = monthsWithActual.map(key => monthlyTargets[key] || 0);
+              const actuals = monthsWithActual.map(key => monthlyActual[key] || 0);
+              totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
+              totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
+            } else if (kr.aggregation_type === 'max') {
+              totalTarget = Math.max(...monthKeys.map(key => monthlyTargets[key] || 0), 0);
+              totalActual = Math.max(...monthKeys.map(key => monthlyActual[key] || 0), 0);
+            } else if (kr.aggregation_type === 'min') {
+              const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
+              const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
+              totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
+              totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
+            } else {
+              totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
+              totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+            }
+            
+            if (kr.target_direction === 'minimize') {
+              percentage = (totalActual > 0 && totalTarget > 0) ? (totalTarget / totalActual) * 100 : 0;
+            } else {
+              percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
+            }
+          } else {
+            switch (quarter) {
+              case 1: percentage = kr.q1_percentage || 0; break;
+              case 2: percentage = kr.q2_percentage || 0; break;
+              case 3: percentage = kr.q3_percentage || 0; break;
+              case 4: percentage = kr.q4_percentage || 0; break;
+            }
           }
           break;
+          
         case 'monthly':
           // Se mês customizado foi fornecido, recalcular
           if (options?.selectedMonth && options?.selectedYear) {
             const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
-            const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-            const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
-            
             const monthTarget = monthlyTargets[monthKey] || 0;
             const monthActual = monthlyActual[monthKey] || 0;
             
@@ -372,6 +413,7 @@ export const useStrategicMap = () => {
             percentage = kr.monthly_percentage || 0;
           }
           break;
+          
         case 'yearly':
           // Se ano customizado foi fornecido, recalcular
           if (options?.selectedYear) {
@@ -379,9 +421,6 @@ export const useStrategicMap = () => {
             for (let m = 1; m <= 12; m++) {
               monthKeys.push(`${options.selectedYear}-${m.toString().padStart(2, '0')}`);
             }
-            
-            const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-            const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
             
             // Aplicar agregação baseada no tipo
             let totalTarget = 0;
@@ -417,6 +456,89 @@ export const useStrategicMap = () => {
             percentage = kr.yearly_percentage || 0;
           }
           break;
+          
+        case 'semesterly':
+          if (options?.selectedSemester && options?.selectedSemesterYear) {
+            const semesterMonths: Record<number, number[]> = {
+              1: [1, 2, 3, 4, 5, 6],
+              2: [7, 8, 9, 10, 11, 12]
+            };
+            const semester = options.selectedSemester;
+            const year = options.selectedSemesterYear;
+            const months = semesterMonths[semester];
+            const monthKeys = months.map(m => `${year}-${m.toString().padStart(2, '0')}`);
+            
+            let totalTarget = 0;
+            let totalActual = 0;
+            
+            if (kr.aggregation_type === 'average') {
+              const monthsWithActual = monthKeys.filter(key => (monthlyActual[key] || 0) !== 0);
+              const targets = monthsWithActual.map(key => monthlyTargets[key] || 0);
+              const actuals = monthsWithActual.map(key => monthlyActual[key] || 0);
+              totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
+              totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
+            } else if (kr.aggregation_type === 'max') {
+              totalTarget = Math.max(...monthKeys.map(key => monthlyTargets[key] || 0), 0);
+              totalActual = Math.max(...monthKeys.map(key => monthlyActual[key] || 0), 0);
+            } else if (kr.aggregation_type === 'min') {
+              const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
+              const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
+              totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
+              totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
+            } else {
+              totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
+              totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+            }
+            
+            if (kr.target_direction === 'minimize') {
+              percentage = (totalActual > 0 && totalTarget > 0) ? (totalTarget / totalActual) * 100 : 0;
+            } else {
+              percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
+            }
+          }
+          break;
+          
+        case 'bimonthly':
+          if (options?.selectedBimonth && options?.selectedBimonthYear) {
+            const bimonthMonths: Record<number, number[]> = {
+              1: [1, 2], 2: [3, 4], 3: [5, 6],
+              4: [7, 8], 5: [9, 10], 6: [11, 12]
+            };
+            const bimonth = options.selectedBimonth;
+            const year = options.selectedBimonthYear;
+            const months = bimonthMonths[bimonth];
+            const monthKeys = months.map(m => `${year}-${m.toString().padStart(2, '0')}`);
+            
+            let totalTarget = 0;
+            let totalActual = 0;
+            
+            if (kr.aggregation_type === 'average') {
+              const monthsWithActual = monthKeys.filter(key => (monthlyActual[key] || 0) !== 0);
+              const targets = monthsWithActual.map(key => monthlyTargets[key] || 0);
+              const actuals = monthsWithActual.map(key => monthlyActual[key] || 0);
+              totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
+              totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
+            } else if (kr.aggregation_type === 'max') {
+              totalTarget = Math.max(...monthKeys.map(key => monthlyTargets[key] || 0), 0);
+              totalActual = Math.max(...monthKeys.map(key => monthlyActual[key] || 0), 0);
+            } else if (kr.aggregation_type === 'min') {
+              const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
+              const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
+              totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
+              totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
+            } else {
+              totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
+              totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
+            }
+            
+            if (kr.target_direction === 'minimize') {
+              percentage = (totalActual > 0 && totalTarget > 0) ? (totalTarget / totalActual) * 100 : 0;
+            } else {
+              percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
+            }
+          }
+          break;
+          
         case 'ytd':
         default:
           percentage = kr.ytd_percentage || 0;
@@ -436,6 +558,9 @@ export const useStrategicMap = () => {
       selectedMonth?: number;
       selectedYear?: number;
       selectedQuarter?: 1 | 2 | 3 | 4;
+      selectedQuarterYear?: number;
+      selectedSemester?: 1 | 2;
+      selectedSemesterYear?: number;
       selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
       selectedBimonthYear?: number;
     },

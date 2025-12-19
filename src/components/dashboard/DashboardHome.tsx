@@ -168,10 +168,14 @@ export const DashboardHome: React.FC = () => {
         selectedQuarterYear,
         selectedYear,
         selectedMonth: selectedMonth,
+        selectedSemester,
+        selectedSemesterYear,
+        selectedBimonth,
+        selectedBimonthYear,
         planFirstYear
       }
     ) as unknown as KeyResultWithPillar[];
-  }, [keyResults, validityEnabled, periodType, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, planFirstYear]);
+  }, [keyResults, validityEnabled, periodType, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, selectedSemester, selectedSemesterYear, selectedBimonth, selectedBimonthYear, planFirstYear]);
 
   // Filter and sort logic
   useEffect(() => {
@@ -532,6 +536,53 @@ export const DashboardHome: React.FC = () => {
       
       const targets = monthKeys.map(key => monthlyTargets[key] || 0);
       const actuals = monthKeys.map(key => monthlyActual[key] || 0);
+      
+      const totalTarget = calculateAggregatedValue(targets, kr.aggregation_type || 'sum');
+      const totalActual = calculateAggregatedValue(actuals, kr.aggregation_type || 'sum');
+      
+      if (totalTarget > 0) {
+        return calculateKRStatus(totalActual, totalTarget, kr.target_direction || 'maximize').percentage;
+      }
+      return 0;
+    }
+    
+    // semesterly - calcular para o semestre selecionado
+    if (periodType === 'semesterly' && selectedSemester && selectedSemesterYear) {
+      const startMonth = selectedSemester === 1 ? 1 : 7;
+      const endMonth = selectedSemester === 1 ? 6 : 12;
+      
+      const monthKeys = [];
+      for (let m = startMonth; m <= endMonth; m++) {
+        monthKeys.push(`${selectedSemesterYear}-${m.toString().padStart(2, '0')}`);
+      }
+      
+      const targets = monthKeys.map(key => kr.monthly_targets?.[key] || 0);
+      const actuals = monthKeys.map(key => kr.monthly_actual?.[key] || 0);
+      
+      const totalTarget = calculateAggregatedValue(targets, kr.aggregation_type || 'sum');
+      const totalActual = calculateAggregatedValue(actuals, kr.aggregation_type || 'sum');
+      
+      if (totalTarget > 0) {
+        return calculateKRStatus(totalActual, totalTarget, kr.target_direction || 'maximize').percentage;
+      }
+      return 0;
+    }
+    
+    // bimonthly - calcular para o bimestre selecionado
+    if (periodType === 'bimonthly' && selectedBimonth && selectedBimonthYear) {
+      const bimonthMonths: Record<number, [number, number]> = {
+        1: [1, 2], 2: [3, 4], 3: [5, 6],
+        4: [7, 8], 5: [9, 10], 6: [11, 12]
+      };
+      const [startMonth, endMonth] = bimonthMonths[selectedBimonth];
+      
+      const monthKeys = [];
+      for (let m = startMonth; m <= endMonth; m++) {
+        monthKeys.push(`${selectedBimonthYear}-${m.toString().padStart(2, '0')}`);
+      }
+      
+      const targets = monthKeys.map(key => kr.monthly_targets?.[key] || 0);
+      const actuals = monthKeys.map(key => kr.monthly_actual?.[key] || 0);
       
       const totalTarget = calculateAggregatedValue(targets, kr.aggregation_type || 'sum');
       const totalActual = calculateAggregatedValue(actuals, kr.aggregation_type || 'sum');
