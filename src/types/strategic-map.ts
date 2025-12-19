@@ -54,7 +54,7 @@ export interface KeyResult {
   target_value: number;
   current_value: number;
   unit?: string;
-  frequency?: string;
+  frequency?: 'monthly' | 'quarterly' | 'semesterly' | 'yearly';
   responsible?: string;
   deadline?: string;
   due_date?: string;
