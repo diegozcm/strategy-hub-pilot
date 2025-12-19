@@ -13,6 +13,7 @@ import { getDirectionLabel, calculateKRStatus } from '@/lib/krHelpers';
 import { cn } from '@/lib/utils';
 import { getKRQuarters } from '@/lib/krValidityFilter';
 import { SmartPeriodSelector } from '@/components/ui/SmartPeriodSelector';
+import { type KRFrequency } from '@/lib/krFrequencyHelpers';
 
 import { Edit, Calendar, User, Target, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -488,6 +489,7 @@ export const KROverviewModal = ({
               onYTDClick={handleYTDClick}
               className="flex-wrap"
               compact={true}
+              krFrequency={(currentKeyResult.frequency as KRFrequency) || 'monthly'}
             />
           </div>
           
