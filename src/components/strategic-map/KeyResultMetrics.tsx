@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
 import { useKRMetrics, formatMetricValue, getAchievementStatus } from '@/hooks/useKRMetrics';
 import { KeyResult } from '@/types/strategic-map';
-import { calculateKRStatus } from '@/lib/krHelpers';
+import { calculateKRStatus, getStatusBackgroundColors, getDefaultBackgroundColors } from '@/lib/krHelpers';
 
 interface KeyResultMetricsProps {
   keyResult: KeyResult;
@@ -98,6 +98,15 @@ export const KeyResultMetrics = ({
         keyResult.target_direction || 'maximize'
       )
     : { percentage: 0, isExcellent: false, isGood: false, color: 'text-gray-500' };
+
+  // Get dynamic background colors based on performance
+  const statusBgColors = hasData
+    ? getStatusBackgroundColors(
+        currentMetrics.actual,
+        currentMetrics.target,
+        keyResult.target_direction || 'maximize'
+      )
+    : getDefaultBackgroundColors();
 
   const isExcellent = krStatus.isExcellent;
   const isGood = krStatus.isGood;
@@ -230,10 +239,10 @@ export const KeyResultMetrics = ({
           </CardContent>
       </Card>
 
-        <Card className="h-24">
+        <Card className={`h-24 transition-colors duration-300 ${statusBgColors.bg} ${statusBgColors.border}`}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
             <CardTitle className="text-sm font-medium">Período Atual</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className={`h-4 w-4 ${statusBgColors.icon}`} />
           </CardHeader>
           <CardContent className="px-4 pb-3 pt-0">
             {selectedPeriod === 'monthly' && onMonthChange && onYearChange ? (

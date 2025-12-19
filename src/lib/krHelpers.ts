@@ -399,3 +399,61 @@ export const getProgressLevel = (progress: number): 'excellent' | 'success' | 'w
   if (progress >= 71) return 'warning';
   return 'critical';
 };
+
+/**
+ * Background color styles for status-based card coloring
+ */
+export interface StatusBackgroundColors {
+  bg: string;
+  border: string;
+  icon: string;
+}
+
+/**
+ * Gets background, border, and icon colors based on KR performance
+ */
+export const getStatusBackgroundColors = (
+  actual: number,
+  target: number,
+  direction: TargetDirection = 'maximize'
+): StatusBackgroundColors => {
+  const { percentage } = calculateKRStatus(actual, target, direction);
+  
+  if (percentage > 105) {
+    return { 
+      bg: 'bg-blue-50/80 dark:bg-blue-950/40', 
+      border: 'border-l-4 border-l-blue-500', 
+      icon: 'text-blue-600 dark:text-blue-400' 
+    };
+  }
+  if (percentage >= 100) {
+    return { 
+      bg: 'bg-green-50/80 dark:bg-green-950/40', 
+      border: 'border-l-4 border-l-green-500', 
+      icon: 'text-green-600 dark:text-green-400' 
+    };
+  }
+  if (percentage >= 71) {
+    return { 
+      bg: 'bg-yellow-50/80 dark:bg-yellow-950/40', 
+      border: 'border-l-4 border-l-yellow-500', 
+      icon: 'text-yellow-600 dark:text-yellow-400' 
+    };
+  }
+  return { 
+    bg: 'bg-red-50/80 dark:bg-red-950/40', 
+    border: 'border-l-4 border-l-red-500', 
+    icon: 'text-red-600 dark:text-red-400' 
+  };
+};
+
+/**
+ * Gets default (neutral) background colors when no data is available
+ */
+export const getDefaultBackgroundColors = (): StatusBackgroundColors => {
+  return {
+    bg: 'bg-muted/50',
+    border: 'border-l-4 border-l-muted-foreground/30',
+    icon: 'text-muted-foreground'
+  };
+};
