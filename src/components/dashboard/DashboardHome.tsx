@@ -16,6 +16,7 @@ import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 import { RumoDashboard } from './RumoDashboard';
 import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
 import { filterKRsByValidity, getPopulatedQuarters } from '@/lib/krValidityFilter';
+import { type KRFrequency } from '@/lib/krFrequencyHelpers';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
 import { calculateKRStatus } from '@/lib/krHelpers';
 import { toast } from 'sonner';
@@ -41,6 +42,7 @@ interface KeyResultWithPillar {
   priority?: string;
   target_direction?: 'maximize' | 'minimize';
   unit?: string;
+  frequency?: KRFrequency;
   // Pre-calculated fields from database
   ytd_target?: number;
   ytd_actual?: number;
@@ -343,6 +345,7 @@ export const DashboardHome: React.FC = () => {
           aggregation_type,
           objective_id,
           unit,
+          frequency,
           ytd_target,
           ytd_actual,
           ytd_percentage,
@@ -389,6 +392,7 @@ export const DashboardHome: React.FC = () => {
         target_direction: (kr.target_direction as 'maximize' | 'minimize') || 'maximize',
         priority: 'medium',
         unit: kr.unit,
+        frequency: (kr.frequency as KRFrequency) || 'monthly',
         // Pre-calculated fields from database
         ytd_target: kr.ytd_target,
         ytd_actual: kr.ytd_actual,
@@ -1139,6 +1143,7 @@ export const DashboardHome: React.FC = () => {
                                     monthlyTargets={kr.monthly_targets}
                                     monthlyActual={kr.monthly_actual}
                                     targetDirection={kr.target_direction || 'maximize'}
+                                    frequency={kr.frequency || 'monthly'}
                                     selectedYear={selectedYear}
                                     size="sm"
                                   />
