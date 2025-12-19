@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info, X } from 'lucide-react';
-import { KeyResult } from '@/types/strategic-map';
+import { KeyResult, Frequency } from '@/types/strategic-map';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +19,17 @@ import { useCompanyUsers } from '@/hooks/useCompanyUsers';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { useKRPermissions } from '@/hooks/useKRPermissions';
 import { cn } from '@/lib/utils';
+import { 
+  KRFrequency, 
+  getPeriodsForFrequency, 
+  periodTargetsToMonthly, 
+  monthlyTargetsToPeriod, 
+  getFrequencyLabel, 
+  getFrequencyBadgeColor,
+  isFrequencyPeriodBased,
+  calculateYearlyFromPeriods,
+  isPeriodInValidity
+} from '@/lib/krFrequencyHelpers';
 
 // Função para verificar se um mês está dentro da vigência
 const isMonthInValidity = (monthKey: string, startMonth?: string, endMonth?: string): boolean => {
@@ -107,7 +118,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
     start_month: '',
     end_month: '',
     assigned_owner_id: '',
-    weight: 1
+    weight: 1,
+    frequency: 'monthly' as KRFrequency
   });
   
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
@@ -116,6 +128,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
   const [editMode, setEditMode] = useState<boolean>(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
+  const [periodTargets, setPeriodTargets] = useState<Record<string, number>>({});
   
   // Ref para rastrear o último initialYear processado (evita travamento do select)
   const lastInitialYearRef = useRef<number | undefined>(undefined);
@@ -299,6 +312,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
         end_month: keyResult?.end_month
       });
       
+      const krFrequency = (keyResult.frequency as KRFrequency) || 'monthly';
+      
       setBasicInfo({
         title: keyResult.title,
         description: keyResult.description || '',
@@ -309,13 +324,20 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
         start_month: keyResult.start_month || '',
         end_month: keyResult.end_month || '',
         assigned_owner_id: keyResult.assigned_owner_id || '',
-        weight: keyResult.weight || 1
+        weight: keyResult.weight || 1,
+        frequency: krFrequency
       });
       
       setAggregationType(keyResult.aggregation_type || 'sum');
       
       // Inicializar selectedValidityQuarter a partir do start_month/end_month
       setSelectedValidityQuarter(monthsToValidity(keyResult.start_month || '', keyResult.end_month || ''));
+      
+      // Initialize period targets if frequency is not monthly
+      if (isFrequencyPeriodBased(krFrequency)) {
+        const existingTargets = (keyResult.monthly_targets as Record<string, number>) || {};
+        setPeriodTargets(monthlyTargetsToPeriod(existingTargets, krFrequency, selectedYear));
+      }
       
       setErrors({}); // Clear errors when opening modal
     }
@@ -338,6 +360,14 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
     }
   }, [open, selectedYear, keyResult]);
 
+  // Update period targets when frequency or year changes
+  useEffect(() => {
+    if (open && keyResult && isFrequencyPeriodBased(basicInfo.frequency)) {
+      const existingTargets = (keyResult.monthly_targets as Record<string, number>) || {};
+      setPeriodTargets(monthlyTargetsToPeriod(existingTargets, basicInfo.frequency, selectedYear));
+    }
+  }, [open, selectedYear, basicInfo.frequency, keyResult]);
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!keyResult || isSaving) return;
@@ -345,6 +375,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
     console.log('[KREditModal] Salvando', {
       basicInfo_start_month: basicInfo.start_month,
       basicInfo_end_month: basicInfo.end_month,
+      frequency: basicInfo.frequency,
       keyResultId: keyResult.id
     });
     
@@ -364,22 +395,40 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
       // Merge dos dados existentes com os novos dados do ano selecionado
       const existingMonthlyTargets = (keyResult.monthly_targets as Record<string, number>) || {};
       
-      // Limpar valores vazios ou inválidos do monthly_targets do ano atual
-      const cleanCurrentYearTargets = Object.fromEntries(
-        Object.entries(monthlyTargets)
-          .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
-      );
+      let finalMonthlyTargets: Record<string, number>;
+      let yearlyTarget: number;
       
-      // Preservar dados de outros anos e atualizar apenas o ano selecionado
-      const mergedMonthlyTargets = { ...existingMonthlyTargets };
-      Object.keys(mergedMonthlyTargets).forEach(key => {
-        if (key.startsWith(`${selectedYear}-`)) {
-          delete mergedMonthlyTargets[key];
-        }
-      });
-      Object.assign(mergedMonthlyTargets, cleanCurrentYearTargets);
-
-      const yearlyTarget = calculateYearlyTarget(cleanCurrentYearTargets);
+      if (isFrequencyPeriodBased(basicInfo.frequency)) {
+        // Convert period targets to monthly format (stored in first month of each period)
+        const currentYearMonthlyFromPeriods = periodTargetsToMonthly(periodTargets, basicInfo.frequency, selectedYear);
+        
+        // Merge with existing (preserving other years)
+        finalMonthlyTargets = { ...existingMonthlyTargets };
+        Object.keys(finalMonthlyTargets).forEach(key => {
+          if (key.startsWith(`${selectedYear}-`)) {
+            delete finalMonthlyTargets[key];
+          }
+        });
+        Object.assign(finalMonthlyTargets, currentYearMonthlyFromPeriods);
+        
+        yearlyTarget = calculateYearlyFromPeriods(periodTargets, aggregationType);
+      } else {
+        // Monthly frequency - use original logic
+        const cleanCurrentYearTargets = Object.fromEntries(
+          Object.entries(monthlyTargets)
+            .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
+        );
+        
+        finalMonthlyTargets = { ...existingMonthlyTargets };
+        Object.keys(finalMonthlyTargets).forEach(key => {
+          if (key.startsWith(`${selectedYear}-`)) {
+            delete finalMonthlyTargets[key];
+          }
+        });
+        Object.assign(finalMonthlyTargets, cleanCurrentYearTargets);
+        
+        yearlyTarget = calculateYearlyTarget(cleanCurrentYearTargets);
+      }
 
       await onSave({
         id: keyResult.id,
@@ -388,7 +437,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
         unit: basicInfo.unit,
         responsible: basicInfo.responsible,
         objective_id: basicInfo.objective_id === '' || basicInfo.objective_id === 'none' ? null : basicInfo.objective_id,
-        monthly_targets: mergedMonthlyTargets,
+        monthly_targets: finalMonthlyTargets,
         yearly_target: yearlyTarget,
         target_value: yearlyTarget,
         aggregation_type: aggregationType,
@@ -396,7 +445,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
         start_month: basicInfo.start_month || null,
         end_month: basicInfo.end_month || null,
         assigned_owner_id: basicInfo.assigned_owner_id === 'none' || basicInfo.assigned_owner_id === '' ? null : basicInfo.assigned_owner_id,
-        weight: basicInfo.weight || 1
+        weight: basicInfo.weight || 1,
+        frequency: basicInfo.frequency
       });
 
       toast({
@@ -433,7 +483,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
           <Tabs defaultValue="basic-info" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="basic-info">Informações Básicas</TabsTrigger>
-              <TabsTrigger value="monthly-targets">Metas Mensais</TabsTrigger>
+              <TabsTrigger value="monthly-targets">Metas</TabsTrigger>
             </TabsList>
 
             {/* Basic Info Tab */}
@@ -528,6 +578,55 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                 {errors.target_direction && (
                   <p className="text-sm text-destructive">{errors.target_direction}</p>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="frequency">Frequência das Metas</Label>
+                <Select 
+                  value={basicInfo.frequency} 
+                  onValueChange={(value: KRFrequency) => setBasicInfo({...basicInfo, frequency: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">
+                      <div className="flex items-center gap-2">
+                        <span className={cn("px-2 py-0.5 rounded text-xs font-medium", getFrequencyBadgeColor('monthly'))}>
+                          Mensal
+                        </span>
+                        <span className="text-muted-foreground text-xs">12 metas por ano</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="quarterly">
+                      <div className="flex items-center gap-2">
+                        <span className={cn("px-2 py-0.5 rounded text-xs font-medium", getFrequencyBadgeColor('quarterly'))}>
+                          Trimestral
+                        </span>
+                        <span className="text-muted-foreground text-xs">4 metas por ano (Q1-Q4)</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="semesterly">
+                      <div className="flex items-center gap-2">
+                        <span className={cn("px-2 py-0.5 rounded text-xs font-medium", getFrequencyBadgeColor('semesterly'))}>
+                          Semestral
+                        </span>
+                        <span className="text-muted-foreground text-xs">2 metas por ano (S1-S2)</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="yearly">
+                      <div className="flex items-center gap-2">
+                        <span className={cn("px-2 py-0.5 rounded text-xs font-medium", getFrequencyBadgeColor('yearly'))}>
+                          Anual
+                        </span>
+                        <span className="text-muted-foreground text-xs">1 meta por ano</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Define a frequência de acompanhamento das metas deste KR
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -681,7 +780,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
               </div>
             </TabsContent>
 
-            {/* Monthly Targets Tab */}
+            {/* Targets Tab - Dynamic based on frequency */}
             <TabsContent value="monthly-targets" className="space-y-4 mt-4">
               {basicInfo.start_month && basicInfo.end_month && (
                 <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
@@ -693,9 +792,17 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
 
               <div className="flex justify-between items-center">
                 <div className="space-y-2">
-                  <Label>Metas Mensais ({selectedYear})</Label>
+                  <div className="flex items-center gap-2">
+                    <Label>Metas {getFrequencyLabel(basicInfo.frequency)}s ({selectedYear})</Label>
+                    <span className={cn("px-2 py-0.5 rounded text-xs font-medium", getFrequencyBadgeColor(basicInfo.frequency))}>
+                      {getFrequencyLabel(basicInfo.frequency)}
+                    </span>
+                  </div>
                   <p className="text-sm text-muted-foreground">
-                    Defina as metas para cada mês do ano selecionado.
+                    {basicInfo.frequency === 'monthly' && 'Defina as metas para cada mês do ano selecionado.'}
+                    {basicInfo.frequency === 'quarterly' && 'Defina as metas para cada trimestre (Q1-Q4).'}
+                    {basicInfo.frequency === 'semesterly' && 'Defina as metas para cada semestre (S1-S2).'}
+                    {basicInfo.frequency === 'yearly' && 'Defina a meta anual única.'}
                   </p>
                 </div>
                 
@@ -732,8 +839,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="sum">Somar todas as metas mensais</SelectItem>
-                        <SelectItem value="average">Calcular a média das metas mensais</SelectItem>
+                        <SelectItem value="sum">Somar todas as metas</SelectItem>
+                        <SelectItem value="average">Calcular a média das metas</SelectItem>
                         <SelectItem value="max">Usar o maior valor entre as metas</SelectItem>
                         <SelectItem value="min">Usar o menor valor entre as metas</SelectItem>
                         <SelectItem value="last">Usar o último valor registrado</SelectItem>
@@ -748,75 +855,142 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                 </div>
               </div>
 
+              {/* Dynamic grid based on frequency */}
               <div className="space-y-3">
                 <div className="grid grid-cols-[150px_1fr_180px_80px] gap-4 p-3 bg-muted/30 rounded-lg font-medium text-sm">
-                  <div>Mês</div>
+                  <div>Período</div>
                   <div className="text-center">Meta</div>
                   <div className="text-center">Meta Anual Calculada</div>
                   <div className="text-center">Unidade</div>
                 </div>
                 
-                {months.map((month) => (
-                  <div 
-                    key={month.key} 
-                    className={cn(
-                      "grid grid-cols-[150px_1fr_180px_80px] gap-4 items-center p-3 border rounded-lg",
-                      isMonthInValidity(month.key, basicInfo.start_month, basicInfo.end_month) && 
-                        "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-                    )}
-                  >
-                    <div>
-                      <Label className="text-sm font-medium">{month.name}</Label>
+                {isFrequencyPeriodBased(basicInfo.frequency) ? (
+                  // Period-based frequencies (quarterly, semesterly, yearly)
+                  getPeriodsForFrequency(basicInfo.frequency, selectedYear).map((period) => (
+                    <div 
+                      key={period.key} 
+                      className={cn(
+                        "grid grid-cols-[150px_1fr_180px_80px] gap-4 items-center p-3 border rounded-lg",
+                        isPeriodInValidity(period.key, basicInfo.start_month, basicInfo.end_month) && 
+                          "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                      )}
+                    >
+                      <div>
+                        <Label className="text-sm font-medium">{period.label}</Label>
+                      </div>
+                      <div className="flex gap-1 items-center">
+                        <Input
+                          type="text"
+                          placeholder="0,00"
+                          value={editingField === period.key ? tempValue : formatBrazilianNumber(periodTargets[period.key])}
+                          onFocus={() => {
+                            setEditingField(period.key);
+                            setTempValue(periodTargets[period.key]?.toString() || '');
+                          }}
+                          onChange={(e) => {
+                            setTempValue(e.target.value);
+                          }}
+                          onBlur={() => {
+                            const value = parseBrazilianNumber(tempValue);
+                            setPeriodTargets(prev => ({
+                              ...prev,
+                              [period.key]: value || 0
+                            }));
+                            setEditingField(null);
+                            setTempValue('');
+                          }}
+                          className="flex-1 text-right font-mono"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 shrink-0"
+                          tabIndex={-1}
+                          onClick={() => {
+                            setPeriodTargets(prev => {
+                              const newTargets = { ...prev };
+                              delete newTargets[period.key];
+                              return newTargets;
+                            });
+                          }}
+                          title="Limpar meta"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="text-center text-sm font-medium">
+                        {formatBrazilianNumber(calculateYearlyFromPeriods(periodTargets, aggregationType))}
+                      </div>
+                      <div className="text-center text-sm text-muted-foreground">
+                        {basicInfo.unit}
+                      </div>
                     </div>
-                    <div className="flex gap-1 items-center">
-                      <Input
-                        type="text"
-                        placeholder="0,00"
-                        value={editingField === month.key ? tempValue : formatBrazilianNumber(monthlyTargets[month.key])}
-                        onFocus={() => {
-                          setEditingField(month.key);
-                          setTempValue(monthlyTargets[month.key]?.toString() || '');
-                        }}
-                        onChange={(e) => {
-                          setTempValue(e.target.value);
-                        }}
-                        onBlur={() => {
-                          const value = parseBrazilianNumber(tempValue);
-                          setMonthlyTargets(prev => ({
-                            ...prev,
-                            [month.key]: value || 0
-                          }));
-                          setEditingField(null);
-                          setTempValue('');
-                        }}
-                        className="flex-1 text-right font-mono"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 shrink-0"
-                        tabIndex={-1}
-                        onClick={() => {
-                          setMonthlyTargets(prev => {
-                            const newTargets = { ...prev };
-                            delete newTargets[month.key];
-                            return newTargets;
-                          });
-                        }}
-                        title="Limpar meta"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                  ))
+                ) : (
+                  // Monthly frequency
+                  months.map((month) => (
+                    <div 
+                      key={month.key} 
+                      className={cn(
+                        "grid grid-cols-[150px_1fr_180px_80px] gap-4 items-center p-3 border rounded-lg",
+                        isMonthInValidity(month.key, basicInfo.start_month, basicInfo.end_month) && 
+                          "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                      )}
+                    >
+                      <div>
+                        <Label className="text-sm font-medium">{month.name}</Label>
+                      </div>
+                      <div className="flex gap-1 items-center">
+                        <Input
+                          type="text"
+                          placeholder="0,00"
+                          value={editingField === month.key ? tempValue : formatBrazilianNumber(monthlyTargets[month.key])}
+                          onFocus={() => {
+                            setEditingField(month.key);
+                            setTempValue(monthlyTargets[month.key]?.toString() || '');
+                          }}
+                          onChange={(e) => {
+                            setTempValue(e.target.value);
+                          }}
+                          onBlur={() => {
+                            const value = parseBrazilianNumber(tempValue);
+                            setMonthlyTargets(prev => ({
+                              ...prev,
+                              [month.key]: value || 0
+                            }));
+                            setEditingField(null);
+                            setTempValue('');
+                          }}
+                          className="flex-1 text-right font-mono"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 shrink-0"
+                          tabIndex={-1}
+                          onClick={() => {
+                            setMonthlyTargets(prev => {
+                              const newTargets = { ...prev };
+                              delete newTargets[month.key];
+                              return newTargets;
+                            });
+                          }}
+                          title="Limpar meta"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="text-center text-sm font-medium">
+                        {formatBrazilianNumber(calculateYearlyTarget(monthlyTargets))}
+                      </div>
+                      <div className="text-center text-sm text-muted-foreground">
+                        {basicInfo.unit}
+                      </div>
                     </div>
-                    <div className="text-center text-sm font-medium">
-                      {formatBrazilianNumber(calculateYearlyTarget(monthlyTargets))}
-                    </div>
-                    <div className="text-center text-sm text-muted-foreground">
-                      {basicInfo.unit}
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </TabsContent>
 

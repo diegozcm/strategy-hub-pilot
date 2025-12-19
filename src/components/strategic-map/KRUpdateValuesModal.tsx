@@ -10,6 +10,17 @@ import { X } from 'lucide-react';
 import { calculateKRStatus } from '@/lib/krHelpers';
 import { cn } from '@/lib/utils';
 import { usePeriodFilter } from '@/hooks/usePeriodFilter';
+import { 
+  KRFrequency, 
+  getPeriodsForFrequency, 
+  periodTargetsToMonthly, 
+  monthlyTargetsToPeriod, 
+  getFrequencyLabel, 
+  getFrequencyBadgeColor,
+  isFrequencyPeriodBased,
+  calculateYearlyFromPeriods,
+  isPeriodInValidity
+} from '@/lib/krFrequencyHelpers';
 
 // Função para verificar se um mês está dentro da vigência
 const isMonthInValidity = (monthKey: string, startMonth?: string | null, endMonth?: string | null): boolean => {
@@ -42,9 +53,12 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
   const { selectedYear, setSelectedYear, yearOptions } = usePeriodFilter();
   const [isSaving, setIsSaving] = useState(false);
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
+  const [periodActual, setPeriodActual] = useState<Record<string, number>>({});
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
   const hasInitialized = useRef(false);
+
+  const frequency = (keyResult?.frequency as KRFrequency) || 'monthly';
 
   // Inicialização inteligente: usar o ano da vigência do KR quando o modal abre
   useEffect(() => {
@@ -72,6 +86,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
     
     hasInitialized.current = true;
   }, [open, keyResult?.start_month, yearOptions, selectedYear, setSelectedYear]);
+
   // Formata número para padrão brasileiro (xxx.xxx.xxx,xx)
   const formatBrazilianNumber = (value: number | null | undefined): string => {
     if (value === null || value === undefined) return '';
@@ -131,9 +146,15 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
   // Initialize form when keyResult changes
   useEffect(() => {
     if (keyResult) {
-      setMonthlyActual(keyResult.monthly_actual as Record<string, number> || {});
+      const existingActual = keyResult.monthly_actual as Record<string, number> || {};
+      setMonthlyActual(existingActual);
+      
+      // Initialize period actuals if frequency is period-based
+      if (isFrequencyPeriodBased(frequency)) {
+        setPeriodActual(monthlyTargetsToPeriod(existingActual, frequency, selectedYear));
+      }
     }
-  }, [keyResult]);
+  }, [keyResult, frequency, selectedYear]);
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,26 +166,44 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
       // Merge dos dados existentes com os novos dados do ano selecionado
       const existingMonthlyActual = (keyResult.monthly_actual as Record<string, number>) || {};
       
-      // Limpar valores vazios ou inválidos do monthly_actual do ano atual
-      const cleanCurrentYearActual = Object.fromEntries(
-        Object.entries(monthlyActual)
-          .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
-      );
+      let finalMonthlyActual: Record<string, number>;
+      let yearlyActual: number;
       
-      // Preservar dados de outros anos e atualizar apenas o ano selecionado
-      const mergedMonthlyActual = { ...existingMonthlyActual };
-      Object.keys(mergedMonthlyActual).forEach(key => {
-        if (key.startsWith(`${selectedYear}-`)) {
-          delete mergedMonthlyActual[key];
-        }
-      });
-      Object.assign(mergedMonthlyActual, cleanCurrentYearActual);
-
-      const yearlyActual = calculateYearlyActual(cleanCurrentYearActual);
+      if (isFrequencyPeriodBased(frequency)) {
+        // Convert period actuals to monthly format
+        const currentYearMonthlyFromPeriods = periodTargetsToMonthly(periodActual, frequency, selectedYear);
+        
+        // Merge with existing (preserving other years)
+        finalMonthlyActual = { ...existingMonthlyActual };
+        Object.keys(finalMonthlyActual).forEach(key => {
+          if (key.startsWith(`${selectedYear}-`)) {
+            delete finalMonthlyActual[key];
+          }
+        });
+        Object.assign(finalMonthlyActual, currentYearMonthlyFromPeriods);
+        
+        yearlyActual = calculateYearlyFromPeriods(periodActual, keyResult.aggregation_type || 'sum');
+      } else {
+        // Monthly frequency
+        const cleanCurrentYearActual = Object.fromEntries(
+          Object.entries(monthlyActual)
+            .filter(([_, value]) => typeof value === 'number' && !isNaN(value))
+        );
+        
+        finalMonthlyActual = { ...existingMonthlyActual };
+        Object.keys(finalMonthlyActual).forEach(key => {
+          if (key.startsWith(`${selectedYear}-`)) {
+            delete finalMonthlyActual[key];
+          }
+        });
+        Object.assign(finalMonthlyActual, cleanCurrentYearActual);
+        
+        yearlyActual = calculateYearlyActual(cleanCurrentYearActual);
+      }
 
       await onSave({
         id: keyResult.id,
-        monthly_actual: mergedMonthlyActual,
+        monthly_actual: finalMonthlyActual,
         yearly_actual: yearlyActual,
         current_value: yearlyActual,
       });
@@ -190,14 +229,25 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
   if (!keyResult) return null;
 
   const monthlyTargets = keyResult.monthly_targets as Record<string, number> || {};
+  const periodTargets = isFrequencyPeriodBased(frequency) 
+    ? monthlyTargetsToPeriod(monthlyTargets, frequency, selectedYear) 
+    : {};
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[920px] max-h-[95vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Atualizar Valores - {keyResult.title}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Atualizar Valores - {keyResult.title}
+            <span className={cn("px-2 py-0.5 rounded text-xs font-medium", getFrequencyBadgeColor(frequency))}>
+              {getFrequencyLabel(frequency)}
+            </span>
+          </DialogTitle>
           <DialogDescription>
-            Atualize os valores realizados mensais para este resultado-chave
+            {isFrequencyPeriodBased(frequency) 
+              ? `Atualize os valores realizados ${getFrequencyLabel(frequency).toLowerCase()}s para este resultado-chave`
+              : 'Atualize os valores realizados mensais para este resultado-chave'
+            }
           </DialogDescription>
         </DialogHeader>
 
@@ -230,136 +280,236 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
             <div className="space-y-2">
               <Label>Valores Realizados ({selectedYear})</Label>
               <p className="text-sm text-muted-foreground">
-                Atualize os valores realizados para cada mês.
+                {isFrequencyPeriodBased(frequency) 
+                  ? `Atualize os valores realizados para cada ${frequency === 'quarterly' ? 'trimestre' : frequency === 'semesterly' ? 'semestre' : 'ano'}.`
+                  : 'Atualize os valores realizados para cada mês.'
+                }
               </p>
             </div>
           </div>
 
           <div className="space-y-3">
             <div className="grid grid-cols-[150px_180px_240px_140px_50px] gap-4 p-3 bg-muted/30 rounded-lg font-medium text-sm">
-              <div>Mês</div>
+              <div>Período</div>
               <div className="text-center">Meta ({selectedYear})</div>
               <div className="text-center">Realizado</div>
               <div className="text-center">% Atingimento</div>
               <div className="text-center">Unidade</div>
             </div>
             
-            {months.map((month, index) => {
-              const target = monthlyTargets[month.key] || 0;
-              const actual = monthlyActual[month.key] ?? null;
-              const status = actual !== null && target !== 0 
-                ? calculateKRStatus(actual, target, keyResult.target_direction || 'maximize')
-                : null;
-              const percentage = status?.percentage ?? null;
+            {isFrequencyPeriodBased(frequency) ? (
+              // Period-based display
+              getPeriodsForFrequency(frequency, selectedYear).map((period, index) => {
+                const target = periodTargets[period.key] || 0;
+                const actual = periodActual[period.key] ?? null;
+                const status = actual !== null && target !== 0 
+                  ? calculateKRStatus(actual, target, keyResult.target_direction || 'maximize')
+                  : null;
+                const percentage = status?.percentage ?? null;
 
-              return (
-                <div 
-                  key={month.key} 
-                  className={cn(
-                    "grid grid-cols-[150px_180px_240px_140px_50px] gap-4 items-center p-3 border rounded-lg",
-                    isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month) && 
-                      "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-                  )}
-                >
-                  <div className="font-medium text-sm">
-                    {month.name}
-                  </div>
-                  <div className="text-right text-base font-medium pr-2">
-                    {formatBrazilianNumber(target)}
-                  </div>
-                  <div className="flex gap-1 items-center">
-                    <Input
-                      type="text"
-                      placeholder="0,00"
-                      tabIndex={index + 1}
-                      value={editingField === month.key 
-                        ? tempValue 
-                        : (monthlyActual[month.key] !== undefined 
-                            ? formatBrazilianNumber(monthlyActual[month.key]) 
-                            : '')
-                      }
-                      onFocus={() => {
-                        setEditingField(month.key);
-                        setTempValue(monthlyActual[month.key]?.toString() || '');
-                      }}
-                      onChange={(e) => {
-                        setTempValue(e.target.value);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Tab' && !e.shiftKey && index < months.length - 1) {
-                          e.preventDefault();
-                          const nextInput = document.querySelector(`input[tabindex="${index + 2}"]`) as HTMLInputElement;
-                          if (nextInput) {
-                            nextInput.focus();
+                return (
+                  <div 
+                    key={period.key} 
+                    className={cn(
+                      "grid grid-cols-[150px_180px_240px_140px_50px] gap-4 items-center p-3 border rounded-lg",
+                      isPeriodInValidity(period.key, keyResult.start_month, keyResult.end_month) && 
+                        "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                    )}
+                  >
+                    <div className="font-medium text-sm">
+                      {period.label}
+                    </div>
+                    <div className="text-right text-base font-medium pr-2">
+                      {formatBrazilianNumber(target)}
+                    </div>
+                    <div className="flex gap-1 items-center">
+                      <Input
+                        type="text"
+                        placeholder="0,00"
+                        tabIndex={index + 1}
+                        value={editingField === period.key 
+                          ? tempValue 
+                          : (periodActual[period.key] !== undefined 
+                              ? formatBrazilianNumber(periodActual[period.key]) 
+                              : '')
+                        }
+                        onFocus={() => {
+                          setEditingField(period.key);
+                          setTempValue(periodActual[period.key]?.toString() || '');
+                        }}
+                        onChange={(e) => {
+                          setTempValue(e.target.value);
+                        }}
+                        onBlur={() => {
+                          const value = parseBrazilianNumber(tempValue);
+                          if (tempValue === '' || tempValue === '-') {
+                            setPeriodActual(prev => {
+                              const newActual = { ...prev };
+                              delete newActual[period.key];
+                              return newActual;
+                            });
+                          } else if (value !== null) {
+                            setPeriodActual(prev => ({
+                              ...prev,
+                              [period.key]: value
+                            }));
                           }
-                        } else if (e.key === 'Tab' && e.shiftKey && index > 0) {
-                          e.preventDefault();
-                          const prevInput = document.querySelector(`input[tabindex="${index}"]`) as HTMLInputElement;
-                          if (prevInput) {
-                            prevInput.focus();
-                          }
-                        } else if (e.key === 'Enter') {
-                          e.preventDefault();
-                          (e.target as HTMLInputElement).blur();
-                          if (index < months.length - 1) {
+                          setEditingField(null);
+                          setTempValue('');
+                        }}
+                        className="flex-1 text-right font-mono text-base"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        onClick={() => {
+                          setPeriodActual(prev => {
+                            const newActual = { ...prev };
+                            delete newActual[period.key];
+                            return newActual;
+                          });
+                        }}
+                        title="Limpar valor realizado"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="text-center">
+                      {percentage !== null && status ? (
+                        <span className={`text-sm font-medium ${status.color}`}>
+                          {percentage.toFixed(1)}%
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
+                      )}
+                    </div>
+                    <div className="text-center text-sm text-muted-foreground">
+                      {keyResult.unit}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              // Monthly display
+              months.map((month, index) => {
+                const target = monthlyTargets[month.key] || 0;
+                const actual = monthlyActual[month.key] ?? null;
+                const status = actual !== null && target !== 0 
+                  ? calculateKRStatus(actual, target, keyResult.target_direction || 'maximize')
+                  : null;
+                const percentage = status?.percentage ?? null;
+
+                return (
+                  <div 
+                    key={month.key} 
+                    className={cn(
+                      "grid grid-cols-[150px_180px_240px_140px_50px] gap-4 items-center p-3 border rounded-lg",
+                      isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month) && 
+                        "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                    )}
+                  >
+                    <div className="font-medium text-sm">
+                      {month.name}
+                    </div>
+                    <div className="text-right text-base font-medium pr-2">
+                      {formatBrazilianNumber(target)}
+                    </div>
+                    <div className="flex gap-1 items-center">
+                      <Input
+                        type="text"
+                        placeholder="0,00"
+                        tabIndex={index + 1}
+                        value={editingField === month.key 
+                          ? tempValue 
+                          : (monthlyActual[month.key] !== undefined 
+                              ? formatBrazilianNumber(monthlyActual[month.key]) 
+                              : '')
+                        }
+                        onFocus={() => {
+                          setEditingField(month.key);
+                          setTempValue(monthlyActual[month.key]?.toString() || '');
+                        }}
+                        onChange={(e) => {
+                          setTempValue(e.target.value);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Tab' && !e.shiftKey && index < months.length - 1) {
+                            e.preventDefault();
                             const nextInput = document.querySelector(`input[tabindex="${index + 2}"]`) as HTMLInputElement;
                             if (nextInput) {
                               nextInput.focus();
                             }
+                          } else if (e.key === 'Tab' && e.shiftKey && index > 0) {
+                            e.preventDefault();
+                            const prevInput = document.querySelector(`input[tabindex="${index}"]`) as HTMLInputElement;
+                            if (prevInput) {
+                              prevInput.focus();
+                            }
+                          } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            (e.target as HTMLInputElement).blur();
+                            if (index < months.length - 1) {
+                              const nextInput = document.querySelector(`input[tabindex="${index + 2}"]`) as HTMLInputElement;
+                              if (nextInput) {
+                                nextInput.focus();
+                              }
+                            }
                           }
-                        }
-                      }}
-                      onBlur={() => {
-                        const value = parseBrazilianNumber(tempValue);
-                        if (tempValue === '' || tempValue === '-') {
+                        }}
+                        onBlur={() => {
+                          const value = parseBrazilianNumber(tempValue);
+                          if (tempValue === '' || tempValue === '-') {
+                            setMonthlyActual(prev => {
+                              const newActual = { ...prev };
+                              delete newActual[month.key];
+                              return newActual;
+                            });
+                          } else if (value !== null) {
+                            setMonthlyActual(prev => ({
+                              ...prev,
+                              [month.key]: value
+                            }));
+                          }
+                          setEditingField(null);
+                          setTempValue('');
+                        }}
+                        className="flex-1 text-right font-mono text-base"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        onClick={() => {
                           setMonthlyActual(prev => {
                             const newActual = { ...prev };
                             delete newActual[month.key];
                             return newActual;
                           });
-                        } else if (value !== null) {
-                          setMonthlyActual(prev => ({
-                            ...prev,
-                            [month.key]: value
-                          }));
-                        }
-                        setEditingField(null);
-                        setTempValue('');
-                      }}
-                      className="flex-1 text-right font-mono text-base"
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 shrink-0"
-                      onClick={() => {
-                        setMonthlyActual(prev => {
-                          const newActual = { ...prev };
-                          delete newActual[month.key];
-                          return newActual;
-                        });
-                      }}
-                      title="Limpar valor realizado"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                        }}
+                        title="Limpar valor realizado"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="text-center">
+                      {percentage !== null && status ? (
+                        <span className={`text-sm font-medium ${status.color}`}>
+                          {percentage.toFixed(1)}%
+                        </span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">-</span>
+                      )}
+                    </div>
+                    <div className="text-center text-sm text-muted-foreground">
+                      {keyResult.unit}
+                    </div>
                   </div>
-                  <div className="text-center">
-                    {percentage !== null && status ? (
-                      <span className={`text-sm font-medium ${status.color}`}>
-                        {percentage.toFixed(1)}%
-                      </span>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">-</span>
-                    )}
-                  </div>
-                  <div className="text-center text-sm text-muted-foreground">
-                    {keyResult.unit}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">
