@@ -1,9 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { KeyResult } from '@/types/strategic-map';
 import { KeyResultMetrics } from './KeyResultMetrics';
 import { KeyResultChart } from './KeyResultChart';
@@ -13,10 +10,11 @@ import { KRInitiativesModal } from './KRInitiativesModal';
 import { KREditModal } from './KREditModal';
 import { KRUpdateValuesModal } from './KRUpdateValuesModal';
 import { getDirectionLabel, calculateKRStatus } from '@/lib/krHelpers';
-import { formatValueWithUnit, cn } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { getKRQuarters } from '@/lib/krValidityFilter';
+import { SmartPeriodSelector } from '@/components/ui/SmartPeriodSelector';
 
-import { Edit, Calendar, User, Target, TrendingUp, Trash2, FileEdit, ListChecks, FileBarChart, Rocket, CalendarDays, AlertCircle } from 'lucide-react';
+import { Edit, Calendar, User, Target, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { usePeriodFilter } from '@/hooks/usePeriodFilter';
@@ -88,12 +86,22 @@ export const KROverviewModal = ({
     setSelectedQuarterYear,
     selectedMonthYear,
     setSelectedMonthYear,
+    selectedSemester,
+    setSelectedSemester,
+    selectedSemesterYear,
+    setSelectedSemesterYear,
+    selectedBimonth,
+    setSelectedBimonth,
+    selectedBimonthYear,
+    setSelectedBimonthYear,
     quarterOptions, 
     monthOptions, 
     yearOptions,
+    semesterOptions,
+    bimonthlyOptions,
     isYTDCalculable: isYTDApplicable,
     ytdInfoMessage: ytdWarningMessage,
-    planFirstYear
+    handleYTDClick
   } = usePeriodFilter();
   
   // Estados locais para sincronização do ano do gráfico e métricas
@@ -451,83 +459,35 @@ export const KROverviewModal = ({
                 Iniciativas
               </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-muted/50 p-1 rounded-lg">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={selectedPeriod === 'ytd' ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => {
-                          if (isYTDApplicable) {
-                            setSelectedPeriod('ytd');
-                            onPeriodChange?.('ytd');
-                          } else {
-                            setSelectedPeriod('yearly');
-                            setSelectedYear(planFirstYear);
-                            setSelectedYearlyYear(planFirstYear);
-                            onPeriodChange?.('yearly');
-                            onYearChange?.(planFirstYear);
-                            toast({
-                              title: "YTD não disponível",
-                              description: ytdWarningMessage,
-                            });
-                          }
-                        }}
-                        className={cn("gap-2", !isYTDApplicable && "opacity-50")}
-                      >
-                        <TrendingUp className="w-4 h-4" />
-                        YTD
-                        {!isYTDApplicable && <AlertCircle className="w-3 h-3" />}
-                      </Button>
-                    </TooltipTrigger>
-                    {!isYTDApplicable && ytdWarningMessage && (
-                      <TooltipContent>
-                        <p>{ytdWarningMessage}</p>
-                      </TooltipContent>
-                    )}
-                  </Tooltip>
-                </TooltipProvider>
-                <Button
-                  variant={selectedPeriod === 'yearly' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => {
-                    setSelectedPeriod('yearly');
-                    onPeriodChange?.('yearly');
-                  }}
-                  className="gap-2"
-                >
-                  <Target className="w-4 h-4" />
-                  Ano
-                </Button>
-                <Button
-                  variant={selectedPeriod === 'quarterly' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => {
-                    setSelectedPeriod('quarterly');
-                    onPeriodChange?.('quarterly');
-                  }}
-                  className="gap-2"
-                >
-                  <Calendar className="w-4 h-4" />
-                  Quarter
-                </Button>
-                <Button
-                  variant={selectedPeriod === 'monthly' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => {
-                    setSelectedPeriod('monthly');
-                    onPeriodChange?.('monthly');
-                  }}
-                  className="gap-2"
-                >
-                  <CalendarDays className="w-4 h-4" />
-                  Mês
-                </Button>
-              </div>
-              
-            </div>
+            <SmartPeriodSelector
+              selectedPeriod={selectedPeriod}
+              selectedYear={selectedYear}
+              selectedMonth={selectedMonth}
+              selectedQuarter={selectedQuarter}
+              selectedQuarterYear={selectedQuarterYear}
+              selectedSemester={selectedSemester}
+              selectedSemesterYear={selectedSemesterYear}
+              selectedBimonth={selectedBimonth}
+              selectedBimonthYear={selectedBimonthYear}
+              setSelectedPeriod={setSelectedPeriod}
+              setSelectedYear={handleYearChange}
+              setSelectedMonth={setSelectedMonth}
+              setSelectedQuarter={setSelectedQuarter}
+              setSelectedQuarterYear={setSelectedQuarterYear}
+              setSelectedSemester={setSelectedSemester}
+              setSelectedSemesterYear={setSelectedSemesterYear}
+              setSelectedBimonth={setSelectedBimonth}
+              setSelectedBimonthYear={setSelectedBimonthYear}
+              yearOptions={yearOptions}
+              quarterOptions={krQuarterOptions}
+              semesterOptions={semesterOptions}
+              bimonthlyOptions={bimonthlyOptions}
+              monthOptions={monthOptions}
+              isYTDCalculable={isYTDApplicable}
+              ytdInfoMessage={ytdWarningMessage}
+              onYTDClick={handleYTDClick}
+              className="flex-wrap"
+            />
           </div>
           
           <div className="flex-1 overflow-y-auto px-6">

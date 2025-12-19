@@ -43,10 +43,14 @@ export const RumoDashboard = () => {
         selectedQuarterYear,
         selectedYear,
         selectedMonth,
-        planFirstYear // Passar ano do plano para YTD inteligente
+        selectedSemester,
+        selectedSemesterYear,
+        selectedBimonth,
+        selectedBimonthYear,
+        planFirstYear
       }
     );
-  }, [keyResults, validityEnabled, periodType, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, planFirstYear]);
+  }, [keyResults, validityEnabled, periodType, selectedQuarter, selectedQuarterYear, selectedYear, selectedMonth, selectedSemester, selectedSemesterYear, selectedBimonth, selectedBimonthYear, planFirstYear]);
 
   // Processar dados para aninhar objetivos dentro dos pilares
   const pillarsWithObjectives = useMemo(() => {
@@ -65,12 +69,16 @@ export const RumoDashboard = () => {
   } = useRumoCalculations(
     pillarsWithObjectives, 
     objectives, 
-    filteredKeyResults,  // Usar KRs filtrados por vigência
+    filteredKeyResults,
     periodType,
     periodType === 'monthly' 
       ? { selectedMonth, selectedYear } 
       : periodType === 'quarterly'
-      ? { selectedQuarter }
+      ? { selectedQuarter, selectedQuarterYear }
+      : periodType === 'semesterly'
+      ? { selectedSemester, selectedSemesterYear }
+      : periodType === 'bimonthly'
+      ? { selectedBimonth, selectedBimonthYear }
       : periodType === 'yearly'
       ? { selectedYear }
       : undefined
