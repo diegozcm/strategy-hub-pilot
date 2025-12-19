@@ -333,9 +333,10 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
   // Calculate summary stats
   const summaryStats = useMemo(() => {
     const total = filteredAndSortedKRs.length;
-    let achieved = 0;
-    let attention = 0;
-    let critical = 0;
+    let excellent = 0;  // > 105%
+    let achieved = 0;   // 100-105%
+    let attention = 0;  // 71-99%
+    let critical = 0;   // < 71%
     let totalEfficiency = 0;
     let totalWeight = 0;
 
@@ -345,14 +346,15 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
       totalEfficiency += eficiencia * weight;
       totalWeight += weight;
 
-      if (eficiencia >= 100) achieved++;
-      else if (eficiencia >= 50) attention++;
+      if (eficiencia > 105) excellent++;
+      else if (eficiencia >= 100) achieved++;
+      else if (eficiencia >= 71) attention++;
       else critical++;
     });
 
     const weightedAverage = totalWeight > 0 ? totalEfficiency / totalWeight : 0;
 
-    return { total, achieved, attention, critical, weightedAverage };
+    return { total, excellent, achieved, attention, critical, weightedAverage };
   }, [filteredAndSortedKRs, selectedYear, selectedMonth, selectedQuarter, selectedQuarterYear, periodType]);
 
   // Prepare export data (simplified - no frequency or weight)
@@ -566,12 +568,22 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
                 <div className="flex items-center gap-4">
                   <Tooltip>
                     <TooltipTrigger className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                        {summaryStats.excellent}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Excelentes (&gt;105%)</TooltipContent>
+                  </Tooltip>
+                  
+                  <Tooltip>
+                    <TooltipTrigger className="flex items-center gap-1.5">
                       <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                       <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
                         {summaryStats.achieved}
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent>Atingidos (≥100%)</TooltipContent>
+                    <TooltipContent>No Alvo (100-105%)</TooltipContent>
                   </Tooltip>
                   
                   <Tooltip>
@@ -581,7 +593,7 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
                         {summaryStats.attention}
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent>Atenção (50-99%)</TooltipContent>
+                    <TooltipContent>Atenção (71-99%)</TooltipContent>
                   </Tooltip>
                   
                   <Tooltip>
@@ -591,7 +603,7 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
                         {summaryStats.critical}
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent>Críticos (&lt;50%)</TooltipContent>
+                    <TooltipContent>Críticos (&lt;71%)</TooltipContent>
                   </Tooltip>
                 </div>
               </div>
