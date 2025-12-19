@@ -1,4 +1,4 @@
-import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, ReferenceArea, BarChart, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -11,6 +11,13 @@ import { calculateKRStatus, type TargetDirection } from '@/lib/krHelpers';
 import { formatValueWithUnit } from '@/lib/utils';
 import { KeyResultWithMetrics } from '@/hooks/useKRMetrics';
 import { cn } from '@/lib/utils';
+import { 
+  isFrequencyPeriodBased, 
+  getFrequencyLabel, 
+  getPeriodsForFrequency, 
+  KRFrequency,
+  getFrequencyBadgeColor
+} from '@/lib/krFrequencyHelpers';
 
 interface KeyResultChartProps {
   keyResult: KeyResultWithMetrics;
@@ -37,13 +44,9 @@ export const KeyResultChart = ({
   selectedPeriod = 'ytd',
   yearOptions: propYearOptions
 }: KeyResultChartProps) => {
-  // Debug log to track validity data
-  console.log('[KeyResultChart] Renderizando com:', {
-    kr_id: keyResult.id,
-    start_month: keyResult.start_month,
-    end_month: keyResult.end_month,
-    has_validity: !!(keyResult.start_month && keyResult.end_month)
-  });
+  // Detect frequency - default to monthly for backward compatibility
+  const frequency = (keyResult.frequency as KRFrequency) || 'monthly';
+  const isPeriodBased = isFrequencyPeriodBased(frequency);
 
   // Helper functions for validity period
   const isMonthInValidity = (monthKey: string, startMonth?: string, endMonth?: string): boolean => {
@@ -95,23 +98,22 @@ export const KeyResultChart = ({
     { key: `${selectedYear}-12`, name: 'Dez' },
   ];
 
-const normalizeNumber = (val: unknown): number | null => {
-  if (val === null || val === undefined) return null;
-  if (typeof val === 'number') return Number.isFinite(val) ? val : null;
-  if (typeof val === 'string') {
-    const cleaned = val.trim().replace(/\s+/g, '').replace(',', '.');
-    const num = Number(cleaned);
-    return Number.isFinite(num) ? num : null;
-  }
-  return null;
-};
+  const normalizeNumber = (val: unknown): number | null => {
+    if (val === null || val === undefined) return null;
+    if (typeof val === 'number') return Number.isFinite(val) ? val : null;
+    if (typeof val === 'string') {
+      const cleaned = val.trim().replace(/\s+/g, '').replace(',', '.');
+      const num = Number(cleaned);
+      return Number.isFinite(num) ? num : null;
+    }
+    return null;
+  };
 
-const normalizedTargets: Record<string, number | null> =
-  Object.fromEntries(Object.entries(monthlyTargets || {}).map(([k, v]) => [k, normalizeNumber(v as unknown)]));
+  const normalizedTargets: Record<string, number | null> =
+    Object.fromEntries(Object.entries(monthlyTargets || {}).map(([k, v]) => [k, normalizeNumber(v as unknown)]));
 
-const normalizedActuals: Record<string, number | null> =
-  Object.fromEntries(Object.entries(monthlyActual || {}).map(([k, v]) => [k, normalizeNumber(v as unknown)]));
-
+  const normalizedActuals: Record<string, number | null> =
+    Object.fromEntries(Object.entries(monthlyActual || {}).map(([k, v]) => [k, normalizeNumber(v as unknown)]));
 
   // Calculate magnitudes for dual axis logic
   const previstoVals = Object.values(normalizedTargets).filter(v => v !== null && Number.isFinite(v)) as number[];
@@ -123,26 +125,16 @@ const normalizedActuals: Record<string, number | null> =
   const useDualAxis = maxAbsPrev > 0 && maxAbsReal > 0 && 
     (Math.max(maxAbsPrev, maxAbsReal) / Math.min(maxAbsPrev, maxAbsReal)) >= 10;
 
-  const calculateTotal = (data: Record<string, number | null | undefined>) => {
-    return Object.values(data).reduce((sum, value) => {
-      const n = typeof value === 'number' ? value : Number(value as any);
-      return Number.isFinite(n) ? sum + n : sum;
-    }, 0);
-  };
-
   // Calculate totals based on selected period
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
   
   // Determine which months to include based on selected period
   const getMonthsForPeriod = () => {
     if (selectedPeriod === 'monthly') {
-      // Only current month
       return months.filter(month => month.key === currentMonth);
     } else if (selectedPeriod === 'yearly') {
-      // All 12 months
       return months;
     } else {
-      // YTD: only months with valid targets AND actual data
       return months.filter(month => {
         const target = normalizedTargets[month.key];
         const actual = normalizedActuals[month.key];
@@ -154,28 +146,6 @@ const normalizedActuals: Record<string, number | null> =
   };
 
   const monthsForTotal = getMonthsForPeriod();
-
-  // Calculate aggregated value based on aggregation type
-  const calculateAggregation = (data: Record<string, number | null | undefined>, type: string) => {
-    const values = monthsForTotal
-      .map(month => data[month.key])
-      .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-    
-    if (values.length === 0) return 0;
-    
-    switch (type) {
-      case 'sum':
-        return values.reduce((sum, v) => sum + v, 0);
-      case 'average':
-        return values.reduce((sum, v) => sum + v, 0) / values.length;
-      case 'max':
-        return Math.max(...values);
-      case 'min':
-        return Math.min(...values);
-      default:
-        return values.reduce((sum, v) => sum + v, 0);
-    }
-  };
 
   // Use pre-calculated values from database based on selected period
   const targetTotal = selectedPeriod === 'yearly'
@@ -233,6 +203,58 @@ const normalizedActuals: Record<string, number | null> =
     );
   };
 
+  // ============== Period-based chart data (for quarterly, semiannual, annual) ==============
+  const periods = isPeriodBased ? getPeriodsForFrequency(frequency, selectedYear) : [];
+  
+  const periodChartData = periods.map(period => {
+    let meta = 0;
+    let realizado = 0;
+    let metaCount = 0;
+    let realizadoCount = 0;
+
+    period.monthKeys.forEach(monthKey => {
+      const target = normalizedTargets[monthKey];
+      const actual = normalizedActuals[monthKey];
+      
+      if (target !== null) {
+        meta += target;
+        metaCount++;
+      }
+      if (actual !== null) {
+        realizado += actual;
+        realizadoCount++;
+      }
+    });
+
+    if (aggregationType === 'average' && metaCount > 0) {
+      meta = meta / metaCount;
+    }
+    if (aggregationType === 'average' && realizadoCount > 0) {
+      realizado = realizado / realizadoCount;
+    }
+
+    const percentage = meta > 0 ? (realizado / meta) * 100 : 0;
+    const status = calculateKRStatus(realizado, meta, targetDirection);
+
+    return {
+      period: period.label,
+      periodKey: period.key,
+      meta: meta || 0,
+      realizado: realizado || 0,
+      percentage,
+      status
+    };
+  });
+
+  // Get chart title based on frequency
+  const getChartTitle = () => {
+    if (frequency === 'quarterly') return 'Evolução Trimestral - Meta vs Realizado';
+    if (frequency === 'semesterly') return 'Evolução Semestral - Meta vs Realizado';
+    if (frequency === 'yearly') return 'Meta Anual - Meta vs Realizado';
+    return 'Evolução Mensal - Previsto vs Realizado';
+  };
+
+  // Monthly chart data (original behavior)
   const chartData = [
     ...months.map(month => ({
       month: month.name,
@@ -250,7 +272,6 @@ const normalizedActuals: Record<string, number | null> =
     }
   ];
 
-
   // Get validity indices for chart highlighting
   const getValidityIndices = () => {
     if (!keyResult.start_month || !keyResult.end_month) return null;
@@ -266,17 +287,507 @@ const normalizedActuals: Record<string, number | null> =
     };
   };
 
+  // Calculate max value for period chart Y-axis
+  const maxPeriodValue = Math.max(
+    ...periodChartData.flatMap(d => [d.meta, d.realizado]),
+    0
+  ) * 1.15;
+
+  // ============== Period-based bar chart rendering ==============
+  const renderPeriodChart = () => (
+    <div className="h-[300px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart 
+          data={periodChartData} 
+          margin={{ top: 30, right: 30, left: 20, bottom: 20 }}
+          barCategoryGap={frequency === 'yearly' ? '40%' : '25%'}
+        >
+          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+          <XAxis 
+            dataKey="period" 
+            className="text-sm fill-muted-foreground font-medium"
+            tickLine={false}
+            axisLine={{ stroke: 'hsl(var(--border))' }}
+          />
+          <YAxis 
+            className="text-xs fill-muted-foreground"
+            tickFormatter={(value) => formatValueWithUnit(value, unit)}
+            domain={[0, maxPeriodValue]}
+            tickLine={false}
+            axisLine={false}
+          />
+          <Tooltip 
+            cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3 }}
+            content={({ active, payload, label }) => {
+              if (!active || !payload || payload.length === 0) return null;
+              
+              const data = payload[0]?.payload;
+              const percentage = data?.percentage || 0;
+              const status = data?.status;
+              
+              return (
+                <div className="bg-background border border-border rounded-lg shadow-lg p-3 min-w-[180px]">
+                  <p className="font-semibold text-sm mb-2 text-foreground">{label}</p>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-sm">Meta:</span>
+                      <span className="font-medium text-sm">{formatValueWithUnit(data?.meta || 0, unit)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-sm">Realizado:</span>
+                      <span className="font-semibold text-sm text-primary">{formatValueWithUnit(data?.realizado || 0, unit)}</span>
+                    </div>
+                    <div className="border-t border-border pt-1.5 mt-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground text-sm">Atingimento:</span>
+                        <span className={`font-bold text-sm ${status?.color || ''}`}>
+                          {percentage.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }}
+          />
+          <Legend 
+            wrapperStyle={{ paddingTop: '10px' }}
+            formatter={(value) => (
+              <span className="text-sm text-foreground">
+                {value === 'meta' ? 'Meta' : 'Realizado'}
+              </span>
+            )}
+          />
+          <Bar 
+            dataKey="meta" 
+            fill="hsl(var(--muted-foreground))"
+            opacity={0.4}
+            radius={[6, 6, 0, 0]}
+            name="meta"
+            maxBarSize={frequency === 'yearly' ? 120 : 80}
+            label={{ 
+              position: 'top', 
+              formatter: (value: number) => formatValueWithUnit(value, unit),
+              style: { 
+                fontSize: '11px', 
+                fill: 'hsl(var(--muted-foreground))',
+                fontWeight: 500
+              }
+            }}
+          />
+          <Bar 
+            dataKey="realizado" 
+            radius={[6, 6, 0, 0]}
+            name="realizado"
+            maxBarSize={frequency === 'yearly' ? 120 : 80}
+            label={{ 
+              position: 'top', 
+              formatter: (value: number) => formatValueWithUnit(value, unit),
+              style: { 
+                fontSize: '12px', 
+                fill: 'hsl(var(--primary))',
+                fontWeight: 600
+              }
+            }}
+          >
+            {periodChartData.map((entry, index) => {
+              const status = entry.status;
+              let fillColor = 'hsl(var(--primary))';
+              
+              if (status?.isExcellent) {
+                fillColor = 'hsl(142.1 76.2% 36.3%)';
+              } else if (status?.isGood) {
+                fillColor = 'hsl(var(--primary))';
+              } else if (entry.percentage >= 50) {
+                fillColor = 'hsl(38 92% 50%)';
+              } else if (entry.percentage > 0) {
+                fillColor = 'hsl(0 84.2% 60.2%)';
+              }
+              
+              return <Cell key={`cell-${index}`} fill={fillColor} />;
+            })}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+
+  // ============== Period-based table rendering ==============
+  const renderPeriodTable = () => (
+    <div className="rounded-md border overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-32 bg-background">Indicador</TableHead>
+            {periodChartData.map(period => (
+              <TableHead 
+                key={period.periodKey} 
+                className="text-center min-w-28 font-medium"
+              >
+                {period.period}
+              </TableHead>
+            ))}
+            <TableHead className="text-center min-w-28 bg-muted font-semibold">
+              Total Anual
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell className="font-medium bg-background">Meta</TableCell>
+            {periodChartData.map(period => (
+              <TableCell key={period.periodKey} className="text-center">
+                {period.meta > 0 ? formatValueForTable(period.meta, unit) : '-'}
+              </TableCell>
+            ))}
+            <TableCell className="text-center bg-muted/50 font-semibold">
+              {targetTotal > 0 ? formatValueForTable(targetTotal, unit) : '-'}
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-background">Realizado</TableCell>
+            {periodChartData.map(period => (
+              <TableCell key={period.periodKey} className="text-center">
+                <span className="font-medium text-primary">
+                  {period.realizado > 0 ? formatValueForTable(period.realizado, unit) : '-'}
+                </span>
+              </TableCell>
+            ))}
+            <TableCell className="text-center bg-muted/50 font-semibold">
+              <span className="text-primary">
+                {actualTotal > 0 ? formatValueForTable(actualTotal, unit) : '-'}
+              </span>
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium bg-background">% Atingimento</TableCell>
+            {periodChartData.map(period => (
+              <TableCell key={period.periodKey} className="text-center">
+                {period.meta > 0 ? (
+                  <span className={`font-semibold ${period.status?.color || ''}`}>
+                    {period.percentage.toFixed(1)}%
+                  </span>
+                ) : '-'}
+              </TableCell>
+            ))}
+            <TableCell className="text-center bg-muted/50 font-semibold">
+              {targetTotal > 0 ? (
+                <span className={`font-semibold ${calculateKRStatus(actualTotal, targetTotal, targetDirection).color}`}>
+                  {preCalculatedPercentage.toFixed(1)}%
+                </span>
+              ) : '-'}
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </div>
+  );
+
+  // ============== Monthly line chart rendering (original) ==============
+  const renderMonthlyChart = () => (
+    <div className="h-[270px] w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={chartData} margin={{ top: 20, right: useDualAxis ? 60 : 35, left: 10, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+          <XAxis 
+            dataKey="month" 
+            className="text-xs fill-muted-foreground"
+          />
+          <YAxis 
+            yAxisId="left"
+            className="text-xs fill-muted-foreground"
+            tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
+            domain={['auto', 'auto']}
+            includeHidden={true}
+          />
+          <YAxis 
+            yAxisId="right"
+            orientation="right"
+            className="text-xs fill-muted-foreground"
+            tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
+            domain={['auto', 'auto']}
+            includeHidden={true}
+            hide={!useDualAxis}
+          />
+          <YAxis 
+            yAxisId="barAxis"
+            orientation="right"
+            className="text-xs fill-muted-foreground"
+            tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
+            domain={[0, barAxisMax]}
+            label={{ 
+              value: 'Total', 
+              angle: -90, 
+              position: 'insideRight',
+              style: { textAnchor: 'middle', fontSize: '12px', fill: 'hsl(var(--muted-foreground))' }
+            }}
+          />
+          <Tooltip 
+            formatter={(value: number | null, name: string) => {
+              if (value === null || value === undefined || !Number.isFinite(Number(value))) {
+                return ['Sem dados', name];
+              }
+              
+              let label = 'Realizado';
+              if (name === 'previsto' || name === 'previstoBar') {
+                label = 'Previsto (Meta)';
+              } else if (name === 'realizado' || name === 'realizadoBar') {
+                label = 'Realizado';
+              }
+              
+              return [formatValueWithUnit(Number(value), unit), label];
+            }}
+            labelFormatter={(label) => label.includes('Total') ? label : `Mês: ${label}`}
+            contentStyle={{
+              backgroundColor: 'hsl(var(--background))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '6px',
+            }}
+          />
+          <Legend 
+            formatter={(value) => {
+              if (value === 'previstoBar' || value === 'realizadoBar') return null;
+              
+              return (
+                <span className="text-sm">
+                  {value === 'previsto' ? 'Previsto (Meta)' : 'Realizado'}
+                </span>
+              );
+            }}
+          />
+          {(() => {
+            const validity = getValidityIndices();
+            if (!validity) return null;
+            return (
+              <ReferenceArea
+                x1={validity.startMonth}
+                x2={validity.endMonth}
+                yAxisId="left"
+                fill="hsl(142.1 76.2% 36.3%)"
+                fillOpacity={0.1}
+                strokeOpacity={0.3}
+              />
+            );
+          })()}
+          <ReferenceLine y={0} yAxisId="left" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+          {useDualAxis && <ReferenceLine y={0} yAxisId="right" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />}
+          <ReferenceLine y={0} yAxisId="barAxis" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+          <Line 
+            type="monotone" 
+            dataKey="previsto"
+            yAxisId="left"
+            stroke="hsl(var(--muted-foreground))" 
+            strokeWidth={2}
+            strokeDasharray="5 5"
+            connectNulls={false}
+            dot={{ fill: 'hsl(var(--muted-foreground))', strokeWidth: 2, r: 4 }}
+            activeDot={{ r: 6, fill: 'hsl(var(--muted-foreground))' }}
+          />
+          <Line 
+            type="monotone" 
+            dataKey="realizado"
+            yAxisId={useDualAxis ? 'right' : 'left'}
+            stroke="hsl(var(--primary))" 
+            strokeWidth={3}
+            connectNulls={false}
+            dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+            activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
+          />
+          <Bar 
+            dataKey="previstoBar"
+            yAxisId="barAxis"
+            fill="hsl(var(--muted-foreground))"
+            opacity={0.5}
+            radius={[4, 4, 0, 0]}
+            barSize={30}
+            name="Previsto (Meta)"
+            label={{ 
+              position: 'top', 
+              formatter: (value: number) => formatValueWithUnit(value, unit),
+              style: { fontSize: '11px', fill: 'hsl(var(--muted-foreground))' }
+            }}
+          />
+          <Bar 
+            dataKey="realizadoBar"
+            yAxisId="barAxis"
+            fill="hsl(var(--primary))"
+            radius={[4, 4, 0, 0]}
+            barSize={30}
+            name="Realizado"
+            label={{ 
+              position: 'top', 
+              formatter: (value: number) => formatValueWithUnit(value, unit),
+              style: { fontSize: '11px', fill: 'hsl(var(--primary))', fontWeight: 600 }
+            }}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+
+  // ============== Monthly table rendering (original) ==============
+  const renderMonthlyTable = () => (
+    <div className="rounded-md border overflow-x-scroll [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar]:block [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-thumb]:rounded-full" style={{ scrollbarColor: '#9ca3af #f3f4f6', scrollbarWidth: 'thin' }}>
+      <Table className="relative">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-32 sticky left-0 bg-background z-10 border-r">Indicador</TableHead>
+            {months.map(month => {
+              const isCurrentMonth = month.key === currentMonth;
+              const inValidity = isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month);
+              return (
+                <TableHead 
+                  key={month.key} 
+                  className={cn(
+                    "text-center min-w-20",
+                    inValidity && "bg-green-50 dark:bg-green-900/20 border-b-2 border-green-300 dark:border-green-700"
+                  )}
+                >
+                  {month.name}
+                  {isCurrentMonth && (
+                    <span className="block text-xs text-primary">(atual)</span>
+                  )}
+                </TableHead>
+              );
+            })}
+            <TableHead className="text-center min-w-24 bg-muted font-semibold">
+              {getAggregationLabel(aggregationType)} <span className="text-xs">{getPeriodLabel()}</span>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow>
+            <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Previsto</TableCell>
+            {months.map(month => {
+              const isCurrentMonth = month.key === currentMonth;
+              const inValidity = isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month);
+              const value = normalizedTargets[month.key];
+              const hasValue = value !== null && value !== undefined && Number.isFinite(Number(value));
+              return (
+                <TableCell 
+                  key={month.key} 
+                  className={cn(
+                    "text-center min-w-20",
+                    isCurrentMonth && "bg-blue-50 dark:bg-blue-900/20",
+                    !isCurrentMonth && inValidity && "bg-green-50 dark:bg-green-900/20"
+                  )}
+                >
+                  {hasValue ? (
+                    <span className={value < 0 ? "text-red-600" : ""}>
+                      {formatValueForTable(value, unit)}
+                    </span>
+                  ) : '-'}
+                </TableCell>
+              );
+            })}
+            <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
+              {targetTotal !== 0 ? (
+                <span className={targetTotal < 0 ? "text-red-600" : ""}>
+                  {formatValueForTable(targetTotal, unit)}
+                </span>
+              ) : '-'}
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Realizado</TableCell>
+            {months.map(month => {
+              const isCurrentMonth = month.key === currentMonth;
+              const inValidity = isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month);
+              const value = normalizedActuals[month.key];
+              const hasValue = value !== null && value !== undefined && Number.isFinite(Number(value));
+              
+              return (
+                <TableCell 
+                  key={month.key} 
+                  className={cn(
+                    "text-center min-w-20",
+                    isCurrentMonth && "bg-blue-50 dark:bg-blue-900/20",
+                    !isCurrentMonth && inValidity && "bg-green-50 dark:bg-green-900/20"
+                  )}
+                >
+                  {hasValue ? (
+                    <span className={value < 0 ? "text-red-600 font-semibold" : ""}>
+                      {formatValueForTable(value, unit)}
+                    </span>
+                  ) : '-'}
+                </TableCell>
+              );
+            })}
+            <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
+              {actualTotal !== 0 ? (
+                <span className={actualTotal < 0 ? "text-red-600" : ""}>
+                  {formatValueForTable(actualTotal, unit)}
+                </span>
+              ) : '-'}
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">% Atingimento</TableCell>
+            {months.map(month => {
+              const isCurrentMonth = month.key === currentMonth;
+              const inValidity = isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month);
+              const actual = normalizedActuals[month.key];
+              const target = normalizedTargets[month.key];
+              const hasActual = typeof actual === 'number' && Number.isFinite(actual);
+              const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
+              
+              const status = hasActual && hasTarget ? calculateKRStatus(actual, target, targetDirection) : null;
+              
+              return (
+                <TableCell 
+                  key={month.key} 
+                  className={cn(
+                    "text-center min-w-20",
+                    isCurrentMonth && "bg-blue-50 dark:bg-blue-900/20",
+                    !isCurrentMonth && inValidity && "bg-green-50 dark:bg-green-900/20"
+                  )}
+                >
+                  {status ? (
+                    <span className={`${status.color} font-semibold`}>
+                      {status.percentage.toFixed(1)}%
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </TableCell>
+              );
+            })}
+            <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
+              {targetTotal !== 0 ? (
+                (() => {
+                  const totalStatus = calculateKRStatus(actualTotal, targetTotal, targetDirection);
+                  return (
+                    <span className={`${totalStatus.color} font-semibold`}>
+                      {preCalculatedPercentage.toFixed(1)}%
+                    </span>
+                  );
+                })()
+              ) : (
+                <span className="text-gray-400">-</span>
+              )}
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   return (
     <Card className="mb-6">
       <CardHeader className="pb-3 flex flex-row items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CardTitle className="text-lg">Evolução Mensal - Previsto vs Realizado</CardTitle>
+        <div className="flex items-center gap-2 flex-wrap">
+          <CardTitle className="text-lg">{getChartTitle()}</CardTitle>
+          {isPeriodBased && (
+            <Badge className={getFrequencyBadgeColor(frequency)}>
+              {getFrequencyLabel(frequency)}
+            </Badge>
+          )}
           {keyResult.start_month && keyResult.end_month && (
             <Badge variant="outline" className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800">
               📅 {formatValidityPeriod(keyResult.start_month, keyResult.end_month)}
             </Badge>
           )}
-          {useDualAxis && (
+          {!isPeriodBased && useDualAxis && (
             <Badge variant="outline" className="text-xs">
               Escalas independentes (3 eixos)
             </Badge>
@@ -323,290 +834,9 @@ const normalizedActuals: Record<string, number | null> =
       </CardHeader>
       <CardContent>
         {viewMode === 'chart' ? (
-          <div className="h-[270px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 20, right: useDualAxis ? 60 : 35, left: 10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis 
-                  dataKey="month" 
-                  className="text-xs fill-muted-foreground"
-                />
-                <YAxis 
-                  yAxisId="left"
-                  className="text-xs fill-muted-foreground"
-                  tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
-                  domain={['auto', 'auto']}
-                  includeHidden={true}
-                />
-                <YAxis 
-                  yAxisId="right"
-                  orientation="right"
-                  className="text-xs fill-muted-foreground"
-                  tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
-                  domain={['auto', 'auto']}
-                  includeHidden={true}
-                  hide={!useDualAxis}
-                />
-                <YAxis 
-                  yAxisId="barAxis"
-                  orientation="right"
-                  className="text-xs fill-muted-foreground"
-                  tickFormatter={(value) => `${value.toLocaleString('pt-BR')}`}
-                  domain={[0, barAxisMax]}
-                  label={{ 
-                    value: 'Total', 
-                    angle: -90, 
-                    position: 'insideRight',
-                    style: { textAnchor: 'middle', fontSize: '12px', fill: 'hsl(var(--muted-foreground))' }
-                  }}
-                />
-                <Tooltip 
-                  formatter={(value: number | null, name: string) => {
-                    if (value === null || value === undefined || !Number.isFinite(Number(value))) {
-                      return ['Sem dados', name];
-                    }
-                    
-                    // Determine the label based on the dataKey name
-                    let label = 'Realizado';
-                    if (name === 'previsto' || name === 'previstoBar') {
-                      label = 'Previsto (Meta)';
-                    } else if (name === 'realizado' || name === 'realizadoBar') {
-                      label = 'Realizado';
-                    }
-                    
-                    return [formatValueWithUnit(Number(value), unit), label];
-                  }}
-                  labelFormatter={(label) => label.includes('Total') ? label : `Mês: ${label}`}
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--background))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px',
-                  }}
-                />
-                <Legend 
-                  formatter={(value) => {
-                    if (value === 'previstoBar' || value === 'realizadoBar') return null;
-                    
-                    return (
-                      <span className="text-sm">
-                        {value === 'previsto' ? 'Previsto (Meta)' : 'Realizado'}
-                      </span>
-                    );
-                  }}
-                />
-                {(() => {
-                  const validity = getValidityIndices();
-                  if (!validity) return null;
-                  return (
-                    <ReferenceArea
-                      x1={validity.startMonth}
-                      x2={validity.endMonth}
-                      yAxisId="left"
-                      fill="hsl(142.1 76.2% 36.3%)"
-                      fillOpacity={0.1}
-                      strokeOpacity={0.3}
-                    />
-                  );
-                })()}
-                <ReferenceLine y={0} yAxisId="left" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
-                {useDualAxis && <ReferenceLine y={0} yAxisId="right" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />}
-                <ReferenceLine y={0} yAxisId="barAxis" stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
-                <Line 
-                  type="monotone" 
-                  dataKey="previsto"
-                  yAxisId="left"
-                  stroke="hsl(var(--muted-foreground))" 
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  connectNulls={false}
-                  dot={{ fill: 'hsl(var(--muted-foreground))', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, fill: 'hsl(var(--muted-foreground))' }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="realizado"
-                  yAxisId={useDualAxis ? 'right' : 'left'}
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={3}
-                  connectNulls={false}
-                  dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
-                />
-                <Bar 
-                  dataKey="previstoBar"
-                  yAxisId="barAxis"
-                  fill="hsl(var(--muted-foreground))"
-                  opacity={0.5}
-                  radius={[4, 4, 0, 0]}
-                  barSize={30}
-                  name="Previsto (Meta)"
-                  label={{ 
-                    position: 'top', 
-                    formatter: (value: number) => formatValueWithUnit(value, unit),
-                    style: { fontSize: '11px', fill: 'hsl(var(--muted-foreground))' }
-                  }}
-                />
-                <Bar 
-                  dataKey="realizadoBar"
-                  yAxisId="barAxis"
-                  fill="hsl(var(--primary))"
-                  radius={[4, 4, 0, 0]}
-                  barSize={30}
-                  name="Realizado"
-                  label={{ 
-                    position: 'top', 
-                    formatter: (value: number) => formatValueWithUnit(value, unit),
-                    style: { fontSize: '11px', fill: 'hsl(var(--primary))', fontWeight: 600 }
-                  }}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
+          isPeriodBased ? renderPeriodChart() : renderMonthlyChart()
         ) : (
-          <div className="rounded-md border overflow-x-scroll [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar]:block [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-thumb]:rounded-full" style={{ scrollbarColor: '#9ca3af #f3f4f6', scrollbarWidth: 'thin' }}>
-            <Table className="relative">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-32 sticky left-0 bg-background z-10 border-r">Indicador</TableHead>
-                  {months.map(month => {
-                    const isCurrentMonth = month.key === currentMonth;
-                    const inValidity = isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month);
-                    return (
-                      <TableHead 
-                        key={month.key} 
-                        className={cn(
-                          "text-center min-w-20",
-                          inValidity && "bg-green-50 dark:bg-green-900/20 border-b-2 border-green-300 dark:border-green-700"
-                        )}
-                      >
-                        {month.name}
-                        {isCurrentMonth && (
-                          <span className="block text-xs text-primary">(atual)</span>
-                        )}
-                      </TableHead>
-                    );
-                  })}
-                  <TableHead className="text-center min-w-24 bg-muted font-semibold">
-                    {getAggregationLabel(aggregationType)} <span className="text-xs">{getPeriodLabel()}</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Previsto</TableCell>
-                  {months.map(month => {
-                    const isCurrentMonth = month.key === currentMonth;
-                    const inValidity = isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month);
-                    const value = normalizedTargets[month.key];
-                    const hasValue = value !== null && value !== undefined && Number.isFinite(Number(value));
-                    return (
-                      <TableCell 
-                        key={month.key} 
-                        className={cn(
-                          "text-center min-w-20",
-                          isCurrentMonth && "bg-blue-50 dark:bg-blue-900/20",
-                          !isCurrentMonth && inValidity && "bg-green-50 dark:bg-green-900/20"
-                        )}
-                      >
-                        {hasValue ? (
-                          <span className={value < 0 ? "text-red-600" : ""}>
-                            {formatValueForTable(value, unit)}
-                          </span>
-                        ) : '-'}
-                      </TableCell>
-                    );
-                  })}
-                  <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
-                    {targetTotal !== 0 ? (
-                      <span className={targetTotal < 0 ? "text-red-600" : ""}>
-                        {formatValueForTable(targetTotal, unit)}
-                      </span>
-                    ) : '-'}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">Realizado</TableCell>
-                  {months.map(month => {
-                    const isCurrentMonth = month.key === currentMonth;
-                    const inValidity = isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month);
-                    const value = normalizedActuals[month.key];
-                    const hasValue = value !== null && value !== undefined && Number.isFinite(Number(value));
-                    
-                    return (
-                      <TableCell 
-                        key={month.key} 
-                        className={cn(
-                          "text-center min-w-20",
-                          isCurrentMonth && "bg-blue-50 dark:bg-blue-900/20",
-                          !isCurrentMonth && inValidity && "bg-green-50 dark:bg-green-900/20"
-                        )}
-                      >
-                        {hasValue ? (
-                          <span className={value < 0 ? "text-red-600 font-semibold" : ""}>
-                            {formatValueForTable(value, unit)}
-                          </span>
-                        ) : '-'}
-                      </TableCell>
-                    );
-                  })}
-                  <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
-                    {actualTotal !== 0 ? (
-                      <span className={actualTotal < 0 ? "text-red-600" : ""}>
-                        {formatValueForTable(actualTotal, unit)}
-                      </span>
-                    ) : '-'}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium sticky left-0 bg-background z-10 border-r">% Atingimento</TableCell>
-                  {months.map(month => {
-                    const isCurrentMonth = month.key === currentMonth;
-                    const inValidity = isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month);
-                    const actual = normalizedActuals[month.key];
-                    const target = normalizedTargets[month.key];
-                    const hasActual = typeof actual === 'number' && Number.isFinite(actual);
-                    const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
-                    
-                    const status = hasActual && hasTarget ? calculateKRStatus(actual, target, targetDirection) : null;
-                    
-                    return (
-                      <TableCell 
-                        key={month.key} 
-                        className={cn(
-                          "text-center min-w-20",
-                          isCurrentMonth && "bg-blue-50 dark:bg-blue-900/20",
-                          !isCurrentMonth && inValidity && "bg-green-50 dark:bg-green-900/20"
-                        )}
-                      >
-                        {status ? (
-                          <span className={`${status.color} font-semibold`}>
-                            {status.percentage.toFixed(1)}%
-                          </span>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                    );
-                  })}
-                  <TableCell className="text-center bg-gray-100 font-semibold min-w-24">
-                    {targetTotal !== 0 ? (
-                      (() => {
-                        // Use pre-calculated percentage from database
-                        const totalStatus = calculateKRStatus(actualTotal, targetTotal, targetDirection);
-                        return (
-                          <span className={`${totalStatus.color} font-semibold`}>
-                            {preCalculatedPercentage.toFixed(1)}%
-                          </span>
-                        );
-                      })()
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
+          isPeriodBased ? renderPeriodTable() : renderMonthlyTable()
         )}
       </CardContent>
     </Card>
