@@ -919,43 +919,23 @@ export const KeyResultChart = ({
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Label className="text-sm font-medium whitespace-nowrap">Ano:</Label>
-            <Select 
-              value={selectedYear.toString()} 
-              onValueChange={(value) => onYearChange?.(parseInt(value))}
-            >
-              <SelectTrigger className="w-24 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {finalYearOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value.toString()}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setViewMode('chart')}
-              className={`h-8 w-8 ${viewMode === 'chart' ? 'bg-accent' : ''}`}
-            >
-              <BarChart3 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setViewMode('table')}
-              className={`h-8 w-8 ${viewMode === 'table' ? 'bg-accent' : ''}`}
-            >
-              <TableIcon className="h-4 w-4" />
-            </Button>
-          </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setViewMode('chart')}
+            className={`h-8 w-8 ${viewMode === 'chart' ? 'bg-accent' : ''}`}
+          >
+            <BarChart3 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setViewMode('table')}
+            className={`h-8 w-8 ${viewMode === 'table' ? 'bg-accent' : ''}`}
+          >
+            <TableIcon className="h-4 w-4" />
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
