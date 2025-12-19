@@ -375,17 +375,17 @@ export const KeyResultChart = ({
             }}
           >
             {periodChartData.map((entry, index) => {
-              const status = entry.status;
-              let fillColor = 'hsl(var(--primary))';
+              const percentage = entry.percentage;
+              let fillColor: string;
               
-              if (status?.isExcellent) {
-                fillColor = 'hsl(142.1 76.2% 36.3%)';
-              } else if (status?.isGood) {
-                fillColor = 'hsl(var(--primary))';
-              } else if (entry.percentage >= 50) {
-                fillColor = 'hsl(38 92% 50%)';
-              } else if (entry.percentage > 0) {
-                fillColor = 'hsl(0 84.2% 60.2%)';
+              if (percentage > 105) {
+                fillColor = '#3b82f6'; // blue-500
+              } else if (percentage >= 100) {
+                fillColor = '#22c55e'; // green-500
+              } else if (percentage >= 71) {
+                fillColor = '#eab308'; // yellow-500
+              } else {
+                fillColor = '#ef4444'; // red-500
               }
               
               return <Cell key={`cell-${index}`} fill={fillColor} />;
