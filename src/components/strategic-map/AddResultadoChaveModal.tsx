@@ -194,7 +194,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
 
       await onSave({
         ...resultadoChaveData,
-        frequency: resultadoChaveData.frequency as 'monthly' | 'quarterly' | 'semesterly' | 'yearly'
+        frequency: resultadoChaveData.frequency as 'monthly' | 'bimonthly' | 'quarterly' | 'semesterly' | 'yearly'
       });
       
       // Reset form
@@ -432,6 +432,12 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                           Mensal (12 meses)
                         </div>
                       </SelectItem>
+                      <SelectItem value="bimonthly">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={getFrequencyBadgeColor('bimonthly')}>B</Badge>
+                          Bimestral (B1-B6)
+                        </div>
+                      </SelectItem>
                       <SelectItem value="quarterly">
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className={getFrequencyBadgeColor('quarterly')}>Q</Badge>
@@ -453,6 +459,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">
+                    {formData.frequency === 'bimonthly' && 'Configure metas por bimestre (B1, B2, B3, B4, B5, B6)'}
                     {formData.frequency === 'quarterly' && 'Configure metas por trimestre (Q1, Q2, Q3, Q4)'}
                     {formData.frequency === 'semesterly' && 'Configure metas por semestre (S1, S2)'}
                     {formData.frequency === 'yearly' && 'Configure apenas a meta anual'}
