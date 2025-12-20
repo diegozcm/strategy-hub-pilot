@@ -60,6 +60,7 @@ export const ObjectivesPage: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [pillarFilter, setPillarFilter] = useState<string>('all');
   
   const [isCreateObjectiveOpen, setIsCreateObjectiveOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -265,6 +266,7 @@ export const ObjectivesPage: React.FC = () => {
     const matchesSearch = objective.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          objective.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPlan = selectedPlan === 'all' || objective.plan_id === selectedPlan;
+    const matchesPillar = pillarFilter === 'all' || objective.pillar_id === pillarFilter;
     
     let matchesStatus = statusFilter === 'all';
     if (!matchesStatus) {
@@ -291,7 +293,7 @@ export const ObjectivesPage: React.FC = () => {
       }
     }
     
-    return matchesSearch && matchesPlan && matchesStatus;
+    return matchesSearch && matchesPlan && matchesPillar && matchesStatus;
   }).sort((a, b) => (b.weight || 1) - (a.weight || 1)); // Ordenar por peso (maior primeiro)
 
   const handleEditKeyResult = (keyResult: KeyResult) => {
@@ -591,11 +593,33 @@ export const ObjectivesPage: React.FC = () => {
                 />
               </div>
               
+              <Select value={pillarFilter} onValueChange={setPillarFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Todos os pilares" />
+                </SelectTrigger>
+                <SelectContent className="bg-background border shadow-lg z-50">
+                  <SelectItem value="all">
+                    <span>Todos os pilares</span>
+                  </SelectItem>
+                  {pillars.map((pillar) => (
+                    <SelectItem key={pillar.id} value={pillar.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full flex-shrink-0" 
+                          style={{ backgroundColor: pillar.color }} 
+                        />
+                        <span>{pillar.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-44">
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-background border shadow-lg z-50">
                   <SelectItem value="all">Todos os status</SelectItem>
                   <SelectItem value="excellent">
                     <div className="flex items-center gap-2">
