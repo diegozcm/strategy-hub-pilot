@@ -13,7 +13,7 @@ import { KeyResult, KRInitiative, InitiativeStatus, InitiativePriority } from '@
 import { useState } from 'react';
 import { Plus, Calendar, Target, AlertCircle, Edit, Trash2, User, DollarSign } from 'lucide-react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
-import { parseISO } from 'date-fns';
+import { parseISO, format } from 'date-fns';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { useEffect } from 'react';
@@ -30,6 +30,12 @@ const quarterToDates = (quarter: 1 | 2 | 3 | 4, year: number) => {
   };
 };
 
+// Helper: Converter ano inteiro para datas de início e fim
+const yearToDates = (year: number) => ({
+  start_date: `${year}-01-01`,
+  end_date: `${year}-12-31`
+});
+
 // Helper: Detectar quarter a partir de uma data
 const dateToQuarter = (dateString: string): { quarter: 1 | 2 | 3 | 4, year: number } | null => {
   if (!dateString) return null;
@@ -40,19 +46,58 @@ const dateToQuarter = (dateString: string): { quarter: 1 | 2 | 3 | 4, year: numb
   return { quarter, year };
 };
 
-// Helper: Formatar quarter para exibição "Q1 (jan-mar) 2026"
-const formatQuarterDisplay = (startDate: string): string => {
-  const quarterInfo = dateToQuarter(startDate);
-  if (!quarterInfo) return startDate;
+// Helper: Detectar tipo de período (quarter, year, custom)
+const detectPeriodType = (startDate: string, endDate: string): { type: string; year: number } => {
+  const startInfo = dateToQuarter(startDate);
+  const endInfo = dateToQuarter(endDate);
   
-  const quarterLabels: Record<number, string> = {
-    1: 'Q1 (jan-mar)',
-    2: 'Q2 (abr-jun)',
-    3: 'Q3 (jul-set)',
-    4: 'Q4 (out-dez)'
-  };
+  if (!startInfo || !endInfo) {
+    return { type: 'custom', year: new Date().getFullYear() };
+  }
   
-  return `${quarterLabels[quarterInfo.quarter]} ${quarterInfo.year}`;
+  // Verificar se é ano todo
+  if (startDate.endsWith('-01-01') && endDate.endsWith('-12-31') && startInfo.year === endInfo.year) {
+    return { type: 'year', year: startInfo.year };
+  }
+  
+  // Verificar se é um quarter válido (mesmo quarter, mesmas datas esperadas)
+  if (startInfo.quarter === endInfo.quarter && startInfo.year === endInfo.year) {
+    const expectedDates = quarterToDates(startInfo.quarter, startInfo.year);
+    if (startDate === expectedDates.start_date && endDate === expectedDates.end_date) {
+      return { type: startInfo.quarter.toString(), year: startInfo.year };
+    }
+  }
+  
+  // Caso contrário é personalizado
+  return { type: 'custom', year: startInfo.year };
+};
+
+// Helper: Formatar período para exibição
+const formatPeriodDisplay = (startDate: string, endDate: string): string => {
+  const periodInfo = detectPeriodType(startDate, endDate);
+  
+  if (periodInfo.type === 'year') {
+    return `Ano Todo ${periodInfo.year}`;
+  }
+  
+  if (['1', '2', '3', '4'].includes(periodInfo.type)) {
+    const quarterLabels: Record<string, string> = {
+      '1': 'Q1 (jan-mar)',
+      '2': 'Q2 (abr-jun)',
+      '3': 'Q3 (jul-set)',
+      '4': 'Q4 (out-dez)'
+    };
+    return `${quarterLabels[periodInfo.type]} ${periodInfo.year}`;
+  }
+  
+  // Personalizado - mostrar datas
+  try {
+    const start = format(parseISO(startDate), 'dd/MM/yyyy');
+    const end = format(parseISO(endDate), 'dd/MM/yyyy');
+    return `${start} - ${end}`;
+  } catch {
+    return `${startDate} - ${endDate}`;
+  }
 };
 
 interface KRInitiativesModalProps {
@@ -83,12 +128,14 @@ const statusColors: Record<InitiativeStatus, string> = {
   on_hold: 'bg-muted text-muted-foreground'
 };
 
-// Quarter options for display
-const quarterSelectOptions = [
+// Period options for display
+const periodSelectOptions = [
   { value: '1', label: 'Q1 (Jan - Mar)' },
   { value: '2', label: 'Q2 (Abr - Jun)' },
   { value: '3', label: 'Q3 (Jul - Set)' },
-  { value: '4', label: 'Q4 (Out - Dez)' }
+  { value: '4', label: 'Q4 (Out - Dez)' },
+  { value: 'year', label: 'Ano Todo' },
+  { value: 'custom', label: 'Personalizado' }
 ];
 
 export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesModalProps) => {
@@ -103,7 +150,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
   // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedQuarterNum, setSelectedQuarterNum] = useState<string>('');
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('');
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -126,14 +173,25 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
     }
   }, [yearOptions, selectedYear]);
 
-  // Auto-update dates when quarter or year changes
+  // Auto-update dates when period or year changes
   useEffect(() => {
-    if (selectedQuarterNum && selectedYear) {
-      const dates = quarterToDates(parseInt(selectedQuarterNum) as 1 | 2 | 3 | 4, selectedYear);
+    if (!selectedPeriod || !selectedYear) return;
+    
+    // Modo personalizado: não auto-atualiza datas
+    if (selectedPeriod === 'custom') return;
+    
+    if (selectedPeriod === 'year') {
+      // Ano todo
+      const dates = yearToDates(selectedYear);
+      setStartDate(dates.start_date);
+      setEndDate(dates.end_date);
+    } else if (['1', '2', '3', '4'].includes(selectedPeriod)) {
+      // Quarter específico
+      const dates = quarterToDates(parseInt(selectedPeriod) as 1 | 2 | 3 | 4, selectedYear);
       setStartDate(dates.start_date);
       setEndDate(dates.end_date);
     }
-  }, [selectedQuarterNum, selectedYear]);
+  }, [selectedPeriod, selectedYear]);
   const [status, setStatus] = useState<InitiativeStatus>('planned');
   const [priority, setPriority] = useState<InitiativePriority>('medium');
   const [responsible, setResponsible] = useState('');
@@ -148,7 +206,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setSelectedQuarterNum('');
+    setSelectedPeriod('');
     setStartDate('');
     setEndDate('');
     setStatus('planned');
@@ -196,14 +254,10 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
     setTitle(initiative.title);
     setDescription(initiative.description || '');
     
-    // Detectar quarter da iniciativa existente
-    const quarterInfo = dateToQuarter(initiative.start_date);
-    if (quarterInfo) {
-      setSelectedQuarterNum(quarterInfo.quarter.toString());
-      setSelectedYear(quarterInfo.year);
-    } else {
-      setSelectedQuarterNum('');
-    }
+    // Detectar tipo de período da iniciativa existente
+    const periodInfo = detectPeriodType(initiative.start_date, initiative.end_date);
+    setSelectedPeriod(periodInfo.type);
+    setSelectedYear(periodInfo.year);
     
     setStartDate(initiative.start_date);
     setEndDate(initiative.end_date);
@@ -330,16 +384,16 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Quarter *</Label>
+                    <Label>Período *</Label>
                     <Select 
-                      value={selectedQuarterNum} 
-                      onValueChange={(value) => setSelectedQuarterNum(value)}
+                      value={selectedPeriod} 
+                      onValueChange={(value) => setSelectedPeriod(value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {quarterSelectOptions.map((opt) => (
+                        {periodSelectOptions.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}
                           </SelectItem>
@@ -366,6 +420,30 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Custom date fields - only show when "Personalizado" is selected */}
+                  {selectedPeriod === 'custom' && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="startDate">Data de Início *</Label>
+                        <Input
+                          id="startDate"
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="endDate">Data de Fim *</Label>
+                        <Input
+                          id="endDate"
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                        />
+                      </div>
+                    </>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="status">Status</Label>
@@ -490,7 +568,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                           <CardTitle className="text-base">{initiative.title}</CardTitle>
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Calendar className="h-3 w-3" />
-                            {formatQuarterDisplay(initiative.start_date)}
+                            {formatPeriodDisplay(initiative.start_date, initiative.end_date)}
                             {initiative.responsible && (
                               <>
                                 <User className="h-3 w-3 ml-2" />
