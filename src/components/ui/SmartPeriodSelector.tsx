@@ -65,6 +65,9 @@ interface SmartPeriodSelectorProps {
   // Modo compacto: não mostra o select de período específico (usado no modal de KR)
   compact?: boolean;
   
+  // Ocultar o select de ano quando yearly está selecionado (usado no modal de KR que já tem seletor próprio)
+  hideYearSelect?: boolean;
+  
   // Frequência do KR - filtra as opções de período disponíveis
   krFrequency?: KRFrequency;
 }
@@ -116,6 +119,7 @@ export const SmartPeriodSelector: React.FC<SmartPeriodSelectorProps> = ({
   onYTDClick,
   className,
   compact = false,
+  hideYearSelect = false,
   krFrequency,
 }) => {
   // Determinar se é um período granular (não YTD nem yearly)
@@ -236,8 +240,8 @@ export const SmartPeriodSelector: React.FC<SmartPeriodSelectorProps> = ({
           Ano
         </Button>
 
-        {/* Select de Ano - aparece quando 'yearly' está selecionado */}
-        {selectedPeriod === 'yearly' && yearOptions.length > 0 && (
+        {/* Select de Ano - aparece quando 'yearly' está selecionado E hideYearSelect é false */}
+        {selectedPeriod === 'yearly' && yearOptions.length > 0 && !hideYearSelect && (
           <>
             <div className="h-6 w-px bg-border" />
             <Select

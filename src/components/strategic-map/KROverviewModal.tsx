@@ -489,6 +489,7 @@ export const KROverviewModal = ({
               onYTDClick={handleYTDClick}
               className="flex-wrap"
               compact={true}
+              hideYearSelect={true}
               krFrequency={(currentKeyResult.frequency as KRFrequency) || 'monthly'}
             />
           </div>
