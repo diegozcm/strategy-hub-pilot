@@ -7,8 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
+import { ProgressSlider } from '@/components/ui/progress-slider';
 import { KeyResult, KRInitiative, InitiativeStatus, InitiativePriority } from '@/types/strategic-map';
 import { useState } from 'react';
 import { Plus, Calendar, Target, AlertCircle, Edit, Trash2, User, DollarSign } from 'lucide-react';
@@ -619,19 +619,14 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                           <h4 className="font-medium text-sm">Progresso</h4>
                           <span className="text-sm text-muted-foreground">{initiative.progress_percentage}%</span>
                         </div>
-                        <div className="group relative">
-                          <Progress value={initiative.progress_percentage} className="w-full cursor-pointer hover:opacity-80 transition-opacity" />
-                          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
-                            <Slider
-                              value={[initiative.progress_percentage]}
-                              onValueChange={(value) => handleUpdateProgress(initiative.id, value[0])}
-                              max={100}
-                              min={0}
-                              step={5}
-                              className="w-full h-full"
-                            />
-                          </div>
-                        </div>
+                        <ProgressSlider
+                          value={initiative.progress_percentage ?? 0}
+                          onValueCommit={(value) => handleUpdateProgress(initiative.id, value)}
+                          max={100}
+                          min={0}
+                          step={5}
+                          className="w-full"
+                        />
                       </div>
 
                       {initiative.completion_notes && (
