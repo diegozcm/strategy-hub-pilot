@@ -128,6 +128,18 @@ const statusColors: Record<InitiativeStatus, string> = {
   on_hold: 'bg-muted text-muted-foreground'
 };
 
+// Helper: Mapear progresso para status automático
+const getStatusFromProgress = (progress: number): InitiativeStatus => {
+  if (progress >= 100) return 'completed';
+  if (progress > 0) return 'in_progress';
+  return 'planned';
+};
+
+// Helper: Verificar se o status atual bloqueia alterações de progresso
+const isProgressLocked = (status: InitiativeStatus): boolean => {
+  return status === 'cancelled' || status === 'on_hold';
+};
+
 // Period options for display
 const periodSelectOptions = [
   { value: '1', label: 'Q1 (Jan - Mar)' },
@@ -280,7 +292,21 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
   };
 
   const handleUpdateProgress = async (initiativeId: string, newProgress: number) => {
-    await updateInitiative(initiativeId, { progress_percentage: newProgress });
+    // Encontrar a iniciativa atual
+    const initiative = initiatives.find(i => i.id === initiativeId);
+    if (!initiative) return;
+    
+    // Não permitir mudança se estiver cancelada ou em espera
+    if (isProgressLocked(initiative.status)) return;
+    
+    // Calcular o novo status baseado no progresso
+    const newStatus = getStatusFromProgress(newProgress);
+    
+    // Atualizar progresso E status juntos
+    await updateInitiative(initiativeId, { 
+      progress_percentage: newProgress,
+      status: newStatus
+    });
   };
 
 
@@ -627,7 +653,13 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                           step={5}
                           className="w-full"
                           colorScheme="initiatives"
+                          disabled={isProgressLocked(initiative.status)}
                         />
+                        {isProgressLocked(initiative.status) && (
+                          <p className="text-xs text-muted-foreground italic mt-1">
+                            Progresso bloqueado — Iniciativa {statusLabels[initiative.status].toLowerCase()}
+                          </p>
+                        )}
                       </div>
 
                       {initiative.completion_notes && (
