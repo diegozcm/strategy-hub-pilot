@@ -224,14 +224,15 @@ export const KeyResultChart = ({
     // Ex: Q1 -> dados em 2026-01, Q2 -> dados em 2026-04, etc.
     const firstMonthKey = period.monthKeys[0];
     
-    const target = normalizedTargets[firstMonthKey];
-    const actual = normalizedActuals[firstMonthKey];
+    // Usar ?? null para converter undefined (chave inexistente) para null
+    const target = normalizedTargets[firstMonthKey] ?? null;
+    const actual = normalizedActuals[firstMonthKey] ?? null;
     
     const meta = target !== null ? target : 0;
     const realizado = actual !== null ? actual : 0;
     
-    // Rastrear se há dados reais (actual não é null)
-    const hasActualData = actual !== null;
+    // Rastrear se há dados reais (actual não é null NEM undefined)
+    const hasActualData = actual !== null && actual !== undefined;
 
     const percentage = meta > 0 ? (realizado / meta) * 100 : 0;
     const status = calculateKRStatus(realizado, meta, targetDirection);
