@@ -567,22 +567,27 @@ export const KROverviewModal = ({
               selectedSemester={selectedPeriod === 'semesterly' ? selectedSemester : undefined}
               selectedBimonth={selectedPeriod === 'bimonthly' ? selectedBimonth : undefined}
               periodActual={(() => {
-                // Get current metrics based on selected period
+                // Get current metrics based on selected period - preservar null quando não há dados
                 if (selectedPeriod === 'monthly' && selectedMonth) {
                   const monthKey = `${selectedMonthYear}-${String(selectedMonth).padStart(2, '0')}`;
-                  return (monthlyActual as Record<string, number>)[monthKey] ?? 0;
+                  const value = (monthlyActual as Record<string, number | null | undefined>)[monthKey];
+                  return value === undefined || value === null ? null : value;
                 }
                 if (selectedPeriod === 'quarterly' && selectedQuarter) {
                   const quarterKey = `q${selectedQuarter}_actual` as keyof typeof currentKeyResult;
-                  return (currentKeyResult[quarterKey] as number) ?? 0;
+                  const value = currentKeyResult[quarterKey] as number | null | undefined;
+                  return value === undefined || value === null ? null : value;
                 }
                 if (selectedPeriod === 'semesterly' && selectedSemester) {
-                  // Sum quarters for semester
-                  if (selectedSemester === 1) {
-                    return ((currentKeyResult.q1_actual ?? 0) + (currentKeyResult.q2_actual ?? 0));
-                  } else {
-                    return ((currentKeyResult.q3_actual ?? 0) + (currentKeyResult.q4_actual ?? 0));
+                  // Verificar se ambos os quarters têm dados
+                  const q1 = selectedSemester === 1 ? currentKeyResult.q1_actual : currentKeyResult.q3_actual;
+                  const q2 = selectedSemester === 1 ? currentKeyResult.q2_actual : currentKeyResult.q4_actual;
+                  
+                  // Se ambos são null, retornar null
+                  if ((q1 === null || q1 === undefined) && (q2 === null || q2 === undefined)) {
+                    return null;
                   }
+                  return ((q1 ?? 0) + (q2 ?? 0));
                 }
                 if (selectedPeriod === 'bimonthly' && selectedBimonth) {
                   const bimonthMonths: Record<number, [number, number]> = {
@@ -591,26 +596,51 @@ export const KROverviewModal = ({
                   const [m1, m2] = bimonthMonths[selectedBimonth];
                   const m1Key = `${selectedBimonthYear}-${String(m1).padStart(2, '0')}`;
                   const m2Key = `${selectedBimonthYear}-${String(m2).padStart(2, '0')}`;
-                  return ((monthlyActual as Record<string, number>)[m1Key] ?? 0) + ((monthlyActual as Record<string, number>)[m2Key] ?? 0);
+                  
+                  const v1 = (monthlyActual as Record<string, number | null | undefined>)[m1Key];
+                  const v2 = (monthlyActual as Record<string, number | null | undefined>)[m2Key];
+                  
+                  // Se ambos são null/undefined, retornar null
+                  if ((v1 === null || v1 === undefined) && (v2 === null || v2 === undefined)) {
+                    return null;
+                  }
+                  return ((v1 ?? 0) + (v2 ?? 0));
+                }
+                if (selectedPeriod === 'yearly') {
+                  // Verificar se há algum valor actual no ano
+                  const actualValues = Object.entries(monthlyActual as Record<string, number | null | undefined>)
+                    .filter(([key]) => key.startsWith(`${selectedYear}-`))
+                    .map(([, v]) => v);
+                  
+                  const hasAnyActual = actualValues.some(v => v !== null && v !== undefined);
+                  if (!hasAnyActual) return null;
+                  
+                  return actualValues
+                    .filter((v): v is number => v !== null && v !== undefined)
+                    .reduce((sum, v) => sum + v, 0);
                 }
                 return undefined;
               })()}
               periodTarget={(() => {
-                // Get target for selected period
+                // Get target for selected period - preservar null quando não há dados
                 if (selectedPeriod === 'monthly' && selectedMonth) {
                   const monthKey = `${selectedMonthYear}-${String(selectedMonth).padStart(2, '0')}`;
-                  return (monthlyTargets as Record<string, number>)[monthKey] ?? 0;
+                  const value = (monthlyTargets as Record<string, number | null | undefined>)[monthKey];
+                  return value === undefined || value === null ? null : value;
                 }
                 if (selectedPeriod === 'quarterly' && selectedQuarter) {
                   const quarterKey = `q${selectedQuarter}_target` as keyof typeof currentKeyResult;
-                  return (currentKeyResult[quarterKey] as number) ?? 0;
+                  const value = currentKeyResult[quarterKey] as number | null | undefined;
+                  return value === undefined || value === null ? null : value;
                 }
                 if (selectedPeriod === 'semesterly' && selectedSemester) {
-                  if (selectedSemester === 1) {
-                    return ((currentKeyResult.q1_target ?? 0) + (currentKeyResult.q2_target ?? 0));
-                  } else {
-                    return ((currentKeyResult.q3_target ?? 0) + (currentKeyResult.q4_target ?? 0));
+                  const q1 = selectedSemester === 1 ? currentKeyResult.q1_target : currentKeyResult.q3_target;
+                  const q2 = selectedSemester === 1 ? currentKeyResult.q2_target : currentKeyResult.q4_target;
+                  
+                  if ((q1 === null || q1 === undefined) && (q2 === null || q2 === undefined)) {
+                    return null;
                   }
+                  return ((q1 ?? 0) + (q2 ?? 0));
                 }
                 if (selectedPeriod === 'bimonthly' && selectedBimonth) {
                   const bimonthMonths: Record<number, [number, number]> = {
@@ -619,7 +649,26 @@ export const KROverviewModal = ({
                   const [m1, m2] = bimonthMonths[selectedBimonth];
                   const m1Key = `${selectedBimonthYear}-${String(m1).padStart(2, '0')}`;
                   const m2Key = `${selectedBimonthYear}-${String(m2).padStart(2, '0')}`;
-                  return ((monthlyTargets as Record<string, number>)[m1Key] ?? 0) + ((monthlyTargets as Record<string, number>)[m2Key] ?? 0);
+                  
+                  const v1 = (monthlyTargets as Record<string, number | null | undefined>)[m1Key];
+                  const v2 = (monthlyTargets as Record<string, number | null | undefined>)[m2Key];
+                  
+                  if ((v1 === null || v1 === undefined) && (v2 === null || v2 === undefined)) {
+                    return null;
+                  }
+                  return ((v1 ?? 0) + (v2 ?? 0));
+                }
+                if (selectedPeriod === 'yearly') {
+                  const targetValues = Object.entries(monthlyTargets as Record<string, number | null | undefined>)
+                    .filter(([key]) => key.startsWith(`${selectedYear}-`))
+                    .map(([, v]) => v);
+                  
+                  const hasAnyTarget = targetValues.some(v => v !== null && v !== undefined);
+                  if (!hasAnyTarget) return null;
+                  
+                  return targetValues
+                    .filter((v): v is number => v !== null && v !== undefined)
+                    .reduce((sum, v) => sum + v, 0);
                 }
                 return undefined;
               })()}
