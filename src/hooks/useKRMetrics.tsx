@@ -2,33 +2,33 @@ import { useMemo } from 'react';
 
 export interface KRMetrics {
   ytd: {
-    target: number;
-    actual: number;
+    target: number | null;
+    actual: number | null;
     percentage: number;
   };
   monthly: {
-    target: number;
-    actual: number;
+    target: number | null;
+    actual: number | null;
     percentage: number;
   };
   yearly: {
-    target: number;
-    actual: number;
+    target: number | null;
+    actual: number | null;
     percentage: number;
   };
   quarterly: {
-    target: number;
-    actual: number;
+    target: number | null;
+    actual: number | null;
     percentage: number;
   };
   semesterly: {
-    target: number;
-    actual: number;
+    target: number | null;
+    actual: number | null;
     percentage: number;
   };
   bimonthly: {
-    target: number;
-    actual: number;
+    target: number | null;
+    actual: number | null;
     percentage: number;
   };
 }
@@ -92,12 +92,12 @@ export const useKRMetrics = (
 ): KRMetrics => {
   return useMemo(() => {
     const defaultMetrics: KRMetrics = {
-      ytd: { target: 0, actual: 0, percentage: 0 },
-      monthly: { target: 0, actual: 0, percentage: 0 },
-      yearly: { target: 0, actual: 0, percentage: 0 },
-      quarterly: { target: 0, actual: 0, percentage: 0 },
-      semesterly: { target: 0, actual: 0, percentage: 0 },
-      bimonthly: { target: 0, actual: 0, percentage: 0 },
+      ytd: { target: null, actual: null, percentage: 0 },
+      monthly: { target: null, actual: null, percentage: 0 },
+      yearly: { target: null, actual: null, percentage: 0 },
+      quarterly: { target: null, actual: null, percentage: 0 },
+      semesterly: { target: null, actual: null, percentage: 0 },
+      bimonthly: { target: null, actual: null, percentage: 0 },
     };
 
     if (!keyResult) {
@@ -105,13 +105,32 @@ export const useKRMetrics = (
     }
 
     // Helper function to calculate metrics for a set of months
-    const calculateMetricsForMonths = (monthKeys: string[]) => {
-      const monthlyTargets = (keyResult.monthly_targets as Record<string, number>) || {};
-      const monthlyActual = (keyResult.monthly_actual as Record<string, number>) || {};
+    const calculateMetricsForMonths = (monthKeys: string[]): { target: number | null; actual: number | null; percentage: number } => {
+      const monthlyTargets = (keyResult.monthly_targets as Record<string, number | null>) || {};
+      const monthlyActual = (keyResult.monthly_actual as Record<string, number | null>) || {};
       const aggregationType = keyResult.aggregation_type || 'sum';
       
-      const targetValues = monthKeys.map(key => monthlyTargets[key] || 0);
-      const actualValues = monthKeys.map(key => monthlyActual[key] || 0);
+      // Verificar se há ALGUM valor de actual nos meses (não undefined, não null)
+      const hasAnyActualData = monthKeys.some(key => {
+        const value = monthlyActual[key];
+        return value !== null && value !== undefined;
+      });
+      
+      // Verificar se há ALGUM valor de target nos meses
+      const hasAnyTargetData = monthKeys.some(key => {
+        const value = monthlyTargets[key];
+        return value !== null && value !== undefined;
+      });
+      
+      // Mapear valores, usando null para chaves inexistentes
+      const targetValues = monthKeys.map(key => {
+        const val = monthlyTargets[key];
+        return val !== null && val !== undefined ? val : 0;
+      });
+      const actualValues = monthKeys.map(key => {
+        const val = monthlyActual[key];
+        return val !== null && val !== undefined ? val : 0;
+      });
       
       let totalTarget = 0;
       let totalActual = 0;
@@ -122,8 +141,8 @@ export const useKRMetrics = (
           totalActual = actualValues.reduce((sum, v) => sum + v, 0);
           break;
         case 'average':
-          const validTargets = targetValues.filter(v => v !== null && v !== undefined && v !== 0);
-          const validActuals = actualValues.filter(v => v !== null && v !== undefined);
+          const validTargets = targetValues.filter(v => v !== 0);
+          const validActuals = actualValues.filter(v => v !== 0);
           totalTarget = validTargets.length > 0 ? validTargets.reduce((sum, v) => sum + v, 0) / validTargets.length : 0;
           totalActual = validActuals.length > 0 ? validActuals.reduce((sum, v) => sum + v, 0) / validActuals.length : 0;
           break;
@@ -132,21 +151,21 @@ export const useKRMetrics = (
           totalActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
           break;
         case 'min':
-          const nonZeroTargets = targetValues.filter(v => v !== null && v !== undefined && v !== 0);
-          const nonZeroActuals = actualValues.filter(v => v !== null && v !== undefined);
+          const nonZeroTargets = targetValues.filter(v => v !== 0);
+          const nonZeroActuals = actualValues.filter(v => v !== 0);
           totalTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
           totalActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
           break;
         case 'last':
           for (let i = monthKeys.length - 1; i >= 0; i--) {
-            if (monthlyTargets[monthKeys[i]] !== undefined) {
-              totalTarget = monthlyTargets[monthKeys[i]];
+            if (monthlyTargets[monthKeys[i]] !== undefined && monthlyTargets[monthKeys[i]] !== null) {
+              totalTarget = monthlyTargets[monthKeys[i]]!;
               break;
             }
           }
           for (let i = monthKeys.length - 1; i >= 0; i--) {
-            if (monthlyActual[monthKeys[i]] !== undefined) {
-              totalActual = monthlyActual[monthKeys[i]];
+            if (monthlyActual[monthKeys[i]] !== undefined && monthlyActual[monthKeys[i]] !== null) {
+              totalActual = monthlyActual[monthKeys[i]]!;
               break;
             }
           }
@@ -155,13 +174,20 @@ export const useKRMetrics = (
       
       // Calculate percentage
       let percentage = 0;
-      if (keyResult.target_direction === 'minimize') {
-        percentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : 0;
-      } else {
-        percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
+      if (hasAnyActualData && hasAnyTargetData) {
+        if (keyResult.target_direction === 'minimize') {
+          percentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : 0;
+        } else {
+          percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
+        }
       }
       
-      return { target: totalTarget, actual: totalActual, percentage };
+      // Retornar null para actual se não há dados, null para target se não há dados
+      return { 
+        target: hasAnyTargetData ? totalTarget : null, 
+        actual: hasAnyActualData ? totalActual : null, 
+        percentage 
+      };
     };
 
     // Calculate semester metrics if selected
@@ -177,8 +203,8 @@ export const useKRMetrics = (
       return {
         ...defaultMetrics,
         ytd: {
-          target: keyResult.ytd_target ?? 0,
-          actual: keyResult.ytd_actual ?? 0,
+          target: keyResult.ytd_target ?? null,
+          actual: keyResult.ytd_actual ?? null,
           percentage: keyResult.ytd_percentage ?? 0,
         },
         semesterly: semesterMetrics,
@@ -198,8 +224,8 @@ export const useKRMetrics = (
       return {
         ...defaultMetrics,
         ytd: {
-          target: keyResult.ytd_target ?? 0,
-          actual: keyResult.ytd_actual ?? 0,
+          target: keyResult.ytd_target ?? null,
+          actual: keyResult.ytd_actual ?? null,
           percentage: keyResult.ytd_percentage ?? 0,
         },
         bimonthly: bimonthMetrics,
@@ -220,120 +246,80 @@ export const useKRMetrics = (
     const months = quarterMonths[quarter];
     const monthKeys = months.map(m => `${year}-${m.toString().padStart(2, '0')}`);
     
-    const monthlyTargets = (keyResult.monthly_targets as Record<string, number>) || {};
-    const monthlyActual = (keyResult.monthly_actual as Record<string, number>) || {};
-    const aggregationType = keyResult.aggregation_type || 'sum';
-    
-    const targetValues = monthKeys.map(key => monthlyTargets[key] || 0);
-    const actualValues = monthKeys.map(key => monthlyActual[key] || 0);
-    
-    let qTarget = 0;
-    let qActual = 0;
-    
-    switch (aggregationType) {
-      case 'sum':
-        qTarget = targetValues.reduce((sum, v) => sum + v, 0);
-        qActual = actualValues.reduce((sum, v) => sum + v, 0);
-        break;
-      case 'average':
-        const validTargets = targetValues.filter(v => v !== null && v !== undefined && v !== 0);
-        const validActuals = actualValues.filter(v => v !== null && v !== undefined);
-        qTarget = validTargets.length > 0 ? validTargets.reduce((sum, v) => sum + v, 0) / validTargets.length : 0;
-        qActual = validActuals.length > 0 ? validActuals.reduce((sum, v) => sum + v, 0) / validActuals.length : 0;
-        break;
-      case 'max':
-        qTarget = targetValues.length > 0 ? Math.max(...targetValues) : 0;
-        qActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
-        break;
-      case 'min':
-        const nonZeroTargets = targetValues.filter(v => v !== null && v !== undefined && v !== 0);
-        const nonZeroActuals = actualValues.filter(v => v !== null && v !== undefined);
-        qTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
-        qActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
-        break;
-    }
-    
-    // Calculate percentage using database formula
-    let qPercentage = 0;
-    if (keyResult.target_direction === 'minimize') {
-      qPercentage = qActual > 0 ? (qTarget / qActual) * 100 : (qTarget === 0 ? 100 : 0);
-    } else {
-      qPercentage = qTarget > 0 ? (qActual / qTarget) * 100 : 0;
-    }
+    // Usar a função helper que preserva null corretamente
+    const quarterMetrics = calculateMetricsForMonths(monthKeys);
 
     return {
       ...defaultMetrics,
       ytd: {
-        target: keyResult.ytd_target ?? 0,
-        actual: keyResult.ytd_actual ?? 0,
+        target: keyResult.ytd_target ?? null,
+        actual: keyResult.ytd_actual ?? null,
         percentage: keyResult.ytd_percentage ?? 0,
       },
       monthly: {
-        target: keyResult.current_month_target ?? 0,
-        actual: keyResult.current_month_actual ?? 0,
+        target: keyResult.current_month_target ?? null,
+        actual: keyResult.current_month_actual ?? null,
         percentage: keyResult.monthly_percentage ?? 0,
       },
       yearly: {
-        target: keyResult.yearly_target ?? 0,
-        actual: keyResult.yearly_actual ?? 0,
+        target: keyResult.yearly_target ?? null,
+        actual: keyResult.yearly_actual ?? null,
         percentage: keyResult.yearly_percentage ?? 0,
       },
-      quarterly: {
-        target: qTarget,
-        actual: qActual,
-        percentage: qPercentage,
-      },
+      quarterly: quarterMetrics,
     };
   }
 
   // If specific quarter is provided (without year), use pre-calculated values
   if (options?.selectedQuarter) {
     const quarter = options.selectedQuarter;
-    let qTarget = 0;
-    let qActual = 0;
+    let qTarget: number | null = null;
+    let qActual: number | null = null;
 
     switch (quarter) {
       case 1:
-        qTarget = keyResult.q1_target ?? 0;
-        qActual = keyResult.q1_actual ?? 0;
+        qTarget = keyResult.q1_target ?? null;
+        qActual = keyResult.q1_actual ?? null;
         break;
       case 2:
-        qTarget = keyResult.q2_target ?? 0;
-        qActual = keyResult.q2_actual ?? 0;
+        qTarget = keyResult.q2_target ?? null;
+        qActual = keyResult.q2_actual ?? null;
         break;
       case 3:
-        qTarget = keyResult.q3_target ?? 0;
-        qActual = keyResult.q3_actual ?? 0;
+        qTarget = keyResult.q3_target ?? null;
+        qActual = keyResult.q3_actual ?? null;
         break;
       case 4:
-        qTarget = keyResult.q4_target ?? 0;
-        qActual = keyResult.q4_actual ?? 0;
+        qTarget = keyResult.q4_target ?? null;
+        qActual = keyResult.q4_actual ?? null;
         break;
     }
 
-    // Calculate percentage using database formula
+    // Calculate percentage using database formula - only if we have data
     let qPercentage = 0;
-    if (keyResult.target_direction === 'minimize') {
-      qPercentage = qActual > 0 ? (qTarget / qActual) * 100 : (qTarget === 0 ? 100 : 0);
-    } else {
-      qPercentage = qTarget > 0 ? (qActual / qTarget) * 100 : 0;
+    if (qTarget !== null && qActual !== null) {
+      if (keyResult.target_direction === 'minimize') {
+        qPercentage = qActual > 0 ? (qTarget / qActual) * 100 : (qTarget === 0 ? 100 : 0);
+      } else {
+        qPercentage = qTarget > 0 ? (qActual / qTarget) * 100 : 0;
+      }
     }
 
     return {
       ...defaultMetrics,
       ytd: {
-        target: keyResult.ytd_target ?? 0,
-        actual: keyResult.ytd_actual ?? 0,
+        target: keyResult.ytd_target ?? null,
+        actual: keyResult.ytd_actual ?? null,
         percentage: keyResult.ytd_percentage ?? 0,
       },
       monthly: {
-        target: keyResult.current_month_target ?? 0,
-        actual: keyResult.current_month_actual ?? 0,
+        target: keyResult.current_month_target ?? null,
+        actual: keyResult.current_month_actual ?? null,
         percentage: keyResult.monthly_percentage ?? 0,
       },
       yearly: {
-        target: keyResult.yearly_target ?? 0,
-        actual: keyResult.yearly_actual ?? 0,
+        target: keyResult.yearly_target ?? null,
+        actual: keyResult.yearly_actual ?? null,
         percentage: keyResult.yearly_percentage ?? 0,
       },
       quarterly: {
@@ -351,91 +337,56 @@ export const useKRMetrics = (
         monthKeys.push(`${options.selectedYear}-${m.toString().padStart(2, '0')}`);
       }
       
-      const monthlyTargets = (keyResult.monthly_targets as Record<string, number>) || {};
-      const monthlyActual = (keyResult.monthly_actual as Record<string, number>) || {};
-      const aggregationType = keyResult.aggregation_type || 'sum';
-      
-      // Collect values
-      const targetValues = monthKeys.map(key => monthlyTargets[key] || 0);
-      const actualValues = monthKeys.map(key => monthlyActual[key] || 0);
-      
-      // Calculate based on aggregation type
-      let totalTarget = 0;
-      let totalActual = 0;
-      
-      switch (aggregationType) {
-        case 'sum':
-          totalTarget = targetValues.reduce((sum, v) => sum + v, 0);
-          totalActual = actualValues.reduce((sum, v) => sum + v, 0);
-          break;
-        case 'average':
-          const validYearTargets = targetValues.filter(v => v !== null && v !== undefined && v !== 0);
-          const validYearActuals = actualValues.filter(v => v !== null && v !== undefined);
-          totalTarget = validYearTargets.length > 0 ? validYearTargets.reduce((sum, v) => sum + v, 0) / validYearTargets.length : 0;
-          totalActual = validYearActuals.length > 0 ? validYearActuals.reduce((sum, v) => sum + v, 0) / validYearActuals.length : 0;
-          break;
-        case 'max':
-          totalTarget = targetValues.length > 0 ? Math.max(...targetValues) : 0;
-          totalActual = actualValues.length > 0 ? Math.max(...actualValues) : 0;
-          break;
-        case 'min':
-          const nonZeroYearTargets = targetValues.filter(v => v !== null && v !== undefined && v !== 0);
-          const nonZeroYearActuals = actualValues.filter(v => v !== null && v !== undefined);
-          totalTarget = nonZeroYearTargets.length > 0 ? Math.min(...nonZeroYearTargets) : 0;
-          totalActual = nonZeroYearActuals.length > 0 ? Math.min(...nonZeroYearActuals) : 0;
-          break;
-      }
-      
-      // Calculate percentage using database formula
-      let yearlyPercentage = 0;
-      if (keyResult.target_direction === 'minimize') {
-        yearlyPercentage = totalActual > 0 ? (totalTarget / totalActual) * 100 : (totalTarget === 0 ? 100 : 0);
-      } else {
-        yearlyPercentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
-      }
+      // Usar a função helper que preserva null corretamente
+      const yearlyMetrics = calculateMetricsForMonths(monthKeys);
       
       return {
         ...defaultMetrics,
         ytd: {
-          target: keyResult.ytd_target ?? 0,
-          actual: keyResult.ytd_actual ?? 0,
+          target: keyResult.ytd_target ?? null,
+          actual: keyResult.ytd_actual ?? null,
           percentage: keyResult.ytd_percentage ?? 0,
         },
         monthly: {
-          target: keyResult.current_month_target ?? 0,
-          actual: keyResult.current_month_actual ?? 0,
+          target: keyResult.current_month_target ?? null,
+          actual: keyResult.current_month_actual ?? null,
           percentage: keyResult.monthly_percentage ?? 0,
         },
-        yearly: {
-          target: totalTarget,
-          actual: totalActual,
-          percentage: yearlyPercentage,
-        },
+        yearly: yearlyMetrics,
       };
     }
 
     // If specific month is provided, calculate metrics for that month
     if (options?.selectedMonth && options?.selectedYear) {
       const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
-      const monthlyTargets = (keyResult.monthly_targets as Record<string, number>) || {};
-      const monthlyActual = (keyResult.monthly_actual as Record<string, number>) || {};
+      const monthlyTargets = (keyResult.monthly_targets as Record<string, number | null>) || {};
+      const monthlyActual = (keyResult.monthly_actual as Record<string, number | null>) || {};
       
-      const monthTarget = monthlyTargets[monthKey] || 0;
-      const monthActual = monthlyActual[monthKey] || 0;
+      // Preservar null se a chave não existe ou é null/undefined
+      const rawTarget = monthlyTargets[monthKey];
+      const rawActual = monthlyActual[monthKey];
       
-      // Calculate percentage using database formula
+      const hasTargetData = rawTarget !== null && rawTarget !== undefined;
+      const hasActualData = rawActual !== null && rawActual !== undefined;
+      
+      const monthTarget = hasTargetData ? rawTarget : null;
+      const monthActual = hasActualData ? rawActual : null;
+      
+      // Calculate percentage using database formula - only if we have data
       let monthPercentage = 0;
-      if (keyResult.target_direction === 'minimize') {
-        monthPercentage = monthActual > 0 ? (monthTarget / monthActual) * 100 : (monthTarget === 0 ? 100 : 0);
-      } else {
-        monthPercentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
+      if (hasTargetData && hasActualData && monthTarget !== null && monthActual !== null) {
+        if (keyResult.target_direction === 'minimize') {
+          monthPercentage = monthActual > 0 ? (monthTarget / monthActual) * 100 : (monthTarget === 0 ? 100 : 0);
+        } else {
+          monthPercentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
+        }
       }
       
       return {
         ...defaultMetrics,
         ytd: {
-          target: keyResult.ytd_target ?? 0,
-          actual: keyResult.ytd_actual ?? 0,
+          target: keyResult.ytd_target ?? null,
+          actual: keyResult.ytd_actual ?? null,
           percentage: keyResult.ytd_percentage ?? 0,
         },
         monthly: {
@@ -444,8 +395,8 @@ export const useKRMetrics = (
           percentage: monthPercentage,
         },
         yearly: {
-          target: keyResult.yearly_target ?? 0,
-          actual: keyResult.yearly_actual ?? 0,
+          target: keyResult.yearly_target ?? null,
+          actual: keyResult.yearly_actual ?? null,
           percentage: keyResult.yearly_percentage ?? 0,
         },
       };
@@ -454,29 +405,29 @@ export const useKRMetrics = (
     // Default behavior - use pre-calculated fields from database
     const currentQuarter = Math.ceil((new Date().getMonth() + 1) / 3) as 1 | 2 | 3 | 4;
     
-    let defaultQTarget = 0;
-    let defaultQActual = 0;
+    let defaultQTarget: number | null = null;
+    let defaultQActual: number | null = null;
     let defaultQPercentage = 0;
 
     switch (currentQuarter) {
       case 1:
-        defaultQTarget = keyResult.q1_target ?? 0;
-        defaultQActual = keyResult.q1_actual ?? 0;
+        defaultQTarget = keyResult.q1_target ?? null;
+        defaultQActual = keyResult.q1_actual ?? null;
         defaultQPercentage = keyResult.q1_percentage ?? 0;
         break;
       case 2:
-        defaultQTarget = keyResult.q2_target ?? 0;
-        defaultQActual = keyResult.q2_actual ?? 0;
+        defaultQTarget = keyResult.q2_target ?? null;
+        defaultQActual = keyResult.q2_actual ?? null;
         defaultQPercentage = keyResult.q2_percentage ?? 0;
         break;
       case 3:
-        defaultQTarget = keyResult.q3_target ?? 0;
-        defaultQActual = keyResult.q3_actual ?? 0;
+        defaultQTarget = keyResult.q3_target ?? null;
+        defaultQActual = keyResult.q3_actual ?? null;
         defaultQPercentage = keyResult.q3_percentage ?? 0;
         break;
       case 4:
-        defaultQTarget = keyResult.q4_target ?? 0;
-        defaultQActual = keyResult.q4_actual ?? 0;
+        defaultQTarget = keyResult.q4_target ?? null;
+        defaultQActual = keyResult.q4_actual ?? null;
         defaultQPercentage = keyResult.q4_percentage ?? 0;
         break;
     }
@@ -484,18 +435,18 @@ export const useKRMetrics = (
     return {
       ...defaultMetrics,
       ytd: {
-        target: keyResult.ytd_target ?? 0,
-        actual: keyResult.ytd_actual ?? 0,
+        target: keyResult.ytd_target ?? null,
+        actual: keyResult.ytd_actual ?? null,
         percentage: keyResult.ytd_percentage ?? 0,
       },
       monthly: {
-        target: keyResult.current_month_target ?? 0,
-        actual: keyResult.current_month_actual ?? 0,
+        target: keyResult.current_month_target ?? null,
+        actual: keyResult.current_month_actual ?? null,
         percentage: keyResult.monthly_percentage ?? 0,
       },
       yearly: {
-        target: keyResult.yearly_target ?? 0,
-        actual: keyResult.yearly_actual ?? 0,
+        target: keyResult.yearly_target ?? null,
+        actual: keyResult.yearly_actual ?? null,
         percentage: keyResult.yearly_percentage ?? 0,
       },
       quarterly: {
@@ -523,7 +474,10 @@ export const getAchievementStatus = (
 /**
  * Format metric value with unit
  */
-export const formatMetricValue = (value: number, unit?: string): string => {
+export const formatMetricValue = (value: number | null | undefined, unit?: string): string => {
+  // Retornar "—" para valores nulos/undefined
+  if (value === null || value === undefined) return '—';
+  
   if (!unit) return value.toFixed(1);
   
   switch (unit.toLowerCase()) {
