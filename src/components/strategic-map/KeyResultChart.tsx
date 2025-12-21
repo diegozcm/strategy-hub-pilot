@@ -567,8 +567,12 @@ export const KeyResultChart = ({
                     <div className="border-t border-border pt-1.5 mt-1.5">
                       <div className="flex justify-between items-center">
                         <span className="text-muted-foreground text-sm">Atingimento:</span>
-                        <span className={`font-bold text-sm ${status?.color || ''}`}>
-                          {percentage.toFixed(1)}%
+                        <span className={`font-bold text-sm ${
+                          data?.hasActualData === false 
+                            ? 'text-muted-foreground' 
+                            : (status?.color || '')
+                        }`}>
+                          {data?.hasActualData === false ? 'N/D' : `${percentage.toFixed(1)}%`}
                         </span>
                       </div>
                     </div>
@@ -618,14 +622,16 @@ export const KeyResultChart = ({
             }}
           >
             {periodChartData.map((entry, index) => {
-              const percentage = entry.percentage;
               let fillColor: string;
               
-              if (percentage > 105) {
+              // Se não há dados reais (actual é null), usar cinza
+              if (!entry.hasActualData) {
+                fillColor = '#9ca3af'; // gray-400 - cor neutra para "sem dados"
+              } else if (entry.percentage > 105) {
                 fillColor = '#3b82f6'; // blue-500
-              } else if (percentage >= 100) {
+              } else if (entry.percentage >= 100) {
                 fillColor = '#22c55e'; // green-500
-              } else if (percentage >= 71) {
+              } else if (entry.percentage >= 71) {
                 fillColor = '#eab308'; // yellow-500
               } else {
                 fillColor = '#ef4444'; // red-500
