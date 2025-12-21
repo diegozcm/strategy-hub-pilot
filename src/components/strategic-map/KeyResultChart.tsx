@@ -35,8 +35,8 @@ interface KeyResultChartProps {
   selectedQuarter?: 1 | 2 | 3 | 4;
   selectedSemester?: 1 | 2;
   selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
-  periodActual?: number;
-  periodTarget?: number;
+  periodActual?: number | null;
+  periodTarget?: number | null;
 }
 
 export const KeyResultChart = ({ 
