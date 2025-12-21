@@ -626,6 +626,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                           min={0}
                           step={5}
                           className="w-full"
+                          colorScheme="initiatives"
                         />
                       </div>
 

@@ -11,24 +11,41 @@ interface ProgressSliderProps {
   disabled?: boolean;
   className?: string;
   onValueCommit?: (value: number) => void;
+  colorScheme?: 'default' | 'initiatives';
 }
 
-const getProgressColor = (value: number): string => {
+// Esquema padrão (usado em outros lugares do sistema)
+const getDefaultProgressColor = (value: number): string => {
   if (value >= 100) return 'bg-green-500';
   if (value >= 71) return 'bg-yellow-500';
   return 'bg-red-500';
 };
 
-const getThumbBorderColor = (value: number): string => {
+const getDefaultThumbBorderColor = (value: number): string => {
   if (value >= 100) return 'border-green-500';
   if (value >= 71) return 'border-yellow-500';
+  return 'border-red-500';
+};
+
+// Esquema específico para iniciativas
+const getInitiativesProgressColor = (value: number): string => {
+  if (value >= 100) return 'bg-blue-500';   // 100% = AZUL
+  if (value >= 60) return 'bg-green-500';   // 60-99% = VERDE
+  if (value >= 31) return 'bg-yellow-500';  // 31-59% = AMARELO
+  return 'bg-red-500';                       // 0-30% = VERMELHO
+};
+
+const getInitiativesThumbBorderColor = (value: number): string => {
+  if (value >= 100) return 'border-blue-500';
+  if (value >= 60) return 'border-green-500';
+  if (value >= 31) return 'border-yellow-500';
   return 'border-red-500';
 };
 
 const ProgressSlider = React.forwardRef<
   React.ElementRef<typeof SliderPrimitive.Root>,
   ProgressSliderProps
->(({ className, value, defaultValue, onValueCommit, min = 0, max = 100, step = 1, disabled, ...props }, ref) => {
+>(({ className, value, defaultValue, onValueCommit, min = 0, max = 100, step = 1, disabled, colorScheme = 'default', ...props }, ref) => {
   const [localValue, setLocalValue] = React.useState<number>(
     value ?? defaultValue ?? 0
   );
@@ -47,8 +64,17 @@ const ProgressSlider = React.forwardRef<
     onValueCommit?.(newValue[0]);
   };
 
-  const progressColor = getProgressColor(localValue);
-  const thumbColor = getThumbBorderColor(localValue);
+  // Selecionar funções de cor baseado no esquema
+  const getProgressColorFn = colorScheme === 'initiatives' 
+    ? getInitiativesProgressColor 
+    : getDefaultProgressColor;
+
+  const getThumbColorFn = colorScheme === 'initiatives' 
+    ? getInitiativesThumbBorderColor 
+    : getDefaultThumbBorderColor;
+
+  const progressColor = getProgressColorFn(localValue);
+  const thumbColor = getThumbColorFn(localValue);
 
   return (
     <SliderPrimitive.Root
