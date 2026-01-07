@@ -841,6 +841,71 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 
                   <Card>
                     <CardHeader>
+                      <CardTitle className="text-lg">Resetar Senha</CardTitle>
+                      <CardDescription>
+                        Gerar uma nova senha temporária e enviar por e-mail
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" disabled={isLoading}>
+                            <Key className="h-4 w-4 mr-2" />
+                            Resetar Senha
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Resetar Senha do Usuário</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Uma nova senha temporária será gerada e enviada para o e-mail <strong>{user?.email}</strong>.
+                              <br /><br />
+                              O usuário será obrigado a alterar a senha no próximo login.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={async () => {
+                                if (!user) return;
+                                setIsLoading(true);
+                                try {
+                                  const { data, error } = await supabase.functions.invoke('reset-user-password', {
+                                    body: { email: user.email, source: 'admin' }
+                                  });
+                                  
+                                  if (error) throw error;
+                                  
+                                  if (data?.success) {
+                                    toast({
+                                      title: 'Sucesso',
+                                      description: 'Senha temporária enviada para o e-mail do usuário'
+                                    });
+                                  } else {
+                                    throw new Error(data?.message || 'Erro ao resetar senha');
+                                  }
+                                } catch (error: any) {
+                                  console.error('Erro ao resetar senha:', error);
+                                  toast({
+                                    title: 'Erro',
+                                    description: error.message || 'Erro ao resetar senha do usuário',
+                                    variant: 'destructive'
+                                  });
+                                } finally {
+                                  setIsLoading(false);
+                                }
+                              }}
+                            >
+                              Confirmar Reset
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
                       <CardTitle className="text-lg text-destructive">Zona de Perigo</CardTitle>
                       <CardDescription>
                         Ações permanentes que não podem ser desfeitas
