@@ -10,7 +10,10 @@ const corsHeaders = {
 
 interface ResetPasswordRequest {
   email: string;
-  source?: string; // "settings" for logged-in users, "login" for non-logged users
+  source?: string; // "settings" for logged-in users, "login" for non-logged users, "admin" for admin panel
+  customPassword?: string; // If provided, use this password instead of generating one
+  sendEmail?: boolean; // If false, don't send email (admin defines and communicates directly)
+  forcePasswordChange?: boolean; // If true, force password change on next login
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -21,7 +24,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { email, source = "login" }: ResetPasswordRequest = await req.json();
+    const { email, source = "login", customPassword, sendEmail = true, forcePasswordChange = true }: ResetPasswordRequest = await req.json();
 
     if (!email?.trim()) {
       return new Response(JSON.stringify({
@@ -79,25 +82,54 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('user_id', targetUser.id)
       .single();
 
-    // Generate temporary password using the same DB function as admin
-    const { data: tempPassword, error: genError } = await supabaseAdmin
-      .rpc('generate_temporary_password');
+    // Use custom password if provided, otherwise generate temporary password
+    let passwordToSet: string;
+    
+    if (customPassword) {
+      // Validate custom password (min 8 chars, at least 1 letter and 1 number)
+      if (customPassword.length < 8) {
+        return new Response(JSON.stringify({
+          success: false,
+          message: 'A senha deve ter pelo menos 8 caracteres'
+        }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      if (!/[a-zA-Z]/.test(customPassword) || !/[0-9]/.test(customPassword)) {
+        return new Response(JSON.stringify({
+          success: false,
+          message: 'A senha deve conter pelo menos 1 letra e 1 número'
+        }), {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      passwordToSet = customPassword;
+      console.log('Using custom password provided by admin');
+    } else {
+      // Generate temporary password using the same DB function as admin
+      const { data: tempPassword, error: genError } = await supabaseAdmin
+        .rpc('generate_temporary_password');
 
-    if (genError || !tempPassword) {
-      console.error('Error generating temporary password:', genError);
-      return new Response(JSON.stringify({
-        success: false,
-        message: 'Erro ao gerar senha temporária'
-      }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      if (genError || !tempPassword) {
+        console.error('Error generating temporary password:', genError);
+        return new Response(JSON.stringify({
+          success: false,
+          message: 'Erro ao gerar senha temporária'
+        }), {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      passwordToSet = tempPassword;
+      console.log('Generated temporary password');
     }
 
     // Update user password and set must_change_password flag
     const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(
       targetUser.id,
-      { password: tempPassword }
+      { password: passwordToSet }
     );
 
     if (updateAuthError) {
@@ -115,15 +147,19 @@ const handler = async (req: Request): Promise<Response> => {
     const expirationTime = new Date();
     expirationTime.setMinutes(expirationTime.getMinutes() + 15); // 15 minutes validity
 
-    // Only set must_change_password for non-logged users (login flow)
+    // Only set must_change_password based on forcePasswordChange flag or source
     const profileUpdate: any = {
-      temp_reset_token: tempPassword,
+      temp_reset_token: passwordToSet,
       temp_reset_expires: expirationTime.toISOString(),
       updated_at: new Date().toISOString()
     };
 
-    // For non-logged users (login flow), force password change
-    if (source !== "settings") {
+    // Force password change based on the forcePasswordChange parameter
+    // For admin source, respect the forcePasswordChange flag
+    // For login flow (non-logged users), always force password change
+    if (source === "admin") {
+      profileUpdate.must_change_password = forcePasswordChange;
+    } else if (source !== "settings") {
       profileUpdate.must_change_password = true;
     }
 
@@ -134,6 +170,18 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (updateProfileError) {
       console.error('Error updating profile:', updateProfileError);
+    }
+
+    // Skip email sending if sendEmail is false
+    if (!sendEmail) {
+      console.log('Skipping email - admin will communicate password directly');
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Senha atualizada com sucesso. O administrador irá comunicar a nova senha ao usuário.'
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     // Send email using Resend (same as send-user-credentials)
@@ -219,7 +267,7 @@ const handler = async (req: Request): Promise<Response> => {
     emailBody = emailBody
       .replace(/\{\{userName\}\}/g, userName)
       .replace(/\{\{email\}\}/g, email)
-      .replace(/\{\{temporaryPassword\}\}/g, tempPassword)
+      .replace(/\{\{temporaryPassword\}\}/g, passwordToSet)
       .replace(/\{\{loginUrl\}\}/g, loginUrl);
 
     console.log('Sending password reset email to:', email);
