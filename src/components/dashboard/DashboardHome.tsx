@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, Settings, Search, Compass, LayoutDashboard } from 'lucide-react';
+import { Target, Briefcase, TrendingUp, Users, ArrowUp, ArrowDown, AlertCircle, CheckCircle, Award, Building, Settings, Search, Compass, LayoutDashboard, Rocket } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -18,9 +18,11 @@ import { MonthlyPerformanceIndicators } from '@/components/strategic-map/Monthly
 import { filterKRsByValidity, getPopulatedQuarters } from '@/lib/krValidityFilter';
 import { type KRFrequency } from '@/lib/krFrequencyHelpers';
 import { KROverviewModal } from '@/components/strategic-map/KROverviewModal';
+import { KRInitiativesModal } from '@/components/strategic-map/KRInitiativesModal';
 import { calculateKRStatus } from '@/lib/krHelpers';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface KeyResultWithPillar {
   id: string;
@@ -123,6 +125,8 @@ export const DashboardHome: React.FC = () => {
   const [objectives, setObjectives] = useState<any[]>([]);
   const [pillars, setPillars] = useState<any[]>([]);
   const [selectedKRForModal, setSelectedKRForModal] = useState<KeyResultWithPillar | null>(null);
+  const [selectedKRForInitiatives, setSelectedKRForInitiatives] = useState<KeyResultWithPillar | null>(null);
+  const [initiativesCount, setInitiativesCount] = useState<Record<string, number>>({});
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
     totalObjectives: 0,
     totalKRs: 0,
@@ -442,6 +446,22 @@ export const DashboardHome: React.FC = () => {
 
       const toolsResults = await Promise.allSettled(toolsPromises);
       const filledTools = toolsResults.filter(result => result.status === 'fulfilled' && result.value.data).length;
+
+      // Buscar contagem de iniciativas por KR
+      const krIds = keyResultsWithPillars.map(kr => kr.id);
+      if (krIds.length > 0) {
+        const { data: initiativesData } = await supabase
+          .from('kr_initiatives')
+          .select('key_result_id')
+          .eq('company_id', company.id)
+          .in('key_result_id', krIds);
+        
+        const countMap: Record<string, number> = {};
+        initiativesData?.forEach(init => {
+          countMap[init.key_result_id] = (countMap[init.key_result_id] || 0) + 1;
+        });
+        setInitiativesCount(countMap);
+      }
 
       setKeyResults(keyResultsWithPillars);
       setObjectives(objectivesData || []);
@@ -1169,6 +1189,37 @@ export const DashboardHome: React.FC = () => {
                                     </span>
                                   </div>
                                 </div>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setSelectedKRForInitiatives(kr);
+                                        }}
+                                        className={cn(
+                                          "text-muted-foreground hover:text-purple-600 relative",
+                                          initiativesCount[kr.id] > 0 && "text-purple-500"
+                                        )}
+                                      >
+                                        <Rocket className="h-4 w-4" />
+                                        {initiativesCount[kr.id] > 0 && (
+                                          <Badge 
+                                            variant="secondary" 
+                                            className="absolute -top-1 -right-1 h-4 min-w-4 px-1 text-[10px] font-medium bg-purple-100 text-purple-700 border-purple-200"
+                                          >
+                                            {initiativesCount[kr.id]}
+                                          </Badge>
+                                        )}
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Iniciativas ({initiativesCount[kr.id] || 0})</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                                 <Button
                                   variant="ghost"
                                   size="sm"
@@ -1215,6 +1266,19 @@ export const DashboardHome: React.FC = () => {
           initialPeriod={periodType}
           initialMonth={selectedMonth}
           initialYear={selectedMonthYear}
+        />
+      )}
+
+      {/* KR Initiatives Modal */}
+      {selectedKRForInitiatives && (
+        <KRInitiativesModal
+          keyResult={selectedKRForInitiatives as any}
+          open={!!selectedKRForInitiatives}
+          onClose={() => {
+            setSelectedKRForInitiatives(null);
+            // Refresh initiatives count after closing
+            fetchDashboardData();
+          }}
         />
       )}
     </div>
