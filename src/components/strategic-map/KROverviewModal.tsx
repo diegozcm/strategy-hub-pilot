@@ -450,32 +450,25 @@ export const KROverviewModal = ({
                 <FileBarChart className="h-4 w-4 mr-2" />
                 Status Report
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowInitiativesModal(true)}
-                className="text-purple-600 border-purple-200 hover:bg-purple-100 hover:border-purple-300 hover:text-purple-600"
-              >
-                <Rocket className="h-4 w-4" />
-                Iniciativas
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowInitiativesModal(true)}
+                  className="text-purple-600 border-purple-200 hover:bg-purple-100 hover:border-purple-300 hover:text-purple-600"
+                >
+                  <Rocket className="h-4 w-4 mr-2" />
+                  Iniciativas
+                </Button>
                 {initiatives.length > 0 && (
                   <Badge 
                     variant="secondary" 
-                    className={cn(
-                      "ml-1.5 h-5 min-w-5 px-1.5 text-xs font-medium",
-                      initiatives.every(i => i.status === 'completed') 
-                        ? "bg-green-100 text-green-700 border-green-200"
-                        : initiatives.some(i => i.status === 'in_progress')
-                        ? "bg-yellow-100 text-yellow-700 border-yellow-200"
-                        : initiatives.some(i => i.status === 'cancelled' || i.status === 'on_hold')
-                        ? "bg-orange-100 text-orange-700 border-orange-200"
-                        : "bg-blue-100 text-blue-700 border-blue-200"
-                    )}
+                    className="absolute -top-2 -right-2 h-5 min-w-5 px-1.5 text-xs font-medium bg-red-500 text-white border-red-500"
                   >
                     {initiatives.length}
                   </Badge>
                 )}
-              </Button>
+              </div>
             </div>
             <SmartPeriodSelector
               selectedPeriod={selectedPeriod}
