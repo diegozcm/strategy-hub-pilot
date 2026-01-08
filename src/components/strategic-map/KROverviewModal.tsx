@@ -458,6 +458,23 @@ export const KROverviewModal = ({
               >
                 <Rocket className="h-4 w-4" />
                 Iniciativas
+                {initiatives.length > 0 && (
+                  <Badge 
+                    variant="secondary" 
+                    className={cn(
+                      "ml-1.5 h-5 min-w-5 px-1.5 text-xs font-medium",
+                      initiatives.every(i => i.status === 'completed') 
+                        ? "bg-green-100 text-green-700 border-green-200"
+                        : initiatives.some(i => i.status === 'in_progress')
+                        ? "bg-yellow-100 text-yellow-700 border-yellow-200"
+                        : initiatives.some(i => i.status === 'cancelled' || i.status === 'on_hold')
+                        ? "bg-orange-100 text-orange-700 border-orange-200"
+                        : "bg-blue-100 text-blue-700 border-blue-200"
+                    )}
+                  >
+                    {initiatives.length}
+                  </Badge>
+                )}
               </Button>
             </div>
             <SmartPeriodSelector
