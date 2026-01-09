@@ -236,17 +236,17 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
 
     const initiativeData = {
       key_result_id: keyResult.id,
-      company_id: company?.id, // Usar o company_id correto
+      company_id: company?.id,
       title: title.trim(),
-      description: description.trim() || undefined,
+      description: description.trim() || null,
       start_date: startDate,
       end_date: endDate,
       status,
       priority,
-      responsible: responsible.trim() || undefined,
-      budget: budget ? parseFloat(budget) : undefined,
+      responsible: responsible.trim() || null,
+      budget: budget ? parseFloat(budget) : null,
       progress_percentage: progressPercentage,
-      completion_notes: completionNotes.trim() || undefined
+      completion_notes: completionNotes.trim() || null
     };
 
     let success = false;
