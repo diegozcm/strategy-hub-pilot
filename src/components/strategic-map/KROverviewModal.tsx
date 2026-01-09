@@ -461,12 +461,11 @@ export const KROverviewModal = ({
                   Iniciativas
                 </Button>
                 {initiatives.length > 0 && (
-                  <Badge 
-                    variant="secondary" 
-                    className="absolute -top-2 -right-2 h-5 min-w-5 px-1.5 text-xs font-medium bg-red-500 text-white border-red-500"
+                  <span 
+                    className="absolute -top-2 -right-2 h-5 min-w-5 px-1.5 text-xs font-medium bg-purple-600 text-white rounded-full flex items-center justify-center pointer-events-none"
                   >
                     {initiatives.length}
-                  </Badge>
+                  </span>
                 )}
               </div>
             </div>
