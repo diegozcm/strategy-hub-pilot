@@ -262,11 +262,12 @@ export const DashboardHome: React.FC = () => {
     if (!company?.id) return;
     setLoading(true);
     try {
-      // Buscar planos estratégicos da empresa
+      // Buscar apenas planos estratégicos ATIVOS da empresa
       const { data: plansData } = await supabase
         .from('strategic_plans')
         .select('id')
-        .eq('company_id', company.id);
+        .eq('company_id', company.id)
+        .eq('status', 'active');
       const planIds = plansData?.map(plan => plan.id) || [];
       
       if (planIds.length === 0) {
