@@ -71,10 +71,8 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
     return <Navigate to="/auth" replace />;
   }
 
-  // Admin without MFA configured - force setup
-  if (mfaStatus === 'no-factors') {
-    return <Navigate to="/admin-mfa-setup" replace />;
-  }
+  // Admin without MFA configured - allow access (they'll configure in settings)
+  // MFA is only required AFTER the admin has configured it at least once
 
   // Admin with MFA but needs to verify in this session
   if (mfaStatus === 'needs-verify') {

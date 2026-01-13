@@ -24,11 +24,20 @@ export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCance
   const [verificationCode, setVerificationCode] = useState('');
   const [error, setError] = useState('');
   
+  const [started, setStarted] = useState(false);
   const navigate = useNavigate();
 
+  // Only auto-start if explicitly required (not used in current flow)
   useEffect(() => {
+    if (required) {
+      handleStartEnrollment();
+    }
+  }, [required]);
+
+  const handleStartEnrollment = () => {
+    setStarted(true);
     startEnrollment();
-  }, []);
+  };
 
   const startEnrollment = async () => {
     setLoading(true);
@@ -136,6 +145,59 @@ export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCance
       navigate('/app/admin', { replace: true });
     }
   };
+
+  // Show start screen if not started yet and not required
+  if (!started && !required) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1 text-center">
+            <div className="flex justify-center mb-4">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Shield className="h-8 w-8 text-primary" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl font-bold">Configurar 2FA</CardTitle>
+            <CardDescription>
+              Proteja sua conta com autenticação de dois fatores
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                A autenticação de dois fatores adiciona uma camada extra de segurança à sua conta. 
+                Você precisará de um aplicativo autenticador no seu celular.
+              </p>
+              
+              <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg text-left">
+                <Smartphone className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <p className="text-xs text-muted-foreground">
+                  Apps compatíveis: Google Authenticator, Microsoft Authenticator, Authy, 1Password
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                className="flex-1" 
+                onClick={handleCancel}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                className="flex-1"
+                onClick={handleStartEnrollment}
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                Iniciar Configuração
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
