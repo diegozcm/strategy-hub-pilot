@@ -64,6 +64,7 @@ export const LandingPageEditorPage: React.FC = () => {
   const benefitsEditor = useTabEditor('benefits');
   const featuresEditor = useTabEditor('features');
   const testimonialsEditor = useTabEditor('testimonials');
+  const ctaEditor = useTabEditor('cta');
   const footerEditor = useTabEditor('footer');
 
   const handleRefresh = () => {
@@ -126,12 +127,13 @@ export const LandingPageEditorPage: React.FC = () => {
 
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="hero">Hero</TabsTrigger>
           <TabsTrigger value="features">Features</TabsTrigger>
           <TabsTrigger value="demo">Demo</TabsTrigger>
           <TabsTrigger value="benefits">Benefits</TabsTrigger>
           <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
+          <TabsTrigger value="cta">CTA</TabsTrigger>
           <TabsTrigger value="footer">Footer</TabsTrigger>
         </TabsList>
 
@@ -897,6 +899,85 @@ export const LandingPageEditorPage: React.FC = () => {
               </Card>
             ))}
           </div>
+        </TabsContent>
+
+        <TabsContent value="cta" className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Seção CTA (Call to Action)</CardTitle>
+                <CardDescription>Edite a seção de chamada para ação final</CardDescription>
+              </div>
+              <TabControls
+                isEditing={ctaEditor.isEditing}
+                hasChanges={ctaEditor.hasChanges}
+                isSaving={ctaEditor.isSaving}
+                onStartEdit={ctaEditor.startEdit}
+                onSave={ctaEditor.saveChanges}
+                onCancel={ctaEditor.cancelEdit}
+              />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Toggle de Seção Ativa */}
+              <SectionToggle
+                isEditing={ctaEditor.isEditing}
+                isActive={ctaEditor.getFieldValue('section_enabled', 'true') !== 'false'}
+                onToggle={(checked) => ctaEditor.updateLocalField('section_enabled', checked ? 'true' : 'false')}
+                sectionName="CTA"
+              />
+
+              {/* Título */}
+              <EditableField
+                id="cta-title"
+                label="Título"
+                value={ctaEditor.getFieldValue('title')}
+                isEditing={ctaEditor.isEditing}
+                placeholder="Ex: Pronto para transformar sua empresa?"
+                onChange={(value) => ctaEditor.updateLocalField('title', value)}
+              />
+
+              {/* Subtítulo */}
+              <EditableField
+                id="cta-subtitle"
+                label="Subtítulo"
+                value={ctaEditor.getFieldValue('subtitle')}
+                isEditing={ctaEditor.isEditing}
+                placeholder="Ex: Junte-se a centenas de empresas..."
+                type="textarea"
+                onChange={(value) => ctaEditor.updateLocalField('subtitle', value)}
+              />
+
+              {/* Botões */}
+              <div className="grid grid-cols-2 gap-4">
+                <EditableField
+                  id="cta-primary-button"
+                  label="Botão Primário"
+                  value={ctaEditor.getFieldValue('primary_button')}
+                  isEditing={ctaEditor.isEditing}
+                  placeholder="Começar Agora"
+                  onChange={(value) => ctaEditor.updateLocalField('primary_button', value)}
+                />
+                <EditableField
+                  id="cta-secondary-button"
+                  label="Botão Secundário"
+                  value={ctaEditor.getFieldValue('secondary_button')}
+                  isEditing={ctaEditor.isEditing}
+                  placeholder="Agendar Demo"
+                  onChange={(value) => ctaEditor.updateLocalField('secondary_button', value)}
+                />
+              </div>
+
+              {/* Link do Botão Secundário */}
+              <EditableField
+                id="cta-secondary-button-link"
+                label="Link do Botão Secundário"
+                value={ctaEditor.getFieldValue('secondary_button_link')}
+                isEditing={ctaEditor.isEditing}
+                placeholder="https://wa.me/..."
+                onChange={(value) => ctaEditor.updateLocalField('secondary_button_link', value)}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="footer">
