@@ -3,6 +3,7 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   Building2, 
   Users, 
+  Target, 
   Package, 
   Settings, 
   LogOut,
@@ -108,11 +109,11 @@ const StartTogetherAdminSidebar: React.FC = () => {
         <div className="p-4 border-b border-border lg:mt-0">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Package className="w-4 h-4 text-primary-foreground" />
+              <Target className="w-4 h-4 text-primary-foreground" />
             </div>
             {!collapsed && (
               <div>
-                <h2 className="text-sm font-semibold text-foreground">Start Together</h2>
+                <h2 className="text-sm font-semibold text-foreground">Strategy HUB</h2>
                 <p className="text-xs text-muted-foreground">Admin</p>
               </div>
             )}
@@ -200,9 +201,9 @@ export const StartTogetherAdminLayout: React.FC = () => {
             <SidebarTrigger className="mr-3" />
             <div className="flex items-center gap-2 flex-1">
               <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
-                <Package className="w-3 h-3 text-primary-foreground" />
+                <Target className="w-3 h-3 text-primary-foreground" />
               </div>
-              <span className="text-sm font-semibold">Start Together Admin</span>
+              <span className="text-sm font-semibold">Strategy HUB Admin</span>
             </div>
           </header>
         </div>
