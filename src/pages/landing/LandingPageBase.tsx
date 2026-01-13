@@ -321,6 +321,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
       </section>
 
       {/* Main Features */}
+      {parseBoolean(getContent('features', 'section_enabled', 'true'), true) && (
       <section id="features" className={`py-16 px-4 ${t.sectionBg}`}>
         <div className="container mx-auto">
           <div className="text-center mb-16">
@@ -478,8 +479,10 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
           </div>
         </div>
       </section>
+      )}
 
       {/* Demo Section */}
+      {parseBoolean(getContent('demo', 'section_enabled', 'true'), true) && (
       <section id="cases" className={`py-16 px-4 ${t.demoBg}`}>
         <div className="container mx-auto">
           <div className="text-center mb-16">
@@ -537,8 +540,10 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
             </div>}
         </div>
       </section>
+      )}
 
       {/* ROI Benefits Section */}
+      {parseBoolean(getContent('benefits', 'section_enabled', 'true'), true) && (
       <section className={`py-16 px-4 ${t.benefitsBg}`}>
         <div className="container mx-auto">
           <div className="text-center mb-16">
@@ -569,8 +574,10 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
           </div>
         </div>
       </section>
+      )}
 
       {/* Testimonials */}
+      {parseBoolean(getContent('testimonials', 'section_enabled', 'true'), true) && (
       <section className={`py-16 px-4 ${t.testimonialsBg}`}>
         <div className="container mx-auto">
           <div className="text-center mb-16">
@@ -609,6 +616,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
           </div>
         </div>
       </section>
+      )}
 
       {/* Final CTA */}
       <section className={`py-20 px-4 ${t.ctaBg}`}>
@@ -637,6 +645,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
       </section>
 
       {/* Footer */}
+      {parseBoolean(getContent('footer', 'section_enabled', 'true'), true) && (
       <footer className={t.footerBg}>
         <div className="container mx-auto px-4 py-12">
           <div className="grid md:grid-cols-3 gap-8 mb-8">
@@ -713,5 +722,6 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
           </div>
         </div>
       </footer>
+      )}
     </div>;
 };
