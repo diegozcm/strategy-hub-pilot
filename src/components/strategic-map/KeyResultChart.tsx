@@ -234,8 +234,8 @@ export const KeyResultChart = ({
     // Rastrear se há dados reais (actual não é null NEM undefined)
     const hasActualData = actual !== null && actual !== undefined;
 
-    const percentage = meta > 0 ? (realizado / meta) * 100 : 0;
     const status = calculateKRStatus(realizado, meta, targetDirection);
+    const percentage = status.percentage; // Usar percentage de calculateKRStatus que considera target_direction
 
     return {
       period: period.label,
@@ -456,7 +456,8 @@ export const KeyResultChart = ({
       };
     }
     
-    const percentage = selectedPeriodData.percentage;
+    // Usar status.percentage que já considera target_direction (minimize/maximize)
+    const percentage = selectedPeriodData.status.percentage;
     
     // Return color config based on percentage
     if (percentage > 105) {
@@ -628,14 +629,14 @@ export const KeyResultChart = ({
               // Se não há dados reais (actual é null), usar cinza
               if (!entry.hasActualData) {
                 fillColor = '#9ca3af'; // gray-400 - cor neutra para "sem dados"
-              } else if (entry.percentage > 105) {
-                fillColor = '#3b82f6'; // blue-500
-              } else if (entry.percentage >= 100) {
-                fillColor = '#22c55e'; // green-500
-              } else if (entry.percentage >= 71) {
-                fillColor = '#eab308'; // yellow-500
+              } else if (entry.status.isExcellent) {
+                fillColor = '#3b82f6'; // blue-500 - excelente (>105%)
+              } else if (entry.status.percentage >= 100) {
+                fillColor = '#22c55e'; // green-500 - sucesso (100-105%)
+              } else if (entry.status.isGood) {
+                fillColor = '#eab308'; // yellow-500 - atenção (71-99%)
               } else {
-                fillColor = '#ef4444'; // red-500
+                fillColor = '#ef4444'; // red-500 - crítico (<71%)
               }
               
               return <Cell key={`cell-${index}`} fill={fillColor} />;
