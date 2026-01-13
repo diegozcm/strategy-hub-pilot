@@ -3257,6 +3257,13 @@ export type Database = {
         }[]
       }
       generate_temporary_password: { Args: never; Returns: string }
+      get_admin_mfa_status: {
+        Args: { user_ids: string[] }
+        Returns: {
+          has_mfa: boolean
+          user_id: string
+        }[]
+      }
       get_company_users: {
         Args: { _company_id: string }
         Returns: {
