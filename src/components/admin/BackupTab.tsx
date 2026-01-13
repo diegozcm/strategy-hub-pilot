@@ -40,6 +40,7 @@ import {
   Info
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { formatDateTimeBrazil } from '@/lib/dateUtils';
 
 export const BackupTab: React.FC = () => {
   const {
@@ -319,7 +320,7 @@ export const BackupTab: React.FC = () => {
                     <SelectContent>
                       {backupJobs.filter(job => job.status === 'completed').map((job) => (
                         <SelectItem key={job.id} value={job.id}>
-                          {getBackupTypeLabel(job.backup_type)} - {new Date(job.created_at).toLocaleString('pt-BR')}
+                          {getBackupTypeLabel(job.backup_type)} - {formatDateTimeBrazil(job.created_at)}
                           {job.notes && ` (${job.notes.substring(0, 30)}...)`}
                         </SelectItem>
                       ))}
@@ -422,7 +423,7 @@ export const BackupTab: React.FC = () => {
                               </Badge>
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {log.start_time && new Date(log.start_time).toLocaleString('pt-BR')}
+                              {log.start_time && formatDateTimeBrazil(log.start_time)}
                               {log.records_restored && ` • ${log.records_restored} registros`}
                               {log.tables_restored && ` • ${log.tables_restored.length} tabelas`}
                             </div>
@@ -486,12 +487,12 @@ export const BackupTab: React.FC = () => {
                               </div>
                               
                               <div className="text-sm text-muted-foreground">
-                                <p>Criado em: {new Date(job.created_at).toLocaleString('pt-BR')}</p>
+                                <p>Criado em: {formatDateTimeBrazil(job.created_at)}</p>
                                 {job.start_time && (
-                                  <p>Iniciado em: {new Date(job.start_time).toLocaleString('pt-BR')}</p>
+                                  <p>Iniciado em: {formatDateTimeBrazil(job.start_time)}</p>
                                 )}
                                 {job.end_time && (
-                                  <p>Finalizado em: {new Date(job.end_time).toLocaleString('pt-BR')}</p>
+                                  <p>Finalizado em: {formatDateTimeBrazil(job.end_time)}</p>
                                 )}
                               </div>
 
@@ -754,14 +755,14 @@ export const BackupTab: React.FC = () => {
                                 
                                 <div>
                                   {schedule.last_run ? (
-                                    <p><strong>Última execução:</strong> {new Date(schedule.last_run).toLocaleString('pt-BR')}</p>
+                                    <p><strong>Última execução:</strong> {formatDateTimeBrazil(schedule.last_run)}</p>
                                   ) : (
                                     <p><strong>Última execução:</strong> Nunca executado</p>
                                   )}
                                   
                                   {schedule.is_active && (
                                     <p className={isOverdue ? 'text-destructive font-medium' : 'text-primary'}>
-                                      <strong>Próxima execução:</strong> {nextRun.toLocaleString('pt-BR')}
+                                      <strong>Próxima execução:</strong> {formatDateTimeBrazil(nextRun)}
                                     </p>
                                   )}
                                   

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useGoldenCircle } from '@/hooks/useGoldenCircle';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { formatDateTimeBrazil } from '@/lib/dateUtils';
 
 interface GoldenCircleHistoryProps {
   open: boolean;
@@ -53,7 +54,7 @@ export const GoldenCircleHistory: React.FC<GoldenCircleHistoryProps> = ({
                       </CardTitle>
                       <div className="flex items-center gap-2">
                         <Badge variant="secondary">
-                          {new Date(entry.changed_at).toLocaleString('pt-BR')}
+                          {formatDateTimeBrazil(entry.changed_at)}
                         </Badge>
                         <Badge variant="outline">
                           {entry.profiles?.first_name && entry.profiles?.last_name 

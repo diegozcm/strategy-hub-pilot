@@ -33,6 +33,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { RecalculateKRMetricsButton } from './RecalculateKRMetricsButton';
+import { formatDateTimeBrazil } from '@/lib/dateUtils';
 
 interface SystemSetting {
   id: string;
@@ -435,7 +436,7 @@ export const SystemSettingsPage: React.FC = () => {
                           </div>
                           
                           <div className="text-xs text-muted-foreground">
-                            Última atualização: {new Date(setting.updated_at).toLocaleString('pt-BR')}
+                            Última atualização: {formatDateTimeBrazil(setting.updated_at)}
                           </div>
                         </div>
                       ))}

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { Target, AlertTriangle, TrendingUp } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { formatDateTimeBrazil, formatDateBrazil } from '@/lib/dateUtils';
 
 interface BeepAssessment {
   id: string;
@@ -267,8 +267,8 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
                    const answeredQuestions = assessment.answered_questions || 0;
                    const totalQuestions = assessment.total_questions || 100;
                    const lastAnswerDate = assessment.last_answer_at 
-                     ? new Date(assessment.last_answer_at).toLocaleDateString('pt-BR')
-                     : new Date(assessment.created_at).toLocaleDateString('pt-BR');
+                      ? formatDateBrazil(assessment.last_answer_at)
+                      : formatDateBrazil(assessment.created_at);
                    
                    return (
                      <div key={assessment.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
@@ -278,7 +278,7 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
                           <p className="text-sm text-gray-600">
                             {answeredQuestions > 0 
                               ? `Última resposta em ${lastAnswerDate}`
-                              : `Iniciada em ${new Date(assessment.created_at).toLocaleDateString('pt-BR')}`
+                              : `Iniciada em ${formatDateBrazil(assessment.created_at)}`
                             }
                           </p>
                         </div>
@@ -370,8 +370,8 @@ export const BeepStartScreen: React.FC<BeepStartScreenProps> = ({
                   <p className="text-sm">
                     <strong>Última atividade:</strong> {
                       conflictingDraft.last_answer_at 
-                        ? new Date(conflictingDraft.last_answer_at).toLocaleString('pt-BR')
-                        : new Date(conflictingDraft.created_at).toLocaleString('pt-BR')
+                        ? formatDateTimeBrazil(conflictingDraft.last_answer_at)
+                        : formatDateTimeBrazil(conflictingDraft.created_at)
                     }
                   </p>
                 </div>
