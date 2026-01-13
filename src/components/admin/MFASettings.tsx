@@ -71,6 +71,14 @@ export const MFASettings: React.FC = () => {
   const handleDeleteFactor = async () => {
     if (!deletingFactorId) return;
 
+    // Prevent removing the last MFA factor - mandatory for admins
+    if (verifiedFactors.length <= 1) {
+      toast.error('Administradores devem ter pelo menos um método de 2FA configurado');
+      setDeletingFactorId(null);
+      setConfirmDelete(false);
+      return;
+    }
+
     try {
       const { error } = await supabase.auth.mfa.unenroll({
         factorId: deletingFactorId
@@ -93,13 +101,15 @@ export const MFASettings: React.FC = () => {
     }
   };
 
+  const verifiedFactors = factors.filter(f => f.status === 'verified');
+
   const handleEnrollmentSuccess = () => {
     setShowEnrollment(false);
     loadFactors();
   };
 
-  const verifiedFactors = factors.filter(f => f.status === 'verified');
   const hasMFA = verifiedFactors.length > 0;
+  const canRemoveFactor = verifiedFactors.length > 1;
 
   if (showEnrollment) {
     return (
@@ -169,6 +179,8 @@ export const MFASettings: React.FC = () => {
                         setDeletingFactorId(factor.id);
                         setConfirmDelete(true);
                       }}
+                      disabled={!canRemoveFactor}
+                      title={!canRemoveFactor ? 'Você deve ter pelo menos um método de 2FA' : undefined}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -187,10 +199,19 @@ export const MFASettings: React.FC = () => {
             </Button>
 
             {!hasMFA && (
-              <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                <ShieldOff className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5" />
-                <p className="text-xs text-amber-700 dark:text-amber-300">
-                  Recomendamos fortemente ativar a autenticação de dois fatores para proteger sua conta de administrador.
+              <div className="flex items-start gap-2 p-3 bg-destructive/10 rounded-lg">
+                <ShieldOff className="h-4 w-4 text-destructive mt-0.5" />
+                <p className="text-xs text-destructive">
+                  A autenticação de dois fatores é obrigatória para todos os administradores do sistema.
+                </p>
+              </div>
+            )}
+
+            {hasMFA && !canRemoveFactor && (
+              <div className="flex items-start gap-2 p-3 bg-muted rounded-lg">
+                <Shield className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <p className="text-xs text-muted-foreground">
+                  Você deve ter pelo menos um método de 2FA configurado. Adicione outro método antes de remover este.
                 </p>
               </div>
             )}

@@ -80,7 +80,7 @@ const App = () => (
                 <Route path="/company-inactive" element={<CompanyInactivePage />} />
                 <Route path="/admin-login" element={<AdminLoginPage />} />
                 <Route path="/admin-mfa-verify" element={<MFAVerification />} />
-                <Route path="/admin-mfa-setup" element={<MFAEnrollment />} />
+                <Route path="/admin-mfa-setup" element={<MFAEnrollment required />} />
                 
                 {/* Redirects for direct page access */}
                 <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />
