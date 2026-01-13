@@ -251,7 +251,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
           <div className="flex items-center space-x-2">
             <Target className={`h-8 w-8 ${t.logoColor}`} />
             <div className="flex flex-col">
-              <span className={`text-2xl font-bold ${t.logoColor}`}>Start Together</span>
+              <span className={`text-2xl font-bold ${t.logoColor}`}>Strategy HUB</span>
               <span className={`text-xs ${t.logoSubtext}`}>by COFOUND</span>
             </div>
           </div>
@@ -263,7 +263,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
             <a href="#cases" className={t.navLink}>
               Caso de Uso
             </a>
-            <a href={getContent('hero', 'secondary_button_link', 'https://wa.me/554796342353?text=Tenho%20interesse%20em%20saber%20mais%20sobre%20o%20Start%20Together%20by%20COFOUND')} className={t.navLink}>
+            <a href={getContent('hero', 'secondary_button_link', 'https://wa.me/554796342353?text=Tenho%20interesse%20em%20saber%20mais%20sobre%20o%20Strategy%20HUB%20by%20COFOUND')} className={t.navLink}>
               Contato
             </a>
           </nav>
@@ -295,7 +295,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
                     {getContent('hero', 'primary_button', 'Começar Gratuitamente')}
                   </Button>
                 </Link>}
-              {parseBoolean(getContent('hero', 'secondary_button_active', 'false')) && <a href={getContent('hero', 'secondary_button_link', 'https://wa.me//554796342353?text=Tenho%20interesse%20em%20saber%20mais%20sobre%20o%20Start%20Together%20by%20COFOUND')} target="_blank" rel="noopener noreferrer">
+              {parseBoolean(getContent('hero', 'secondary_button_active', 'false')) && <a href={getContent('hero', 'secondary_button_link', 'https://wa.me//554796342353?text=Tenho%20interesse%20em%20saber%20mais%20sobre%20o%20Strategy%20HUB%20by%20COFOUND')} target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" size="lg" className={`text-lg px-8 py-6 ${t.secondaryBtn}`}>
                     <Phone className="mr-2 h-5 w-5" />
                     {getContent('hero', 'secondary_button', 'Fale com um consultor!')}
@@ -487,7 +487,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className={`text-4xl font-bold ${t.demoTitle} mb-4`}>
-              {getContent('demo', 'title', 'Veja o Start Together em Ação')}
+              {getContent('demo', 'title', 'Veja o Strategy HUB em Ação')}
             </h2>
             <p className={`text-xl ${t.demoSubtitle}`}>
               {getContent('demo', 'subtitle', 'Explore as principais funcionalidades da plataforma')}
@@ -653,7 +653,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <Target className={`h-6 w-6 ${t.footerLogoColor}`} />
-                <span className={`text-xl font-bold ${t.footerTitle}`}>Start Together</span>
+                <span className={`text-xl font-bold ${t.footerTitle}`}>Strategy HUB</span>
               </div>
               <p className={`${t.footerText} text-sm mb-4`}>
                 {getContent('footer', 'description', 'Impulsionando o crescimento de empresas através de estratégia e inovação.')}
@@ -708,7 +708,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
           <div className={`border-t ${t.footerBorder} pt-8`}>
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <p className={`text-sm ${t.footerCopyright}`}>
-                © 2024 Start Together by COFOUND. Todos os direitos reservados.
+                © 2024 Strategy HUB by COFOUND. Todos os direitos reservados.
               </p>
               <div className="flex gap-6">
                 <a href={getContent('footer', 'privacy_url', '#')} className={`text-sm ${t.footerLink}`}>

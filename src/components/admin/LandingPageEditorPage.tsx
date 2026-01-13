@@ -577,7 +577,7 @@ export const LandingPageEditorPage: React.FC = () => {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle>Seção Demo - Configurações Gerais</CardTitle>
-                  <CardDescription>Configure o título e subtítulo da seção "Veja o Start Together em Ação"</CardDescription>
+                  <CardDescription>Configure o título e subtítulo da seção "Veja o Strategy HUB em Ação"</CardDescription>
                 </div>
                 <TabControls
                   isEditing={demoEditor.isEditing}
@@ -932,7 +932,7 @@ export const LandingPageEditorPage: React.FC = () => {
                   value={footerEditor.getFieldValue('company_name')}
                   isEditing={footerEditor.isEditing}
                   onChange={(value) => footerEditor.updateLocalField('company_name', value)}
-                  placeholder="Ex: Start Together"
+                  placeholder="Ex: Strategy HUB"
                 />
                 <EditableField
                   id="footer-company-description"
@@ -1021,7 +1021,7 @@ export const LandingPageEditorPage: React.FC = () => {
                   value={footerEditor.getFieldValue('copyright_text')}
                   isEditing={footerEditor.isEditing}
                   onChange={(value) => footerEditor.updateLocalField('copyright_text', value)}
-                  placeholder="Ex: © 2024 Start Together. Todos os direitos reservados."
+                  placeholder="Ex: © 2024 Strategy HUB. Todos os direitos reservados."
                 />
 
                 <div className="space-y-4">

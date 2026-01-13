@@ -112,14 +112,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Enviar email de notificação
     const emailResponse = await resend.emails.send({
-      from: "StartTogether <onboarding@resend.dev>",
+      from: "Strategy HUB <onboarding@resend.dev>",
       to: [adminEmail],
-      subject: "Novo usuário aguardando aprovação - StartTogether",
+      subject: "Novo usuário aguardando aprovação - Strategy HUB",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #2563eb;">Novo usuário aguardando aprovação</h2>
           
-          <p>Um novo usuário se cadastrou na plataforma StartTogether e está aguardando aprovação para acessar o sistema.</p>
+          <p>Um novo usuário se cadastrou na plataforma Strategy HUB e está aguardando aprovação para acessar o sistema.</p>
           
           <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h3 style="margin-top: 0;">Informações do usuário:</h3>
@@ -133,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
           
           <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
           <p style="color: #6b7280; font-size: 12px;">
-            Esta é uma notificação automática do sistema StartTogether.<br>
+            Esta é uma notificação automática do sistema Strategy HUB.<br>
             Se você não deve receber estes emails, entre em contato com o administrador do sistema.
           </p>
         </div>
