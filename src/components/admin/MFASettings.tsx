@@ -71,13 +71,6 @@ export const MFASettings: React.FC = () => {
   const handleDeleteFactor = async () => {
     if (!deletingFactorId) return;
 
-    // Prevent removing the last MFA factor - mandatory for admins
-    if (verifiedFactors.length <= 1) {
-      toast.error('Administradores devem ter pelo menos um método de 2FA configurado');
-      setDeletingFactorId(null);
-      setConfirmDelete(false);
-      return;
-    }
 
     try {
       const { error } = await supabase.auth.mfa.unenroll({
@@ -109,7 +102,7 @@ export const MFASettings: React.FC = () => {
   };
 
   const hasMFA = verifiedFactors.length > 0;
-  const canRemoveFactor = verifiedFactors.length > 1;
+  const canRemoveFactor = verifiedFactors.length > 0;
 
   if (showEnrollment) {
     return (
