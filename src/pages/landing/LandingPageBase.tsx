@@ -619,13 +619,14 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
       )}
 
       {/* Final CTA */}
+      {parseBoolean(getContent('cta', 'section_enabled', 'true'), true) && (
       <section className={`py-20 px-4 ${t.ctaBg}`}>
         <div className="container mx-auto text-center max-w-4xl">
           <h2 className={`text-4xl md:text-5xl font-bold ${t.ctaTitle} mb-6`}>
             {getContent('cta', 'title', 'Pronto para transformar sua empresa?')}
           </h2>
           <p className={`text-xl ${t.ctaSubtitle} mb-8`}>
-            {getContent('cta', 'subtitle', 'Junte-se a centenas de empresas que já estão crescendo com o Start Together')}
+            {getContent('cta', 'subtitle', 'Junte-se a centenas de empresas que já estão crescendo com o Strategy HUB')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/auth">
@@ -643,6 +644,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
           </div>
         </div>
       </section>
+      )}
 
       {/* Footer */}
       {parseBoolean(getContent('footer', 'section_enabled', 'true'), true) && (
