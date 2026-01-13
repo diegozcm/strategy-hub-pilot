@@ -515,17 +515,6 @@ export const AuthPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Admin Access Link */}
-        {!isPasswordReset && (
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => navigate('/admin-login')}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Acesso Administrativo →
-            </button>
-          </div>
-        )}
 
         {/* Features */}
         {!isPasswordReset && (
