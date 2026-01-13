@@ -8,13 +8,49 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { IconPicker } from './landing-page/IconPicker';
 import { ScreenshotManager } from './landing-page/ScreenshotManager';
 import { Badge } from '@/components/ui/badge';
-import { Eye, RefreshCw, Info } from 'lucide-react';
+import { Eye, RefreshCw, Info, ToggleLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTabEditor } from '@/hooks/useTabEditor';
 import { TabControls } from './landing-page/TabControls';
 import { EditableField } from './landing-page/EditableField';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
+
+// Componente reutilizável para controle de seção ativa
+interface SectionToggleProps {
+  isEditing: boolean;
+  isActive: boolean;
+  onToggle: (checked: boolean) => void;
+  sectionName: string;
+}
+
+const SectionToggle: React.FC<SectionToggleProps> = ({ isEditing, isActive, onToggle, sectionName }) => (
+  <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
+    <CardContent className="py-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <ToggleLeft className="h-5 w-5 text-primary" />
+          <div>
+            <Label className="text-base font-semibold">Seção Ativa</Label>
+            <p className="text-sm text-muted-foreground">
+              Habilitar ou desabilitar a seção "{sectionName}" na landing page
+            </p>
+          </div>
+        </div>
+        {isEditing ? (
+          <Switch
+            checked={isActive}
+            onCheckedChange={onToggle}
+          />
+        ) : (
+          <Badge variant={isActive ? 'default' : 'secondary'}>
+            {isActive ? 'Ativa' : 'Inativa'}
+          </Badge>
+        )}
+      </div>
+    </CardContent>
+  </Card>
+);
 
 export const LandingPageEditorPage: React.FC = () => {
   const { content, loading, updateContent, getContent, refetch, forceRefresh, lastFetch } = useLandingPageContent();
@@ -324,6 +360,14 @@ export const LandingPageEditorPage: React.FC = () => {
 
         <TabsContent value="features">
           <div className="space-y-6">
+            {/* Section Toggle */}
+            <SectionToggle
+              isEditing={featuresEditor.isEditing}
+              isActive={featuresEditor.getFieldValue('section_enabled', 'true') === 'true'}
+              onToggle={(checked) => featuresEditor.updateLocalField('section_enabled', checked.toString())}
+              sectionName="Features"
+            />
+
             {/* General Settings */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -521,6 +565,14 @@ export const LandingPageEditorPage: React.FC = () => {
 
         <TabsContent value="demo">
           <div className="space-y-6">
+            {/* Section Toggle */}
+            <SectionToggle
+              isEditing={demoEditor.isEditing}
+              isActive={demoEditor.getFieldValue('section_enabled', 'true') === 'true'}
+              onToggle={(checked) => demoEditor.updateLocalField('section_enabled', checked.toString())}
+              sectionName="Demo"
+            />
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -613,6 +665,14 @@ export const LandingPageEditorPage: React.FC = () => {
 
         <TabsContent value="benefits">
           <div className="space-y-6">
+            {/* Section Toggle */}
+            <SectionToggle
+              isEditing={benefitsEditor.isEditing}
+              isActive={benefitsEditor.getFieldValue('section_enabled', 'true') === 'true'}
+              onToggle={(checked) => benefitsEditor.updateLocalField('section_enabled', checked.toString())}
+              sectionName="Benefits"
+            />
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
@@ -700,6 +760,14 @@ export const LandingPageEditorPage: React.FC = () => {
 
         <TabsContent value="testimonials">
           <div className="space-y-6">
+            {/* Section Toggle */}
+            <SectionToggle
+              isEditing={testimonialsEditor.isEditing}
+              isActive={testimonialsEditor.getFieldValue('section_enabled', 'true') === 'true'}
+              onToggle={(checked) => testimonialsEditor.updateLocalField('section_enabled', checked.toString())}
+              sectionName="Testimonials"
+            />
+
             {/* General Settings */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -833,6 +901,14 @@ export const LandingPageEditorPage: React.FC = () => {
 
         <TabsContent value="footer">
           <div className="space-y-6">
+            {/* Section Toggle */}
+            <SectionToggle
+              isEditing={footerEditor.isEditing}
+              isActive={footerEditor.getFieldValue('section_enabled', 'true') === 'true'}
+              onToggle={(checked) => footerEditor.updateLocalField('section_enabled', checked.toString())}
+              sectionName="Footer"
+            />
+
             {/* Company Information */}
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
