@@ -17,10 +17,7 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
 
   useEffect(() => {
     const checkMFAStatus = async () => {
-      if (!user) {
-        setMfaStatus('loading');
-        return;
-      }
+      if (!user) return; // Don't check MFA if no user
 
       try {
         // Check if user has any verified MFA factors
@@ -28,7 +25,7 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
         const verifiedFactors = factorsData?.totp?.filter(f => f.status === 'verified') || [];
 
         if (verifiedFactors.length === 0) {
-          // Admin has no MFA configured - must set up
+          // Admin has no MFA configured - allow access
           setMfaStatus('no-factors');
           return;
         }
@@ -49,10 +46,13 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
       }
     };
 
-    checkMFAStatus();
+    if (user) {
+      checkMFAStatus();
+    }
   }, [user]);
 
-  const loading = authLoading || adminCheckLoading || mfaStatus === 'loading';
+  // Loading only considers mfaStatus when user exists and is admin
+  const loading = authLoading || adminCheckLoading || (!!user && isSystemAdmin && mfaStatus === 'loading');
 
   if (loading) {
     return (
