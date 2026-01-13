@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Plus, Trash2, UserPlus, Search } from 'lucide-react';
+import { Shield, Plus, Trash2, UserPlus, Search, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,12 +28,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { MFASettings } from './MFASettings';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 interface SystemAdmin {
   id: string;
   user_id: string;
   role: string;
   created_at: string;
+  has_mfa?: boolean;
   profiles: {
     email: string;
     first_name: string | null;
@@ -91,11 +94,21 @@ export const SystemAdminsTab: React.FC = () => {
 
       if (profilesError) throw profilesError;
 
+      // Buscar status de MFA dos admins
+      const { data: mfaStatus, error: mfaError } = await supabase
+        .rpc('get_admin_mfa_status', { user_ids: userIds });
+
+      if (mfaError) {
+        console.error('Erro ao buscar status MFA:', mfaError);
+      }
+
       // Combinar os dados
       const adminsData = userRoles.map(ur => {
         const profile = profiles?.find(p => p.user_id === ur.user_id);
+        const mfa = mfaStatus?.find((m: { user_id: string; has_mfa: boolean }) => m.user_id === ur.user_id);
         return {
           ...ur,
+          has_mfa: mfa?.has_mfa || false,
           profiles: profile || {
             email: 'unknown@example.com',
             first_name: null,
@@ -411,6 +424,29 @@ export const SystemAdminsTab: React.FC = () => {
                           Admin desde {new Date(admin.created_at).toLocaleDateString('pt-BR')}
                         </p>
                       </div>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            {admin.has_mfa ? (
+                              <Badge className="bg-green-600 hover:bg-green-700 text-white">
+                                <ShieldCheck className="h-3 w-3 mr-1" />
+                                2FA Ativo
+                              </Badge>
+                            ) : (
+                              <Badge variant="destructive">
+                                <ShieldAlert className="h-3 w-3 mr-1" />
+                                Sem 2FA
+                              </Badge>
+                            )}
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {admin.has_mfa 
+                              ? 'Autenticação de dois fatores configurada' 
+                              : 'Este administrador ainda não configurou 2FA'}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
 
                       <Button
                         variant="destructive"
