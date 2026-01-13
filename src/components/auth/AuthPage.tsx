@@ -275,7 +275,7 @@ export const AuthPage: React.FC = () => {
           <div className="mb-4">
             <Target className="h-8 w-8 text-primary mx-auto" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">Start Together</h1>
+          <h1 className="text-3xl font-bold text-foreground">Strategy HUB</h1>
           <p className="text-muted-foreground mt-2">Gestão Estratégica Inteligente</p>
         </div>
 
@@ -295,7 +295,7 @@ export const AuthPage: React.FC = () => {
             <CardDescription className="text-center">
               {isPasswordReset 
                 ? 'Digite sua nova senha abaixo'
-                : 'Entre com suas credenciais para acessar o Start Together'
+                : 'Entre com suas credenciais para acessar o Strategy HUB'
               }
             </CardDescription>
           </CardHeader>

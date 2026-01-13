@@ -131,18 +131,18 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('is_active', true)
       .single();
 
-    let emailSubject = "Esqueci minha senha - Start Together";
+    let emailSubject = "Esqueci minha senha - Strategy HUB";
     let emailBody = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2563eb; margin: 0;">🔷 Start Together</h1>
+          <h1 style="color: #2563eb; margin: 0;">🔷 Strategy HUB</h1>
           <p style="color: #64748b; margin: 5px 0;">Gestão Estratégica</p>
         </div>
         
         <div style="background: #f8fafc; padding: 25px; border-radius: 8px; margin-bottom: 25px;">
           <h2 style="color: #1e293b; margin-top: 0;">Olá, ${userName}!</h2>
           <p style="color: #475569; line-height: 1.6;">
-            Você solicitou ajuda para acessar sua conta no Start Together. 
+            Você solicitou ajuda para acessar sua conta no Strategy HUB. 
             Use as credenciais temporárias abaixo para fazer login:
           </p>
           
@@ -168,7 +168,7 @@ const handler = async (req: Request): Promise<Response> => {
         
         <div style="border-top: 1px solid #e2e8f0; padding-top: 20px; text-align: center;">
           <p style="color: #94a3b8; font-size: 12px; margin: 0;">
-            Este e-mail foi enviado automaticamente pelo sistema Start Together.<br>
+            Este e-mail foi enviado automaticamente pelo sistema Strategy HUB.<br>
             Se você não solicitou este acesso, pode ignorar este e-mail com segurança.
           </p>
         </div>
@@ -205,7 +205,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     while (retryCount <= maxRetries) {
       emailResponse = await resend.emails.send({
-        from: "Start Together <noreply@cofound.com.br>",
+        from: "Strategy HUB <noreply@cofound.com.br>",
         to: [email],
         subject: emailSubject,
         html: emailBody,

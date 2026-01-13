@@ -92,7 +92,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Step 4: Fetching email template from database...');
     
     // Fetch email template from database
-    let emailSubject = "Bem-vindo(a) ao Start Together - Suas credenciais de acesso";
+    let emailSubject = "Bem-vindo(a) ao Strategy HUB - Suas credenciais de acesso";
     let emailBody = "";
     
     try {
@@ -120,14 +120,14 @@ const handler = async (req: Request): Promise<Response> => {
       emailBody = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #2563eb; margin: 0;">🔷 Start Together</h1>
+                <h1 style="color: #2563eb; margin: 0;">🔷 Strategy HUB</h1>
                 <p style="color: #64748b; margin: 5px 0;">Gestão Estratégica</p>
               </div>
               
               <div style="background: #f8fafc; padding: 25px; border-radius: 8px; margin-bottom: 25px;">
                 <h2 style="color: #1e293b; margin-top: 0;">Olá, {{userName}}!</h2>
                 <p style="color: #475569; line-height: 1.6;">
-                  Você foi convidado(a) para acessar o sistema Start Together. 
+                  Você foi convidado(a) para acessar o sistema Strategy HUB. 
                   Suas credenciais de acesso são:
                 </p>
                 
@@ -179,7 +179,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       try {
         emailResponse = await resend.emails.send({
-          from: "Start Together <noreply@cofound.com.br>",
+          from: "Strategy HUB <noreply@cofound.com.br>",
           to: [to],
           subject: emailSubject,
           html: emailBody,

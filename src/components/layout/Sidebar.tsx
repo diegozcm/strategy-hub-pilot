@@ -97,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
             <div className="flex items-center space-x-2">
               <Target className="h-6 w-6 text-primary" />
               <div>
-                <h1 className="text-lg font-bold text-foreground">Start Together</h1>
+                <h1 className="text-lg font-bold text-foreground">Strategy HUB</h1>
                 <p className="text-xs text-muted-foreground">By COFOUND</p>
               </div>
             </div>
