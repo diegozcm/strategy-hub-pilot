@@ -80,12 +80,12 @@ Deno.serve(async (req) => {
         // Execute the backup
         const backupResult = await executeScheduledBackup(supabase, schedule)
         
+        // ALWAYS update next_run to prevent infinite loops, even if backup fails
+        await updateScheduleNextRun(supabase, schedule)
+        
         if (backupResult.success) {
           // Perform backup rotation (keep only 5 most recent)
           await performBackupRotation(supabase, schedule.id)
-          
-          // Update schedule's last_run and next_run
-          await updateScheduleNextRun(supabase, schedule)
           
           console.log(`✅ Schedule ${schedule.schedule_name} executed successfully`)
           executionResults.push({
@@ -105,6 +105,14 @@ Deno.serve(async (req) => {
         }
       } catch (error) {
         console.error(`❌ Error executing schedule ${schedule.schedule_name}:`, error)
+        
+        // Still update next_run even on exception to prevent infinite loops
+        try {
+          await updateScheduleNextRun(supabase, schedule)
+        } catch (updateError) {
+          console.error(`❌ Failed to update next_run for ${schedule.schedule_name}:`, updateError)
+        }
+        
         executionResults.push({
           schedule_id: schedule.id,
           schedule_name: schedule.schedule_name,
@@ -262,8 +270,16 @@ async function executeScheduledBackup(supabase: any, schedule: BackupSchedule) {
 
     const backupSizeBytes = new TextEncoder().encode(backupContent).length
 
+    // Sanitize schedule name: remove accents and special characters
+    const sanitizedScheduleName = schedule.schedule_name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents (diacritics)
+      .replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .toLowerCase()
+
     // Upload to storage
-    const fileName = `scheduled-backup-${schedule.schedule_name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}-${backupJob.id}.json`
+    const fileName = `scheduled-backup-${sanitizedScheduleName}-${new Date().toISOString().split('T')[0]}-${backupJob.id}.json`
     const filePath = `scheduled/${fileName}`
 
     const { error: uploadError } = await supabase.storage
@@ -274,6 +290,16 @@ async function executeScheduledBackup(supabase: any, schedule: BackupSchedule) {
       })
 
     if (uploadError) {
+      // Mark job as failed with error details
+      await supabase
+        .from('backup_jobs')
+        .update({
+          status: 'failed',
+          error_message: `Upload failed: ${uploadError.message}`,
+          end_time: new Date().toISOString()
+        })
+        .eq('id', backupJob.id)
+      
       throw new Error(`Failed to upload backup: ${uploadError.message}`)
     }
 
@@ -312,6 +338,9 @@ async function executeScheduledBackup(supabase: any, schedule: BackupSchedule) {
 
   } catch (error) {
     console.error('❌ Backup execution error:', error)
+    
+    // Try to mark any existing job as failed
+    // Note: backupJob may not exist if error occurred during job creation
     return {
       success: false,
       error: error.message
