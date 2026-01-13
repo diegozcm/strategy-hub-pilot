@@ -13,6 +13,8 @@ import { LoadingStateMonitor } from "@/components/ui/LoadingStateMonitor";
 import { AuthFlowDebugger } from "@/components/ui/AuthFlowDebugger";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { AdminLoginPage } from "@/components/admin/AdminLoginPage";
+import { MFAVerification } from "@/components/admin/MFAVerification";
+import { MFAEnrollment } from "@/components/admin/MFAEnrollment";
 import { CompanyInactivePage } from "@/pages/CompanyInactivePage";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { MonitoringPage } from "@/components/admin/MonitoringPage";
@@ -77,6 +79,8 @@ const App = () => (
                 <Route path="/company-selection" element={<CompanySelectionPage />} />
                 <Route path="/company-inactive" element={<CompanyInactivePage />} />
                 <Route path="/admin-login" element={<AdminLoginPage />} />
+                <Route path="/admin-mfa-verify" element={<MFAVerification />} />
+                <Route path="/admin-mfa-setup" element={<MFAEnrollment />} />
                 
                 {/* Redirects for direct page access */}
                 <Route path="/dashboard" element={<Navigate to="/app/dashboard" replace />} />

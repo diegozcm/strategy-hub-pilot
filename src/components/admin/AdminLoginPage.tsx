@@ -58,8 +58,18 @@ export const AdminLoginPage: React.FC = () => {
         return;
       }
       
+      // Check MFA status
+      const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      
+      if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel === 'aal1') {
+        // User has MFA enabled, needs to verify
+        console.log('🔐 MFA required, redirecting to verification...');
+        navigate('/admin-mfa-verify', { replace: true });
+        setLoading(false);
+        return;
+      }
+      
       console.log('✅ Admin login successful, redirecting to admin panel...');
-      // Navegação direta após confirmar que é admin
       navigate('/app/admin', { replace: true });
     } catch (err) {
       setError('Erro ao tentar fazer login. Tente novamente.');
