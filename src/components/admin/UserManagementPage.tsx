@@ -34,6 +34,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { useIsSystemAdmin } from '@/hooks/useIsSystemAdmin';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -962,6 +963,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 export const UserManagementPage: React.FC = () => {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
+  const { data: isAdmin, isLoading: adminLoading } = useIsSystemAdmin();
   const { toast } = useToast();
   const [users, setUsers] = useState<ExtendedUser[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -974,8 +976,6 @@ export const UserManagementPage: React.FC = () => {
   const [confirmingEmail, setConfirmingEmail] = useState<string | null>(null);
   const [userToDelete, setUserToDelete] = useState<UserProfile | null>(null);
   const [isDeletionModalOpen, setIsDeletionModalOpen] = useState(false);
-
-  const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
     if (isAdmin) {
@@ -1215,6 +1215,14 @@ export const UserManagementPage: React.FC = () => {
   const handleUserDeleted = () => {
     loadData();
   };
+
+  if (adminLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (

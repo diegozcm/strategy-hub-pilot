@@ -26,6 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { useIsSystemAdmin } from '@/hooks/useIsSystemAdmin';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -167,6 +168,7 @@ const CompanyCard: React.FC<CompanyCardProps> = ({
 
 export const CompaniesPage: React.FC = () => {
   const { user, profile } = useAuth();
+  const { data: isAdmin, isLoading: adminLoading } = useIsSystemAdmin();
   const { toast } = useToast();
   // Usar o hook customizado para carregamento de dados
   const {
@@ -186,8 +188,6 @@ export const CompaniesPage: React.FC = () => {
   const [managingUsers, setManagingUsers] = useState<Company | null>(null);
   const [deletingCompany, setDeletingCompany] = useState<Company | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
-
-  const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
     if (isAdmin) {
@@ -275,6 +275,14 @@ export const CompaniesPage: React.FC = () => {
     const matchesType = companyTypeFilter === 'all' || company.company_type === companyTypeFilter;
     return matchesSearch && matchesType;
   });
+
+  if (adminLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (

@@ -28,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { useIsSystemAdmin } from '@/hooks/useIsSystemAdmin';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -49,13 +50,12 @@ interface SettingGroup {
 
 export const SystemSettingsPage: React.FC = () => {
   const { user, profile } = useAuth();
+  const { data: isAdmin, isLoading: adminLoading } = useIsSystemAdmin();
   const { toast } = useToast();
   const [settings, setSettings] = useState<SettingGroup>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editedSettings, setEditedSettings] = useState<{[key: string]: any}>({});
-
-  const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
     if (isAdmin) {
@@ -238,6 +238,19 @@ export const SystemSettingsPage: React.FC = () => {
       />
     );
   };
+
+  if (adminLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center py-8">
+            <LoadingSpinner size="lg" />
+            <p className="text-muted-foreground mt-4">Verificando permissões...</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!isAdmin) {
     return (
