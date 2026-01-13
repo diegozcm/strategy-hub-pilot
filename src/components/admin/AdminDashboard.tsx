@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Building, Users, Shield, Activity, TrendingUp, AlertTriangle } from 'lucide-react';
 import { AdminDashboardSkeleton } from './AdminDashboardSkeleton';
 import { useActiveUsersPresence, type ActiveUser } from '@/hooks/useActiveUsersPresence';
+import { formatDateTimeBrazil, formatTimeBrazil } from '@/lib/dateUtils';
 
 interface AdminStats {
   totalCompanies: number;
@@ -276,10 +277,7 @@ export const AdminDashboard: React.FC = () => {
                       {user.company_name || 'Sem empresa'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Online: {new Date(user.online_at).toLocaleString('pt-BR', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      Online: {formatTimeBrazil(user.online_at)}
                     </p>
                     <p className="text-xs text-green-500 font-medium">
                       Sessão: {formatSessionDuration(user.online_at)}
@@ -328,13 +326,7 @@ export const AdminDashboard: React.FC = () => {
                       {login.companies?.name || 'Sem empresa'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(login.login_time).toLocaleString('pt-BR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {formatDateTimeBrazil(login.login_time)}
                     </p>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${
                       login.profiles?.role === 'admin' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :

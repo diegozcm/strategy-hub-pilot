@@ -6,6 +6,7 @@ import { KeyResult } from '@/types/strategic-map';
 import { useKeyResultHistory, KeyResultHistoryEntry } from '@/hooks/useKeyResultHistory';
 import { Clock, User, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatValueWithUnit } from '@/lib/utils';
+import { formatDateTimeBrazil } from '@/lib/dateUtils';
 
 interface KeyResultHistoryTabProps {
   keyResult: KeyResult;
@@ -81,7 +82,7 @@ export const KeyResultHistoryTab = ({ keyResult }: KeyResultHistoryTabProps) => 
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="text-xs">
                     <Clock className="w-3 h-3 mr-1" />
-                    {new Date(entry.changed_at).toLocaleString('pt-BR')}
+                    {formatDateTimeBrazil(entry.changed_at)}
                   </Badge>
                   <Badge variant="outline" className="text-xs">
                     <User className="w-3 h-3 mr-1" />
