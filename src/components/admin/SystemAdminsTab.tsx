@@ -27,6 +27,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { MFASettings } from './MFASettings';
 
 interface SystemAdmin {
   id: string;
@@ -429,6 +430,22 @@ export const SystemAdminsTab: React.FC = () => {
               ))
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Seção de Segurança 2FA */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Sua Segurança
+          </CardTitle>
+          <CardDescription>
+            A autenticação de dois fatores é obrigatória para todos os administradores
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <MFASettings />
         </CardContent>
       </Card>
 

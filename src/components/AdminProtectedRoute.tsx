@@ -13,37 +13,46 @@ interface AdminProtectedRouteProps {
 export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
   const { data: isSystemAdmin, isLoading: adminCheckLoading } = useIsSystemAdmin();
-  const [mfaRequired, setMfaRequired] = useState<boolean | null>(null);
-  const [checkingMFA, setCheckingMFA] = useState(true);
+  const [mfaStatus, setMfaStatus] = useState<'loading' | 'no-factors' | 'needs-verify' | 'verified'>('loading');
 
   useEffect(() => {
     const checkMFAStatus = async () => {
       if (!user) {
-        setCheckingMFA(false);
+        setMfaStatus('loading');
         return;
       }
 
       try {
+        // Check if user has any verified MFA factors
+        const { data: factorsData } = await supabase.auth.mfa.listFactors();
+        const verifiedFactors = factorsData?.totp?.filter(f => f.status === 'verified') || [];
+
+        if (verifiedFactors.length === 0) {
+          // Admin has no MFA configured - must set up
+          setMfaStatus('no-factors');
+          return;
+        }
+
+        // Has factors, check if verified in this session
         const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
         
-        // Check if user has MFA enabled but hasn't verified yet
-        if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
-          setMfaRequired(true);
+        if (aalData?.currentLevel !== 'aal2') {
+          // Has MFA but needs to verify in this session
+          setMfaStatus('needs-verify');
         } else {
-          setMfaRequired(false);
+          // Fully authenticated with MFA
+          setMfaStatus('verified');
         }
       } catch (err) {
         console.error('Error checking MFA status:', err);
-        setMfaRequired(false);
-      } finally {
-        setCheckingMFA(false);
+        setMfaStatus('no-factors');
       }
     };
 
     checkMFAStatus();
   }, [user]);
 
-  const loading = authLoading || adminCheckLoading || checkingMFA;
+  const loading = authLoading || adminCheckLoading || mfaStatus === 'loading';
 
   if (loading) {
     return (
@@ -62,8 +71,13 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
     return <Navigate to="/auth" replace />;
   }
 
-  // Redirect to MFA verification if required
-  if (mfaRequired) {
+  // Admin without MFA configured - force setup
+  if (mfaStatus === 'no-factors') {
+    return <Navigate to="/admin-mfa-setup" replace />;
+  }
+
+  // Admin with MFA but needs to verify in this session
+  if (mfaStatus === 'needs-verify') {
     return <Navigate to="/admin-mfa-verify" replace />;
   }
 

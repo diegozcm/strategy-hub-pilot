@@ -11,9 +11,10 @@ import { Shield, Smartphone, CheckCircle2, XCircle } from 'lucide-react';
 interface MFAEnrollmentProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+  required?: boolean;
 }
 
-export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCancel }) => {
+export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCancel, required = false }) => {
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
   const [verifying, setVerifying] = useState(false);
@@ -158,9 +159,12 @@ export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCance
               <Shield className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Configurar 2FA</CardTitle>
+        <CardTitle className="text-2xl font-bold">Configurar 2FA</CardTitle>
           <CardDescription>
-            Proteja sua conta com autenticação de dois fatores
+            {required 
+              ? 'A autenticação de dois fatores é obrigatória para administradores'
+              : 'Proteja sua conta com autenticação de dois fatores'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -239,16 +243,18 @@ export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCance
           )}
 
           <div className="flex gap-3">
+            {!required && (
+              <Button 
+                variant="outline" 
+                className="flex-1" 
+                onClick={handleCancel}
+                disabled={verifying}
+              >
+                Cancelar
+              </Button>
+            )}
             <Button 
-              variant="outline" 
-              className="flex-1" 
-              onClick={handleCancel}
-              disabled={verifying}
-            >
-              Cancelar
-            </Button>
-            <Button 
-              className="flex-1" 
+              className={required ? "w-full" : "flex-1"}
               onClick={verifyAndActivate}
               disabled={verifying || verificationCode.length !== 6}
             >
@@ -265,6 +271,15 @@ export const MFAEnrollment: React.FC<MFAEnrollmentProps> = ({ onSuccess, onCance
               )}
             </Button>
           </div>
+
+          {required && (
+            <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+              <Shield className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5" />
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                Todos os administradores do sistema devem ter 2FA configurado para acessar o painel administrativo.
+              </p>
+            </div>
+          )}
 
           <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
             <Smartphone className="h-4 w-4 text-muted-foreground mt-0.5" />
