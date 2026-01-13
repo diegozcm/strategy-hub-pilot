@@ -9,12 +9,16 @@ import { FloatingAIChat } from '@/components/ai/FloatingAIChat';
 import { useFloatingAI } from '@/hooks/useFloatingAI';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyAIAccess } from '@/hooks/useCompanyAIAccess';
+import { useRealtimePresence } from '@/hooks/useRealtimePresence';
 
 export const AppLayout: React.FC = () => {
   const isMobile = useIsMobile();
   const { hasAIAccess } = useCompanyAIAccess();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const floatingAI = useFloatingAI();
+
+  // Track user presence in real-time for admin dashboard
+  useRealtimePresence();
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const closeSidebar = () => setSidebarOpen(false);

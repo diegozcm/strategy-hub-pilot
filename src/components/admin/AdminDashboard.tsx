@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { Building, Users, Shield, Activity, TrendingUp, AlertTriangle } from 'lucide-react';
 import { AdminDashboardSkeleton } from './AdminDashboardSkeleton';
+import { useActiveUsersPresence, type ActiveUser } from '@/hooks/useActiveUsersPresence';
 
 interface AdminStats {
   totalCompanies: number;
@@ -22,27 +23,22 @@ export const AdminDashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [recentLogins, setRecentLogins] = useState<any[]>([]);
-  const [activeUsers, setActiveUsers] = useState<any[]>([]);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Real-time active users via Supabase Presence
+  const { activeUsers: realtimeActiveUsers, isLoading: presenceLoading } = useActiveUsersPresence();
 
   useEffect(() => {
     fetchAdminStats();
     fetchRecentLogins();
-    fetchActiveUsers();
 
     // Update current time every minute to refresh session duration
     const timer = setInterval(() => {
       setCurrentTime(new Date());
     }, 60000); // Update every minute
 
-    // Refresh active users every 30 seconds
-    const activeUsersTimer = setInterval(() => {
-      fetchActiveUsers();
-    }, 30000);
-
     return () => {
       clearInterval(timer);
-      clearInterval(activeUsersTimer);
     };
   }, []);
 
@@ -145,82 +141,8 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchActiveUsers = async () => {
-    try {
-      // Fetch active sessions (no logout_time)
-      const { data: activeSessions, error: sessionsError } = await supabase
-        .from('user_login_logs')
-        .select('*')
-        .is('logout_time', null)
-        .order('login_time', { ascending: false });
-
-      if (sessionsError) {
-        console.error('Error fetching active users:', sessionsError);
-        return;
-      }
-
-      if (!activeSessions || activeSessions.length === 0) {
-        setActiveUsers([]);
-        return;
-      }
-
-      // Get unique user IDs (latest session per user)
-      const uniqueUsers = new Map();
-      activeSessions.forEach(session => {
-        if (!uniqueUsers.has(session.user_id)) {
-          uniqueUsers.set(session.user_id, session);
-        }
-      });
-
-      const latestSessions = Array.from(uniqueUsers.values());
-      const userIds = latestSessions.map(s => s.user_id);
-      const companyIds = [...new Set(latestSessions.map(s => s.company_id).filter(Boolean))];
-
-      // Fetch profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, first_name, last_name, email, role')
-        .in('user_id', userIds);
-
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-      }
-
-      // Fetch companies
-      let companies: any[] = [];
-      if (companyIds.length > 0) {
-        const { data: companiesData, error: companiesError } = await supabase
-          .from('companies')
-          .select('id, name')
-          .in('id', companyIds);
-
-        if (companiesError) {
-          console.error('Error fetching companies:', companiesError);
-        } else {
-          companies = companiesData || [];
-        }
-      }
-
-      // Enrich sessions with profile and company data
-      const enrichedSessions = latestSessions.map(session => {
-        const profile = profiles?.find(p => p.user_id === session.user_id);
-        const company = companies.find(c => c.id === session.company_id);
-
-        return {
-          ...session,
-          profiles: profile,
-          companies: company
-        };
-      });
-
-      setActiveUsers(enrichedSessions);
-    } catch (error) {
-      console.error('Error fetching active users:', error);
-    }
-  };
-
-  const formatSessionDuration = (loginTime: string) => {
-    const start = new Date(loginTime);
+  const formatSessionDuration = (onlineAt: string) => {
+    const start = new Date(onlineAt);
     const now = currentTime;
     const diffMs = now.getTime() - start.getTime();
     
@@ -308,62 +230,67 @@ export const AdminDashboard: React.FC = () => {
         ))}
       </div>
 
-      {/* Active Users */}
+      {/* Active Users - Real-time via Supabase Presence */}
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="text-foreground flex items-center">
             <Activity className="h-5 w-5 mr-2 text-green-500" />
             Usuários Ativos
+            {presenceLoading && (
+              <span className="ml-2 text-xs text-muted-foreground">(conectando...)</span>
+            )}
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            Usuários conectados no momento ({activeUsers.length} online)
+            Usuários conectados no momento ({realtimeActiveUsers.length} online) - Tempo real
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {activeUsers.length > 0 ? (
-              activeUsers.map((session) => (
-                <div key={session.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            {realtimeActiveUsers.length > 0 ? (
+              realtimeActiveUsers.map((user) => (
+                <div key={user.user_id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center flex-1">
                     <div className="relative">
-                      <div className="bg-muted p-2 rounded-full mr-3">
-                        <Users className="h-4 w-4 text-foreground" />
-                      </div>
+                      {user.avatar_url ? (
+                        <img 
+                          src={user.avatar_url} 
+                          alt={`${user.first_name || ''} ${user.last_name || ''}`}
+                          className="w-10 h-10 rounded-full mr-3 object-cover"
+                        />
+                      ) : (
+                        <div className="bg-muted p-2 rounded-full mr-3">
+                          <Users className="h-4 w-4 text-foreground" />
+                        </div>
+                      )}
                       <div className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-card animate-pulse"></div>
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-foreground">
-                        {session.profiles?.first_name} {session.profiles?.last_name}
+                        {user.first_name} {user.last_name}
                       </p>
-                      <p className="text-xs text-muted-foreground">{session.profiles?.email}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                   </div>
                   <div className="text-right ml-4">
                     <p className="text-sm font-medium text-foreground">
-                      {session.companies?.name || 'Sem empresa'}
+                      {user.company_name || 'Sem empresa'}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Login: {new Date(session.login_time).toLocaleString('pt-BR', {
+                      Online: {new Date(user.online_at).toLocaleString('pt-BR', {
                         hour: '2-digit',
                         minute: '2-digit'
                       })}
                     </p>
                     <p className="text-xs text-green-500 font-medium">
-                      Sessão: {formatSessionDuration(session.login_time)}
+                      Sessão: {formatSessionDuration(user.online_at)}
                     </p>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${
-                      session.profiles?.role === 'admin' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :
-                      session.profiles?.role === 'manager' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' :
-                      'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
-                    }`}>
-                      {session.profiles?.role === 'admin' ? 'Admin' :
-                       session.profiles?.role === 'manager' ? 'Gestor' : 'Membro'}
-                    </span>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-muted-foreground text-center py-4">Nenhum usuário conectado</p>
+              <p className="text-muted-foreground text-center py-4">
+                {presenceLoading ? 'Carregando...' : 'Nenhum usuário conectado'}
+              </p>
             )}
           </div>
         </CardContent>
