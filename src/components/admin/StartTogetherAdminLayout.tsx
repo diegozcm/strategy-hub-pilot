@@ -159,7 +159,7 @@ const StartTogetherAdminSidebar: React.FC = () => {
                     {profile?.first_name || 'Admin'}
                   </p>
                   <Badge variant="secondary" className="text-xs">
-                    {profile?.role || 'admin'}
+                    admin
                   </Badge>
                 </div>
               </div>
