@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Settings, LogOut } from "lucide-react";
+import { Settings, LogOut, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navItems, type NavSection } from "../config/sidebarContent";
 import { Separator } from "@/components/ui/separator";
@@ -111,9 +111,13 @@ export function IconNavigation({
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex h-full w-16 flex-col border-r border-border bg-muted/50">
-        {/* Spacer to align with header */}
-        <div className="flex h-16 items-center justify-center" />
+      <div className="flex h-full w-16 flex-col border-r border-border bg-primary/5">
+        {/* Logo */}
+        <div className="flex h-16 items-center justify-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+            <Target className="h-5 w-5 text-primary-foreground" />
+          </div>
+        </div>
 
         <Separator className="w-full" />
 
