@@ -111,7 +111,7 @@ export function IconNavigation({
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex h-full w-16 flex-col border-r border-border bg-primary/5">
+      <div className="flex h-full w-16 flex-col border-r border-border bg-[#F7F7F7]">
         {/* Logo */}
         <div className="flex h-16 items-center justify-center">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
