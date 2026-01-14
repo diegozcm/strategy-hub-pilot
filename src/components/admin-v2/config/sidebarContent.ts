@@ -40,24 +40,24 @@ export function getSidebarContent(activeSection: NavSection): SidebarContent {
         {
           title: "Visão Geral",
           items: [
-            { icon: LayoutDashboard, label: "Painel Principal", isActive: true },
-            { icon: Activity, label: "Estatísticas do Sistema", hasDropdown: true, children: [
-              { label: "Usuários Ativos" },
-              { label: "Empresas Cadastradas" },
-              { label: "Logins Recentes" },
+            { icon: LayoutDashboard, label: "Painel Principal", href: "/app/admin-v2", isActive: true },
+            { icon: Activity, label: "Estatísticas do Sistema", href: "/app/admin-v2/dashboard/stats", hasDropdown: true, children: [
+              { label: "Usuários Ativos", href: "/app/admin-v2/dashboard/stats/active-users" },
+              { label: "Empresas Cadastradas", href: "/app/admin-v2/dashboard/stats/companies" },
+              { label: "Logins Recentes", href: "/app/admin-v2/dashboard/stats/logins" },
             ]},
-            { icon: Clock, label: "Atividade Recente", hasDropdown: true, children: [
-              { label: "Últimas 24 horas" },
-              { label: "Última semana" },
-              { label: "Último mês" },
+            { icon: Clock, label: "Atividade Recente", href: "/app/admin-v2/dashboard/activity", hasDropdown: true, children: [
+              { label: "Últimas 24 horas", href: "/app/admin-v2/dashboard/activity/24h" },
+              { label: "Última semana", href: "/app/admin-v2/dashboard/activity/week" },
+              { label: "Último mês", href: "/app/admin-v2/dashboard/activity/month" },
             ]},
           ],
         },
         {
           title: "Relatórios Rápidos",
           items: [
-            { icon: Users, label: "Usuários por Empresa" },
-            { icon: CheckCircle, label: "Status do Sistema" },
+            { icon: Users, label: "Usuários por Empresa", href: "/app/admin-v2/dashboard/users-by-company" },
+            { icon: CheckCircle, label: "Status do Sistema", href: "/app/admin-v2/dashboard/system-status" },
           ],
         },
       ],
@@ -69,27 +69,27 @@ export function getSidebarContent(activeSection: NavSection): SidebarContent {
         {
           title: "Ações Rápidas",
           items: [
-            { icon: Plus, label: "Nova Empresa" },
-            { icon: Filter, label: "Filtrar Empresas" },
+            { icon: Plus, label: "Nova Empresa", href: "/app/admin-v2/companies/new" },
+            { icon: Filter, label: "Filtrar Empresas", href: "/app/admin-v2/companies/filter" },
           ],
         },
         {
           title: "Gerenciamento",
           items: [
-            { icon: Building2, label: "Todas as Empresas", hasDropdown: true, children: [
-              { label: "Empresas Ativas" },
-              { label: "Empresas Inativas" },
+            { icon: Building2, label: "Todas as Empresas", href: "/app/admin-v2/companies", hasDropdown: true, children: [
+              { label: "Empresas Ativas", href: "/app/admin-v2/companies/active" },
+              { label: "Empresas Inativas", href: "/app/admin-v2/companies/inactive" },
             ]},
-            { icon: Globe, label: "Startups", hasDropdown: true, children: [
-              { label: "Startups Ativas" },
-              { label: "Mentores Vinculados" },
+            { icon: Globe, label: "Startups", href: "/app/admin-v2/companies/startups", hasDropdown: true, children: [
+              { label: "Startups Ativas", href: "/app/admin-v2/companies/startups/active" },
+              { label: "Mentores Vinculados", href: "/app/admin-v2/companies/startups/mentors" },
             ]},
           ],
         },
         {
           title: "Outros",
           items: [
-            { icon: Archive, label: "Empresas Arquivadas" },
+            { icon: Archive, label: "Empresas Arquivadas", href: "/app/admin-v2/companies/archived" },
           ],
         },
       ],
@@ -101,22 +101,22 @@ export function getSidebarContent(activeSection: NavSection): SidebarContent {
         {
           title: "Ações Rápidas",
           items: [
-            { icon: UserPlus, label: "Criar Usuário" },
-            { icon: Filter, label: "Filtrar Usuários" },
+            { icon: UserPlus, label: "Criar Usuário", href: "/app/admin-v2/users/create" },
+            { icon: Filter, label: "Filtrar Usuários", href: "/app/admin-v2/users/filter" },
           ],
         },
         {
           title: "Gerenciamento",
           items: [
-            { icon: Users, label: "Todos os Usuários", hasDropdown: true, children: [
-              { label: "Usuários Ativos" },
-              { label: "Usuários Inativos" },
+            { icon: Users, label: "Todos os Usuários", href: "/app/admin-v2/users", hasDropdown: true, children: [
+              { label: "Usuários Ativos", href: "/app/admin-v2/users/active" },
+              { label: "Usuários Inativos", href: "/app/admin-v2/users/inactive" },
             ]},
-            { icon: Clock, label: "Pendentes", hasDropdown: true, children: [
-              { label: "Aguardando Aprovação" },
-              { label: "Primeiro Login" },
+            { icon: Clock, label: "Pendentes", href: "/app/admin-v2/users/pending", hasDropdown: true, children: [
+              { label: "Aguardando Aprovação", href: "/app/admin-v2/users/pending/approval" },
+              { label: "Primeiro Login", href: "/app/admin-v2/users/pending/first-login" },
             ]},
-            { icon: Shield, label: "Administradores do Sistema" },
+            { icon: Shield, label: "Administradores do Sistema", href: "/app/admin-v2/users/admins" },
           ],
         },
       ],
@@ -128,21 +128,21 @@ export function getSidebarContent(activeSection: NavSection): SidebarContent {
         {
           title: "Configuração",
           items: [
-            { icon: Package, label: "Módulos Disponíveis", hasDropdown: true, children: [
-              { label: "Planejamento Estratégico" },
-              { label: "Startup Hub" },
-              { label: "IA Copilot" },
+            { icon: Package, label: "Módulos Disponíveis", href: "/app/admin-v2/modules", hasDropdown: true, children: [
+              { label: "Planejamento Estratégico", href: "/app/admin-v2/modules/strategic-planning" },
+              { label: "Startup Hub", href: "/app/admin-v2/modules/startup-hub" },
+              { label: "IA Copilot", href: "/app/admin-v2/modules/ai-copilot" },
             ]},
-            { icon: Building2, label: "Módulos por Empresa" },
+            { icon: Building2, label: "Módulos por Empresa", href: "/app/admin-v2/modules/by-company" },
           ],
         },
         {
           title: "Permissões",
           items: [
-            { icon: Shield, label: "Roles e Permissões", hasDropdown: true, children: [
-              { label: "Administrador" },
-              { label: "Gerente" },
-              { label: "Membro" },
+            { icon: Shield, label: "Roles e Permissões", href: "/app/admin-v2/modules/roles", hasDropdown: true, children: [
+              { label: "Administrador", href: "/app/admin-v2/modules/roles/admin" },
+              { label: "Gerente", href: "/app/admin-v2/modules/roles/manager" },
+              { label: "Membro", href: "/app/admin-v2/modules/roles/member" },
             ]},
           ],
         },
@@ -155,20 +155,20 @@ export function getSidebarContent(activeSection: NavSection): SidebarContent {
         {
           title: "Sistema",
           items: [
-            { icon: Server, label: "Saúde do Sistema" },
-            { icon: Activity, label: "Performance" },
-            { icon: AlertCircle, label: "Alertas", hasDropdown: true, children: [
-              { label: "Erros Críticos" },
-              { label: "Avisos" },
-              { label: "Informações" },
+            { icon: Server, label: "Saúde do Sistema", href: "/app/admin-v2/monitoring/health" },
+            { icon: Activity, label: "Performance", href: "/app/admin-v2/monitoring/performance" },
+            { icon: AlertCircle, label: "Alertas", href: "/app/admin-v2/monitoring/alerts", hasDropdown: true, children: [
+              { label: "Erros Críticos", href: "/app/admin-v2/monitoring/alerts/critical" },
+              { label: "Avisos", href: "/app/admin-v2/monitoring/alerts/warnings" },
+              { label: "Informações", href: "/app/admin-v2/monitoring/alerts/info" },
             ]},
           ],
         },
         {
           title: "Logs",
           items: [
-            { icon: FileText, label: "Logs de Acesso" },
-            { icon: Database, label: "Logs de Banco de Dados" },
+            { icon: FileText, label: "Logs de Acesso", href: "/app/admin-v2/monitoring/logs/access" },
+            { icon: Database, label: "Logs de Banco de Dados", href: "/app/admin-v2/monitoring/logs/database" },
           ],
         },
       ],
@@ -180,30 +180,30 @@ export function getSidebarContent(activeSection: NavSection): SidebarContent {
         {
           title: "Sistema",
           items: [
-            { icon: Settings, label: "Configurações Gerais" },
-            { icon: Lock, label: "Segurança", hasDropdown: true, children: [
-              { label: "Políticas de Senha" },
-              { label: "MFA" },
-              { label: "Sessões Ativas" },
+            { icon: Settings, label: "Configurações Gerais", href: "/app/admin-v2/settings/general" },
+            { icon: Lock, label: "Segurança", href: "/app/admin-v2/settings/security", hasDropdown: true, children: [
+              { label: "Políticas de Senha", href: "/app/admin-v2/settings/security/password" },
+              { label: "MFA", href: "/app/admin-v2/settings/security/mfa" },
+              { label: "Sessões Ativas", href: "/app/admin-v2/settings/security/sessions" },
             ]},
-            { icon: Bell, label: "Notificações" },
+            { icon: Bell, label: "Notificações", href: "/app/admin-v2/settings/notifications" },
           ],
         },
         {
           title: "Dados",
           items: [
-            { icon: Download, label: "Backup", hasDropdown: true, children: [
-              { label: "Criar Backup" },
-              { label: "Restaurar Backup" },
-              { label: "Agendamentos" },
+            { icon: Download, label: "Backup", href: "/app/admin-v2/settings/backup", hasDropdown: true, children: [
+              { label: "Criar Backup", href: "/app/admin-v2/settings/backup/create" },
+              { label: "Restaurar Backup", href: "/app/admin-v2/settings/backup/restore" },
+              { label: "Agendamentos", href: "/app/admin-v2/settings/backup/schedules" },
             ]},
-            { icon: Trash2, label: "Limpeza de Dados" },
+            { icon: Trash2, label: "Limpeza de Dados", href: "/app/admin-v2/settings/cleanup" },
           ],
         },
         {
           title: "Administradores",
           items: [
-            { icon: Shield, label: "Admins do Sistema" },
+            { icon: Shield, label: "Admins do Sistema", href: "/app/admin-v2/settings/admins" },
           ],
         },
       ],
@@ -215,14 +215,14 @@ export function getSidebarContent(activeSection: NavSection): SidebarContent {
         {
           title: "Editor",
           items: [
-            { icon: Palette, label: "Editar Conteúdo" },
-            { icon: Eye, label: "Preview" },
+            { icon: Palette, label: "Editar Conteúdo", href: "/app/admin-v2/landing/edit" },
+            { icon: Eye, label: "Preview", href: "/app/admin-v2/landing/preview" },
           ],
         },
         {
           title: "Publicação",
           items: [
-            { icon: Upload, label: "Publicar Alterações" },
+            { icon: Upload, label: "Publicar Alterações", href: "/app/admin-v2/landing/publish" },
           ],
         },
       ],
@@ -234,19 +234,19 @@ export function getSidebarContent(activeSection: NavSection): SidebarContent {
         {
           title: "Templates",
           items: [
-            { icon: Mail, label: "Todos os Templates", hasDropdown: true, children: [
-              { label: "Boas-vindas" },
-              { label: "Credenciais de Acesso" },
-              { label: "Recuperação de Senha" },
-              { label: "Notificações" },
+            { icon: Mail, label: "Todos os Templates", href: "/app/admin-v2/emails", hasDropdown: true, children: [
+              { label: "Boas-vindas", href: "/app/admin-v2/emails/welcome" },
+              { label: "Credenciais de Acesso", href: "/app/admin-v2/emails/credentials" },
+              { label: "Recuperação de Senha", href: "/app/admin-v2/emails/password-recovery" },
+              { label: "Notificações", href: "/app/admin-v2/emails/notifications" },
             ]},
           ],
         },
         {
           title: "Ações",
           items: [
-            { icon: Plus, label: "Novo Template" },
-            { icon: Eye, label: "Preview" },
+            { icon: Plus, label: "Novo Template", href: "/app/admin-v2/emails/new" },
+            { icon: Eye, label: "Preview", href: "/app/admin-v2/emails/preview" },
           ],
         },
       ],
