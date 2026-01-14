@@ -47,6 +47,7 @@ import { ToolsPage } from "@/components/tools/ToolsPage";
 import { StartupHubPage } from "@/components/startup-hub/StartupHubPage";
 import { ModuleBasedRedirect } from "@/components/ModuleBasedRedirect";
 import { ModuleProtectedRoute } from "@/components/ui/ModuleProtectedRoute";
+import AdminV2Page from "@/components/admin-v2/AdminV2Page";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -136,6 +137,13 @@ const App = () => (
                   <Route path="landing-preview" element={<LandingPagePreview />} />
                   <Route path="email-templates" element={<EmailTemplatesPage />} />
                 </Route>
+
+                {/* Admin V2 - Nova versão em desenvolvimento (acesso via URL direta) */}
+                <Route path="/app/admin-v2" element={
+                  <AdminProtectedRoute>
+                    <AdminV2Page />
+                  </AdminProtectedRoute>
+                } />
 
               {/* Redirect /admin to /app/admin */}
               <Route path="/admin" element={<Navigate to="/app/admin" replace />} />
