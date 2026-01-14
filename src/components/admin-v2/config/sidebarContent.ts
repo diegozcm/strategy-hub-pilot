@@ -46,11 +46,7 @@ export function getSidebarContent(activeSection: NavSection): SidebarContent {
               { label: "Empresas Cadastradas", href: "/app/admin-v2/dashboard/stats/companies" },
               { label: "Logins Recentes", href: "/app/admin-v2/dashboard/stats/logins" },
             ]},
-            { icon: Clock, label: "Atividade Recente", href: "/app/admin-v2/dashboard/activity", hasDropdown: true, children: [
-              { label: "Últimas 24 horas", href: "/app/admin-v2/dashboard/activity/24h" },
-              { label: "Última semana", href: "/app/admin-v2/dashboard/activity/week" },
-              { label: "Último mês", href: "/app/admin-v2/dashboard/activity/month" },
-            ]},
+            { icon: Clock, label: "Atividade Recente", href: "/app/admin-v2/dashboard/activity" },
           ],
         },
         {
