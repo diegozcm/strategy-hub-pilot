@@ -138,7 +138,7 @@ export function SearchInput({ collapsed = false, onNavigate }: SearchInputProps)
                     key={`${item.href}-${index}`}
                     value={item.label}
                     onSelect={() => handleSelect(item.href)}
-                    className="flex cursor-pointer flex-col items-start gap-0.5 px-3 py-2.5 transition-all duration-150 ease-out data-[selected=true]:bg-primary/10"
+                    className="flex cursor-pointer flex-col items-start gap-0.5 px-3 py-2.5 transition-all duration-150 ease-out hover:bg-[#3DBBFF]/20 data-[selected=true]:bg-[#3DBBFF]/20"
                   >
                     <span className="font-medium transition-colors duration-150">{item.label}</span>
                     <span className="text-xs text-muted-foreground transition-colors duration-150 group-data-[selected=true]:text-primary">
