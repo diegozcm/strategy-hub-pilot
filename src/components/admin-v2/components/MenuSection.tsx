@@ -27,7 +27,6 @@ export function MenuSection({ section, expandedItems, onToggleExpanded }: MenuSe
                 isExpanded={isExpanded}
                 onToggle={() => onToggleExpanded(itemKey)}
               />
-              />
               {isExpanded && item.children && (
                 <div className="mt-1 space-y-0.5">
                   {item.children.map((child, childIndex) => (
