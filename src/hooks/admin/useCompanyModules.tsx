@@ -14,23 +14,37 @@ export const useCompanyModules = () => {
   return useQuery({
     queryKey: ["admin-company-modules"],
     queryFn: async (): Promise<{ modulesByCompany: CompanyModules; stats: ModuleStats }> => {
-      // Fetch user_module_roles with profiles and system_modules
+      // 1. Fetch user_module_roles with system_modules (no FK to profiles exists)
       const { data: moduleRoles, error: rolesError } = await supabase
         .from("user_module_roles")
         .select(`
+          user_id,
           module_id,
-          profiles!inner(company_id),
           system_modules!inner(id, name, slug)
         `);
 
       if (rolesError) throw rolesError;
 
-      // Aggregate modules by company
-      const modulesByCompany: CompanyModules = {};
+      // 2. Fetch profiles separately to get user_id -> company_id mapping
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, company_id");
+
+      if (profilesError) throw profilesError;
+
+      // 3. Create user_id -> company_id map for manual JOIN
+      const userToCompany: Record<string, string> = {};
+      profiles?.forEach(p => {
+        if (p.user_id && p.company_id) {
+          userToCompany[p.user_id] = p.company_id;
+        }
+      });
+
+      // 4. Aggregate modules by company using manual JOIN
       const companyModuleSet: Record<string, Set<string>> = {};
 
       moduleRoles?.forEach((row: any) => {
-        const companyId = row.profiles?.company_id;
+        const companyId = userToCompany[row.user_id];
         const moduleSlug = row.system_modules?.slug;
         
         if (companyId && moduleSlug) {
@@ -41,12 +55,13 @@ export const useCompanyModules = () => {
         }
       });
 
-      // Convert sets to arrays
+      // 5. Convert sets to arrays
+      const modulesByCompany: CompanyModules = {};
       Object.entries(companyModuleSet).forEach(([companyId, slugs]) => {
         modulesByCompany[companyId] = Array.from(slugs);
       });
 
-      // Calculate stats - count unique companies with each module
+      // 6. Calculate stats - count unique companies with each module
       const companiesWithStrategy = new Set<string>();
       const companiesWithStartup = new Set<string>();
 
