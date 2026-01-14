@@ -7,6 +7,7 @@ export { default as SystemStatsPage } from "./dashboard/SystemStatsPage";
 export { default as ActiveUsersStatsPage } from "./dashboard/ActiveUsersStatsPage";
 export { default as RegisteredCompaniesPage } from "./dashboard/RegisteredCompaniesPage";
 export { default as RecentLoginsPage } from "./dashboard/RecentLoginsPage";
+export { default as RecentActivityPage } from "./dashboard/RecentActivityPage";
 export { default as RecentActivity24hPage } from "./dashboard/RecentActivity24hPage";
 export { default as RecentActivityWeekPage } from "./dashboard/RecentActivityWeekPage";
 export { default as RecentActivityMonthPage } from "./dashboard/RecentActivityMonthPage";

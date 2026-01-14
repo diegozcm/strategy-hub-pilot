@@ -56,6 +56,7 @@ import {
   ActiveUsersStatsPage,
   RegisteredCompaniesPage,
   RecentLoginsPage,
+  RecentActivityPage,
   RecentActivity24hPage,
   RecentActivityWeekPage,
   RecentActivityMonthPage,
@@ -220,7 +221,7 @@ const App = () => (
                   <Route path="dashboard/stats/active-users" element={<ActiveUsersStatsPage />} />
                   <Route path="dashboard/stats/companies" element={<RegisteredCompaniesPage />} />
                   <Route path="dashboard/stats/logins" element={<RecentLoginsPage />} />
-                  <Route path="dashboard/activity" element={<RecentActivity24hPage />} />
+                  <Route path="dashboard/activity" element={<RecentActivityPage />} />
                   <Route path="dashboard/activity/24h" element={<RecentActivity24hPage />} />
                   <Route path="dashboard/activity/week" element={<RecentActivityWeekPage />} />
                   <Route path="dashboard/activity/month" element={<RecentActivityMonthPage />} />
