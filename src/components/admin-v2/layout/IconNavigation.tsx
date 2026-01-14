@@ -1,14 +1,26 @@
-import { Settings, LogOut } from "lucide-react";
+import { useState } from "react";
+import { Settings, LogOut, Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navItems, type NavSection } from "../config/sidebarContent";
-import { BrandBadge } from "../components/BrandBadge";
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useAuth } from "@/hooks/useMultiTenant";
 
 interface IconNavButtonProps {
   children: React.ReactNode;
@@ -22,9 +34,9 @@ function IconNavButton({ children, isActive = false, onClick, tooltip }: IconNav
     <button
       onClick={onClick}
       className={cn(
-        "flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
+        "flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-200",
         isActive
-          ? "bg-primary text-primary-foreground"
+          ? "bg-primary text-primary-foreground shadow-sm"
           : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
       )}
     >
@@ -49,50 +61,128 @@ function IconNavButton({ children, isActive = false, onClick, tooltip }: IconNav
 interface IconNavigationProps {
   activeSection: NavSection;
   onSectionChange: (section: NavSection) => void;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-export function IconNavigation({ activeSection, onSectionChange }: IconNavigationProps) {
+export function IconNavigation({
+  activeSection,
+  onSectionChange,
+  isCollapsed,
+  onToggleCollapse,
+}: IconNavigationProps) {
+  const { profile, signOut } = useAuth();
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const name = profile?.first_name && profile?.last_name
+    ? `${profile.first_name} ${profile.last_name}`
+    : profile?.first_name || "Admin";
+  
+  const avatarUrl = profile?.avatar_url;
+
+  const initials = name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const handleSectionClick = (sectionId: NavSection) => {
+    if (isCollapsed && sectionId === activeSection) {
+      onToggleCollapse();
+    } else {
+      onSectionChange(sectionId);
+      if (isCollapsed) {
+        onToggleCollapse();
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await signOut();
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutDialog(false);
+    }
+  };
+
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex h-full w-16 flex-col bg-muted/50 border-r border-border">
+      <div className="flex h-full w-16 flex-col border-r border-border bg-muted/50">
         {/* Logo */}
-        <BrandBadge collapsed />
+        <div className="flex h-16 items-center justify-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+            <Target className="h-5 w-5 text-primary-foreground" />
+          </div>
+        </div>
 
-        <Separator className="mx-3" />
+        <Separator className="w-full" />
 
         {/* Navigation Icons */}
         <div className="flex flex-1 flex-col items-center gap-1 py-4">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <IconNavButton
-                key={item.id}
-                isActive={activeSection === item.id}
-                onClick={() => onSectionChange(item.id)}
-                tooltip={item.label}
-              >
-                <Icon className="h-5 w-5" />
-              </IconNavButton>
-            );
-          })}
+          {navItems.map((item) => (
+            <IconNavButton
+              key={item.id}
+              isActive={activeSection === item.id}
+              onClick={() => handleSectionClick(item.id)}
+              tooltip={item.label}
+            >
+              <item.icon className="h-5 w-5" />
+            </IconNavButton>
+          ))}
         </div>
 
-        <Separator className="mx-3" />
+        <Separator className="w-full" />
 
         {/* Bottom section */}
-        <div className="flex flex-col items-center gap-1 py-4">
+        <div className="flex flex-col items-center gap-2 py-4">
           <IconNavButton
             isActive={activeSection === "settings"}
-            onClick={() => onSectionChange("settings")}
+            onClick={() => handleSectionClick("settings")}
             tooltip="Configurações"
           >
             <Settings className="h-5 w-5" />
           </IconNavButton>
-          <IconNavButton tooltip="Sair">
+          
+          <IconNavButton onClick={() => setShowLogoutDialog(true)} tooltip="Sair">
             <LogOut className="h-5 w-5" />
           </IconNavButton>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Avatar className="h-9 w-9 cursor-pointer">
+                <AvatarImage src={avatarUrl} alt={name} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={8}>
+              {name}
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
+
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar saída</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja sair do sistema?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLoggingOut}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleLogout} disabled={isLoggingOut}>
+              {isLoggingOut ? "Saindo..." : "Sair"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </TooltipProvider>
   );
 }

@@ -7,7 +7,7 @@ interface BrandBadgeProps {
 export function BrandBadge({ collapsed = false }: BrandBadgeProps) {
   if (collapsed) {
     return (
-      <div className="flex items-center justify-center p-3">
+      <div className="flex h-16 items-center justify-center">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
           <Target className="h-5 w-5 text-primary-foreground" />
         </div>
@@ -16,7 +16,7 @@ export function BrandBadge({ collapsed = false }: BrandBadgeProps) {
   }
 
   return (
-    <div className="flex items-center gap-3 p-4">
+    <div className="flex h-16 items-center gap-3 px-4">
       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
         <Target className="h-5 w-5 text-primary-foreground" />
       </div>
