@@ -18,15 +18,17 @@ interface SearchableItem {
   section: string;
   sectionId: NavSection;
   parent?: string;
+  parentKey?: string; // Key to expand the parent item
 }
 
 interface SearchInputProps {
   collapsed?: boolean;
   onNavigate?: () => void;
   onSectionChange?: (section: NavSection) => void;
+  onExpandItem?: (key: string) => void;
 }
 
-export function SearchInput({ collapsed = false, onNavigate, onSectionChange }: SearchInputProps) {
+export function SearchInput({ collapsed = false, onNavigate, onSectionChange, onExpandItem }: SearchInputProps) {
   const [searchValue, setSearchValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -42,7 +44,7 @@ export function SearchInput({ collapsed = false, onNavigate, onSectionChange }: 
       const sectionLabel = content.title;
 
       content.sections.forEach((section) => {
-        section.items.forEach((item) => {
+        section.items.forEach((item, itemIndex) => {
           if (item.href) {
             items.push({
               label: item.label,
@@ -60,6 +62,7 @@ export function SearchInput({ collapsed = false, onNavigate, onSectionChange }: 
                   section: sectionLabel,
                   sectionId: sectionId,
                   parent: item.label,
+                  parentKey: `${section.title}-${itemIndex}`,
                 });
               }
             });
@@ -96,6 +99,9 @@ export function SearchInput({ collapsed = false, onNavigate, onSectionChange }: 
 
   const handleSelect = (item: SearchableItem) => {
     onSectionChange?.(item.sectionId);
+    if (item.parentKey) {
+      onExpandItem?.(item.parentKey);
+    }
     navigate(item.href);
     setSearchValue("");
     setIsOpen(false);
