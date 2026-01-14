@@ -138,10 +138,10 @@ export function SearchInput({ collapsed = false, onNavigate }: SearchInputProps)
                     key={`${item.href}-${index}`}
                     value={item.label}
                     onSelect={() => handleSelect(item.href)}
-                    className="flex cursor-pointer flex-col items-start gap-0.5 px-3 py-2.5 transition-all duration-150 ease-out hover:bg-[#3DBBFF]/20 data-[selected=true]:bg-[#3DBBFF]/20"
+                    className="group flex cursor-pointer flex-col items-start gap-0.5 px-3 py-2.5 transition-all duration-150 ease-out hover:bg-[#3DBBFF] hover:text-white data-[selected=true]:bg-[#3DBBFF] data-[selected=true]:text-white"
                   >
                     <span className="font-medium transition-colors duration-150">{item.label}</span>
-                    <span className="text-xs text-muted-foreground transition-colors duration-150 group-data-[selected=true]:text-primary">
+                    <span className="text-xs text-muted-foreground transition-colors duration-150 group-hover:text-white/80 group-data-[selected=true]:text-white/80">
                       {item.parent ? `${item.section} › ${item.parent}` : item.section}
                     </span>
                   </CommandItem>
