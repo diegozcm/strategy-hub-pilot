@@ -1,8 +1,9 @@
-import { Building2, Users, Shield, Activity, Clock, CheckCircle } from "lucide-react";
+import { Building2, Users, Shield, Activity, Clock, Target, Rocket, Sparkles } from "lucide-react";
 import { AdminPageContainer } from "../../components/AdminPageContainer";
 import { StatCard } from "../../components/StatCard";
 import { PresenceIndicator } from "../../components/PresenceIndicator";
 import { useDashboardStats, useRecentLogins, useLoginStats } from "@/hooks/admin/useDashboardStats";
+import { useCompanyModules } from "@/hooks/admin/useCompanyModules";
 import { useActiveUsersPresence } from "@/hooks/useActiveUsersPresence";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,6 +13,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 export default function DashboardOverviewPage() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: moduleData, isLoading: modulesLoading } = useCompanyModules();
   const { activeUsers } = useActiveUsersPresence();
   const { data: recentLogins, isLoading: loginsLoading } = useRecentLogins(5);
   const { data: loginChart } = useLoginStats(7);
@@ -74,17 +76,17 @@ export default function DashboardOverviewPage() {
             title="Empresas com IA"
             value={stats?.companiesWithAI || 0}
             description="IA Copilot habilitado"
-            icon={CheckCircle}
-            variant="success"
+            icon={Sparkles}
+            variant="info"
             isLoading={statsLoading}
           />
           <StatCard
-            title="Empresas com OKR"
-            value={stats?.companiesWithOKR || 0}
-            description="Módulo OKR ativo"
-            icon={CheckCircle}
+            title="Strategy HUB"
+            value={moduleData?.stats.strategyHub || 0}
+            description="Módulo ativo"
+            icon={Target}
             variant="success"
-            isLoading={statsLoading}
+            isLoading={modulesLoading}
           />
         </div>
 
