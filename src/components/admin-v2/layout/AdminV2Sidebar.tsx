@@ -42,6 +42,7 @@ export function AdminV2Sidebar() {
         onToggleCollapse={handleToggleCollapse}
         expandedItems={expandedItems}
         onToggleExpanded={handleToggleExpanded}
+        onSectionChange={handleSectionChange}
       />
     </div>
   );
