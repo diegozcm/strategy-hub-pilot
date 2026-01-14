@@ -15,6 +15,7 @@ interface DetailSidebarProps {
   onToggleCollapse: () => void;
   expandedItems: Set<string>;
   onToggleExpanded: (itemKey: string) => void;
+  onSectionChange: (section: NavSection) => void;
 }
 
 export function DetailSidebar({
@@ -23,6 +24,7 @@ export function DetailSidebar({
   onToggleCollapse,
   expandedItems,
   onToggleExpanded,
+  onSectionChange,
 }: DetailSidebarProps) {
   const content = getSidebarContent(activeSection);
 
@@ -49,7 +51,7 @@ export function DetailSidebar({
       <Separator className="w-full" />
 
       {/* Search */}
-      <SearchInput />
+      <SearchInput onSectionChange={onSectionChange} />
 
       <Separator className="w-full" />
 

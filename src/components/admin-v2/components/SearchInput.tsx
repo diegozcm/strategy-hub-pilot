@@ -16,15 +16,17 @@ interface SearchableItem {
   label: string;
   href: string;
   section: string;
+  sectionId: NavSection;
   parent?: string;
 }
 
 interface SearchInputProps {
   collapsed?: boolean;
   onNavigate?: () => void;
+  onSectionChange?: (section: NavSection) => void;
 }
 
-export function SearchInput({ collapsed = false, onNavigate }: SearchInputProps) {
+export function SearchInput({ collapsed = false, onNavigate, onSectionChange }: SearchInputProps) {
   const [searchValue, setSearchValue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,6 +48,7 @@ export function SearchInput({ collapsed = false, onNavigate }: SearchInputProps)
               label: item.label,
               href: item.href,
               section: sectionLabel,
+              sectionId: sectionId,
             });
           }
           if (item.children) {
@@ -55,6 +58,7 @@ export function SearchInput({ collapsed = false, onNavigate }: SearchInputProps)
                   label: child.label,
                   href: child.href,
                   section: sectionLabel,
+                  sectionId: sectionId,
                   parent: item.label,
                 });
               }
@@ -90,8 +94,9 @@ export function SearchInput({ collapsed = false, onNavigate }: SearchInputProps)
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSelect = (href: string) => {
-    navigate(href);
+  const handleSelect = (item: SearchableItem) => {
+    onSectionChange?.(item.sectionId);
+    navigate(item.href);
     setSearchValue("");
     setIsOpen(false);
     onNavigate?.();
@@ -137,7 +142,7 @@ export function SearchInput({ collapsed = false, onNavigate }: SearchInputProps)
                   <CommandItem
                     key={`${item.href}-${index}`}
                     value={item.label}
-                    onSelect={() => handleSelect(item.href)}
+                    onSelect={() => handleSelect(item)}
                     className="group flex cursor-pointer flex-col items-start gap-0.5 px-3 py-2.5 transition-all duration-150 ease-out hover:bg-[#3DBBFF] hover:text-white data-[selected=true]:bg-[#3DBBFF] data-[selected=true]:text-white"
                   >
                     <span className="font-medium transition-colors duration-150">{item.label}</span>
