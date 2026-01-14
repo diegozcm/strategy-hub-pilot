@@ -21,7 +21,7 @@ export function BrandBadge({ collapsed = false }: BrandBadgeProps) {
         <Target className="h-5 w-5 text-primary-foreground" />
       </div>
       <div className="flex flex-col">
-        <span className="text-sm font-semibold text-foreground">Strategy HUB</span>
+        <span className="text-base font-bold tracking-tight text-primary">Strategy HUB</span>
         <span className="text-xs text-muted-foreground">Administração</span>
       </div>
     </div>

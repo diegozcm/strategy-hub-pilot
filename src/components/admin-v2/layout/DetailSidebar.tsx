@@ -55,12 +55,9 @@ export function DetailSidebar({
 
       {/* Section Title */}
       <div className="px-4 py-4">
-        <div className="flex items-center gap-2">
-          <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-          <h2 className="text-xl font-bold tracking-tight text-foreground">
-            {content.title}
-          </h2>
-        </div>
+        <h2 className="text-xl font-bold tracking-tight text-primary">
+          {content.title}
+        </h2>
       </div>
 
       {/* Menu Sections */}
