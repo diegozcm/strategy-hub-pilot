@@ -11,7 +11,6 @@ interface DashboardStats {
   pendingUsers: number;
   systemAdmins: number;
   companiesWithAI: number;
-  companiesWithOKR: number;
 }
 
 export const useDashboardStats = () => {
@@ -21,7 +20,7 @@ export const useDashboardStats = () => {
       // Fetch companies stats
       const { data: companies, error: companiesError } = await supabase
         .from("companies")
-        .select("id, status, company_type, ai_enabled, okr_enabled");
+        .select("id, status, company_type, ai_enabled");
 
       if (companiesError) throw companiesError;
 
@@ -49,7 +48,6 @@ export const useDashboardStats = () => {
         inactiveCompanies: companiesArray.filter(c => c.status === "inactive").length,
         startupCompanies: companiesArray.filter(c => c.company_type === "startup").length,
         companiesWithAI: companiesArray.filter(c => c.ai_enabled).length,
-        companiesWithOKR: companiesArray.filter(c => c.okr_enabled).length,
         totalUsers: profilesArray.length,
         activeUsers: profilesArray.filter(p => p.status === "active").length,
         pendingUsers: profilesArray.filter(p => p.status === "pending").length,
@@ -146,7 +144,7 @@ export const useCompanyStats = () => {
     queryFn: async () => {
       const { data: companies, error: companiesError } = await supabase
         .from("companies")
-        .select("id, name, status, company_type, ai_enabled, okr_enabled, created_at, logo_url");
+        .select("id, name, status, company_type, ai_enabled, created_at, logo_url");
 
       if (companiesError) throw companiesError;
 
