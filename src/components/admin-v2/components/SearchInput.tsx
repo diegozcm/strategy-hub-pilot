@@ -126,7 +126,7 @@ export function SearchInput({ collapsed = false, onNavigate }: SearchInputProps)
         </div>
         
         {isOpen && searchValue.trim() && (
-          <CommandList className="absolute left-3 right-3 top-full z-50 mt-1 max-h-64 overflow-auto rounded-lg border border-border bg-popover shadow-lg">
+          <CommandList className="absolute left-3 right-3 top-full z-50 mt-1 max-h-64 overflow-auto rounded-lg border border-border bg-popover shadow-lg animate-in fade-in-0 slide-in-from-top-2 duration-200">
             {filteredItems.length === 0 ? (
               <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
                 Nenhum resultado encontrado.
@@ -138,10 +138,10 @@ export function SearchInput({ collapsed = false, onNavigate }: SearchInputProps)
                     key={`${item.href}-${index}`}
                     value={item.label}
                     onSelect={() => handleSelect(item.href)}
-                    className="flex cursor-pointer flex-col items-start gap-0.5 px-3 py-2"
+                    className="flex cursor-pointer flex-col items-start gap-0.5 px-3 py-2.5 transition-all duration-150 ease-out data-[selected=true]:bg-primary/10"
                   >
-                    <span className="font-medium">{item.label}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="font-medium transition-colors duration-150">{item.label}</span>
+                    <span className="text-xs text-muted-foreground transition-colors duration-150 group-data-[selected=true]:text-primary">
                       {item.parent ? `${item.section} › ${item.parent}` : item.section}
                     </span>
                   </CommandItem>
