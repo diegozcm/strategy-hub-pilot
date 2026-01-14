@@ -26,16 +26,12 @@ export function MenuSection({ section, expandedItems, onToggleExpanded }: MenuSe
                 item={item}
                 isExpanded={isExpanded}
                 onToggle={() => onToggleExpanded(itemKey)}
-                onItemClick={() => console.log(`Clicked ${item.label}`)}
+              />
               />
               {isExpanded && item.children && (
                 <div className="mt-1 space-y-0.5">
                   {item.children.map((child, childIndex) => (
-                    <SubMenuItem
-                      key={`${itemKey}-child-${childIndex}`}
-                      item={child}
-                      onItemClick={() => console.log(`Clicked ${child.label}`)}
-                    />
+                    <SubMenuItem key={`${itemKey}-child-${childIndex}`} item={child} />
                   ))}
                 </div>
               )}

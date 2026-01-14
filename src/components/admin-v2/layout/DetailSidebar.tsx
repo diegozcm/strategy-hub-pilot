@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { PanelLeftClose, PanelLeft } from "lucide-react";
+import { PanelLeftClose } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getSidebarContent, type NavSection } from "../config/sidebarContent";
 import { BrandBadge } from "../components/BrandBadge";
@@ -12,26 +11,20 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DetailSidebarProps {
   activeSection: NavSection;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
+  expandedItems: Set<string>;
+  onToggleExpanded: (itemKey: string) => void;
 }
 
-export function DetailSidebar({ activeSection }: DetailSidebarProps) {
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export function DetailSidebar({
+  activeSection,
+  isCollapsed,
+  onToggleCollapse,
+  expandedItems,
+  onToggleExpanded,
+}: DetailSidebarProps) {
   const content = getSidebarContent(activeSection);
-
-  const toggleExpanded = (itemKey: string) => {
-    setExpandedItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(itemKey)) {
-        next.delete(itemKey);
-      } else {
-        next.add(itemKey);
-      }
-      return next;
-    });
-  };
-
-  const toggleCollapse = () => setIsCollapsed((s) => !s);
 
   return (
     <div
@@ -41,28 +34,24 @@ export function DetailSidebar({ activeSection }: DetailSidebarProps) {
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between pr-2">
+      <div className="flex h-16 items-center justify-between pr-2">
         <BrandBadge />
         <Button
           variant="ghost"
           size="icon"
-          onClick={toggleCollapse}
+          onClick={onToggleCollapse}
           className="h-8 w-8"
         >
-          {isCollapsed ? (
-            <PanelLeft className="h-4 w-4" />
-          ) : (
-            <PanelLeftClose className="h-4 w-4" />
-          )}
+          <PanelLeftClose className="h-4 w-4" />
         </Button>
       </div>
 
-      <Separator />
+      <Separator className="w-full" />
 
       {/* Search */}
       <SearchInput />
 
-      <Separator />
+      <Separator className="w-full" />
 
       {/* Section Title */}
       <div className="px-4 py-3">
@@ -77,14 +66,14 @@ export function DetailSidebar({ activeSection }: DetailSidebarProps) {
               key={`${activeSection}-${index}`}
               section={section}
               expandedItems={expandedItems}
-              onToggleExpanded={toggleExpanded}
+              onToggleExpanded={onToggleExpanded}
             />
           ))}
         </div>
       </ScrollArea>
 
       {/* User Avatar */}
-      <UserAvatar name="Admin" email="admin@strategyhub.com" />
+      <UserAvatar />
     </div>
   );
 }

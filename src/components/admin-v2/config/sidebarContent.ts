@@ -19,18 +19,18 @@ export interface SidebarContent {
   sections: MenuSectionT[];
 }
 
+// Settings removed from here - it's in the bottom section of IconNavigation
 export const navItems = [
   { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { id: "companies", icon: Building2, label: "Empresas" },
   { id: "users", icon: Users, label: "Usuários" },
   { id: "modules", icon: Package, label: "Módulos" },
   { id: "monitoring", icon: Monitor, label: "Monitoramento" },
-  { id: "settings", icon: Settings, label: "Configurações" },
   { id: "landing", icon: FileText, label: "Landing Page" },
   { id: "emails", icon: Mail, label: "Templates" },
 ] as const;
 
-export type NavSection = typeof navItems[number]["id"];
+export type NavSection = (typeof navItems)[number]["id"] | "settings";
 
 export function getSidebarContent(activeSection: NavSection): SidebarContent {
   const contentMap: Record<NavSection, SidebarContent> = {
