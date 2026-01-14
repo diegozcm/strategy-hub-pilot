@@ -1,12 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { IconNavigation } from "./IconNavigation";
 import { DetailSidebar } from "./DetailSidebar";
 import type { NavSection } from "../config/sidebarContent";
+import { findNavigationContext } from "../utils/findNavigationContext";
 
 export function AdminV2Sidebar() {
+  const location = useLocation();
   const [activeSection, setActiveSection] = useState<NavSection>("dashboard");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
+  // Sync sidebar state with current URL on load and navigation
+  useEffect(() => {
+    const context = findNavigationContext(location.pathname);
+    if (context) {
+      setActiveSection(context.sectionId);
+      if (context.expandKey) {
+        setExpandedItems((prev) => {
+          const next = new Set(prev);
+          next.add(context.expandKey!);
+          return next;
+        });
+      }
+    }
+  }, [location.pathname]);
 
   const handleSectionChange = (section: NavSection) => {
     setActiveSection(section);
@@ -28,6 +46,14 @@ export function AdminV2Sidebar() {
     });
   };
 
+  const handleExpandItem = (key: string) => {
+    setExpandedItems((prev) => {
+      const next = new Set(prev);
+      next.add(key);
+      return next;
+    });
+  };
+
   return (
     <div className="flex h-screen shrink-0">
       <IconNavigation
@@ -43,6 +69,7 @@ export function AdminV2Sidebar() {
         expandedItems={expandedItems}
         onToggleExpanded={handleToggleExpanded}
         onSectionChange={handleSectionChange}
+        onExpandItem={handleExpandItem}
       />
     </div>
   );

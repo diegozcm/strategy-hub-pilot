@@ -16,6 +16,7 @@ interface DetailSidebarProps {
   expandedItems: Set<string>;
   onToggleExpanded: (itemKey: string) => void;
   onSectionChange: (section: NavSection) => void;
+  onExpandItem: (key: string) => void;
 }
 
 export function DetailSidebar({
@@ -25,6 +26,7 @@ export function DetailSidebar({
   expandedItems,
   onToggleExpanded,
   onSectionChange,
+  onExpandItem,
 }: DetailSidebarProps) {
   const content = getSidebarContent(activeSection);
 
@@ -51,7 +53,7 @@ export function DetailSidebar({
       <Separator className="w-full" />
 
       {/* Search */}
-      <SearchInput onSectionChange={onSectionChange} />
+      <SearchInput onSectionChange={onSectionChange} onExpandItem={onExpandItem} />
 
       <Separator className="w-full" />
 
