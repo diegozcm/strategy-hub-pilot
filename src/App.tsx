@@ -49,6 +49,76 @@ import { ModuleBasedRedirect } from "@/components/ModuleBasedRedirect";
 import { ModuleProtectedRoute } from "@/components/ui/ModuleProtectedRoute";
 import AdminV2Page from "@/components/admin-v2/AdminV2Page";
 
+// Admin V2 Page Imports
+import {
+  DashboardOverviewPage,
+  SystemStatsPage,
+  ActiveUsersStatsPage,
+  RegisteredCompaniesPage,
+  RecentLoginsPage,
+  RecentActivity24hPage,
+  RecentActivityWeekPage,
+  RecentActivityMonthPage,
+  UsersByCompanyPage,
+  SystemStatusPage,
+  NewCompanyPage,
+  FilterCompaniesPage,
+  AllCompaniesPage,
+  ActiveCompaniesPage,
+  InactiveCompaniesPage,
+  StartupsPage,
+  ActiveStartupsPage,
+  LinkedMentorsPage,
+  ArchivedCompaniesPage,
+  CreateUserPage as CreateUserPageV2,
+  FilterUsersPage,
+  AllUsersPage,
+  ActiveUsersPage,
+  InactiveUsersPage,
+  PendingApprovalPage,
+  FirstLoginPage,
+  SystemAdminsPage,
+  AvailableModulesPage,
+  StrategicPlanningModulePage,
+  StartupHubModulePage,
+  AICopilotModulePage,
+  ModulesByCompanyPage,
+  RolesPermissionsPage,
+  AdminRolePage,
+  ManagerRolePage,
+  MemberRolePage,
+  SystemHealthPage,
+  PerformancePage,
+  AlertsPage,
+  CriticalErrorsPage,
+  WarningsPage,
+  InfoLogsPage,
+  AccessLogsPage,
+  DatabaseLogsPage,
+  GeneralSettingsPage,
+  SecurityPage,
+  PasswordPoliciesPage,
+  MFASettingsPage,
+  ActiveSessionsPage,
+  NotificationsSettingsPage,
+  BackupPage,
+  CreateBackupPage,
+  RestoreBackupPage,
+  BackupSchedulesPage,
+  DataCleanupPage,
+  SystemAdminsSettingsPage,
+  EditLandingPage,
+  PreviewLandingPage,
+  PublishLandingPage,
+  AllEmailTemplatesPage,
+  WelcomeTemplatePage,
+  CredentialsTemplatePage,
+  PasswordRecoveryTemplatePage,
+  NotificationTemplatePage,
+  NewTemplatePage,
+  PreviewEmailPage,
+} from "@/components/admin-v2/pages";
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -143,7 +213,91 @@ const App = () => (
                   <AdminProtectedRoute>
                     <AdminV2Page />
                   </AdminProtectedRoute>
-                } />
+                }>
+                  {/* Dashboard */}
+                  <Route index element={<DashboardOverviewPage />} />
+                  <Route path="dashboard/stats" element={<SystemStatsPage />} />
+                  <Route path="dashboard/stats/active-users" element={<ActiveUsersStatsPage />} />
+                  <Route path="dashboard/stats/companies" element={<RegisteredCompaniesPage />} />
+                  <Route path="dashboard/stats/logins" element={<RecentLoginsPage />} />
+                  <Route path="dashboard/activity" element={<RecentActivity24hPage />} />
+                  <Route path="dashboard/activity/24h" element={<RecentActivity24hPage />} />
+                  <Route path="dashboard/activity/week" element={<RecentActivityWeekPage />} />
+                  <Route path="dashboard/activity/month" element={<RecentActivityMonthPage />} />
+                  <Route path="dashboard/users-by-company" element={<UsersByCompanyPage />} />
+                  <Route path="dashboard/system-status" element={<SystemStatusPage />} />
+
+                  {/* Companies */}
+                  <Route path="companies" element={<AllCompaniesPage />} />
+                  <Route path="companies/new" element={<NewCompanyPage />} />
+                  <Route path="companies/filter" element={<FilterCompaniesPage />} />
+                  <Route path="companies/active" element={<ActiveCompaniesPage />} />
+                  <Route path="companies/inactive" element={<InactiveCompaniesPage />} />
+                  <Route path="companies/startups" element={<StartupsPage />} />
+                  <Route path="companies/startups/active" element={<ActiveStartupsPage />} />
+                  <Route path="companies/startups/mentors" element={<LinkedMentorsPage />} />
+                  <Route path="companies/archived" element={<ArchivedCompaniesPage />} />
+
+                  {/* Users */}
+                  <Route path="users" element={<AllUsersPage />} />
+                  <Route path="users/create" element={<CreateUserPageV2 />} />
+                  <Route path="users/filter" element={<FilterUsersPage />} />
+                  <Route path="users/active" element={<ActiveUsersPage />} />
+                  <Route path="users/inactive" element={<InactiveUsersPage />} />
+                  <Route path="users/pending" element={<PendingApprovalPage />} />
+                  <Route path="users/pending/approval" element={<PendingApprovalPage />} />
+                  <Route path="users/pending/first-login" element={<FirstLoginPage />} />
+                  <Route path="users/admins" element={<SystemAdminsPage />} />
+
+                  {/* Modules */}
+                  <Route path="modules" element={<AvailableModulesPage />} />
+                  <Route path="modules/strategic-planning" element={<StrategicPlanningModulePage />} />
+                  <Route path="modules/startup-hub" element={<StartupHubModulePage />} />
+                  <Route path="modules/ai-copilot" element={<AICopilotModulePage />} />
+                  <Route path="modules/by-company" element={<ModulesByCompanyPage />} />
+                  <Route path="modules/roles" element={<RolesPermissionsPage />} />
+                  <Route path="modules/roles/admin" element={<AdminRolePage />} />
+                  <Route path="modules/roles/manager" element={<ManagerRolePage />} />
+                  <Route path="modules/roles/member" element={<MemberRolePage />} />
+
+                  {/* Monitoring */}
+                  <Route path="monitoring/health" element={<SystemHealthPage />} />
+                  <Route path="monitoring/performance" element={<PerformancePage />} />
+                  <Route path="monitoring/alerts" element={<AlertsPage />} />
+                  <Route path="monitoring/alerts/critical" element={<CriticalErrorsPage />} />
+                  <Route path="monitoring/alerts/warnings" element={<WarningsPage />} />
+                  <Route path="monitoring/alerts/info" element={<InfoLogsPage />} />
+                  <Route path="monitoring/logs/access" element={<AccessLogsPage />} />
+                  <Route path="monitoring/logs/database" element={<DatabaseLogsPage />} />
+
+                  {/* Settings */}
+                  <Route path="settings/general" element={<GeneralSettingsPage />} />
+                  <Route path="settings/security" element={<SecurityPage />} />
+                  <Route path="settings/security/password" element={<PasswordPoliciesPage />} />
+                  <Route path="settings/security/mfa" element={<MFASettingsPage />} />
+                  <Route path="settings/security/sessions" element={<ActiveSessionsPage />} />
+                  <Route path="settings/notifications" element={<NotificationsSettingsPage />} />
+                  <Route path="settings/backup" element={<BackupPage />} />
+                  <Route path="settings/backup/create" element={<CreateBackupPage />} />
+                  <Route path="settings/backup/restore" element={<RestoreBackupPage />} />
+                  <Route path="settings/backup/schedules" element={<BackupSchedulesPage />} />
+                  <Route path="settings/cleanup" element={<DataCleanupPage />} />
+                  <Route path="settings/admins" element={<SystemAdminsSettingsPage />} />
+
+                  {/* Landing Page */}
+                  <Route path="landing/edit" element={<EditLandingPage />} />
+                  <Route path="landing/preview" element={<PreviewLandingPage />} />
+                  <Route path="landing/publish" element={<PublishLandingPage />} />
+
+                  {/* Email Templates */}
+                  <Route path="emails" element={<AllEmailTemplatesPage />} />
+                  <Route path="emails/welcome" element={<WelcomeTemplatePage />} />
+                  <Route path="emails/credentials" element={<CredentialsTemplatePage />} />
+                  <Route path="emails/password-recovery" element={<PasswordRecoveryTemplatePage />} />
+                  <Route path="emails/notifications" element={<NotificationTemplatePage />} />
+                  <Route path="emails/new" element={<NewTemplatePage />} />
+                  <Route path="emails/preview" element={<PreviewEmailPage />} />
+                </Route>
 
               {/* Redirect /admin to /app/admin */}
               <Route path="/admin" element={<Navigate to="/app/admin" replace />} />

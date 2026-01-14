@@ -150,20 +150,6 @@ export function IconNavigation({
           <IconNavButton onClick={() => setShowLogoutDialog(true)} tooltip="Sair">
             <LogOut className="h-5 w-5" />
           </IconNavButton>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Avatar className="h-9 w-9 cursor-pointer">
-                <AvatarImage src={avatarUrl} alt={name} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={8}>
-              {name}
-            </TooltipContent>
-          </Tooltip>
         </div>
       </div>
 
