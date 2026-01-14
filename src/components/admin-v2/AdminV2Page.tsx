@@ -3,12 +3,12 @@ import { AdminV2Sidebar } from "./layout/AdminV2Sidebar";
 
 const AdminV2Page = () => {
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
+    <div className="flex h-screen bg-background overflow-hidden">
+      {/* Sidebar - Fixed height */}
       <AdminV2Sidebar />
       
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-auto">
+      {/* Main Content Area - Scrollable */}
+      <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
     </div>
