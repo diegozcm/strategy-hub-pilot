@@ -29,7 +29,7 @@ export function DetailSidebar({
   return (
     <div
       className={cn(
-        "flex h-full flex-col border-r border-border bg-background transition-all duration-300",
+        "flex h-full flex-col border-r border-border bg-[#F7F7F7] transition-all duration-300",
         isCollapsed ? "w-0 overflow-hidden" : "w-64"
       )}
     >
