@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +31,7 @@ export default function AllUsersPage() {
     return users.filter(user => {
       const matchesSearch = !searchQuery || user.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) || user.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) || user.email?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesStatus = !statusFilter || user.status === statusFilter;
-      const matchesCompany = !companyFilter || user.company_id === companyFilter;
+      const matchesCompany = !companyFilter || user.company_ids.includes(companyFilter);
       return matchesSearch && matchesStatus && matchesCompany;
     });
   }, [users, searchQuery, statusFilter, companyFilter]);
@@ -66,7 +66,7 @@ export default function AllUsersPage() {
               <TableBody>
                 {filteredUsers.map((user) => (
                   <TableRow key={user.user_id}>
-                    <TableCell><div className="flex items-center gap-3"><Avatar className="h-8 w-8"><AvatarFallback className="text-xs">{getInitials(user.first_name, user.last_name)}</AvatarFallback></Avatar><span className="font-medium">{user.first_name} {user.last_name}</span></div></TableCell>
+                    <TableCell><div className="flex items-center gap-3"><Avatar className="h-8 w-8"><AvatarImage src={user.avatar_url || undefined} alt={`${user.first_name} ${user.last_name}`} /><AvatarFallback className="text-xs">{getInitials(user.first_name, user.last_name)}</AvatarFallback></Avatar><span className="font-medium">{user.first_name} {user.last_name}</span></div></TableCell>
                     <TableCell className="text-muted-foreground">{user.email}</TableCell>
                     <TableCell>{user.company_name || <span className="text-muted-foreground">Sem empresa</span>}</TableCell>
                     <TableCell><StatusBadge status={user.status === 'active' ? 'active' : 'inactive'} label={user.status === 'active' ? 'Ativo' : 'Inativo'} /></TableCell>

@@ -5,7 +5,7 @@ import { StatCard } from "../../components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -93,6 +93,7 @@ export default function SystemAdminsPage() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar className="h-8 w-8 ring-2 ring-amber-200">
+                          <AvatarImage src={user.avatar_url || undefined} alt={`${user.first_name} ${user.last_name}`} />
                           <AvatarFallback className="text-xs bg-amber-100 text-amber-700">{getInitials(user.first_name, user.last_name)}</AvatarFallback>
                         </Avatar>
                         <div>
