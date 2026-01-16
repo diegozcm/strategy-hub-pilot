@@ -42,10 +42,10 @@ export default function AllUsersPage() {
   return (
     <AdminPageContainer title="Todos os Usuários" description="Gerencie todos os usuários do sistema">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <StatCard title="Total de Usuários" value={statsLoading ? '-' : stats?.totalUsers || 0} icon={<Users className="h-5 w-5" />} />
-        <StatCard title="Usuários Ativos" value={statsLoading ? '-' : stats?.activeUsers || 0} icon={<UserCheck className="h-5 w-5" />} trend="success" />
-        <StatCard title="Usuários Inativos" value={statsLoading ? '-' : stats?.inactiveUsers || 0} icon={<UserX className="h-5 w-5" />} />
-        <StatCard title="Administradores" value={statsLoading ? '-' : stats?.systemAdmins || 0} icon={<Shield className="h-5 w-5" />} />
+        <StatCard title="Total de Usuários" value={statsLoading ? '-' : stats?.totalUsers || 0} icon={Users} isLoading={statsLoading} />
+        <StatCard title="Usuários Ativos" value={statsLoading ? '-' : stats?.activeUsers || 0} icon={UserCheck} variant="success" isLoading={statsLoading} />
+        <StatCard title="Usuários Inativos" value={statsLoading ? '-' : stats?.inactiveUsers || 0} icon={UserX} variant="warning" isLoading={statsLoading} />
+        <StatCard title="Administradores" value={statsLoading ? '-' : stats?.systemAdmins || 0} icon={Shield} variant="info" isLoading={statsLoading} />
       </div>
       <Card>
         <CardHeader className="pb-3">
@@ -69,7 +69,7 @@ export default function AllUsersPage() {
                     <TableCell><div className="flex items-center gap-3"><Avatar className="h-8 w-8"><AvatarFallback className="text-xs">{getInitials(user.first_name, user.last_name)}</AvatarFallback></Avatar><span className="font-medium">{user.first_name} {user.last_name}</span></div></TableCell>
                     <TableCell className="text-muted-foreground">{user.email}</TableCell>
                     <TableCell>{user.company_name || <span className="text-muted-foreground">Sem empresa</span>}</TableCell>
-                    <TableCell><StatusBadge status={user.status === 'active' ? 'success' : 'inactive'}>{user.status === 'active' ? 'Ativo' : 'Inativo'}</StatusBadge></TableCell>
+                    <TableCell><StatusBadge status={user.status === 'active' ? 'active' : 'inactive'} label={user.status === 'active' ? 'Ativo' : 'Inativo'} /></TableCell>
                     <TableCell>{user.is_system_admin ? <Badge className="bg-amber-100 text-amber-700 border-amber-200"><Shield className="h-3 w-3 mr-1" />Admin</Badge> : <Badge variant="outline">Usuário</Badge>}</TableCell>
                     <TableCell>
                       <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
