@@ -47,7 +47,7 @@ export const useUsersStats = () => {
   });
 };
 
-interface UserWithDetails {
+export interface UserWithDetails {
   user_id: string;
   first_name: string | null;
   last_name: string | null;
@@ -59,6 +59,8 @@ interface UserWithDetails {
   created_at: string | null;
   company_name: string | null;
   is_system_admin: boolean;
+  avatar_url: string | null;
+  company_ids: string[];
 }
 
 export const useAllUsers = (filters?: {
@@ -72,7 +74,7 @@ export const useAllUsers = (filters?: {
     queryKey: ['all-users', filters],
     queryFn: async (): Promise<UserWithDetails[]> => {
       // Get all profiles with company info
-      let query = supabase
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select(`
           user_id,
@@ -84,25 +86,29 @@ export const useAllUsers = (filters?: {
           first_login_at,
           must_change_password,
           created_at,
+          avatar_url,
           companies!profiles_company_id_fkey(name)
-        `);
-
-      if (filters?.status) {
-        query = query.eq('status', filters.status);
-      }
-      if (filters?.companyId) {
-        query = query.eq('company_id', filters.companyId);
-      }
-      if (filters?.neverLoggedIn) {
-        query = query.is('first_login_at', null);
-      }
-      if (filters?.pendingPassword) {
-        query = query.eq('must_change_password', true);
-      }
-
-      const { data: profiles, error: profilesError } = await query.order('created_at', { ascending: false });
+        `)
+        .order('created_at', { ascending: false });
       
       if (profilesError) throw profilesError;
+
+      // Get all user_company_relations to support multiple companies
+      const { data: companyRelations, error: relationsError } = await supabase
+        .from('user_company_relations')
+        .select('user_id, company_id');
+      
+      if (relationsError) throw relationsError;
+
+      // Build a map of user_id -> array of company_ids
+      const userCompanyMap = new Map<string, string[]>();
+      companyRelations?.forEach(rel => {
+        const existing = userCompanyMap.get(rel.user_id) || [];
+        if (!existing.includes(rel.company_id)) {
+          existing.push(rel.company_id);
+        }
+        userCompanyMap.set(rel.user_id, existing);
+      });
 
       // Get all system admins
       const { data: adminRoles, error: adminsError } = await supabase
@@ -114,21 +120,44 @@ export const useAllUsers = (filters?: {
 
       const adminUserIds = new Set(adminRoles?.map(r => r.user_id) || []);
 
-      let users: UserWithDetails[] = (profiles || []).map((p: any) => ({
-        user_id: p.user_id,
-        first_name: p.first_name,
-        last_name: p.last_name,
-        email: p.email,
-        status: p.status,
-        company_id: p.company_id,
-        first_login_at: p.first_login_at,
-        must_change_password: p.must_change_password,
-        created_at: p.created_at,
-        company_name: p.companies?.name || null,
-        is_system_admin: adminUserIds.has(p.user_id)
-      }));
+      let users: UserWithDetails[] = (profiles || []).map((p: any) => {
+        // Combine primary company_id with relations
+        const relatedCompanyIds = userCompanyMap.get(p.user_id) || [];
+        const allCompanyIds = p.company_id 
+          ? [...new Set([p.company_id, ...relatedCompanyIds])]
+          : relatedCompanyIds;
 
-      // Filter by admin status if requested
+        return {
+          user_id: p.user_id,
+          first_name: p.first_name,
+          last_name: p.last_name,
+          email: p.email,
+          status: p.status,
+          company_id: p.company_id,
+          first_login_at: p.first_login_at,
+          must_change_password: p.must_change_password,
+          created_at: p.created_at,
+          company_name: p.companies?.name || null,
+          is_system_admin: adminUserIds.has(p.user_id),
+          avatar_url: p.avatar_url,
+          company_ids: allCompanyIds
+        };
+      });
+
+      // Apply filters
+      if (filters?.status) {
+        users = users.filter(u => u.status === filters.status);
+      }
+      if (filters?.companyId) {
+        // Filter users who have access to this company (via primary or relations)
+        users = users.filter(u => u.company_ids.includes(filters.companyId!));
+      }
+      if (filters?.neverLoggedIn) {
+        users = users.filter(u => !u.first_login_at);
+      }
+      if (filters?.pendingPassword) {
+        users = users.filter(u => u.must_change_password);
+      }
       if (filters?.isAdmin) {
         users = users.filter(u => u.is_system_admin);
       }
