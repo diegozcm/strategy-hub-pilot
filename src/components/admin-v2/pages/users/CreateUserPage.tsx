@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useCompaniesForSelect } from '@/hooks/admin/useUsersStats';
-import { ArrowLeft, User, Building2, Key } from 'lucide-react';
+import { User, Building2, Key } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function CreateUserPage() {
@@ -28,9 +28,6 @@ export default function CreateUserPage() {
 
   return (
     <AdminPageContainer title="Criar Usuário" description="Adicione um novo usuário ao sistema">
-      <Button variant="ghost" className="mb-4" onClick={() => navigate('/app/admin-v2/users')}>
-        <ArrowLeft className="h-4 w-4 mr-2" />Voltar para Usuários
-      </Button>
       <div className="space-y-6 max-w-2xl">
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><User className="h-5 w-5" />Informações Básicas</CardTitle></CardHeader>
