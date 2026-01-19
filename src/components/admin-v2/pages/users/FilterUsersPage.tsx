@@ -14,18 +14,10 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, MoreHorizontal, Shield, X, RefreshCw, Eye, Edit, Key, Mail, UserX, UserCheck, ShieldCheck, ShieldOff, Trash2 } from "lucide-react";
-import {
-  UserDetailsModal,
-  EditUserModal,
-  UserStatusModal,
-  ResetPasswordModal,
-  ResendCredentialsModal,
-  AdminPrivilegeModal
-} from "./modals";
-import { UserDeletionModal } from "@/components/admin/users/UserDeletionModal";
+import { Search, Filter, MoreHorizontal, Shield, X, RefreshCw, Eye, UserX, UserCheck } from "lucide-react";
+import { UserDetailsModal, UserStatusModal } from "./modals";
 
-type ModalType = 'details' | 'edit' | 'status' | 'password' | 'credentials' | 'admin' | 'delete' | null;
+type ModalType = 'details' | 'status' | null;
 
 export default function FilterUsersPage() {
   const queryClient = useQueryClient();
@@ -43,7 +35,6 @@ export default function FilterUsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserWithDetails | null>(null);
   const [modalType, setModalType] = useState<ModalType>(null);
   const [statusAction, setStatusAction] = useState<'deactivate' | 'reactivate'>('deactivate');
-  const [adminAction, setAdminAction] = useState<'promote' | 'demote'>('promote');
 
   const filters = useMemo(() => {
     if (!filtersApplied) return undefined;
@@ -90,12 +81,6 @@ export default function FilterUsersPage() {
     setSelectedUser(user);
     setStatusAction(action);
     setModalType('status');
-  };
-
-  const openAdminModal = (action: 'promote' | 'demote', user: UserWithDetails) => {
-    setSelectedUser(user);
-    setAdminAction(action);
-    setModalType('admin');
   };
 
   const handleSuccess = () => {
@@ -210,29 +195,18 @@ export default function FilterUsersPage() {
                       <TableCell className="text-muted-foreground">{user.email}</TableCell>
                       <TableCell>{user.company_name || <span className="text-muted-foreground">Sem empresa</span>}</TableCell>
                       <TableCell><StatusBadge status={user.status === 'active' ? 'active' : 'inactive'} label={user.status === 'active' ? 'Ativo' : 'Inativo'} /></TableCell>
-                      <TableCell>{user.is_system_admin ? <Badge className="bg-amber-100 text-amber-700 border-amber-200"><Shield className="h-3 w-3 mr-1" />Admin</Badge> : <Badge variant="outline">Usuário</Badge>}</TableCell>
+                      <TableCell>{user.is_system_admin ? <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700"><Shield className="h-3 w-3 mr-1" />Admin</Badge> : <Badge variant="outline">Usuário</Badge>}</TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => openModal('details', user)}><Eye className="h-4 w-4 mr-2" />Ver Detalhes</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openModal('edit', user)}><Edit className="h-4 w-4 mr-2" />Editar</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => openModal('password', user)}><Key className="h-4 w-4 mr-2" />Gerar Nova Senha</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openModal('credentials', user)}><Mail className="h-4 w-4 mr-2" />Reenviar Credenciais</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            {user.is_system_admin ? (
-                              <DropdownMenuItem onClick={() => openAdminModal('demote', user)} className="text-amber-600"><ShieldOff className="h-4 w-4 mr-2" />Remover Privilégio Admin</DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem onClick={() => openAdminModal('promote', user)}><ShieldCheck className="h-4 w-4 mr-2" />Promover a Admin</DropdownMenuItem>
-                            )}
                             <DropdownMenuSeparator />
                             {user.status === 'active' ? (
-                              <DropdownMenuItem onClick={() => openStatusModal('deactivate', user)} className="text-destructive"><UserX className="h-4 w-4 mr-2" />Desativar</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openStatusModal('deactivate', user)} className="text-destructive"><UserX className="h-4 w-4 mr-2" />Desativar Usuário</DropdownMenuItem>
                             ) : (
-                              <DropdownMenuItem onClick={() => openStatusModal('reactivate', user)} className="text-green-600"><UserCheck className="h-4 w-4 mr-2" />Reativar</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openStatusModal('reactivate', user)} className="text-green-600"><UserCheck className="h-4 w-4 mr-2" />Reativar Usuário</DropdownMenuItem>
                             )}
-                            <DropdownMenuItem onClick={() => openModal('delete', user)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Excluir Permanentemente</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -255,27 +229,12 @@ export default function FilterUsersPage() {
         </Card>
       )}
 
-      {/* Modals - Renderização Condicional */}
+      {/* Modals */}
       {modalType === 'details' && selectedUser && (
-        <UserDetailsModal open={true} onOpenChange={(open) => !open && setModalType(null)} user={selectedUser} />
-      )}
-      {modalType === 'edit' && selectedUser && (
-        <EditUserModal open={true} onOpenChange={(open) => !open && setModalType(null)} user={selectedUser} onSuccess={handleSuccess} />
+        <UserDetailsModal open={true} onOpenChange={(open) => !open && setModalType(null)} user={selectedUser} onSuccess={handleSuccess} />
       )}
       {modalType === 'status' && selectedUser && (
         <UserStatusModal open={true} onOpenChange={(open) => !open && setModalType(null)} user={selectedUser} action={statusAction} onSuccess={handleSuccess} />
-      )}
-      {modalType === 'password' && selectedUser && (
-        <ResetPasswordModal open={true} onOpenChange={(open) => !open && setModalType(null)} user={selectedUser} onSuccess={handleSuccess} />
-      )}
-      {modalType === 'credentials' && selectedUser && (
-        <ResendCredentialsModal open={true} onOpenChange={(open) => !open && setModalType(null)} user={selectedUser} onSuccess={handleSuccess} />
-      )}
-      {modalType === 'admin' && selectedUser && (
-        <AdminPrivilegeModal open={true} onOpenChange={(open) => !open && setModalType(null)} user={selectedUser} action={adminAction} onSuccess={handleSuccess} />
-      )}
-      {modalType === 'delete' && selectedUser && (
-        <UserDeletionModal user={{ ...selectedUser, id: selectedUser.user_id, role: selectedUser.is_system_admin ? 'admin' : 'member', status: (selectedUser.status || 'active') as 'active' | 'inactive' | 'pending', updated_at: selectedUser.created_at }} open={true} onClose={() => setModalType(null)} onDeleted={handleSuccess} />
       )}
     </AdminPageContainer>
   );

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -20,16 +20,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, Shield, MoreHorizontal, AlertTriangle, UserPlus, ShieldOff, Eye, Loader2, Trash2 } from "lucide-react";
+import { Search, Shield, MoreHorizontal, AlertTriangle, UserPlus, Eye, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import {
-  UserDetailsModal,
-  AdminPrivilegeModal
-} from "./modals";
-import { UserDeletionModal } from "@/components/admin/users/UserDeletionModal";
+import { UserDetailsModal } from "./modals";
 
-type ModalType = 'details' | 'admin' | 'add' | 'delete' | null;
+type ModalType = 'details' | 'add' | null;
 
 export default function SystemAdminsPage() {
   const { toast } = useToast();
@@ -60,9 +56,9 @@ export default function SystemAdminsPage() {
     );
   }, [users, searchQuery]);
 
-  const openModal = (type: ModalType, user: UserWithDetails) => {
+  const openModal = (user: UserWithDetails) => {
     setSelectedUser(user);
-    setModalType(type);
+    setModalType('details');
   };
 
   const handleSuccess = () => {
@@ -193,13 +189,13 @@ export default function SystemAdminsPage() {
                   <TableRow key={user.user_id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8 ring-2 ring-amber-200">
+                        <Avatar className="h-8 w-8 ring-2 ring-amber-200 dark:ring-amber-700">
                           <AvatarImage src={user.avatar_url || undefined} alt={`${user.first_name} ${user.last_name}`} />
-                          <AvatarFallback className="text-xs bg-amber-100 text-amber-700">{getInitials(user.first_name, user.last_name)}</AvatarFallback>
+                          <AvatarFallback className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300">{getInitials(user.first_name, user.last_name)}</AvatarFallback>
                         </Avatar>
                         <div>
                           <span className="font-medium">{user.first_name} {user.last_name}</span>
-                          <div className="flex items-center gap-1 text-xs text-amber-600">
+                          <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                             <Shield className="h-3 w-3" />
                             <span>Administrador</span>
                           </div>
@@ -212,19 +208,8 @@ export default function SystemAdminsPage() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openModal('details', user)}>
-                            <Eye className="h-4 w-4 mr-2" />Ver Perfil
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => openModal('admin', user)} 
-                            className="text-destructive"
-                            disabled={filteredUsers.length <= 1}
-                          >
-                            <ShieldOff className="h-4 w-4 mr-2" />Remover Privilégio Admin
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openModal('delete', user)} className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />Excluir Permanentemente
+                          <DropdownMenuItem onClick={() => openModal(user)}>
+                            <Eye className="h-4 w-4 mr-2" />Ver Detalhes
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -237,35 +222,13 @@ export default function SystemAdminsPage() {
         </CardContent>
       </Card>
 
-      {/* Modals - Renderização Condicional */}
+      {/* Modals */}
       {modalType === 'details' && selectedUser && (
         <UserDetailsModal
           open={true}
           onOpenChange={(open) => !open && setModalType(null)}
           user={selectedUser}
-        />
-      )}
-      {modalType === 'admin' && selectedUser && (
-        <AdminPrivilegeModal
-          open={true}
-          onOpenChange={(open) => !open && setModalType(null)}
-          user={selectedUser}
-          action="demote"
           onSuccess={handleSuccess}
-        />
-      )}
-      {modalType === 'delete' && selectedUser && (
-        <UserDeletionModal
-          user={{ 
-            ...selectedUser, 
-            id: selectedUser.user_id,
-            role: 'admin',
-            status: (selectedUser.status || 'active') as 'active' | 'inactive' | 'pending',
-            updated_at: selectedUser.created_at
-          }}
-          open={true}
-          onClose={() => setModalType(null)}
-          onDeleted={handleSuccess}
         />
       )}
 

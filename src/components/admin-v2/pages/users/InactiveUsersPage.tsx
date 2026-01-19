@@ -11,18 +11,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, UserX, MoreHorizontal, UserCheck, Eye, Edit, Key, Mail, ShieldCheck, Trash2 } from "lucide-react";
-import {
-  UserDetailsModal,
-  EditUserModal,
-  UserStatusModal,
-  ResetPasswordModal,
-  ResendCredentialsModal,
-  AdminPrivilegeModal
-} from "./modals";
-import { UserDeletionModal } from "@/components/admin/users/UserDeletionModal";
+import { Search, UserX, MoreHorizontal, UserCheck, Eye } from "lucide-react";
+import { UserDetailsModal, UserStatusModal } from "./modals";
 
-type ModalType = 'details' | 'edit' | 'status' | 'password' | 'credentials' | 'admin' | 'delete' | null;
+type ModalType = 'details' | 'status' | null;
 
 export default function InactiveUsersPage() {
   const queryClient = useQueryClient();
@@ -36,7 +28,6 @@ export default function InactiveUsersPage() {
   // Modal state
   const [selectedUser, setSelectedUser] = useState<UserWithDetails | null>(null);
   const [modalType, setModalType] = useState<ModalType>(null);
-  const [adminAction, setAdminAction] = useState<'promote' | 'demote'>('promote');
 
   const filteredUsers = useMemo(() => {
     if (!users) return [];
@@ -53,12 +44,6 @@ export default function InactiveUsersPage() {
   const openModal = (type: ModalType, user: UserWithDetails) => {
     setSelectedUser(user);
     setModalType(type);
-  };
-
-  const openAdminModal = (action: 'promote' | 'demote', user: UserWithDetails) => {
-    setSelectedUser(user);
-    setAdminAction(action);
-    setModalType('admin');
   };
 
   const handleSuccess = () => {
@@ -139,27 +124,9 @@ export default function InactiveUsersPage() {
                           <DropdownMenuItem onClick={() => openModal('details', user)}>
                             <Eye className="h-4 w-4 mr-2" />Ver Detalhes
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openModal('edit', user)}>
-                            <Edit className="h-4 w-4 mr-2" />Editar
-                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => openModal('password', user)}>
-                            <Key className="h-4 w-4 mr-2" />Gerar Nova Senha
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openModal('credentials', user)}>
-                            <Mail className="h-4 w-4 mr-2" />Reenviar Credenciais
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {!user.is_system_admin && (
-                            <DropdownMenuItem onClick={() => openAdminModal('promote', user)}>
-                              <ShieldCheck className="h-4 w-4 mr-2" />Promover a Admin
-                            </DropdownMenuItem>
-                          )}
                           <DropdownMenuItem onClick={() => openModal('status', user)} className="text-green-600">
                             <UserCheck className="h-4 w-4 mr-2" />Reativar Usuário
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openModal('delete', user)} className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />Excluir Permanentemente
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -172,16 +139,9 @@ export default function InactiveUsersPage() {
         </CardContent>
       </Card>
 
-      {/* Modals - Renderização Condicional */}
+      {/* Modals */}
       {modalType === 'details' && selectedUser && (
         <UserDetailsModal
-          open={true}
-          onOpenChange={(open) => !open && setModalType(null)}
-          user={selectedUser}
-        />
-      )}
-      {modalType === 'edit' && selectedUser && (
-        <EditUserModal
           open={true}
           onOpenChange={(open) => !open && setModalType(null)}
           user={selectedUser}
@@ -195,45 +155,6 @@ export default function InactiveUsersPage() {
           user={selectedUser}
           action="reactivate"
           onSuccess={handleSuccess}
-        />
-      )}
-      {modalType === 'password' && selectedUser && (
-        <ResetPasswordModal
-          open={true}
-          onOpenChange={(open) => !open && setModalType(null)}
-          user={selectedUser}
-          onSuccess={handleSuccess}
-        />
-      )}
-      {modalType === 'credentials' && selectedUser && (
-        <ResendCredentialsModal
-          open={true}
-          onOpenChange={(open) => !open && setModalType(null)}
-          user={selectedUser}
-          onSuccess={handleSuccess}
-        />
-      )}
-      {modalType === 'admin' && selectedUser && (
-        <AdminPrivilegeModal
-          open={true}
-          onOpenChange={(open) => !open && setModalType(null)}
-          user={selectedUser}
-          action={adminAction}
-          onSuccess={handleSuccess}
-        />
-      )}
-      {modalType === 'delete' && selectedUser && (
-        <UserDeletionModal
-          user={{ 
-            ...selectedUser, 
-            id: selectedUser.user_id,
-            role: selectedUser.is_system_admin ? 'admin' : 'member',
-            status: (selectedUser.status || 'inactive') as 'active' | 'inactive' | 'pending',
-            updated_at: selectedUser.created_at
-          }}
-          open={true}
-          onClose={() => setModalType(null)}
-          onDeleted={handleSuccess}
         />
       )}
     </AdminPageContainer>
