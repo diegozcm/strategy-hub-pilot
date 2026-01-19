@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Building2, Users, CheckCircle, Search, MoreHorizontal, Eye, Pencil, UserCog, Power } from "lucide-react";
+import { Users, CheckCircle, Search, MoreHorizontal, Eye, Pencil, UserCog, Power, Building2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AdminPageContainer } from "../../components/AdminPageContainer";
 import { StatCard } from "../../components/StatCard";
 import { StatusBadge } from "../../components/StatusBadge";
@@ -21,6 +22,7 @@ interface CompanyWithDetails {
   status: string | null;
   ai_enabled: boolean;
   created_at: string;
+  logo_url: string | null;
   userCount: number;
 }
 
@@ -33,7 +35,7 @@ export default function ActiveCompaniesPage() {
     queryFn: async (): Promise<CompanyWithDetails[]> => {
       const { data: companiesData, error } = await supabase
         .from("companies")
-        .select("id, name, company_type, status, ai_enabled, created_at")
+        .select("id, name, company_type, status, ai_enabled, created_at, logo_url")
         .eq("status", "active")
         .order("name");
 
@@ -170,9 +172,12 @@ export default function ActiveCompaniesPage() {
                     <TableRow key={company.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                            <Building2 className="h-5 w-5 text-green-600" />
-                          </div>
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={company.logo_url || undefined} alt={company.name} />
+                            <AvatarFallback className="bg-green-500/10 text-green-600">
+                              {company.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
                           <div>
                             <p className="font-medium">{company.name}</p>
                             <p className="text-xs text-muted-foreground">
