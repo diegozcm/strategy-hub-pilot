@@ -11,11 +11,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useCompaniesForSelect } from '@/hooks/admin/useUsersStats';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Building2, Key, Shield, Loader2, Mail, Briefcase, Eye } from 'lucide-react';
+import { User, Building2, Key, Shield, Loader2, Mail, Briefcase, Eye, CheckCircle2, Info, UserPlus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { AvatarCropUploadLocal } from '@/components/ui/AvatarCropUploadLocal';
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import type { UserRole } from '@/types/auth';
 
 interface SystemModule {
@@ -136,16 +137,18 @@ const useCompanyModuleAccess = (companyId: string | null) => {
   });
 };
 
+const initialFormData = {
+  firstName: '', lastName: '', email: '', companyId: '', department: '', position: '',
+  passwordType: 'auto', manualPassword: '', sendCredentials: true, forcePasswordChange: true
+};
+
 export default function CreateUserPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { data: companies, isLoading: companiesLoading } = useCompaniesForSelect();
   const { data: systemModules, isLoading: modulesLoading } = useSystemModules();
 
-  const [formData, setFormData] = useState({
-    firstName: '', lastName: '', email: '', companyId: '', department: '', position: '',
-    passwordType: 'auto', manualPassword: '', sendCredentials: true, forcePasswordChange: true
-  });
+  const [formData, setFormData] = useState(initialFormData);
 
   // Estado para a foto de perfil (Data URL)
   const [avatarDataUrl, setAvatarDataUrl] = useState<string>('');
@@ -153,6 +156,17 @@ export default function CreateUserPage() {
   // Estados para módulos e permissões
   const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
   const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole | null>>({});
+
+  // Estado para controlar o modal de sucesso
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Função para limpar todos os campos do formulário
+  const resetForm = () => {
+    setFormData(initialFormData);
+    setAvatarDataUrl('');
+    setModuleAccess({});
+    setModuleRoles({});
+  };
 
   // Buscar módulos disponíveis quando empresa é selecionada
   const { data: companyModules, isLoading: companyModulesLoading } = useCompanyModuleAccess(formData.companyId || null);
@@ -206,8 +220,36 @@ export default function CreateUserPage() {
     ];
   };
 
-  const handleNotImplemented = () => {
-    toast({ title: "Funcionalidade em Desenvolvimento", description: "A criação de usuários será implementada em breve." });
+  const handleCreateUser = () => {
+    // Validação básica
+    if (!formData.firstName.trim() || !formData.email.trim()) {
+      toast({ 
+        title: "Campos obrigatórios", 
+        description: "Preencha nome e email para continuar.",
+        variant: "destructive" 
+      });
+      return;
+    }
+    
+    // Simula criação e abre o modal de sucesso
+    setShowSuccessModal(true);
+  };
+
+  const handleCreateAnother = () => {
+    setShowSuccessModal(false);
+    resetForm();
+  };
+
+  const getSelectedModulesWithRoles = () => {
+    return availableModules
+      .filter(m => moduleAccess[m.moduleId])
+      .map(module => {
+        const role = moduleRoles[module.moduleId];
+        const roleLabel = role 
+          ? getRoleOptions(module.moduleSlug).find(r => r.value === role)?.label
+          : null;
+        return { ...module, roleLabel };
+      });
   };
 
   const selectedModulesCount = Object.values(moduleAccess).filter(Boolean).length;
@@ -607,13 +649,90 @@ export default function CreateUserPage() {
 
       {/* Botões de Ação */}
       <div className="flex justify-end gap-3 mt-6">
-        <Button variant="outline" onClick={() => navigate('/app/admin-v2/users')}>
+        <Button variant="outline" onClick={resetForm}>
           Cancelar
         </Button>
-        <Button onClick={handleNotImplemented}>
+        <Button onClick={handleCreateUser}>
           Criar Usuário
         </Button>
       </div>
+
+      {/* Modal de Sucesso */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md">
+          <div className="flex flex-col items-center text-center py-4">
+            {/* Ícone de sucesso */}
+            <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
+              <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
+            </div>
+            
+            <DialogTitle className="text-xl">Usuário Cadastrado com Sucesso!</DialogTitle>
+            
+            {/* Preview do usuário criado */}
+            <div className="w-full mt-6 p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-12 w-12 border-2 border-background">
+                  {avatarDataUrl && <AvatarImage src={avatarDataUrl} alt="Avatar" />}
+                  <AvatarFallback className="bg-primary/10 text-primary">
+                    {formData.firstName?.[0]?.toUpperCase()}{formData.lastName?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="text-left">
+                  <p className="font-medium">{formData.firstName} {formData.lastName}</p>
+                  <p className="text-sm text-muted-foreground">{formData.email}</p>
+                  {formData.position && (
+                    <p className="text-xs text-muted-foreground">
+                      {formData.position}
+                      {formData.companyId && ` • ${companies?.find(c => c.id === formData.companyId)?.name}`}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Módulos selecionados */}
+              {selectedModulesCount > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {getSelectedModulesWithRoles().map(module => (
+                    <Badge key={module.moduleId} variant="secondary" className="text-xs">
+                      {module.moduleName}
+                      {module.roleLabel && (
+                        <span className="ml-1 opacity-70">({module.roleLabel})</span>
+                      )}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Texto de ajuda */}
+            <div className="w-full mt-4 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg text-left">
+              <h4 className="font-medium text-sm flex items-center gap-2 mb-2">
+                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                Como o usuário pode acessar?
+              </h4>
+              <p className="text-sm text-muted-foreground">
+                {formData.sendCredentials 
+                  ? "O usuário receberá um email com suas credenciais de acesso. No primeiro login, será solicitada a alteração da senha temporária."
+                  : "As credenciais de acesso devem ser informadas manualmente ao usuário. No primeiro login, será solicitada a alteração da senha."
+                }
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowSuccessModal(false)}
+            >
+              Fechar
+            </Button>
+            <Button onClick={handleCreateAnother}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Criar Outro Usuário
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminPageContainer>
   );
 }
