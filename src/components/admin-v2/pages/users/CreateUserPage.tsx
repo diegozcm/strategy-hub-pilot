@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AdminPageContainer } from '../../components/AdminPageContainer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,66 +9,463 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useCompaniesForSelect } from '@/hooks/admin/useUsersStats';
-import { User, Building2, Key } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { User, Building2, Key, Shield, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import type { UserRole } from '@/types/auth';
+
+interface SystemModule {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+}
+
+interface CompanyModuleAccess {
+  moduleId: string;
+  moduleSlug: string;
+  moduleName: string;
+}
+
+// Hook para buscar módulos do sistema
+const useSystemModules = () => {
+  return useQuery({
+    queryKey: ['system-modules-active'],
+    queryFn: async (): Promise<SystemModule[]> => {
+      const { data, error } = await supabase
+        .from('system_modules')
+        .select('id, name, slug, active')
+        .eq('active', true)
+        .order('name');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// Hook para buscar quais módulos uma empresa tem acesso (baseado em usuários existentes)
+const useCompanyModuleAccess = (companyId: string | null) => {
+  return useQuery({
+    queryKey: ['company-module-access', companyId],
+    queryFn: async (): Promise<CompanyModuleAccess[]> => {
+      if (!companyId) return [];
+      
+      // Step 1: Get user IDs for this company
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('company_id', companyId);
+      
+      if (profilesError || !profilesData?.length) {
+        // Fallback: retornar todos os módulos ativos
+        const { data: allModules } = await supabase
+          .from('system_modules')
+          .select('id, name, slug')
+          .eq('active', true);
+        
+        return (allModules || []).map(m => ({
+          moduleId: m.id,
+          moduleSlug: m.slug,
+          moduleName: m.name,
+        }));
+      }
+      
+      const userIds = profilesData.map(p => p.user_id);
+      
+      // Step 2: Get module roles for these users
+      const { data: userModuleRoles, error } = await supabase
+        .from('user_module_roles')
+        .select(`
+          module_id,
+          system_modules!inner(id, name, slug)
+        `)
+        .in('user_id', userIds);
+      
+      if (error) {
+        console.error('Error fetching company modules:', error);
+        // Fallback: retornar todos os módulos ativos
+        const { data: allModules } = await supabase
+          .from('system_modules')
+          .select('id, name, slug')
+          .eq('active', true);
+        
+        return (allModules || []).map(m => ({
+          moduleId: m.id,
+          moduleSlug: m.slug,
+          moduleName: m.name,
+        }));
+      }
+      
+      // Deduplicate modules
+      const uniqueModules = new Map<string, CompanyModuleAccess>();
+      userModuleRoles?.forEach((row: any) => {
+        const mod = row.system_modules;
+        if (mod && !uniqueModules.has(mod.id)) {
+          uniqueModules.set(mod.id, {
+            moduleId: mod.id,
+            moduleSlug: mod.slug,
+            moduleName: mod.name,
+          });
+        }
+      });
+      
+      // Se não encontrou módulos específicos, retornar todos os módulos ativos
+      if (uniqueModules.size === 0) {
+        const { data: allModules } = await supabase
+          .from('system_modules')
+          .select('id, name, slug')
+          .eq('active', true);
+        
+        return (allModules || []).map(m => ({
+          moduleId: m.id,
+          moduleSlug: m.slug,
+          moduleName: m.name,
+        }));
+      }
+      
+      return Array.from(uniqueModules.values());
+    },
+    enabled: !!companyId,
+    staleTime: 60 * 1000,
+  });
+};
 
 export default function CreateUserPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { data: companies, isLoading: companiesLoading } = useCompaniesForSelect();
+  const { data: systemModules, isLoading: modulesLoading } = useSystemModules();
 
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', companyId: '', department: '', position: '',
     passwordType: 'auto', manualPassword: '', sendCredentials: true, forcePasswordChange: true
   });
 
+  // Estados para módulos e permissões
+  const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
+  const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole | null>>({});
+
+  // Buscar módulos disponíveis quando empresa é selecionada
+  const { data: companyModules, isLoading: companyModulesLoading } = useCompanyModuleAccess(formData.companyId || null);
+
+  // Usar todos os módulos do sistema quando nenhuma empresa está selecionada
+  const availableModules = useMemo(() => {
+    if (!formData.companyId && systemModules) {
+      return systemModules.map(m => ({
+        moduleId: m.id,
+        moduleSlug: m.slug,
+        moduleName: m.name,
+      }));
+    }
+    return companyModules || [];
+  }, [formData.companyId, systemModules, companyModules]);
+
+  // Reset module access when company changes
+  useEffect(() => {
+    setModuleAccess({});
+    setModuleRoles({});
+  }, [formData.companyId]);
+
+  const handleModuleAccessChange = (moduleId: string, checked: boolean) => {
+    setModuleAccess(prev => ({ ...prev, [moduleId]: checked }));
+    if (!checked) {
+      setModuleRoles(prev => ({ ...prev, [moduleId]: null }));
+    }
+  };
+
+  const handleModuleRoleChange = (moduleId: string, role: UserRole | null) => {
+    setModuleRoles(prev => ({ ...prev, [moduleId]: role }));
+  };
+
+  const getRoleOptions = (moduleSlug: string): { value: string; label: string }[] => {
+    if (moduleSlug === 'startup-hub') {
+      return [
+        { value: 'startup', label: 'Startup' },
+        { value: 'mentor', label: 'Mentor' },
+      ];
+    }
+    if (moduleSlug === 'strategic-planning') {
+      return [
+        { value: 'manager', label: 'Gestor' },
+        { value: 'member', label: 'Membro' },
+      ];
+    }
+    return [
+      { value: 'admin', label: 'Admin' },
+      { value: 'manager', label: 'Gestor' },
+      { value: 'member', label: 'Membro' },
+    ];
+  };
+
   const handleNotImplemented = () => {
     toast({ title: "Funcionalidade em Desenvolvimento", description: "A criação de usuários será implementada em breve." });
   };
 
+  const selectedModulesCount = Object.values(moduleAccess).filter(Boolean).length;
+
   return (
     <AdminPageContainer title="Criar Usuário" description="Adicione um novo usuário ao sistema">
-      <div className="space-y-6 max-w-2xl">
-        <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><User className="h-5 w-5" />Informações Básicas</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Nome *</Label><Input placeholder="Digite o nome" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Sobrenome *</Label><Input placeholder="Digite o sobrenome" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} /></div>
-            </div>
-            <div className="space-y-2"><Label>Email *</Label><Input type="email" placeholder="email@empresa.com" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} /></div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Building2 className="h-5 w-5" />Empresa e Acesso</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2"><Label>Empresa</Label>
-              <Select value={formData.companyId} onValueChange={(value) => setFormData({ ...formData, companyId: value })}>
-                <SelectTrigger><SelectValue placeholder="Selecione uma empresa" /></SelectTrigger>
-                <SelectContent>{companiesLoading ? <SelectItem value="loading" disabled>Carregando...</SelectItem> : companies?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>Departamento</Label><Input placeholder="Ex: Tecnologia" value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Cargo</Label><Input placeholder="Ex: Desenvolvedor" value={formData.position} onChange={(e) => setFormData({ ...formData, position: e.target.value })} /></div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2 text-lg"><Key className="h-5 w-5" />Credenciais</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <RadioGroup value={formData.passwordType} onValueChange={(value) => setFormData({ ...formData, passwordType: value })}>
-              <div className="flex items-center space-x-2"><RadioGroupItem value="auto" id="auto" /><Label htmlFor="auto">Gerar senha temporária automaticamente</Label></div>
-              <div className="flex items-center space-x-2"><RadioGroupItem value="manual" id="manual" /><Label htmlFor="manual">Definir senha manualmente</Label></div>
-            </RadioGroup>
-            {formData.passwordType === 'manual' && <div className="space-y-2"><Label>Senha</Label><Input type="password" placeholder="Digite a senha" value={formData.manualPassword} onChange={(e) => setFormData({ ...formData, manualPassword: e.target.value })} /></div>}
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center space-x-2"><Checkbox id="sendCredentials" checked={formData.sendCredentials} onCheckedChange={(checked) => setFormData({ ...formData, sendCredentials: checked as boolean })} /><Label htmlFor="sendCredentials" className="font-normal">Enviar credenciais por email</Label></div>
-              <div className="flex items-center space-x-2"><Checkbox id="forcePasswordChange" checked={formData.forcePasswordChange} onCheckedChange={(checked) => setFormData({ ...formData, forcePasswordChange: checked as boolean })} /><Label htmlFor="forcePasswordChange" className="font-normal">Obrigar troca de senha no primeiro login</Label></div>
-            </div>
-          </CardContent>
-        </Card>
-        <div className="flex justify-end gap-3"><Button variant="outline" onClick={() => navigate('/app/admin-v2/users')}>Cancelar</Button><Button onClick={handleNotImplemented}>Criar Usuário</Button></div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Coluna Esquerda - Informações do Usuário */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <User className="h-5 w-5" />
+                Informações Básicas
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nome *</Label>
+                  <Input 
+                    placeholder="Digite o nome" 
+                    value={formData.firstName} 
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Sobrenome *</Label>
+                  <Input 
+                    placeholder="Digite o sobrenome" 
+                    value={formData.lastName} 
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} 
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Email *</Label>
+                <Input 
+                  type="email" 
+                  placeholder="email@empresa.com" 
+                  value={formData.email} 
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Building2 className="h-5 w-5" />
+                Empresa e Acesso
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Empresa</Label>
+                <Select 
+                  value={formData.companyId} 
+                  onValueChange={(value) => setFormData({ ...formData, companyId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma empresa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companiesLoading ? (
+                      <SelectItem value="loading" disabled>Carregando...</SelectItem>
+                    ) : (
+                      companies?.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Departamento</Label>
+                  <Input 
+                    placeholder="Ex: Tecnologia" 
+                    value={formData.department} 
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Cargo</Label>
+                  <Input 
+                    placeholder="Ex: Desenvolvedor" 
+                    value={formData.position} 
+                    onChange={(e) => setFormData({ ...formData, position: e.target.value })} 
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Key className="h-5 w-5" />
+                Credenciais
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <RadioGroup 
+                value={formData.passwordType} 
+                onValueChange={(value) => setFormData({ ...formData, passwordType: value })}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="auto" id="auto" />
+                  <Label htmlFor="auto">Gerar senha temporária automaticamente</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="manual" id="manual" />
+                  <Label htmlFor="manual">Definir senha manualmente</Label>
+                </div>
+              </RadioGroup>
+              {formData.passwordType === 'manual' && (
+                <div className="space-y-2">
+                  <Label>Senha</Label>
+                  <Input 
+                    type="password" 
+                    placeholder="Digite a senha" 
+                    value={formData.manualPassword} 
+                    onChange={(e) => setFormData({ ...formData, manualPassword: e.target.value })} 
+                  />
+                </div>
+              )}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="sendCredentials" 
+                    checked={formData.sendCredentials} 
+                    onCheckedChange={(checked) => setFormData({ ...formData, sendCredentials: checked as boolean })} 
+                  />
+                  <Label htmlFor="sendCredentials" className="font-normal">
+                    Enviar credenciais por email
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="forcePasswordChange" 
+                    checked={formData.forcePasswordChange} 
+                    onCheckedChange={(checked) => setFormData({ ...formData, forcePasswordChange: checked as boolean })} 
+                  />
+                  <Label htmlFor="forcePasswordChange" className="font-normal">
+                    Obrigar troca de senha no primeiro login
+                  </Label>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Coluna Direita - Módulos e Permissões */}
+        <div className="space-y-6">
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Shield className="h-5 w-5" />
+                Módulos e Permissões
+              </CardTitle>
+              <CardDescription>
+                {formData.companyId 
+                  ? "Selecione os módulos e defina as permissões do usuário"
+                  : "Selecione uma empresa para ver os módulos disponíveis"
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!formData.companyId ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Shield className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">Selecione uma empresa primeiro</p>
+                  <p className="text-xs mt-1">Os módulos disponíveis serão exibidos aqui</p>
+                </div>
+              ) : companyModulesLoading || modulesLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : availableModules.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">Nenhum módulo disponível</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {availableModules.map((module) => {
+                    const isChecked = moduleAccess[module.moduleId] || false;
+                    const currentRole = moduleRoles[module.moduleId] || null;
+                    const roleOptions = getRoleOptions(module.moduleSlug);
+
+                    return (
+                      <div 
+                        key={module.moduleId} 
+                        className="rounded-lg border p-4 space-y-3"
+                      >
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            id={`module-${module.moduleId}`}
+                            checked={isChecked}
+                            onCheckedChange={(checked) => handleModuleAccessChange(module.moduleId, !!checked)}
+                          />
+                          <div className="flex-1">
+                            <label 
+                              htmlFor={`module-${module.moduleId}`} 
+                              className="text-sm font-medium cursor-pointer"
+                            >
+                              {module.moduleName}
+                            </label>
+                            <p className="text-xs text-muted-foreground">{module.moduleSlug}</p>
+                          </div>
+                        </div>
+
+                        {isChecked && (
+                          <div className="pl-7">
+                            <Label className="text-xs text-muted-foreground mb-2 block">
+                              Papel no módulo:
+                            </Label>
+                            <RadioGroup 
+                              value={currentRole || ''} 
+                              onValueChange={(value) => handleModuleRoleChange(module.moduleId, value as UserRole)}
+                              className="flex flex-wrap gap-3"
+                            >
+                              {roleOptions.map((option) => (
+                                <div key={option.value} className="flex items-center gap-2">
+                                  <RadioGroupItem 
+                                    id={`role-${module.moduleId}-${option.value}`}
+                                    value={option.value}
+                                  />
+                                  <Label 
+                                    htmlFor={`role-${module.moduleId}-${option.value}`}
+                                    className="cursor-pointer text-sm"
+                                  >
+                                    {option.label}
+                                  </Label>
+                                </div>
+                              ))}
+                            </RadioGroup>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {selectedModulesCount > 0 && (
+                    <div className="pt-2 text-sm text-muted-foreground">
+                      {selectedModulesCount} módulo{selectedModulesCount > 1 ? 's' : ''} selecionado{selectedModulesCount > 1 ? 's' : ''}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Botões de Ação */}
+      <div className="flex justify-end gap-3 mt-6">
+        <Button variant="outline" onClick={() => navigate('/app/admin-v2/users')}>
+          Cancelar
+        </Button>
+        <Button onClick={handleNotImplemented}>
+          Criar Usuário
+        </Button>
       </div>
     </AdminPageContainer>
   );
