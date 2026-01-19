@@ -39,7 +39,7 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
     firstName: '',
     lastName: '',
     status: 'active',
-    companyId: ''
+    companyId: 'none'
   });
 
   // Estado para avatar
@@ -52,7 +52,7 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
         firstName: user.first_name || '',
         lastName: user.last_name || '',
         status: user.status || 'active',
-        companyId: user.company_id || ''
+        companyId: user.company_id || 'none'
       });
       setAvatarDataUrl(user.avatar_url || '');
       setAvatarRemoved(false);
@@ -126,7 +126,7 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
           first_name: formData.firstName.trim(),
           last_name: formData.lastName.trim(),
           status: formData.status,
-          company_id: formData.companyId || null,
+          company_id: formData.companyId === 'none' ? null : (formData.companyId || null),
           avatar_url: newAvatarUrl,
           updated_at: new Date().toISOString()
         })
@@ -135,7 +135,7 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
       if (profileError) throw profileError;
 
       // Update user_company_relations if company changed
-      if (formData.companyId && formData.companyId !== user.company_id) {
+      if (formData.companyId && formData.companyId !== 'none' && formData.companyId !== user.company_id) {
         const { data: existingRelation } = await supabase
           .from('user_company_relations')
           .select('id')
@@ -234,7 +234,7 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
                 <SelectValue placeholder="Selecione uma empresa" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sem empresa</SelectItem>
+                <SelectItem value="none">Sem empresa</SelectItem>
                 {companies?.map((company) => (
                   <SelectItem key={company.id} value={company.id}>
                     {company.name}
