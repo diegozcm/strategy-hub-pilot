@@ -13,8 +13,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Building2, Key, Shield, Loader2, Mail, Briefcase, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { AvatarCropUploadLocal } from '@/components/ui/AvatarCropUploadLocal';
 import type { UserRole } from '@/types/auth';
 
 interface SystemModule {
@@ -146,6 +147,9 @@ export default function CreateUserPage() {
     passwordType: 'auto', manualPassword: '', sendCredentials: true, forcePasswordChange: true
   });
 
+  // Estado para a foto de perfil (Data URL)
+  const [avatarDataUrl, setAvatarDataUrl] = useState<string>('');
+
   // Estados para módulos e permissões
   const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
   const [moduleRoles, setModuleRoles] = useState<Record<string, UserRole | null>>({});
@@ -221,6 +225,23 @@ export default function CreateUserPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Upload de Foto de Perfil */}
+              <div className="flex justify-center pb-4 border-b">
+                <AvatarCropUploadLocal
+                  currentImageUrl={avatarDataUrl || undefined}
+                  onImageCropped={(dataUrl) => setAvatarDataUrl(dataUrl)}
+                  onImageRemoved={() => setAvatarDataUrl('')}
+                  userInitials={
+                    formData.firstName && formData.lastName 
+                      ? `${formData.firstName[0]}${formData.lastName[0]}`.toUpperCase()
+                      : formData.firstName 
+                        ? formData.firstName[0].toUpperCase()
+                        : 'U'
+                  }
+                  size="lg"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Nome *</Label>
@@ -472,7 +493,10 @@ export default function CreateUserPage() {
             <CardContent>
               <div className="flex flex-col items-center text-center space-y-4">
                 {/* Avatar */}
-                <Avatar className="h-20 w-20">
+                <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
+                  {avatarDataUrl ? (
+                    <AvatarImage src={avatarDataUrl} alt="Preview" />
+                  ) : null}
                   <AvatarFallback className="text-xl bg-primary/10 text-primary">
                     {formData.firstName && formData.lastName 
                       ? `${formData.firstName[0]}${formData.lastName[0]}`.toUpperCase()
