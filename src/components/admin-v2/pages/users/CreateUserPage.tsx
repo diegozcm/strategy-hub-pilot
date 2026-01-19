@@ -353,8 +353,28 @@ export default function CreateUserPage() {
         }
       });
 
+      // Handle edge function errors (including 422 business errors)
       if (createError) {
-        throw new Error('Erro de comunicação com o servidor.');
+        console.error('Edge function error:', createError);
+        // Try to parse error message from context
+        let errorMessage = 'Erro de comunicação com o servidor.';
+        try {
+          // Edge function errors with non-2xx status have the response in context
+          const errorContext = (createError as any).context;
+          if (errorContext?.body) {
+            const parsed = JSON.parse(errorContext.body);
+            errorMessage = parsed.error || errorMessage;
+          } else if ((createError as any).message) {
+            errorMessage = (createError as any).message;
+          }
+        } catch {
+          // Keep default message
+        }
+        
+        if (errorMessage.includes('já existe') || errorMessage.includes('already exists')) {
+          throw new Error('Este e-mail já está cadastrado no sistema.');
+        }
+        throw new Error(errorMessage);
       }
 
       if (!createResult?.success) {
