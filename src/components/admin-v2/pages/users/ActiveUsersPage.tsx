@@ -185,44 +185,56 @@ export default function ActiveUsersPage() {
         </CardContent>
       </Card>
 
-      {/* Modals */}
-      <UserDetailsModal
-        open={modalType === 'details'}
-        onOpenChange={(open) => !open && setModalType(null)}
-        user={selectedUser}
-      />
-      <EditUserModal
-        open={modalType === 'edit'}
-        onOpenChange={(open) => !open && setModalType(null)}
-        user={selectedUser}
-        onSuccess={handleSuccess}
-      />
-      <UserStatusModal
-        open={modalType === 'status'}
-        onOpenChange={(open) => !open && setModalType(null)}
-        user={selectedUser}
-        action={statusAction}
-        onSuccess={handleSuccess}
-      />
-      <ResetPasswordModal
-        open={modalType === 'password'}
-        onOpenChange={(open) => !open && setModalType(null)}
-        user={selectedUser}
-        onSuccess={handleSuccess}
-      />
-      <ResendCredentialsModal
-        open={modalType === 'credentials'}
-        onOpenChange={(open) => !open && setModalType(null)}
-        user={selectedUser}
-        onSuccess={handleSuccess}
-      />
-      <AdminPrivilegeModal
-        open={modalType === 'admin'}
-        onOpenChange={(open) => !open && setModalType(null)}
-        user={selectedUser}
-        action={adminAction}
-        onSuccess={handleSuccess}
-      />
+      {/* Modals - Renderização Condicional */}
+      {modalType === 'details' && selectedUser && (
+        <UserDetailsModal
+          open={true}
+          onOpenChange={(open) => !open && setModalType(null)}
+          user={selectedUser}
+        />
+      )}
+      {modalType === 'edit' && selectedUser && (
+        <EditUserModal
+          open={true}
+          onOpenChange={(open) => !open && setModalType(null)}
+          user={selectedUser}
+          onSuccess={handleSuccess}
+        />
+      )}
+      {modalType === 'status' && selectedUser && (
+        <UserStatusModal
+          open={true}
+          onOpenChange={(open) => !open && setModalType(null)}
+          user={selectedUser}
+          action={statusAction}
+          onSuccess={handleSuccess}
+        />
+      )}
+      {modalType === 'password' && selectedUser && (
+        <ResetPasswordModal
+          open={true}
+          onOpenChange={(open) => !open && setModalType(null)}
+          user={selectedUser}
+          onSuccess={handleSuccess}
+        />
+      )}
+      {modalType === 'credentials' && selectedUser && (
+        <ResendCredentialsModal
+          open={true}
+          onOpenChange={(open) => !open && setModalType(null)}
+          user={selectedUser}
+          onSuccess={handleSuccess}
+        />
+      )}
+      {modalType === 'admin' && selectedUser && (
+        <AdminPrivilegeModal
+          open={true}
+          onOpenChange={(open) => !open && setModalType(null)}
+          user={selectedUser}
+          action={adminAction}
+          onSuccess={handleSuccess}
+        />
+      )}
     </AdminPageContainer>
   );
 }

@@ -233,19 +233,23 @@ export default function SystemAdminsPage() {
         </CardContent>
       </Card>
 
-      {/* Modals */}
-      <UserDetailsModal
-        open={modalType === 'details'}
-        onOpenChange={(open) => !open && setModalType(null)}
-        user={selectedUser}
-      />
-      <AdminPrivilegeModal
-        open={modalType === 'admin'}
-        onOpenChange={(open) => !open && setModalType(null)}
-        user={selectedUser}
-        action="demote"
-        onSuccess={handleSuccess}
-      />
+      {/* Modals - Renderização Condicional */}
+      {modalType === 'details' && selectedUser && (
+        <UserDetailsModal
+          open={true}
+          onOpenChange={(open) => !open && setModalType(null)}
+          user={selectedUser}
+        />
+      )}
+      {modalType === 'admin' && selectedUser && (
+        <AdminPrivilegeModal
+          open={true}
+          onOpenChange={(open) => !open && setModalType(null)}
+          user={selectedUser}
+          action="demote"
+          onSuccess={handleSuccess}
+        />
+      )}
 
       {/* Add Admin Dialog */}
       <Dialog open={modalType === 'add'} onOpenChange={(open) => {
