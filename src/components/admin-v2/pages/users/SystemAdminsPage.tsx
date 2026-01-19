@@ -20,15 +20,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, Shield, MoreHorizontal, AlertTriangle, UserPlus, ShieldOff, Eye, Loader2 } from "lucide-react";
+import { Search, Shield, MoreHorizontal, AlertTriangle, UserPlus, ShieldOff, Eye, Loader2, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   UserDetailsModal,
   AdminPrivilegeModal
 } from "./modals";
+import { UserDeletionModal } from "@/components/admin/users/UserDeletionModal";
 
-type ModalType = 'details' | 'admin' | 'add' | null;
+type ModalType = 'details' | 'admin' | 'add' | 'delete' | null;
 
 export default function SystemAdminsPage() {
   const { toast } = useToast();
@@ -222,6 +223,9 @@ export default function SystemAdminsPage() {
                           >
                             <ShieldOff className="h-4 w-4 mr-2" />Remover Privilégio Admin
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openModal('delete', user)} className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />Excluir Permanentemente
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -248,6 +252,20 @@ export default function SystemAdminsPage() {
           user={selectedUser}
           action="demote"
           onSuccess={handleSuccess}
+        />
+      )}
+      {modalType === 'delete' && selectedUser && (
+        <UserDeletionModal
+          user={{ 
+            ...selectedUser, 
+            id: selectedUser.user_id,
+            role: 'admin',
+            status: (selectedUser.status || 'active') as 'active' | 'inactive' | 'pending',
+            updated_at: selectedUser.created_at
+          }}
+          open={true}
+          onClose={() => setModalType(null)}
+          onDeleted={handleSuccess}
         />
       )}
 

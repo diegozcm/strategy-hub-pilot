@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, UserX, MoreHorizontal, Mail, KeyRound, CheckCircle, Eye, Edit } from "lucide-react";
+import { Search, UserX, MoreHorizontal, Mail, KeyRound, CheckCircle, Eye, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -20,8 +20,9 @@ import {
   ResetPasswordModal,
   ResendCredentialsModal
 } from "./modals";
+import { UserDeletionModal } from "@/components/admin/users/UserDeletionModal";
 
-type ModalType = 'details' | 'edit' | 'password' | 'credentials' | null;
+type ModalType = 'details' | 'edit' | 'password' | 'credentials' | 'delete' | null;
 
 export default function FirstLoginPage() {
   const queryClient = useQueryClient();
@@ -147,6 +148,10 @@ export default function FirstLoginPage() {
                           <DropdownMenuItem onClick={() => openModal('edit', user)}>
                             <Edit className="h-4 w-4 mr-2" />Editar
                           </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => openModal('delete', user)} className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />Excluir Permanentemente
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -188,6 +193,20 @@ export default function FirstLoginPage() {
           onOpenChange={(open) => !open && setModalType(null)}
           user={selectedUser}
           onSuccess={handleSuccess}
+        />
+      )}
+      {modalType === 'delete' && selectedUser && (
+        <UserDeletionModal
+          user={{ 
+            ...selectedUser, 
+            id: selectedUser.user_id,
+            role: 'member',
+            status: (selectedUser.status || 'active') as 'active' | 'inactive' | 'pending',
+            updated_at: selectedUser.created_at
+          }}
+          open={true}
+          onClose={() => setModalType(null)}
+          onDeleted={handleSuccess}
         />
       )}
     </AdminPageContainer>
