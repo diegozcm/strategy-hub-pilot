@@ -3,7 +3,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { AdminPageContainer } from '../../components/AdminPageContainer';
-import { StatCard } from '../../components/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +17,7 @@ import {
   Trash2,
   CheckCircle2
 } from 'lucide-react';
-import { format, subDays, differenceInDays } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface Warning {
@@ -175,30 +174,59 @@ export default function WarningsPage() {
     <AdminPageContainer
       title="Avisos do Sistema"
       description="Alertas que requerem atenção mas não são críticos"
-      actions={
-        <Button variant="outline" size="sm" onClick={() => navigate('/app/admin-v2/monitoring/alerts')}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
-        </Button>
-      }
     >
       <div className="space-y-6">
+        {/* Header with back button */}
+        <div className="flex justify-between items-center">
+          <Button variant="outline" size="sm" onClick={() => navigate('/app/admin-v2/monitoring/alerts')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
+
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <StatCard
-            title="Total de Avisos"
-            value={warnings.length.toString()}
-            icon={<AlertTriangle className="h-5 w-5 text-yellow-600" />}
-          />
-          <StatCard
-            title="Avisos de Backup"
-            value={backupWarnings.length.toString()}
-            icon={<Database className="h-5 w-5 text-yellow-600" />}
-          />
-          <StatCard
-            title="Operações Lentas"
-            value={slowWarnings.length.toString()}
-            icon={<Timer className="h-5 w-5 text-yellow-600" />}
-          />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Total de Avisos</p>
+                  <p className="text-2xl font-bold">{warnings.length}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-yellow-500/10">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Avisos de Backup</p>
+                  <p className="text-2xl font-bold">{backupWarnings.length}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-yellow-500/10">
+                  <Database className="h-5 w-5 text-yellow-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Operações Lentas</p>
+                  <p className="text-2xl font-bold">{slowWarnings.length}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-yellow-500/10">
+                  <Timer className="h-5 w-5 text-yellow-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card>

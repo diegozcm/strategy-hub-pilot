@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AdminPageContainer } from '../../components/AdminPageContainer';
-import { StatCard } from '../../components/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -143,37 +142,76 @@ export default function DatabaseLogsPage() {
     <AdminPageContainer
       title="Logs de Banco de Dados"
       description="Atividades de backup, restauração e limpeza"
-      actions={
-        <Button variant="outline" size="sm" onClick={() => refetchBackups()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Atualizar
-        </Button>
-      }
     >
       <div className="space-y-6">
+        {/* Header with action button */}
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" onClick={() => refetchBackups()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
+          </Button>
+        </div>
+
+        {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard
-            title="Total de Backups"
-            value={stats.totalBackups.toString()}
-            icon={<Database className="h-5 w-5" />}
-          />
-          <StatCard
-            title="Taxa de Sucesso"
-            value={`${stats.successRate}%`}
-            icon={<CheckCircle2 className="h-5 w-5" />}
-            trend={stats.successRate >= 90 ? 'up' : 'down'}
-            trendValue={stats.successRate >= 90 ? 'Ótimo' : 'Atenção'}
-          />
-          <StatCard
-            title="Registros Salvos"
-            value={stats.totalRecords.toLocaleString()}
-            icon={<FileText className="h-5 w-5" />}
-          />
-          <StatCard
-            title="Tamanho Total"
-            value={`${stats.totalSizeMB} MB`}
-            icon={<HardDrive className="h-5 w-5" />}
-          />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Total de Backups</p>
+                  <p className="text-2xl font-bold">{stats.totalBackups}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
+                  <Database className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Taxa de Sucesso</p>
+                  <p className="text-2xl font-bold">{stats.successRate}%</p>
+                  <p className={`text-xs font-medium ${stats.successRate >= 90 ? 'text-green-600' : 'text-red-600'}`}>
+                    {stats.successRate >= 90 ? 'Ótimo' : 'Atenção'}
+                  </p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-green-500/10">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Registros Salvos</p>
+                  <p className="text-2xl font-bold">{stats.totalRecords.toLocaleString()}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Tamanho Total</p>
+                  <p className="text-2xl font-bold">{stats.totalSizeMB} MB</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
+                  <HardDrive className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>

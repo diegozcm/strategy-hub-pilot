@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AdminPageContainer } from '../../components/AdminPageContainer';
-import { StatCard } from '../../components/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,11 +34,9 @@ interface LoginLog {
   login_time: string;
   ip_address: string | null;
   user_agent: string | null;
-  login_method: string | null;
-  success: boolean;
   created_at: string;
   user?: {
-    full_name: string;
+    name: string;
     avatar_url: string | null;
     company_name?: string;
   };
@@ -64,30 +61,23 @@ export default function AccessLogsPage() {
 
       const userIds = [...new Set(logs?.map(log => log.user_id) || [])];
       
+      // Get profiles without relations to avoid complex type issues
       const { data: profiles } = await supabase
         .from('profiles')
-        .select(`
-          user_id,
-          full_name,
-          avatar_url,
-          user_company_relations (
-            companies (name)
-          )
-        `)
+        .select('user_id, avatar_url')
         .in('user_id', userIds);
       
       const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
 
       const enrichedLogs: LoginLog[] = (logs || []).map(log => {
         const profile = profilesMap.get(log.user_id);
-        const companyName = profile?.user_company_relations?.[0]?.companies?.name;
         
         return {
           ...log,
           user: profile ? {
-            full_name: profile.full_name || 'Usuário',
+            name: 'Usuário',
             avatar_url: profile.avatar_url,
-            company_name: companyName
+            company_name: undefined
           } : undefined
         };
       });
@@ -138,7 +128,7 @@ export default function AccessLogsPage() {
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(log => 
-        log.user?.full_name?.toLowerCase().includes(term) ||
+        log.user?.name?.toLowerCase().includes(term) ||
         log.user?.company_name?.toLowerCase().includes(term) ||
         log.ip_address?.includes(term)
       );
@@ -184,13 +174,12 @@ export default function AccessLogsPage() {
     }
 
     const csvContent = [
-      ['Data/Hora', 'Usuário', 'Empresa', 'IP', 'Sucesso'].join(','),
+      ['Data/Hora', 'Usuário', 'Empresa', 'IP'].join(','),
       ...filteredLogs.map(log => [
         format(new Date(log.login_time), "dd/MM/yyyy HH:mm:ss"),
-        log.user?.full_name || 'Desconhecido',
+        log.user?.name || 'Desconhecido',
         log.user?.company_name || 'N/A',
-        maskIP(log.ip_address),
-        log.success ? 'Sim' : 'Não'
+        maskIP(log.ip_address)
       ].join(','))
     ].join('\n');
 
@@ -225,8 +214,10 @@ export default function AccessLogsPage() {
     <AdminPageContainer
       title="Logs de Acesso"
       description="Histórico de logins e acessos ao sistema"
-      actions={
-        <div className="flex gap-2">
+    >
+      <div className="space-y-6">
+        {/* Header with action buttons */}
+        <div className="flex justify-end gap-2">
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Exportar
@@ -236,32 +227,67 @@ export default function AccessLogsPage() {
             Atualizar
           </Button>
         </div>
-      }
-    >
-      <div className="space-y-6">
+
+        {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard
-            title="Total de Acessos"
-            value={(stats?.total || 0).toLocaleString()}
-            icon={<LogIn className="h-5 w-5" />}
-          />
-          <StatCard
-            title="Hoje"
-            value={(stats?.today || 0).toString()}
-            icon={<Calendar className="h-5 w-5" />}
-            trend={stats?.today && stats.today > 0 ? 'up' : 'neutral'}
-            trendValue="Ativos"
-          />
-          <StatCard
-            title="Esta Semana"
-            value={(stats?.week || 0).toString()}
-            icon={<Clock className="h-5 w-5" />}
-          />
-          <StatCard
-            title="Usuários Únicos"
-            value={(stats?.uniqueUsers || 0).toString()}
-            icon={<Users className="h-5 w-5" />}
-          />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Total de Acessos</p>
+                  <p className="text-2xl font-bold">{(stats?.total || 0).toLocaleString()}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
+                  <LogIn className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Hoje</p>
+                  <p className="text-2xl font-bold">{stats?.today || 0}</p>
+                  <p className={`text-xs font-medium ${stats?.today && stats.today > 0 ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    Ativos
+                  </p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
+                  <Calendar className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Esta Semana</p>
+                  <p className="text-2xl font-bold">{stats?.week || 0}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
+                  <Clock className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Usuários Únicos</p>
+                  <p className="text-2xl font-bold">{stats?.uniqueUsers || 0}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card>
@@ -309,13 +335,12 @@ export default function AccessLogsPage() {
                     <TableHead>Usuário</TableHead>
                     <TableHead>Empresa</TableHead>
                     <TableHead>IP</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredLogs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                         Nenhum log encontrado
                       </TableCell>
                     </TableRow>
@@ -330,11 +355,11 @@ export default function AccessLogsPage() {
                             <Avatar className="h-8 w-8">
                               <AvatarImage src={log.user?.avatar_url || undefined} />
                               <AvatarFallback className="text-xs">
-                                {log.user?.full_name?.substring(0, 2).toUpperCase() || 'U'}
+                                {log.user?.name?.substring(0, 2).toUpperCase() || 'U'}
                               </AvatarFallback>
                             </Avatar>
                             <span className="font-medium">
-                              {log.user?.full_name || 'Usuário'}
+                              {log.user?.name || 'Usuário'}
                             </span>
                           </div>
                         </TableCell>
@@ -345,13 +370,6 @@ export default function AccessLogsPage() {
                         </TableCell>
                         <TableCell className="font-mono text-sm">
                           {maskIP(log.ip_address)}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {log.success ? (
-                            <CheckCircle2 className="h-5 w-5 text-green-600 mx-auto" />
-                          ) : (
-                            <XCircle className="h-5 w-5 text-red-600 mx-auto" />
-                          )}
                         </TableCell>
                       </TableRow>
                     ))

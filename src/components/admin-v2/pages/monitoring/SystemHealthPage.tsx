@@ -1,11 +1,9 @@
 
 import React from 'react';
 import { AdminPageContainer } from '../../components/AdminPageContainer';
-import { StatCard } from '../../components/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useClientDiagnostics } from '@/hooks/useClientDiagnostics';
 import { 
   Activity, 
@@ -22,13 +20,26 @@ import {
 
 export default function SystemHealthPage() {
   const { 
-    diagnostics, 
-    isLoading, 
-    runDiagnostics, 
-    getHealthScore
+    statusChecks,
+    recentErrors,
+    checkNow,
+    lastChecked
   } = useClientDiagnostics();
 
-  const healthScore = getHealthScore();
+  // Calculate health score based on status checks
+  const calculateHealthScore = () => {
+    const checks = [
+      statusChecks.react,
+      statusChecks.dom,
+      statusChecks.localStorage,
+      statusChecks.noRecentErrors,
+      statusChecks.memoryUsage
+    ];
+    const passedChecks = checks.filter(Boolean).length;
+    return Math.round((passedChecks / checks.length) * 100);
+  };
+
+  const healthScore = calculateHealthScore();
   
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
@@ -42,29 +53,29 @@ export default function SystemHealthPage() {
     return 'bg-red-100 border-red-200';
   };
 
-  const statusChecks = [
+  const statusChecksList = [
     { 
       key: 'react', 
       label: 'React Renderização', 
-      status: diagnostics.statusChecks.reactRendering,
+      status: statusChecks.react,
       icon: Zap
     },
     { 
       key: 'dom', 
       label: 'DOM Operacional', 
-      status: diagnostics.statusChecks.domOperational,
+      status: statusChecks.dom,
       icon: Activity
     },
     { 
       key: 'storage', 
       label: 'Local Storage', 
-      status: diagnostics.statusChecks.localStorageWorking,
+      status: statusChecks.localStorage,
       icon: HardDrive
     },
     { 
       key: 'memory', 
       label: 'Memória Disponível', 
-      status: diagnostics.statusChecks.memoryAvailable,
+      status: statusChecks.memoryUsage,
       icon: Cpu
     },
   ];
@@ -77,40 +88,25 @@ export default function SystemHealthPage() {
     { name: 'Query Error Handler', description: 'Gerencia erros de API', active: true },
   ];
 
-  const issues = diagnostics.recentErrors.length > 0 
-    ? diagnostics.recentErrors.slice(0, 5) 
-    : [];
-
-  if (isLoading) {
-    return (
-      <AdminPageContainer
-        title="Saúde do Sistema"
-        description="Carregando diagnósticos..."
-      >
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map(i => (
-              <Skeleton key={i} className="h-24" />
-            ))}
-          </div>
-          <Skeleton className="h-64" />
-        </div>
-      </AdminPageContainer>
-    );
-  }
+  const issues = recentErrors.slice(0, 5);
 
   return (
     <AdminPageContainer
       title="Saúde do Sistema"
       description="Monitoramento em tempo real do status do sistema"
-      actions={
-        <Button onClick={runDiagnostics} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Verificar Agora
-        </Button>
-      }
     >
       <div className="space-y-6">
+        {/* Header with action button */}
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-muted-foreground">
+            Última verificação: {lastChecked.toLocaleTimeString('pt-BR')}
+          </p>
+          <Button onClick={checkNow} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Verificar Agora
+          </Button>
+        </div>
+
         {/* Score e Status Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card className={`${getScoreBg(healthScore)} border`}>
@@ -123,7 +119,7 @@ export default function SystemHealthPage() {
             </CardContent>
           </Card>
 
-          {statusChecks.map((check) => {
+          {statusChecksList.map((check) => {
             const IconComponent = check.icon;
             return (
               <Card key={check.key} className={check.status ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}>
@@ -149,7 +145,7 @@ export default function SystemHealthPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {statusChecks.map((check) => (
+              {statusChecksList.map((check) => (
                 <div key={check.key} className="flex items-center justify-between py-2 border-b last:border-0">
                   <div className="flex items-center gap-3">
                     {check.status ? (
@@ -175,15 +171,15 @@ export default function SystemHealthPage() {
 
               <div className="flex items-center justify-between py-2">
                 <div className="flex items-center gap-3">
-                  {diagnostics.recentErrors.length === 0 ? (
+                  {recentErrors.length === 0 ? (
                     <CheckCircle2 className="h-5 w-5 text-green-600" />
                   ) : (
                     <AlertTriangle className="h-5 w-5 text-yellow-600" />
                   )}
                   <span className="font-medium">Erros Recentes</span>
                 </div>
-                <Badge variant={diagnostics.recentErrors.length === 0 ? 'default' : 'secondary'}>
-                  {diagnostics.recentErrors.length} erro(s)
+                <Badge variant={recentErrors.length === 0 ? 'default' : 'secondary'}>
+                  {recentErrors.length} erro(s)
                 </Badge>
               </div>
             </div>
@@ -241,9 +237,7 @@ export default function SystemHealthPage() {
                     <XCircle className="h-5 w-5 text-red-600 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-red-800 truncate">{error.message}</p>
-                      <p className="text-sm text-red-600">
-                        {new Date(error.timestamp).toLocaleString('pt-BR')}
-                      </p>
+                      <p className="text-sm text-red-600">{error.time}</p>
                     </div>
                   </div>
                 ))}
