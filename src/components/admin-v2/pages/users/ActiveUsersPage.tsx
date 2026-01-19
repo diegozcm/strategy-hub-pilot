@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, UserCheck, MoreHorizontal, Shield, Eye, Edit, Key, Mail, UserX, ShieldCheck, ShieldOff } from "lucide-react";
+import { Search, UserCheck, MoreHorizontal, Shield, Eye, Edit, Key, Mail, UserX, ShieldCheck, ShieldOff, Trash2 } from "lucide-react";
 import {
   UserDetailsModal,
   EditUserModal,
@@ -21,8 +21,9 @@ import {
   ResendCredentialsModal,
   AdminPrivilegeModal
 } from "./modals";
+import { UserDeletionModal } from "@/components/admin/users/UserDeletionModal";
 
-type ModalType = 'details' | 'edit' | 'status' | 'password' | 'credentials' | 'admin' | null;
+type ModalType = 'details' | 'edit' | 'status' | 'password' | 'credentials' | 'admin' | 'delete' | null;
 
 export default function ActiveUsersPage() {
   const queryClient = useQueryClient();
@@ -174,6 +175,9 @@ export default function ActiveUsersPage() {
                           <DropdownMenuItem onClick={() => openStatusModal('deactivate', user)} className="text-destructive">
                             <UserX className="h-4 w-4 mr-2" />Desativar Usuário
                           </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openModal('delete', user)} className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />Excluir Permanentemente
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -233,6 +237,20 @@ export default function ActiveUsersPage() {
           user={selectedUser}
           action={adminAction}
           onSuccess={handleSuccess}
+        />
+      )}
+      {modalType === 'delete' && selectedUser && (
+        <UserDeletionModal
+          user={{ 
+            ...selectedUser, 
+            id: selectedUser.user_id,
+            role: selectedUser.is_system_admin ? 'admin' : 'member',
+            status: (selectedUser.status || 'active') as 'active' | 'inactive' | 'pending',
+            updated_at: selectedUser.created_at
+          }}
+          open={true}
+          onClose={() => setModalType(null)}
+          onDeleted={handleSuccess}
         />
       )}
     </AdminPageContainer>
