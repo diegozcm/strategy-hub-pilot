@@ -30,10 +30,10 @@ export default function ModulesByCompanyPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["modules-by-company"],
     queryFn: async (): Promise<CompanyModuleData[]> => {
-      // Get all companies
+      // Get all companies with company_type
       const { data: companies, error: companiesError } = await supabase
         .from("companies")
-        .select("id, name, status, ai_enabled")
+        .select("id, name, status, ai_enabled, company_type")
         .order("name");
 
       if (companiesError) throw companiesError;
@@ -63,6 +63,18 @@ export default function ModulesByCompanyPage() {
         if (p.user_id && p.company_id) userToCompany[p.user_id] = p.company_id;
       });
 
+      // Get startup_hub_profiles to check which companies have startup hub access
+      const { data: startupProfiles } = await supabase
+        .from("startup_hub_profiles")
+        .select("user_id");
+
+      // Map companies that have users with startup_hub_profiles
+      const companiesWithStartupHub = new Set<string>();
+      startupProfiles?.forEach(sp => {
+        const companyId = userToCompany[sp.user_id];
+        if (companyId) companiesWithStartupHub.add(companyId);
+      });
+
       // Calculate module usage per company
       const companyModules: Record<string, Record<string, Set<string>>> = {};
 
@@ -84,6 +96,18 @@ export default function ModulesByCompanyPage() {
         const startupModuleId = moduleMap["startup-hub"];
         const aiModuleId = moduleMap["ai"];
 
+        // Startup Hub is enabled if:
+        // 1. Company is of type 'startup', OR
+        // 2. Company has users with startup_hub_profiles (e.g., mentors), OR
+        // 3. Company has users with startup-hub module roles
+        const isStartupCompany = company.company_type === 'startup';
+        const hasStartupProfiles = companiesWithStartupHub.has(company.id);
+        const hasStartupModuleRoles = startupModuleId ? (companyRoles[startupModuleId]?.size || 0) > 0 : false;
+        const startupEnabled = isStartupCompany || hasStartupProfiles || hasStartupModuleRoles;
+
+        // Count users for startup module (from module roles or estimate from profiles)
+        const startupUserCount = startupModuleId ? companyRoles[startupModuleId]?.size || 0 : 0;
+
         return {
           id: company.id,
           name: company.name,
@@ -94,8 +118,8 @@ export default function ModulesByCompanyPage() {
               userCount: strategicModuleId ? companyRoles[strategicModuleId]?.size || 0 : 0,
             },
             startup: {
-              enabled: startupModuleId ? (companyRoles[startupModuleId]?.size || 0) > 0 : false,
-              userCount: startupModuleId ? companyRoles[startupModuleId]?.size || 0 : 0,
+              enabled: startupEnabled,
+              userCount: startupUserCount,
             },
             ai: {
               enabled: company.ai_enabled,
