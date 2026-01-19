@@ -11,8 +11,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useCompaniesForSelect } from '@/hooks/admin/useUsersStats';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { User, Building2, Key, Shield, Loader2 } from 'lucide-react';
+import { User, Building2, Key, Shield, Loader2, Mail, Briefcase, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import type { UserRole } from '@/types/auth';
 
 interface SystemModule {
@@ -453,6 +455,127 @@ export default function CreateUserPage() {
                   )}
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Card de Pré-visualização */}
+          <Card className="border-dashed">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Eye className="h-5 w-5" />
+                Pré-visualização
+              </CardTitle>
+              <CardDescription>
+                Como o perfil aparecerá no sistema
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center text-center space-y-4">
+                {/* Avatar */}
+                <Avatar className="h-20 w-20">
+                  <AvatarFallback className="text-xl bg-primary/10 text-primary">
+                    {formData.firstName && formData.lastName 
+                      ? `${formData.firstName[0]}${formData.lastName[0]}`.toUpperCase()
+                      : formData.firstName 
+                        ? formData.firstName[0].toUpperCase()
+                        : <User className="h-8 w-8 text-muted-foreground" />
+                    }
+                  </AvatarFallback>
+                </Avatar>
+
+                {/* Nome */}
+                <div>
+                  <p className="font-semibold text-lg">
+                    {formData.firstName || formData.lastName 
+                      ? `${formData.firstName} ${formData.lastName}`.trim()
+                      : <span className="text-muted-foreground italic">Nome do usuário</span>
+                    }
+                  </p>
+                  {formData.position && (
+                    <p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
+                      <Briefcase className="h-3 w-3" />
+                      {formData.position}
+                    </p>
+                  )}
+                </div>
+
+                {/* Informações */}
+                <div className="w-full space-y-2 text-sm">
+                  {/* Email */}
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    <span className={formData.email ? 'text-foreground' : 'italic'}>
+                      {formData.email || 'email@empresa.com'}
+                    </span>
+                  </div>
+
+                  {/* Empresa */}
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Building2 className="h-4 w-4" />
+                    <span className={formData.companyId ? 'text-foreground' : 'italic'}>
+                      {formData.companyId 
+                        ? companies?.find(c => c.id === formData.companyId)?.name
+                        : 'Nenhuma empresa'
+                      }
+                    </span>
+                  </div>
+
+                  {/* Departamento */}
+                  {formData.department && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Briefcase className="h-4 w-4" />
+                      <span className="text-foreground">{formData.department}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Módulos Selecionados */}
+                {selectedModulesCount > 0 && (
+                  <div className="w-full pt-3 border-t">
+                    <p className="text-xs text-muted-foreground mb-2">Acesso aos módulos:</p>
+                    <div className="flex flex-wrap gap-1 justify-center">
+                      {availableModules
+                        .filter(m => moduleAccess[m.moduleId])
+                        .map(module => {
+                          const role = moduleRoles[module.moduleId];
+                          const roleLabel = role 
+                            ? getRoleOptions(module.moduleSlug).find(r => r.value === role)?.label
+                            : null;
+                          
+                          return (
+                            <Badge 
+                              key={module.moduleId} 
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {module.moduleName}
+                              {roleLabel && (
+                                <span className="ml-1 opacity-70">({roleLabel})</span>
+                              )}
+                            </Badge>
+                          );
+                        })
+                      }
+                    </div>
+                  </div>
+                )}
+
+                {/* Status de credenciais */}
+                <div className="w-full pt-3 border-t text-xs text-muted-foreground">
+                  <div className="flex items-center justify-center gap-2">
+                    <Key className="h-3 w-3" />
+                    <span>
+                      {formData.passwordType === 'auto' 
+                        ? 'Senha temporária será gerada'
+                        : 'Senha definida manualmente'
+                      }
+                    </span>
+                  </div>
+                  {formData.sendCredentials && (
+                    <p className="mt-1">Credenciais serão enviadas por email</p>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
