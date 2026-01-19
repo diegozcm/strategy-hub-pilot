@@ -9,20 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, UserX, MoreHorizontal, Mail, KeyRound, CheckCircle, Eye, Edit, Trash2 } from "lucide-react";
+import { Search, UserX, MoreHorizontal, KeyRound, CheckCircle, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import {
-  UserDetailsModal,
-  EditUserModal,
-  ResetPasswordModal,
-  ResendCredentialsModal
-} from "./modals";
-import { UserDeletionModal } from "@/components/admin/users/UserDeletionModal";
+import { UserDetailsModal } from "./modals";
 
-type ModalType = 'details' | 'edit' | 'password' | 'credentials' | 'delete' | null;
+type ModalType = 'details' | null;
 
 export default function FirstLoginPage() {
   const queryClient = useQueryClient();
@@ -49,9 +43,9 @@ export default function FirstLoginPage() {
     });
   }, [users, searchQuery, companyFilter]);
 
-  const openModal = (type: ModalType, user: UserWithDetails) => {
+  const openModal = (user: UserWithDetails) => {
     setSelectedUser(user);
-    setModalType(type);
+    setModalType('details');
   };
 
   const handleSuccess = () => {
@@ -135,22 +129,8 @@ export default function FirstLoginPage() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openModal('credentials', user)}>
-                            <Mail className="h-4 w-4 mr-2" />Reenviar Credenciais
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openModal('password', user)}>
-                            <KeyRound className="h-4 w-4 mr-2" />Gerar Nova Senha
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => openModal('details', user)}>
+                          <DropdownMenuItem onClick={() => openModal(user)}>
                             <Eye className="h-4 w-4 mr-2" />Ver Detalhes
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openModal('edit', user)}>
-                            <Edit className="h-4 w-4 mr-2" />Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => openModal('delete', user)} className="text-destructive">
-                            <Trash2 className="h-4 w-4 mr-2" />Excluir Permanentemente
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -163,50 +143,13 @@ export default function FirstLoginPage() {
         </CardContent>
       </Card>
 
-      {/* Modals - Renderização Condicional */}
+      {/* Modals */}
       {modalType === 'details' && selectedUser && (
         <UserDetailsModal
           open={true}
           onOpenChange={(open) => !open && setModalType(null)}
           user={selectedUser}
-        />
-      )}
-      {modalType === 'edit' && selectedUser && (
-        <EditUserModal
-          open={true}
-          onOpenChange={(open) => !open && setModalType(null)}
-          user={selectedUser}
           onSuccess={handleSuccess}
-        />
-      )}
-      {modalType === 'password' && selectedUser && (
-        <ResetPasswordModal
-          open={true}
-          onOpenChange={(open) => !open && setModalType(null)}
-          user={selectedUser}
-          onSuccess={handleSuccess}
-        />
-      )}
-      {modalType === 'credentials' && selectedUser && (
-        <ResendCredentialsModal
-          open={true}
-          onOpenChange={(open) => !open && setModalType(null)}
-          user={selectedUser}
-          onSuccess={handleSuccess}
-        />
-      )}
-      {modalType === 'delete' && selectedUser && (
-        <UserDeletionModal
-          user={{ 
-            ...selectedUser, 
-            id: selectedUser.user_id,
-            role: 'member',
-            status: (selectedUser.status || 'active') as 'active' | 'inactive' | 'pending',
-            updated_at: selectedUser.created_at
-          }}
-          open={true}
-          onClose={() => setModalType(null)}
-          onDeleted={handleSuccess}
         />
       )}
     </AdminPageContainer>
