@@ -11,11 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
 import { Loader2, Save } from "lucide-react";
 import { UserWithDetails, useCompaniesForSelect } from "@/hooks/admin/useUsersStats";
 import { AvatarCropUploadLocal } from "@/components/ui/AvatarCropUploadLocal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 
 interface EditUserModalProps {
   open: boolean;
@@ -29,6 +32,19 @@ interface FormData {
   lastName: string;
   status: string;
   companyId: string;
+}
+
+interface SystemModule {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+}
+
+interface UserModuleRole {
+  module_id: string;
+  role: string;
+  active: boolean;
 }
 
 export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserModalProps) {
@@ -46,6 +62,39 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
   const [avatarDataUrl, setAvatarDataUrl] = useState<string>('');
   const [avatarRemoved, setAvatarRemoved] = useState(false);
 
+  // Estados para módulos e permissões
+  const [moduleAccess, setModuleAccess] = useState<Record<string, boolean>>({});
+  const [moduleRoles, setModuleRoles] = useState<Record<string, string>>({});
+
+  // Buscar módulos do sistema
+  const { data: systemModules } = useQuery({
+    queryKey: ['system-modules-active'],
+    queryFn: async (): Promise<SystemModule[]> => {
+      const { data, error } = await supabase
+        .from('system_modules')
+        .select('id, name, slug, active')
+        .eq('active', true)
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  // Buscar permissões atuais do usuário
+  const { data: userModuleRoles, refetch: refetchRoles } = useQuery({
+    queryKey: ['user-module-roles', user?.user_id],
+    queryFn: async (): Promise<UserModuleRole[]> => {
+      if (!user?.user_id) return [];
+      const { data, error } = await supabase
+        .from('user_module_roles')
+        .select('module_id, role, active')
+        .eq('user_id', user.user_id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.user_id && open
+  });
+
   useEffect(() => {
     if (user && open) {
       setFormData({
@@ -59,6 +108,22 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
     }
   }, [user, open]);
 
+  // Popular estados de módulos quando userModuleRoles carregar
+  useEffect(() => {
+    if (userModuleRoles && open) {
+      const accessMap: Record<string, boolean> = {};
+      const rolesMap: Record<string, string> = {};
+      userModuleRoles.forEach(umr => {
+        if (umr.active) {
+          accessMap[umr.module_id] = true;
+          rolesMap[umr.module_id] = umr.role;
+        }
+      });
+      setModuleAccess(accessMap);
+      setModuleRoles(rolesMap);
+    }
+  }, [userModuleRoles, open]);
+
   const handleAvatarChange = (dataUrl: string) => {
     setAvatarDataUrl(dataUrl);
     setAvatarRemoved(false);
@@ -67,6 +132,30 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
   const handleAvatarRemove = () => {
     setAvatarDataUrl('');
     setAvatarRemoved(true);
+  };
+
+  const handleModuleAccessChange = (moduleId: string, checked: boolean) => {
+    setModuleAccess(prev => ({ ...prev, [moduleId]: checked }));
+    if (!checked) {
+      setModuleRoles(prev => ({ ...prev, [moduleId]: '' }));
+    }
+  };
+
+  const handleModuleRoleChange = (moduleId: string, role: string) => {
+    setModuleRoles(prev => ({ ...prev, [moduleId]: role }));
+  };
+
+  const getRoleOptions = (slug: string) => {
+    if (slug === 'startup-hub') {
+      return [
+        { value: 'startup', label: 'Startup' },
+        { value: 'mentor', label: 'Mentor' },
+      ];
+    }
+    return [
+      { value: 'manager', label: 'Gestor' },
+      { value: 'member', label: 'Membro' },
+    ];
   };
 
   const handleSave = async () => {
@@ -157,6 +246,44 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
         }
       }
 
+      // Atualizar módulos do usuário
+      for (const module of systemModules || []) {
+        const hasAccess = moduleAccess[module.id];
+        const role = moduleRoles[module.id];
+        
+        // Buscar registro existente
+        const existingRole = userModuleRoles?.find(r => r.module_id === module.id);
+        
+        if (hasAccess && role) {
+          const typedRole = role as "admin" | "manager" | "member";
+          if (existingRole) {
+            // Atualizar existente
+            await supabase
+              .from('user_module_roles')
+              .update({ role: typedRole, active: true, updated_at: new Date().toISOString() })
+              .eq('user_id', user.user_id)
+              .eq('module_id', module.id);
+          } else {
+            // Inserir novo
+            await supabase
+              .from('user_module_roles')
+              .insert([{
+                user_id: user.user_id,
+                module_id: module.id,
+                role: typedRole,
+                active: true
+              }]);
+          }
+        } else if (existingRole) {
+          // Desativar acesso ao módulo
+          await supabase
+            .from('user_module_roles')
+            .update({ active: false, updated_at: new Date().toISOString() })
+            .eq('user_id', user.user_id)
+            .eq('module_id', module.id);
+        }
+      }
+
       toast({
         title: 'Sucesso',
         description: 'Usuário atualizado com sucesso.'
@@ -182,11 +309,11 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Usuário</DialogTitle>
           <DialogDescription>
-            Atualize as informações e foto de perfil do usuário.
+            Atualize as informações, foto de perfil e permissões do usuário.
           </DialogDescription>
         </DialogHeader>
 
@@ -258,6 +385,51 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
                 <SelectItem value="inactive">Inativo</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <Separator className="my-4" />
+
+          {/* Módulos e Permissões */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Módulos e Permissões</Label>
+            <p className="text-xs text-muted-foreground">
+              Configure quais módulos o usuário pode acessar e seu nível de permissão.
+            </p>
+            
+            <div className="space-y-3">
+              {systemModules?.map((module) => (
+                <div key={module.id} className="flex items-center gap-4 p-3 border rounded-lg bg-muted/30">
+                  <Checkbox
+                    id={`module-${module.id}`}
+                    checked={moduleAccess[module.id] || false}
+                    onCheckedChange={(checked) => handleModuleAccessChange(module.id, !!checked)}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor={`module-${module.id}`} className="font-medium cursor-pointer">
+                      {module.name}
+                    </Label>
+                  </div>
+                  
+                  {moduleAccess[module.id] && (
+                    <Select
+                      value={moduleRoles[module.id] || ''}
+                      onValueChange={(value) => handleModuleRoleChange(module.id, value)}
+                    >
+                      <SelectTrigger className="w-28">
+                        <SelectValue placeholder="Função" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getRoleOptions(module.slug).map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
