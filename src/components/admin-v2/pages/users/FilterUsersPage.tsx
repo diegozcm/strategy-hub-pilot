@@ -37,7 +37,7 @@ export default function FilterUsersPage() {
   const [neverLoggedIn, setNeverLoggedIn] = useState(false);
   const [pendingPassword, setPendingPassword] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [filtersApplied, setFiltersApplied] = useState(false);
+  const [filtersApplied, setFiltersApplied] = useState(true);
 
   // Modal state
   const [selectedUser, setSelectedUser] = useState<UserWithDetails | null>(null);
@@ -78,7 +78,7 @@ export default function FilterUsersPage() {
     setNeverLoggedIn(false);
     setPendingPassword(false);
     setIsAdmin(false);
-    setFiltersApplied(false);
+    setFiltersApplied(true);
   };
 
   const openModal = (type: ModalType, user: UserWithDetails) => {
