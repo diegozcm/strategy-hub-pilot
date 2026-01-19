@@ -178,13 +178,17 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Auth user created successfully:', authUser.user.id);
 
     // Log the admin action for audit
-    await supabaseAdmin.from('database_cleanup_logs').insert({
-      admin_user_id: user.id,
-      cleanup_category: 'user_creation',
-      records_deleted: 0,
-      success: true,
-      notes: `Created user ${email} (${authUser.user.id}) by admin ${user.email}`
-    }).catch(err => console.warn('Failed to log admin action:', err));
+    try {
+      await supabaseAdmin.from('database_cleanup_logs').insert({
+        admin_user_id: user.id,
+        cleanup_category: 'user_creation',
+        records_deleted: 0,
+        success: true,
+        notes: `Created user ${email} (${authUser.user.id}) by admin ${user.email}`
+      });
+    } catch (err) {
+      console.warn('Failed to log admin action:', err);
+    }
 
     return new Response(
       JSON.stringify({ 
