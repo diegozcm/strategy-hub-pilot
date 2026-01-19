@@ -31,7 +31,7 @@ interface AlertItem {
 
 export default function AlertsPage() {
   const navigate = useNavigate();
-  const { diagnostics } = useClientDiagnostics();
+  const { recentErrors } = useClientDiagnostics();
 
   const { data: backupJobs, isLoading: isLoadingBackups } = useQuery({
     queryKey: ['backup-jobs-alerts'],
@@ -64,12 +64,12 @@ export default function AlertsPage() {
   const allAlerts: AlertItem[] = React.useMemo(() => {
     const alerts: AlertItem[] = [];
 
-    diagnostics.recentErrors.forEach((error, index) => {
+    recentErrors.forEach((error, index) => {
       alerts.push({
         id: `error-${index}`,
         type: 'critical',
         message: error.message,
-        timestamp: new Date(error.timestamp),
+        timestamp: new Date(),
         source: 'Cliente JavaScript'
       });
     });
@@ -115,7 +115,7 @@ export default function AlertsPage() {
     });
 
     return alerts.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  }, [diagnostics.recentErrors, backupJobs, cleanupLogs]);
+  }, [recentErrors, backupJobs, cleanupLogs]);
 
   const recentAlerts = allAlerts.filter(alert => 
     isAfter(alert.timestamp, subDays(new Date(), 1))

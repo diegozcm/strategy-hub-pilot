@@ -3,7 +3,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { AdminPageContainer } from '../../components/AdminPageContainer';
-import { StatCard } from '../../components/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -159,37 +158,73 @@ export default function InfoLogsPage() {
     <AdminPageContainer
       title="Informações do Sistema"
       description="Atividades concluídas e eventos informativos"
-      actions={
-        <Button variant="outline" size="sm" onClick={() => navigate('/app/admin-v2/monitoring/alerts')}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar
-        </Button>
-      }
     >
       <div className="space-y-6">
+        {/* Header with back button */}
+        <div className="flex justify-between items-center">
+          <Button variant="outline" size="sm" onClick={() => navigate('/app/admin-v2/monitoring/alerts')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
+
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <StatCard
-            title="Total de Atividades"
-            value={infoItems.length.toString()}
-            icon={<Info className="h-5 w-5 text-blue-600" />}
-          />
-          <StatCard
-            title="Backups (7 dias)"
-            value={recentBackups.toString()}
-            icon={<Database className="h-5 w-5 text-green-600" />}
-            trend="up"
-            trendValue="Recente"
-          />
-          <StatCard
-            title="Limpezas (7 dias)"
-            value={recentCleanups.toString()}
-            icon={<Trash2 className="h-5 w-5 text-blue-600" />}
-          />
-          <StatCard
-            title="Registros Salvos"
-            value={totalRecordsBackedUp.toLocaleString()}
-            icon={<CheckCircle2 className="h-5 w-5 text-green-600" />}
-          />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Total de Atividades</p>
+                  <p className="text-2xl font-bold">{infoItems.length}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-blue-500/10">
+                  <Info className="h-5 w-5 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Backups (7 dias)</p>
+                  <p className="text-2xl font-bold">{recentBackups}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-green-500/10">
+                  <Database className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Limpezas (7 dias)</p>
+                  <p className="text-2xl font-bold">{recentCleanups}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-blue-500/10">
+                  <Trash2 className="h-5 w-5 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Registros Salvos</p>
+                  <p className="text-2xl font-bold">{totalRecordsBackedUp.toLocaleString()}</p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-green-500/10">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card>

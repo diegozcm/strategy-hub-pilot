@@ -1,13 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { AdminPageContainer } from '../../components/AdminPageContainer';
-import { StatCard } from '../../components/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useClientDiagnostics } from '@/hooks/useClientDiagnostics';
 import { 
   Gauge, 
@@ -30,7 +28,7 @@ interface PerformanceMetric {
 }
 
 export default function PerformancePage() {
-  const { diagnostics, isLoading, runDiagnostics } = useClientDiagnostics();
+  const { perfMetrics, recentErrors, checkNow } = useClientDiagnostics();
   const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetric[]>([]);
   const [memoryUsage, setMemoryUsage] = useState<number | null>(null);
 
@@ -42,8 +40,8 @@ export default function PerformancePage() {
     const metrics: PerformanceMetric[] = [];
 
     // Navigation Timing API
-    if (window.performance && window.performance.timing) {
-      const timing = window.performance.timing;
+    if (window.performance && (window.performance as any).timing) {
+      const timing = (window.performance as any).timing;
       
       const domContentLoaded = timing.domContentLoadedEventEnd - timing.navigationStart;
       const pageLoad = timing.loadEventEnd - timing.navigationStart;
@@ -164,66 +162,89 @@ export default function PerformancePage() {
   const pageLoadTime = performanceMetrics.find(m => m.name === 'Page Load Time')?.value || 0;
   const firstPaint = performanceMetrics.find(m => m.name === 'First Paint')?.value || 0;
 
-  if (isLoading) {
-    return (
-      <AdminPageContainer
-        title="Performance do Sistema"
-        description="Carregando métricas..."
-      >
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map(i => (
-              <Skeleton key={i} className="h-24" />
-            ))}
-          </div>
-          <Skeleton className="h-64" />
-        </div>
-      </AdminPageContainer>
-    );
-  }
-
   return (
     <AdminPageContainer
       title="Performance do Sistema"
       description="Métricas de tempo de carregamento e operações"
-      actions={
-        <Button onClick={() => { runDiagnostics(); collectPerformanceMetrics(); }} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Atualizar Métricas
-        </Button>
-      }
     >
       <div className="space-y-6">
+        {/* Header with action button */}
+        <div className="flex justify-end">
+          <Button onClick={() => { checkNow(); collectPerformanceMetrics(); }} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar Métricas
+          </Button>
+        </div>
+
         {/* Cards Principais */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard
-            title="DOM Load"
-            value={formatTime(domLoadTime)}
-            icon={<Zap className="h-5 w-5" />}
-            trend={domLoadTime < 1500 ? 'up' : 'down'}
-            trendValue={domLoadTime < 1500 ? 'Rápido' : 'Lento'}
-          />
-          <StatCard
-            title="Page Load"
-            value={formatTime(pageLoadTime)}
-            icon={<Clock className="h-5 w-5" />}
-            trend={pageLoadTime < 3000 ? 'up' : 'down'}
-            trendValue={pageLoadTime < 3000 ? 'Normal' : 'Lento'}
-          />
-          <StatCard
-            title="First Paint"
-            value={formatTime(firstPaint)}
-            icon={<Activity className="h-5 w-5" />}
-            trend={firstPaint < 1000 ? 'up' : 'down'}
-            trendValue={firstPaint < 1000 ? 'Ótimo' : 'Aceitável'}
-          />
-          <StatCard
-            title="Memória"
-            value={memoryUsage !== null ? `${memoryUsage}%` : 'N/A'}
-            icon={<HardDrive className="h-5 w-5" />}
-            trend={memoryUsage !== null && memoryUsage < 70 ? 'up' : 'down'}
-            trendValue={memoryUsage !== null && memoryUsage < 70 ? 'Normal' : 'Alto'}
-          />
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">DOM Load</p>
+                  <p className="text-2xl font-bold">{formatTime(domLoadTime)}</p>
+                  <p className={`text-xs font-medium ${domLoadTime < 1500 ? 'text-green-600' : 'text-red-600'}`}>
+                    {domLoadTime < 1500 ? 'Rápido' : 'Lento'}
+                  </p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
+                  <Zap className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Page Load</p>
+                  <p className="text-2xl font-bold">{formatTime(pageLoadTime)}</p>
+                  <p className={`text-xs font-medium ${pageLoadTime < 3000 ? 'text-green-600' : 'text-red-600'}`}>
+                    {pageLoadTime < 3000 ? 'Normal' : 'Lento'}
+                  </p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
+                  <Clock className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">First Paint</p>
+                  <p className="text-2xl font-bold">{formatTime(firstPaint)}</p>
+                  <p className={`text-xs font-medium ${firstPaint < 1000 ? 'text-green-600' : 'text-yellow-600'}`}>
+                    {firstPaint < 1000 ? 'Ótimo' : 'Aceitável'}
+                  </p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
+                  <Activity className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">Memória</p>
+                  <p className="text-2xl font-bold">{memoryUsage !== null ? `${memoryUsage}%` : 'N/A'}</p>
+                  <p className={`text-xs font-medium ${memoryUsage !== null && memoryUsage < 70 ? 'text-green-600' : 'text-red-600'}`}>
+                    {memoryUsage !== null && memoryUsage < 70 ? 'Normal' : 'Alto'}
+                  </p>
+                </div>
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
+                  <HardDrive className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Métricas de Navegação */}
@@ -310,7 +331,7 @@ export default function PerformancePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {diagnostics.recentErrors.length === 0 ? (
+            {recentErrors.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <TrendingUp className="h-12 w-12 mx-auto mb-3 text-green-500" />
                 <p className="font-medium text-green-700">Nenhuma operação lenta</p>
@@ -319,14 +340,12 @@ export default function PerformancePage() {
             ) : (
               <ScrollArea className="h-48">
                 <div className="space-y-2">
-                  {diagnostics.recentErrors.map((error, index) => (
+                  {recentErrors.map((error, index) => (
                     <div key={index} className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                       <Timer className="h-5 w-5 text-yellow-600" />
                       <div className="flex-1">
                         <p className="font-medium text-yellow-800">{error.message}</p>
-                        <p className="text-sm text-yellow-600">
-                          {new Date(error.timestamp).toLocaleString('pt-BR')}
-                        </p>
+                        <p className="text-sm text-yellow-600">{error.time}</p>
                       </div>
                     </div>
                   ))}
