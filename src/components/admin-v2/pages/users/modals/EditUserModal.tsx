@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Save } from "lucide-react";
 import { UserWithDetails, useCompaniesForSelect } from "@/hooks/admin/useUsersStats";
-import { UserHeader } from "./shared/UserHeader";
+import { AvatarCropUploadLocal } from "@/components/ui/AvatarCropUploadLocal";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,6 +42,10 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
     companyId: ''
   });
 
+  // Estado para avatar
+  const [avatarDataUrl, setAvatarDataUrl] = useState<string>('');
+  const [avatarRemoved, setAvatarRemoved] = useState(false);
+
   useEffect(() => {
     if (user && open) {
       setFormData({
@@ -50,8 +54,20 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
         status: user.status || 'active',
         companyId: user.company_id || ''
       });
+      setAvatarDataUrl(user.avatar_url || '');
+      setAvatarRemoved(false);
     }
   }, [user, open]);
+
+  const handleAvatarChange = (dataUrl: string) => {
+    setAvatarDataUrl(dataUrl);
+    setAvatarRemoved(false);
+  };
+
+  const handleAvatarRemove = () => {
+    setAvatarDataUrl('');
+    setAvatarRemoved(true);
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -67,6 +83,42 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
 
     setLoading(true);
     try {
+      let newAvatarUrl: string | null = user.avatar_url || null;
+
+      // Upload novo avatar se alterado (é um novo data URL)
+      if (avatarDataUrl && avatarDataUrl.startsWith('data:')) {
+        const response = await fetch(avatarDataUrl);
+        const blob = await response.blob();
+        const fileName = `${user.user_id}/avatar.webp`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, blob, { upsert: true });
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+          newAvatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+          console.log('Avatar uploaded:', newAvatarUrl);
+        } else {
+          console.error('Upload error:', uploadError);
+          toast({
+            title: 'Aviso',
+            description: 'Não foi possível atualizar a foto de perfil.',
+          });
+        }
+      }
+
+      // Remover avatar se solicitado
+      if (avatarRemoved && user.avatar_url) {
+        const fileName = `${user.user_id}/avatar.webp`;
+        await supabase.storage.from('avatars').remove([fileName]);
+        // Também tenta remover o antigo .jpg se existir
+        await supabase.storage.from('avatars').remove([`${user.user_id}/avatar.jpg`]);
+        newAvatarUrl = null;
+      }
+
       // Update profile
       const { error: profileError } = await supabase
         .from('profiles')
@@ -75,6 +127,7 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
           last_name: formData.lastName.trim(),
           status: formData.status,
           company_id: formData.companyId || null,
+          avatar_url: newAvatarUrl,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.user_id);
@@ -83,7 +136,6 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
 
       // Update user_company_relations if company changed
       if (formData.companyId && formData.companyId !== user.company_id) {
-        // Check if relation already exists
         const { data: existingRelation } = await supabase
           .from('user_company_relations')
           .select('id')
@@ -126,18 +178,30 @@ export function EditUserModal({ open, onOpenChange, user, onSuccess }: EditUserM
 
   if (!user) return null;
 
+  const userInitials = `${formData.firstName.charAt(0)}${formData.lastName.charAt(0)}`.toUpperCase() || 'U';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Editar Usuário</DialogTitle>
           <DialogDescription>
-            Atualize as informações do usuário.
+            Atualize as informações e foto de perfil do usuário.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          <UserHeader user={user} size="sm" showStatus={false} showAdmin={false} />
+          {/* Avatar Upload */}
+          <div className="flex flex-col items-center gap-2 pb-4 border-b">
+            <AvatarCropUploadLocal
+              currentImageUrl={avatarDataUrl || undefined}
+              onImageCropped={handleAvatarChange}
+              onImageRemoved={handleAvatarRemove}
+              userInitials={userInitials}
+              size="lg"
+            />
+            <p className="text-xs text-muted-foreground">Clique para alterar a foto</p>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">

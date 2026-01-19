@@ -422,25 +422,35 @@ export default function CreateUserPage() {
           const response = await fetch(avatarDataUrl);
           const blob = await response.blob();
           
-          const fileName = `${newUserId}/avatar.jpg`;
+          const fileName = `${newUserId}/avatar.webp`;
           const { error: uploadError } = await supabase.storage
             .from('avatars')
             .upload(fileName, blob, { upsert: true });
 
-          if (!uploadError) {
+          if (uploadError) {
+            console.error('Avatar upload error:', uploadError);
+            toast({
+              title: 'Aviso',
+              description: 'Não foi possível salvar a foto de perfil. O usuário foi criado sem foto.',
+            });
+          } else {
             const { data: urlData } = supabase.storage
               .from('avatars')
               .getPublicUrl(fileName);
             
             await supabase
               .from('profiles')
-              .update({ avatar_url: urlData.publicUrl })
+              .update({ avatar_url: `${urlData.publicUrl}?t=${Date.now()}` })
               .eq('user_id', newUserId);
             
-            console.log('✅ Avatar uploaded');
+            console.log('✅ Avatar uploaded:', urlData.publicUrl);
           }
         } catch (avatarErr) {
           console.warn('Avatar upload failed, continuing:', avatarErr);
+          toast({
+            title: 'Aviso',
+            description: 'Erro ao processar foto de perfil.',
+          });
         }
       }
 
