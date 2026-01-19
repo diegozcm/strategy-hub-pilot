@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { AdminPageContainer } from "../../components/AdminPageContainer";
-import { useAllUsers, useCompaniesForSelect } from "@/hooks/admin/useUsersStats";
+import { useAllUsers, useCompaniesForSelect, UserWithDetails } from "@/hooks/admin/useUsersStats";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,11 +14,20 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
-import { Search, Filter, MoreHorizontal, Shield, X, RefreshCw } from "lucide-react";
+import { Search, Filter, MoreHorizontal, Shield, X, RefreshCw, Eye, Edit, Key, Mail, UserX, UserCheck, ShieldCheck, ShieldOff } from "lucide-react";
+import {
+  UserDetailsModal,
+  EditUserModal,
+  UserStatusModal,
+  ResetPasswordModal,
+  ResendCredentialsModal,
+  AdminPrivilegeModal
+} from "./modals";
+
+type ModalType = 'details' | 'edit' | 'status' | 'password' | 'credentials' | 'admin' | null;
 
 export default function FilterUsersPage() {
-  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: companies } = useCompaniesForSelect();
   
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,6 +37,12 @@ export default function FilterUsersPage() {
   const [pendingPassword, setPendingPassword] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [filtersApplied, setFiltersApplied] = useState(false);
+
+  // Modal state
+  const [selectedUser, setSelectedUser] = useState<UserWithDetails | null>(null);
+  const [modalType, setModalType] = useState<ModalType>(null);
+  const [statusAction, setStatusAction] = useState<'deactivate' | 'reactivate'>('deactivate');
+  const [adminAction, setAdminAction] = useState<'promote' | 'demote'>('promote');
 
   const filters = useMemo(() => {
     if (!filtersApplied) return undefined;
@@ -64,8 +80,26 @@ export default function FilterUsersPage() {
     setFiltersApplied(false);
   };
 
-  const handleNotImplemented = (action: string) => {
-    toast({ title: "Funcionalidade em Desenvolvimento", description: `A ação "${action}" será implementada em breve.` });
+  const openModal = (type: ModalType, user: UserWithDetails) => {
+    setSelectedUser(user);
+    setModalType(type);
+  };
+
+  const openStatusModal = (action: 'deactivate' | 'reactivate', user: UserWithDetails) => {
+    setSelectedUser(user);
+    setStatusAction(action);
+    setModalType('status');
+  };
+
+  const openAdminModal = (action: 'promote' | 'demote', user: UserWithDetails) => {
+    setSelectedUser(user);
+    setAdminAction(action);
+    setModalType('admin');
+  };
+
+  const handleSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['all-users'] });
+    queryClient.invalidateQueries({ queryKey: ['users-stats'] });
   };
 
   const getInitials = (firstName?: string | null, lastName?: string | null) => {
@@ -163,7 +197,15 @@ export default function FilterUsersPage() {
                 <TableBody>
                   {filteredUsers.map(user => (
                     <TableRow key={user.user_id}>
-                      <TableCell><div className="flex items-center gap-3"><Avatar className="h-8 w-8"><AvatarImage src={user.avatar_url || undefined} alt={`${user.first_name} ${user.last_name}`} /><AvatarFallback className="text-xs">{getInitials(user.first_name, user.last_name)}</AvatarFallback></Avatar><span className="font-medium">{user.first_name} {user.last_name}</span></div></TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar_url || undefined} alt={`${user.first_name} ${user.last_name}`} />
+                            <AvatarFallback className="text-xs">{getInitials(user.first_name, user.last_name)}</AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{user.first_name} {user.last_name}</span>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-muted-foreground">{user.email}</TableCell>
                       <TableCell>{user.company_name || <span className="text-muted-foreground">Sem empresa</span>}</TableCell>
                       <TableCell><StatusBadge status={user.status === 'active' ? 'active' : 'inactive'} label={user.status === 'active' ? 'Ativo' : 'Inativo'} /></TableCell>
@@ -172,10 +214,23 @@ export default function FilterUsersPage() {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleNotImplemented("Ver Detalhes")}>Ver Detalhes</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleNotImplemented("Editar")}>Editar</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openModal('details', user)}><Eye className="h-4 w-4 mr-2" />Ver Detalhes</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openModal('edit', user)}><Edit className="h-4 w-4 mr-2" />Editar</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleNotImplemented("Excluir")} className="text-destructive">Excluir</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openModal('password', user)}><Key className="h-4 w-4 mr-2" />Gerar Nova Senha</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openModal('credentials', user)}><Mail className="h-4 w-4 mr-2" />Reenviar Credenciais</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            {user.is_system_admin ? (
+                              <DropdownMenuItem onClick={() => openAdminModal('demote', user)} className="text-amber-600"><ShieldOff className="h-4 w-4 mr-2" />Remover Privilégio Admin</DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem onClick={() => openAdminModal('promote', user)}><ShieldCheck className="h-4 w-4 mr-2" />Promover a Admin</DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            {user.status === 'active' ? (
+                              <DropdownMenuItem onClick={() => openStatusModal('deactivate', user)} className="text-destructive"><UserX className="h-4 w-4 mr-2" />Desativar</DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem onClick={() => openStatusModal('reactivate', user)} className="text-green-600"><UserCheck className="h-4 w-4 mr-2" />Reativar</DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -197,6 +252,14 @@ export default function FilterUsersPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Modals */}
+      <UserDetailsModal open={modalType === 'details'} onOpenChange={(open) => !open && setModalType(null)} user={selectedUser} />
+      <EditUserModal open={modalType === 'edit'} onOpenChange={(open) => !open && setModalType(null)} user={selectedUser} onSuccess={handleSuccess} />
+      <UserStatusModal open={modalType === 'status'} onOpenChange={(open) => !open && setModalType(null)} user={selectedUser} action={statusAction} onSuccess={handleSuccess} />
+      <ResetPasswordModal open={modalType === 'password'} onOpenChange={(open) => !open && setModalType(null)} user={selectedUser} onSuccess={handleSuccess} />
+      <ResendCredentialsModal open={modalType === 'credentials'} onOpenChange={(open) => !open && setModalType(null)} user={selectedUser} onSuccess={handleSuccess} />
+      <AdminPrivilegeModal open={modalType === 'admin'} onOpenChange={(open) => !open && setModalType(null)} user={selectedUser} action={adminAction} onSuccess={handleSuccess} />
     </AdminPageContainer>
   );
 }
