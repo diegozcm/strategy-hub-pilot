@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Search, Filter, X, Building2, Users, Bot } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AdminPageContainer } from "../../components/AdminPageContainer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ interface CompanyWithDetails {
   status: string | null;
   ai_enabled: boolean;
   created_at: string;
+  logo_url: string | null;
   userCount: number;
 }
 
@@ -36,7 +38,7 @@ export default function FilterCompaniesPage() {
     queryFn: async (): Promise<CompanyWithDetails[]> => {
       const { data: companiesData, error } = await supabase
         .from("companies")
-        .select("id, name, company_type, status, ai_enabled, created_at")
+        .select("id, name, company_type, status, ai_enabled, created_at, logo_url")
         .order("name");
 
       if (error) throw error;
@@ -250,7 +252,17 @@ export default function FilterCompaniesPage() {
                 <TableBody>
                   {filteredCompanies.map(company => (
                     <TableRow key={company.id}>
-                      <TableCell className="font-medium">{company.name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={company.logo_url || undefined} alt={company.name} />
+                            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                              {company.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="font-medium">{company.name}</span>
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline">
                           {company.company_type === "startup" ? "Startup" : "Regular"}
