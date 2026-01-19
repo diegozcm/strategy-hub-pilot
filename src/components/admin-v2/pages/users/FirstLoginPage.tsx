@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { AdminPageContainer } from "../../components/AdminPageContainer";
-import { useAllUsers, useUsersStats, useCompaniesForSelect } from "@/hooks/admin/useUsersStats";
+import { useAllUsers, useUsersStats, useCompaniesForSelect, UserWithDetails } from "@/hooks/admin/useUsersStats";
+import { useQueryClient } from "@tanstack/react-query";
 import { StatCard } from "../../components/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,19 +11,30 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
-import { Search, UserX, MoreHorizontal, Mail, KeyRound, CheckCircle } from "lucide-react";
+import { Search, UserX, MoreHorizontal, Mail, KeyRound, CheckCircle, Eye, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  UserDetailsModal,
+  EditUserModal,
+  ResetPasswordModal,
+  ResendCredentialsModal
+} from "./modals";
+
+type ModalType = 'details' | 'edit' | 'password' | 'credentials' | null;
 
 export default function FirstLoginPage() {
-  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { data: stats, isLoading: statsLoading } = useUsersStats();
   const { data: companies } = useCompaniesForSelect();
   const { data: users, isLoading } = useAllUsers({ neverLoggedIn: true });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [companyFilter, setCompanyFilter] = useState<string>("all");
+
+  // Modal state
+  const [selectedUser, setSelectedUser] = useState<UserWithDetails | null>(null);
+  const [modalType, setModalType] = useState<ModalType>(null);
 
   const filteredUsers = useMemo(() => {
     if (!users) return [];
@@ -36,8 +48,14 @@ export default function FirstLoginPage() {
     });
   }, [users, searchQuery, companyFilter]);
 
-  const handleNotImplemented = (action: string) => {
-    toast({ title: "Funcionalidade em Desenvolvimento", description: `A ação "${action}" será implementada em breve.` });
+  const openModal = (type: ModalType, user: UserWithDetails) => {
+    setSelectedUser(user);
+    setModalType(type);
+  };
+
+  const handleSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['all-users'] });
+    queryClient.invalidateQueries({ queryKey: ['users-stats'] });
   };
 
   const getInitials = (firstName?: string | null, lastName?: string | null) => {
@@ -100,7 +118,15 @@ export default function FirstLoginPage() {
               <TableBody>
                 {filteredUsers.map(user => (
                   <TableRow key={user.user_id}>
-                    <TableCell><div className="flex items-center gap-3"><Avatar className="h-8 w-8"><AvatarImage src={user.avatar_url || undefined} alt={`${user.first_name} ${user.last_name}`} /><AvatarFallback className="text-xs">{getInitials(user.first_name, user.last_name)}</AvatarFallback></Avatar><span className="font-medium">{user.first_name} {user.last_name}</span></div></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user.avatar_url || undefined} alt={`${user.first_name} ${user.last_name}`} />
+                          <AvatarFallback className="text-xs">{getInitials(user.first_name, user.last_name)}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{user.first_name} {user.last_name}</span>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{user.email}</TableCell>
                     <TableCell>{user.company_name || <span className="text-muted-foreground">Sem empresa</span>}</TableCell>
                     <TableCell className="text-muted-foreground">{formatDate(user.created_at)}</TableCell>
@@ -108,14 +134,19 @@ export default function FirstLoginPage() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleNotImplemented("Reenviar Credenciais")}>
+                          <DropdownMenuItem onClick={() => openModal('credentials', user)}>
                             <Mail className="h-4 w-4 mr-2" />Reenviar Credenciais
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleNotImplemented("Gerar Nova Senha")}>
+                          <DropdownMenuItem onClick={() => openModal('password', user)}>
                             <KeyRound className="h-4 w-4 mr-2" />Gerar Nova Senha
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleNotImplemented("Ver Detalhes")}>Ver Detalhes</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openModal('details', user)}>
+                            <Eye className="h-4 w-4 mr-2" />Ver Detalhes
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openModal('edit', user)}>
+                            <Edit className="h-4 w-4 mr-2" />Editar
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -126,6 +157,31 @@ export default function FirstLoginPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Modals */}
+      <UserDetailsModal
+        open={modalType === 'details'}
+        onOpenChange={(open) => !open && setModalType(null)}
+        user={selectedUser}
+      />
+      <EditUserModal
+        open={modalType === 'edit'}
+        onOpenChange={(open) => !open && setModalType(null)}
+        user={selectedUser}
+        onSuccess={handleSuccess}
+      />
+      <ResetPasswordModal
+        open={modalType === 'password'}
+        onOpenChange={(open) => !open && setModalType(null)}
+        user={selectedUser}
+        onSuccess={handleSuccess}
+      />
+      <ResendCredentialsModal
+        open={modalType === 'credentials'}
+        onOpenChange={(open) => !open && setModalType(null)}
+        user={selectedUser}
+        onSuccess={handleSuccess}
+      />
     </AdminPageContainer>
   );
 }
