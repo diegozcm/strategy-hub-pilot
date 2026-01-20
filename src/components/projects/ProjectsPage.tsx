@@ -20,6 +20,7 @@ import { ProjectCard } from './ProjectCard';
 import { ProjectCoverUpload } from './ProjectCoverUpload';
 import { QuickTaskInput } from './QuickTaskInput';
 import { TaskEditModal } from './TaskEditModal';
+import { TaskCreateModal } from './TaskCreateModal';
 import { useCompanyUsers } from '@/hooks/useCompanyUsers';
 interface StrategicPlan {
   id: string;
@@ -852,106 +853,57 @@ export const ProjectsPage: React.FC = () => {
           <p className="text-muted-foreground mt-2">Gerencie seus projetos e tarefas estratégicas</p>
         </div>
         <div className="flex space-x-3">
-          <Dialog open={isCreateTaskOpen} onOpenChange={setIsCreateTaskOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Tarefa
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Criar Tarefa</DialogTitle>
-                <DialogDescription>
-                  Adicione uma nova tarefa a um projeto estratégico.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="task-project">Projeto</Label>
-                  <Select 
-                    value={taskForm.project_id} 
-                    onValueChange={(value) => setTaskForm(prev => ({ ...prev, project_id: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um projeto" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="task-title">Título da Tarefa</Label>
-                  <Input
-                    id="task-title"
-                    value={taskForm.title}
-                    onChange={(e) => setTaskForm(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Ex: Implementar nova funcionalidade"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="task-description">Descrição</Label>
-                  <Textarea
-                    id="task-description"
-                    value={taskForm.description}
-                    onChange={(e) => setTaskForm(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Descreva a tarefa em detalhes"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="task-priority">Prioridade</Label>
-                    <Select 
-                      value={taskForm.priority} 
-                      onValueChange={(value) => setTaskForm(prev => ({ ...prev, priority: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Baixa</SelectItem>
-                        <SelectItem value="medium">Média</SelectItem>
-                        <SelectItem value="high">Alta</SelectItem>
-                        <SelectItem value="critical">Crítica</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label htmlFor="task-hours">Horas Estimadas</Label>
-                    <Input
-                      id="task-hours"
-                      type="number"
-                      value={taskForm.estimated_hours}
-                      onChange={(e) => setTaskForm(prev => ({ ...prev, estimated_hours: e.target.value }))}
-                      placeholder="8"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="task-due-date">Data de Vencimento</Label>
-                  <Input
-                    id="task-due-date"
-                    type="date"
-                    value={taskForm.due_date}
-                    onChange={(e) => setTaskForm(prev => ({ ...prev, due_date: e.target.value }))}
-                  />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsCreateTaskOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={createTask}>
-                    Criar Tarefa
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <TaskCreateModal
+            open={isCreateTaskOpen}
+            onOpenChange={setIsCreateTaskOpen}
+            projects={projects}
+            objectives={objectives}
+            users={companyUsers}
+            onSave={async (data) => {
+              if (!user) return;
+              try {
+                const projectTasks = tasks.filter(t => t.project_id === data.project_id);
+                const maxPosition = Math.max(0, ...projectTasks.map(t => t.position || 0));
+                
+                const { data: newTask, error } = await supabase
+                  .from('project_tasks')
+                  .insert([{
+                    title: data.title,
+                    description: data.description || null,
+                    project_id: data.project_id,
+                    priority: data.priority,
+                    estimated_hours: data.estimated_hours ? parseInt(data.estimated_hours) : null,
+                    due_date: data.due_date || null,
+                    assignee_id: data.assignee_id,
+                    status: 'todo',
+                    position: maxPosition + 1
+                  }])
+                  .select()
+                  .single();
+
+                if (error) throw error;
+
+                setTasks(prev => [newTask, ...prev]);
+                toast({
+                  title: "Sucesso",
+                  description: "Tarefa criada com sucesso!",
+                });
+              } catch (error) {
+                console.error('Error creating task:', error);
+                toast({
+                  title: "Erro",
+                  description: "Erro ao criar tarefa. Tente novamente.",
+                  variant: "destructive",
+                });
+                throw error;
+              }
+            }}
+          />
+
+          <Button variant="outline" onClick={() => setIsCreateTaskOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Tarefa
+          </Button>
 
           <Dialog open={isCreateProjectOpen} onOpenChange={(open) => {
             setIsCreateProjectOpen(open);
@@ -1720,14 +1672,26 @@ export const ProjectsPage: React.FC = () => {
       </Tabs>
 
       {/* Task Edit Modal */}
-      <TaskEditModal
-        open={isTaskEditModalOpen}
-        onOpenChange={setIsTaskEditModalOpen}
-        task={editingTask}
-        users={companyUsers}
-        onSave={updateTask}
-        onDelete={deleteTask}
-      />
+      {(() => {
+        const taskProject = editingTask ? projects.find(p => p.id === editingTask.project_id) : null;
+        const taskObjectives = taskProject?.objective_ids 
+          ? objectives.filter(obj => taskProject.objective_ids?.includes(obj.id))
+          : [];
+        
+        return (
+          <TaskEditModal
+            open={isTaskEditModalOpen}
+            onOpenChange={setIsTaskEditModalOpen}
+            task={editingTask}
+            users={companyUsers}
+            objectives={taskObjectives}
+            pillarColor={taskProject?.pillar_color}
+            pillarName={taskProject?.pillar_name}
+            onSave={updateTask}
+            onDelete={deleteTask}
+          />
+        );
+      })()}
     </div>
   );
 };
