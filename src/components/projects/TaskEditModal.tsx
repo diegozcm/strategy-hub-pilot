@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserSelect } from './UserSelect';
-import { Save, Trash2, Target } from 'lucide-react';
+import { Save, Trash2, Target, Folder } from 'lucide-react';
 
 interface CompanyUser {
   user_id: string;
@@ -24,6 +24,14 @@ interface StrategicObjective {
     name: string;
     color: string;
   };
+}
+
+interface StrategicProject {
+  id: string;
+  name: string;
+  pillar_color?: string;
+  pillar_name?: string;
+  objective_ids?: string[];
 }
 
 interface TaskData {
@@ -44,6 +52,7 @@ interface TaskEditModalProps {
   onOpenChange: (open: boolean) => void;
   task: TaskData | null;
   users: CompanyUser[];
+  projects?: StrategicProject[];
   objectives?: StrategicObjective[];
   pillarColor?: string;
   pillarName?: string;
@@ -56,6 +65,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
   onOpenChange,
   task,
   users,
+  projects = [],
   objectives = [],
   pillarColor,
   pillarName,
@@ -70,7 +80,8 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
     due_date: '',
     estimated_hours: '',
     actual_hours: '',
-    assignee_id: null as string | null
+    assignee_id: null as string | null,
+    project_id: ''
   });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -85,10 +96,25 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
         due_date: task.due_date || '',
         estimated_hours: task.estimated_hours?.toString() || '',
         actual_hours: task.actual_hours?.toString() || '',
-        assignee_id: task.assignee_id
+        assignee_id: task.assignee_id,
+        project_id: task.project_id || ''
       });
     }
   }, [task]);
+
+  // Get current project info based on form.project_id
+  const currentProject = useMemo(() => {
+    return projects.find(p => p.id === form.project_id);
+  }, [projects, form.project_id]);
+
+  const currentPillarColor = currentProject?.pillar_color || pillarColor;
+  const currentPillarName = currentProject?.pillar_name || pillarName;
+
+  // Get objectives for current project
+  const projectObjectives = useMemo(() => {
+    if (!currentProject?.objective_ids?.length) return objectives;
+    return objectives.filter(obj => currentProject.objective_ids?.includes(obj.id));
+  }, [currentProject, objectives]);
 
   const handleSave = async () => {
     if (!task) return;
@@ -102,7 +128,8 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
         due_date: form.due_date || null,
         estimated_hours: form.estimated_hours ? parseInt(form.estimated_hours) : null,
         actual_hours: form.actual_hours ? parseInt(form.actual_hours) : null,
-        assignee_id: form.assignee_id
+        assignee_id: form.assignee_id,
+        project_id: form.project_id || undefined
       });
       onOpenChange(false);
     } finally {
@@ -131,102 +158,133 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
       <DialogContent 
         className="sm:max-w-2xl overflow-hidden"
         style={{
-          borderLeft: pillarColor ? `4px solid ${pillarColor}` : undefined
+          borderLeft: currentPillarColor ? `4px solid ${currentPillarColor}` : undefined
         }}
       >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-2 text-lg">
             Editar Tarefa
-            {pillarName && (
+            {currentPillarName && (
               <span 
-                className="text-xs px-2 py-0.5 rounded-full"
+                className="text-xs font-medium px-2.5 py-1 rounded-full"
                 style={{ 
-                  backgroundColor: `${pillarColor}20`,
-                  color: pillarColor 
+                  backgroundColor: `${currentPillarColor}15`,
+                  color: currentPillarColor 
                 }}
               >
-                {pillarName}
+                {currentPillarName}
               </span>
             )}
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-5">
-          {/* Row 1: Title + Objectives Info */}
+        <div className="space-y-4">
+          {/* Row 1: Project + Objectives */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs text-muted-foreground">Título</Label>
-              <Input
-                value={form.title}
-                onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
-                className="mt-1"
-              />
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <Folder className="w-3 h-3" />
+                Projeto
+              </Label>
+              <Select 
+                value={form.project_id} 
+                onValueChange={(val) => setForm(prev => ({ ...prev, project_id: val }))}
+              >
+                <SelectTrigger className="h-9 text-sm bg-background border-border/60 focus:ring-1 focus:ring-primary/20">
+                  <SelectValue placeholder="Selecione um projeto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      <div className="flex items-center gap-2">
+                        {project.pillar_color && (
+                          <div 
+                            className="w-2 h-2 rounded-full flex-shrink-0" 
+                            style={{ backgroundColor: project.pillar_color }}
+                          />
+                        )}
+                        <span className="truncate">{project.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
                 <Target className="w-3 h-3" />
                 Objetivos do Projeto
               </Label>
-              <div className="mt-1 text-sm text-muted-foreground border rounded-md p-2 min-h-[38px] flex items-center">
-                {objectives.length > 0 ? (
+              <div className="text-sm text-muted-foreground border border-border/60 rounded-md p-2 min-h-[36px] flex items-center bg-muted/30">
+                {projectObjectives.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
-                    {objectives.slice(0, 2).map(obj => (
+                    {projectObjectives.slice(0, 2).map(obj => (
                       <span 
                         key={obj.id}
-                        className="text-xs px-2 py-0.5 rounded-full"
+                        className="text-[11px] px-2 py-0.5 rounded-full bg-background border"
                         style={{
-                          backgroundColor: obj.strategic_pillars?.color ? `${obj.strategic_pillars.color}20` : undefined,
-                          color: obj.strategic_pillars?.color
+                          borderColor: obj.strategic_pillars?.color ? `${obj.strategic_pillars.color}40` : undefined
                         }}
                       >
-                        {obj.title.length > 20 ? `${obj.title.slice(0, 20)}...` : obj.title}
+                        {obj.title.length > 18 ? `${obj.title.slice(0, 18)}...` : obj.title}
                       </span>
                     ))}
-                    {objectives.length > 2 && (
-                      <span className="text-xs text-muted-foreground">
-                        +{objectives.length - 2}
+                    {projectObjectives.length > 2 && (
+                      <span className="text-[11px] text-muted-foreground">
+                        +{projectObjectives.length - 2}
                       </span>
                     )}
                   </div>
                 ) : (
-                  <span className="text-xs italic">Nenhum objetivo vinculado</span>
+                  <span className="text-xs italic text-muted-foreground/70">Nenhum objetivo vinculado</span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Row 2: Description + Assignee */}
+          {/* Row 2: Title */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-muted-foreground">Título</Label>
+            <Input
+              value={form.title}
+              onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
+              className="h-9 text-sm bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/20"
+              placeholder="Título da tarefa"
+            />
+          </div>
+
+          {/* Row 3: Description + Assignee */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs text-muted-foreground">Descrição</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Descrição</Label>
               <Textarea
                 value={form.description}
                 onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
-                className="mt-1"
+                className="text-sm resize-none bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/20"
                 placeholder="Descreva a tarefa..."
               />
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Responsável</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Responsável</Label>
               <UserSelect
                 users={users}
                 value={form.assignee_id}
                 onValueChange={(val) => setForm(prev => ({ ...prev, assignee_id: val }))}
-                className="mt-1"
+                className="h-9"
               />
             </div>
           </div>
 
-          {/* Row 3: Status, Priority, Due Date */}
+          {/* Row 4: Status, Priority, Due Date */}
           <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label className="text-xs text-muted-foreground">Status</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Status</Label>
               <Select 
                 value={form.status} 
                 onValueChange={(val) => setForm(prev => ({ ...prev, status: val }))}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="h-9 text-sm bg-background border-border/60 focus:ring-1 focus:ring-primary/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -238,13 +296,13 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
               </Select>
             </div>
 
-            <div>
-              <Label className="text-xs text-muted-foreground">Prioridade</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Prioridade</Label>
               <Select 
                 value={form.priority} 
                 onValueChange={(val) => setForm(prev => ({ ...prev, priority: val }))}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="h-9 text-sm bg-background border-border/60 focus:ring-1 focus:ring-primary/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -256,61 +314,61 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
               </Select>
             </div>
 
-            <div>
-              <Label className="text-xs text-muted-foreground">Data de Vencimento</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Data de Vencimento</Label>
               <Input
                 type="date"
                 value={form.due_date}
                 onChange={(e) => setForm(prev => ({ ...prev, due_date: e.target.value }))}
-                className="mt-1"
+                className="h-9 text-sm bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/20"
               />
             </div>
           </div>
 
-          {/* Row 4: Hours */}
+          {/* Row 5: Hours */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs text-muted-foreground">Horas Estimadas</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Horas Estimadas</Label>
               <Input
                 type="number"
                 value={form.estimated_hours}
                 onChange={(e) => setForm(prev => ({ ...prev, estimated_hours: e.target.value }))}
-                className="mt-1"
+                className="h-9 text-sm bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/20"
                 placeholder="0"
               />
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Horas Realizadas</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Horas Realizadas</Label>
               <Input
                 type="number"
                 value={form.actual_hours}
                 onChange={(e) => setForm(prev => ({ ...prev, actual_hours: e.target.value }))}
-                className="mt-1"
+                className="h-9 text-sm bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/20"
                 placeholder="0"
               />
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex justify-between pt-4 border-t">
+          <div className="flex justify-between pt-3 border-t border-border/60">
             {onDelete && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 px-3"
               >
-                <Trash2 className="w-4 h-4 mr-1" />
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
                 {deleting ? 'Excluindo...' : 'Excluir'}
               </Button>
             )}
             <div className="flex gap-2 ml-auto">
-              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="h-8 px-4">
                 Cancelar
               </Button>
-              <Button size="sm" onClick={handleSave} disabled={saving || !form.title.trim()}>
-                <Save className="w-4 h-4 mr-1" />
+              <Button size="sm" onClick={handleSave} disabled={saving || !form.title.trim()} className="h-8 px-4">
+                <Save className="w-3.5 h-3.5 mr-1.5" />
                 {saving ? 'Salvando...' : 'Salvar'}
               </Button>
             </div>

@@ -13,6 +13,7 @@ interface KanbanColumnProps {
   accentColor: string;
   getProjectName: (projectId: string) => string | undefined;
   getPillarColor?: (projectId: string) => string | undefined;
+  getProjectCoverUrl?: (projectId: string) => string | undefined;
   isOver?: boolean;
   onEditTask?: (task: ProjectTask) => void;
 }
@@ -25,6 +26,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   accentColor,
   getProjectName,
   getPillarColor,
+  getProjectCoverUrl,
   isOver = false,
   onEditTask,
 }) => {
@@ -38,7 +40,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
     <Card
       ref={setNodeRef}
       className={cn(
-        'flex flex-col min-h-[400px] p-4 border-b-4 transition-all duration-200',
+        'flex flex-col min-h-[400px] p-4 border-b-4 transition-all duration-200 rounded-lg',
         accentColor,
         (isOver || isDroppableOver) && 'ring-2 ring-primary/50 bg-primary/5'
       )}
@@ -56,10 +58,10 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
       {/* Tasks Container */}
       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-        <div className="flex-1 space-y-3 overflow-y-auto">
+        <div className="flex-1 space-y-2.5 overflow-y-auto">
           {sortedTasks.length === 0 ? (
             <div className={cn(
-              'h-24 border-2 border-dashed rounded-lg flex items-center justify-center',
+              'h-24 border-2 border-dashed rounded-md flex items-center justify-center',
               'text-sm text-muted-foreground',
               (isOver || isDroppableOver) ? 'border-primary bg-primary/10' : 'border-muted'
             )}>
@@ -71,6 +73,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 key={task.id}
                 task={task}
                 projectName={getProjectName(task.project_id)}
+                projectCoverUrl={getProjectCoverUrl?.(task.project_id)}
                 pillarColor={getPillarColor?.(task.project_id)}
                 onEdit={onEditTask}
               />

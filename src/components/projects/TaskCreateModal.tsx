@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserSelect } from './UserSelect';
-import { Plus } from 'lucide-react';
+import { Plus, Folder, Target } from 'lucide-react';
 
 interface CompanyUser {
   user_id: string;
@@ -119,14 +119,14 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
           borderLeft: pillarColor ? `4px solid ${pillarColor}` : undefined
         }}
       >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-2 text-lg">
             Criar Tarefa
             {selectedProject?.pillar_name && (
               <span 
-                className="text-xs px-2 py-0.5 rounded-full"
+                className="text-xs font-medium px-2.5 py-1 rounded-full"
                 style={{ 
-                  backgroundColor: `${pillarColor}20`,
+                  backgroundColor: `${pillarColor}15`,
                   color: pillarColor 
                 }}
               >
@@ -136,16 +136,19 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-5">
+        <div className="space-y-4">
           {/* Row 1: Project + Objective */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs text-muted-foreground">Projeto</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <Folder className="w-3 h-3" />
+                Projeto
+              </Label>
               <Select 
                 value={form.project_id} 
                 onValueChange={(value) => setForm(prev => ({ ...prev, project_id: value }))}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="h-9 text-sm bg-background border-border/60 focus:ring-1 focus:ring-primary/20">
                   <SelectValue placeholder="Selecione um projeto" />
                 </SelectTrigger>
                 <SelectContent>
@@ -154,11 +157,11 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
                       <div className="flex items-center gap-2">
                         {project.pillar_color && (
                           <div 
-                            className="w-2 h-2 rounded-full" 
+                            className="w-2 h-2 rounded-full flex-shrink-0" 
                             style={{ backgroundColor: project.pillar_color }}
                           />
                         )}
-                        {project.name}
+                        <span className="truncate">{project.name}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -166,75 +169,81 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
               </Select>
             </div>
 
-            <div>
-              <Label className="text-xs text-muted-foreground">Objetivo Estratégico</Label>
-              <div className="mt-1 text-sm text-muted-foreground border rounded-md p-2 min-h-[38px] flex items-center">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <Target className="w-3 h-3" />
+                Objetivo Estratégico
+              </Label>
+              <div className="text-sm text-muted-foreground border border-border/60 rounded-md p-2 min-h-[36px] flex items-center bg-muted/30">
                 {projectObjectives.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
                     {projectObjectives.slice(0, 2).map(obj => (
                       <span 
                         key={obj.id}
-                        className="text-xs px-2 py-0.5 rounded-full bg-accent"
+                        className="text-[11px] px-2 py-0.5 rounded-full bg-background border"
+                        style={{
+                          borderColor: obj.strategic_pillars?.color ? `${obj.strategic_pillars.color}40` : undefined
+                        }}
                       >
-                        {obj.title.length > 20 ? `${obj.title.slice(0, 20)}...` : obj.title}
+                        {obj.title.length > 18 ? `${obj.title.slice(0, 18)}...` : obj.title}
                       </span>
                     ))}
                     {projectObjectives.length > 2 && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-[11px] text-muted-foreground">
                         +{projectObjectives.length - 2}
                       </span>
                     )}
                   </div>
                 ) : (
-                  <span className="text-xs italic">Selecione um projeto</span>
+                  <span className="text-xs italic text-muted-foreground/70">Selecione um projeto</span>
                 )}
               </div>
             </div>
           </div>
 
           {/* Row 2: Title */}
-          <div>
-            <Label className="text-xs text-muted-foreground">Título da Tarefa</Label>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-muted-foreground">Título da Tarefa</Label>
             <Input
               value={form.title}
               onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
-              className="mt-1"
+              className="h-9 text-sm bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/20"
               placeholder="Ex: Implementar nova funcionalidade"
             />
           </div>
 
           {/* Row 3: Description + Assignee */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs text-muted-foreground">Descrição</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Descrição</Label>
               <Textarea
                 value={form.description}
                 onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
                 rows={3}
-                className="mt-1"
+                className="text-sm resize-none bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/20"
                 placeholder="Descreva a tarefa..."
               />
             </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Responsável</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Responsável</Label>
               <UserSelect
                 users={users}
                 value={form.assignee_id}
                 onValueChange={(val) => setForm(prev => ({ ...prev, assignee_id: val }))}
-                className="mt-1"
+                className="h-9"
               />
             </div>
           </div>
 
           {/* Row 4: Priority, Hours, Due Date */}
           <div className="grid grid-cols-3 gap-4">
-            <div>
-              <Label className="text-xs text-muted-foreground">Prioridade</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Prioridade</Label>
               <Select 
                 value={form.priority} 
                 onValueChange={(val) => setForm(prev => ({ ...prev, priority: val }))}
               >
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="h-9 text-sm bg-background border-border/60 focus:ring-1 focus:ring-primary/20">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -246,39 +255,40 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
               </Select>
             </div>
 
-            <div>
-              <Label className="text-xs text-muted-foreground">Horas Estimadas</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Horas Estimadas</Label>
               <Input
                 type="number"
                 value={form.estimated_hours}
                 onChange={(e) => setForm(prev => ({ ...prev, estimated_hours: e.target.value }))}
-                className="mt-1"
+                className="h-9 text-sm bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/20"
                 placeholder="8"
               />
             </div>
 
-            <div>
-              <Label className="text-xs text-muted-foreground">Data de Vencimento</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-muted-foreground">Data de Vencimento</Label>
               <Input
                 type="date"
                 value={form.due_date}
                 onChange={(e) => setForm(prev => ({ ...prev, due_date: e.target.value }))}
-                className="mt-1"
+                className="h-9 text-sm bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/20"
               />
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+          <div className="flex justify-end gap-2 pt-3 border-t border-border/60">
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} className="h-8 px-4">
               Cancelar
             </Button>
             <Button 
               size="sm" 
               onClick={handleSave} 
               disabled={saving || !form.project_id || !form.title.trim()}
+              className="h-8 px-4"
             >
-              <Plus className="w-4 h-4 mr-1" />
+              <Plus className="w-3.5 h-3.5 mr-1.5" />
               {saving ? 'Criando...' : 'Criar Tarefa'}
             </Button>
           </div>
