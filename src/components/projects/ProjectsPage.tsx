@@ -1411,7 +1411,7 @@ export const ProjectsPage: React.FC = () => {
                         </div>
 
                         {/* Right Column: Tasks Preview */}
-                        <div className="bg-muted/30 rounded-lg p-4 space-y-4 h-fit">
+                        <div className="bg-muted/30 rounded-lg p-4 space-y-4 h-fit overflow-hidden">
                           {/* Header */}
                           <div className="flex items-center justify-between pb-2 border-b">
                             <h4 className="font-semibold text-sm flex items-center gap-2">
@@ -1430,7 +1430,7 @@ export const ProjectsPage: React.FC = () => {
                           </div>
                           
                           {/* Task List */}
-                          <div className="space-y-2 max-h-52 overflow-y-auto">
+                          <div className="space-y-2 max-h-52 overflow-y-auto overflow-x-hidden">
                             {projectTasks.length === 0 ? (
                               <p className="text-xs text-muted-foreground py-6 text-center">
                                 Nenhuma tarefa encontrada
