@@ -58,11 +58,11 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 
       {/* Tasks Container */}
       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-        <div className="flex-1 space-y-2.5 overflow-y-auto">
+        <div className="flex-1 space-y-2.5 overflow-y-auto min-h-[120px]">
           {sortedTasks.length === 0 ? (
             <div className={cn(
-              'h-24 border-2 border-dashed rounded-md flex items-center justify-center',
-              'text-sm text-muted-foreground',
+              'h-full min-h-[100px] border-2 border-dashed rounded-md flex items-center justify-center',
+              'text-sm text-muted-foreground transition-colors',
               (isOver || isDroppableOver) ? 'border-primary bg-primary/10' : 'border-muted'
             )}>
               {(isOver || isDroppableOver) ? 'Solte aqui' : 'Sem tarefas'}

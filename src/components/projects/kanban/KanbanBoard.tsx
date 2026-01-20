@@ -2,7 +2,8 @@ import React, { useState, useMemo, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -10,6 +11,7 @@ import {
   DragStartEvent,
   DragEndEvent,
   DragOverEvent,
+  CollisionDetection,
 } from '@dnd-kit/core';
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { Circle, Clock, AlertCircle, CheckCircle } from 'lucide-react';
@@ -352,7 +354,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       {/* Kanban Board */}
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={(args) => {
+          // pointerWithin works better for empty columns
+          const pointerCollisions = pointerWithin(args);
+          if (pointerCollisions.length > 0) {
+            return pointerCollisions;
+          }
+          return rectIntersection(args);
+        }}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
