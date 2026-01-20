@@ -1034,141 +1034,64 @@ export const ProjectsPage: React.FC = () => {
 
                 return (
                   <div className="flex flex-col max-h-[90vh]">
-                    {/* Header Section */}
-                    <div className="relative flex-shrink-0">
-                      {/* Pillar color bar */}
-                      <div 
-                        className="absolute top-0 left-0 right-0 h-1 z-10"
-                        style={{ backgroundColor: pillarColor }}
-                      />
-                      
-                      {editingProject ? (
-                        /* Edit Mode Header - Show Upload Component */
-                        <div className="pt-2 px-4 pb-4">
-                          <div className="flex items-center justify-between mb-3">
-                            <h2 className="font-semibold text-lg text-foreground">Editar Projeto</h2>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setIsProjectDetailOpen(false)}
-                              className="h-8 w-8"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <ProjectCoverUpload
-                            currentImageUrl={editProjectForm.cover_image_url || undefined}
-                            onImageUploaded={handleCoverImageUploaded}
-                            onImageRemoved={handleCoverImageRemoved}
-                            projectId={selectedProjectForDetail.id}
-                          />
-                        </div>
-                      ) : selectedProjectForDetail.cover_image_url ? (
-                        /* View Mode with Cover Image */
-                        <div className="relative h-44">
+                    {/* Header Section - Always h-44 (176px) */}
+                    <div className="relative flex-shrink-0 h-44">
+                      {/* Thumbnail with image or pillar color fallback */}
+                      {(editingProject ? editProjectForm.cover_image_url : selectedProjectForDetail.cover_image_url) ? (
+                        <>
                           <img 
-                            src={selectedProjectForDetail.cover_image_url}
+                            src={editingProject ? editProjectForm.cover_image_url : selectedProjectForDetail.cover_image_url}
                             alt={selectedProjectForDetail.name}
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                          
-                          {/* Close button */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setIsProjectDetailOpen(false)}
-                            className="absolute top-3 right-3 h-8 w-8 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                          
-                          {/* Content over image */}
-                          <div className="absolute bottom-0 left-0 right-0 p-4">
-                            <div className="flex items-end justify-between gap-4">
-                              <div className="flex-1 min-w-0">
-                                <h2 className="text-white font-bold text-xl leading-tight drop-shadow-lg truncate">
-                                  {selectedProjectForDetail.name}
-                                </h2>
-                                {pillarName && (
-                                  <Badge 
-                                    className="mt-1.5 text-white text-xs border-0"
-                                    style={{ backgroundColor: `${pillarColor}CC` }}
-                                  >
-                                    {pillarName}
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1 flex-shrink-0">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => setEditingProject(true)}
-                                  className="h-8 w-8 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
-                                >
-                                  <Edit3 className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    deleteProject(selectedProjectForDetail.id, selectedProjectForDetail.name);
-                                    setIsProjectDetailOpen(false);
-                                  }}
-                                  className="h-8 w-8 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </div>
+                        </>
+                      ) : (
+                        /* Pillar color fallback */
+                        <div 
+                          className="w-full h-full"
+                          style={{ backgroundColor: pillarColor }}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-black/30" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <FolderOpen className="w-16 h-16 text-white/30" />
                           </div>
                         </div>
-                      ) : (
-                        /* View Mode without Cover Image */
-                        <div className="bg-muted/40 pt-3 pb-4 px-4">
-                          {/* Close button */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setIsProjectDetailOpen(false)}
-                            className="absolute top-3 right-3 h-8 w-8 z-10"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-
-                          <div className="flex items-start justify-between gap-4 pr-10">
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div 
-                                className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
-                                style={{ backgroundColor: `${pillarColor}15` }}
+                      )}
+                      
+                      {/* Single close button */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setIsProjectDetailOpen(false)}
+                        className="absolute top-3 right-3 h-8 w-8 z-20 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                      
+                      {/* Content over header */}
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <div className="flex items-end justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <h2 className="text-white font-bold text-xl leading-tight drop-shadow-lg truncate">
+                              {editingProject ? 'Editar Projeto' : selectedProjectForDetail.name}
+                            </h2>
+                            {!editingProject && pillarName && (
+                              <Badge 
+                                className="mt-1.5 text-white text-xs border-0"
+                                style={{ backgroundColor: `${pillarColor}CC` }}
                               >
-                                <FolderOpen className="w-6 h-6" style={{ color: pillarColor }} />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <h2 className="font-bold text-lg leading-tight truncate text-foreground">
-                                  {selectedProjectForDetail.name}
-                                </h2>
-                                {pillarName && (
-                                  <Badge 
-                                    className="mt-1 text-xs border"
-                                    style={{ 
-                                      backgroundColor: `${pillarColor}15`,
-                                      color: pillarColor,
-                                      borderColor: `${pillarColor}40`
-                                    }}
-                                    variant="outline"
-                                  >
-                                    {pillarName}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
+                                {pillarName}
+                              </Badge>
+                            )}
+                          </div>
+                          {!editingProject && (
                             <div className="flex items-center gap-1 flex-shrink-0">
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setEditingProject(true)}
-                                className="h-8 w-8"
+                                className="h-8 w-8 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
                               >
                                 <Edit3 className="h-4 w-4" />
                               </Button>
@@ -1179,21 +1102,48 @@ export const ProjectsPage: React.FC = () => {
                                   deleteProject(selectedProjectForDetail.id, selectedProjectForDetail.name);
                                   setIsProjectDetailOpen(false);
                                 }}
-                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                className="h-8 w-8 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
-                          </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* Scrollable Content */}
                     <div className="overflow-y-auto flex-1 p-4">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Left Column: Project Details */}
                         <div className="space-y-4">
+                          {/* Cover Image Upload - Only in Edit Mode */}
+                          {editingProject && (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Imagem de Capa</Label>
+                              <div className="mt-1">
+                                <ProjectCoverUpload
+                                  currentImageUrl={editProjectForm.cover_image_url || undefined}
+                                  onImageUploaded={handleCoverImageUploaded}
+                                  onImageRemoved={handleCoverImageRemoved}
+                                  projectId={selectedProjectForDetail.id}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Project Name - Only in Edit Mode */}
+                          {editingProject && (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Nome do Projeto</Label>
+                              <Input
+                                value={editProjectForm.name}
+                                onChange={(e) => setEditProjectForm(prev => ({ ...prev, name: e.target.value }))}
+                                className="mt-1"
+                              />
+                            </div>
+                          )}
+
                           {/* Description */}
                           {editingProject ? (
                             <div>
@@ -1209,8 +1159,8 @@ export const ProjectsPage: React.FC = () => {
                             <p className="text-sm text-muted-foreground">{selectedProjectForDetail.description}</p>
                           )}
 
-                          {/* Info Grid */}
-                          <div className="grid grid-cols-2 gap-3 text-sm">
+                          {/* Info Grid - Added gap-x-6 for spacing */}
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                             <div className="space-y-0.5">
                               <span className="text-xs text-muted-foreground">Plano</span>
                               {editingProject ? (
