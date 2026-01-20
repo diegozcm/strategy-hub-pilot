@@ -59,6 +59,7 @@ interface ProjectTask {
   actual_hours: number;
   project_id: string;
   assignee_id: string;
+  position: number;
 }
 
 export const ProjectsPage: React.FC = () => {

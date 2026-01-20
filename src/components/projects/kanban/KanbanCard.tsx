@@ -9,14 +9,15 @@ import { cn } from '@/lib/utils';
 export interface ProjectTask {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   status: string;
-  priority: string;
-  due_date: string;
-  estimated_hours: number;
-  actual_hours: number;
+  priority: string | null;
+  due_date: string | null;
+  estimated_hours: number | null;
+  actual_hours: number | null;
   project_id: string;
   assignee_id: string;
+  position: number;
 }
 
 interface KanbanCardProps {

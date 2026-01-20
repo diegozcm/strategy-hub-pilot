@@ -67,14 +67,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return tasks.filter(task => task.project_id === selectedProject);
   }, [tasks, selectedProject]);
 
-  // Group tasks by status
+  // Group tasks by status and sort by position
   const tasksByStatus = useMemo(() => {
-    return {
+    const grouped = {
       todo: filteredTasks.filter(t => t.status === 'todo'),
       in_progress: filteredTasks.filter(t => t.status === 'in_progress'),
       review: filteredTasks.filter(t => t.status === 'review'),
       done: filteredTasks.filter(t => t.status === 'done'),
     };
+    // Sort each group by position
+    Object.keys(grouped).forEach(key => {
+      grouped[key as keyof typeof grouped].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    });
+    return grouped;
   }, [filteredTasks]);
 
   const getProjectName = (projectId: string): string | undefined => {
@@ -112,59 +117,161 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     if (!over) return;
 
     const activeTaskId = active.id as string;
-    const overId = over.id as string;
-
-    // Determine the target column
-    let targetColumn: string;
-    
-    // Check if dropped on a column directly
-    if (COLUMNS.some(col => col.id === overId)) {
-      targetColumn = overId;
-    } else {
-      // Dropped on a task, find its column
-      const overColumn = findColumnByTaskId(overId);
-      if (!overColumn) return;
-      targetColumn = overColumn;
-    }
+    const overIdValue = over.id as string;
 
     const activeTask = tasks.find(t => t.id === activeTaskId);
     if (!activeTask) return;
 
-    // If status hasn't changed, just handle reordering within column
-    if (activeTask.status === targetColumn) {
-      // Reorder logic could be added here if we track order
-      return;
+    // Determine the target column
+    const isOverColumn = COLUMNS.some(col => col.id === overIdValue);
+    let targetColumn: string;
+    
+    if (isOverColumn) {
+      targetColumn = overIdValue;
+    } else {
+      // Dropped on a task, find its column
+      const overColumn = findColumnByTaskId(overIdValue);
+      if (!overColumn) return;
+      targetColumn = overColumn;
     }
 
-    // Optimistic update - update local state immediately
+    // Get tasks in target column sorted by position
+    const columnTasks = tasks
+      .filter(t => t.status === targetColumn)
+      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+
+    // Calculate new index
+    let newIndex: number;
+    if (isOverColumn) {
+      // Dropped on column itself - add to end
+      newIndex = columnTasks.length;
+    } else {
+      // Dropped on a specific task - insert at that position
+      const overTaskIndex = columnTasks.findIndex(t => t.id === overIdValue);
+      newIndex = overTaskIndex >= 0 ? overTaskIndex : columnTasks.length;
+    }
+
     const previousTasks = [...tasks];
-    const updatedTasks = tasks.map(t =>
-      t.id === activeTaskId ? { ...t, status: targetColumn } : t
-    );
-    onTasksUpdate(updatedTasks);
 
-    // Update database in background
-    try {
-      const { error } = await supabase
-        .from('project_tasks')
-        .update({ status: targetColumn })
-        .eq('id', activeTaskId);
+    if (activeTask.status === targetColumn) {
+      // Same column - reordering
+      const oldIndex = columnTasks.findIndex(t => t.id === activeTaskId);
+      if (oldIndex === newIndex || oldIndex === -1) return;
 
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso",
-        description: `Tarefa movida para "${COLUMNS.find(c => c.id === targetColumn)?.title}"`,
+      // Reorder tasks in this column
+      const reorderedColumnTasks = arrayMove(columnTasks, oldIndex, newIndex);
+      
+      // Update positions in local state
+      const updatedTasks = tasks.map(task => {
+        const newPosition = reorderedColumnTasks.findIndex(t => t.id === task.id);
+        if (newPosition >= 0 && task.status === targetColumn) {
+          return { ...task, position: newPosition };
+        }
+        return task;
       });
-    } catch (error) {
-      console.error('Error updating task status:', error);
-      // Revert on error
-      onTasksUpdate(previousTasks);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar status da tarefa. Tente novamente.",
-        variant: "destructive",
+      
+      onTasksUpdate(updatedTasks);
+
+      // Update positions in database
+      try {
+        const updates = reorderedColumnTasks.map((task, index) => 
+          supabase
+            .from('project_tasks')
+            .update({ position: index })
+            .eq('id', task.id)
+        );
+        
+        await Promise.all(updates);
+
+        toast({
+          title: "Sucesso",
+          description: "Ordem das tarefas atualizada",
+        });
+      } catch (error) {
+        console.error('Error updating task positions:', error);
+        onTasksUpdate(previousTasks);
+        toast({
+          title: "Erro",
+          description: "Erro ao reordenar tarefas. Tente novamente.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      // Different column - moving to new status
+      // Remove from source column and add to target at specific position
+      const sourceColumnTasks = tasks
+        .filter(t => t.status === activeTask.status && t.id !== activeTaskId)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+      
+      const targetColumnTasks = columnTasks.filter(t => t.id !== activeTaskId);
+      
+      // Insert at new position
+      targetColumnTasks.splice(newIndex, 0, { ...activeTask, status: targetColumn });
+
+      // Update all positions
+      const updatedTasks = tasks.map(task => {
+        // Update source column positions
+        const sourceIndex = sourceColumnTasks.findIndex(t => t.id === task.id);
+        if (sourceIndex >= 0 && task.status === activeTask.status) {
+          return { ...task, position: sourceIndex };
+        }
+        
+        // Update target column positions
+        const targetIndex = targetColumnTasks.findIndex(t => t.id === task.id);
+        if (targetIndex >= 0) {
+          if (task.id === activeTaskId) {
+            return { ...task, status: targetColumn, position: targetIndex };
+          }
+          return { ...task, position: targetIndex };
+        }
+        
+        return task;
       });
+
+      onTasksUpdate(updatedTasks);
+
+      // Update database
+      try {
+        // Update moved task's status and position
+        await supabase
+          .from('project_tasks')
+          .update({ status: targetColumn, position: newIndex })
+          .eq('id', activeTaskId);
+
+        // Update positions in target column
+        const targetUpdates = targetColumnTasks
+          .filter(t => t.id !== activeTaskId)
+          .map((task, index) => {
+            const actualIndex = index >= newIndex ? index + 1 : index;
+            return supabase
+              .from('project_tasks')
+              .update({ position: actualIndex })
+              .eq('id', task.id);
+          });
+
+        // Update positions in source column
+        const sourceUpdates = sourceColumnTasks.map((task, index) =>
+          supabase
+            .from('project_tasks')
+            .update({ position: index })
+            .eq('id', task.id)
+        );
+
+        await Promise.all([...targetUpdates, ...sourceUpdates]);
+
+        toast({
+          title: "Sucesso",
+          description: `Tarefa movida para "${COLUMNS.find(c => c.id === targetColumn)?.title}"`,
+        });
+      } catch (error) {
+        console.error('Error updating task status:', error);
+        onTasksUpdate(previousTasks);
+        toast({
+          title: "Erro",
+          description: "Erro ao mover tarefa. Tente novamente.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
