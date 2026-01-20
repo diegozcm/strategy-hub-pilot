@@ -1684,6 +1684,7 @@ export const ProjectsPage: React.FC = () => {
             onOpenChange={setIsTaskEditModalOpen}
             task={editingTask}
             users={companyUsers}
+            projects={projects}
             objectives={taskObjectives}
             pillarColor={taskProject?.pillar_color}
             pillarName={taskProject?.pillar_name}
@@ -1692,6 +1693,43 @@ export const ProjectsPage: React.FC = () => {
           />
         );
       })()}
+
+      {/* Task Create Modal */}
+      <TaskCreateModal
+        open={isCreateTaskOpen}
+        onOpenChange={setIsCreateTaskOpen}
+        projects={projects}
+        objectives={objectives}
+        users={companyUsers}
+        onSave={async (data) => {
+          if (!user) return;
+          const projectTasks = tasks.filter(t => t.project_id === data.project_id);
+          const maxPosition = Math.max(0, ...projectTasks.map(t => t.position || 0));
+          
+          const { data: newTask, error } = await supabase
+            .from('project_tasks')
+            .insert([{
+              title: data.title,
+              description: data.description || null,
+              project_id: data.project_id,
+              priority: data.priority,
+              estimated_hours: data.estimated_hours ? parseInt(data.estimated_hours) : null,
+              due_date: data.due_date || null,
+              assignee_id: data.assignee_id,
+              status: 'todo',
+              position: maxPosition + 1
+            }])
+            .select()
+            .single();
+
+          if (error) throw error;
+          setTasks(prev => [newTask, ...prev]);
+          toast({
+            title: "Sucesso",
+            description: "Tarefa criada com sucesso!",
+          });
+        }}
+      />
     </div>
   );
 };

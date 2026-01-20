@@ -23,6 +23,7 @@ interface StrategicProject {
   id: string;
   name: string;
   pillar_color?: string;
+  cover_image_url?: string;
 }
 
 interface CompanyUser {
@@ -101,6 +102,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   const getPillarColor = (projectId: string): string | undefined => {
     return projects.find(p => p.id === projectId)?.pillar_color;
+  };
+
+  const getProjectCoverUrl = (projectId: string): string | undefined => {
+    return projects.find(p => p.id === projectId)?.cover_image_url;
   };
 
   const findColumnByTaskId = (taskId: string): string | null => {
@@ -330,6 +335,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               accentColor={column.color}
               getProjectName={getProjectName}
               getPillarColor={getPillarColor}
+              getProjectCoverUrl={getProjectCoverUrl}
               isOver={overId === column.id}
               onEditTask={onEditTask}
             />

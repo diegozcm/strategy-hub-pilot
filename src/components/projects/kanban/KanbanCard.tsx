@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, Clock, GripVertical, Edit3 } from 'lucide-react';
+import { Calendar, Clock, GripVertical, Edit3, Folder } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -30,6 +30,7 @@ export interface ProjectTask {
 interface KanbanCardProps {
   task: ProjectTask;
   projectName?: string;
+  projectCoverUrl?: string;
   pillarColor?: string;
   isDragging?: boolean;
   onEdit?: (task: ProjectTask) => void;
@@ -58,6 +59,7 @@ const isOverdue = (dueDate: string | null) => {
 export const KanbanCard: React.FC<KanbanCardProps> = ({ 
   task, 
   projectName, 
+  projectCoverUrl,
   pillarColor,
   isDragging = false,
   onEdit 
@@ -90,28 +92,38 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
       ref={setNodeRef}
       style={{
         ...style,
-        borderLeftWidth: '4px',
+        borderLeftWidth: '3px',
         borderLeftColor: pillarColor || 'hsl(var(--border))'
       }}
       className={cn(
-        'p-4 cursor-grab active:cursor-grabbing group',
-        'transition-all duration-300 ease-out',
-        'hover:shadow-xl hover:-translate-y-1.5 hover:border-primary/40',
-        'hover:bg-accent/5',
-        'bg-card border border-border',
-        isSortableDragging || isDragging ? 'opacity-60 shadow-2xl scale-105 rotate-2 z-50' : '',
+        'relative p-3 cursor-grab active:cursor-grabbing group overflow-hidden',
+        'transition-all duration-200 ease-out',
+        'hover:shadow-lg hover:-translate-y-1 hover:border-primary/30',
+        'bg-card border border-border rounded-md',
+        isSortableDragging || isDragging ? 'opacity-60 shadow-2xl scale-[1.02] rotate-1 z-50' : '',
         'touch-none select-none'
       )}
       {...attributes}
       {...listeners}
     >
-      <div className="space-y-3">
+      {/* Background image overlay */}
+      {projectCoverUrl && (
+        <>
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-[0.08]"
+            style={{ backgroundImage: `url(${projectCoverUrl})` }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/50 to-background/90" />
+        </>
+      )}
+      
+      <div className="relative space-y-2.5">
         {/* Header with grip and title */}
         <div className="flex items-start gap-2">
-          <GripVertical className="w-4 h-4 text-muted-foreground/50 mt-0.5 flex-shrink-0" />
+          <GripVertical className="w-3.5 h-3.5 text-muted-foreground/40 mt-0.5 flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <h4 className={cn(
-              'font-medium text-sm text-foreground leading-tight',
+              'font-medium text-sm text-foreground leading-snug',
               task.status === 'done' && 'line-through text-muted-foreground'
             )}>
               {task.title}
@@ -121,7 +133,7 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+            className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity -mr-1 -mt-0.5"
             onClick={handleEditClick}
           >
             <Edit3 className="w-3 h-3" />
@@ -130,23 +142,22 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
 
         {/* Description */}
         {task.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2 pl-6">
+          <p className="text-xs text-muted-foreground line-clamp-2 pl-5">
             {task.description}
           </p>
         )}
 
-        {/* Project name */}
+        {/* Project name - compact style */}
         {projectName && (
-          <div className="pl-6">
-            <Badge variant="outline" className="text-xs font-normal">
-              {projectName}
-            </Badge>
+          <div className="pl-5 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Folder className="w-3 h-3" />
+            <span className="truncate">{projectName}</span>
           </div>
         )}
 
         {/* Footer with meta info */}
-        <div className="flex items-center justify-between pl-6 pt-1">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between pl-5 pt-1">
+          <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
             {task.estimated_hours && (
               <div className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
@@ -169,16 +180,16 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
               <div className="flex items-center gap-1.5">
                 <Avatar className="h-5 w-5">
                   <AvatarImage src={task.assignee.avatar_url} />
-                  <AvatarFallback className="text-[9px]">
+                  <AvatarFallback className="text-[9px] bg-muted">
                     {task.assignee.first_name?.[0]}{task.assignee.last_name?.[0]}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-xs text-muted-foreground truncate max-w-16">
+                <span className="text-xs text-muted-foreground truncate max-w-14">
                   {task.assignee.first_name}
                 </span>
               </div>
             )}
-            <Badge className={cn('text-xs border-0', priorityConfig.color)}>
+            <Badge className={cn('text-[10px] px-1.5 py-0 border-0', priorityConfig.color)}>
               {priorityConfig.label}
             </Badge>
           </div>
