@@ -1021,42 +1021,87 @@ export const ProjectsPage: React.FC = () => {
                   const pillarColor = firstObjective?.strategic_pillars?.color || '#6366f1';
                   const pillarName = firstObjective?.strategic_pillars?.name;
 
+                  const adjustColorLocal = (hex: string, percent: number): string => {
+                    const num = parseInt(hex.replace('#', ''), 16);
+                    const amt = Math.round(2.55 * percent);
+                    const R = Math.max(Math.min((num >> 16) + amt, 255), 0);
+                    const G = Math.max(Math.min((num >> 8 & 0x00FF) + amt, 255), 0);
+                    const B = Math.max(Math.min((num & 0x0000FF) + amt, 255), 0);
+                    return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+                  };
+
                   return (
-                    <div 
-                      style={{ backgroundColor: pillarColor }}
-                      className="p-3 rounded-t-lg flex-shrink-0"
-                    >
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex-1 space-y-2">
-                          <h2 className="text-white font-semibold text-xl leading-tight">
-                            {selectedProjectForDetail.name}
-                          </h2>
-                          {pillarName && (
-                            <Badge className="bg-white/20 text-white border-white/30 hover:bg-white/30 text-xs">
-                              {pillarName}
-                            </Badge>
-                          )}
+                    <div className="relative overflow-hidden rounded-t-lg flex-shrink-0">
+                      {/* Barra colorida no topo (indicador do pilar) */}
+                      <div 
+                        className="absolute top-0 left-0 right-0 h-1 z-10"
+                        style={{ backgroundColor: pillarColor }}
+                      />
+                      
+                      {/* Imagem de fundo ou gradiente */}
+                      {selectedProjectForDetail.cover_image_url ? (
+                        <div className="relative h-48">
+                          <img 
+                            src={selectedProjectForDetail.cover_image_url}
+                            alt={selectedProjectForDetail.name}
+                            className="w-full h-full object-cover"
+                          />
+                          {/* Gradiente escuro para legibilidade */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0 pr-8">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setEditingProject(!editingProject)}
-                            className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
-                          >
-                            <Edit3 className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              deleteProject(selectedProjectForDetail.id, selectedProjectForDetail.name);
-                              setIsProjectDetailOpen(false);
-                            }}
-                            className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                      ) : (
+                        <div 
+                          className="h-32 flex items-center justify-center"
+                          style={{ 
+                            background: `linear-gradient(135deg, ${pillarColor} 0%, ${adjustColorLocal(pillarColor, -30)} 100%)`
+                          }}
+                        >
+                          <FolderOpen className="w-12 h-12 text-white/30" />
+                        </div>
+                      )}
+                      
+                      {/* Conteudo sobre a imagem/gradiente */}
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <div className="flex items-end justify-between gap-4">
+                          <div className="flex-1 space-y-2">
+                            <h2 className="text-white font-bold text-2xl leading-tight drop-shadow-lg">
+                              {selectedProjectForDetail.name}
+                            </h2>
+                            {pillarName && (
+                              <Badge 
+                                className="text-white text-xs"
+                                style={{ 
+                                  backgroundColor: `${pillarColor}CC`,
+                                  borderColor: pillarColor 
+                                }}
+                              >
+                                {pillarName}
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          {/* Botoes de acao */}
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setEditingProject(!editingProject)}
+                              className="h-9 w-9 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                deleteProject(selectedProjectForDetail.id, selectedProjectForDetail.name);
+                                setIsProjectDetailOpen(false);
+                              }}
+                              className="h-9 w-9 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
