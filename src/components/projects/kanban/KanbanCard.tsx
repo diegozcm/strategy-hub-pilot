@@ -91,13 +91,15 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
       style={{
         ...style,
         borderLeftWidth: '4px',
-        borderLeftColor: pillarColor || '#e2e8f0'
+        borderLeftColor: pillarColor || 'hsl(var(--border))'
       }}
       className={cn(
-        'p-4 cursor-grab active:cursor-grabbing transition-all duration-200 group',
-        'hover:shadow-lg hover:scale-[1.02] hover:border-primary/50',
+        'p-4 cursor-grab active:cursor-grabbing group',
+        'transition-all duration-300 ease-out',
+        'hover:shadow-xl hover:-translate-y-1.5 hover:border-primary/40',
+        'hover:bg-accent/5',
         'bg-card border border-border',
-        isSortableDragging || isDragging ? 'opacity-50 shadow-2xl scale-105 rotate-2 z-50' : '',
+        isSortableDragging || isDragging ? 'opacity-60 shadow-2xl scale-105 rotate-2 z-50' : '',
         'touch-none select-none'
       )}
       {...attributes}
