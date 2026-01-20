@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserSelect } from './UserSelect';
-import { Save, Trash2, Target, Folder } from 'lucide-react';
+import { Save, Trash2, Folder } from 'lucide-react';
 
 interface CompanyUser {
   user_id: string;
@@ -14,16 +14,6 @@ interface CompanyUser {
   last_name: string;
   email: string;
   avatar_url?: string;
-}
-
-interface StrategicObjective {
-  id: string;
-  title: string;
-  pillar_id: string;
-  strategic_pillars?: {
-    name: string;
-    color: string;
-  };
 }
 
 interface StrategicProject {
@@ -53,7 +43,6 @@ interface TaskEditModalProps {
   task: TaskData | null;
   users: CompanyUser[];
   projects?: StrategicProject[];
-  objectives?: StrategicObjective[];
   pillarColor?: string;
   pillarName?: string;
   onSave: (taskId: string, updates: Partial<TaskData>) => Promise<void>;
@@ -66,7 +55,6 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
   task,
   users,
   projects = [],
-  objectives = [],
   pillarColor,
   pillarName,
   onSave,
@@ -110,12 +98,6 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
   const currentPillarColor = currentProject?.pillar_color || pillarColor;
   const currentPillarName = currentProject?.pillar_name || pillarName;
 
-  // Get objectives for current project
-  const projectObjectives = useMemo(() => {
-    if (!currentProject?.objective_ids?.length) return objectives;
-    return objectives.filter(obj => currentProject.objective_ids?.includes(obj.id));
-  }, [currentProject, objectives]);
-
   const handleSave = async () => {
     if (!task) return;
     setSaving(true);
@@ -158,7 +140,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
       <DialogContent 
         className="sm:max-w-2xl overflow-hidden"
         style={{
-          borderLeft: currentPillarColor ? `4px solid ${currentPillarColor}` : undefined
+          border: currentPillarColor ? `2px solid ${currentPillarColor}` : undefined
         }}
       >
         <DialogHeader className="pb-2">
@@ -179,7 +161,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
         </DialogHeader>
         
         <div className="space-y-4">
-          {/* Row 1: Project + Objectives */}
+          {/* Row 1: Project + Responsável */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
@@ -211,34 +193,13 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                <Target className="w-3 h-3" />
-                Objetivos do Projeto
-              </Label>
-              <div className="text-sm text-muted-foreground border border-border/60 rounded-md p-2 min-h-[36px] flex items-center bg-muted/30">
-                {projectObjectives.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {projectObjectives.slice(0, 2).map(obj => (
-                      <span 
-                        key={obj.id}
-                        className="text-[11px] px-2 py-0.5 rounded-full bg-background border"
-                        style={{
-                          borderColor: obj.strategic_pillars?.color ? `${obj.strategic_pillars.color}40` : undefined
-                        }}
-                      >
-                        {obj.title.length > 18 ? `${obj.title.slice(0, 18)}...` : obj.title}
-                      </span>
-                    ))}
-                    {projectObjectives.length > 2 && (
-                      <span className="text-[11px] text-muted-foreground">
-                        +{projectObjectives.length - 2}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-xs italic text-muted-foreground/70">Nenhum objetivo vinculado</span>
-                )}
-              </div>
+              <Label className="text-xs font-medium text-muted-foreground">Responsável</Label>
+              <UserSelect
+                users={users}
+                value={form.assignee_id}
+                onValueChange={(val) => setForm(prev => ({ ...prev, assignee_id: val }))}
+                className="h-9"
+              />
             </div>
           </div>
 
@@ -253,27 +214,16 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
             />
           </div>
 
-          {/* Row 3: Description + Assignee */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Descrição</Label>
-              <Textarea
-                value={form.description}
-                onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
-                rows={3}
-                className="text-sm resize-none bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/20"
-                placeholder="Descreva a tarefa..."
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Responsável</Label>
-              <UserSelect
-                users={users}
-                value={form.assignee_id}
-                onValueChange={(val) => setForm(prev => ({ ...prev, assignee_id: val }))}
-                className="h-9"
-              />
-            </div>
+          {/* Row 3: Description (full width) */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-muted-foreground">Descrição</Label>
+            <Textarea
+              value={form.description}
+              onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+              rows={3}
+              className="text-sm resize-none bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/20"
+              placeholder="Descreva a tarefa..."
+            />
           </div>
 
           {/* Row 4: Status, Priority, Due Date */}
