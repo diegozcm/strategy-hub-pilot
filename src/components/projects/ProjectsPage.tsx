@@ -632,7 +632,7 @@ export const ProjectsPage: React.FC = () => {
     updateTaskStatus(taskId, newStatus);
   };
 
-  const openProjectDetail = (project: StrategicProject) => {
+  const openProjectDetail = async (project: StrategicProject) => {
     setSelectedProjectForDetail(project);
     setEditProjectForm({
       name: project.name,
@@ -647,6 +647,11 @@ export const ProjectsPage: React.FC = () => {
     });
     setEditingProject(false);
     setIsProjectDetailOpen(true);
+    
+    // Carregar objetivos automaticamente para exibir o nome completo
+    if (project.plan_id) {
+      await loadObjectives(project.plan_id);
+    }
   };
 
   const updateProject = async () => {
@@ -1187,13 +1192,24 @@ export const ProjectsPage: React.FC = () => {
                             <h2 className="text-white font-bold text-xl leading-tight drop-shadow-lg truncate">
                               {editingProject ? 'Editar Projeto' : selectedProjectForDetail.name}
                             </h2>
-                            {!editingProject && pillarName && (
-                              <Badge 
-                                className="mt-1.5 text-white text-xs border-0"
-                                style={{ backgroundColor: `${pillarColor}CC` }}
-                              >
-                                {pillarName}
-                              </Badge>
+                            {/* Badges inline: Pilar + Status + Prioridade */}
+                            {!editingProject && (
+                              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                {pillarName && (
+                                  <Badge 
+                                    className="text-white text-xs border-0"
+                                    style={{ backgroundColor: `${pillarColor}CC` }}
+                                  >
+                                    {pillarName}
+                                  </Badge>
+                                )}
+                                <Badge className={`${getStatusColor(selectedProjectForDetail.status)} text-white text-xs border-0`}>
+                                  {getStatusText(selectedProjectForDetail.status)}
+                                </Badge>
+                                <Badge className={`${getPriorityColor(selectedProjectForDetail.priority || 'medium')} text-white text-xs border-0`}>
+                                  {getPriorityText(selectedProjectForDetail.priority || 'medium')}
+                                </Badge>
+                              </div>
                             )}
                           </div>
                           {!editingProject && (
@@ -1293,9 +1309,10 @@ export const ProjectsPage: React.FC = () => {
                               )}
                             </div>
                             
-                            <div className="space-y-0.5">
-                              <span className="text-xs text-muted-foreground">Status</span>
-                              {editingProject ? (
+                            {/* Status - Only in Edit Mode */}
+                            {editingProject && (
+                              <div className="space-y-0.5">
+                                <span className="text-xs text-muted-foreground">Status</span>
                                 <Select 
                                   value={editProjectForm.status} 
                                   onValueChange={(value) => setEditProjectForm(prev => ({ ...prev, status: value }))}
@@ -1311,16 +1328,13 @@ export const ProjectsPage: React.FC = () => {
                                     <SelectItem value="cancelled">Cancelado</SelectItem>
                                   </SelectContent>
                                 </Select>
-                              ) : (
-                                <Badge className={`${getStatusColor(selectedProjectForDetail.status)} text-white text-xs`}>
-                                  {getStatusText(selectedProjectForDetail.status)}
-                                </Badge>
-                              )}
-                            </div>
+                              </div>
+                            )}
                             
-                            <div className="space-y-0.5">
-                              <span className="text-xs text-muted-foreground">Prioridade</span>
-                              {editingProject ? (
+                            {/* Prioridade - Only in Edit Mode */}
+                            {editingProject && (
+                              <div className="space-y-0.5">
+                                <span className="text-xs text-muted-foreground">Prioridade</span>
                                 <Select 
                                   value={editProjectForm.priority} 
                                   onValueChange={(value) => setEditProjectForm(prev => ({ ...prev, priority: value }))}
@@ -1335,12 +1349,8 @@ export const ProjectsPage: React.FC = () => {
                                     <SelectItem value="critical">Crítica</SelectItem>
                                   </SelectContent>
                                 </Select>
-                              ) : (
-                                <Badge className={`${getPriorityColor(selectedProjectForDetail.priority || 'medium')} text-white text-xs`}>
-                                  {getPriorityText(selectedProjectForDetail.priority || 'medium')}
-                                </Badge>
-                              )}
-                            </div>
+                              </div>
+                            )}
                             
                             <div className="space-y-0.5">
                               <span className="text-xs text-muted-foreground">Orçamento</span>
@@ -1450,10 +1460,11 @@ export const ProjectsPage: React.FC = () => {
                         </div>
 
                         {/* Right Column: Tasks Preview */}
-                        <div className="bg-muted/30 rounded-lg p-3 space-y-3">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium text-sm flex items-center gap-2">
-                              <CheckSquare className="w-4 h-4 text-muted-foreground" />
+                        <div className="bg-muted/30 rounded-lg p-4 space-y-4 h-fit">
+                          {/* Header */}
+                          <div className="flex items-center justify-between pb-2 border-b">
+                            <h4 className="font-semibold text-sm flex items-center gap-2">
+                              <CheckSquare className="w-4 h-4 text-primary" />
                               Tarefas ({projectTasks.length})
                             </h4>
                             <Button 
@@ -1467,36 +1478,48 @@ export const ProjectsPage: React.FC = () => {
                             </Button>
                           </div>
                           
-                          {projectTasks.length === 0 ? (
-                            <p className="text-xs text-muted-foreground py-4 text-center">
-                              Nenhuma tarefa encontrada
-                            </p>
-                          ) : (
-                            <>
-                              <div className="space-y-2 max-h-48 overflow-y-auto">
-                                {projectTasks.slice(0, 5).map(task => (
-                                  <div 
-                                    key={task.id} 
-                                    className="flex items-center gap-2 p-2 bg-background rounded-md text-xs"
-                                  >
-                                    {getTaskStatusIcon(task.status)}
-                                    <span className="flex-1 truncate">{task.title}</span>
+                          {/* Task List */}
+                          <div className="space-y-2 max-h-52 overflow-y-auto">
+                            {projectTasks.length === 0 ? (
+                              <p className="text-xs text-muted-foreground py-6 text-center">
+                                Nenhuma tarefa encontrada
+                              </p>
+                            ) : (
+                              projectTasks.slice(0, 8).map(task => (
+                                <div 
+                                  key={task.id} 
+                                  className="flex items-center gap-2 p-2 bg-background rounded-md text-xs hover:bg-muted/50 cursor-pointer transition-colors"
+                                  onClick={() => {
+                                    setEditingTask(task);
+                                    setIsTaskEditModalOpen(true);
+                                  }}
+                                >
+                                  {getTaskStatusIcon(task.status)}
+                                  <span className="flex-1 truncate">{task.title}</span>
+                                  {task.priority && (
                                     <Badge 
                                       variant="outline" 
                                       className={`text-[10px] px-1.5 py-0 ${getPriorityColor(task.priority)} text-white border-0`}
                                     >
                                       {getPriorityText(task.priority)}
                                     </Badge>
-                                  </div>
-                                ))}
-                              </div>
-                              {projectTasks.length > 5 && (
-                                <p className="text-xs text-muted-foreground text-center">
-                                  +{projectTasks.length - 5} outras tarefas
-                                </p>
-                              )}
-                            </>
-                          )}
+                                  )}
+                                </div>
+                              ))
+                            )}
+                            {projectTasks.length > 8 && (
+                              <p className="text-xs text-muted-foreground text-center pt-1">
+                                +{projectTasks.length - 8} outras tarefas
+                              </p>
+                            )}
+                          </div>
+                          
+                          {/* Quick Task Input */}
+                          <div className="pt-2 border-t">
+                            <QuickTaskInput 
+                              onCreateTask={(title) => createQuickTask(title, selectedProjectForDetail.id)}
+                            />
+                          </div>
                         </div>
                       </div>
 
