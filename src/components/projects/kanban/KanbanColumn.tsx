@@ -1,9 +1,9 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Badge } from '@/components/ui/badge';
-import { KanbanCard, ProjectTask } from './KanbanCard';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { KanbanCard, ProjectTask } from './KanbanCard';
 
 interface KanbanColumnProps {
   id: string;
@@ -12,7 +12,9 @@ interface KanbanColumnProps {
   icon: React.ReactNode;
   accentColor: string;
   getProjectName: (projectId: string) => string | undefined;
+  getPillarColor?: (projectId: string) => string | undefined;
   isOver?: boolean;
+  onEditTask?: (task: ProjectTask) => void;
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
@@ -22,46 +24,44 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   icon,
   accentColor,
   getProjectName,
+  getPillarColor,
   isOver = false,
+  onEditTask,
 }) => {
   const { setNodeRef, isOver: isDroppableOver } = useDroppable({ id });
 
-  // Sort tasks by position for correct ordering
+  // Sort tasks by position
   const sortedTasks = [...tasks].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
   const taskIds = sortedTasks.map(task => task.id);
 
   return (
-    <div className="flex flex-col h-full min-h-[500px]">
+    <Card
+      ref={setNodeRef}
+      className={cn(
+        'flex flex-col min-h-[400px] p-4 border-b-4 transition-all duration-200',
+        accentColor,
+        (isOver || isDroppableOver) && 'ring-2 ring-primary/50 bg-primary/5'
+      )}
+    >
       {/* Column Header */}
-      <div className={cn(
-        'flex items-center justify-between p-3 rounded-t-lg border-b-2',
-        'bg-muted/50',
-        accentColor
-      )}>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">{icon}</span>
-          <h3 className="font-semibold text-foreground">{title}</h3>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2 text-sm font-medium">
+          {icon}
+          <span>{title}</span>
         </div>
-        <Badge variant="secondary" className="font-bold">
+        <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
           {tasks.length}
-        </Badge>
+        </span>
       </div>
 
-      {/* Column Content */}
-      <div
-        ref={setNodeRef}
-        className={cn(
-          'flex-1 p-3 space-y-3 rounded-b-lg transition-colors duration-200',
-          'bg-muted/20 border border-t-0 border-border',
-          (isOver || isDroppableOver) && 'bg-primary/10 border-primary/30 border-dashed'
-        )}
-      >
-        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-          {tasks.length === 0 ? (
+      {/* Tasks Container */}
+      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+        <div className="flex-1 space-y-3 overflow-y-auto">
+          {sortedTasks.length === 0 ? (
             <div className={cn(
-              'flex items-center justify-center h-24 rounded-lg border-2 border-dashed',
-              'text-muted-foreground text-sm',
-              (isOver || isDroppableOver) ? 'border-primary/50 bg-primary/5' : 'border-border'
+              'h-24 border-2 border-dashed rounded-lg flex items-center justify-center',
+              'text-sm text-muted-foreground',
+              (isOver || isDroppableOver) ? 'border-primary bg-primary/10' : 'border-muted'
             )}>
               {(isOver || isDroppableOver) ? 'Solte aqui' : 'Sem tarefas'}
             </div>
@@ -71,18 +71,13 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 key={task.id}
                 task={task}
                 projectName={getProjectName(task.project_id)}
+                pillarColor={getPillarColor?.(task.project_id)}
+                onEdit={onEditTask}
               />
             ))
           )}
-        </SortableContext>
-
-        {/* Drop placeholder when dragging over non-empty column */}
-        {tasks.length > 0 && (isOver || isDroppableOver) && (
-          <div className="h-20 rounded-lg border-2 border-dashed border-primary/50 bg-primary/5 flex items-center justify-center text-sm text-muted-foreground">
-            Solte aqui
-          </div>
-        )}
-      </div>
-    </div>
+        </div>
+      </SortableContext>
+    </Card>
   );
 };
