@@ -1439,14 +1439,14 @@ export const ProjectsPage: React.FC = () => {
                               projectTasks.slice(0, 8).map(task => (
                                 <div 
                                   key={task.id} 
-                                  className="flex items-center gap-2 p-2 bg-background rounded-md text-xs hover:bg-muted/50 cursor-pointer transition-colors"
+                                  className="flex items-center gap-2 p-2 bg-background rounded-md text-xs hover:bg-muted/50 cursor-pointer transition-colors min-w-0 overflow-hidden"
                                   onClick={() => {
                                     setEditingTask(task);
                                     setIsTaskEditModalOpen(true);
                                   }}
                                 >
                                   {getTaskStatusIcon(task.status)}
-                                  <span className="flex-1 truncate">{task.title}</span>
+                                  <span className="flex-1 truncate min-w-0">{task.title}</span>
                                   {task.priority && (
                                     <Badge 
                                       variant="outline" 
