@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause, Edit3, Save, Trash2, Target, ImageIcon } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause, Edit3, Save, Trash2, Target, ImageIcon, ArrowRight, CheckSquare, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -89,6 +89,7 @@ export const ProjectsPage: React.FC = () => {
   const [isObjectivesModalOpen, setIsObjectivesModalOpen] = useState(false);
   const [currentProjectForObjectives, setCurrentProjectForObjectives] = useState<string | null>(null);
   const [tempSelectedObjectives, setTempSelectedObjectives] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'projects' | 'kanban'>('projects');
 
   // Form states
   const [projectForm, setProjectForm] = useState({
@@ -1009,382 +1010,417 @@ export const ProjectsPage: React.FC = () => {
 
           {/* Project Detail/Edit Modal */}
           <Dialog open={isProjectDetailOpen} onOpenChange={setIsProjectDetailOpen}>
-        <DialogContent className="sm:max-w-2xl p-0">
-              <div className="max-h-[90vh] overflow-hidden flex flex-col">
-                {/* Header colorido com pilar */}
-                {selectedProjectForDetail && (() => {
-                  // Buscar o primeiro objetivo com pilar
-                  const firstObjective = selectedProjectForDetail.objective_ids
-                    ?.map(objId => objectives.find(o => o.id === objId))
-                    .find(obj => obj?.strategic_pillars);
-                  
-                  const pillarColor = firstObjective?.strategic_pillars?.color || '#6366f1';
-                  const pillarName = firstObjective?.strategic_pillars?.name;
+            <DialogContent className="sm:max-w-3xl p-0 gap-0 max-h-[90vh] overflow-hidden">
+              {selectedProjectForDetail && (() => {
+                const projectTasks = getProjectTasks(selectedProjectForDetail.id);
+                const firstObjective = selectedProjectForDetail.objective_ids
+                  ?.map(objId => objectives.find(o => o.id === objId))
+                  .find(obj => obj?.strategic_pillars);
+                
+                const pillarColor = selectedProjectForDetail.pillar_color || firstObjective?.strategic_pillars?.color || '#64748b';
+                const pillarName = selectedProjectForDetail.pillar_name || firstObjective?.strategic_pillars?.name;
+                const planName = plans.find(p => p.id === selectedProjectForDetail.plan_id)?.name;
 
-                  const adjustColorLocal = (hex: string, percent: number): string => {
-                    const num = parseInt(hex.replace('#', ''), 16);
-                    const amt = Math.round(2.55 * percent);
-                    const R = Math.max(Math.min((num >> 16) + amt, 255), 0);
-                    const G = Math.max(Math.min((num >> 8 & 0x00FF) + amt, 255), 0);
-                    const B = Math.max(Math.min((num & 0x0000FF) + amt, 255), 0);
-                    return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
-                  };
+                const handleOpenKanban = () => {
+                  setIsProjectDetailOpen(false);
+                  setSelectedProject(selectedProjectForDetail.id);
+                  setActiveTab('kanban');
+                };
 
-                  return (
-                    <div className="relative overflow-hidden rounded-t-lg flex-shrink-0">
-                      {/* Barra colorida no topo (indicador do pilar) */}
+                return (
+                  <div className="flex flex-col max-h-[90vh]">
+                    {/* Compact Header */}
+                    <div className="relative flex-shrink-0">
+                      {/* Pillar color bar */}
                       <div 
                         className="absolute top-0 left-0 right-0 h-1 z-10"
                         style={{ backgroundColor: pillarColor }}
                       />
                       
-                      {/* Imagem de fundo ou gradiente */}
                       {selectedProjectForDetail.cover_image_url ? (
-                        <div className="relative h-48">
+                        <div className="relative h-40">
                           <img 
                             src={selectedProjectForDetail.cover_image_url}
                             alt={selectedProjectForDetail.name}
                             className="w-full h-full object-cover"
                           />
-                          {/* Gradiente escuro para legibilidade */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-                        </div>
-                      ) : (
-                        <div 
-                          className="h-32 flex items-center justify-center"
-                          style={{ 
-                            background: `linear-gradient(135deg, ${pillarColor} 0%, ${adjustColorLocal(pillarColor, -30)} 100%)`
-                          }}
-                        >
-                          <FolderOpen className="w-12 h-12 text-white/30" />
-                        </div>
-                      )}
-                      
-                      {/* Conteudo sobre a imagem/gradiente */}
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <div className="flex items-end justify-between gap-4">
-                          <div className="flex-1 space-y-2">
-                            <h2 className="text-white font-bold text-2xl leading-tight drop-shadow-lg">
-                              {selectedProjectForDetail.name}
-                            </h2>
-                            {pillarName && (
-                              <Badge 
-                                className="text-white text-xs"
-                                style={{ 
-                                  backgroundColor: `${pillarColor}CC`,
-                                  borderColor: pillarColor 
-                                }}
-                              >
-                                {pillarName}
-                              </Badge>
-                            )}
-                          </div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
                           
-                          {/* Botoes de acao */}
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => setEditingProject(!editingProject)}
-                              className="h-9 w-9 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
-                            >
-                              <Edit3 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                deleteProject(selectedProjectForDetail.id, selectedProjectForDetail.name);
-                                setIsProjectDetailOpen(false);
-                              }}
-                              className="h-9 w-9 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                          {/* Content over image */}
+                          <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <div className="flex items-end justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <h2 className="text-white font-bold text-xl leading-tight drop-shadow-lg truncate">
+                                  {selectedProjectForDetail.name}
+                                </h2>
+                                {pillarName && (
+                                  <Badge 
+                                    className="mt-1.5 text-white text-xs"
+                                    style={{ backgroundColor: `${pillarColor}CC` }}
+                                  >
+                                    {pillarName}
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setEditingProject(!editingProject)}
+                                  className="h-8 w-8 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
+                                >
+                                  <Edit3 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    deleteProject(selectedProjectForDetail.id, selectedProjectForDetail.name);
+                                    setIsProjectDetailOpen(false);
+                                  }}
+                                  className="h-8 w-8 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Conteúdo com scroll */}
-                <div className="overflow-y-auto flex-1 p-6">
-              {selectedProjectForDetail && (
-                <div className="space-y-6">
-                  {/* Basic Information */}
-                  <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="edit-project-name">Nome do Projeto</Label>
-                      {editingProject ? (
-                        <Input
-                          id="edit-project-name"
-                          value={editProjectForm.name}
-                          onChange={(e) => setEditProjectForm(prev => ({ ...prev, name: e.target.value }))}
-                        />
                       ) : (
-                        <p className="mt-1 text-sm text-foreground">{selectedProjectForDetail.name}</p>
+                        <div className="bg-muted/50 pt-3 pb-4 px-4">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div 
+                                className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                                style={{ backgroundColor: `${pillarColor}20` }}
+                              >
+                                <FolderOpen className="w-5 h-5" style={{ color: pillarColor }} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h2 className="font-bold text-lg leading-tight truncate text-foreground">
+                                  {selectedProjectForDetail.name}
+                                </h2>
+                                {pillarName && (
+                                  <Badge 
+                                    className="mt-1 text-xs"
+                                    style={{ 
+                                      backgroundColor: `${pillarColor}20`,
+                                      color: pillarColor,
+                                      borderColor: pillarColor
+                                    }}
+                                    variant="outline"
+                                  >
+                                    {pillarName}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setEditingProject(!editingProject)}
+                                className="h-8 w-8"
+                              >
+                                <Edit3 className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  deleteProject(selectedProjectForDetail.id, selectedProjectForDetail.name);
+                                  setIsProjectDetailOpen(false);
+                                }}
+                                className="h-8 w-8 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
                       )}
                     </div>
 
-                    <div>
-                      <Label htmlFor="edit-project-description">Descrição</Label>
-                      {editingProject ? (
-                        <Textarea
-                          id="edit-project-description"
-                          value={editProjectForm.description}
-                          onChange={(e) => setEditProjectForm(prev => ({ ...prev, description: e.target.value }))}
-                          rows={3}
-                        />
-                      ) : (
-                        <p className="mt-1 text-sm text-foreground">{selectedProjectForDetail.description || 'Sem descrição'}</p>
-                      )}
-                    </div>
+                    {/* Scrollable Content */}
+                    <div className="overflow-y-auto flex-1 p-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* Left Column: Project Details */}
+                        <div className="space-y-4">
+                          {/* Description */}
+                          {editingProject ? (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Descrição</Label>
+                              <Textarea
+                                value={editProjectForm.description}
+                                onChange={(e) => setEditProjectForm(prev => ({ ...prev, description: e.target.value }))}
+                                rows={2}
+                                className="mt-1"
+                              />
+                            </div>
+                          ) : selectedProjectForDetail.description && (
+                            <p className="text-sm text-muted-foreground">{selectedProjectForDetail.description}</p>
+                          )}
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="edit-project-plan">Plano Estratégico</Label>
-                        {editingProject ? (
-                          <Select 
-                            value={editProjectForm.plan_id} 
-                            onValueChange={(value) => setEditProjectForm(prev => ({ ...prev, plan_id: value }))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione um plano" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {plans.map((plan) => (
-                                <SelectItem key={plan.id} value={plan.id}>
-                                  {plan.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <p className="mt-1 text-sm text-foreground">
-                            {plans.find(p => p.id === selectedProjectForDetail.plan_id)?.name || 'Sem plano'}
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-project-status">Status</Label>
-                        {editingProject ? (
-                          <Select 
-                            value={editProjectForm.status} 
-                            onValueChange={(value) => setEditProjectForm(prev => ({ ...prev, status: value }))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="planning">Planejamento</SelectItem>
-                              <SelectItem value="active">Ativo</SelectItem>
-                              <SelectItem value="on_hold">Em Pausa</SelectItem>
-                              <SelectItem value="completed">Concluído</SelectItem>
-                              <SelectItem value="cancelled">Cancelado</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <div className="mt-1">
-                            <Badge className={`${getStatusColor(selectedProjectForDetail.status)} text-white`}>
-                              {getStatusText(selectedProjectForDetail.status)}
-                            </Badge>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="edit-project-priority">Prioridade</Label>
-                        {editingProject ? (
-                          <Select 
-                            value={editProjectForm.priority} 
-                            onValueChange={(value) => setEditProjectForm(prev => ({ ...prev, priority: value }))}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="low">Baixa</SelectItem>
-                              <SelectItem value="medium">Média</SelectItem>
-                              <SelectItem value="high">Alta</SelectItem>
-                              <SelectItem value="critical">Crítica</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <div className="mt-1">
-                            <Badge className={`${getPriorityColor(selectedProjectForDetail.priority || 'medium')} text-white`}>
-                              {getPriorityText(selectedProjectForDetail.priority || 'medium')}
-                            </Badge>
-                          </div>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-project-budget">Orçamento (R$)</Label>
-                        {editingProject ? (
-                          <Input
-                            id="edit-project-budget"
-                            type="number"
-                            step="0.01"
-                            value={editProjectForm.budget}
-                            onChange={(e) => setEditProjectForm(prev => ({ ...prev, budget: e.target.value }))}
-                          />
-                        ) : (
-                          <p className="mt-1 text-sm text-foreground">
-                            {selectedProjectForDetail.budget 
-                              ? `R$ ${selectedProjectForDetail.budget.toLocaleString('pt-BR')}`
-                              : 'Não definido'
-                            }
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="edit-project-start-date">Data de Início</Label>
-                        {editingProject ? (
-                          <Input
-                            id="edit-project-start-date"
-                            type="date"
-                            value={editProjectForm.start_date}
-                            onChange={(e) => setEditProjectForm(prev => ({ ...prev, start_date: e.target.value }))}
-                          />
-                        ) : (
-                          <p className="mt-1 text-sm text-foreground">
-                            {selectedProjectForDetail.start_date 
-                              ? new Date(selectedProjectForDetail.start_date).toLocaleDateString('pt-BR')
-                              : 'Não definida'
-                            }
-                          </p>
-                        )}
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-project-end-date">Data de Término</Label>
-                        {editingProject ? (
-                          <Input
-                            id="edit-project-end-date"
-                            type="date"
-                            value={editProjectForm.end_date}
-                            onChange={(e) => setEditProjectForm(prev => ({ ...prev, end_date: e.target.value }))}
-                          />
-                        ) : (
-                          <p className="mt-1 text-sm text-foreground">
-                            {selectedProjectForDetail.end_date 
-                              ? new Date(selectedProjectForDetail.end_date).toLocaleDateString('pt-BR')
-                              : 'Não definida'
-                            }
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Project Objectives Section */}
-                  <div className="border-t pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-medium text-foreground">Objetivos Estratégicos</h3>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if (selectedProjectForDetail?.plan_id) {
-                            loadObjectives(selectedProjectForDetail.plan_id);
-                            openObjectivesModal(selectedProjectForDetail.id);
-                          }
-                        }}
-                      >
-                        <Target className="w-4 h-4 mr-2" />
-                        Gerenciar Objetivos
-                      </Button>
-                    </div>
-                    {selectedProjectForDetail?.objective_ids && selectedProjectForDetail.objective_ids.length > 0 ? (
-                      <div className="space-y-2">
-                        {selectedProjectForDetail.objective_ids.map((objId) => {
-                          const objective = objectives.find(o => o.id === objId);
-                          if (!objective) return null;
-                          return (
-                            <div key={objId} className="flex items-center gap-2 p-2 bg-muted rounded-md">
-                              <Target className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-sm">{objective.title}</span>
-                              {objective.strategic_pillars && (
-                                <Badge variant="outline" className="text-xs">
-                                  {objective.strategic_pillars.name}
+                          {/* Info Grid */}
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div className="space-y-0.5">
+                              <span className="text-xs text-muted-foreground">Plano</span>
+                              {editingProject ? (
+                                <Select 
+                                  value={editProjectForm.plan_id} 
+                                  onValueChange={(value) => setEditProjectForm(prev => ({ ...prev, plan_id: value }))}
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {plans.map((plan) => (
+                                      <SelectItem key={plan.id} value={plan.id}>{plan.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <p className="font-medium truncate">{planName || 'Sem plano'}</p>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-0.5">
+                              <span className="text-xs text-muted-foreground">Status</span>
+                              {editingProject ? (
+                                <Select 
+                                  value={editProjectForm.status} 
+                                  onValueChange={(value) => setEditProjectForm(prev => ({ ...prev, status: value }))}
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="planning">Planejamento</SelectItem>
+                                    <SelectItem value="active">Ativo</SelectItem>
+                                    <SelectItem value="on_hold">Em Pausa</SelectItem>
+                                    <SelectItem value="completed">Concluído</SelectItem>
+                                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Badge className={`${getStatusColor(selectedProjectForDetail.status)} text-white text-xs`}>
+                                  {getStatusText(selectedProjectForDetail.status)}
                                 </Badge>
                               )}
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">Nenhum objetivo associado a este projeto.</p>
-                    )}
-                  </div>
-
-                  {/* Project Tasks Summary */}
-                  <div className="border-t pt-6">
-                    <h3 className="text-lg font-medium text-foreground mb-4">Tarefas do Projeto</h3>
-                    <div className="space-y-4">
-                      {getProjectTasks(selectedProjectForDetail.id).length === 0 ? (
-                        <p className="text-sm text-muted-foreground">Nenhuma tarefa encontrada para este projeto.</p>
-                      ) : (
-                        <div className="grid grid-cols-1 gap-3">
-                          {getProjectTasks(selectedProjectForDetail.id).map((task) => (
-                            <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2">
-                                  {getTaskStatusIcon(task.status)}
-                                  <span className="text-sm font-medium">{task.title}</span>
-                                  <Badge variant="outline" className={`${getPriorityColor(task.priority)} text-white border-0 text-xs`}>
-                                    {getPriorityText(task.priority)}
-                                  </Badge>
-                                </div>
-                                {task.description && (
-                                  <p className="text-xs text-muted-foreground mt-1 ml-6">{task.description}</p>
-                                )}
-                              </div>
-                              <div className="flex items-center space-x-4 text-xs text-muted-foreground">
-                                {task.estimated_hours && (
-                                  <div className="flex items-center">
-                                    <Clock className="w-3 h-3 mr-1" />
-                                    {task.estimated_hours}h
-                                  </div>
-                                )}
-                                {task.due_date && (
-                                  <div className="flex items-center">
-                                    <Calendar className="w-3 h-3 mr-1" />
-                                    {new Date(task.due_date).toLocaleDateString('pt-BR')}
-                                  </div>
-                                )}
-                              </div>
+                            
+                            <div className="space-y-0.5">
+                              <span className="text-xs text-muted-foreground">Prioridade</span>
+                              {editingProject ? (
+                                <Select 
+                                  value={editProjectForm.priority} 
+                                  onValueChange={(value) => setEditProjectForm(prev => ({ ...prev, priority: value }))}
+                                >
+                                  <SelectTrigger className="h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="low">Baixa</SelectItem>
+                                    <SelectItem value="medium">Média</SelectItem>
+                                    <SelectItem value="high">Alta</SelectItem>
+                                    <SelectItem value="critical">Crítica</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Badge className={`${getPriorityColor(selectedProjectForDetail.priority || 'medium')} text-white text-xs`}>
+                                  {getPriorityText(selectedProjectForDetail.priority || 'medium')}
+                                </Badge>
+                              )}
                             </div>
-                          ))}
+                            
+                            <div className="space-y-0.5">
+                              <span className="text-xs text-muted-foreground">Orçamento</span>
+                              {editingProject ? (
+                                <Input
+                                  type="number"
+                                  step="0.01"
+                                  value={editProjectForm.budget}
+                                  onChange={(e) => setEditProjectForm(prev => ({ ...prev, budget: e.target.value }))}
+                                  className="h-8 text-xs"
+                                />
+                              ) : (
+                                <p className="font-medium">
+                                  {selectedProjectForDetail.budget 
+                                    ? `R$ ${selectedProjectForDetail.budget.toLocaleString('pt-BR')}`
+                                    : '—'
+                                  }
+                                </p>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-0.5">
+                              <span className="text-xs text-muted-foreground">Início</span>
+                              {editingProject ? (
+                                <Input
+                                  type="date"
+                                  value={editProjectForm.start_date}
+                                  onChange={(e) => setEditProjectForm(prev => ({ ...prev, start_date: e.target.value }))}
+                                  className="h-8 text-xs"
+                                />
+                              ) : (
+                                <p className="font-medium">
+                                  {selectedProjectForDetail.start_date 
+                                    ? new Date(selectedProjectForDetail.start_date).toLocaleDateString('pt-BR')
+                                    : '—'
+                                  }
+                                </p>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-0.5">
+                              <span className="text-xs text-muted-foreground">Término</span>
+                              {editingProject ? (
+                                <Input
+                                  type="date"
+                                  value={editProjectForm.end_date}
+                                  onChange={(e) => setEditProjectForm(prev => ({ ...prev, end_date: e.target.value }))}
+                                  className="h-8 text-xs"
+                                />
+                              ) : (
+                                <p className="font-medium">
+                                  {selectedProjectForDetail.end_date 
+                                    ? new Date(selectedProjectForDetail.end_date).toLocaleDateString('pt-BR')
+                                    : '—'
+                                  }
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Cover Image URL (edit mode only) */}
+                          {editingProject && (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Imagem de Capa (URL)</Label>
+                              <Input
+                                type="url"
+                                value={editProjectForm.cover_image_url}
+                                onChange={(e) => setEditProjectForm(prev => ({ ...prev, cover_image_url: e.target.value }))}
+                                placeholder="https://exemplo.com/imagem.jpg"
+                                className="h-8 text-xs mt-1"
+                              />
+                            </div>
+                          )}
+
+                          {/* Objectives - Compact Chips */}
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-xs text-muted-foreground font-medium">Objetivos Estratégicos</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-xs"
+                                onClick={() => {
+                                  if (selectedProjectForDetail?.plan_id) {
+                                    loadObjectives(selectedProjectForDetail.plan_id);
+                                    openObjectivesModal(selectedProjectForDetail.id);
+                                  }
+                                }}
+                              >
+                                <Target className="w-3 h-3 mr-1" />
+                                Gerenciar
+                              </Button>
+                            </div>
+                            {selectedProjectForDetail?.objective_ids && selectedProjectForDetail.objective_ids.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5">
+                                {selectedProjectForDetail.objective_ids.map((objId) => {
+                                  const objective = objectives.find(o => o.id === objId);
+                                  if (!objective) return null;
+                                  return (
+                                    <div 
+                                      key={objId} 
+                                      className="flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-xs"
+                                    >
+                                      <Target className="w-3 h-3 text-muted-foreground" />
+                                      <span className="truncate max-w-32">{objective.title}</span>
+                                      {objective.strategic_pillars && (
+                                        <span 
+                                          className="w-2 h-2 rounded-full flex-shrink-0" 
+                                          style={{ backgroundColor: objective.strategic_pillars.color }}
+                                        />
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">Nenhum objetivo associado</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Right Column: Tasks Preview */}
+                        <div className="bg-muted/30 rounded-lg p-3 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium text-sm flex items-center gap-2">
+                              <CheckSquare className="w-4 h-4 text-muted-foreground" />
+                              Tarefas ({projectTasks.length})
+                            </h4>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={handleOpenKanban}
+                              className="h-7 px-2 text-xs text-primary hover:text-primary"
+                            >
+                              Ver no Kanban
+                              <ArrowRight className="w-3 h-3 ml-1" />
+                            </Button>
+                          </div>
+                          
+                          {projectTasks.length === 0 ? (
+                            <p className="text-xs text-muted-foreground py-4 text-center">
+                              Nenhuma tarefa encontrada
+                            </p>
+                          ) : (
+                            <>
+                              <div className="space-y-2 max-h-48 overflow-y-auto">
+                                {projectTasks.slice(0, 5).map(task => (
+                                  <div 
+                                    key={task.id} 
+                                    className="flex items-center gap-2 p-2 bg-background rounded-md text-xs"
+                                  >
+                                    {getTaskStatusIcon(task.status)}
+                                    <span className="flex-1 truncate">{task.title}</span>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`text-[10px] px-1.5 py-0 ${getPriorityColor(task.priority)} text-white border-0`}
+                                    >
+                                      {getPriorityText(task.priority)}
+                                    </Badge>
+                                  </div>
+                                ))}
+                              </div>
+                              {projectTasks.length > 5 && (
+                                <p className="text-xs text-muted-foreground text-center">
+                                  +{projectTasks.length - 5} outras tarefas
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      {editingProject && (
+                        <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
+                          <Button variant="outline" size="sm" onClick={() => setEditingProject(false)}>
+                            Cancelar
+                          </Button>
+                          <Button size="sm" onClick={updateProject}>
+                            <Save className="w-3 h-3 mr-1" />
+                            Salvar
+                          </Button>
                         </div>
                       )}
                     </div>
                   </div>
-
-                  {/* Action Buttons */}
-                  {editingProject && (
-                    <div className="flex justify-end space-x-2 border-t pt-6">
-                      <Button variant="outline" onClick={() => setEditingProject(false)}>
-                        Cancelar
-                      </Button>
-                      <Button onClick={updateProject}>
-                        <Save className="w-4 h-4 mr-2" />
-                        Salvar Alterações
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-              </div>
-              </div>
+                );
+              })()}
             </DialogContent>
           </Dialog>
 
@@ -1492,7 +1528,7 @@ export const ProjectsPage: React.FC = () => {
       </div>
 
       {/* View Tabs */}
-      <Tabs defaultValue="projects" className="w-full">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'projects' | 'kanban')} className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="projects">Projetos</TabsTrigger>
           <TabsTrigger value="kanban">Kanban de Tarefas</TabsTrigger>
