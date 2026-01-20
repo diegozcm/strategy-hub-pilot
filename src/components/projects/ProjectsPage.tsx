@@ -55,6 +55,7 @@ interface StrategicProject {
   cover_image_url?: string;
   pillar_color?: string;
   pillar_name?: string;
+  all_pillars?: Array<{ name: string; color: string }>;
 }
 
 interface ProjectTask {
@@ -212,15 +213,22 @@ export const ProjectsPage: React.FC = () => {
               `)
               .eq('project_id', project.id);
             
-            // Get the first pillar info found
-            const firstRelation = relations?.[0];
-            const pillarInfo = firstRelation?.strategic_objectives?.strategic_pillars;
+            // Collect all unique pillars from relations
+            const pillarsInfo = relations
+              ?.map(r => r.strategic_objectives?.strategic_pillars)
+              .filter(Boolean)
+              .filter((pillar, index, self) => 
+                index === self.findIndex(p => p?.name === pillar?.name)
+              ) as Array<{ name: string; color: string }> || [];
+            
+            const primaryPillar = pillarsInfo[0];
             
             return {
               ...project,
               objective_ids: relations?.map(r => r.objective_id) || [],
-              pillar_color: pillarInfo?.color || undefined,
-              pillar_name: pillarInfo?.name || undefined
+              pillar_color: primaryPillar?.color || undefined,
+              pillar_name: primaryPillar?.name || undefined,
+              all_pillars: pillarsInfo
             };
           })
         );

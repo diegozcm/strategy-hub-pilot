@@ -22,6 +22,7 @@ interface StrategicProject {
   objective_ids?: string[];
   pillar_color?: string;
   pillar_name?: string;
+  all_pillars?: Array<{ name: string; color: string }>;
 }
 
 interface TaskCreateModalProps {
@@ -113,6 +114,9 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
                 }}
               >
                 {selectedProject.pillar_name}
+                {selectedProject?.all_pillars && selectedProject.all_pillars.length > 1 && (
+                  <span className="opacity-60"> +{selectedProject.all_pillars.length - 1}</span>
+                )}
               </span>
             )}
           </DialogTitle>
@@ -137,7 +141,17 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
                   {projects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       <div className="flex items-center gap-2">
-                        {project.pillar_color && (
+                        {project.all_pillars && project.all_pillars.length > 0 ? (
+                          <div className="flex -space-x-1">
+                            {project.all_pillars.slice(0, 3).map((pillar, idx) => (
+                              <div 
+                                key={idx}
+                                className="w-2.5 h-2.5 rounded-full border border-background flex-shrink-0" 
+                                style={{ backgroundColor: pillar.color }}
+                              />
+                            ))}
+                          </div>
+                        ) : project.pillar_color && (
                           <div 
                             className="w-2 h-2 rounded-full flex-shrink-0" 
                             style={{ backgroundColor: project.pillar_color }}
