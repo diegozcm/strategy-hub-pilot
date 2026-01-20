@@ -18,6 +18,9 @@ import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 import { KanbanBoard } from './kanban';
 import { ProjectCard } from './ProjectCard';
 import { ProjectCoverUpload } from './ProjectCoverUpload';
+import { QuickTaskInput } from './QuickTaskInput';
+import { TaskEditModal } from './TaskEditModal';
+import { useCompanyUsers } from '@/hooks/useCompanyUsers';
 interface StrategicPlan {
   id: string;
   name: string;
@@ -56,20 +59,27 @@ interface StrategicProject {
 interface ProjectTask {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   status: string;
-  priority: string;
-  due_date: string;
-  estimated_hours: number;
-  actual_hours: number;
+  priority: string | null;
+  due_date: string | null;
+  estimated_hours: number | null;
+  actual_hours: number | null;
   project_id: string;
-  assignee_id: string;
+  assignee_id: string | null;
   position: number;
+  assignee?: {
+    first_name: string;
+    last_name?: string;
+    avatar_url?: string;
+  } | null;
 }
 
 export const ProjectsPage: React.FC = () => {
   const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
+  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(authCompany?.id);
+  
   const [projects, setProjects] = useState<StrategicProject[]>([]);
   const [plans, setPlans] = useState<StrategicPlan[]>([]);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
@@ -91,6 +101,10 @@ export const ProjectsPage: React.FC = () => {
   const [currentProjectForObjectives, setCurrentProjectForObjectives] = useState<string | null>(null);
   const [tempSelectedObjectives, setTempSelectedObjectives] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<'projects' | 'kanban'>('projects');
+  
+  // Task editing state
+  const [editingTask, setEditingTask] = useState<ProjectTask | null>(null);
+  const [isTaskEditModalOpen, setIsTaskEditModalOpen] = useState(false);
 
   // Form states
   const [projectForm, setProjectForm] = useState({
@@ -475,6 +489,103 @@ export const ProjectsPage: React.FC = () => {
         variant: "destructive",
       });
     }
+  };
+
+  // Quick task creation (Asana-style)
+  const createQuickTask = async (title: string, projectId: string) => {
+    if (!user || !title.trim() || !projectId) return;
+
+    try {
+      const projectTasks = tasks.filter(t => t.project_id === projectId);
+      const maxPosition = Math.max(0, ...projectTasks.map(t => t.position || 0));
+
+      const { data, error } = await supabase
+        .from('project_tasks')
+        .insert([{
+          title: title.trim(),
+          project_id: projectId,
+          status: 'todo',
+          position: maxPosition + 1
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setTasks(prev => [data, ...prev]);
+      toast({
+        title: "Sucesso",
+        description: "Tarefa criada!",
+      });
+    } catch (error) {
+      console.error('Error creating quick task:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar tarefa.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Update task (from modal)
+  const updateTask = async (taskId: string, updates: Partial<ProjectTask>) => {
+    try {
+      const { error } = await supabase
+        .from('project_tasks')
+        .update(updates)
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      setTasks(prev => prev.map(task => 
+        task.id === taskId ? { ...task, ...updates } : task
+      ));
+
+      toast({
+        title: "Sucesso",
+        description: "Tarefa atualizada!",
+      });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar tarefa.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  // Delete task
+  const deleteTask = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from('project_tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) throw error;
+
+      setTasks(prev => prev.filter(task => task.id !== taskId));
+
+      toast({
+        title: "Sucesso",
+        description: "Tarefa excluída!",
+      });
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir tarefa.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const handleEditTask = (task: ProjectTask) => {
+    setEditingTask(task);
+    setIsTaskEditModalOpen(true);
   };
 
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
@@ -1114,7 +1225,7 @@ export const ProjectsPage: React.FC = () => {
 
                     {/* Scrollable Content */}
                     <div className="overflow-y-auto flex-1 p-4">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 lg:grid-cols-[60%_1fr] gap-8">
                         {/* Left Column: Project Details */}
                         <div className="space-y-4">
                           {/* Cover Image Upload - Only in Edit Mode */}
@@ -1318,10 +1429,10 @@ export const ProjectsPage: React.FC = () => {
                                   return (
                                     <div 
                                       key={objId} 
-                                      className="flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-xs"
+                                      className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted rounded-lg text-xs"
                                     >
-                                      <Target className="w-3 h-3 text-muted-foreground" />
-                                      <span className="truncate max-w-32">{objective.title}</span>
+                                      <Target className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                      <span className="break-words">{objective.title}</span>
                                       {objective.strategic_pillars && (
                                         <span 
                                           className="w-2 h-2 rounded-full flex-shrink-0" 

@@ -22,6 +22,15 @@ import { supabase } from '@/integrations/supabase/client';
 interface StrategicProject {
   id: string;
   name: string;
+  pillar_color?: string;
+}
+
+interface CompanyUser {
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  avatar_url?: string;
 }
 
 interface KanbanBoardProps {
@@ -30,6 +39,8 @@ interface KanbanBoardProps {
   selectedProject: string;
   onProjectFilterChange: (value: string) => void;
   onTasksUpdate: (tasks: ProjectTask[]) => void;
+  companyUsers?: CompanyUser[];
+  onEditTask?: (task: ProjectTask) => void;
 }
 
 const COLUMNS = [
@@ -45,6 +56,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   selectedProject,
   onProjectFilterChange,
   onTasksUpdate,
+  companyUsers = [],
+  onEditTask,
 }) => {
   const { toast } = useToast();
   const [activeTask, setActiveTask] = useState<ProjectTask | null>(null);
@@ -84,6 +97,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   const getProjectName = (projectId: string): string | undefined => {
     return projects.find(p => p.id === projectId)?.name;
+  };
+
+  const getPillarColor = (projectId: string): string | undefined => {
+    return projects.find(p => p.id === projectId)?.pillar_color;
   };
 
   const findColumnByTaskId = (taskId: string): string | null => {
@@ -312,7 +329,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               icon={column.icon}
               accentColor={column.color}
               getProjectName={getProjectName}
+              getPillarColor={getPillarColor}
               isOver={overId === column.id}
+              onEditTask={onEditTask}
             />
           ))}
         </div>
@@ -323,6 +342,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             <KanbanCard
               task={activeTask}
               projectName={getProjectName(activeTask.project_id)}
+              pillarColor={getPillarColor(activeTask.project_id)}
               isDragging
             />
           ) : null}
