@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserSelect } from './UserSelect';
-import { Save, Trash2 } from 'lucide-react';
+import { Save, Trash2, Target } from 'lucide-react';
 
 interface CompanyUser {
   user_id: string;
@@ -14,6 +14,16 @@ interface CompanyUser {
   last_name: string;
   email: string;
   avatar_url?: string;
+}
+
+interface StrategicObjective {
+  id: string;
+  title: string;
+  pillar_id: string;
+  strategic_pillars?: {
+    name: string;
+    color: string;
+  };
 }
 
 interface TaskData {
@@ -26,6 +36,7 @@ interface TaskData {
   estimated_hours: number | null;
   actual_hours: number | null;
   assignee_id: string | null;
+  project_id?: string;
 }
 
 interface TaskEditModalProps {
@@ -33,6 +44,9 @@ interface TaskEditModalProps {
   onOpenChange: (open: boolean) => void;
   task: TaskData | null;
   users: CompanyUser[];
+  objectives?: StrategicObjective[];
+  pillarColor?: string;
+  pillarName?: string;
   onSave: (taskId: string, updates: Partial<TaskData>) => Promise<void>;
   onDelete?: (taskId: string) => Promise<void>;
 }
@@ -42,6 +56,9 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
   onOpenChange,
   task,
   users,
+  objectives = [],
+  pillarColor,
+  pillarName,
   onSave,
   onDelete
 }) => {
@@ -111,20 +128,71 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent 
+        className="sm:max-w-2xl overflow-hidden"
+        style={{
+          borderLeft: pillarColor ? `4px solid ${pillarColor}` : undefined
+        }}
+      >
         <DialogHeader>
-          <DialogTitle>Editar Tarefa</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            Editar Tarefa
+            {pillarName && (
+              <span 
+                className="text-xs px-2 py-0.5 rounded-full"
+                style={{ 
+                  backgroundColor: `${pillarColor}20`,
+                  color: pillarColor 
+                }}
+              >
+                {pillarName}
+              </span>
+            )}
+          </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-5">
-          {/* Row 1: Title */}
-          <div>
-            <Label className="text-xs text-muted-foreground">Título</Label>
-            <Input
-              value={form.title}
-              onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
-              className="mt-1"
-            />
+          {/* Row 1: Title + Objectives Info */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs text-muted-foreground">Título</Label>
+              <Input
+                value={form.title}
+                onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                <Target className="w-3 h-3" />
+                Objetivos do Projeto
+              </Label>
+              <div className="mt-1 text-sm text-muted-foreground border rounded-md p-2 min-h-[38px] flex items-center">
+                {objectives.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {objectives.slice(0, 2).map(obj => (
+                      <span 
+                        key={obj.id}
+                        className="text-xs px-2 py-0.5 rounded-full"
+                        style={{
+                          backgroundColor: obj.strategic_pillars?.color ? `${obj.strategic_pillars.color}20` : undefined,
+                          color: obj.strategic_pillars?.color
+                        }}
+                      >
+                        {obj.title.length > 20 ? `${obj.title.slice(0, 20)}...` : obj.title}
+                      </span>
+                    ))}
+                    {objectives.length > 2 && (
+                      <span className="text-xs text-muted-foreground">
+                        +{objectives.length - 2}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-xs italic">Nenhum objetivo vinculado</span>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Row 2: Description + Assignee */}
