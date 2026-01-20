@@ -26,7 +26,9 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
 }) => {
   const { setNodeRef, isOver: isDroppableOver } = useDroppable({ id });
 
-  const taskIds = tasks.map(task => task.id);
+  // Sort tasks by position for correct ordering
+  const sortedTasks = [...tasks].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+  const taskIds = sortedTasks.map(task => task.id);
 
   return (
     <div className="flex flex-col h-full min-h-[500px]">
@@ -64,7 +66,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
               {(isOver || isDroppableOver) ? 'Solte aqui' : 'Sem tarefas'}
             </div>
           ) : (
-            tasks.map((task) => (
+            sortedTasks.map((task) => (
               <KanbanCard
                 key={task.id}
                 task={task}
