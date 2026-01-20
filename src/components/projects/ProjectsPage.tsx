@@ -1647,10 +1647,18 @@ export const ProjectsPage: React.FC = () => {
 
       {/* View Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'projects' | 'kanban')} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="projects">Projetos</TabsTrigger>
-          <TabsTrigger value="kanban">Kanban de Tarefas</TabsTrigger>
-        </TabsList>
+        <div className="flex justify-center mb-6">
+          <TabsList className="inline-flex w-auto bg-muted/50 p-1 rounded-lg">
+            <TabsTrigger value="projects" className="px-6 py-2.5 rounded-md data-[state=active]:shadow-sm">
+              <FolderOpen className="w-4 h-4 mr-2" />
+              Projetos
+            </TabsTrigger>
+            <TabsTrigger value="kanban" className="px-6 py-2.5 rounded-md data-[state=active]:shadow-sm">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Kanban de Tarefas
+            </TabsTrigger>
+          </TabsList>
+        </div>
         
         <TabsContent value="projects" className="space-y-6">
           {/* Empty State */}
@@ -1705,9 +1713,21 @@ export const ProjectsPage: React.FC = () => {
             selectedProject={selectedProject}
             onProjectFilterChange={setSelectedProject}
             onTasksUpdate={setTasks}
+            companyUsers={companyUsers}
+            onEditTask={handleEditTask}
           />
         </TabsContent>
       </Tabs>
+
+      {/* Task Edit Modal */}
+      <TaskEditModal
+        open={isTaskEditModalOpen}
+        onOpenChange={setIsTaskEditModalOpen}
+        task={editingTask}
+        users={companyUsers}
+        onSave={updateTask}
+        onDelete={deleteTask}
+      />
     </div>
   );
 };
