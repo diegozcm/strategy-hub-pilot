@@ -853,11 +853,10 @@ export const ProjectsPage: React.FC = () => {
           <p className="text-muted-foreground mt-2">Gerencie seus projetos e tarefas estratégicas</p>
         </div>
         <div className="flex space-x-3">
-          <TaskCreateModal
+        <TaskCreateModal
             open={isCreateTaskOpen}
             onOpenChange={setIsCreateTaskOpen}
             projects={projects}
-            objectives={objectives}
             users={companyUsers}
             onSave={async (data) => {
               if (!user) return;
@@ -1685,7 +1684,6 @@ export const ProjectsPage: React.FC = () => {
             task={editingTask}
             users={companyUsers}
             projects={projects}
-            objectives={taskObjectives}
             pillarColor={taskProject?.pillar_color}
             pillarName={taskProject?.pillar_name}
             onSave={updateTask}
@@ -1699,7 +1697,6 @@ export const ProjectsPage: React.FC = () => {
         open={isCreateTaskOpen}
         onOpenChange={setIsCreateTaskOpen}
         projects={projects}
-        objectives={objectives}
         users={companyUsers}
         onSave={async (data) => {
           if (!user) return;

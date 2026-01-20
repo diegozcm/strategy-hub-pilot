@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserSelect } from './UserSelect';
-import { Plus, Folder, Target } from 'lucide-react';
+import { Plus, Folder } from 'lucide-react';
 
 interface CompanyUser {
   user_id: string;
@@ -14,16 +14,6 @@ interface CompanyUser {
   last_name: string;
   email: string;
   avatar_url?: string;
-}
-
-interface StrategicObjective {
-  id: string;
-  title: string;
-  pillar_id: string;
-  strategic_pillars?: {
-    name: string;
-    color: string;
-  };
 }
 
 interface StrategicProject {
@@ -38,7 +28,6 @@ interface TaskCreateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projects: StrategicProject[];
-  objectives: StrategicObjective[];
   users: CompanyUser[];
   onSave: (data: {
     project_id: string;
@@ -56,7 +45,6 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
   open,
   onOpenChange,
   projects,
-  objectives,
   users,
   onSave,
   defaultProjectId
@@ -94,12 +82,6 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
 
   const pillarColor = selectedProject?.pillar_color;
 
-  // Get objectives for selected project
-  const projectObjectives = useMemo(() => {
-    if (!selectedProject?.objective_ids?.length) return [];
-    return objectives.filter(obj => selectedProject.objective_ids?.includes(obj.id));
-  }, [selectedProject, objectives]);
-
   const handleSave = async () => {
     if (!form.project_id || !form.title.trim()) return;
     setSaving(true);
@@ -116,7 +98,7 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
       <DialogContent 
         className="sm:max-w-2xl overflow-hidden"
         style={{
-          borderLeft: pillarColor ? `4px solid ${pillarColor}` : undefined
+          border: pillarColor ? `2px solid ${pillarColor}` : undefined
         }}
       >
         <DialogHeader className="pb-2">
@@ -137,7 +119,7 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
         </DialogHeader>
         
         <div className="space-y-4">
-          {/* Row 1: Project + Objective */}
+          {/* Row 1: Project + Responsável */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
@@ -170,34 +152,13 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                <Target className="w-3 h-3" />
-                Objetivo Estratégico
-              </Label>
-              <div className="text-sm text-muted-foreground border border-border/60 rounded-md p-2 min-h-[36px] flex items-center bg-muted/30">
-                {projectObjectives.length > 0 ? (
-                  <div className="flex flex-wrap gap-1">
-                    {projectObjectives.slice(0, 2).map(obj => (
-                      <span 
-                        key={obj.id}
-                        className="text-[11px] px-2 py-0.5 rounded-full bg-background border"
-                        style={{
-                          borderColor: obj.strategic_pillars?.color ? `${obj.strategic_pillars.color}40` : undefined
-                        }}
-                      >
-                        {obj.title.length > 18 ? `${obj.title.slice(0, 18)}...` : obj.title}
-                      </span>
-                    ))}
-                    {projectObjectives.length > 2 && (
-                      <span className="text-[11px] text-muted-foreground">
-                        +{projectObjectives.length - 2}
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-xs italic text-muted-foreground/70">Selecione um projeto</span>
-                )}
-              </div>
+              <Label className="text-xs font-medium text-muted-foreground">Responsável</Label>
+              <UserSelect
+                users={users}
+                value={form.assignee_id}
+                onValueChange={(val) => setForm(prev => ({ ...prev, assignee_id: val }))}
+                className="h-9"
+              />
             </div>
           </div>
 
@@ -212,27 +173,16 @@ export const TaskCreateModal: React.FC<TaskCreateModalProps> = ({
             />
           </div>
 
-          {/* Row 3: Description + Assignee */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Descrição</Label>
-              <Textarea
-                value={form.description}
-                onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
-                rows={3}
-                className="text-sm resize-none bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/20"
-                placeholder="Descreva a tarefa..."
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-muted-foreground">Responsável</Label>
-              <UserSelect
-                users={users}
-                value={form.assignee_id}
-                onValueChange={(val) => setForm(prev => ({ ...prev, assignee_id: val }))}
-                className="h-9"
-              />
-            </div>
+          {/* Row 3: Description (full width) */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium text-muted-foreground">Descrição</Label>
+            <Textarea
+              value={form.description}
+              onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+              rows={3}
+              className="text-sm resize-none bg-background border-border/60 focus-visible:ring-1 focus-visible:ring-primary/20"
+              placeholder="Descreva a tarefa..."
+            />
           </div>
 
           {/* Row 4: Priority, Hours, Due Date */}
