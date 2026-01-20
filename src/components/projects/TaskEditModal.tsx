@@ -111,12 +111,13 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Editar Tarefa</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="space-y-5">
+          {/* Row 1: Title */}
           <div>
             <Label className="text-xs text-muted-foreground">Título</Label>
             <Input
@@ -126,28 +127,31 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
             />
           </div>
 
-          <div>
-            <Label className="text-xs text-muted-foreground">Descrição</Label>
-            <Textarea
-              value={form.description}
-              onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
-              rows={3}
-              className="mt-1"
-              placeholder="Descreva a tarefa..."
-            />
-          </div>
-
-          <div>
-            <Label className="text-xs text-muted-foreground">Responsável</Label>
-            <UserSelect
-              users={users}
-              value={form.assignee_id}
-              onValueChange={(val) => setForm(prev => ({ ...prev, assignee_id: val }))}
-              className="mt-1"
-            />
-          </div>
-
+          {/* Row 2: Description + Assignee */}
           <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs text-muted-foreground">Descrição</Label>
+              <Textarea
+                value={form.description}
+                onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+                rows={3}
+                className="mt-1"
+                placeholder="Descreva a tarefa..."
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Responsável</Label>
+              <UserSelect
+                users={users}
+                value={form.assignee_id}
+                onValueChange={(val) => setForm(prev => ({ ...prev, assignee_id: val }))}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
+          {/* Row 3: Status, Priority, Due Date */}
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <Label className="text-xs text-muted-foreground">Status</Label>
               <Select 
@@ -183,18 +187,19 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
                 </SelectContent>
               </Select>
             </div>
+
+            <div>
+              <Label className="text-xs text-muted-foreground">Data de Vencimento</Label>
+              <Input
+                type="date"
+                value={form.due_date}
+                onChange={(e) => setForm(prev => ({ ...prev, due_date: e.target.value }))}
+                className="mt-1"
+              />
+            </div>
           </div>
 
-          <div>
-            <Label className="text-xs text-muted-foreground">Data de Vencimento</Label>
-            <Input
-              type="date"
-              value={form.due_date}
-              onChange={(e) => setForm(prev => ({ ...prev, due_date: e.target.value }))}
-              className="mt-1"
-            />
-          </div>
-
+          {/* Row 4: Hours */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label className="text-xs text-muted-foreground">Horas Estimadas</Label>
@@ -218,6 +223,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
             </div>
           </div>
 
+          {/* Actions */}
           <div className="flex justify-between pt-4 border-t">
             {onDelete && (
               <Button
