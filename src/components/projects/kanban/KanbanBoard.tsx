@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -63,6 +63,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const { toast } = useToast();
   const [activeTask, setActiveTask] = useState<ProjectTask | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const previousTasksRef = useRef<ProjectTask[]>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -122,12 +123,38 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const task = tasks.find(t => t.id === active.id);
     if (task) {
       setActiveTask(task);
+      previousTasksRef.current = [...tasks]; // Save state for potential rollback
     }
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { over } = event;
+    const { active, over } = event;
     setOverId(over?.id as string | null);
+    
+    if (!over) return;
+    
+    const activeId = active.id as string;
+    const overIdValue = over.id as string;
+    
+    // Find source column
+    const activeColumn = findColumnByTaskId(activeId);
+    if (!activeColumn) return;
+    
+    // Determine target column
+    const isOverColumn = COLUMNS.some(col => col.id === overIdValue);
+    const overColumn = isOverColumn ? overIdValue : findColumnByTaskId(overIdValue);
+    
+    // If moving to a different column, update task status temporarily
+    if (overColumn && activeColumn !== overColumn) {
+      const updatedTasks = tasks.map(task => {
+        if (task.id === activeId) {
+          return { ...task, status: overColumn };
+        }
+        return task;
+      });
+      
+      onTasksUpdate(updatedTasks);
+    }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -136,27 +163,35 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     setActiveTask(null);
     setOverId(null);
 
-    if (!over) return;
+    if (!over) {
+      // Cancelled - restore previous state
+      onTasksUpdate(previousTasksRef.current);
+      return;
+    }
 
     const activeTaskId = active.id as string;
     const overIdValue = over.id as string;
 
-    const activeTask = tasks.find(t => t.id === activeTaskId);
-    if (!activeTask) return;
-
-    // Determine the target column
-    const isOverColumn = COLUMNS.some(col => col.id === overIdValue);
-    let targetColumn: string;
-    
-    if (isOverColumn) {
-      targetColumn = overIdValue;
-    } else {
-      // Dropped on a task, find its column
-      const overColumn = findColumnByTaskId(overIdValue);
-      if (!overColumn) return;
-      targetColumn = overColumn;
+    const currentTask = tasks.find(t => t.id === activeTaskId);
+    if (!currentTask) {
+      onTasksUpdate(previousTasksRef.current);
+      return;
     }
 
+    // Get the original task from saved state to know original column
+    const originalTask = previousTasksRef.current.find(t => t.id === activeTaskId);
+    if (!originalTask) {
+      onTasksUpdate(previousTasksRef.current);
+      return;
+    }
+
+    // Current status is the target column (may have been updated by dragOver)
+    const targetColumn = currentTask.status;
+    const sourceColumn = originalTask.status;
+
+    // Determine new position based on where it was dropped
+    const isOverColumn = COLUMNS.some(col => col.id === overIdValue);
+    
     // Get tasks in target column sorted by position
     const columnTasks = tasks
       .filter(t => t.status === targetColumn)
@@ -166,16 +201,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     let newIndex: number;
     if (isOverColumn) {
       // Dropped on column itself - add to end
-      newIndex = columnTasks.length;
+      newIndex = columnTasks.filter(t => t.id !== activeTaskId).length;
     } else {
       // Dropped on a specific task - insert at that position
       const overTaskIndex = columnTasks.findIndex(t => t.id === overIdValue);
       newIndex = overTaskIndex >= 0 ? overTaskIndex : columnTasks.length;
     }
 
-    const previousTasks = [...tasks];
-
-    if (activeTask.status === targetColumn) {
+    if (sourceColumn === targetColumn) {
       // Same column - reordering
       const oldIndex = columnTasks.findIndex(t => t.id === activeTaskId);
       if (oldIndex === newIndex || oldIndex === -1) return;
@@ -211,7 +244,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         });
       } catch (error) {
         console.error('Error updating task positions:', error);
-        onTasksUpdate(previousTasks);
+        onTasksUpdate(previousTasksRef.current);
         toast({
           title: "Erro",
           description: "Erro ao reordenar tarefas. Tente novamente.",
@@ -220,31 +253,31 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       }
     } else {
       // Different column - moving to new status
-      // Remove from source column and add to target at specific position
-      const sourceColumnTasks = tasks
-        .filter(t => t.status === activeTask.status && t.id !== activeTaskId)
+      // Get source column tasks (excluding moved task)
+      const sourceColumnTasks = previousTasksRef.current
+        .filter(t => t.status === sourceColumn && t.id !== activeTaskId)
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
       
-      const targetColumnTasks = columnTasks.filter(t => t.id !== activeTaskId);
+      // Get target column tasks (excluding moved task, then insert at position)
+      const targetColumnTasks = tasks
+        .filter(t => t.status === targetColumn && t.id !== activeTaskId)
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
       
       // Insert at new position
-      targetColumnTasks.splice(newIndex, 0, { ...activeTask, status: targetColumn });
+      targetColumnTasks.splice(newIndex, 0, { ...currentTask, status: targetColumn });
 
-      // Update all positions
+      // Update all positions in state
       const updatedTasks = tasks.map(task => {
         // Update source column positions
         const sourceIndex = sourceColumnTasks.findIndex(t => t.id === task.id);
-        if (sourceIndex >= 0 && task.status === activeTask.status) {
+        if (sourceIndex >= 0 && task.id !== activeTaskId) {
           return { ...task, position: sourceIndex };
         }
         
         // Update target column positions
         const targetIndex = targetColumnTasks.findIndex(t => t.id === task.id);
         if (targetIndex >= 0) {
-          if (task.id === activeTaskId) {
-            return { ...task, status: targetColumn, position: targetIndex };
-          }
-          return { ...task, position: targetIndex };
+          return { ...task, status: targetColumn, position: targetIndex };
         }
         
         return task;
@@ -260,7 +293,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           .update({ status: targetColumn, position: newIndex })
           .eq('id', activeTaskId);
 
-        // Update positions in target column
+        // Update positions in target column (other tasks)
         const targetUpdates = targetColumnTasks
           .filter(t => t.id !== activeTaskId)
           .map((task, index) => {
@@ -287,7 +320,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         });
       } catch (error) {
         console.error('Error updating task status:', error);
-        onTasksUpdate(previousTasks);
+        onTasksUpdate(previousTasksRef.current);
         toast({
           title: "Erro",
           description: "Erro ao mover tarefa. Tente novamente.",
