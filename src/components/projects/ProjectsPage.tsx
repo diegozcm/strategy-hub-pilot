@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 import { KanbanBoard } from './kanban';
 import { ProjectCard } from './ProjectCard';
+import { ProjectCoverUpload } from './ProjectCoverUpload';
 interface StrategicPlan {
   id: string;
   name: string;
@@ -978,22 +979,18 @@ export const ProjectsPage: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Cover Image URL */}
+                {/* Cover Image Upload */}
                 <div>
-                  <Label htmlFor="project-cover-image">Imagem de Capa (URL)</Label>
-                  <div className="flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                    <Input
-                      id="project-cover-image"
-                      type="url"
-                      value={projectForm.cover_image_url}
-                      onChange={(e) => setProjectForm(prev => ({ ...prev, cover_image_url: e.target.value }))}
-                      placeholder="https://exemplo.com/imagem.jpg"
-                      className="flex-1"
+                  <Label>Imagem de Capa</Label>
+                  <div className="mt-2">
+                    <ProjectCoverUpload
+                      currentImageUrl={projectForm.cover_image_url || undefined}
+                      onImageUploaded={(url) => setProjectForm(prev => ({ ...prev, cover_image_url: url }))}
+                      onImageRemoved={() => setProjectForm(prev => ({ ...prev, cover_image_url: '' }))}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Cole a URL de uma imagem para representar o projeto. Se vazio, será usada a cor do pilar.
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Faça upload de uma imagem 16:9 para representar o projeto.
                   </p>
                 </div>
                 <div className="flex justify-end space-x-2">
@@ -1027,9 +1024,17 @@ export const ProjectsPage: React.FC = () => {
                   setActiveTab('kanban');
                 };
 
+                const handleCoverImageUploaded = (url: string) => {
+                  setEditProjectForm(prev => ({ ...prev, cover_image_url: url }));
+                };
+
+                const handleCoverImageRemoved = () => {
+                  setEditProjectForm(prev => ({ ...prev, cover_image_url: '' }));
+                };
+
                 return (
                   <div className="flex flex-col max-h-[90vh]">
-                    {/* Compact Header */}
+                    {/* Header Section */}
                     <div className="relative flex-shrink-0">
                       {/* Pillar color bar */}
                       <div 
@@ -1037,14 +1042,46 @@ export const ProjectsPage: React.FC = () => {
                         style={{ backgroundColor: pillarColor }}
                       />
                       
-                      {selectedProjectForDetail.cover_image_url ? (
-                        <div className="relative h-40">
+                      {editingProject ? (
+                        /* Edit Mode Header - Show Upload Component */
+                        <div className="pt-2 px-4 pb-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h2 className="font-semibold text-lg text-foreground">Editar Projeto</h2>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setIsProjectDetailOpen(false)}
+                              className="h-8 w-8"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <ProjectCoverUpload
+                            currentImageUrl={editProjectForm.cover_image_url || undefined}
+                            onImageUploaded={handleCoverImageUploaded}
+                            onImageRemoved={handleCoverImageRemoved}
+                            projectId={selectedProjectForDetail.id}
+                          />
+                        </div>
+                      ) : selectedProjectForDetail.cover_image_url ? (
+                        /* View Mode with Cover Image */
+                        <div className="relative h-44">
                           <img 
                             src={selectedProjectForDetail.cover_image_url}
                             alt={selectedProjectForDetail.name}
                             className="w-full h-full object-cover"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                          
+                          {/* Close button */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsProjectDetailOpen(false)}
+                            className="absolute top-3 right-3 h-8 w-8 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
                           
                           {/* Content over image */}
                           <div className="absolute bottom-0 left-0 right-0 p-4">
@@ -1055,7 +1092,7 @@ export const ProjectsPage: React.FC = () => {
                                 </h2>
                                 {pillarName && (
                                   <Badge 
-                                    className="mt-1.5 text-white text-xs"
+                                    className="mt-1.5 text-white text-xs border-0"
                                     style={{ backgroundColor: `${pillarColor}CC` }}
                                   >
                                     {pillarName}
@@ -1066,7 +1103,7 @@ export const ProjectsPage: React.FC = () => {
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() => setEditingProject(!editingProject)}
+                                  onClick={() => setEditingProject(true)}
                                   className="h-8 w-8 text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full"
                                 >
                                   <Edit3 className="h-4 w-4" />
@@ -1087,14 +1124,25 @@ export const ProjectsPage: React.FC = () => {
                           </div>
                         </div>
                       ) : (
-                        <div className="bg-muted/50 pt-3 pb-4 px-4">
-                          <div className="flex items-start justify-between gap-4">
+                        /* View Mode without Cover Image */
+                        <div className="bg-muted/40 pt-3 pb-4 px-4">
+                          {/* Close button */}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setIsProjectDetailOpen(false)}
+                            className="absolute top-3 right-3 h-8 w-8 z-10"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+
+                          <div className="flex items-start justify-between gap-4 pr-10">
                             <div className="flex items-center gap-3 min-w-0 flex-1">
                               <div 
-                                className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                                style={{ backgroundColor: `${pillarColor}20` }}
+                                className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0"
+                                style={{ backgroundColor: `${pillarColor}15` }}
                               >
-                                <FolderOpen className="w-5 h-5" style={{ color: pillarColor }} />
+                                <FolderOpen className="w-6 h-6" style={{ color: pillarColor }} />
                               </div>
                               <div className="min-w-0 flex-1">
                                 <h2 className="font-bold text-lg leading-tight truncate text-foreground">
@@ -1102,11 +1150,11 @@ export const ProjectsPage: React.FC = () => {
                                 </h2>
                                 {pillarName && (
                                   <Badge 
-                                    className="mt-1 text-xs"
+                                    className="mt-1 text-xs border"
                                     style={{ 
-                                      backgroundColor: `${pillarColor}20`,
+                                      backgroundColor: `${pillarColor}15`,
                                       color: pillarColor,
-                                      borderColor: pillarColor
+                                      borderColor: `${pillarColor}40`
                                     }}
                                     variant="outline"
                                   >
@@ -1119,7 +1167,7 @@ export const ProjectsPage: React.FC = () => {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => setEditingProject(!editingProject)}
+                                onClick={() => setEditingProject(true)}
                                 className="h-8 w-8"
                               >
                                 <Edit3 className="h-4 w-4" />
@@ -1291,20 +1339,6 @@ export const ProjectsPage: React.FC = () => {
                               )}
                             </div>
                           </div>
-
-                          {/* Cover Image URL (edit mode only) */}
-                          {editingProject && (
-                            <div>
-                              <Label className="text-xs text-muted-foreground">Imagem de Capa (URL)</Label>
-                              <Input
-                                type="url"
-                                value={editProjectForm.cover_image_url}
-                                onChange={(e) => setEditProjectForm(prev => ({ ...prev, cover_image_url: e.target.value }))}
-                                placeholder="https://exemplo.com/imagem.jpg"
-                                className="h-8 text-xs mt-1"
-                              />
-                            </div>
-                          )}
 
                           {/* Objectives - Compact Chips */}
                           <div>
