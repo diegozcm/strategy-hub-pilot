@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause, Edit3, Save, Trash2, Target } from 'lucide-react';
+import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause, Edit3, Save, Trash2, Target, ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 import { KanbanBoard } from './kanban';
+import { ProjectCard } from './ProjectCard';
 interface StrategicPlan {
   id: string;
   name: string;
@@ -46,6 +47,9 @@ interface StrategicProject {
   owner_id: string;
   created_at: string;
   objective_ids?: string[];
+  cover_image_url?: string;
+  pillar_color?: string;
+  pillar_name?: string;
 }
 
 interface ProjectTask {
@@ -94,7 +98,8 @@ export const ProjectsPage: React.FC = () => {
     start_date: '',
     end_date: '',
     budget: '',
-    priority: 'medium'
+    priority: 'medium',
+    cover_image_url: ''
   });
 
   const [taskForm, setTaskForm] = useState({
@@ -114,7 +119,8 @@ export const ProjectsPage: React.FC = () => {
     end_date: '',
     budget: '',
     priority: 'medium',
-    status: 'planning'
+    status: 'planning',
+    cover_image_url: ''
   });
 
   useEffect(() => {
@@ -140,46 +146,73 @@ export const ProjectsPage: React.FC = () => {
         return;
       }
       
-      // Load strategic plans
+      // Load only ACTIVE strategic plans
       const { data: plansData, error: plansError } = await supabase
         .from('strategic_plans')
         .select('id, name, status')
         .eq('company_id', authCompany.id)
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (plansError) throw plansError;
       setPlans(plansData || []);
 
-      // Load projects - filter by company_id
+      // Get active plan IDs
+      const activePlanIds = plansData?.map(p => p.id) || [];
+
+      if (activePlanIds.length === 0) {
+        setProjects([]);
+        setTasks([]);
+        setLoading(false);
+        return;
+      }
+
+      // Load projects - filter by active plans only
       const { data: projectsData, error: projectsError } = await supabase
         .from('strategic_projects')
         .select('*')
         .eq('company_id', authCompany.id)
+        .in('plan_id', activePlanIds)
         .order('created_at', { ascending: false });
 
       if (projectsError) throw projectsError;
       
-      // Load objective IDs for each project
+      // Load objective IDs and pillar info for each project
       if (projectsData && projectsData.length > 0) {
-        const projectsWithObjectives = await Promise.all(
+        const projectsWithPillarInfo = await Promise.all(
           projectsData.map(async (project) => {
             const { data: relations } = await supabase
               .from('project_objective_relations')
-              .select('objective_id')
+              .select(`
+                objective_id,
+                strategic_objectives (
+                  pillar_id,
+                  strategic_pillars (
+                    name,
+                    color
+                  )
+                )
+              `)
               .eq('project_id', project.id);
+            
+            // Get the first pillar info found
+            const firstRelation = relations?.[0];
+            const pillarInfo = firstRelation?.strategic_objectives?.strategic_pillars;
             
             return {
               ...project,
-              objective_ids: relations?.map(r => r.objective_id) || []
+              objective_ids: relations?.map(r => r.objective_id) || [],
+              pillar_color: pillarInfo?.color || undefined,
+              pillar_name: pillarInfo?.name || undefined
             };
           })
         );
-        setProjects(projectsWithObjectives);
+        setProjects(projectsWithPillarInfo);
       } else {
         setProjects([]);
       }
 
-      // Load tasks - filter by projects from this company
+      // Load tasks - filter by projects from active plans only
       if (projectsData && projectsData.length > 0) {
         const projectIds = projectsData.map(project => project.id);
         const { data: tasksData, error: tasksError } = await supabase
@@ -259,10 +292,14 @@ export const ProjectsPage: React.FC = () => {
       const { data: project, error: projectError } = await supabase
         .from('strategic_projects')
         .insert([{
-          ...projectForm,
+          name: projectForm.name,
+          description: projectForm.description,
+          plan_id: projectForm.plan_id,
+          priority: projectForm.priority,
           start_date: projectForm.start_date || null,
           end_date: projectForm.end_date || null,
           budget: projectForm.budget ? parseFloat(projectForm.budget) : null,
+          cover_image_url: projectForm.cover_image_url || null,
           company_id: authCompany.id,
           owner_id: user.id,
           status: 'planning'
@@ -288,7 +325,7 @@ export const ProjectsPage: React.FC = () => {
 
       // 3. Atualizar estado e resetar formulário
       setProjects(prev => [{ ...project, objective_ids: selectedObjectives }, ...prev]);
-      setProjectForm({ name: '', description: '', plan_id: '', start_date: '', end_date: '', budget: '', priority: 'medium' });
+      setProjectForm({ name: '', description: '', plan_id: '', start_date: '', end_date: '', budget: '', priority: 'medium', cover_image_url: '' });
       setSelectedObjectives([]);
       setObjectives([]);
       setIsCreateProjectOpen(false);
@@ -391,7 +428,7 @@ export const ProjectsPage: React.FC = () => {
   };
 
   const resetProjectForm = () => {
-    setProjectForm({ name: '', description: '', plan_id: '', start_date: '', end_date: '', budget: '', priority: 'medium' });
+    setProjectForm({ name: '', description: '', plan_id: '', start_date: '', end_date: '', budget: '', priority: 'medium', cover_image_url: '' });
     setSelectedObjectives([]);
     setObjectives([]);
   };
@@ -492,7 +529,8 @@ export const ProjectsPage: React.FC = () => {
       end_date: project.end_date || '',
       budget: project.budget?.toString() || '',
       priority: project.priority || 'medium',
-      status: project.status
+      status: project.status,
+      cover_image_url: project.cover_image_url || ''
     });
     setEditingProject(false);
     setIsProjectDetailOpen(true);
@@ -512,7 +550,8 @@ export const ProjectsPage: React.FC = () => {
           end_date: editProjectForm.end_date || null,
           budget: editProjectForm.budget ? parseFloat(editProjectForm.budget) : null,
           priority: editProjectForm.priority,
-          status: editProjectForm.status
+          status: editProjectForm.status,
+          cover_image_url: editProjectForm.cover_image_url || null
         })
         .eq('id', selectedProjectForDetail.id);
 
@@ -936,6 +975,25 @@ export const ProjectsPage: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+                
+                {/* Cover Image URL */}
+                <div>
+                  <Label htmlFor="project-cover-image">Imagem de Capa (URL)</Label>
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="project-cover-image"
+                      type="url"
+                      value={projectForm.cover_image_url}
+                      onChange={(e) => setProjectForm(prev => ({ ...prev, cover_image_url: e.target.value }))}
+                      placeholder="https://exemplo.com/imagem.jpg"
+                      className="flex-1"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Cole a URL de uma imagem para representar o projeto. Se vazio, será usada a cor do pilar.
+                  </p>
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button variant="outline" onClick={() => setIsCreateProjectOpen(false)}>
@@ -1421,86 +1479,20 @@ export const ProjectsPage: React.FC = () => {
               </CardContent>
             </Card>
           ) : (
-            /* Projects Grid */
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            /* Projects Grid - Modern Cards */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {filteredProjects.map((project) => {
                 const projectTasks = getProjectTasks(project.id);
                 const completedTasks = projectTasks.filter(t => t.status === 'done').length;
-                const taskProgress = projectTasks.length > 0 ? (completedTasks / projectTasks.length) * 100 : 0;
 
                 return (
-                <Card key={project.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => openProjectDetail(project)}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg leading-tight">{project.name}</CardTitle>
-                          <CardDescription className="mt-1">
-                            {project.description}
-                          </CardDescription>
-                        </div>
-                        <div className="flex flex-col items-end space-y-2">
-                          <Badge variant="secondary" className={`${getStatusColor(project.status)} text-white`}>
-                            {getStatusText(project.status)}
-                          </Badge>
-                          <Badge variant="outline" className={`${getPriorityColor(project.priority)} text-white border-0`}>
-                            {getPriorityText(project.priority)}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {/* Progress */}
-                        <div>
-                          <div className="flex justify-between text-sm mb-2">
-                            <span className="text-muted-foreground">Progresso das Tarefas</span>
-                            <span className="font-medium">{Math.round(taskProgress)}%</span>
-                          </div>
-                          <Progress value={taskProgress} className="h-2" />
-                        </div>
-
-                        {/* Tasks Summary */}
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center text-muted-foreground">
-                            <Users className="w-4 h-4 mr-1" />
-                            Tarefas
-                          </div>
-                          <span className="font-medium">
-                            {completedTasks}/{projectTasks.length} concluídas
-                          </span>
-                        </div>
-
-                        {/* Objectives Count */}
-                        {project.objective_ids && project.objective_ids.length > 0 && (
-                          <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center text-muted-foreground">
-                              <Target className="w-4 h-4 mr-1" />
-                              Objetivos
-                            </div>
-                            <span className="font-medium">
-                              {project.objective_ids.length} associado{project.objective_ids.length !== 1 ? 's' : ''}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Budget and Timeline */}
-                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                          {project.budget && (
-                            <div className="flex items-center">
-                              <DollarSign className="w-4 h-4 mr-1" />
-                              R$ {project.budget.toLocaleString('pt-BR')}
-                            </div>
-                          )}
-                          {project.end_date && (
-                            <div className="flex items-center">
-                              <Calendar className="w-4 h-4 mr-1" />
-                              {new Date(project.end_date).toLocaleDateString('pt-BR')}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    taskCount={projectTasks.length}
+                    completedTasks={completedTasks}
+                    onClick={() => openProjectDetail(project)}
+                  />
                 );
               })}
             </div>

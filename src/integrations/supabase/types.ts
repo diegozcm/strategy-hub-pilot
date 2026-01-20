@@ -2420,6 +2420,7 @@ export type Database = {
         Row: {
           budget: number | null
           company_id: string | null
+          cover_image_url: string | null
           created_at: string
           description: string | null
           end_date: string | null
@@ -2437,6 +2438,7 @@ export type Database = {
         Insert: {
           budget?: number | null
           company_id?: string | null
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
@@ -2454,6 +2456,7 @@ export type Database = {
         Update: {
           budget?: number | null
           company_id?: string | null
+          cover_image_url?: string | null
           created_at?: string
           description?: string | null
           end_date?: string | null
