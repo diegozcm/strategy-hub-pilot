@@ -60,7 +60,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
   };
 
   return (
-    <header className="bg-card border-b border-border px-4 lg:px-6 py-4">
+    <header className="bg-card border-b border-border px-4 lg:px-6 py-4 min-h-[77px]">
       <div className="flex items-center justify-between">
         {/* Mobile hamburger menu */}
         {isMobile && (

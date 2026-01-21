@@ -2434,6 +2434,7 @@ export type Database = {
           priority: string | null
           progress: number | null
           responsible: string | null
+          responsible_id: string | null
           start_date: string | null
           status: string
           updated_at: string
@@ -2452,6 +2453,7 @@ export type Database = {
           priority?: string | null
           progress?: number | null
           responsible?: string | null
+          responsible_id?: string | null
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -2470,6 +2472,7 @@ export type Database = {
           priority?: string | null
           progress?: number | null
           responsible?: string | null
+          responsible_id?: string | null
           start_date?: string | null
           status?: string
           updated_at?: string
@@ -2488,6 +2491,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "strategic_plans"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "strategic_projects_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }

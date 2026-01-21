@@ -2,6 +2,7 @@ import React from 'react';
 import { Calendar, FolderOpen, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface ProjectCardProps {
   project: {
@@ -14,6 +15,12 @@ interface ProjectCardProps {
     cover_image_url?: string;
     pillar_color?: string;
     pillar_name?: string;
+    responsible_id?: string;
+    responsible_user?: {
+      first_name: string;
+      last_name?: string;
+      avatar_url?: string;
+    };
   };
   taskCount: number;
   completedTasks: number;
@@ -115,18 +122,31 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         
         {/* Footer Info */}
         <div className="flex items-center justify-between pt-2 border-t border-border/50">
-          {/* Tasks count */}
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>{completedTasks}/{taskCount} tarefas</span>
+          {/* Left side - Tasks and Date */}
+          <div className="flex items-center gap-3">
+            {/* Tasks count */}
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>{completedTasks}/{taskCount}</span>
+            </div>
+            
+            {/* End date */}
+            {project.end_date && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>{new Date(project.end_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>
+              </div>
+            )}
           </div>
           
-          {/* End date */}
-          {project.end_date && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>{new Date(project.end_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}</span>
-            </div>
+          {/* Right side - Responsible avatar */}
+          {project.responsible_user && (
+            <Avatar className="h-6 w-6 border-2 border-background shadow-sm">
+              <AvatarImage src={project.responsible_user.avatar_url} />
+              <AvatarFallback className="text-[10px] bg-primary text-primary-foreground">
+                {project.responsible_user.first_name?.[0]}{project.responsible_user.last_name?.[0]}
+              </AvatarFallback>
+            </Avatar>
           )}
         </div>
       </CardContent>
