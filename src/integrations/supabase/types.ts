@@ -1461,6 +1461,7 @@ export type Database = {
           end_date: string
           id: string
           key_result_id: string
+          position: number | null
           priority: string
           progress_percentage: number | null
           responsible: string | null
@@ -1479,6 +1480,7 @@ export type Database = {
           end_date: string
           id?: string
           key_result_id: string
+          position?: number | null
           priority?: string
           progress_percentage?: number | null
           responsible?: string | null
@@ -1497,6 +1499,7 @@ export type Database = {
           end_date?: string
           id?: string
           key_result_id?: string
+          position?: number | null
           priority?: string
           progress_percentage?: number | null
           responsible?: string | null
