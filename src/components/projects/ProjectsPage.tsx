@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause, Edit3, Save, Trash2, Target, ImageIcon, ArrowRight, CheckSquare, X } from 'lucide-react';
+import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause, Edit3, Save, Trash2, Target, ImageIcon, ArrowRight, CheckSquare, X, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +25,7 @@ import { TaskEditModal } from './TaskEditModal';
 import { TaskCreateModal } from './TaskCreateModal';
 import { useCompanyUsers } from '@/hooks/useCompanyUsers';
 import { UserSelect } from './UserSelect';
+import { ProjectFiltersModal, ProjectFilters } from './ProjectFiltersModal';
 interface StrategicPlan {
   id: string;
   name: string;
@@ -98,10 +99,13 @@ export const ProjectsPage: React.FC = () => {
   const [selectedObjectives, setSelectedObjectives] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [pillarFilter, setPillarFilter] = useState<string>('all');
-  const [objectiveFilter, setObjectiveFilter] = useState<string>('all');
-  const [responsibleFilter, setResponsibleFilter] = useState<string>('all');
+  const [filters, setFilters] = useState<ProjectFilters>({
+    pillar: 'all',
+    objective: 'all',
+    responsible: 'all',
+    status: 'all'
+  });
+  const [isFiltersModalOpen, setIsFiltersModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
@@ -406,11 +410,39 @@ export const ProjectsPage: React.FC = () => {
         if (relError) throw relError;
       }
 
-      // 3. Atualizar estado e resetar formulário
-      setProjects(prev => [{ ...project, objective_ids: selectedObjectives }, ...prev]);
+      // 3. Buscar dados do responsável se existir
+      let responsibleUser = null;
+      if (projectForm.responsible_id) {
+        const { data: userData } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, avatar_url')
+          .eq('user_id', projectForm.responsible_id)
+          .single();
+        responsibleUser = userData;
+      }
+
+      // 4. Calcular dados do pilar a partir dos objetivos selecionados
+      const selectedObjs = objectives.filter(o => selectedObjectives.includes(o.id));
+      const pillarsInfo = selectedObjs
+        .map(o => o.strategic_pillars)
+        .filter(Boolean)
+        .filter((pillar, index, self) => 
+          index === self.findIndex(p => p?.name === pillar?.name)
+        ) as Array<{ name: string; color: string }>;
+
+      // 5. Atualizar estado com dados completos
+      const projectWithDetails: StrategicProject = {
+        ...project,
+        objective_ids: selectedObjectives,
+        responsible_user: responsibleUser,
+        pillar_color: pillarsInfo[0]?.color,
+        pillar_name: pillarsInfo[0]?.name,
+        all_pillars: pillarsInfo
+      };
+      
+      setProjects(prev => [projectWithDetails, ...prev]);
       setProjectForm({ name: '', description: '', plan_id: '', start_date: '', end_date: '', budget: '', priority: 'medium', cover_image_url: '', responsible_id: '' });
       setSelectedObjectives([]);
-      setObjectives([]);
       setIsCreateProjectOpen(false);
       
       toast({
@@ -482,12 +514,38 @@ export const ProjectsPage: React.FC = () => {
           if (error) throw error;
         }
 
-        // Update local state
+        // Calcular dados do pilar a partir dos novos objetivos
+        const selectedObjs = objectives.filter(o => tempSelectedObjectives.includes(o.id));
+        const pillarsInfo = selectedObjs
+          .map(o => o.strategic_pillars)
+          .filter(Boolean)
+          .filter((pillar, index, self) => 
+            index === self.findIndex(p => p?.name === pillar?.name)
+          ) as Array<{ name: string; color: string }>;
+
+        // Update local state with complete pillar info
         setProjects(prev => prev.map(p => 
           p.id === currentProjectForObjectives 
-            ? { ...p, objective_ids: tempSelectedObjectives }
+            ? { 
+                ...p, 
+                objective_ids: tempSelectedObjectives,
+                pillar_color: pillarsInfo[0]?.color,
+                pillar_name: pillarsInfo[0]?.name,
+                all_pillars: pillarsInfo
+              }
             : p
         ));
+
+        // Also update selectedProjectForDetail if it's the same project
+        if (selectedProjectForDetail?.id === currentProjectForObjectives) {
+          setSelectedProjectForDetail(prev => prev ? {
+            ...prev,
+            objective_ids: tempSelectedObjectives,
+            pillar_color: pillarsInfo[0]?.color,
+            pillar_name: pillarsInfo[0]?.name,
+            all_pillars: pillarsInfo
+          } : null);
+        }
 
         toast({
           title: "Sucesso",
@@ -604,8 +662,26 @@ export const ProjectsPage: React.FC = () => {
 
       if (error) throw error;
 
+      // Buscar dados do assignee se mudou
+      let assigneeData = null;
+      const currentTask = tasks.find(t => t.id === taskId);
+      if (updates.assignee_id && updates.assignee_id !== currentTask?.assignee_id) {
+        const { data: userData } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, avatar_url')
+          .eq('user_id', updates.assignee_id)
+          .single();
+        assigneeData = userData;
+      }
+
       setTasks(prev => prev.map(task => 
-        task.id === taskId ? { ...task, ...updates } : task
+        task.id === taskId 
+          ? { 
+              ...task, 
+              ...updates, 
+              assignee: updates.assignee_id ? assigneeData : (updates.assignee_id === null ? null : task.assignee)
+            } 
+          : task
       ));
 
       toast({
@@ -744,16 +820,33 @@ export const ProjectsPage: React.FC = () => {
 
       if (error) throw error;
 
-      // Update local state
+      // Buscar dados do responsável se mudou
+      let responsibleUser = selectedProjectForDetail.responsible_user;
+      if (editProjectForm.responsible_id && editProjectForm.responsible_id !== selectedProjectForDetail.responsible_id) {
+        const { data: userData } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, avatar_url')
+          .eq('user_id', editProjectForm.responsible_id)
+          .single();
+        responsibleUser = userData;
+      } else if (!editProjectForm.responsible_id) {
+        responsibleUser = undefined;
+      }
+
+      // Update local state with complete data
+      const updatedProject = { 
+        ...selectedProjectForDetail, 
+        ...editProjectForm,
+        budget: editProjectForm.budget ? parseFloat(editProjectForm.budget) : selectedProjectForDetail.budget,
+        responsible_user: responsibleUser
+      };
+
       setProjects(prev => prev.map(project => 
-        project.id === selectedProjectForDetail.id 
-          ? { 
-              ...project, 
-              ...editProjectForm,
-              budget: editProjectForm.budget ? parseFloat(editProjectForm.budget) : project.budget
-            }
-          : project
+        project.id === selectedProjectForDetail.id ? updatedProject : project
       ));
+
+      // Also update selectedProjectForDetail
+      setSelectedProjectForDetail(updatedProject);
 
       setEditingProject(false);
       toast({
@@ -869,18 +962,50 @@ export const ProjectsPage: React.FC = () => {
     return Array.from(pillarsMap.entries()).map(([name, color]) => ({ name, color }));
   }, [projects]);
 
-  const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
-    const matchesPillar = pillarFilter === 'all' || project.pillar_name === pillarFilter;
-    const matchesObjective = objectiveFilter === 'all' || 
-      (project.objective_ids && project.objective_ids.includes(objectiveFilter));
-    const matchesResponsible = responsibleFilter === 'all' || 
-      project.responsible_id === responsibleFilter;
-    
-    return matchesSearch && matchesStatus && matchesPillar && matchesObjective && matchesResponsible;
-  });
+  const filteredProjects = useMemo(() => {
+    return projects.filter(project => {
+      const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           project.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = filters.status === 'all' || project.status === filters.status;
+      const matchesPillar = filters.pillar === 'all' || project.pillar_name === filters.pillar;
+      const matchesObjective = filters.objective === 'all' || 
+        (project.objective_ids && project.objective_ids.includes(filters.objective));
+      const matchesResponsible = filters.responsible === 'all' || 
+        project.responsible_id === filters.responsible;
+      
+      return matchesSearch && matchesStatus && matchesPillar && matchesObjective && matchesResponsible;
+    });
+  }, [projects, searchTerm, filters]);
+
+  // Filtered tasks based on global filters (for Kanban)
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(task => {
+      const project = projects.find(p => p.id === task.project_id);
+      if (!project) return false;
+      
+      // Filtro por busca (no título da tarefa ou nome do projeto)
+      const matchesSearch = !searchTerm || 
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        project.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Filtro por pilar
+      const matchesPillar = filters.pillar === 'all' || project.pillar_name === filters.pillar;
+      
+      // Filtro por objetivo
+      const matchesObjective = filters.objective === 'all' || 
+        (project.objective_ids && project.objective_ids.includes(filters.objective));
+      
+      // Filtro por responsável (do projeto OU da tarefa)
+      const matchesResponsible = filters.responsible === 'all' || 
+        project.responsible_id === filters.responsible ||
+        task.assignee_id === filters.responsible;
+      
+      // Filtro por status do projeto
+      const matchesStatus = filters.status === 'all' || project.status === filters.status;
+      
+      return matchesSearch && matchesPillar && matchesObjective && matchesResponsible && matchesStatus;
+    });
+  }, [tasks, projects, searchTerm, filters]);
 
   // Group projects by pillar for visual organization
   const projectsByPillar = useMemo(() => {
@@ -901,13 +1026,6 @@ export const ProjectsPage: React.FC = () => {
 
   const getProjectTasks = (projectId: string) => {
     return tasks.filter(task => task.project_id === projectId);
-  };
-
-  const tasksByStatus = {
-    todo: tasks.filter(t => t.status === 'todo' && (selectedProject === 'all' ? true : t.project_id === selectedProject)),
-    in_progress: tasks.filter(t => t.status === 'in_progress' && (selectedProject === 'all' ? true : t.project_id === selectedProject)),
-    review: tasks.filter(t => t.status === 'review' && (selectedProject === 'all' ? true : t.project_id === selectedProject)),
-    done: tasks.filter(t => t.status === 'done' && (selectedProject === 'all' ? true : t.project_id === selectedProject))
   };
 
   if (loading) {
@@ -982,7 +1100,18 @@ export const ProjectsPage: React.FC = () => {
 
                 if (error) throw error;
 
-                setTasks(prev => [newTask, ...prev]);
+                // Buscar dados do assignee se existir
+                let assigneeData = null;
+                if (data.assignee_id) {
+                  const { data: userData } = await supabase
+                    .from('profiles')
+                    .select('first_name, last_name, avatar_url')
+                    .eq('user_id', data.assignee_id)
+                    .single();
+                  assigneeData = userData;
+                }
+
+                setTasks(prev => [{ ...newTask, assignee: assigneeData }, ...prev]);
                 toast({
                   title: "Sucesso",
                   description: "Tarefa criada com sucesso!",
@@ -1708,7 +1837,7 @@ export const ProjectsPage: React.FC = () => {
         </div>
 
         {/* Filters - Below Tabs */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-6">
           {/* Search */}
           <div className="relative flex-1 min-w-[200px] max-w-md">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -1720,87 +1849,40 @@ export const ProjectsPage: React.FC = () => {
             />
           </div>
 
-          {/* Pillar Filter */}
-          <Select value={pillarFilter} onValueChange={setPillarFilter}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="Todos os pilares" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os pilares</SelectItem>
-              {uniquePillars.map((pillar) => (
-                <SelectItem key={pillar.name} value={pillar.name}>
-                  <div className="flex items-center gap-2">
-                    <span 
-                      className="w-3 h-3 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: pillar.color }}
-                    />
-                    <span className="truncate">{pillar.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Objective Filter */}
-          <Select value={objectiveFilter} onValueChange={setObjectiveFilter}>
-            <SelectTrigger className="w-52">
-              <SelectValue placeholder="Todos os objetivos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os objetivos</SelectItem>
-              {objectives.map((objective) => (
-                <SelectItem key={objective.id} value={objective.id}>
-                  <div className="flex items-center gap-2">
-                    <span 
-                      className="w-3 h-3 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: objective.strategic_pillars?.color || '#94a3b8' }}
-                    />
-                    <span className="truncate max-w-[180px]">{objective.title}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Responsible Filter */}
-          <Select value={responsibleFilter} onValueChange={setResponsibleFilter}>
-            <SelectTrigger className="w-52">
-              <SelectValue placeholder="Todos os responsáveis" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os responsáveis</SelectItem>
-              {companyUsers.map((user) => (
-                <SelectItem key={user.user_id} value={user.user_id}>
-                  <div className="flex items-center gap-2">
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage src={user.avatar_url || undefined} />
-                      <AvatarFallback className="text-[8px] bg-primary text-primary-foreground">
-                        {user.first_name?.[0]}{user.last_name?.[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="truncate">{user.first_name} {user.last_name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* Status Filter */}
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os status</SelectItem>
-              <SelectItem value="planning">Planejamento</SelectItem>
-              <SelectItem value="active">Ativo</SelectItem>
-              <SelectItem value="on_hold">Em Pausa</SelectItem>
-              <SelectItem value="completed">Concluído</SelectItem>
-              <SelectItem value="cancelled">Cancelado</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Filter Button */}
+          <Button
+            variant="outline"
+            onClick={() => setIsFiltersModalOpen(true)}
+            className="gap-2"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            Filtrar
+            {(() => {
+              const count = [
+                filters.pillar !== 'all',
+                filters.objective !== 'all',
+                filters.responsible !== 'all',
+                filters.status !== 'all'
+              ].filter(Boolean).length;
+              return count > 0 ? (
+                <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                  {count}
+                </Badge>
+              ) : null;
+            })()}
+          </Button>
         </div>
+
+        {/* Filters Modal */}
+        <ProjectFiltersModal
+          open={isFiltersModalOpen}
+          onOpenChange={setIsFiltersModalOpen}
+          filters={filters}
+          onFiltersChange={setFilters}
+          pillars={uniquePillars}
+          objectives={objectives}
+          users={companyUsers}
+        />
         
         <TabsContent value="projects" className="space-y-6">
           {/* Empty State */}
@@ -1846,8 +1928,8 @@ export const ProjectsPage: React.FC = () => {
 
         <TabsContent value="kanban" className="space-y-6">
           <KanbanBoard
-            tasks={tasks}
-            projects={projects}
+            tasks={filteredTasks}
+            projects={filteredProjects}
             selectedProject={selectedProject}
             onProjectFilterChange={setSelectedProject}
             onTasksUpdate={setTasks}
@@ -1907,7 +1989,19 @@ export const ProjectsPage: React.FC = () => {
             .single();
 
           if (error) throw error;
-          setTasks(prev => [newTask, ...prev]);
+
+          // Buscar dados do assignee se existir
+          let assigneeData = null;
+          if (data.assignee_id) {
+            const { data: userData } = await supabase
+              .from('profiles')
+              .select('first_name, last_name, avatar_url')
+              .eq('user_id', data.assignee_id)
+              .single();
+            assigneeData = userData;
+          }
+
+          setTasks(prev => [{ ...newTask, assignee: assigneeData }, ...prev]);
           toast({
             title: "Sucesso",
             description: "Tarefa criada com sucesso!",
