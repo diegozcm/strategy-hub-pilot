@@ -123,8 +123,8 @@ export function ManageCompanyUsersModal({
 
       const { error } = await supabase.rpc('assign_user_to_company_v2', {
         _admin_id: user.id,
-        _user_id: selectedUser,
-        _company_id: company.id
+        _company_id: company.id,
+        _user_id: selectedUser
       });
 
       if (error) throw error;
@@ -160,8 +160,8 @@ export function ManageCompanyUsersModal({
 
       const { error } = await supabase.rpc('unassign_user_from_company_v2', {
         _admin_id: user.id,
-        _user_id: userId,
-        _company_id: company.id
+        _company_id: company.id,
+        _user_id: userId
       });
 
       if (error) throw error;

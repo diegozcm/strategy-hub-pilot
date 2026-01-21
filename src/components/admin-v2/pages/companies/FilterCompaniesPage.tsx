@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, Filter, X, Building2, Users, Bot } from "lucide-react";
+import { Search, Filter, X, Building2, Users, Bot, MoreHorizontal, Eye } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AdminPageContainer } from "../../components/AdminPageContainer";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "../../components/StatusBadge";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CompanyDetailsModal } from "./modals";
 
 interface CompanyWithDetails {
   id: string;
@@ -25,6 +27,8 @@ interface CompanyWithDetails {
   userCount: number;
 }
 
+type ModalType = 'details' | null;
+
 export default function FilterCompaniesPage() {
   const [filters, setFilters] = useState({
     search: "",
@@ -32,8 +36,10 @@ export default function FilterCompaniesPage() {
     status: "all",
     aiEnabled: "all",
   });
+  const [selectedCompany, setSelectedCompany] = useState<CompanyWithDetails | null>(null);
+  const [modalType, setModalType] = useState<ModalType>(null);
 
-  const { data: companies, isLoading } = useQuery({
+  const { data: companies, isLoading, refetch } = useQuery({
     queryKey: ["admin-companies-filter"],
     queryFn: async (): Promise<CompanyWithDetails[]> => {
       const { data: companiesData, error } = await supabase
@@ -104,6 +110,21 @@ export default function FilterCompaniesPage() {
   };
 
   const hasActiveFilters = filters.search || filters.type !== "all" || filters.status !== "all" || filters.aiEnabled !== "all";
+
+  const handleOpenDetails = (company: CompanyWithDetails) => {
+    setSelectedCompany(company);
+    setModalType('details');
+  };
+
+  const handleCloseModal = () => {
+    setModalType(null);
+    setSelectedCompany(null);
+  };
+
+  const handleSuccess = () => {
+    refetch();
+    handleCloseModal();
+  };
 
   return (
     <AdminPageContainer 
@@ -247,6 +268,7 @@ export default function FilterCompaniesPage() {
                     <TableHead>Status</TableHead>
                     <TableHead>Usuários</TableHead>
                     <TableHead>IA</TableHead>
+                    <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -284,6 +306,21 @@ export default function FilterCompaniesPage() {
                           <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleOpenDetails(company)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver Detalhes
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -292,6 +329,15 @@ export default function FilterCompaniesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {modalType === 'details' && selectedCompany && (
+        <CompanyDetailsModal
+          open={true}
+          onOpenChange={handleCloseModal}
+          company={selectedCompany}
+          onSuccess={handleSuccess}
+        />
+      )}
     </AdminPageContainer>
   );
 }
