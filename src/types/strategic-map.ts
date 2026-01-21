@@ -112,6 +112,12 @@ export interface StrategicProject {
   description?: string;
   budget?: number;
   responsible?: string;
+  responsible_id?: string;
+  responsible_user?: {
+    first_name: string;
+    last_name?: string;
+    avatar_url?: string;
+  };
   start_date?: string;
   end_date?: string;
   status: string;

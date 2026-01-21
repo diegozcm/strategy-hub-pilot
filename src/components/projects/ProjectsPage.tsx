@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause, Edit3, Save, Trash2, Target, ImageIcon, ArrowRight, CheckSquare, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -17,11 +18,13 @@ import { useToast } from '@/hooks/use-toast';
 import { NoCompanyMessage } from '@/components/NoCompanyMessage';
 import { KanbanBoard } from './kanban';
 import { ProjectCard } from './ProjectCard';
+import { ProjectPillarGroup } from './ProjectPillarGroup';
 import { ProjectCoverUpload } from './ProjectCoverUpload';
 import { QuickTaskInput } from './QuickTaskInput';
 import { TaskEditModal } from './TaskEditModal';
 import { TaskCreateModal } from './TaskCreateModal';
 import { useCompanyUsers } from '@/hooks/useCompanyUsers';
+import { UserSelect } from './UserSelect';
 interface StrategicPlan {
   id: string;
   name: string;
@@ -56,6 +59,12 @@ interface StrategicProject {
   pillar_color?: string;
   pillar_name?: string;
   all_pillars?: Array<{ name: string; color: string }>;
+  responsible_id?: string;
+  responsible_user?: {
+    first_name: string;
+    last_name?: string;
+    avatar_url?: string;
+  };
 }
 
 interface ProjectTask {
@@ -117,7 +126,8 @@ export const ProjectsPage: React.FC = () => {
     end_date: '',
     budget: '',
     priority: 'medium',
-    cover_image_url: ''
+    cover_image_url: '',
+    responsible_id: ''
   });
 
   const [taskForm, setTaskForm] = useState({
@@ -138,7 +148,8 @@ export const ProjectsPage: React.FC = () => {
     budget: '',
     priority: 'medium',
     status: 'planning',
-    cover_image_url: ''
+    cover_image_url: '',
+    responsible_id: ''
   });
 
   useEffect(() => {
@@ -185,10 +196,17 @@ export const ProjectsPage: React.FC = () => {
         return;
       }
 
-      // Load projects - filter by active plans only
+      // Load projects - filter by active plans only with responsible user data
       const { data: projectsData, error: projectsError } = await supabase
         .from('strategic_projects')
-        .select('*')
+        .select(`
+          *,
+          responsible_user:profiles!strategic_projects_responsible_id_fkey (
+            first_name,
+            last_name,
+            avatar_url
+          )
+        `)
         .eq('company_id', authCompany.id)
         .in('plan_id', activePlanIds)
         .order('created_at', { ascending: false });
@@ -247,7 +265,26 @@ export const ProjectsPage: React.FC = () => {
           .order('created_at', { ascending: false });
 
         if (tasksError) throw tasksError;
-        setTasks(tasksData || []);
+        
+        // Fetch assignee info for each task that has an assignee_id
+        const tasksWithAssignees = await Promise.all(
+          (tasksData || []).map(async (task) => {
+            if (!task.assignee_id) return task;
+            
+            const { data: assigneeData } = await supabase
+              .from('profiles')
+              .select('first_name, last_name, avatar_url')
+              .eq('user_id', task.assignee_id)
+              .single();
+            
+            return {
+              ...task,
+              assignee: assigneeData || null
+            };
+          })
+        );
+        
+        setTasks(tasksWithAssignees);
       } else {
         setTasks([]);
       }
@@ -325,6 +362,7 @@ export const ProjectsPage: React.FC = () => {
           end_date: projectForm.end_date || null,
           budget: projectForm.budget ? parseFloat(projectForm.budget) : null,
           cover_image_url: projectForm.cover_image_url || null,
+          responsible_id: projectForm.responsible_id || null,
           company_id: authCompany.id,
           owner_id: user.id,
           status: 'planning'
@@ -350,7 +388,7 @@ export const ProjectsPage: React.FC = () => {
 
       // 3. Atualizar estado e resetar formulário
       setProjects(prev => [{ ...project, objective_ids: selectedObjectives }, ...prev]);
-      setProjectForm({ name: '', description: '', plan_id: '', start_date: '', end_date: '', budget: '', priority: 'medium', cover_image_url: '' });
+      setProjectForm({ name: '', description: '', plan_id: '', start_date: '', end_date: '', budget: '', priority: 'medium', cover_image_url: '', responsible_id: '' });
       setSelectedObjectives([]);
       setObjectives([]);
       setIsCreateProjectOpen(false);
@@ -453,7 +491,7 @@ export const ProjectsPage: React.FC = () => {
   };
 
   const resetProjectForm = () => {
-    setProjectForm({ name: '', description: '', plan_id: '', start_date: '', end_date: '', budget: '', priority: 'medium', cover_image_url: '' });
+    setProjectForm({ name: '', description: '', plan_id: '', start_date: '', end_date: '', budget: '', priority: 'medium', cover_image_url: '', responsible_id: '' });
     setSelectedObjectives([]);
     setObjectives([]);
   };
@@ -652,7 +690,8 @@ export const ProjectsPage: React.FC = () => {
       budget: project.budget?.toString() || '',
       priority: project.priority || 'medium',
       status: project.status,
-      cover_image_url: project.cover_image_url || ''
+      cover_image_url: project.cover_image_url || '',
+      responsible_id: project.responsible_id || ''
     });
     setEditingProject(false);
     setIsProjectDetailOpen(true);
@@ -678,7 +717,8 @@ export const ProjectsPage: React.FC = () => {
           budget: editProjectForm.budget ? parseFloat(editProjectForm.budget) : null,
           priority: editProjectForm.priority,
           status: editProjectForm.status,
-          cover_image_url: editProjectForm.cover_image_url || null
+          cover_image_url: editProjectForm.cover_image_url || null,
+          responsible_id: editProjectForm.responsible_id || null
         })
         .eq('id', selectedProjectForDetail.id);
 
@@ -791,10 +831,10 @@ export const ProjectsPage: React.FC = () => {
 
   const getTaskStatusIcon = (status: string) => {
     switch (status) {
-      case 'done': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'in_progress': return <Circle className="w-4 h-4 text-blue-500" />;
-      case 'review': return <AlertCircle className="w-4 h-4 text-yellow-500" />;
-      default: return <Circle className="w-4 h-4 text-gray-400" />;
+      case 'done': return <CheckCircle className="w-4 h-4 text-emerald-500" />;
+      case 'in_progress': return <Circle className="w-4 h-4 text-primary" />;
+      case 'review': return <AlertCircle className="w-4 h-4 text-amber-500" />;
+      default: return <Circle className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
@@ -806,6 +846,23 @@ export const ProjectsPage: React.FC = () => {
     
     return matchesSearch && matchesStatus && matchesPlan;
   });
+
+  // Group projects by pillar for visual organization
+  const projectsByPillar = useMemo(() => {
+    const grouped: Record<string, { projects: StrategicProject[]; color: string }> = {};
+    
+    filteredProjects.forEach(project => {
+      const pillarKey = project.pillar_name || 'Sem Pilar';
+      const pillarColor = project.pillar_color || '#94a3b8';
+      
+      if (!grouped[pillarKey]) {
+        grouped[pillarKey] = { projects: [], color: pillarColor };
+      }
+      grouped[pillarKey].projects.push(project);
+    });
+    
+    return grouped;
+  }, [filteredProjects]);
 
   const getProjectTasks = (projectId: string) => {
     return tasks.filter(task => task.project_id === projectId);
@@ -1054,6 +1111,15 @@ export const ProjectsPage: React.FC = () => {
                   </div>
                 </div>
                 
+                {/* Responsible */}
+                <div>
+                  <Label>Responsável</Label>
+                  <UserSelect
+                    users={companyUsers}
+                    value={projectForm.responsible_id}
+                    onValueChange={(value) => setProjectForm(prev => ({ ...prev, responsible_id: value || '' }))}
+                  />
+                </div>
                 {/* Cover Image Upload */}
                 <div>
                   <Label>Imagem de Capa</Label>
@@ -1368,6 +1434,37 @@ export const ProjectsPage: React.FC = () => {
                                 </p>
                               )}
                             </div>
+                            
+                            {/* Responsible */}
+                            <div className="space-y-0.5 col-span-2">
+                              <span className="text-xs text-muted-foreground">Responsável</span>
+                              {editingProject ? (
+                                <UserSelect
+                                  users={companyUsers}
+                                  value={editProjectForm.responsible_id}
+                                  onValueChange={(value) => setEditProjectForm(prev => ({ ...prev, responsible_id: value || '' }))}
+                                  className="h-8 text-xs"
+                                />
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  {selectedProjectForDetail.responsible_user ? (
+                                    <>
+                                      <Avatar className="h-6 w-6">
+                                        <AvatarImage src={selectedProjectForDetail.responsible_user.avatar_url} />
+                                        <AvatarFallback className="text-[10px] bg-primary text-primary-foreground">
+                                          {selectedProjectForDetail.responsible_user.first_name?.[0]}{selectedProjectForDetail.responsible_user.last_name?.[0]}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <span className="font-medium text-sm">
+                                        {selectedProjectForDetail.responsible_user.first_name} {selectedProjectForDetail.responsible_user.last_name}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <span className="text-muted-foreground text-sm">—</span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           {/* Objectives - Compact Chips */}
@@ -1564,7 +1661,7 @@ export const ProjectsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
               placeholder="Buscar projetos..."
               value={searchTerm}
@@ -1624,7 +1721,7 @@ export const ProjectsPage: React.FC = () => {
           {plans.length === 0 ? (
             <Card className="text-center py-12">
               <CardContent>
-                <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-foreground mb-2">Nenhum plano estratégico encontrado</h3>
                 <p className="text-muted-foreground mb-4">Crie um plano estratégico primeiro para poder criar projetos.</p>
                 <Button variant="outline">
@@ -1635,7 +1732,7 @@ export const ProjectsPage: React.FC = () => {
           ) : filteredProjects.length === 0 ? (
             <Card className="text-center py-12">
               <CardContent>
-                <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-foreground mb-2">Nenhum projeto encontrado</h3>
                 <p className="text-muted-foreground mb-4">Comece criando seu primeiro projeto estratégico.</p>
                 <Button onClick={() => setIsCreateProjectOpen(true)}>
@@ -1645,22 +1742,18 @@ export const ProjectsPage: React.FC = () => {
               </CardContent>
             </Card>
           ) : (
-            /* Projects Grid - Modern Cards */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {filteredProjects.map((project) => {
-                const projectTasks = getProjectTasks(project.id);
-                const completedTasks = projectTasks.filter(t => t.status === 'done').length;
-
-                return (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    taskCount={projectTasks.length}
-                    completedTasks={completedTasks}
-                    onClick={() => openProjectDetail(project)}
-                  />
-                );
-              })}
+            /* Projects grouped by Pillar */
+            <div className="space-y-8">
+              {Object.entries(projectsByPillar).map(([pillarName, { projects: pillarProjects, color }]) => (
+                <ProjectPillarGroup
+                  key={pillarName}
+                  pillarName={pillarName}
+                  pillarColor={color}
+                  projects={pillarProjects}
+                  tasks={tasks}
+                  onProjectClick={openProjectDetail}
+                />
+              ))}
             </div>
           )}
         </TabsContent>
