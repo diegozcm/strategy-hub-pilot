@@ -11,12 +11,30 @@ import { Slider } from '@/components/ui/slider';
 import { ProgressSlider } from '@/components/ui/progress-slider';
 import { KeyResult, KRInitiative, InitiativeStatus, InitiativePriority } from '@/types/strategic-map';
 import { useState } from 'react';
-import { Plus, Calendar, Target, AlertCircle, Edit, Trash2, User, DollarSign } from 'lucide-react';
+import { Plus, Calendar, Target, AlertCircle, Edit, Trash2, User, DollarSign, GripVertical } from 'lucide-react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { parseISO, format } from 'date-fns';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { useEffect } from 'react';
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { SortableInitiativeCard } from './initiatives/SortableInitiativeCard';
 
 // Helper: Converter quarter para datas de início e fim
 const quarterToDates = (quarter: 1 | 2 | 3 | 4, year: number) => {
@@ -152,12 +170,25 @@ const periodSelectOptions = [
 
 export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesModalProps) => {
   const { company } = useAuth();
-  const { initiatives, loading, createInitiative, updateInitiative, deleteInitiative, getInitiativeStats } = useKRInitiatives(keyResult?.id);
+  const { initiatives, loading, createInitiative, updateInitiative, deleteInitiative, reorderInitiatives, getInitiativeStats } = useKRInitiatives(keyResult?.id);
   const { yearOptions } = usePlanPeriodOptions();
   
   const [showNewForm, setShowNewForm] = useState(false);
   const [editingInitiative, setEditingInitiative] = useState<KRInitiative | null>(null);
   const [deletingInitiativeId, setDeletingInitiativeId] = useState<string | null>(null);
+  const [activeInitiative, setActiveInitiative] = useState<KRInitiative | null>(null);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
   
   // Form state
   const [title, setTitle] = useState('');
@@ -309,6 +340,26 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
     });
   };
 
+  // Drag handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    const initiative = initiatives.find(i => i.id === event.active.id);
+    if (initiative) setActiveInitiative(initiative);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveInitiative(null);
+    
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    
+    const oldIndex = initiatives.findIndex(i => i.id === active.id);
+    const newIndex = initiatives.findIndex(i => i.id === over.id);
+    
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const reordered = arrayMove(initiatives, oldIndex, newIndex);
+      await reorderInitiatives(reordered);
+    }
+  };
 
   const getStatusBadge = (status: InitiativeStatus) => (
     <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status]}`}>
@@ -585,93 +636,47 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                 </AlertDescription>
               </Alert>
             ) : (
-              <div className="space-y-4">
-                {initiatives.map((initiative) => (
-                  <Card key={initiative.id}>
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1">
-                          <CardTitle className="text-base">{initiative.title}</CardTitle>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
-                            {formatPeriodDisplay(initiative.start_date, initiative.end_date)}
-                            {initiative.responsible && (
-                              <>
-                                <User className="h-3 w-3 ml-2" />
-                                {initiative.responsible}
-                              </>
-                            )}
-                            {initiative.budget && (
-                              <>
-                                <DollarSign className="h-3 w-3 ml-2" />
-                                R$ {initiative.budget.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              </>
-                            )}
-                          </div>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext 
+                  items={initiatives.map(i => i.id)} 
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-4">
+                    {initiatives.map((initiative) => (
+                      <SortableInitiativeCard
+                        key={initiative.id}
+                        initiative={initiative}
+                        onEdit={handleEditInitiative}
+                        onDelete={setDeletingInitiativeId}
+                        onUpdateProgress={handleUpdateProgress}
+                        formatPeriodDisplay={formatPeriodDisplay}
+                        getStatusBadge={getStatusBadge}
+                        statusLabels={statusLabels}
+                        isProgressLocked={isProgressLocked}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+                
+                <DragOverlay>
+                  {activeInitiative && (
+                    <Card className="shadow-xl ring-2 ring-primary/20">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base">{activeInitiative.title}</CardTitle>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          {formatPeriodDisplay(activeInitiative.start_date, activeInitiative.end_date)}
                         </div>
-                        <div className="flex items-center gap-2">
-                          {getStatusBadge(initiative.status)}
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditInitiative(initiative)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeletingInitiativeId(initiative.id)}
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {initiative.description && (
-                        <div>
-                          <h4 className="font-medium text-sm mb-1">Descrição</h4>
-                          <p className="text-sm text-muted-foreground">{initiative.description}</p>
-                        </div>
-                      )}
-                      
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-medium text-sm">Progresso</h4>
-                          <span className="text-sm text-muted-foreground">{initiative.progress_percentage}%</span>
-                        </div>
-                        <ProgressSlider
-                          value={initiative.progress_percentage ?? 0}
-                          onValueCommit={(value) => handleUpdateProgress(initiative.id, value)}
-                          max={100}
-                          min={0}
-                          step={5}
-                          className="w-full"
-                          colorScheme="initiatives"
-                          disabled={isProgressLocked(initiative.status)}
-                        />
-                        {isProgressLocked(initiative.status) && (
-                          <p className="text-xs text-muted-foreground italic mt-1">
-                            Progresso bloqueado — Iniciativa {statusLabels[initiative.status].toLowerCase()}
-                          </p>
-                        )}
-                      </div>
-
-                      {initiative.completion_notes && (
-                        <div>
-                          <h4 className="font-medium text-sm mb-1">Notas de Acompanhamento</h4>
-                          <p className="text-sm text-muted-foreground">{initiative.completion_notes}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardHeader>
+                    </Card>
+                  )}
+                </DragOverlay>
+              </DndContext>
             )}
           </div>
         </div>

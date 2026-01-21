@@ -207,6 +207,7 @@ export interface KRInitiative {
   budget?: number;
   progress_percentage: number;
   completion_notes?: string;
+  position: number;
   created_by: string;
   created_at: string;
   updated_at: string;

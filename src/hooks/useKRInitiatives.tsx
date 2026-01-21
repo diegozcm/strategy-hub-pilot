@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './useMultiTenant';
@@ -10,7 +10,7 @@ export const useKRInitiatives = (keyResultId?: string) => {
   const [initiatives, setInitiatives] = useState<KRInitiative[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const loadInitiatives = async () => {
+  const loadInitiatives = useCallback(async () => {
     if (!keyResultId || !company?.id) return;
     
     setLoading(true);
@@ -20,7 +20,7 @@ export const useKRInitiatives = (keyResultId?: string) => {
         .select('*')
         .eq('key_result_id', keyResultId)
         .eq('company_id', company.id)
-        .order('start_date', { ascending: true });
+        .order('position', { ascending: true });
 
       if (error) throw error;
       
@@ -35,9 +35,9 @@ export const useKRInitiatives = (keyResultId?: string) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [keyResultId, company?.id, toast]);
 
-  const createInitiative = async (initiativeData: Omit<KRInitiative, 'id' | 'created_by' | 'created_at' | 'updated_at'>) => {
+  const createInitiative = async (initiativeData: Omit<KRInitiative, 'id' | 'created_by' | 'created_at' | 'updated_at' | 'position'>) => {
     if (!user?.id || !company?.id) {
       toast({
         title: "Erro",
@@ -49,10 +49,16 @@ export const useKRInitiatives = (keyResultId?: string) => {
 
     setLoading(true);
     try {
+      // Get max position for this key result
+      const maxPosition = initiatives.length > 0 
+        ? Math.max(...initiatives.map(i => i.position ?? 0)) + 1 
+        : 0;
+
       const { data, error } = await supabase
         .from('kr_initiatives')
         .insert([{
           ...initiativeData,
+          position: maxPosition,
           created_by: user.id,
           company_id: company.id
         }])
@@ -148,6 +154,33 @@ export const useKRInitiatives = (keyResultId?: string) => {
     }
   };
 
+  const reorderInitiatives = async (reorderedInitiatives: KRInitiative[]) => {
+    // Optimistic update
+    const previousInitiatives = [...initiatives];
+    setInitiatives(reorderedInitiatives);
+
+    try {
+      // Update positions in database
+      const updates = reorderedInitiatives.map((init, index) => 
+        supabase
+          .from('kr_initiatives')
+          .update({ position: index })
+          .eq('id', init.id)
+      );
+
+      await Promise.all(updates);
+    } catch (error: any) {
+      console.error('Error reordering initiatives:', error);
+      // Rollback on error
+      setInitiatives(previousInitiatives);
+      toast({
+        title: "Erro ao reordenar",
+        description: "Não foi possível salvar a nova ordem.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getInitiativesByStatus = (status: KRInitiative['status']) => {
     return initiatives.filter(init => init.status === status);
   };
@@ -183,7 +216,7 @@ export const useKRInitiatives = (keyResultId?: string) => {
     if (keyResultId && company?.id) {
       loadInitiatives();
     }
-  }, [keyResultId, company?.id]);
+  }, [keyResultId, company?.id, loadInitiatives]);
 
   return {
     initiatives,
@@ -192,6 +225,7 @@ export const useKRInitiatives = (keyResultId?: string) => {
     createInitiative,
     updateInitiative,
     deleteInitiative,
+    reorderInitiatives,
     getInitiativesByStatus,
     getActiveInitiatives,
     getInitiativeStats
