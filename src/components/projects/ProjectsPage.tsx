@@ -96,10 +96,12 @@ export const ProjectsPage: React.FC = () => {
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [objectives, setObjectives] = useState<StrategicObjective[]>([]);
   const [selectedObjectives, setSelectedObjectives] = useState<string[]>([]);
-  const [selectedPlan, setSelectedPlan] = useState<string>('all');
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [pillarFilter, setPillarFilter] = useState<string>('all');
+  const [objectiveFilter, setObjectiveFilter] = useState<string>('all');
+  const [responsibleFilter, setResponsibleFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
@@ -192,9 +194,27 @@ export const ProjectsPage: React.FC = () => {
       if (activePlanIds.length === 0) {
         setProjects([]);
         setTasks([]);
+        setObjectives([]);
         setLoading(false);
         return;
       }
+
+      // Load objectives for filter dropdown
+      const { data: objectivesData } = await supabase
+        .from('strategic_objectives')
+        .select(`
+          id,
+          title,
+          pillar_id,
+          strategic_pillars (
+            name,
+            color
+          )
+        `)
+        .in('plan_id', activePlanIds)
+        .order('title');
+      
+      setObjectives(objectivesData || []);
 
       // Load projects - filter by active plans only with responsible user data
       const { data: projectsData, error: projectsError } = await supabase
@@ -838,13 +858,28 @@ export const ProjectsPage: React.FC = () => {
     }
   };
 
+  // Extract unique pillars from projects for filter
+  const uniquePillars = useMemo(() => {
+    const pillarsMap = new Map<string, string>();
+    projects.forEach(p => {
+      if (p.pillar_name && p.pillar_color) {
+        pillarsMap.set(p.pillar_name, p.pillar_color);
+      }
+    });
+    return Array.from(pillarsMap.entries()).map(([name, color]) => ({ name, color }));
+  }, [projects]);
+
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          project.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
-    const matchesPlan = selectedPlan === 'all' || project.plan_id === selectedPlan;
+    const matchesPillar = pillarFilter === 'all' || project.pillar_name === pillarFilter;
+    const matchesObjective = objectiveFilter === 'all' || 
+      (project.objective_ids && project.objective_ids.includes(objectiveFilter));
+    const matchesResponsible = responsibleFilter === 'all' || 
+      project.responsible_id === responsibleFilter;
     
-    return matchesSearch && matchesStatus && matchesPlan;
+    return matchesSearch && matchesStatus && matchesPillar && matchesObjective && matchesResponsible;
   });
 
   // Group projects by pillar for visual organization
@@ -1657,53 +1692,9 @@ export const ProjectsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Buscar projetos..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Select value={selectedPlan} onValueChange={setSelectedPlan}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Todos os planos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os planos</SelectItem>
-              {plans.map((plan) => (
-                <SelectItem key={plan.id} value={plan.id}>
-                  {plan.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="planning">Planejamento</SelectItem>
-              <SelectItem value="active">Ativo</SelectItem>
-              <SelectItem value="on_hold">Em Pausa</SelectItem>
-              <SelectItem value="completed">Concluído</SelectItem>
-              <SelectItem value="cancelled">Cancelado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       {/* View Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'projects' | 'kanban')} className="w-full">
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-4">
           <TabsList className="inline-flex w-auto bg-muted/50 p-1 rounded-lg">
             <TabsTrigger value="projects" className="px-6 py-2.5 rounded-md data-[state=active]:shadow-sm">
               <FolderOpen className="w-4 h-4 mr-2" />
@@ -1714,6 +1705,101 @@ export const ProjectsPage: React.FC = () => {
               Kanban de Tarefas
             </TabsTrigger>
           </TabsList>
+        </div>
+
+        {/* Filters - Below Tabs */}
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[200px] max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Buscar projetos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Pillar Filter */}
+          <Select value={pillarFilter} onValueChange={setPillarFilter}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Todos os pilares" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os pilares</SelectItem>
+              {uniquePillars.map((pillar) => (
+                <SelectItem key={pillar.name} value={pillar.name}>
+                  <div className="flex items-center gap-2">
+                    <span 
+                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: pillar.color }}
+                    />
+                    <span className="truncate">{pillar.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Objective Filter */}
+          <Select value={objectiveFilter} onValueChange={setObjectiveFilter}>
+            <SelectTrigger className="w-52">
+              <SelectValue placeholder="Todos os objetivos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os objetivos</SelectItem>
+              {objectives.map((objective) => (
+                <SelectItem key={objective.id} value={objective.id}>
+                  <div className="flex items-center gap-2">
+                    <span 
+                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: objective.strategic_pillars?.color || '#94a3b8' }}
+                    />
+                    <span className="truncate max-w-[180px]">{objective.title}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Responsible Filter */}
+          <Select value={responsibleFilter} onValueChange={setResponsibleFilter}>
+            <SelectTrigger className="w-52">
+              <SelectValue placeholder="Todos os responsáveis" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os responsáveis</SelectItem>
+              {companyUsers.map((user) => (
+                <SelectItem key={user.user_id} value={user.user_id}>
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={user.avatar_url || undefined} />
+                      <AvatarFallback className="text-[8px] bg-primary text-primary-foreground">
+                        {user.first_name?.[0]}{user.last_name?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="truncate">{user.first_name} {user.last_name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Status Filter */}
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-40">
+              <Filter className="w-4 h-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              <SelectItem value="planning">Planejamento</SelectItem>
+              <SelectItem value="active">Ativo</SelectItem>
+              <SelectItem value="on_hold">Em Pausa</SelectItem>
+              <SelectItem value="completed">Concluído</SelectItem>
+              <SelectItem value="cancelled">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         
         <TabsContent value="projects" className="space-y-6">
