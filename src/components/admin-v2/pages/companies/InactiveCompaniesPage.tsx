@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Users, XCircle, Search, MoreHorizontal, Eye, Pencil, Power, AlertCircle, Building2 } from "lucide-react";
+import { Users, XCircle, Search, MoreHorizontal, Eye, AlertCircle, Building2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AdminPageContainer } from "../../components/AdminPageContainer";
 import { StatCard } from "../../components/StatCard";
@@ -9,11 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { CompanyDetailsModal } from "./modals";
 
 interface CompanyWithDetails {
   id: string;
@@ -26,11 +26,14 @@ interface CompanyWithDetails {
   userCount: number;
 }
 
-export default function InactiveCompaniesPage() {
-  const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState("");
+type ModalType = 'details' | null;
 
-  const { data: companies, isLoading } = useQuery({
+export default function InactiveCompaniesPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCompany, setSelectedCompany] = useState<CompanyWithDetails | null>(null);
+  const [modalType, setModalType] = useState<ModalType>(null);
+
+  const { data: companies, isLoading, refetch } = useQuery({
     queryKey: ["admin-inactive-companies"],
     queryFn: async (): Promise<CompanyWithDetails[]> => {
       const { data: companiesData, error } = await supabase
@@ -78,11 +81,19 @@ export default function InactiveCompaniesPage() {
     };
   }, [companies]);
 
-  const handleNotImplemented = (action: string) => {
-    toast({
-      title: "Funcionalidade em Desenvolvimento",
-      description: `A ação "${action}" será implementada em breve.`,
-    });
+  const handleOpenDetails = (company: CompanyWithDetails) => {
+    setSelectedCompany(company);
+    setModalType('details');
+  };
+
+  const handleCloseModal = () => {
+    setModalType(null);
+    setSelectedCompany(null);
+  };
+
+  const handleSuccess = () => {
+    refetch();
+    handleCloseModal();
   };
 
   return (
@@ -207,21 +218,9 @@ export default function InactiveCompaniesPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleNotImplemented("Ver Detalhes")}>
+                            <DropdownMenuItem onClick={() => handleOpenDetails(company)}>
                               <Eye className="h-4 w-4 mr-2" />
                               Ver Detalhes
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleNotImplemented("Editar")}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              onClick={() => handleNotImplemented("Reativar")}
-                              className="text-green-600"
-                            >
-                              <Power className="h-4 w-4 mr-2" />
-                              Reativar Empresa
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -234,6 +233,15 @@ export default function InactiveCompaniesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {modalType === 'details' && selectedCompany && (
+        <CompanyDetailsModal
+          open={true}
+          onOpenChange={handleCloseModal}
+          company={selectedCompany}
+          onSuccess={handleSuccess}
+        />
+      )}
     </AdminPageContainer>
   );
 }
