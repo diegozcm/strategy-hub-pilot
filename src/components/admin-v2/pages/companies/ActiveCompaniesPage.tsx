@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Users, CheckCircle, Search, MoreHorizontal, Eye, Pencil, UserCog, Power, Building2 } from "lucide-react";
+import { Users, CheckCircle, Search, MoreHorizontal, Eye, Power, Building2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AdminPageContainer } from "../../components/AdminPageContainer";
 import { StatCard } from "../../components/StatCard";
@@ -13,7 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { CompanyDetailsModal } from "./modals";
 
 interface CompanyWithDetails {
   id: string;
@@ -26,11 +26,14 @@ interface CompanyWithDetails {
   userCount: number;
 }
 
-export default function ActiveCompaniesPage() {
-  const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState("");
+type ModalType = 'details' | null;
 
-  const { data: companies, isLoading } = useQuery({
+export default function ActiveCompaniesPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCompany, setSelectedCompany] = useState<CompanyWithDetails | null>(null);
+  const [modalType, setModalType] = useState<ModalType>(null);
+
+  const { data: companies, isLoading, refetch } = useQuery({
     queryKey: ["admin-active-companies"],
     queryFn: async (): Promise<CompanyWithDetails[]> => {
       const { data: companiesData, error } = await supabase
@@ -60,6 +63,21 @@ export default function ActiveCompaniesPage() {
     staleTime: 60 * 1000,
   });
 
+  const handleOpenDetails = (company: CompanyWithDetails) => {
+    setSelectedCompany(company);
+    setModalType('details');
+  };
+
+  const handleCloseModal = () => {
+    setModalType(null);
+    setSelectedCompany(null);
+  };
+
+  const handleSuccess = () => {
+    refetch();
+    handleCloseModal();
+  };
+
   const filteredCompanies = useMemo(() => {
     if (!companies) return [];
     if (!searchQuery) return companies;
@@ -77,13 +95,6 @@ export default function ActiveCompaniesPage() {
       totalUsers: companies.reduce((acc, c) => acc + c.userCount, 0),
     };
   }, [companies]);
-
-  const handleNotImplemented = (action: string) => {
-    toast({
-      title: "Funcionalidade em Desenvolvimento",
-      description: `A ação "${action}" será implementada em breve.`,
-    });
-  };
 
   return (
     <AdminPageContainer 
@@ -208,25 +219,9 @@ export default function ActiveCompaniesPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleNotImplemented("Ver Detalhes")}>
+                            <DropdownMenuItem onClick={() => handleOpenDetails(company)}>
                               <Eye className="h-4 w-4 mr-2" />
                               Ver Detalhes
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleNotImplemented("Editar")}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleNotImplemented("Gerenciar Usuários")}>
-                              <UserCog className="h-4 w-4 mr-2" />
-                              Gerenciar Usuários
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              onClick={() => handleNotImplemented("Desativar")}
-                              className="text-destructive"
-                            >
-                              <Power className="h-4 w-4 mr-2" />
-                              Desativar
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -239,6 +234,16 @@ export default function ActiveCompaniesPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Company Details Modal */}
+      {modalType === 'details' && selectedCompany && (
+        <CompanyDetailsModal
+          open={true}
+          onOpenChange={handleCloseModal}
+          company={selectedCompany}
+          onSuccess={handleSuccess}
+        />
+      )}
     </AdminPageContainer>
   );
 }
