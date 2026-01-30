@@ -16,7 +16,7 @@ interface StatCardProps {
 }
 
 const variantStyles = {
-  default: "bg-cofound-blue-dark/10 text-cofound-blue-dark",
+  default: "bg-cofound-blue-light/10 text-cofound-blue-light",
   success: "bg-cofound-green/20 text-cofound-green",
   warning: "bg-yellow-500/10 text-yellow-600",
   danger: "bg-destructive/10 text-destructive",

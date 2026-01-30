@@ -93,7 +93,7 @@ export default function AICopilotModulePage() {
           <Card className="lg:col-span-2">
             <CardHeader>
               <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-lg bg-amber-500 flex items-center justify-center">
+                <div className="h-14 w-14 rounded-lg bg-cofound-blue-dark flex items-center justify-center">
                   <Brain className="h-8 w-8 text-white" />
                 </div>
                 <div className="flex-1">
@@ -102,7 +102,7 @@ export default function AICopilotModulePage() {
                     {isLoading ? (
                       <Skeleton className="h-5 w-16" />
                     ) : (
-                      <Badge variant={moduleData?.active ? "default" : "secondary"}>
+                      <Badge variant={moduleData?.active ? "cofound-success" : "secondary"}>
                         {moduleData?.active ? "Ativo" : "Inativo"}
                       </Badge>
                     )}
@@ -168,7 +168,7 @@ export default function AICopilotModulePage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {features.map(feature => (
                 <div key={feature} className="flex items-center gap-2 text-sm">
-                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <CheckCircle className="h-4 w-4 text-cofound-green" />
                   <span>{feature}</span>
                 </div>
               ))}
@@ -246,7 +246,7 @@ export default function AICopilotModulePage() {
                       <TableCell className="font-medium">{company.name}</TableCell>
                       <TableCell className="text-center">{company.userCount}</TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="default" className="bg-green-500">
+                        <Badge variant="cofound-success">
                           <CheckCircle className="h-3 w-3 mr-1" />
                           Sim
                         </Badge>

@@ -74,7 +74,7 @@ export default function AllUsersPage() {
         <CardHeader className="pb-3">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <CardTitle className="text-lg">Lista de Usuários</CardTitle>
-            <Button onClick={() => navigate('/app/admin-v2/users/create')}><Plus className="h-4 w-4 mr-2" />Criar Usuário</Button>
+            <Button variant="cofound" onClick={() => navigate('/app/admin-v2/users/create')}><Plus className="h-4 w-4 mr-2" />Criar Usuário</Button>
           </div>
         </CardHeader>
         <CardContent>

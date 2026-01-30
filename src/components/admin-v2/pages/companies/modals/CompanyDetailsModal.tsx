@@ -202,7 +202,7 @@ export function CompanyDetailsModal({
               )}
 
               <div className="pt-4">
-                <Button onClick={() => setSubModal('edit')} className="w-full">
+                <Button variant="cofound" onClick={() => setSubModal('edit')} className="w-full">
                   <Pencil className="h-4 w-4 mr-2" />
                   Editar Informações
                 </Button>
@@ -286,7 +286,7 @@ export function CompanyDetailsModal({
               </div>
 
               <div className="pt-4">
-                <Button onClick={() => setSubModal('edit')} className="w-full">
+                <Button variant="cofound" onClick={() => setSubModal('edit')} className="w-full">
                   <Settings className="h-4 w-4 mr-2" />
                   Editar Configurações
                 </Button>
@@ -302,7 +302,7 @@ export function CompanyDetailsModal({
               >
                 <CardHeader className="p-4">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Pencil className="h-4 w-4 text-blue-500" />
+                    <Pencil className="h-4 w-4 text-cofound-blue-light" />
                     Editar Empresa
                   </CardTitle>
                   <CardDescription>
@@ -318,7 +318,7 @@ export function CompanyDetailsModal({
               >
                 <CardHeader className="p-4">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <UserCog className="h-4 w-4 text-violet-500" />
+                    <UserCog className="h-4 w-4 text-cofound-blue-light" />
                     Gerenciar Usuários
                   </CardTitle>
                   <CardDescription>
@@ -332,14 +332,14 @@ export function CompanyDetailsModal({
                 className={`cursor-pointer hover:bg-muted/50 transition-colors ${
                   displayCompany.status === 'active' 
                     ? 'border-orange-500/50' 
-                    : 'border-green-500/50'
+                    : 'border-cofound-green/50'
                 }`}
                 onClick={() => setSubModal('status')}
               >
                 <CardHeader className="p-4">
                   <CardTitle className="text-base flex items-center gap-2">
                     <Power className={`h-4 w-4 ${
-                      displayCompany.status === 'active' ? 'text-orange-500' : 'text-green-500'
+                      displayCompany.status === 'active' ? 'text-orange-500' : 'text-cofound-green'
                     }`} />
                     {displayCompany.status === 'active' ? 'Desativar Empresa' : 'Reativar Empresa'}
                   </CardTitle>

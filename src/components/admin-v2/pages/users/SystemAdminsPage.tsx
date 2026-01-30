@@ -159,7 +159,7 @@ export default function SystemAdminsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Buscar administrador..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 w-64" />
               </div>
-              <Button onClick={() => setModalType('add')}>
+              <Button variant="cofound" onClick={() => setModalType('add')}>
                 <UserPlus className="h-4 w-4 mr-2" />Adicionar Admin
               </Button>
             </div>
@@ -278,7 +278,7 @@ export default function SystemAdminsPage() {
                       <p className="font-medium">{searchedUser.first_name} {searchedUser.last_name}</p>
                       <p className="text-sm text-muted-foreground">{searchedUser.email}</p>
                     </div>
-                    <UserPlus className="h-5 w-5 text-primary" />
+                    <UserPlus className="h-5 w-5 text-cofound-blue-light" />
                   </div>
                 </CardContent>
               </Card>
@@ -289,7 +289,7 @@ export default function SystemAdminsPage() {
             <Button variant="outline" onClick={() => { setModalType(null); setAddEmail(''); setSearchedUser(null); }}>
               Cancelar
             </Button>
-            <Button onClick={handleAddAdmin} disabled={!searchedUser || adding} className="bg-amber-600 hover:bg-amber-700">
+            <Button variant="cofound" onClick={handleAddAdmin} disabled={!searchedUser || adding}>
               {adding ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Adicionando...</>
               ) : (

@@ -155,7 +155,7 @@ export default function SystemHealthPage() {
                     )}
                     <span className="font-medium">{check.label}</span>
                   </div>
-                  <Badge variant={check.status ? 'default' : 'destructive'}>
+                  <Badge variant={check.status ? 'cofound-success' : 'destructive'}>
                     {check.status ? 'Saudável' : 'Com Problemas'}
                   </Badge>
                 </div>
@@ -163,10 +163,10 @@ export default function SystemHealthPage() {
               
               <div className="flex items-center justify-between py-2 border-b">
                 <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                  <CheckCircle2 className="h-5 w-5 text-cofound-green" />
                   <span className="font-medium">Autenticação</span>
                 </div>
-                <Badge variant="default">OK</Badge>
+                <Badge variant="cofound-success">OK</Badge>
               </div>
 
               <div className="flex items-center justify-between py-2">

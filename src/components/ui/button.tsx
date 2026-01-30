@@ -18,6 +18,11 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        // Cofound brand variants
+        cofound: "bg-cofound-green text-cofound-blue-dark hover:bg-cofound-green/90 font-medium shadow-sm",
+        "cofound-secondary": "bg-cofound-blue-light text-cofound-blue-dark hover:bg-cofound-blue-light/90 font-medium shadow-sm",
+        "cofound-outline": "border-2 border-cofound-green bg-transparent text-cofound-green hover:bg-cofound-green/10",
+        "cofound-ghost": "text-cofound-blue-light hover:bg-cofound-blue-light/10",
       },
       size: {
         default: "h-10 px-4 py-2",

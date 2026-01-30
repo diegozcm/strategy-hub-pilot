@@ -159,49 +159,49 @@ export default function RegisteredCompaniesPage() {
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
                 {/* Strategy HUB */}
-                <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                <div className="p-4 rounded-lg bg-cofound-blue-light/10 border border-cofound-blue-light/30">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="p-1.5 rounded-md bg-blue-100 dark:bg-blue-900">
-                      <Target className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <div className="p-1.5 rounded-md bg-cofound-blue-light/20">
+                      <Target className="h-4 w-4 text-cofound-blue-light" />
                     </div>
                     <span className="font-medium text-sm">Strategy HUB</span>
                   </div>
-                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                  <p className="text-2xl font-bold text-cofound-blue-light">
                     {modulesLoading ? "..." : moduleData?.stats.strategyHub || 0}
                   </p>
-                  <p className="text-xs text-blue-600/70 dark:text-blue-400/70">
+                  <p className="text-xs text-cofound-blue-light/70">
                     {stats?.total ? (((moduleData?.stats.strategyHub || 0) / stats.total) * 100).toFixed(0) : 0}% das empresas
                   </p>
                 </div>
 
                 {/* Startup HUB */}
-                <div className="p-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+                <div className="p-4 rounded-lg bg-cofound-green/10 border border-cofound-green/30">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="p-1.5 rounded-md bg-green-100 dark:bg-green-900">
-                      <Rocket className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <div className="p-1.5 rounded-md bg-cofound-green/20">
+                      <Rocket className="h-4 w-4 text-cofound-green" />
                     </div>
                     <span className="font-medium text-sm">Startup HUB</span>
                   </div>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  <p className="text-2xl font-bold text-cofound-green">
                     {modulesLoading ? "..." : moduleData?.stats.startupHub || 0}
                   </p>
-                  <p className="text-xs text-green-600/70 dark:text-green-400/70">
+                  <p className="text-xs text-cofound-green/70">
                     {stats?.total ? (((moduleData?.stats.startupHub || 0) / stats.total) * 100).toFixed(0) : 0}% das empresas
                   </p>
                 </div>
 
                 {/* IA Copilot */}
-                <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800">
+                <div className="p-4 rounded-lg bg-cofound-blue-dark/10 border border-cofound-blue-dark/30">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="p-1.5 rounded-md bg-purple-100 dark:bg-purple-900">
-                      <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                    <div className="p-1.5 rounded-md bg-cofound-blue-dark/20">
+                      <Sparkles className="h-4 w-4 text-cofound-blue-dark" />
                     </div>
                     <span className="font-medium text-sm">IA Copilot</span>
                   </div>
-                  <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+                  <p className="text-2xl font-bold text-cofound-blue-dark">
                     {isLoading ? "..." : stats?.withAI || 0}
                   </p>
-                  <p className="text-xs text-purple-600/70 dark:text-purple-400/70">
+                  <p className="text-xs text-cofound-blue-dark/70">
                     {stats?.total ? ((stats.withAI / stats.total) * 100).toFixed(0) : 0}% das empresas
                   </p>
                 </div>
@@ -289,7 +289,7 @@ export default function RegisteredCompaniesPage() {
                             <div className="flex items-center gap-3">
                               <Avatar className="h-8 w-8">
                                 <AvatarImage src={company.logo_url || undefined} />
-                                <AvatarFallback className="text-xs bg-primary/10">
+                                <AvatarFallback className="text-xs bg-cofound-blue-light/10 text-cofound-blue-light">
                                   {company.name.charAt(0).toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
@@ -317,19 +317,19 @@ export default function RegisteredCompaniesPage() {
                           <TableCell>
                             <div className="flex gap-1 flex-wrap">
                               {companyModules.includes('strategic-planning') && (
-                                <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                                <Badge variant="secondary" className="text-xs bg-cofound-blue-light/20 text-cofound-blue-light border-cofound-blue-light/30">
                                   <Target className="h-3 w-3 mr-1" />
                                   Strategy
                                 </Badge>
                               )}
                               {companyModules.includes('startup-hub') && (
-                                <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+                                <Badge variant="secondary" className="text-xs bg-cofound-green/20 text-cofound-green border-cofound-green/30">
                                   <Rocket className="h-3 w-3 mr-1" />
                                   Startup
                                 </Badge>
                               )}
                               {company.ai_enabled && (
-                                <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+                                <Badge variant="secondary" className="text-xs bg-cofound-blue-dark/20 text-cofound-blue-dark border-cofound-blue-dark/30">
                                   <Sparkles className="h-3 w-3 mr-1" />
                                   IA
                                 </Badge>
