@@ -31,7 +31,7 @@ export function UserHeader({ user, size = 'md', showStatus = true, showAdmin = t
     <div className="flex items-center gap-4">
       <Avatar className={avatarSizes[size]}>
         <AvatarImage src={user.avatar_url || undefined} alt={`${user.first_name} ${user.last_name}`} />
-        <AvatarFallback className="text-xs bg-primary/10 text-primary">
+        <AvatarFallback className="text-xs bg-cofound-blue-light/10 text-cofound-blue-light">
           {getInitials(user.first_name, user.last_name)}
         </AvatarFallback>
       </Avatar>
@@ -50,7 +50,7 @@ export function UserHeader({ user, size = 'md', showStatus = true, showAdmin = t
             <Badge 
               variant={user.status === 'active' ? 'default' : 'secondary'}
               className={user.status === 'active' 
-                ? 'bg-green-100 text-green-700 border-green-200 text-xs' 
+                ? 'bg-cofound-green/20 text-cofound-green border-cofound-green/30 text-xs' 
                 : 'bg-gray-100 text-gray-600 border-gray-200 text-xs'
               }
             >

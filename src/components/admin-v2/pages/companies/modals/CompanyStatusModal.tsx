@@ -134,7 +134,7 @@ export function CompanyStatusModal({
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={loading}
-            className={isDeactivating ? "bg-orange-600 hover:bg-orange-700" : "bg-green-600 hover:bg-green-700"}
+            className={isDeactivating ? "bg-orange-600 hover:bg-orange-700" : "bg-cofound-green hover:bg-cofound-green/90 text-cofound-blue-dark"}
           >
             {loading ? "Processando..." : isDeactivating ? "Desativar" : "Reativar"}
           </AlertDialogAction>

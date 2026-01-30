@@ -188,8 +188,8 @@ export default function PerformancePage() {
                     {domLoadTime < 1500 ? 'Rápido' : 'Lento'}
                   </p>
                 </div>
-                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
-                  <Zap className="h-5 w-5 text-primary" />
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-cofound-blue-light/10">
+                  <Zap className="h-5 w-5 text-cofound-blue-light" />
                 </div>
               </div>
             </CardContent>
@@ -205,8 +205,8 @@ export default function PerformancePage() {
                     {pageLoadTime < 3000 ? 'Normal' : 'Lento'}
                   </p>
                 </div>
-                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
-                  <Clock className="h-5 w-5 text-primary" />
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-cofound-blue-light/10">
+                  <Clock className="h-5 w-5 text-cofound-blue-light" />
                 </div>
               </div>
             </CardContent>
@@ -222,8 +222,8 @@ export default function PerformancePage() {
                     {firstPaint < 1000 ? 'Ótimo' : 'Aceitável'}
                   </p>
                 </div>
-                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
-                  <Activity className="h-5 w-5 text-primary" />
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-cofound-blue-light/10">
+                  <Activity className="h-5 w-5 text-cofound-blue-light" />
                 </div>
               </div>
             </CardContent>
@@ -239,8 +239,8 @@ export default function PerformancePage() {
                     {memoryUsage !== null && memoryUsage < 70 ? 'Normal' : 'Alto'}
                   </p>
                 </div>
-                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-primary/10">
-                  <HardDrive className="h-5 w-5 text-primary" />
+                <div className="h-10 w-10 rounded-lg flex items-center justify-center bg-cofound-blue-light/10">
+                  <HardDrive className="h-5 w-5 text-cofound-blue-light" />
                 </div>
               </div>
             </CardContent>

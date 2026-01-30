@@ -236,7 +236,7 @@ export default function ModulesByCompanyPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         {company.modules.strategic.enabled ? (
-                          <Badge variant="default" className="bg-blue-500">
+                          <Badge variant="cofound-info">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             {company.modules.strategic.userCount}
                           </Badge>
@@ -246,7 +246,7 @@ export default function ModulesByCompanyPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         {company.modules.startup.enabled ? (
-                          <Badge variant="default" className="bg-purple-500">
+                          <Badge variant="cofound-success">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             {company.modules.startup.userCount}
                           </Badge>
@@ -256,7 +256,7 @@ export default function ModulesByCompanyPage() {
                       </TableCell>
                       <TableCell className="text-center">
                         {company.modules.ai.enabled ? (
-                          <Badge variant="default" className="bg-amber-500">
+                          <Badge variant="cofound-primary">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Sim
                           </Badge>
@@ -286,7 +286,7 @@ export default function ModulesByCompanyPage() {
           <CardContent className="pt-6">
             <div className="flex flex-wrap gap-6 text-sm">
               <div className="flex items-center gap-2">
-                <Badge variant="default" className="bg-blue-500">
+                <Badge variant="cofound-info">
                   <CheckCircle className="h-3 w-3 mr-1" />N
                 </Badge>
                 <span className="text-muted-foreground">Módulo ativo, N usuários</span>

@@ -15,9 +15,9 @@ const moduleIcons: Record<string, React.ElementType> = {
 };
 
 const moduleColors: Record<string, string> = {
-  "strategic-planning": "bg-blue-500",
-  "startup-hub": "bg-purple-500",
-  "ai": "bg-amber-500",
+  "strategic-planning": "bg-cofound-blue-light",
+  "startup-hub": "bg-cofound-green",
+  "ai": "bg-cofound-blue-dark",
 };
 
 export default function AvailableModulesPage() {

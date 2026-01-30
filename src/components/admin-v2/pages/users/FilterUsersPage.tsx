@@ -149,7 +149,7 @@ export default function FilterUsersPage() {
             </div>
           </div>
           <div className="flex gap-3 pt-2">
-            <Button onClick={handleApplyFilters}><Filter className="h-4 w-4 mr-2" />Aplicar Filtros</Button>
+            <Button variant="cofound" onClick={handleApplyFilters}><Filter className="h-4 w-4 mr-2" />Aplicar Filtros</Button>
             <Button variant="outline" onClick={handleClearFilters}><X className="h-4 w-4 mr-2" />Limpar Filtros</Button>
           </div>
         </CardContent>
