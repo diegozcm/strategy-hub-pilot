@@ -36,8 +36,8 @@ function IconNavButton({ children, isActive = false, onClick, tooltip }: IconNav
       className={cn(
         "flex h-10 w-10 items-center justify-center rounded-lg transition-all duration-200",
         isActive
-          ? "bg-primary text-primary-foreground shadow-sm"
-          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          ? "bg-cofound-blue-dark text-cofound-white shadow-sm"
+          : "text-muted-foreground hover:bg-cofound-blue-light/10 hover:text-cofound-blue-dark"
       )}
     >
       {children}
@@ -111,11 +111,11 @@ export function IconNavigation({
 
   return (
     <TooltipProvider delayDuration={0}>
-      <div className="flex h-full w-16 flex-col border-r border-border bg-[#F7F7F7]">
+      <div className="flex h-full w-16 flex-col border-r border-border bg-cofound-white">
         {/* Logo */}
         <div className="flex h-16 items-center justify-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-            <Target className="h-5 w-5 text-primary-foreground" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cofound-blue-dark">
+            <Target className="h-5 w-5 text-cofound-white" />
           </div>
         </div>
 

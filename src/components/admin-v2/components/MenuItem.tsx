@@ -29,8 +29,8 @@ export function MenuItem({ item, isExpanded, onToggle }: MenuItemProps) {
       className={cn(
         "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors",
         isActive
-          ? "bg-primary text-primary-foreground"
-          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          ? "bg-cofound-blue-dark text-cofound-white"
+          : "text-muted-foreground hover:bg-cofound-blue-light/10 hover:text-cofound-blue-dark"
       )}
     >
       {Icon && <Icon className="h-4 w-4 shrink-0" />}
@@ -69,8 +69,8 @@ export function SubMenuItem({ item }: SubMenuItemProps) {
       className={cn(
         "flex w-full items-center gap-3 rounded-lg py-1.5 pl-10 pr-3 text-left transition-colors",
         isActive
-          ? "bg-primary/10 text-primary font-medium"
-          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+          ? "bg-cofound-blue-light/10 text-cofound-blue-dark font-medium"
+          : "text-muted-foreground hover:bg-cofound-blue-light/5 hover:text-cofound-blue-dark"
       )}
     >
       {Icon && <Icon className="h-3.5 w-3.5 shrink-0" />}

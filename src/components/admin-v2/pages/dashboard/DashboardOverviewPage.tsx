@@ -122,9 +122,9 @@ export default function DashboardOverviewPage() {
                       <Line 
                         type="monotone" 
                         dataKey="logins" 
-                        stroke="hsl(var(--primary))" 
+                        stroke="hsl(var(--cofound-blue-light))" 
                         strokeWidth={2}
-                        dot={{ fill: "hsl(var(--primary))" }}
+                        dot={{ fill: "hsl(var(--cofound-blue-dark))" }}
                       />
                     </LineChart>
                   </ResponsiveContainer>

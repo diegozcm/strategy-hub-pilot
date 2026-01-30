@@ -23,13 +23,13 @@ export function PresenceIndicator({
         className={cn(
           "rounded-full",
           sizeStyles[size],
-          isOnline ? "bg-green-500" : "bg-gray-400"
+          isOnline ? "bg-cofound-green" : "bg-gray-400"
         )}
       />
       {isOnline && showPulse && (
         <span
           className={cn(
-            "absolute inline-flex rounded-full bg-green-400 opacity-75 animate-ping",
+            "absolute inline-flex rounded-full bg-cofound-green opacity-75 animate-ping",
             sizeStyles[size]
           )}
         />

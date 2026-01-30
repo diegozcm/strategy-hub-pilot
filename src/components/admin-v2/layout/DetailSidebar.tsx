@@ -33,7 +33,7 @@ export function DetailSidebar({
   return (
     <div
       className={cn(
-        "flex h-full flex-col border-r border-border bg-[#F7F7F7] transition-all duration-300",
+        "flex h-full flex-col border-r border-border bg-cofound-white transition-all duration-300",
         isCollapsed ? "w-0 overflow-hidden" : "w-64"
       )}
     >
@@ -59,7 +59,7 @@ export function DetailSidebar({
 
       {/* Section Title */}
       <div className="px-4 py-4">
-        <h2 className="text-xl font-bold tracking-tight text-primary">
+        <h2 className="text-xl font-bold tracking-tight text-cofound-blue-dark">
           {content.title}
         </h2>
       </div>
