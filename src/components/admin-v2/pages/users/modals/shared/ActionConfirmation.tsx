@@ -29,15 +29,15 @@ export function ActionConfirmation({
     },
     success: {
       icon: CheckCircle2,
-      containerClass: 'bg-green-50 border-green-200',
-      iconClass: 'text-green-600',
-      textClass: 'text-green-800'
+      containerClass: 'bg-cofound-green/10 border-cofound-green/30',
+      iconClass: 'text-cofound-green',
+      textClass: 'text-cofound-green'
     },
     info: {
       icon: Info,
-      containerClass: 'bg-blue-50 border-blue-200',
-      iconClass: 'text-blue-600',
-      textClass: 'text-blue-800'
+      containerClass: 'bg-cofound-blue-light/10 border-cofound-blue-light/30',
+      iconClass: 'text-cofound-blue-light',
+      textClass: 'text-cofound-blue-dark'
     }
   };
 

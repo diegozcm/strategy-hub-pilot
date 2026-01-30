@@ -3,7 +3,7 @@ import { AdminV2Sidebar } from "./layout/AdminV2Sidebar";
 
 const AdminV2Page = () => {
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-cofound-white overflow-hidden font-lexend">
       {/* Sidebar - Fixed height */}
       <AdminV2Sidebar />
       

@@ -12,7 +12,7 @@ interface StatusBadgeProps {
 const statusConfig: Record<StatusType, { label: string; className: string }> = {
   active: {
     label: "Ativo",
-    className: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
+    className: "bg-cofound-green/20 text-cofound-green border-cofound-green/30",
   },
   inactive: {
     label: "Inativo",
@@ -24,7 +24,7 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
   },
   success: {
     label: "Sucesso",
-    className: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
+    className: "bg-cofound-green/20 text-cofound-green border-cofound-green/30",
   },
   warning: {
     label: "Atenção",
@@ -36,7 +36,7 @@ const statusConfig: Record<StatusType, { label: string; className: string }> = {
   },
   info: {
     label: "Info",
-    className: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
+    className: "bg-cofound-blue-light/10 text-cofound-blue-light border-cofound-blue-light/30",
   },
 };
 

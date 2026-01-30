@@ -27,7 +27,7 @@ export function UserAvatar({ collapsed = false }: UserAvatarProps) {
       <div className="flex flex-col items-center gap-2 border-t border-border p-2">
         <Avatar className="h-9 w-9">
           <AvatarImage src={avatarUrl} alt={name} />
-          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+          <AvatarFallback className="bg-cofound-blue-dark text-cofound-white text-xs">
             {initials}
           </AvatarFallback>
         </Avatar>
@@ -39,12 +39,12 @@ export function UserAvatar({ collapsed = false }: UserAvatarProps) {
     <div className="flex items-center gap-3 border-t border-border p-4">
       <Avatar className="h-9 w-9 shrink-0">
         <AvatarImage src={avatarUrl} alt={name} />
-        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+        <AvatarFallback className="bg-cofound-blue-dark text-cofound-white text-xs">
           {initials}
         </AvatarFallback>
       </Avatar>
       <div className="flex flex-col overflow-hidden">
-        <span className="truncate text-sm font-medium text-foreground">{name}</span>
+        <span className="truncate text-sm font-medium text-cofound-blue-dark">{name}</span>
         {email && (
           <span className="truncate text-xs text-muted-foreground">{email}</span>
         )}

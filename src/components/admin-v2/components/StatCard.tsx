@@ -16,11 +16,11 @@ interface StatCardProps {
 }
 
 const variantStyles = {
-  default: "bg-primary/10 text-primary",
-  success: "bg-green-500/10 text-green-600 dark:text-green-400",
-  warning: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
+  default: "bg-cofound-blue-dark/10 text-cofound-blue-dark",
+  success: "bg-cofound-green/20 text-cofound-green",
+  warning: "bg-yellow-500/10 text-yellow-600",
   danger: "bg-destructive/10 text-destructive",
-  info: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  info: "bg-cofound-blue-light/10 text-cofound-blue-light",
 };
 
 export function StatCard({

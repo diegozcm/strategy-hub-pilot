@@ -149,7 +149,7 @@ export function SearchInput({ collapsed = false, onNavigate, onSectionChange, on
                     key={`${item.href}-${index}`}
                     value={item.label}
                     onSelect={() => handleSelect(item)}
-                    className="group flex cursor-pointer flex-col items-start gap-0.5 px-3 py-2.5 transition-all duration-150 ease-out hover:bg-[#3DBBFF] hover:text-white data-[selected=true]:bg-[#3DBBFF] data-[selected=true]:text-white"
+                    className="group flex cursor-pointer flex-col items-start gap-0.5 px-3 py-2.5 transition-all duration-150 ease-out hover:bg-cofound-blue-light hover:text-white data-[selected=true]:bg-cofound-blue-light data-[selected=true]:text-white"
                   >
                     <span className="font-medium transition-colors duration-150">{item.label}</span>
                     <span className="text-xs text-muted-foreground transition-colors duration-150 group-hover:text-white/80 group-data-[selected=true]:text-white/80">

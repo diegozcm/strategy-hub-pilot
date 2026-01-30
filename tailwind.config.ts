@@ -73,12 +73,19 @@ export default {
 					'gray-medium': 'hsl(var(--strategy-gray-medium))'
 				},
 				cofound: {
+					'blue-light': 'hsl(var(--cofound-blue-light))',
+					'green': 'hsl(var(--cofound-green))',
+					'blue-dark': 'hsl(var(--cofound-blue-dark))',
+					'white': 'hsl(var(--cofound-white))',
+					// Legacy colors
 					cyan: 'hsl(var(--cofound-cyan))',
 					navy: 'hsl(var(--cofound-navy))',
 					lime: 'hsl(var(--cofound-lime))',
-					white: 'hsl(var(--cofound-white))',
 					'light-gray': 'hsl(var(--cofound-light-gray))'
 				}
+			},
+			fontFamily: {
+				lexend: ['Lexend', 'sans-serif'],
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
