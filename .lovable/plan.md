@@ -1,229 +1,183 @@
 
-# Plano: Melhorar Aplicação das Cores Cofound no Admin-V2
+# Plano: Ajustar RLS para Membros Sempre Verem KRs
 
 ## Problema Identificado
 
-As cores da identidade visual Cofound não estão sendo aplicadas de forma ampla:
-- **Verde (#CDD966)** praticamente não aparece em botões e ações positivas
-- **Azul Claro (#38B6FF)** quase não é usado - deveria aparecer em links, hovers, e destaques
-- **Azul Escuro (#0D2338)** está sendo usado em excesso, onde deveria haver variedade
+A política atual de SELECT na tabela `key_results` exige que a configuração `members_can_view_all` esteja habilitada para membros verem os KRs. O comportamento esperado é que **membros SEMPRE vejam todos os KRs da empresa**, independente dessa configuração.
 
-## Estratégia de Correção
+### Política Atual (Problemática)
 
-A implementação será feita em **3 frentes** para garantir uso adequado das cores:
-
-### 1. Botões Primários -> Verde Cofound
-
-**Onde aplicar:**
-- Todos os botões de ação principal (Criar, Aplicar, Salvar, Confirmar)
-- Botões de status positivo (Reativar, Aprovar)
-
-**Arquivo principal:** `src/components/ui/button.tsx`
-
-Criar nova variante `cofound` para botões primários no admin-v2:
-
-```typescript
-const buttonVariants = cva(
-  // ... base classes
-  {
-    variants: {
-      variant: {
-        // ... outras variantes
-        cofound: "bg-cofound-green text-cofound-blue-dark hover:bg-cofound-green/90 font-medium",
-        "cofound-outline": "border-2 border-cofound-blue-light bg-transparent text-cofound-blue-light hover:bg-cofound-blue-light/10",
-        "cofound-ghost": "text-cofound-blue-light hover:bg-cofound-blue-light/10 hover:text-cofound-blue-light",
-      },
-      // ...
-    }
-  }
-)
+```sql
+-- Membros só veem KRs se:
+-- 1. São manager/admin
+-- 2. São donos do KR
+-- 3. OU se members_can_view_all = true (configuração)  ❌ Problema aqui
 ```
 
-### 2. Ícones e Elementos de Destaque -> Azul Claro
+### Comportamento Esperado
 
-**Onde aplicar:**
-- Ícones em StatCards de informação
-- Links e elementos interativos
-- Bordas de foco e ring
-- Indicadores visuais
-
-**Arquivos a modificar:**
-- `StatCard.tsx` - ícones de variantes info e default
-- `MenuItem.tsx` - hover states
-- Páginas com ícones hardcoded
-
-### 3. Badges e Status -> Verde para Positivo
-
-**Onde aplicar:**
-- Badge "Ativo" e "Habilitado"
-- StatusBadge success
-- Indicadores de status online
-
-**Arquivos a modificar:**
-- `src/components/ui/badge.tsx` - adicionar variante `cofound-success`
-- Páginas que usam `Badge variant="default"` para status positivo
+| Ação | Manager/Admin | Membro |
+|------|---------------|--------|
+| Ver todos os KRs | ✅ | ✅ (SEMPRE) |
+| Criar KR | ✅ | ❌ |
+| Editar configurações do KR | ✅ | ❌ |
+| Deletar KR | ✅ | ❌ |
+| Fazer check-in (inserir valores) | ✅ | ✅ (apenas nos seus KRs) |
+| Criar/Editar/Deletar Iniciativas | ✅ | ❌ |
+| Marcar suas tarefas como concluídas | ✅ | ✅ (apenas suas) |
 
 ---
 
-## Detalhamento das Mudanças
+## Estratégia de Implementação
 
-### Arquivo 1: `src/components/ui/button.tsx`
+### 1. Atualizar Política SELECT de key_results
 
-Adicionar variantes Cofound:
+Remover a dependência da configuração `members_can_view_all` - membros sempre veem todos os KRs da empresa.
 
-```typescript
-const buttonVariants = cva(
-  "...",
-  {
-    variants: {
-      variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        // ... outras existentes
-        // NOVAS VARIANTES COFOUND
-        cofound: "bg-cofound-green text-cofound-blue-dark hover:bg-cofound-green/90 font-medium shadow-sm",
-        "cofound-secondary": "bg-cofound-blue-light text-cofound-blue-dark hover:bg-cofound-blue-light/90",
-        "cofound-outline": "border-2 border-cofound-green bg-transparent text-cofound-green hover:bg-cofound-green/10",
-        "cofound-ghost": "text-cofound-blue-light hover:bg-cofound-blue-light/10",
-      },
-    }
-  }
-)
+**Nova lógica:**
+```sql
+-- Pode ver se:
+-- 1. Pertence à empresa (via user_company_relations)
+-- Simples assim - qualquer usuário da empresa pode ver todos os KRs
 ```
 
-### Arquivo 2: `src/components/ui/badge.tsx`
+### 2. Atualizar Política UPDATE de key_results
 
-Adicionar variantes Cofound:
+Manter a lógica atual que já permite membros fazerem check-in nos seus KRs:
+- Managers/Admins: podem editar qualquer KR
+- Membros: podem editar apenas KRs onde são `assigned_owner_id`
 
-```typescript
-const badgeVariants = cva(
-  "...",
-  {
-    variants: {
-      variant: {
-        // ... existentes
-        // NOVAS VARIANTES COFOUND
-        "cofound-success": "border-cofound-green/30 bg-cofound-green/20 text-cofound-green",
-        "cofound-info": "border-cofound-blue-light/30 bg-cofound-blue-light/20 text-cofound-blue-light",
-        "cofound-primary": "border-transparent bg-cofound-blue-dark text-cofound-white",
-      },
-    }
-  }
-)
-```
+A restrição de **quais campos** podem ser editados será tratada no frontend (já está implementado em `useKRPermissions`).
 
-### Arquivo 3: `src/components/admin-v2/components/StatCard.tsx`
+### 3. Atualizar Políticas de kr_initiatives
 
-Atualizar variantes para usar mais Azul Claro e Verde:
+Atualmente qualquer usuário da empresa pode criar/editar/deletar iniciativas. Precisamos restringir para apenas managers/admins.
 
-```typescript
-const variantStyles = {
-  default: "bg-cofound-blue-light/10 text-cofound-blue-light",  // MUDANÇA: era blue-dark
-  success: "bg-cofound-green/20 text-cofound-green",
-  warning: "bg-yellow-500/10 text-yellow-600",
-  danger: "bg-destructive/10 text-destructive",
-  info: "bg-cofound-blue-light/10 text-cofound-blue-light",
-};
-```
+### 4. Atualizar Frontend (useKRPermissions)
 
-### Arquivo 4: `src/components/admin-v2/components/StatusBadge.tsx`
-
-Já está usando cofound-green para active/success. Verificar consistência.
-
-### Arquivo 5: Páginas com Botões Primários
-
-Atualizar todos os botões de ação principal para usar `variant="cofound"`:
-
-| Página | Botões a Atualizar |
-|--------|-------------------|
-| `FilterUsersPage.tsx` | "Aplicar Filtros" |
-| `AllUsersPage.tsx` | "Criar Usuário" |
-| `CreateUserPage.tsx` | "Criar Usuário" (submit) |
-| `AllCompaniesPage.tsx` | Nenhum (apenas view) |
-| `CompanyDetailsModal.tsx` | "Editar Informações", "Gerenciar Usuários" |
-| Todos os modais de criação/edição | Botão primário de ação |
-
-### Arquivo 6: Páginas com Ícones Hardcoded
-
-Substituir `text-primary` por `text-cofound-blue-light` nos ícones:
-
-| Arquivo | Elementos |
-|---------|-----------|
-| `PerformancePage.tsx` | Ícones dos cards de performance |
-| `SystemAdminsPage.tsx` | Ícone de UserPlus |
-| `DeactivateUserModal.tsx` | Avatar fallback |
-| `ReactivateUserModal.tsx` | Avatar fallback |
-| `FilterCompaniesPage.tsx` | Ícone de Bot |
-
-### Arquivo 7: Páginas de Módulos
-
-Atualizar cores dos módulos para usar paleta Cofound:
-
-```typescript
-const moduleColors: Record<string, string> = {
-  "strategic-planning": "bg-cofound-blue-light",  // era blue-500
-  "startup-hub": "bg-cofound-green",              // era purple-500
-  "ai": "bg-cofound-blue-dark",                   // era amber-500
-};
-```
+O hook já está corretamente configurado:
+- `canViewAllKRs` precisa ser `true` para todos os membros (sem depender de configuração)
+- `canEditAnyKR` é `false` para membros
+- `canCheckInKR` permite membros nos seus próprios KRs
 
 ---
 
-## Resumo Visual da Paleta
+## Detalhamento Técnico
 
+### Arquivo 1: Nova Migration SQL
+
+```sql
+-- 1. Simplificar política SELECT para permitir todos da empresa verem KRs
+DROP POLICY IF EXISTS "Users can view key results based on role" ON public.key_results;
+
+CREATE POLICY "Company users can view all key results"
+ON public.key_results
+FOR SELECT
+TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 
+    FROM user_company_relations ucr
+    JOIN strategic_plans sp ON sp.id = (
+      SELECT so.plan_id 
+      FROM strategic_objectives so 
+      WHERE so.id = key_results.objective_id
+    )
+    WHERE ucr.user_id = auth.uid()
+    AND ucr.company_id = sp.company_id
+  )
+);
+
+-- 2. Manter política UPDATE (já está correta)
+-- Managers editam todos, Members editam apenas onde são owner (check-in)
+
+-- 3. Restringir políticas de kr_initiatives para managers/admins
+DROP POLICY IF EXISTS "Users can create company KR initiatives" ON public.kr_initiatives;
+DROP POLICY IF EXISTS "Users can update company KR initiatives" ON public.kr_initiatives;
+DROP POLICY IF EXISTS "Users can delete company KR initiatives" ON public.kr_initiatives;
+
+-- Manter SELECT aberto para membros verem
+-- CREATE (apenas managers/admins)
+CREATE POLICY "Managers can create KR initiatives"
+ON public.kr_initiatives
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  is_strategy_hub_manager(auth.uid())
+  AND EXISTS (
+    SELECT 1 FROM user_company_relations ucr
+    WHERE ucr.user_id = auth.uid() 
+    AND ucr.company_id = kr_initiatives.company_id
+  )
+  AND created_by = auth.uid()
+);
+
+-- UPDATE (apenas managers/admins)
+CREATE POLICY "Managers can update KR initiatives"
+ON public.kr_initiatives
+FOR UPDATE
+TO authenticated
+USING (
+  is_strategy_hub_manager(auth.uid())
+  AND EXISTS (
+    SELECT 1 FROM user_company_relations ucr
+    WHERE ucr.user_id = auth.uid() 
+    AND ucr.company_id = kr_initiatives.company_id
+  )
+);
+
+-- DELETE (apenas managers/admins)
+CREATE POLICY "Managers can delete KR initiatives"
+ON public.kr_initiatives
+FOR DELETE
+TO authenticated
+USING (
+  is_strategy_hub_manager(auth.uid())
+  AND EXISTS (
+    SELECT 1 FROM user_company_relations ucr
+    WHERE ucr.user_id = auth.uid() 
+    AND ucr.company_id = kr_initiatives.company_id
+  )
+);
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ ELEMENTO                        │ COR ATUAL      │ COR NOVA    │
-├─────────────────────────────────┼────────────────┼─────────────┤
-│ Botão Primário (Criar, Salvar)  │ bg-primary     │ Verde       │
-│ Botão Secundário (Cancelar)     │ bg-secondary   │ outline     │
-│ Links e Hovers                  │ muted          │ Azul Claro  │
-│ Ícones em Cards                 │ primary        │ Azul Claro  │
-│ Badge "Ativo"                   │ verde genérico │ Verde       │
-│ Status Online                   │ green-500      │ Verde       │
-│ Títulos                         │ primary        │ Azul Escuro │
-│ Sidebar Active                  │ primary        │ Azul Escuro │
-└─────────────────────────────────────────────────────────────────┘
+
+### Arquivo 2: Atualizar useKRPermissions.tsx
+
+Simplificar a lógica de `canViewAllKRs` para sempre retornar `true` para qualquer membro do Strategy HUB (remover dependência de `membersCanViewAll`).
+
+```typescript
+// ANTES
+canViewAllKRs: isManagerOrAdmin || (isMemberOnly && (settingsLoading || membersCanViewAll)),
+
+// DEPOIS
+canViewAllKRs: true, // Qualquer membro do módulo pode ver todos os KRs
 ```
+
+### Arquivo 3: Remover Toggle de Visibilidade (Opcional)
+
+A configuração `members_can_view_all` no `ModulesSettingsTab.tsx` pode ser removida ou mantida para futuro uso. Recomendo manter a UI mas ela ficará sem efeito prático.
 
 ---
 
-## Arquivos a Modificar
+## Resumo das Mudanças
 
-| Arquivo | Tipo de Mudança |
-|---------|-----------------|
-| `src/components/ui/button.tsx` | Adicionar variantes cofound |
-| `src/components/ui/badge.tsx` | Adicionar variantes cofound |
-| `src/components/admin-v2/components/StatCard.tsx` | Atualizar default para Azul Claro |
-| `src/components/admin-v2/pages/users/FilterUsersPage.tsx` | Botão "Aplicar" -> variant cofound |
-| `src/components/admin-v2/pages/users/AllUsersPage.tsx` | Botão "Criar" -> variant cofound |
-| `src/components/admin-v2/pages/users/CreateUserPage.tsx` | Botão submit -> variant cofound |
-| `src/components/admin-v2/pages/companies/AllCompaniesPage.tsx` | Avatar fallback cores |
-| `src/components/admin-v2/pages/companies/FilterCompaniesPage.tsx` | Avatar e ícones |
-| `src/components/admin-v2/pages/companies/ActiveStartupsPage.tsx` | Avatar fallback |
-| `src/components/admin-v2/pages/companies/modals/CompanyDetailsModal.tsx` | Botões de ação |
-| `src/components/admin-v2/pages/users/DeactivateUserModal.tsx` | Avatar fallback |
-| `src/components/admin-v2/pages/users/ReactivateUserModal.tsx` | Avatar fallback |
-| `src/components/admin-v2/pages/users/modals/shared/UserHeader.tsx` | Avatar fallback |
-| `src/components/admin-v2/pages/monitoring/PerformancePage.tsx` | Ícones dos cards |
-| `src/components/admin-v2/pages/users/SystemAdminsPage.tsx` | Ícone UserPlus |
-| `src/components/admin-v2/pages/dashboard/RegisteredCompaniesPage.tsx` | Avatar fallback |
-| `src/components/admin-v2/pages/modules/AvailableModulesPage.tsx` | Cores dos módulos |
-| `src/components/admin-v2/pages/modules/ModulesByCompanyPage.tsx` | Badges de módulos |
-| `src/components/admin-v2/pages/modules/AICopilotModulePage.tsx` | Badge de status |
-| `src/components/admin-v2/pages/monitoring/SystemHealthPage.tsx` | Badge OK |
-
-**Total: ~20 arquivos**
+| Arquivo | Mudança |
+|---------|---------|
+| Nova migration SQL | Simplificar SELECT policy, restringir initiativas |
+| `src/hooks/useKRPermissions.tsx` | `canViewAllKRs` sempre `true` |
+| `src/components/settings/ModulesSettingsTab.tsx` | Opcional: remover toggle ou deixar |
 
 ---
 
-## Resultado Esperado
+## Verificação Pós-Implementação
 
-Após as mudanças:
+Após as mudanças, testar com um usuário **Membro** do Strategy HUB:
 
-1. **Botões de ação** terão fundo **Verde (#CDD966)** com texto Azul Escuro
-2. **Ícones informativos** serão **Azul Claro (#38B6FF)**
-3. **Status positivos** usarão **Verde (#CDD966)**
-4. **Hover states** terão destaque em **Azul Claro**
-5. **Textos principais** permanecerão **Azul Escuro (#0D2338)**
+1. ✅ Consegue ver todos os KRs da empresa
+2. ✅ Consegue fazer check-in nos KRs onde é dono
+3. ❌ NÃO consegue criar novos KRs
+4. ❌ NÃO consegue editar configurações de KRs
+5. ❌ NÃO consegue deletar KRs
+6. ❌ NÃO consegue criar/editar/deletar iniciativas
+7. ✅ Consegue ver todas as iniciativas
 
-A interface terá um visual mais vibrante e alinhado com a identidade Cofound.
