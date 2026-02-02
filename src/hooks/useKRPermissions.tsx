@@ -56,9 +56,8 @@ export const useKRPermissions = () => {
     // Permissão de selecionar dono
     canSelectOwner: isManagerOrAdmin, // Apenas managers/admins podem escolher dono
     
-    // Visualização - agora considera configuração da empresa
-    // Enquanto settings carrega, não aplicar restrição para membros
-    canViewAllKRs: isManagerOrAdmin || (isMemberOnly && (settingsLoading || membersCanViewAll)),
+    // Visualização - todos os membros do módulo podem ver todos os KRs
+    canViewAllKRs: true,
     
     // Flags de status
     isManagerOrAdmin,
