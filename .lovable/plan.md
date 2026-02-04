@@ -1,116 +1,70 @@
 
-# Plano: Correção do Tratamento de Erros na Criação de Usuários
+# Plano: Corrigir Erro de FK na Exclusão de Usuário
 
 ## Problema Identificado
 
-O usuário tentou criar um usuário com email `bernardoruschi@gmail.com`, mas esse email **já existe no sistema**. A edge function `create-user-admin` retornou corretamente:
+Ao tentar excluir o usuário "User Test Betinha", o sistema retorna:
 
-```json
-{
-  "success": false,
-  "error": "Usuário com este email já existe"
-}
-```
-
-Com status HTTP **422**. Porém, o frontend exibe:
-
-> "Erro ao criar usuário - Erro de comunicação com o servidor"
+> "update or delete on table 'profiles' violates foreign key constraint 'key_results_assigned_owner_id_fkey' on table 'key_results'"
 
 ### Causa Raiz
 
-O código em `CreateUserPage.tsx` (linhas 356-378) tenta extrair a mensagem de erro incorretamente:
+A função `safe_delete_user_with_replacement` não está transferindo **2 colunas** que referenciam a tabela `profiles`:
 
-```typescript
-// Código atual INCORRETO:
-const errorContext = (createError as any).context;
-if (errorContext?.body) {
-  const parsed = JSON.parse(errorContext.body);  // ❌ body não existe!
-  errorMessage = parsed.error || errorMessage;
-}
-```
-
-De acordo com a documentação oficial do Supabase, para erros de edge functions com status não-2xx, deve-se usar:
-
-```typescript
-import { FunctionsHttpError } from '@supabase/supabase-js'
-
-if (error instanceof FunctionsHttpError) {
-  const errorMessage = await error.context.json()  // ✅ Método assíncrono
-}
-```
-
-## Logs da Edge Function (Confirmação)
-
-```
-2026-02-04T20:06:17Z INFO User already exists: bernardoruschi@gmail.com
-2026-02-04T20:06:17Z INFO ✅ User bernardo.bruschi@cofound.com.br authorized as system admin
-```
-
-A edge function funciona corretamente - o problema é exclusivamente no frontend.
+| Tabela | Coluna | Situação |
+|--------|--------|----------|
+| `key_results` | `owner_id` | ✅ Já transferida |
+| `key_results` | `assigned_owner_id` | ❌ **Não transferida** |
+| `strategic_projects` | `owner_id` | ✅ Já transferida |
+| `strategic_projects` | `responsible_id` | ❌ **Não transferida** |
 
 ## Solução
 
-Atualizar o tratamento de erros em `CreateUserPage.tsx` para usar a API correta do Supabase SDK.
+Criar uma migration para atualizar a função `safe_delete_user_with_replacement` adicionando as transferências faltantes.
 
 ## Detalhamento Técnico
 
-### Arquivo: `src/components/admin-v2/pages/users/CreateUserPage.tsx`
+### Nova Migration SQL
 
-#### Mudança 1: Adicionar import
+A migration irá adicionar dois `UPDATE` statements antes da exclusão do perfil:
 
-```typescript
-// Adicionar no topo do arquivo (linha 12)
-import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from '@supabase/supabase-js';
+```sql
+-- Após a transferência de owner_id de key_results (linha ~349)
+
+-- Transfer key results assigned owner
+UPDATE key_results 
+SET assigned_owner_id = _replacement_user_id, updated_at = now()
+WHERE assigned_owner_id = _user_id;
+
+GET DIAGNOSTICS affected_records = ROW_COUNT;
+IF affected_records > 0 THEN
+  operations_log := operations_log || 
+    ('Transferiu responsabilidade de ' || affected_records || ' resultado(s) chave');
+END IF;
+
+-- Após a transferência de owner_id de strategic_projects (linha ~329)
+
+-- Transfer strategic projects responsible
+UPDATE strategic_projects 
+SET responsible_id = _replacement_user_id, updated_at = now()
+WHERE responsible_id = _user_id;
+
+GET DIAGNOSTICS affected_records = ROW_COUNT;
+IF affected_records > 0 THEN
+  operations_log := operations_log || 
+    ('Transferiu responsável de ' || affected_records || ' projeto(s) estratégico(s)');
+END IF;
 ```
 
-#### Mudança 2: Corrigir tratamento de erro
-
-Substituir linhas 356-378 por:
-
-```typescript
-// Handle edge function errors (including 422 business errors)
-if (createError) {
-  console.error('Edge function error:', createError);
-  let errorMessage = 'Erro de comunicação com o servidor.';
-  
-  try {
-    if (createError instanceof FunctionsHttpError) {
-      // Para erros HTTP da edge function, extrair o JSON da resposta
-      const errorData = await createError.context.json();
-      console.log('Edge function error data:', errorData);
-      errorMessage = errorData?.error || errorMessage;
-    } else if (createError instanceof FunctionsRelayError) {
-      errorMessage = `Erro de relay: ${createError.message}`;
-    } else if (createError instanceof FunctionsFetchError) {
-      errorMessage = `Erro de conexão: ${createError.message}`;
-    } else if ((createError as any).message) {
-      errorMessage = (createError as any).message;
-    }
-  } catch (parseError) {
-    console.error('Error parsing edge function error:', parseError);
-  }
-  
-  if (errorMessage.includes('já existe') || errorMessage.includes('already exists')) {
-    throw new Error('Este e-mail já está cadastrado no sistema.');
-  }
-  throw new Error(errorMessage);
-}
-```
-
-### Verificação em Outro Arquivo
-
-Verificar se há o mesmo problema em `src/components/admin/CreateUserPage.tsx` (versão antiga) - deve receber a mesma correção.
-
-## Resumo das Mudanças
+## Arquivos a Modificar
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/components/admin-v2/pages/users/CreateUserPage.tsx` | Corrigir import e tratamento de erros |
-| `src/components/admin/CreateUserPage.tsx` | Aplicar mesma correção (se necessário) |
+| Nova migration SQL | Atualizar função `safe_delete_user_with_replacement` |
 
 ## Verificação Pós-Implementação
 
-1. ✅ Criar usuário com email novo → sucesso
-2. ✅ Tentar criar usuário com email existente → exibe "Este e-mail já está cadastrado no sistema"
-3. ✅ Erros de conexão → exibe "Erro de conexão: ..."
-4. ✅ Erros de permissão → exibe "Permissão negada..."
+1. ✅ Exclusão de usuário com `assigned_owner_id` em key_results funciona
+2. ✅ Exclusão de usuário com `responsible_id` em strategic_projects funciona
+3. ✅ Log de operações mostra as novas transferências
+4. ✅ Dados críticos são transferidos para o usuário substituto
