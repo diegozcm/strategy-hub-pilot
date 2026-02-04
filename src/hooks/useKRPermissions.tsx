@@ -59,6 +59,12 @@ export const useKRPermissions = () => {
     // Visualização - todos os membros do módulo podem ver todos os KRs
     canViewAllKRs: true,
     
+    // Permissões de iniciativas
+    canCreateInitiative: isManagerOrAdmin,
+    canEditInitiativeConfig: isManagerOrAdmin, // Editar título, datas, responsável, etc
+    canDeleteInitiative: isManagerOrAdmin,
+    canUpdateInitiativeProgress: true, // Todos podem atualizar progresso
+    
     // Flags de status
     isManagerOrAdmin,
     isMemberOnly,
