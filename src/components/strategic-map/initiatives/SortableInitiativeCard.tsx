@@ -15,6 +15,7 @@ interface SortableInitiativeCardProps {
   getStatusBadge: (status: InitiativeStatus) => React.ReactNode;
   statusLabels: Record<InitiativeStatus, string>;
   isProgressLocked: (status: InitiativeStatus) => boolean;
+  canEditConfig?: boolean; // Se pode editar configurações (título, datas, etc)
 }
 
 export const SortableInitiativeCard = ({
@@ -25,7 +26,8 @@ export const SortableInitiativeCard = ({
   formatPeriodDisplay,
   getStatusBadge,
   statusLabels,
-  isProgressLocked
+  isProgressLocked,
+  canEditConfig = true
 }: SortableInitiativeCardProps) => {
   const {
     attributes,
@@ -83,24 +85,26 @@ export const SortableInitiativeCard = ({
           </div>
           <div className="flex items-center gap-2">
             {getStatusBadge(initiative.status)}
-            <div className="flex gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onEdit(initiative)}
-                className="h-8 w-8 p-0"
-              >
-                <Edit className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onDelete(initiative.id)}
-                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
+            {canEditConfig && (
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onEdit(initiative)}
+                  className="h-8 w-8 p-0"
+                >
+                  <Edit className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDelete(initiative.id)}
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>

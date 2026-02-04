@@ -16,6 +16,7 @@ import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { parseISO, format } from 'date-fns';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
+import { useKRPermissions } from '@/hooks/useKRPermissions';
 import { useEffect } from 'react';
 import {
   DndContext,
@@ -172,6 +173,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
   const { company } = useAuth();
   const { initiatives, loading, createInitiative, updateInitiative, deleteInitiative, reorderInitiatives, getInitiativeStats } = useKRInitiatives(keyResult?.id);
   const { yearOptions } = usePlanPeriodOptions();
+  const { canCreateInitiative, canEditInitiativeConfig } = useKRPermissions();
   
   const [showNewForm, setShowNewForm] = useState(false);
   const [editingInitiative, setEditingInitiative] = useState<KRInitiative | null>(null);
@@ -414,7 +416,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                 Defina e gerencie os planos de ação para atingir este resultado-chave
               </p>
             </div>
-            {!showNewForm && (
+            {canCreateInitiative && !showNewForm && (
               <Button onClick={() => setShowNewForm(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Iniciativa
@@ -658,6 +660,7 @@ export const KRInitiativesModal = ({ keyResult, open, onClose }: KRInitiativesMo
                         getStatusBadge={getStatusBadge}
                         statusLabels={statusLabels}
                         isProgressLocked={isProgressLocked}
+                        canEditConfig={canEditInitiativeConfig}
                       />
                     ))}
                   </div>
