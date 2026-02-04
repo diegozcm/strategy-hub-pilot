@@ -1,183 +1,152 @@
 
-# Plano: Ajustar RLS para Membros Sempre Verem KRs
+# Plano: Correção de Permissões para Iniciativas
 
-## Problema Identificado
+## Problemas Identificados
 
-A política atual de SELECT na tabela `key_results` exige que a configuração `members_can_view_all` esteja habilitada para membros verem os KRs. O comportamento esperado é que **membros SEMPRE vejam todos os KRs da empresa**, independente dessa configuração.
+### 1. Usuário com Role Incorreta
+O usuário **Tiago Fachini** (`tiago.fachini@projuris.com.br`) está cadastrado como **member** no Strategy HUB, mas deveria ser **manager** (Gestor).
 
-### Política Atual (Problemática)
+| Email | Role Atual | Role Esperada |
+|-------|------------|---------------|
+| tiago.fachini@projuris.com.br | member | **manager** |
+
+### 2. Frontend Exibe Botões para Todos
+O componente `SortableInitiativeCard` mostra botões de Editar/Excluir para todos os usuários, independente da role.
+
+## Ações Necessárias
+
+### Opção A: Corrigir Role do Usuário (se for apenas esse caso)
+
+Executar SQL para atualizar a role do Tiago:
 
 ```sql
--- Membros só veem KRs se:
--- 1. São manager/admin
--- 2. São donos do KR
--- 3. OU se members_can_view_all = true (configuração)  ❌ Problema aqui
+UPDATE user_module_roles
+SET role = 'manager'
+WHERE user_id = '1c0de795-7fde-4c79-9a7a-328fbf2cd40d'
+AND module_id = 'cc86887a-1f7c-40b6-807b-22a2e304293b';
 ```
 
-### Comportamento Esperado
+### Opção B: Permitir Membros Atualizarem Progresso (se for requisito do sistema)
 
-| Ação | Manager/Admin | Membro |
-|------|---------------|--------|
-| Ver todos os KRs | ✅ | ✅ (SEMPRE) |
-| Criar KR | ✅ | ❌ |
-| Editar configurações do KR | ✅ | ❌ |
-| Deletar KR | ✅ | ❌ |
-| Fazer check-in (inserir valores) | ✅ | ✅ (apenas nos seus KRs) |
-| Criar/Editar/Deletar Iniciativas | ✅ | ❌ |
-| Marcar suas tarefas como concluídas | ✅ | ✅ (apenas suas) |
+Se membros devem poder atualizar progresso das iniciativas:
 
----
-
-## Estratégia de Implementação
-
-### 1. Atualizar Política SELECT de key_results
-
-Remover a dependência da configuração `members_can_view_all` - membros sempre veem todos os KRs da empresa.
-
-**Nova lógica:**
-```sql
--- Pode ver se:
--- 1. Pertence à empresa (via user_company_relations)
--- Simples assim - qualquer usuário da empresa pode ver todos os KRs
-```
-
-### 2. Atualizar Política UPDATE de key_results
-
-Manter a lógica atual que já permite membros fazerem check-in nos seus KRs:
-- Managers/Admins: podem editar qualquer KR
-- Membros: podem editar apenas KRs onde são `assigned_owner_id`
-
-A restrição de **quais campos** podem ser editados será tratada no frontend (já está implementado em `useKRPermissions`).
-
-### 3. Atualizar Políticas de kr_initiatives
-
-Atualmente qualquer usuário da empresa pode criar/editar/deletar iniciativas. Precisamos restringir para apenas managers/admins.
-
-### 4. Atualizar Frontend (useKRPermissions)
-
-O hook já está corretamente configurado:
-- `canViewAllKRs` precisa ser `true` para todos os membros (sem depender de configuração)
-- `canEditAnyKR` é `false` para membros
-- `canCheckInKR` permite membros nos seus próprios KRs
-
----
-
-## Detalhamento Técnico
-
-### Arquivo 1: Nova Migration SQL
+#### 1. Nova Migration SQL
 
 ```sql
--- 1. Simplificar política SELECT para permitir todos da empresa verem KRs
-DROP POLICY IF EXISTS "Users can view key results based on role" ON public.key_results;
+-- Permitir UPDATE para todos da empresa (não apenas managers)
+DROP POLICY IF EXISTS "Managers can update KR initiatives" ON kr_initiatives;
 
-CREATE POLICY "Company users can view all key results"
-ON public.key_results
-FOR SELECT
-TO authenticated
+CREATE POLICY "Company users can update KR initiatives"
+ON kr_initiatives FOR UPDATE TO authenticated
 USING (
   EXISTS (
-    SELECT 1 
-    FROM user_company_relations ucr
-    JOIN strategic_plans sp ON sp.id = (
-      SELECT so.plan_id 
-      FROM strategic_objectives so 
-      WHERE so.id = key_results.objective_id
-    )
-    WHERE ucr.user_id = auth.uid()
-    AND ucr.company_id = sp.company_id
-  )
-);
-
--- 2. Manter política UPDATE (já está correta)
--- Managers editam todos, Members editam apenas onde são owner (check-in)
-
--- 3. Restringir políticas de kr_initiatives para managers/admins
-DROP POLICY IF EXISTS "Users can create company KR initiatives" ON public.kr_initiatives;
-DROP POLICY IF EXISTS "Users can update company KR initiatives" ON public.kr_initiatives;
-DROP POLICY IF EXISTS "Users can delete company KR initiatives" ON public.kr_initiatives;
-
--- Manter SELECT aberto para membros verem
--- CREATE (apenas managers/admins)
-CREATE POLICY "Managers can create KR initiatives"
-ON public.kr_initiatives
-FOR INSERT
-TO authenticated
-WITH CHECK (
-  is_strategy_hub_manager(auth.uid())
-  AND EXISTS (
-    SELECT 1 FROM user_company_relations ucr
-    WHERE ucr.user_id = auth.uid() 
-    AND ucr.company_id = kr_initiatives.company_id
-  )
-  AND created_by = auth.uid()
-);
-
--- UPDATE (apenas managers/admins)
-CREATE POLICY "Managers can update KR initiatives"
-ON public.kr_initiatives
-FOR UPDATE
-TO authenticated
-USING (
-  is_strategy_hub_manager(auth.uid())
-  AND EXISTS (
     SELECT 1 FROM user_company_relations ucr
     WHERE ucr.user_id = auth.uid() 
     AND ucr.company_id = kr_initiatives.company_id
   )
 );
 
--- DELETE (apenas managers/admins)
-CREATE POLICY "Managers can delete KR initiatives"
-ON public.kr_initiatives
-FOR DELETE
-TO authenticated
-USING (
-  is_strategy_hub_manager(auth.uid())
-  AND EXISTS (
-    SELECT 1 FROM user_company_relations ucr
-    WHERE ucr.user_id = auth.uid() 
-    AND ucr.company_id = kr_initiatives.company_id
-  )
-);
+-- Trigger para proteger campos sensíveis
+CREATE OR REPLACE FUNCTION restrict_initiative_updates()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Se não é manager, só permite alterar progresso e status
+  IF NOT is_strategy_hub_manager(auth.uid()) THEN
+    NEW.title := OLD.title;
+    NEW.description := OLD.description;
+    NEW.start_date := OLD.start_date;
+    NEW.end_date := OLD.end_date;
+    NEW.responsible := OLD.responsible;
+    NEW.budget := OLD.budget;
+    NEW.priority := OLD.priority;
+    NEW.completion_notes := OLD.completion_notes;
+    NEW.position := OLD.position;
+    -- Apenas progress_percentage e status são permitidos
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER tr_restrict_initiative_updates
+BEFORE UPDATE ON kr_initiatives
+FOR EACH ROW
+EXECUTE FUNCTION restrict_initiative_updates();
 ```
 
-### Arquivo 2: Atualizar useKRPermissions.tsx
+#### 2. Atualizar useKRPermissions.tsx
 
-Simplificar a lógica de `canViewAllKRs` para sempre retornar `true` para qualquer membro do Strategy HUB (remover dependência de `membersCanViewAll`).
+Adicionar permissões específicas para iniciativas:
 
 ```typescript
-// ANTES
-canViewAllKRs: isManagerOrAdmin || (isMemberOnly && (settingsLoading || membersCanViewAll)),
-
-// DEPOIS
-canViewAllKRs: true, // Qualquer membro do módulo pode ver todos os KRs
+// Após linha 53, adicionar:
+// Permissões de iniciativas
+canCreateInitiative: isManagerOrAdmin,
+canEditInitiativeConfig: isManagerOrAdmin,
+canDeleteInitiative: isManagerOrAdmin,
+canUpdateInitiativeProgress: true, // Todos podem atualizar progresso
 ```
 
-### Arquivo 3: Remover Toggle de Visibilidade (Opcional)
+#### 3. Atualizar SortableInitiativeCard.tsx
 
-A configuração `members_can_view_all` no `ModulesSettingsTab.tsx` pode ser removida ou mantida para futuro uso. Recomendo manter a UI mas ela ficará sem efeito prático.
+Receber prop de permissão e esconder botões:
 
----
+```typescript
+interface SortableInitiativeCardProps {
+  // ... props existentes
+  canEditConfig?: boolean; // Nova prop
+}
+
+// No JSX, envolver botões com condição:
+{canEditConfig !== false && (
+  <div className="flex gap-1">
+    <Button onClick={() => onEdit(initiative)}>...</Button>
+    <Button onClick={() => onDelete(initiative.id)}>...</Button>
+  </div>
+)}
+```
+
+#### 4. Atualizar KRInitiativesModal.tsx
+
+Importar hook e passar permissão:
+
+```typescript
+import { useKRPermissions } from '@/hooks/useKRPermissions';
+
+// Dentro do componente:
+const { canEditInitiativeConfig, canCreateInitiative } = useKRPermissions();
+
+// Esconder botão "Nova Iniciativa" para membros:
+{canCreateInitiative && !showNewForm && (
+  <Button onClick={() => setShowNewForm(true)}>
+    Nova Iniciativa
+  </Button>
+)}
+
+// Passar para o card:
+<SortableInitiativeCard 
+  canEditConfig={canEditInitiativeConfig}
+  {...outrasProps}
+/>
+```
 
 ## Resumo das Mudanças
 
 | Arquivo | Mudança |
 |---------|---------|
-| Nova migration SQL | Simplificar SELECT policy, restringir initiativas |
-| `src/hooks/useKRPermissions.tsx` | `canViewAllKRs` sempre `true` |
-| `src/components/settings/ModulesSettingsTab.tsx` | Opcional: remover toggle ou deixar |
-
----
+| Nova migration SQL | Permitir UPDATE + trigger de proteção |
+| `src/hooks/useKRPermissions.tsx` | Adicionar permissões de iniciativas |
+| `src/components/strategic-map/initiatives/SortableInitiativeCard.tsx` | Esconder botões para membros |
+| `src/components/strategic-map/KRInitiativesModal.tsx` | Verificar permissões antes de exibir ações |
 
 ## Verificação Pós-Implementação
 
-Após as mudanças, testar com um usuário **Membro** do Strategy HUB:
+1. ✅ Gestor (manager) pode criar/editar/deletar iniciativas
+2. ✅ Gestor pode atualizar progresso
+3. ✅ Membro NÃO vê botão "Nova Iniciativa"
+4. ✅ Membro NÃO vê botões de Editar/Excluir nas iniciativas
+5. ✅ Membro CONSEGUE arrastar slider de progresso
+6. ✅ Se membro tentar editar via API, campos protegidos são ignorados pelo trigger
 
-1. ✅ Consegue ver todos os KRs da empresa
-2. ✅ Consegue fazer check-in nos KRs onde é dono
-3. ❌ NÃO consegue criar novos KRs
-4. ❌ NÃO consegue editar configurações de KRs
-5. ❌ NÃO consegue deletar KRs
-6. ❌ NÃO consegue criar/editar/deletar iniciativas
-7. ✅ Consegue ver todas as iniciativas
+## Recomendação
 
+Se o Tiago deveria ser **Gestor**, a **Opção A** (atualizar a role) é mais simples. Se membros em geral devem poder atualizar progresso, implementar a **Opção B** completa.
