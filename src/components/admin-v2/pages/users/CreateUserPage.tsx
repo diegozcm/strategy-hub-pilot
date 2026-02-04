@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from '@supabase/supabase-js';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { User, Building2, Key, Shield, Loader2, Mail, Briefcase, Eye, CheckCircle2, Info, UserPlus, AlertTriangle, Copy, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -356,19 +357,23 @@ export default function CreateUserPage() {
       // Handle edge function errors (including 422 business errors)
       if (createError) {
         console.error('Edge function error:', createError);
-        // Try to parse error message from context
         let errorMessage = 'Erro de comunicação com o servidor.';
+        
         try {
-          // Edge function errors with non-2xx status have the response in context
-          const errorContext = (createError as any).context;
-          if (errorContext?.body) {
-            const parsed = JSON.parse(errorContext.body);
-            errorMessage = parsed.error || errorMessage;
+          if (createError instanceof FunctionsHttpError) {
+            // Para erros HTTP da edge function, extrair o JSON da resposta
+            const errorData = await createError.context.json();
+            console.log('Edge function error data:', errorData);
+            errorMessage = errorData?.error || errorMessage;
+          } else if (createError instanceof FunctionsRelayError) {
+            errorMessage = `Erro de relay: ${createError.message}`;
+          } else if (createError instanceof FunctionsFetchError) {
+            errorMessage = `Erro de conexão: ${createError.message}`;
           } else if ((createError as any).message) {
             errorMessage = (createError as any).message;
           }
-        } catch {
-          // Keep default message
+        } catch (parseError) {
+          console.error('Error parsing edge function error:', parseError);
         }
         
         if (errorMessage.includes('já existe') || errorMessage.includes('already exists')) {
