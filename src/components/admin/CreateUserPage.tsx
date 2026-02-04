@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { supabase } from '@/integrations/supabase/client';
+import { FunctionsHttpError, FunctionsRelayError, FunctionsFetchError } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -152,10 +153,31 @@ export const CreateUserPage = () => {
         createResult = result.data;
         createError = result.error;
         
-        // Se há erro de comunicação real (network, timeout, etc)
+        // Handle edge function errors (including 422 business errors)
         if (createError) {
-          console.error('Edge function invocation error:', createError);
-          throw new Error('Erro de comunicação com o servidor. Verifique sua conexão e tente novamente.');
+          console.error('Edge function error:', createError);
+          let errorMessage = 'Erro de comunicação com o servidor.';
+          
+          try {
+            if (createError instanceof FunctionsHttpError) {
+              const errorData = await createError.context.json();
+              console.log('Edge function error data:', errorData);
+              errorMessage = errorData?.error || errorMessage;
+            } else if (createError instanceof FunctionsRelayError) {
+              errorMessage = `Erro de relay: ${createError.message}`;
+            } else if (createError instanceof FunctionsFetchError) {
+              errorMessage = `Erro de conexão: ${createError.message}`;
+            } else if ((createError as any).message) {
+              errorMessage = (createError as any).message;
+            }
+          } catch (parseError) {
+            console.error('Error parsing edge function error:', parseError);
+          }
+          
+          if (errorMessage.includes('já existe') || errorMessage.includes('already exists')) {
+            throw new Error('Este e-mail já está cadastrado no sistema.');
+          }
+          throw new Error(errorMessage);
         }
         
         // Se não há resultado da função
