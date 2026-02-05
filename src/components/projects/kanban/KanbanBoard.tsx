@@ -44,6 +44,7 @@ interface KanbanBoardProps {
   onTasksUpdate: (tasks: ProjectTask[]) => void;
   companyUsers?: CompanyUser[];
   onEditTask?: (task: ProjectTask) => void;
+  onProjectStatusUpdate?: (projectId: string) => void;
 }
 
 const COLUMNS = [
@@ -61,6 +62,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onTasksUpdate,
   companyUsers = [],
   onEditTask,
+  onProjectStatusUpdate,
 }) => {
   const { toast } = useToast();
   const [activeTask, setActiveTask] = useState<ProjectTask | null>(null);
@@ -315,6 +317,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         );
 
         await Promise.all([...targetUpdates, ...sourceUpdates]);
+
+        // Atualizar status do projeto se necessário
+        if (onProjectStatusUpdate && currentTask?.project_id) {
+          onProjectStatusUpdate(currentTask.project_id);
+        }
 
         toast({
           title: "Sucesso",
