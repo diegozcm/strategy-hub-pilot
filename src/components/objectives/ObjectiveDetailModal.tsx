@@ -339,7 +339,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-medium">Resultados-Chave</h3>
-                      {onCreateKeyResult && (
+                      {onCreateKeyResult && keyResults.length > 0 && (
                         <Button 
                           variant="outline" 
                           size="sm" 
@@ -347,7 +347,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                           className="gap-2"
                         >
                           <Plus className="h-4 w-4" />
-                          Novo KR
+                          Novo Resultado-Chave
                         </Button>
                       )}
                     </div>

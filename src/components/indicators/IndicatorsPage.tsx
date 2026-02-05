@@ -26,6 +26,7 @@ import { KRUpdateValuesModal } from '@/components/strategic-map/KRUpdateValuesMo
 import { KeyResult, StrategicObjective } from '@/types/strategic-map';
 import { useSearchParams } from 'react-router-dom';
 import { KRCard } from './KRCard';
+import { StandaloneKeyResultForm } from './StandaloneKeyResultForm';
 import { KRTableView } from './KRTableView';
 import { useKRMetrics } from '@/hooks/useKRMetrics';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
@@ -141,22 +142,6 @@ export const IndicatorsPage: React.FC = () => {
   const [selectedKeyResult, setSelectedKeyResult] = useState<KeyResult | null>(null);
   const [selectedPillar, setSelectedPillar] = useState<{ name: string; color: string } | null>(null);
   
-  // Form states
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    unit: '%',
-    priority: 'medium',
-    objective_id: 'none',
-    start_month: '',
-    end_month: '',
-    assigned_owner_id: 'none'
-  });
-
-  // Estados para vigência do novo KR (Quarter + Ano)
-  const [newKRValidityQuarter, setNewKRValidityQuarter] = useState<1 | 2 | 3 | 4 | null>(null);
-  const [newKRValidityYear, setNewKRValidityYear] = useState<number>(getDefaultYear());
-
   // Handler para clique no botão YTD - sempre permite selecionar
   const handleYTDClick = () => {
     contextHandleYTDClick();
@@ -234,34 +219,17 @@ export const IndicatorsPage: React.FC = () => {
     }
   }, [searchParams, keyResults, setSearchParams]);
 
-  // Create key result
-  const handleCreateKeyResult = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Create key result using the new standalone form
+  const handleCreateKeyResultFromForm = async (krData: Omit<import('@/types/strategic-map').KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => {
     if (!user || !authCompany) return;
 
     try {
       setIsSubmitting(true);
       
       const keyResultData = {
-        title: formData.title,
-        description: formData.description,
-        unit: formData.unit,
-        target_value: 0, // Will be calculated from monthly targets
-        current_value: 0,
+        ...krData,
         owner_id: user.id,
-        objective_id: (formData.objective_id === 'none' || formData.objective_id === '') ? null : formData.objective_id,
-        metric_type: 'number',
-        frequency: 'monthly',
-        monthly_targets: {},
-        monthly_actual: {},
-        yearly_target: 0,
-        yearly_actual: 0,
-        start_month: formData.start_month || null,
-        end_month: formData.end_month || null,
-        // Se for member, auto-atribuir ao próprio usuário; senão usar o valor do form
-        assigned_owner_id: isMemberOnly 
-          ? currentUserId 
-          : ((formData.assigned_owner_id === 'none' || formData.assigned_owner_id === '') ? null : formData.assigned_owner_id)
+        objective_id: krData.objective_id || null,
       };
 
       const { data, error } = await supabase
@@ -283,20 +251,6 @@ export const IndicatorsPage: React.FC = () => {
 
       setKeyResults(prev => [processedData, ...prev]);
       setIsAddModalOpen(false);
-      
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        unit: '%',
-        priority: 'medium',
-        objective_id: 'none',
-        start_month: '',
-        end_month: '',
-        assigned_owner_id: 'none'
-      });
-      setNewKRValidityQuarter(null);
-      setNewKRValidityYear(getDefaultYear());
 
       toast({
         title: "Sucesso",
@@ -1229,201 +1183,12 @@ export const IndicatorsPage: React.FC = () => {
 
       {/* Add Key Result Modal */}
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Novo Resultado-Chave</DialogTitle>
-            <DialogDescription>
-              Crie um novo resultado-chave para acompanhar o progresso de suas metas.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleCreateKeyResult} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Nome do Resultado-Chave *</Label>
-                <Input
-                  id="title"
-                  placeholder="Ex: Taxa de Conversão"
-                  value={formData.title}
-                  onChange={(e) => setFormData({...formData, title: e.target.value})}
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="assigned_owner">Dono do KR *</Label>
-                <Select 
-                  value={isMemberOnly ? (currentUserId || 'none') : (formData.assigned_owner_id || 'none')} 
-                  onValueChange={(value) => setFormData({...formData, assigned_owner_id: value})}
-                  disabled={!canSelectOwner || loadingUsers || !authCompany}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={
-                      !authCompany ? "Carregando empresa..." :
-                      loadingUsers ? "Carregando usuários..." : 
-                      "Selecione o dono"
-                    } />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Nenhum dono</SelectItem>
-                    {companyUsers.length === 0 && !loadingUsers && (
-                      <SelectItem value="empty" disabled>Nenhum usuário encontrado</SelectItem>
-                    )}
-                    {companyUsers.map((user) => (
-                      <SelectItem key={user.user_id} value={user.user_id}>
-                        {user.first_name} {user.last_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Vigência</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <Select 
-                  value={newKRValidityQuarter?.toString() || 'none'} 
-                  onValueChange={(value) => {
-                    if (value === 'none') {
-                      setNewKRValidityQuarter(null);
-                      setFormData(prev => ({ ...prev, start_month: '', end_month: '' }));
-                      return;
-                    }
-                    // Verificar se é ano inteiro
-                    if (value === 'year') {
-                      setNewKRValidityQuarter(null);
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        start_month: `${newKRValidityYear}-01`, 
-                        end_month: `${newKRValidityYear}-12` 
-                      }));
-                      return;
-                    }
-                    const q = parseInt(value) as 1 | 2 | 3 | 4;
-                    setNewKRValidityQuarter(q);
-                    const { start_month, end_month } = quarterToMonths(q, newKRValidityYear);
-                    setFormData(prev => ({ ...prev, start_month, end_month }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o período" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Sem vigência definida</SelectItem>
-                    <SelectItem value="year">Ano todo</SelectItem>
-                    <SelectItem value="1">Q1 (Jan - Mar)</SelectItem>
-                    <SelectItem value="2">Q2 (Abr - Jun)</SelectItem>
-                    <SelectItem value="3">Q3 (Jul - Set)</SelectItem>
-                    <SelectItem value="4">Q4 (Out - Dez)</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select 
-                  value={newKRValidityYear.toString()} 
-                  onValueChange={(value) => {
-                    const y = parseInt(value);
-                    setNewKRValidityYear(y);
-                    // Atualizar vigência se houver seleção de quarter ou ano todo
-                    if (newKRValidityQuarter) {
-                      const { start_month, end_month } = quarterToMonths(newKRValidityQuarter, y);
-                      setFormData(prev => ({ ...prev, start_month, end_month }));
-                    } else if (formData.start_month && formData.start_month.endsWith('-01') && formData.end_month?.endsWith('-12')) {
-                      // Se era "ano todo", manter ano todo com novo ano
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        start_month: `${y}-01`, 
-                        end_month: `${y}-12` 
-                      }));
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {yearOptions.length > 0 ? (
-                      yearOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value.toString()}>
-                          {option.label}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value={new Date().getFullYear().toString()}>
-                        {new Date().getFullYear()}
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Selecione um ano inteiro ou quarter específico
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="description">Descrição</Label>
-              <Textarea
-                id="description"
-                placeholder="Descreva o que este resultado-chave mede..."
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                rows={3}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="target_value">Meta Anual *</Label>
-                <div className="px-3 py-2 border rounded-md bg-muted">
-                  <span className="text-sm font-medium">
-                    Será calculada automaticamente após definir as metas mensais
-                  </span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="unit">Unidade *</Label>
-                <Select value={formData.unit} onValueChange={(value) => setFormData({...formData, unit: value})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Unidade" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="%">% (Percentual)</SelectItem>
-                    <SelectItem value="R$">R$ (Real)</SelectItem>
-                    <SelectItem value="un">Unidades</SelectItem>
-                    <SelectItem value="h">Horas</SelectItem>
-                    <SelectItem value="dias">Dias</SelectItem>
-                    <SelectItem value="pontos">Pontos</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="objective">Objetivo Estratégico</Label>
-              <Select value={formData.objective_id} onValueChange={(value) => setFormData({...formData, objective_id: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um objetivo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum objetivo</SelectItem>
-                  {objectives.map((objective) => (
-                    <SelectItem key={objective.id} value={objective.id}>
-                      {objective.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Criando...' : 'Criar Resultado-Chave'}
-              </Button>
-            </DialogFooter>
-          </form>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <StandaloneKeyResultForm
+            objectives={objectives}
+            onSave={handleCreateKeyResultFromForm}
+            onCancel={() => setIsAddModalOpen(false)}
+          />
         </DialogContent>
       </Dialog>
 
