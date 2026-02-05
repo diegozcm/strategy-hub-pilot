@@ -112,7 +112,6 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
     title: '',
     description: '',
     unit: '',
-    responsible: '',
     objective_id: '',
     target_direction: 'maximize' as TargetDirection,
     start_month: '',
@@ -318,7 +317,6 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
         title: keyResult.title,
         description: keyResult.description || '',
         unit: keyResult.unit || '',
-        responsible: keyResult.responsible || '',
         objective_id: keyResult.objective_id || 'none',
         target_direction: (keyResult.target_direction as TargetDirection) || 'maximize',
         start_month: keyResult.start_month || '',
@@ -435,7 +433,6 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
         title: basicInfo.title,
         description: basicInfo.description,
         unit: basicInfo.unit,
-        responsible: basicInfo.responsible,
         objective_id: basicInfo.objective_id === '' || basicInfo.objective_id === 'none' ? null : basicInfo.objective_id,
         monthly_targets: finalMonthlyTargets,
         yearly_target: yearlyTarget,
@@ -756,35 +753,24 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="responsible">Responsável</Label>
-                  <Input
-                    id="responsible"
-                    value={basicInfo.responsible}
-                    onChange={(e) => setBasicInfo({...basicInfo, responsible: e.target.value})}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="objective">Objetivo Estratégico</Label>
-                  <Select 
-                    value={basicInfo.objective_id} 
-                    onValueChange={(value) => setBasicInfo({...basicInfo, objective_id: value})}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um objetivo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Nenhum objetivo</SelectItem>
-                      {objectives.map((objective) => (
-                        <SelectItem key={objective.id} value={objective.id}>
-                          {objective.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="objective">Objetivo Estratégico</Label>
+                <Select 
+                  value={basicInfo.objective_id} 
+                  onValueChange={(value) => setBasicInfo({...basicInfo, objective_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um objetivo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhum objetivo</SelectItem>
+                    {objectives.map((objective) => (
+                      <SelectItem key={objective.id} value={objective.id}>
+                        {objective.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </TabsContent>
 
