@@ -73,13 +73,14 @@ const getCurrentPeriodMonths = (frequency: string, selectedMonth?: number): numb
 };
 
 // Aggregate monthly values for a specific period range
+// Returns null when there's no data (instead of 0, which is a valid value)
 const aggregateMonthlyValues = (
   monthlyData: Record<string, number> | null,
   months: number[],
   year: number,
   aggregationType: string = 'sum'
-): number => {
-  if (!monthlyData) return 0;
+): number | null => {
+  if (!monthlyData) return null;
   
   let values: number[] = [];
   months.forEach(month => {
@@ -90,7 +91,7 @@ const aggregateMonthlyValues = (
     }
   });
 
-  if (values.length === 0) return 0;
+  if (values.length === 0) return null;
 
   switch (aggregationType) {
     case 'average':
@@ -114,6 +115,12 @@ const formatValue = (value: number, unit: string = '%'): string => {
     return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
   return value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+};
+
+// Format value or return placeholder for null values
+const formatValueOrEmpty = (value: number | null, unit: string = '%'): string => {
+  if (value === null) return '—';
+  return formatValue(value, unit);
 };
 
 // Performance legend colors based on efficiency percentage
@@ -225,23 +232,38 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
     const target = aggregateMonthlyValues(monthlyTargets, months, targetYear, aggregationType);
     const actual = aggregateMonthlyValues(monthlyActual, months, targetYear, aggregationType);
 
-    // Calculate percentage based on direction
-    let percentage = 0;
-    if (target > 0 && actual > 0) {
-      if (isMinimize) {
-        percentage = (target / actual) * 100;
-      } else {
-        percentage = (actual / target) * 100;
+    // Check if we have data
+    const hasTarget = target !== null;
+    const hasActual = actual !== null;
+    const hasData = hasTarget || hasActual;
+
+    // Calculate percentage based on direction - only if we have both values
+    let percentage: number | null = null;
+    if (hasTarget && hasActual && target !== null && actual !== null) {
+      if (target > 0 && actual > 0) {
+        if (isMinimize) {
+          percentage = (target / actual) * 100;
+        } else {
+          percentage = (actual / target) * 100;
+        }
+      } else if (target === 0 && actual === 0) {
+        percentage = 0;
+      } else if (target > 0) {
+        percentage = 0; // Has target but no actual = 0%
       }
-    } else if (target === 0 && actual === 0) {
-      percentage = 0; // Sem dados = 0%, não 100%
     }
+
+    // Calculate result - only if we have both values
+    const result = (hasTarget && hasActual && target !== null && actual !== null) 
+      ? actual - target 
+      : null;
 
     return {
       target,
       actual,
       percentage,
-      result: actual - target,
+      result,
+      hasData,
     };
   };
 
@@ -257,12 +279,14 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
     const meta = metrics.target;
     const resultado = metrics.result;
     const eficiencia = metrics.percentage;
+    const hasData = metrics.hasData;
 
     return {
       real,
       meta,
       resultado,
       eficiencia,
+      hasData,
       isMinimize: kr.target_direction === 'minimize',
     };
   };
@@ -300,7 +324,9 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
     // Apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(kr => {
-        const { eficiencia } = calculateRMRE(kr);
+        const { eficiencia, hasData } = calculateRMRE(kr);
+        // Skip KRs without data for status filtering
+        if (eficiencia === null || !hasData) return false;
         if (statusFilter === 'achieved') return eficiencia >= 100;
         if (statusFilter === 'attention') return eficiencia >= 50 && eficiencia < 100;
         if (statusFilter === 'critical') return eficiencia < 50;
@@ -337,24 +363,31 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
     let achieved = 0;   // 100-105%
     let attention = 0;  // 71-99%
     let critical = 0;   // < 71%
+    let noData = 0;     // null efficiency
     let totalEfficiency = 0;
     let totalWeight = 0;
 
     filteredAndSortedKRs.forEach(kr => {
-      const { eficiencia } = calculateRMRE(kr);
+      const { eficiencia, hasData } = calculateRMRE(kr);
       const weight = kr.weight || 1;
-      totalEfficiency += eficiencia * weight;
-      totalWeight += weight;
+      
+      // Only include KRs with data in weighted average
+      if (eficiencia !== null && hasData) {
+        totalEfficiency += eficiencia * weight;
+        totalWeight += weight;
 
-      if (eficiencia > 105) excellent++;
-      else if (eficiencia >= 100) achieved++;
-      else if (eficiencia >= 71) attention++;
-      else critical++;
+        if (eficiencia > 105) excellent++;
+        else if (eficiencia >= 100) achieved++;
+        else if (eficiencia >= 71) attention++;
+        else critical++;
+      } else {
+        noData++;
+      }
     });
 
     const weightedAverage = totalWeight > 0 ? totalEfficiency / totalWeight : 0;
 
-    return { total, excellent, achieved, attention, critical, weightedAverage };
+    return { total, excellent, achieved, attention, critical, noData, weightedAverage };
   }, [filteredAndSortedKRs, selectedYear, selectedMonth, selectedQuarter, selectedQuarterYear, periodType]);
 
   // Prepare export data (simplified - no frequency or weight)
@@ -455,11 +488,14 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
             </TableHeader>
             <TableBody>
               {filteredAndSortedKRs.map((kr, index) => {
-                const { real, meta, resultado, eficiencia, isMinimize } = calculateRMRE(kr);
+                const { real, meta, resultado, eficiencia, isMinimize, hasData } = calculateRMRE(kr);
                 const { objective, pillar } = getObjectiveInfo(kr.objective_id);
-                const efficiencyBadge = getEfficiencyBadge(eficiencia);
+                const efficiencyBadge = eficiencia !== null ? getEfficiencyBadge(eficiencia) : null;
                 
-                const isResultadoPositive = isMinimize ? resultado <= 0 : resultado >= 0;
+                // Check if resultado is positive (considering minimize direction)
+                const isResultadoPositive = resultado !== null 
+                  ? (isMinimize ? resultado <= 0 : resultado >= 0)
+                  : null;
 
                 return (
                   <TableRow 
@@ -494,49 +530,73 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
                         {objective?.title || '-'}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right font-mono text-sm">
-                      {formatValue(meta, kr.unit)}
+                    <TableCell className={cn(
+                      "text-right font-mono text-sm",
+                      meta === null && "text-muted-foreground"
+                    )}>
+                      {formatValueOrEmpty(meta, kr.unit)}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-sm">
-                      {formatValue(real, kr.unit)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {isResultadoPositive ? (
-                          <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                        ) : (
-                          <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
-                        )}
-                        <span className={cn(
-                          'font-mono text-sm',
-                          isResultadoPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
-                        )}>
-                          {resultado >= 0 ? '+' : ''}{formatValue(resultado, kr.unit)}
-                        </span>
-                      </div>
+                    <TableCell className={cn(
+                      "text-right font-mono text-sm",
+                      real === null && "text-muted-foreground"
+                    )}>
+                      {formatValueOrEmpty(real, kr.unit)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex flex-col items-end gap-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className={cn('font-bold text-sm', getEfficiencyColor(eficiencia))}>
-                            {eficiencia.toFixed(1).replace('.', ',')}%
+                      {resultado !== null ? (
+                        <div className="flex items-center justify-end gap-1">
+                          {isResultadoPositive ? (
+                            <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                          )}
+                          <span className={cn(
+                            'font-mono text-sm',
+                            isResultadoPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                          )}>
+                            {resultado >= 0 ? '+' : ''}{formatValue(resultado, kr.unit)}
                           </span>
-                          <Badge className={cn("text-xs px-2.5 py-0.5 whitespace-nowrap", efficiencyBadge.className)}>
-                            {efficiencyBadge.label}
-                          </Badge>
                         </div>
-                        <div className={cn("h-1.5 w-24 rounded-full overflow-hidden", getEfficiencyBgColor(eficiencia))}>
-                          <div 
-                            className={cn(
-                              "h-full transition-all duration-300",
-                              eficiencia > 105 ? "bg-blue-500" :
-                              eficiencia >= 100 ? "bg-green-500" :
-                              eficiencia >= 71 ? "bg-yellow-500" : "bg-red-500"
-                            )}
-                            style={{ width: `${Math.min(eficiencia, 100)}%` }}
-                          />
+                      ) : (
+                        <span className="text-muted-foreground font-mono text-sm">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {eficiencia !== null && efficiencyBadge ? (
+                        <div className="flex flex-col items-end gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className={cn('font-bold text-sm', getEfficiencyColor(eficiencia))}>
+                              {eficiencia.toFixed(1).replace('.', ',')}%
+                            </span>
+                            <Badge className={cn("text-xs px-2.5 py-0.5 whitespace-nowrap", efficiencyBadge.className)}>
+                              {efficiencyBadge.label}
+                            </Badge>
+                          </div>
+                          <div className={cn("h-1.5 w-24 rounded-full overflow-hidden", getEfficiencyBgColor(eficiencia))}>
+                            <div 
+                              className={cn(
+                                "h-full transition-all duration-300",
+                                eficiencia > 105 ? "bg-blue-500" :
+                                eficiencia >= 100 ? "bg-green-500" :
+                                eficiencia >= 71 ? "bg-yellow-500" : "bg-red-500"
+                              )}
+                              style={{ width: `${Math.min(eficiencia, 100)}%` }}
+                            />
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="flex flex-col items-end gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-muted-foreground font-mono text-sm">—</span>
+                            <Badge variant="outline" className="text-xs px-2.5 py-0.5 whitespace-nowrap text-muted-foreground border-muted-foreground/30">
+                              Sem dados
+                            </Badge>
+                          </div>
+                          <div className="h-1.5 w-24 rounded-full overflow-hidden bg-muted">
+                            {/* Empty progress bar for no data */}
+                          </div>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
