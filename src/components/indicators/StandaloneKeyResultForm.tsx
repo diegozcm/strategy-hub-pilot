@@ -36,14 +36,13 @@ interface StandaloneKeyResultFormProps {
   onCancel: () => void;
 }
 
-type AggregationType = 'sum' | 'average' | 'max' | 'min' | 'last';
+type AggregationType = 'sum' | 'average' | 'max' | 'min';
 
 const aggregationOptions: { value: AggregationType; label: string }[] = [
   { value: 'sum', label: 'Somar todas as metas' },
   { value: 'average', label: 'Calcular a média das metas' },
   { value: 'max', label: 'Usar o maior valor entre as metas' },
-  { value: 'min', label: 'Usar o menor valor entre as metas' },
-  { value: 'last', label: 'Usar o último valor registrado' }
+  { value: 'min', label: 'Usar o menor valor entre as metas' }
 ];
 
 const frequencyOptions: { value: KRFrequency; label: string; description: string }[] = [

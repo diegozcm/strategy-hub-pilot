@@ -63,7 +63,7 @@ export interface KeyResult {
   monthly_actual?: any;
   yearly_target?: number;
   yearly_actual?: number;
-  aggregation_type?: 'sum' | 'average' | 'max' | 'min' | 'last';
+  aggregation_type?: 'sum' | 'average' | 'max' | 'min';
   comparison_type?: 'cumulative' | 'period';
   target_direction?: 'maximize' | 'minimize';
   weight?: number; // Peso para cálculo de média ponderada (padrão: 1)

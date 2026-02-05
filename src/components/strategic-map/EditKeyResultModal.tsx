@@ -21,7 +21,7 @@ interface EditKeyResultModalProps {
   open: boolean;
   onClose: () => void;
   onSave: (keyResultData: Partial<KeyResult>) => Promise<any>;
-  onAggregationTypeChange?: (keyResultId: string, newType: 'sum' | 'average' | 'max' | 'min' | 'last') => void;
+  onAggregationTypeChange?: (keyResultId: string, newType: 'sum' | 'average' | 'max' | 'min') => void;
 }
 
 export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggregationTypeChange }: EditKeyResultModalProps) => {
@@ -35,7 +35,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
   const [originalMonthlyActual, setOriginalMonthlyActual] = useState<Record<string, number>>({});
   const [originalMonthlyTargets, setOriginalMonthlyTargets] = useState<Record<string, number>>({});
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min' | 'last'>('sum');
+  const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
   const [editMode, setEditMode] = useState<boolean>(false);
 
   // Sincronizar selectedYear com yearOptions disponíveis
@@ -121,7 +121,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
   };
 
   // Função para salvar o tipo de agregação
-  const saveAggregationType = async (newType: 'sum' | 'average' | 'max' | 'min' | 'last') => {
+  const saveAggregationType = async (newType: 'sum' | 'average' | 'max' | 'min') => {
     try {
       setSavingAggregationType(true);
       
@@ -157,7 +157,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
     }
   };
 
-  const handleAggregationTypeChange = (newType: 'sum' | 'average' | 'max' | 'min' | 'last') => {
+  const handleAggregationTypeChange = (newType: 'sum' | 'average' | 'max' | 'min') => {
     setAggregationType(newType);
     saveAggregationType(newType);
   };
@@ -165,7 +165,7 @@ export const EditKeyResultModal = ({ keyResult, open, onClose, onSave, onAggrega
   // Inicializar dados quando keyResult mudar
   useEffect(() => {
     if (keyResult.aggregation_type) {
-      setAggregationType(keyResult.aggregation_type);
+      setAggregationType((keyResult.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum');
     }
   }, [keyResult]);
 

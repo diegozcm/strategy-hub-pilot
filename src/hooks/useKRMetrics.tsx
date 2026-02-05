@@ -62,7 +62,7 @@ export interface KeyResultWithMetrics {
   q4_percentage?: number;
   target_direction?: 'maximize' | 'minimize';
   unit?: string;
-  aggregation_type?: 'sum' | 'average' | 'max' | 'min' | 'last';
+  aggregation_type?: 'sum' | 'average' | 'max' | 'min';
   comparison_type?: 'cumulative' | 'period';
   // Raw monthly data for custom month selection
   monthly_targets?: Record<string, number>;
@@ -155,20 +155,6 @@ export const useKRMetrics = (
           const nonZeroActuals = actualValues.filter(v => v !== 0);
           totalTarget = nonZeroTargets.length > 0 ? Math.min(...nonZeroTargets) : 0;
           totalActual = nonZeroActuals.length > 0 ? Math.min(...nonZeroActuals) : 0;
-          break;
-        case 'last':
-          for (let i = monthKeys.length - 1; i >= 0; i--) {
-            if (monthlyTargets[monthKeys[i]] !== undefined && monthlyTargets[monthKeys[i]] !== null) {
-              totalTarget = monthlyTargets[monthKeys[i]]!;
-              break;
-            }
-          }
-          for (let i = monthKeys.length - 1; i >= 0; i--) {
-            if (monthlyActual[monthKeys[i]] !== undefined && monthlyActual[monthKeys[i]] !== null) {
-              totalActual = monthlyActual[monthKeys[i]]!;
-              break;
-            }
-          }
           break;
       }
       
