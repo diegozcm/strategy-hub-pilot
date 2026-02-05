@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Plus, Edit, Save, X, Trash2, MoreVertical, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,11 +10,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResultadoChaveMiniCard } from '@/components/strategic-map/ResultadoChaveMiniCard';
+import { InlineKeyResultForm } from './InlineKeyResultForm';
 import { KeyResult } from '@/types/strategic-map';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { getProgressLevel } from '@/lib/krHelpers';
 import { usePeriodFilter } from '@/hooks/usePeriodFilter';
+
+// Type for modal navigation stack
+type ModalView = 'details' | 'create-kr';
 
 // Flexible interface for objective to support both ObjectivesPage and StrategicMap
 interface ObjectiveData {
@@ -69,6 +72,7 @@ interface ObjectiveDetailModalProps {
   progressPercentage: number;
   canEditObjective?: boolean;
   canDeleteObjective?: boolean;
+  onCreateKeyResult?: (krData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<any>;
 }
 
 export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
@@ -85,8 +89,8 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
   progressPercentage,
   canEditObjective = true,
   canDeleteObjective = true,
+  onCreateKeyResult,
 }) => {
-  const navigate = useNavigate();
   
   // Consumir período globalmente do contexto
   const {
@@ -97,6 +101,8 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
     selectedQuarterYear
   } = usePeriodFilter();
   
+  // Modal navigation stack
+  const [currentView, setCurrentView] = useState<ModalView>('details');
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -128,7 +134,15 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
 
   const handleClose = () => {
     setIsEditing(false);
+    setCurrentView('details'); // Reset para view inicial
     onClose();
+  };
+
+  const handleCreateKeyResult = async (krData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => {
+    if (onCreateKeyResult) {
+      await onCreateKeyResult(krData);
+      setCurrentView('details');
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -144,208 +158,232 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={(open) => { if (!open) handleClose(); }}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <DialogTitle className="text-xl">
-                  {objective.title}
-                </DialogTitle>
-                <Badge 
-                  variant={getProgressLevel(progressPercentage)}
-                  className="font-semibold text-xl"
-                >
-                  {progressPercentage.toFixed(1).replace('.', ',')}%
-                </Badge>
-              </div>
-              <DialogDescription>
-                <div className="flex items-center gap-2 mt-2">
-                  {pillar && (
+        {currentView === 'create-kr' && onCreateKeyResult ? (
+          <InlineKeyResultForm
+            objectiveId={objective.id}
+            objectiveTitle={objective.title}
+            onSave={handleCreateKeyResult}
+            onCancel={() => setCurrentView('details')}
+          />
+        ) : (
+          <>
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <DialogTitle className="text-xl">
+                      {objective.title}
+                    </DialogTitle>
                     <Badge 
-                      variant="secondary" 
-                      style={{ 
-                        backgroundColor: `${pillar.color}20`, 
-                        color: pillar.color 
-                      }}
+                      variant={getProgressLevel(progressPercentage)}
+                      className="font-semibold text-xl"
                     >
-                      {pillar.name}
+                      {progressPercentage.toFixed(1).replace('.', ',')}%
                     </Badge>
-                  )}
-                  {plan && (
-                    <Badge variant="outline">
-                      {plan.name}
-                    </Badge>
-                  )}
-                  <Badge variant="outline">
-                    {selectedPeriod === 'quarterly' && selectedQuarter && selectedQuarterYear
-                      ? `📈 Q${selectedQuarter} ${selectedQuarterYear}`
-                      : selectedPeriod === 'yearly' && selectedYear
-                      ? `📅 Ano ${selectedYear}`
-                      : selectedPeriod === 'monthly' 
-                      ? (selectedMonth && selectedYear
-                          ? `📆 ${new Date(selectedYear, selectedMonth - 1, 1)
-                              .toLocaleDateString('pt-BR', { month: 'long' })
-                              .charAt(0).toUpperCase() + 
-                              new Date(selectedYear, selectedMonth - 1, 1)
-                              .toLocaleDateString('pt-BR', { month: 'long' })
-                              .slice(1)} ${selectedYear}`
-                          : `📆 ${format(new Date(), 'MMMM', { locale: ptBR }).charAt(0).toUpperCase() + format(new Date(), 'MMMM', { locale: ptBR }).slice(1)}`)
-                      : '📊 YTD'}
-                  </Badge>
+                  </div>
+                  <DialogDescription>
+                    <div className="flex items-center gap-2 mt-2">
+                      {pillar && (
+                        <Badge 
+                          variant="secondary" 
+                          style={{ 
+                            backgroundColor: `${pillar.color}20`, 
+                            color: pillar.color 
+                          }}
+                        >
+                          {pillar.name}
+                        </Badge>
+                      )}
+                      {plan && (
+                        <Badge variant="outline">
+                          {plan.name}
+                        </Badge>
+                      )}
+                      <Badge variant="outline">
+                        {selectedPeriod === 'quarterly' && selectedQuarter && selectedQuarterYear
+                          ? `📈 Q${selectedQuarter} ${selectedQuarterYear}`
+                          : selectedPeriod === 'yearly' && selectedYear
+                          ? `📅 Ano ${selectedYear}`
+                          : selectedPeriod === 'monthly' 
+                          ? (selectedMonth && selectedYear
+                              ? `📆 ${new Date(selectedYear, selectedMonth - 1, 1)
+                                  .toLocaleDateString('pt-BR', { month: 'long' })
+                                  .charAt(0).toUpperCase() + 
+                                  new Date(selectedYear, selectedMonth - 1, 1)
+                                  .toLocaleDateString('pt-BR', { month: 'long' })
+                                  .slice(1)} ${selectedYear}`
+                              : `📆 ${format(new Date(), 'MMMM', { locale: ptBR }).charAt(0).toUpperCase() + format(new Date(), 'MMMM', { locale: ptBR }).slice(1)}`)
+                          : '📊 YTD'}
+                      </Badge>
+                    </div>
+                  </DialogDescription>
                 </div>
-              </DialogDescription>
-            </div>
-            <div className="flex items-center gap-2">
-            {!isEditing && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {canEditObjective && (
-                    <DropdownMenuItem onClick={() => setIsEditing(true)}>
-                      <Edit className="w-4 h-4 mr-2" />
-                      Editar
-                    </DropdownMenuItem>
-                  )}
-                  {onDelete && canDeleteObjective && (
-                    <DropdownMenuItem 
-                      onClick={() => setShowDeleteConfirm(true)}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Excluir
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-              {isEditing && (
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
-                  <X className="w-4 h-4 mr-1" />
-                  Cancelar
-                </Button>
-              )}
-            </div>
-          </div>
-        </DialogHeader>
-
-        <div className="space-y-6">
-          {isEditing ? (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-title">Título</Label>
-                <Input
-                  id="edit-title"
-                  value={editForm.title}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-description">Descrição</Label>
-                <Textarea
-                  id="edit-description"
-                  value={editForm.description}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="edit-target-date">Data Meta</Label>
-                  <Input
-                    id="edit-target-date"
-                    type="date"
-                    value={editForm.target_date}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, target_date: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-pillar">Pilar Estratégico</Label>
-                  <Select value={editForm.pillar_id} onValueChange={(value) => setEditForm(prev => ({ ...prev, pillar_id: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {pillars.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-weight">Peso (1-10)</Label>
-                  <Input
-                    id="edit-weight"
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={editForm.weight}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button variant="outline" onClick={() => setIsEditing(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleUpdate}>
-                  <Save className="w-4 h-4 mr-2" />
-                  Salvar
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium mb-2">Descrição</h3>
-                <p className="text-sm text-muted-foreground">{objective.description || 'Nenhuma descrição fornecida.'}</p>
-              </div>
-              
-              {objective.target_date && (
-                <div>
-                  <h4 className="text-xs font-medium text-muted-foreground">Data Meta</h4>
-                  <p className="text-xs">{new Date(objective.target_date).toLocaleDateString('pt-BR')}</p>
-                </div>
-              )}
-
-              <div>
-                <div className="mb-3">
-                  <h3 className="font-medium">Resultados-Chave</h3>
-                </div>
-                <div className="space-y-2">
-                  {[...keyResults].sort((a, b) => (b.weight || 1) - (a.weight || 1)).map((kr) => (
-                    <ResultadoChaveMiniCard 
-                      key={kr.id} 
-                      resultadoChave={kr}
-                      pillar={pillar}
-                      onOpenDetails={onOpenKeyResultDetails}
-                    />
-                  ))}
-                  {keyResults.length === 0 && (
-                    <div className="text-center py-6">
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Nenhum resultado-chave definido.
-                      </p>
-                      <Button 
-                        onClick={() => navigate('/app/indicators')}
-                        size="sm"
-                        className="gap-2"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Criar Primeiro Resultado-Chave
+                <div className="flex items-center gap-2">
+                {!isEditing && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreVertical className="w-4 h-4" />
                       </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {canEditObjective && (
+                        <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                      )}
+                      {onDelete && canDeleteObjective && (
+                        <DropdownMenuItem 
+                          onClick={() => setShowDeleteConfirm(true)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Excluir
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                  {isEditing && (
+                    <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                      <X className="w-4 h-4 mr-1" />
+                      Cancelar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-6">
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="edit-title">Título</Label>
+                    <Input
+                      id="edit-title"
+                      value={editForm.title}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-description">Descrição</Label>
+                    <Textarea
+                      id="edit-description"
+                      value={editForm.description}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, description: e.target.value }))}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="edit-target-date">Data Meta</Label>
+                      <Input
+                        id="edit-target-date"
+                        type="date"
+                        value={editForm.target_date}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, target_date: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-pillar">Pilar Estratégico</Label>
+                      <Select value={editForm.pillar_id} onValueChange={(value) => setEditForm(prev => ({ ...prev, pillar_id: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pillars.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-weight">Peso (1-10)</Label>
+                      <Input
+                        id="edit-weight"
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={editForm.weight}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 1 }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button variant="outline" onClick={() => setIsEditing(false)}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleUpdate}>
+                      <Save className="w-4 h-4 mr-2" />
+                      Salvar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Descrição</h3>
+                    <p className="text-sm text-muted-foreground">{objective.description || 'Nenhuma descrição fornecida.'}</p>
+                  </div>
+                  
+                  {objective.target_date && (
+                    <div>
+                      <h4 className="text-xs font-medium text-muted-foreground">Data Meta</h4>
+                      <p className="text-xs">{new Date(objective.target_date).toLocaleDateString('pt-BR')}</p>
                     </div>
                   )}
+
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium">Resultados-Chave</h3>
+                      {onCreateKeyResult && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setCurrentView('create-kr')}
+                          className="gap-2"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Novo KR
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      {[...keyResults].sort((a, b) => (b.weight || 1) - (a.weight || 1)).map((kr) => (
+                        <ResultadoChaveMiniCard 
+                          key={kr.id} 
+                          resultadoChave={kr}
+                          pillar={pillar}
+                          onOpenDetails={onOpenKeyResultDetails}
+                        />
+                      ))}
+                      {keyResults.length === 0 && (
+                        <div className="text-center py-6">
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Nenhum resultado-chave definido.
+                          </p>
+                          {onCreateKeyResult && (
+                            <Button 
+                              onClick={() => setCurrentView('create-kr')}
+                              size="sm"
+                              className="gap-2"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Criar Primeiro Resultado-Chave
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-          )}
-        </div>
+          </>
+        )}
       </DialogContent>
 
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>

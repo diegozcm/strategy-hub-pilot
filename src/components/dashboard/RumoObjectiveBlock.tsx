@@ -145,6 +145,45 @@ export const RumoObjectiveBlock = ({
     setIsKROverviewModalOpen(true);
   };
 
+  // Create Key Result inline
+  const handleCreateKeyResult = async (krData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      toast({
+        title: "Erro",
+        description: "Usuário não autenticado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('key_results')
+        .insert([{ ...krData, owner_id: userData.user.id }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Resultado-chave criado com sucesso!",
+      });
+
+      // Refresh page to show new KR
+      window.location.reload();
+    } catch (error) {
+      console.error('Error creating key result:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar resultado-chave. Tente novamente.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const currentPlan = plans.find(p => p.id === objective.plan_id);
 
   return (
@@ -239,6 +278,7 @@ export const RumoObjectiveBlock = ({
         onOpenKeyResultDetails={handleOpenKeyResultDetails}
         pillars={pillars}
         progressPercentage={progress}
+        onCreateKeyResult={handleCreateKeyResult}
       />
 
       {/* KR Overview Modal */}
