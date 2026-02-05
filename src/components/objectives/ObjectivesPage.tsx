@@ -353,6 +353,13 @@ export const ObjectivesPage: React.FC = () => {
   const activePlan = plans.find(p => p.status === 'active');
   const activePlanObjectivesCount = activePlan ? objectives.filter(obj => obj.plan_id === activePlan.id).length : 0;
 
+  // Auto-populate plan_id with active plan
+  useEffect(() => {
+    if (activePlan && !objectiveForm.plan_id) {
+      setObjectiveForm(prev => ({ ...prev, plan_id: activePlan.id }));
+    }
+  }, [activePlan, objectiveForm.plan_id]);
+
   // Show error state if there's an error
   if (error) {
     return (
@@ -497,37 +504,20 @@ export const ObjectivesPage: React.FC = () => {
                         />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="objective-plan">Plano Estratégico</Label>
-                        <Select value={objectiveForm.plan_id} onValueChange={(value) => setObjectiveForm(prev => ({ ...prev, plan_id: value }))}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um plano" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {plans.filter(p => p.status === 'active').map((plan) => (
-                              <SelectItem key={plan.id} value={plan.id}>
-                                {plan.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="objective-pillar">Pilar Estratégico</Label>
-                        <Select value={objectiveForm.pillar_id} onValueChange={(value) => setObjectiveForm(prev => ({ ...prev, pillar_id: value }))}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione um pilar" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {pillars.map((pillar) => (
-                              <SelectItem key={pillar.id} value={pillar.id}>
-                                {pillar.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div>
+                      <Label htmlFor="objective-pillar">Pilar Estratégico</Label>
+                      <Select value={objectiveForm.pillar_id} onValueChange={(value) => setObjectiveForm(prev => ({ ...prev, pillar_id: value }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um pilar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pillars.map((pillar) => (
+                            <SelectItem key={pillar.id} value={pillar.id}>
+                              {pillar.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div className="flex justify-end space-x-2">
