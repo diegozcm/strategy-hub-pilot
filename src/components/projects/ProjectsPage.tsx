@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Plus, Search, Filter, FolderOpen, Calendar, DollarSign, Users, Clock, BarChart3, CheckCircle, Circle, AlertCircle, Pause, Edit3, Save, Trash2, Target, ImageIcon, ArrowRight, CheckSquare, X, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,7 @@ import { TaskCreateModal } from './TaskCreateModal';
 import { useCompanyUsers } from '@/hooks/useCompanyUsers';
 import { UserSelect } from './UserSelect';
 import { ProjectFiltersModal, ProjectFilters } from './ProjectFiltersModal';
+import { calculateProjectStatus } from '@/utils/projectStatusUtils';
 interface StrategicPlan {
   id: string;
   name: string;
@@ -168,6 +169,36 @@ export const ProjectsPage: React.FC = () => {
       loadData();
     }
   }, [authCompany?.id]);
+
+  // Auto-update project status based on task statuses
+  const updateProjectStatusIfNeeded = useCallback(async (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return;
+    
+    // Get all tasks for this project from local state
+    const projectTasks = tasks.filter(t => t.project_id === projectId);
+    
+    // Calculate new status
+    const newStatus = calculateProjectStatus(projectTasks, project.status);
+    
+    // If no update needed, return
+    if (!newStatus || newStatus === project.status) return;
+    
+    try {
+      // Update in database
+      await supabase
+        .from('strategic_projects')
+        .update({ status: newStatus })
+        .eq('id', projectId);
+      
+      // Update local state
+      setProjects(prev => prev.map(p => 
+        p.id === projectId ? { ...p, status: newStatus } : p
+      ));
+    } catch (error) {
+      console.error('Error updating project status:', error);
+    }
+  }, [projects, tasks]);
 
   const loadData = async () => {
     try {
@@ -602,6 +633,9 @@ export const ProjectsPage: React.FC = () => {
       setTaskForm({ title: '', description: '', project_id: '', due_date: '', priority: 'medium', estimated_hours: '' });
       setIsCreateTaskOpen(false);
       
+      // Atualizar status do projeto
+      await updateProjectStatusIfNeeded(taskForm.project_id);
+      
       toast({
         title: "Sucesso",
         description: "Tarefa criada com sucesso!",
@@ -638,6 +672,10 @@ export const ProjectsPage: React.FC = () => {
       if (error) throw error;
 
       setTasks(prev => [data, ...prev]);
+      
+      // Atualizar status do projeto
+      await updateProjectStatusIfNeeded(projectId);
+      
       toast({
         title: "Sucesso",
         description: "Tarefa criada!",
@@ -684,6 +722,14 @@ export const ProjectsPage: React.FC = () => {
           : task
       ));
 
+      // Atualizar status do projeto se o status da task mudou
+      if (updates.status !== undefined) {
+        const projectId = updates.project_id || currentTask?.project_id;
+        if (projectId) {
+          await updateProjectStatusIfNeeded(projectId);
+        }
+      }
+
       toast({
         title: "Sucesso",
         description: "Tarefa atualizada!",
@@ -701,6 +747,10 @@ export const ProjectsPage: React.FC = () => {
 
   // Delete task
   const deleteTask = async (taskId: string) => {
+    // Guardar o project_id antes de deletar
+    const taskToDelete = tasks.find(t => t.id === taskId);
+    const projectId = taskToDelete?.project_id;
+    
     try {
       const { error } = await supabase
         .from('project_tasks')
@@ -710,6 +760,11 @@ export const ProjectsPage: React.FC = () => {
       if (error) throw error;
 
       setTasks(prev => prev.filter(task => task.id !== taskId));
+
+      // Atualizar status do projeto após exclusão
+      if (projectId) {
+        await updateProjectStatusIfNeeded(projectId);
+      }
 
       toast({
         title: "Sucesso",
@@ -732,6 +787,8 @@ export const ProjectsPage: React.FC = () => {
   };
 
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    
     try {
       const { error } = await supabase
         .from('project_tasks')
@@ -740,9 +797,14 @@ export const ProjectsPage: React.FC = () => {
 
       if (error) throw error;
 
-      setTasks(prev => prev.map(task => 
-        task.id === taskId ? { ...task, status: newStatus } : task
+      setTasks(prev => prev.map(t => 
+        t.id === taskId ? { ...t, status: newStatus } : t
       ));
+
+      // Atualizar status do projeto
+      if (task?.project_id) {
+        await updateProjectStatusIfNeeded(task.project_id);
+      }
 
       toast({
         title: "Sucesso",
@@ -1112,6 +1174,10 @@ export const ProjectsPage: React.FC = () => {
                 }
 
                 setTasks(prev => [{ ...newTask, assignee: assigneeData }, ...prev]);
+                
+                // Atualizar status do projeto
+                await updateProjectStatusIfNeeded(data.project_id);
+                
                 toast({
                   title: "Sucesso",
                   description: "Tarefa criada com sucesso!",
@@ -1935,6 +2001,7 @@ export const ProjectsPage: React.FC = () => {
             onTasksUpdate={setTasks}
             companyUsers={companyUsers}
             onEditTask={handleEditTask}
+            onProjectStatusUpdate={updateProjectStatusIfNeeded}
           />
         </TabsContent>
       </Tabs>
