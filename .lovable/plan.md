@@ -1,251 +1,207 @@
 
-
-# Plano: Redesign do Formulário Inline de Criação de KR
+# Plano: Corrigir Funcionalidade "Usar o último valor registrado" (aggregation_type = 'last')
 
 ## Problema Identificado
 
-O formulário atual (`InlineKeyResultForm.tsx`) apresenta os seguintes problemas:
+A opção "Usar o último valor registrado" (`aggregation_type = 'last'`) existe na interface do usuário, mas **NÃO está implementada** nos cálculos:
 
-1. **Layout muito vertical** - Não cabe bem em telas pequenas
-2. **Frequência das metas incorreta** - Deveria mostrar badge + descrição como na edição
-3. **"Como calcular a meta"** - Campo não existe, mas deveria ser um Select (não número)
-4. **Falta campo "Direcionamento"** - Opções "Maior é melhor" / "Menor é melhor" não estão presentes
-
----
-
-## Referência Visual (Modal de Edição KREditModal)
-
-O formulário deve seguir o mesmo padrão do modal de edição, que já possui:
-
-- **Frequência** com badges coloridos + texto descritivo:
-  - "Mensal" (badge azul) + "12 metas por ano"
-  - "Bimestral" (badge teal) + "6 metas por ano (B1-B6)"
-  - etc.
-
-- **Como calcular a meta** com Select de opções:
-  - Somar todas as metas
-  - Calcular a média das metas
-  - Usar o maior valor entre as metas
-  - Usar o menor valor entre as metas
-  - Usar o último valor registrado
-
-- **Direcionamento** com Select visual:
-  - "Maior é melhor" + descrição + emoji
-  - "Menor é melhor" + descrição + emoji
+1. **Banco de dados (SQL)**: A função `calculate_kr_metrics` não possui tratamento para `aggregation_type = 'last'` - ela só implementa `sum`, `average`, `max` e `min`
+2. **Frontend (useRumoCalculations)**: O hook não trata o caso `'last'` e cai no default que faz `sum`
+3. **Frontend (KREditModal)**: As funções `calculateYearlyTarget` e `calculateYearlyActual` não tratam `'last'`
 
 ---
 
-## Novo Layout Proposto
+## O Que Será Implementado
 
-O formulário será reorganizado em um layout mais horizontal e compacto:
+### 1. Correção na Função SQL `calculate_kr_metrics`
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ ← Novo Resultado-Chave                                      │
-│    Vinculado ao objetivo: [Badge: Nome do Objetivo]         │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│ Nome do Resultado-Chave *                                   │
-│ [____________________________________________________]     │
-│                                                             │
-│ ┌──────────────────────────┐ ┌─────────────────────────────┐│
-│ │ Dono do KR               │ │ Vigência                    ││
-│ │ [Select                 v] │ [Select                   v] │
-│ └──────────────────────────┘ └─────────────────────────────┘│
-│                                                             │
-│ ┌──────────────────────────┐ ┌─────────────────────────────┐│
-│ │ Direcionamento *         │ │ Frequência das Metas        ││
-│ │ [📈 Maior é melhor     v] │ [Mensal | 12 metas/ano     v] │
-│ └──────────────────────────┘ └─────────────────────────────┘│
-│                                                             │
-│ ┌──────────────────────────┐ ┌─────────────────────────────┐│
-│ │ Meta *                   │ │ Unidade                     ││
-│ │ [100                    ] │ [% (Percentual)            v] │
-│ └──────────────────────────┘ └─────────────────────────────┘│
-│                                                             │
-│ ┌──────────────────────────┐ ┌─────────────────────────────┐│
-│ │ Como calcular a meta?    │ │ Peso (1-10)                 ││
-│ │ [Somar todas as metas  v] │ [1                          ] │
-│ └──────────────────────────┘ └─────────────────────────────┘│
-│                                                             │
-│ Descrição (opcional)                                        │
-│ [________________________________________________ (2 rows)] │
-│                                                             │
-│ ─────────────────────────────────────────────────────────── │
-│                         [Cancelar] [Criar Resultado-Chave]  │
-└─────────────────────────────────────────────────────────────┘
-```
+Adicionar tratamento para `aggregation_type = 'last'` em todas as seções de cálculo:
+
+**Lógica para 'last':**
+- Para target e actual: percorrer os meses de trás para frente (do mais recente ao mais antigo)
+- Retornar o **primeiro valor não nulo encontrado** (ou seja, o último mês com dados)
+
+Seções a corrigir:
+- YTD (meses 1 até mês atual)
+- Yearly (todos os 12 meses)
+- Q1, Q2, Q3, Q4 (meses de cada trimestre)
 
 ---
 
-## Alterações no Código
+### 2. Correção no Hook `useRumoCalculations.tsx`
 
-### 1. Adicionar novos campos ao estado
+Adicionar o caso `'last'` em todos os locais onde se aplica agregação:
 
 ```typescript
-const [formData, setFormData] = useState({
-  title: '',
-  description: '',
-  target_value: '',
-  unit: '%',
-  frequency: 'monthly' as KRFrequency,
-  start_month: '',
-  end_month: '',
-  assigned_owner_id: '',
-  weight: 1,
-  // NOVOS CAMPOS:
-  target_direction: 'maximize' as TargetDirection,
-  aggregation_type: 'sum' as 'sum' | 'average' | 'max' | 'min' | 'last'
-});
-```
-
-### 2. Adicionar imports necessários
-
-```typescript
-import { getDirectionLabel, getDirectionDescription, type TargetDirection } from '@/lib/krHelpers';
-import { 
-  KRFrequency, 
-  getFrequencyBadgeColor 
-} from '@/lib/krFrequencyHelpers';
-import { cn } from '@/lib/utils';
-```
-
-### 3. Novo campo "Direcionamento"
-
-Seguindo o mesmo padrão do KREditModal (linhas 549-581):
-
-```tsx
-<Select 
-  value={formData.target_direction} 
-  onValueChange={(value: TargetDirection) => setFormData({...formData, target_direction: value})}
->
-  <SelectTrigger>
-    <SelectValue />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="maximize">
-      <div className="flex flex-col">
-        <span>{getDirectionLabel('maximize')}</span>
-        <span className="text-xs text-muted-foreground">{getDirectionDescription('maximize')}</span>
-      </div>
-    </SelectItem>
-    <SelectItem value="minimize">
-      <div className="flex flex-col">
-        <span>{getDirectionLabel('minimize')}</span>
-        <span className="text-xs text-muted-foreground">{getDirectionDescription('minimize')}</span>
-      </div>
-    </SelectItem>
-  </SelectContent>
-</Select>
-```
-
-### 4. Novo campo "Frequência das Metas" (com badges)
-
-Seguindo o padrão do KREditModal (linhas 583-638):
-
-```tsx
-<Select 
-  value={formData.frequency} 
-  onValueChange={(value: KRFrequency) => setFormData({...formData, frequency: value})}
->
-  <SelectTrigger>
-    <SelectValue />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="monthly">
-      <div className="flex items-center gap-2">
-        <span className={cn("px-2 py-0.5 rounded text-xs font-medium", getFrequencyBadgeColor('monthly'))}>
-          Mensal
-        </span>
-        <span className="text-muted-foreground text-xs">12 metas por ano</span>
-      </div>
-    </SelectItem>
-    {/* ... outras opções ... */}
-  </SelectContent>
-</Select>
-```
-
-### 5. Novo campo "Como calcular a meta?"
-
-```tsx
-<Select 
-  value={formData.aggregation_type} 
-  onValueChange={(value: 'sum' | 'average' | 'max' | 'min' | 'last') => 
-    setFormData({...formData, aggregation_type: value})
+else if (kr.aggregation_type === 'last') {
+  // Percorrer do último mês para o primeiro para encontrar o último valor
+  for (let i = monthKeys.length - 1; i >= 0; i--) {
+    const key = monthKeys[i];
+    if (monthlyTargets[key] !== undefined && monthlyTargets[key] !== null) {
+      totalTarget = monthlyTargets[key];
+      break;
+    }
   }
->
-  <SelectTrigger>
-    <SelectValue />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="sum">Somar todas as metas</SelectItem>
-    <SelectItem value="average">Calcular a média das metas</SelectItem>
-    <SelectItem value="max">Usar o maior valor entre as metas</SelectItem>
-    <SelectItem value="min">Usar o menor valor entre as metas</SelectItem>
-    <SelectItem value="last">Usar o último valor registrado</SelectItem>
-  </SelectContent>
-</Select>
+  for (let i = monthKeys.length - 1; i >= 0; i--) {
+    const key = monthKeys[i];
+    if (monthlyActual[key] !== undefined && monthlyActual[key] !== null) {
+      totalActual = monthlyActual[key];
+      break;
+    }
+  }
+}
 ```
 
-### 6. Atualizar payload de criação
+Seções a corrigir:
+- `periodType === 'yearly'` (linhas ~83-104)
+- `periodType === 'quarterly'` (linhas ~133-154)
+- `periodType === 'semesterly'` (linhas ~175-192)
+- `periodType === 'bimonthly'` (linhas ~215-232)
 
-Incluir os novos campos no objeto enviado:
+---
+
+### 3. Correção no `KREditModal.tsx`
+
+Adicionar o caso `'last'` nas funções de cálculo:
 
 ```typescript
-const resultadoChaveData = {
-  // ... campos existentes ...
-  target_direction: formData.target_direction,
-  aggregation_type: formData.aggregation_type,
-  frequency: formData.frequency
-};
+case 'last':
+  // Retornar o último valor não-nulo do período
+  for (let i = values.length - 1; i >= 0; i--) {
+    if (values[i] !== undefined && values[i] !== null && values[i] > 0) {
+      return values[i];
+    }
+  }
+  return 0;
 ```
 
-### 7. Reorganizar layout em grid horizontal
+Funções a corrigir:
+- `calculateYearlyTarget` (linhas ~196-214)
+- `calculateYearlyActual` (linhas ~216-232)
 
-```tsx
-<form onSubmit={handleSubmit} className="space-y-4">
-  {/* Nome - full width */}
-  <div className="space-y-2">...</div>
+---
+
+### 4. Correção no Hook `useKRMetrics.tsx`
+
+Verificar e garantir que o caso `'last'` está funcionando corretamente na função `calculateMetricsForMonths`. 
+
+Este hook **já possui implementação** para `'last'` (linhas 159-172), mas precisa ser validado.
+
+---
+
+## Arquivos a Serem Modificados
+
+| Arquivo | Ação | Prioridade |
+|---------|------|------------|
+| Nova migration SQL | Criar | Alta |
+| `src/hooks/useRumoCalculations.tsx` | Modificar | Alta |
+| `src/components/strategic-map/KREditModal.tsx` | Modificar | Alta |
+| `src/hooks/useKRMetrics.tsx` | Validar | Média |
+
+---
+
+## Detalhes Técnicos
+
+### Nova Migration SQL
+
+```sql
+-- Adicionar suporte para aggregation_type = 'last' na função calculate_kr_metrics
+
+CREATE OR REPLACE FUNCTION public.calculate_kr_metrics(kr_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+AS $function$
+DECLARE
+  -- ... variáveis existentes ...
+BEGIN
+  -- ... código existente ...
   
-  {/* Dono + Vigência - 2 cols */}
-  <div className="grid grid-cols-2 gap-4">...</div>
+  -- YTD: Adicionar ELSIF para 'last'
+  ELSIF kr.aggregation_type = 'last' THEN
+    -- Percorrer do mês mais recente para o mais antigo
+    FOR i IN REVERSE current_month..1 LOOP
+      month_key := current_year || '-' || LPAD(i::TEXT, 2, '0');
+      
+      IF kr.monthly_targets ? month_key THEN
+        month_target := (kr.monthly_targets->>month_key)::NUMERIC;
+        IF month_target IS NOT NULL THEN
+          ytd_target_val := month_target;
+          EXIT; -- Sair do loop ao encontrar o primeiro valor
+        END IF;
+      END IF;
+    END LOOP;
+    
+    FOR i IN REVERSE current_month..1 LOOP
+      month_key := current_year || '-' || LPAD(i::TEXT, 2, '0');
+      
+      IF kr.monthly_actual ? month_key THEN
+        month_actual := (kr.monthly_actual->>month_key)::NUMERIC;
+        IF month_actual IS NOT NULL THEN
+          ytd_actual_val := month_actual;
+          EXIT;
+        END IF;
+      END IF;
+    END LOOP;
+  END IF;
   
-  {/* Direcionamento + Frequência - 2 cols */}
-  <div className="grid grid-cols-2 gap-4">...</div>
-  
-  {/* Meta + Unidade - 2 cols */}
-  <div className="grid grid-cols-2 gap-4">...</div>
-  
-  {/* Como calcular + Peso - 2 cols */}
-  <div className="grid grid-cols-2 gap-4">...</div>
-  
-  {/* Descrição - full width (reduzida) */}
-  <div className="space-y-2">
-    <Textarea rows={2} />
-  </div>
-  
-  {/* Botões */}
-  <div className="flex justify-end gap-3 pt-4 border-t">...</div>
-</form>
+  -- ... repetir padrão para yearly e cada quarter ...
+END;
+$function$;
+```
+
+### Lógica para useRumoCalculations
+
+```typescript
+else if (kr.aggregation_type === 'last') {
+  // Ordenar monthKeys em ordem cronológica reversa não é necessário
+  // já que percorremos do final para o início
+  for (let i = monthKeys.length - 1; i >= 0; i--) {
+    const val = monthlyTargets[monthKeys[i]];
+    if (val !== undefined && val !== null && val !== 0) {
+      totalTarget = val;
+      break;
+    }
+  }
+  for (let i = monthKeys.length - 1; i >= 0; i--) {
+    const val = monthlyActual[monthKeys[i]];
+    if (val !== undefined && val !== null && val !== 0) {
+      totalActual = val;
+      break;
+    }
+  }
+}
 ```
 
 ---
 
-## Arquivo a Ser Modificado
+## Validação por Período
 
-| Arquivo | Ação |
-|---------|------|
-| `src/components/objectives/InlineKeyResultForm.tsx` | Modificar |
+Após implementação, os cálculos devem funcionar corretamente para:
+
+| Filtro | Comportamento Esperado |
+|--------|------------------------|
+| **Mensal** | Valor do mês selecionado (não aplica agregação) |
+| **YTD** | Último valor registrado de jan até mês atual |
+| **Anual** | Último valor registrado dos 12 meses |
+| **Trimestral** | Último valor registrado dos 3 meses do trimestre |
+| **Semestral** | Último valor registrado dos 6 meses do semestre |
+| **Bimestral** | Último valor registrado dos 2 meses do bimestre |
+
+---
+
+## Sobre o Toast de Erro
+
+O toast de erro mencionado pelo usuário **não está diretamente relacionado** à seleção da opção "last". O `saveAggregationType` salva corretamente no banco - o problema é que os **cálculos subsequentes** não usam esse valor corretamente.
+
+O erro pode aparecer se houver uma falha de conexão ao salvar, mas a funcionalidade de salvar em si está correta. O problema real é que após salvar, os cálculos ignoram o valor `'last'`.
 
 ---
 
 ## Resultado Esperado
 
-O formulário terá:
+Após a implementação:
 
-1. Layout mais horizontal e compacto (cabe em telas menores)
-2. Campo "Direcionamento" com visual rico (emoji + descrição)
-3. Campo "Frequência das Metas" com badges coloridos + contagem
-4. Campo "Como calcular a meta?" como Select (não input numérico)
-5. Todos os dados salvos corretamente no banco
-
+1. Ao selecionar "Usar o último valor registrado", o KR usará o valor mais recente disponível para calcular a meta anual
+2. Os cálculos funcionarão corretamente em todos os filtros de período
+3. O dashboard e mapas estratégicos exibirão os valores corretos
+4. Não haverá mais erros ou comportamento inesperado ao usar esta opção
