@@ -196,8 +196,11 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
 
   // Calculate functions
   const calculateYearlyTarget = (targets: Record<string, number>) => {
-    const values = Object.values(targets).filter(value => value > 0);
-    if (values.length === 0) return 0;
+    const entries = Object.entries(targets).filter(([_, value]) => value > 0);
+    if (entries.length === 0) return 0;
+
+    const values = entries.map(([_, v]) => v);
+    const keys = entries.map(([k, _]) => k).sort(); // Ordenar por chave cronológica
 
     switch (aggregationType) {
       case 'sum':
@@ -208,14 +211,26 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
         return Math.max(...values);
       case 'min':
         return Math.min(...values);
+      case 'last':
+        // Retornar o último valor não-nulo do período (ordem cronológica)
+        for (let i = keys.length - 1; i >= 0; i--) {
+          const val = targets[keys[i]];
+          if (val !== undefined && val !== null && val > 0) {
+            return val;
+          }
+        }
+        return 0;
       default:
         return values.reduce((sum, value) => sum + value, 0);
     }
   };
 
   const calculateYearlyActual = (actuals: Record<string, number>) => {
-    const values = Object.values(actuals).filter(value => value > 0);
-    if (values.length === 0) return 0;
+    const entries = Object.entries(actuals).filter(([_, value]) => value > 0);
+    if (entries.length === 0) return 0;
+
+    const values = entries.map(([_, v]) => v);
+    const keys = entries.map(([k, _]) => k).sort(); // Ordenar por chave cronológica
 
     switch (aggregationType) {
       case 'sum':
@@ -226,6 +241,15 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
         return Math.max(...values);
       case 'min':
         return Math.min(...values);
+      case 'last':
+        // Retornar o último valor não-nulo do período (ordem cronológica)
+        for (let i = keys.length - 1; i >= 0; i--) {
+          const val = actuals[keys[i]];
+          if (val !== undefined && val !== null && val > 0) {
+            return val;
+          }
+        }
+        return 0;
       default:
         return values.reduce((sum, value) => sum + value, 0);
     }
