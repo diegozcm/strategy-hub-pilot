@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bell, User, Settings, LogOut, Brain, Menu, Building2 } from 'lucide-react';
+import { User, Settings, LogOut, Brain, Menu, Building2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/hooks/useMultiTenant';
 import { CompanyDisplay } from '@/components/CompanyDisplay';
 import { useCompanyAIAccess } from '@/hooks/useCompanyAIAccess';
+import { useUserCompaniesCount } from '@/hooks/useUserCompaniesCount';
 
 interface DashboardHeaderProps {
   onToggleSidebar?: () => void;
@@ -25,6 +26,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { hasAIAccess } = useCompanyAIAccess();
+  const { hasMultipleCompanies } = useUserCompaniesCount();
 
   const handleSignOut = async () => {
     console.log('🚪 DashboardHeader: Starting logout process');
@@ -116,17 +118,21 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
                   Configurações
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={() => {
-                  clearCompanySelection?.();
-                  navigate('/company-selection', { state: { fromSwitching: true } });
-                }}
-                className="focus:bg-accent"
-              >
-                <Building2 className="mr-2 h-4 w-4" />
-                Trocar de Empresa
-              </DropdownMenuItem>
+              {hasMultipleCompanies && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      clearCompanySelection?.();
+                      navigate('/company-selection', { state: { fromSwitching: true } });
+                    }}
+                    className="focus:bg-accent"
+                  >
+                    <Building2 className="mr-2 h-4 w-4" />
+                    Trocar de Empresa
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem 
                 onClick={handleSignOut}
