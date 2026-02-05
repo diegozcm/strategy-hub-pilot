@@ -427,6 +427,7 @@ export const ObjectiveCard = ({
           onOpenKeyResultDetails={handleOpenKeyResultDetails}
           pillars={pillars}
           progressPercentage={progressPercentage}
+          onCreateKeyResult={onAddResultadoChave}
         />
 
         {/* KR Overview Modal (compact mode) */}
@@ -635,6 +636,7 @@ export const ObjectiveCard = ({
         onOpenKeyResultDetails={handleOpenKeyResultDetails}
         pillars={pillars}
         progressPercentage={progressPercentage}
+        onCreateKeyResult={onAddResultadoChave}
       />
     </>
   );

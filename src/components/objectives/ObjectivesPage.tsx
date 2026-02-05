@@ -349,6 +349,47 @@ export const ObjectivesPage: React.FC = () => {
     }
   }, [keyResults]);
 
+  // Create Key Result inline from ObjectiveDetailModal
+  const handleCreateKeyResult = async (krData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => {
+    if (!user) {
+      toast({
+        title: "Erro",
+        description: "Usuário não autenticado.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('key_results')
+        .insert([{ ...krData, owner_id: user.id }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Atualizar lista de KRs
+      setKeyResults(prev => [...prev, data as KeyResult]);
+      
+      toast({
+        title: "Sucesso",
+        description: "Resultado-chave criado com sucesso!",
+      });
+
+      // Refresh data to ensure consistency
+      await invalidateAndReload();
+    } catch (error) {
+      console.error('Error creating key result:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao criar resultado-chave. Tente novamente.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   // Get active plan
   const activePlan = plans.find(p => p.status === 'active');
   const activePlanObjectivesCount = activePlan ? objectives.filter(obj => obj.plan_id === activePlan.id).length : 0;
@@ -797,6 +838,7 @@ export const ObjectivesPage: React.FC = () => {
           ) : 0}
           canEditObjective={canEditObjective}
           canDeleteObjective={canDeleteObjective}
+          onCreateKeyResult={handleCreateKeyResult}
         />
 
         {/* Edit Key Result Modal */}
