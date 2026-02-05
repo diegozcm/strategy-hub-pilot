@@ -1,70 +1,88 @@
 
-# Plano: Corrigir Erro de FK na Exclusão de Usuário
+# Plano: Remover Campo "Plano Estratégico" do Modal de Criação de Objetivo
 
-## Problema Identificado
+## Resumo da Mudança
 
-Ao tentar excluir o usuário "User Test Betinha", o sistema retorna:
+Atualmente, ao criar um objetivo estratégico na página de Objetivos, o usuário precisa selecionar manualmente o "Plano Estratégico" mesmo quando já existe um plano ativo. Isso é redundante, pois o sistema já sabe qual é o plano ativo.
 
-> "update or delete on table 'profiles' violates foreign key constraint 'key_results_assigned_owner_id_fkey' on table 'key_results'"
+A mudança removerá este campo de seleção e usará automaticamente o plano ativo.
 
-### Causa Raiz
+---
 
-A função `safe_delete_user_with_replacement` não está transferindo **2 colunas** que referenciam a tabela `profiles`:
+## O Que Será Alterado
 
-| Tabela | Coluna | Situação |
-|--------|--------|----------|
-| `key_results` | `owner_id` | ✅ Já transferida |
-| `key_results` | `assigned_owner_id` | ❌ **Não transferida** |
-| `strategic_projects` | `owner_id` | ✅ Já transferida |
-| `strategic_projects` | `responsible_id` | ❌ **Não transferida** |
+**Arquivo:** `src/components/objectives/ObjectivesPage.tsx`
 
-## Solução
+### Alterações:
 
-Criar uma migration para atualizar a função `safe_delete_user_with_replacement` adicionando as transferências faltantes.
+1. **Adicionar auto-preenchimento do plano ativo**
+   - Criar um `useEffect` que automaticamente define `objectiveForm.plan_id` com o ID do plano ativo quando ele estiver disponível
 
-## Detalhamento Técnico
+2. **Remover o campo de seleção "Plano Estratégico"**
+   - Excluir o bloco de código do Select (linhas 501-515)
+   - Ajustar o grid de `grid-cols-2` para que o campo "Pilar Estratégico" ocupe toda a largura
 
-### Nova Migration SQL
+3. **Ajustar a validação**
+   - Manter a validação de `plan_id` para segurança, mas garantir que seja preenchido automaticamente
 
-A migration irá adicionar dois `UPDATE` statements antes da exclusão do perfil:
+4. **Ajustar o reset do formulário**
+   - Após criar um objetivo, o `plan_id` será resetado para vazio, mas o `useEffect` irá re-popular com o plano ativo
 
-```sql
--- Após a transferência de owner_id de key_results (linha ~349)
+---
 
--- Transfer key results assigned owner
-UPDATE key_results 
-SET assigned_owner_id = _replacement_user_id, updated_at = now()
-WHERE assigned_owner_id = _user_id;
+## Antes e Depois
 
-GET DIAGNOSTICS affected_records = ROW_COUNT;
-IF affected_records > 0 THEN
-  operations_log := operations_log || 
-    ('Transferiu responsabilidade de ' || affected_records || ' resultado(s) chave');
-END IF;
-
--- Após a transferência de owner_id de strategic_projects (linha ~329)
-
--- Transfer strategic projects responsible
-UPDATE strategic_projects 
-SET responsible_id = _replacement_user_id, updated_at = now()
-WHERE responsible_id = _user_id;
-
-GET DIAGNOSTICS affected_records = ROW_COUNT;
-IF affected_records > 0 THEN
-  operations_log := operations_log || 
-    ('Transferiu responsável de ' || affected_records || ' projeto(s) estratégico(s)');
-END IF;
+### Antes:
+```
+┌─────────────────┐ ┌─────────────────┐
+│ Plano Estratég. │ │ Pilar Estratég. │
+└─────────────────┘ └─────────────────┘
 ```
 
-## Arquivos a Modificar
+### Depois:
+```
+┌───────────────────────────────────────┐
+│         Pilar Estratégico             │
+└───────────────────────────────────────┘
+```
 
-| Arquivo | Mudança |
-|---------|---------|
-| Nova migration SQL | Atualizar função `safe_delete_user_with_replacement` |
+---
 
-## Verificação Pós-Implementação
+## Detalhes Técnicos
 
-1. ✅ Exclusão de usuário com `assigned_owner_id` em key_results funciona
-2. ✅ Exclusão de usuário com `responsible_id` em strategic_projects funciona
-3. ✅ Log de operações mostra as novas transferências
-4. ✅ Dados críticos são transferidos para o usuário substituto
+```typescript
+// 1. Adicionar useEffect para auto-popular plan_id
+useEffect(() => {
+  if (activePlan && !objectiveForm.plan_id) {
+    setObjectiveForm(prev => ({ ...prev, plan_id: activePlan.id }));
+  }
+}, [activePlan]);
+
+// 2. Remover o grid-cols-2 e o Select de Plano Estratégico
+// Antes:
+<div className="grid grid-cols-2 gap-4">
+  <div>
+    <Label>Plano Estratégico</Label>
+    <Select>...</Select>
+  </div>
+  <div>
+    <Label>Pilar Estratégico</Label>
+    <Select>...</Select>
+  </div>
+</div>
+
+// Depois:
+<div>
+  <Label>Pilar Estratégico</Label>
+  <Select>...</Select>
+</div>
+```
+
+---
+
+## Impacto
+
+- **UX melhorada**: Menos cliques e decisões para o usuário
+- **Fluxo simplificado**: O objetivo é automaticamente vinculado ao plano ativo
+- **Sem quebras**: A lógica de validação e salvamento permanece intacta
+
