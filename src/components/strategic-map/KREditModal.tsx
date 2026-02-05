@@ -123,7 +123,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
   
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
   const [selectedYear, setSelectedYear] = useState<number>(initialYear || new Date().getFullYear());
-  const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min' | 'last'>('sum');
+  const [aggregationType, setAggregationType] = useState<'sum' | 'average' | 'max' | 'min'>('sum');
   const [editMode, setEditMode] = useState<boolean>(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
@@ -211,15 +211,6 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
         return Math.max(...values);
       case 'min':
         return Math.min(...values);
-      case 'last':
-        // Retornar o último valor não-nulo do período (ordem cronológica)
-        for (let i = keys.length - 1; i >= 0; i--) {
-          const val = targets[keys[i]];
-          if (val !== undefined && val !== null && val > 0) {
-            return val;
-          }
-        }
-        return 0;
       default:
         return values.reduce((sum, value) => sum + value, 0);
     }
@@ -241,15 +232,6 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
         return Math.max(...values);
       case 'min':
         return Math.min(...values);
-      case 'last':
-        // Retornar o último valor não-nulo do período (ordem cronológica)
-        for (let i = keys.length - 1; i >= 0; i--) {
-          const val = actuals[keys[i]];
-          if (val !== undefined && val !== null && val > 0) {
-            return val;
-          }
-        }
-        return 0;
       default:
         return values.reduce((sum, value) => sum + value, 0);
     }
@@ -273,7 +255,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
   };
 
   // Save aggregation type
-  const saveAggregationType = async (newType: 'sum' | 'average' | 'max' | 'min' | 'last') => {
+  const saveAggregationType = async (newType: 'sum' | 'average' | 'max' | 'min') => {
     if (!keyResult) return;
     
     try {
@@ -350,7 +332,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
         frequency: krFrequency
       });
       
-      setAggregationType(keyResult.aggregation_type || 'sum');
+      setAggregationType((keyResult.aggregation_type as 'sum' | 'average' | 'max' | 'min') || 'sum');
       
       // Inicializar selectedValidityQuarter a partir do start_month/end_month
       setSelectedValidityQuarter(monthsToValidity(keyResult.start_month || '', keyResult.end_month || ''));
@@ -848,8 +830,9 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                     <Select 
                       value={aggregationType} 
                       onValueChange={(value) => {
-                        setAggregationType(value as 'sum' | 'average' | 'max' | 'min' | 'last');
-                        saveAggregationType(value as 'sum' | 'average' | 'max' | 'min' | 'last');
+                        const typedValue = value as 'sum' | 'average' | 'max' | 'min';
+                        setAggregationType(typedValue);
+                        saveAggregationType(typedValue);
                       }}
                       disabled={savingAggregationType}
                     >
@@ -861,7 +844,6 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                         <SelectItem value="average">Calcular a média das metas</SelectItem>
                         <SelectItem value="max">Usar o maior valor entre as metas</SelectItem>
                         <SelectItem value="min">Usar o menor valor entre as metas</SelectItem>
-                        <SelectItem value="last">Usar o último valor registrado</SelectItem>
                       </SelectContent>
                     </Select>
                     {savingAggregationType && (

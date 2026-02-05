@@ -97,22 +97,6 @@ export const useRumoCalculations = (
           const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
           totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
           totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
-        } else if (kr.aggregation_type === 'last') {
-          // Percorrer do último mês para o primeiro para encontrar o último valor
-          for (let i = monthKeys.length - 1; i >= 0; i--) {
-            const val = monthlyTargets[monthKeys[i]];
-            if (val !== undefined && val !== null && val !== 0) {
-              totalTarget = val;
-              break;
-            }
-          }
-          for (let i = monthKeys.length - 1; i >= 0; i--) {
-            const val = monthlyActual[monthKeys[i]];
-            if (val !== undefined && val !== null && val !== 0) {
-              totalActual = val;
-              break;
-            }
-          }
         } else {
           // sum (default)
           totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
@@ -163,21 +147,6 @@ export const useRumoCalculations = (
           const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
           totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
           totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
-        } else if (kr.aggregation_type === 'last') {
-          for (let i = monthKeys.length - 1; i >= 0; i--) {
-            const val = monthlyTargets[monthKeys[i]];
-            if (val !== undefined && val !== null && val !== 0) {
-              totalTarget = val;
-              break;
-            }
-          }
-          for (let i = monthKeys.length - 1; i >= 0; i--) {
-            const val = monthlyActual[monthKeys[i]];
-            if (val !== undefined && val !== null && val !== 0) {
-              totalActual = val;
-              break;
-            }
-          }
         } else {
           // sum (default)
           totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
@@ -217,21 +186,6 @@ export const useRumoCalculations = (
           const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
           totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
           totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
-        } else if (kr.aggregation_type === 'last') {
-          for (let i = monthKeys.length - 1; i >= 0; i--) {
-            const val = monthlyTargets[monthKeys[i]];
-            if (val !== undefined && val !== null && val !== 0) {
-              totalTarget = val;
-              break;
-            }
-          }
-          for (let i = monthKeys.length - 1; i >= 0; i--) {
-            const val = monthlyActual[monthKeys[i]];
-            if (val !== undefined && val !== null && val !== 0) {
-              totalActual = val;
-              break;
-            }
-          }
         } else {
           totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
           totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
@@ -272,21 +226,6 @@ export const useRumoCalculations = (
           const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
           totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
           totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
-        } else if (kr.aggregation_type === 'last') {
-          for (let i = monthKeys.length - 1; i >= 0; i--) {
-            const val = monthlyTargets[monthKeys[i]];
-            if (val !== undefined && val !== null && val !== 0) {
-              totalTarget = val;
-              break;
-            }
-          }
-          for (let i = monthKeys.length - 1; i >= 0; i--) {
-            const val = monthlyActual[monthKeys[i]];
-            if (val !== undefined && val !== null && val !== 0) {
-              totalActual = val;
-              break;
-            }
-          }
         } else {
           totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
           totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
