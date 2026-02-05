@@ -71,7 +71,6 @@ export const InlineKeyResultForm = ({
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    target_value: '',
     unit: '%',
     frequency: 'monthly' as KRFrequency,
     start_month: '',
@@ -88,7 +87,7 @@ export const InlineKeyResultForm = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.target_value) {
+    if (!formData.title) {
       return;
     }
 
@@ -99,7 +98,7 @@ export const InlineKeyResultForm = ({
         title: formData.title,
         description: formData.description,
         objective_id: objectiveId,
-        target_value: parseFloat(formData.target_value),
+        target_value: 0,
         current_value: 0,
         unit: formData.unit,
         frequency: formData.frequency,
@@ -108,7 +107,7 @@ export const InlineKeyResultForm = ({
         weight: formData.weight || 1,
         monthly_targets: {},
         monthly_actual: {},
-        yearly_target: parseFloat(formData.target_value),
+        yearly_target: 0,
         aggregation_type: formData.aggregation_type,
         comparison_type: 'cumulative' as const,
         target_direction: formData.target_direction,
@@ -304,22 +303,8 @@ export const InlineKeyResultForm = ({
           </div>
         </div>
 
-        {/* Meta + Unidade - 2 cols */}
+        {/* Unidade + Peso - 2 cols */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="kr-target" className="text-sm">Meta Anual *</Label>
-            <Input
-              id="kr-target"
-              type="number"
-              step="0.01"
-              placeholder="100"
-              value={formData.target_value}
-              onChange={(e) => setFormData({...formData, target_value: e.target.value})}
-              required
-              className="h-9"
-            />
-          </div>
-
           <div className="space-y-1">
             <Label htmlFor="kr-unit" className="text-sm">Unidade</Label>
             <Select value={formData.unit} onValueChange={(value) => setFormData({...formData, unit: value})}>
@@ -332,28 +317,6 @@ export const InlineKeyResultForm = ({
                 <SelectItem value="number">Número</SelectItem>
                 <SelectItem value="dias">Dias</SelectItem>
                 <SelectItem value="score">Score</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Como calcular + Peso - 2 cols */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-sm">Como calcular a meta?</Label>
-            <Select 
-              value={formData.aggregation_type} 
-              onValueChange={(value: AggregationType) => setFormData({...formData, aggregation_type: value})}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {aggregationOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
               </SelectContent>
             </Select>
           </div>
@@ -370,6 +333,26 @@ export const InlineKeyResultForm = ({
               className="h-9"
             />
           </div>
+        </div>
+
+        {/* Como calcular - full width */}
+        <div className="space-y-1">
+          <Label className="text-sm">Como calcular a meta?</Label>
+          <Select 
+            value={formData.aggregation_type} 
+            onValueChange={(value: AggregationType) => setFormData({...formData, aggregation_type: value})}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {aggregationOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Descrição - full width (compacta) */}
@@ -390,7 +373,7 @@ export const InlineKeyResultForm = ({
           <Button type="button" variant="outline" onClick={onCancel} disabled={loading} size="sm">
             Cancelar
           </Button>
-          <Button type="submit" disabled={loading || !formData.title || !formData.target_value} size="sm">
+          <Button type="submit" disabled={loading || !formData.title} size="sm">
             <Save className="w-4 h-4 mr-2" />
             {loading ? 'Salvando...' : 'Criar Resultado-Chave'}
           </Button>
