@@ -23,7 +23,7 @@ export const useStartupHubUserType = () => {
           .select('type')
           .eq('user_id', user.id)
           .eq('status', 'active')
-          .single();
+          .maybeSingle();
 
         if (error || !data) {
           setUserType('unknown');

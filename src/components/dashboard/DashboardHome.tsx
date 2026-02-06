@@ -429,20 +429,20 @@ export const DashboardHome: React.FC = () => {
           .from('golden_circle')
           .select('id')
           .eq('company_id', company.id)
-          .single(),
+          .maybeSingle(),
         // SWOT Analysis  
         supabase
           .from('swot_analysis')
           .select('id')
           .eq('company_id', company.id)
-          .single(),
+          .maybeSingle(),
         // BEEP Assessments (completed)
         supabase
           .from('beep_assessments')
           .select('id')
           .eq('company_id', company.id)
           .eq('status', 'completed')
-          .single()
+          .maybeSingle()
       ];
 
       const toolsResults = await Promise.allSettled(toolsPromises);
