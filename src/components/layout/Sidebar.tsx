@@ -45,15 +45,10 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   const isMobile = useIsMobile();
-  const [collapsed, setCollapsed] = useState(false);
+  const collapsed = false; // Sidebar is always expanded
   const { hasModuleAccess } = useModules();
   const { isStartup, isMentor, hasProfile } = useStartupProfile();
   const location = useLocation();
-
-  // Initialize collapsed state based on mobile
-  useEffect(() => {
-    setCollapsed(isMobile);
-  }, [isMobile]);
 
   // Helper function to check if a route is active
   const isRouteActive = (href: string) => {
@@ -102,11 +97,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
           )}
           {collapsed && !isMobile && (
             <Target className="h-6 w-6 text-[hsl(var(--cofound-blue-light))] mx-auto" />
-          )}
-          {!isMobile && (
-            <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)} className="ml-auto text-sidebar-foreground hover:bg-sidebar-accent">
-              {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-            </Button>
           )}
         </div>
       </div>
