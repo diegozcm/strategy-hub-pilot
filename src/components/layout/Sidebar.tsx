@@ -93,7 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
         <div className="flex items-center justify-between">
           {(!collapsed || isMobile) && (
             <div className="flex items-center space-x-2">
-              <Target className="h-6 w-6 text-sidebar-primary" />
+              <Target className="h-6 w-6 text-[hsl(var(--cofound-blue-light))]" />
               <div>
                 <h1 className="text-lg font-bold text-sidebar-foreground">Strategy HUB</h1>
                 <p className="text-xs text-sidebar-foreground/60">By COFOUND</p>
@@ -101,7 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
             </div>
           )}
           {collapsed && !isMobile && (
-            <Target className="h-6 w-6 text-sidebar-primary mx-auto" />
+            <Target className="h-6 w-6 text-[hsl(var(--cofound-blue-light))] mx-auto" />
           )}
           {!isMobile && (
             <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)} className="ml-auto text-sidebar-foreground hover:bg-sidebar-accent">
@@ -130,7 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
             <div key={group.name} className="space-y-2">
               {(!collapsed || isMobile) && (
                 <div className="flex items-center px-3 py-2">
-                  <group.icon className="h-5 w-5 mr-3 text-sidebar-primary" />
+                  <group.icon className="h-5 w-5 mr-3 text-[hsl(var(--cofound-blue-light))]" />
                   <span className="text-sm font-semibold text-sidebar-foreground/80 uppercase tracking-wider">
                     {group.name}
                   </span>
@@ -173,7 +173,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                             : "text-sidebar-foreground/60 hover:bg-sidebar-accent/10 hover:text-sidebar-foreground"
                         )}
                       >
-                        <Calendar className={cn("h-4 w-4", isActive && "text-sidebar-primary", (!collapsed || isMobile) && "mr-3")} />
+                        <Calendar className={cn("h-4 w-4 text-[hsl(var(--cofound-blue-light))]", (!collapsed || isMobile) && "mr-3")} />
                         {(!collapsed || isMobile) && <span className="text-sm">{calendarName}</span>}
                       </NavLink>
                     );
@@ -191,7 +191,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                           : "text-sidebar-foreground/60 hover:bg-sidebar-accent/10 hover:text-sidebar-foreground"
                       )}
                     >
-                      <item.icon className={cn("h-4 w-4", isActive && "text-sidebar-primary", (!collapsed || isMobile) && "mr-3")} />
+                      <item.icon className={cn("h-4 w-4 text-[hsl(var(--cofound-blue-light))]", (!collapsed || isMobile) && "mr-3")} />
                       {(!collapsed || isMobile) && <span className="text-sm">{item.name}</span>}
                     </NavLink>
                   );
