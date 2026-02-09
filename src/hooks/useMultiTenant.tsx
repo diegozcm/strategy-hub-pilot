@@ -135,6 +135,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         user_id: userId,
         company_id: companyId,
         login_time: new Date().toISOString(),
+        user_agent: navigator.userAgent,
       });
       console.log('✅ Login logged successfully');
     } catch (error) {
@@ -144,7 +145,7 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   // Load profile data - OPTIMIZED for normal users (no admin checks)
-  const loadUserProfileOptimized = async (userId: string) => {
+  const loadUserProfileOptimized = async (userId: string, shouldLogLogin: boolean = false) => {
     const startTime = performance.now();
     
     try {
@@ -253,8 +254,8 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         setSelectedCompanyId(company.id);
         localStorage.setItem('selectedCompanyId', company.id);
 
-        // Log login with company
-        await logUserLogin(userId, company.id);
+        // Log login with company (only on real SIGNED_IN events)
+        if (shouldLogLogin) await logUserLogin(userId, company.id);
       } else if (activeCompanies.length > 1) {
         console.log(`🏢 User has ${activeCompanies.length} companies - will need to select`);
         
@@ -270,17 +271,17 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
             } as Company);
             setSelectedCompanyId(persistedCompany.companies.id);
 
-            // Log login with company
-            await logUserLogin(userId, persistedCompany.companies.id);
+            // Log login with company (only on real SIGNED_IN events)
+            if (shouldLogLogin) await logUserLogin(userId, persistedCompany.companies.id);
           }
         } else {
           // Log login without company (will select later)
-          await logUserLogin(userId, null);
+          if (shouldLogLogin) await logUserLogin(userId, null);
         }
       } else {
         console.log('⚠️ User has no active companies');
         // Log login without company
-        await logUserLogin(userId, null);
+        if (shouldLogLogin) await logUserLogin(userId, null);
       }
 
       setLoading(false);
@@ -723,13 +724,13 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
           console.log('👤 User signed in:', session.user.email);
           setSession(session);
           setUser(session.user);
-          loadUserProfileOptimized(session.user.id);
+          loadUserProfileOptimized(session.user.id, true); // true = log login
         } 
         else if (event === 'INITIAL_SESSION' && session) {
           console.log('👤 Initial session found:', session.user.email);
           setSession(session);
           setUser(session.user);
-          loadUserProfileOptimized(session.user.id);
+          loadUserProfileOptimized(session.user.id, false); // false = don't log (page refresh)
         }
         else if (event === 'SIGNED_OUT' || !session) {
           console.log('❌ User signed out');
@@ -801,7 +802,23 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         console.log('⚠️ Critical error, but preserving company selection for recovery');
       });
 
-    return () => subscription.unsubscribe();
+    // Register beforeunload to log logout when user closes tab/window
+    const handleBeforeUnload = () => {
+      const currentUserId = user?.id;
+      if (currentUserId) {
+        // Use sendBeacon for reliable delivery on page unload
+        const url = `https://pdpzxjlnaqwlyqoyoyhr.supabase.co/rest/v1/rpc/log_user_logout_beacon`;
+        // Fallback: just call logUserLogout (may not complete on unload)
+        logUserLogout(currentUserId).catch(() => {});
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [navigate]);
 
   // Sign in for NORMAL USERS (system admins are also allowed here; admin-only console uses AdminLoginPage)

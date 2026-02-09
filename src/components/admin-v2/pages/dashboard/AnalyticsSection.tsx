@@ -1,4 +1,4 @@
-import { Eye, MousePointerClick, Clock, Monitor, Smartphone, Tablet, HelpCircle } from "lucide-react";
+import { Eye, MousePointerClick, Clock, Monitor, Smartphone, Tablet, HelpCircle, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "../../components/StatCard";
 import {
@@ -7,8 +7,13 @@ import {
   useDeviceBreakdown,
 } from "@/hooks/admin/useAnalyticsStats";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
 } from "recharts";
 
 const DEVICE_ICONS: Record<string, React.ElementType> = {
@@ -39,7 +44,19 @@ export function AnalyticsSection() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Analytics da Plataforma (7 dias)</h3>
+      <div className="flex items-center gap-2">
+        <h3 className="text-lg font-semibold">Analytics da Plataforma (7 dias)</h3>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <p className="text-xs">Dados baseados em logins reais dos usuários. Visitantes = usuários únicos. Sessões = total de logins. Duração = tempo entre login e logout.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -60,9 +77,9 @@ export function AnalyticsSection() {
           isLoading={overviewLoading}
         />
         <StatCard
-          title="Sessões/Usuário"
-          value={overview?.avgPagesPerVisit || 0}
-          description="Média por visitante"
+          title="Logins/Usuário"
+          value={overview?.avgLoginsPerUser || 0}
+          description="Média de logins por visitante"
           icon={MousePointerClick}
           variant="default"
           isLoading={overviewLoading}
@@ -91,7 +108,7 @@ export function AnalyticsSection() {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip
+                    <RechartsTooltip
                       contentStyle={{
                         backgroundColor: "hsl(var(--background))",
                         border: "1px solid hsl(var(--border))",
