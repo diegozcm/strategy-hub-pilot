@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserProfile, Company, Permission, AuthContextType, UserRole } from '@/types/auth';
 import { FirstLoginModal } from '@/components/ui/FirstLoginModal';
 import { logStep } from '@/lib/loginTrace';
+import { toast } from 'sonner';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -217,6 +218,17 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
 
       // Check if user must change password
       if (profileData?.must_change_password === true) {
+        // Check if temporary password has expired
+        if (profileData?.temp_reset_expires) {
+          const isExpired = new Date(profileData.temp_reset_expires) < new Date();
+          if (isExpired) {
+            console.log('⏰ Temporary password expired - signing out user');
+            await supabase.auth.signOut();
+            toast.error('Sua senha temporária expirou. Solicite uma nova ao administrador.');
+            setLoading(false);
+            return;
+          }
+        }
         console.log('🔐 User must change password - showing modal');
         setShowFirstLoginModal(true);
         setLoading(false);
@@ -315,6 +327,16 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
       setProfile(profile as UserProfile);
 
       if (profile?.must_change_password === true) {
+        // Check if temporary password has expired
+        if (profile?.temp_reset_expires) {
+          const isExpired = new Date(profile.temp_reset_expires) < new Date();
+          if (isExpired) {
+            console.log('⏰ Temporary password expired - signing out user');
+            await supabase.auth.signOut();
+            toast.error('Sua senha temporária expirou. Solicite uma nova ao administrador.');
+            return;
+          }
+        }
         console.log('🔐 User must change password - showing modal');
         setShowFirstLoginModal(true);
       }

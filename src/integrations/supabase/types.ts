@@ -1862,6 +1862,56 @@ export type Database = {
           },
         ]
       }
+      password_policies: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          id: string
+          min_password_length: number
+          require_lowercase: boolean
+          require_number: boolean
+          require_password_change: boolean
+          require_special_char: boolean
+          require_uppercase: boolean
+          temp_password_validity_hours: number
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          min_password_length?: number
+          require_lowercase?: boolean
+          require_number?: boolean
+          require_password_change?: boolean
+          require_special_char?: boolean
+          require_uppercase?: boolean
+          temp_password_validity_hours?: number
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          min_password_length?: number
+          require_lowercase?: boolean
+          require_number?: boolean
+          require_password_change?: boolean
+          require_special_char?: boolean
+          require_uppercase?: boolean
+          temp_password_validity_hours?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_policies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: true
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       performance_reviews: {
         Row: {
           collaboration_rating: number | null
