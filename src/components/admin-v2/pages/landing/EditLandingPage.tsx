@@ -1,4 +1,10 @@
-import { PlaceholderPage } from "../PlaceholderPage";
+import { AdminPageContainer } from "../../components/AdminPageContainer";
+import { LandingPageEditorPage } from "@/components/admin/LandingPageEditorPage";
+
 export default function EditLandingPage() {
-  return <PlaceholderPage title="Editar Conteúdo" section="Landing Page › Editor" />;
+  return (
+    <AdminPageContainer title="Editor da Landing Page" description="Landing Page › Editar Conteúdo">
+      <LandingPageEditorPage />
+    </AdminPageContainer>
+  );
 }

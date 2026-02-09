@@ -1,4 +1,12 @@
-import { PlaceholderPage } from "../PlaceholderPage";
+import { AdminPageContainer } from "../../components/AdminPageContainer";
+import { BackupTab } from "@/components/admin/BackupTab";
+
 export default function CreateBackupPage() {
-  return <PlaceholderPage title="Criar Backup" section="Configurações › Backup" />;
+  return (
+    <AdminPageContainer title="Criar Backup" description="Configurações › Backup › Criar">
+      <div className="max-w-5xl">
+        <BackupTab />
+      </div>
+    </AdminPageContainer>
+  );
 }
