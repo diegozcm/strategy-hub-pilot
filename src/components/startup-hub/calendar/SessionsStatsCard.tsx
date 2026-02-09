@@ -4,13 +4,8 @@ import { Calendar, Clock, Users, TrendingUp } from 'lucide-react';
 import { MentoringSession } from '@/hooks/useMentorSessions';
 import { useStartupHubUserType } from '@/hooks/useStartupHubUserType';
 
-// Unified session type for calendar display
-type CalendarSession = MentoringSession & {
-  mentor_name?: string;
-};
-
 interface SessionsStatsCardProps {
-  sessions: CalendarSession[];
+  sessions: MentoringSession[];
   selectedMonth: Date;
 }
 

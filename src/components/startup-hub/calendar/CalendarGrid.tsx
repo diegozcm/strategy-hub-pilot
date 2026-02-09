@@ -1,30 +1,30 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarUI } from '@/components/ui/calendar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ChevronLeft, ChevronRight, MoreVertical, Plus, Eye, Edit, Calendar, Clock, ArrowLeft } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, startOfWeek, endOfWeek, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MentoringSession } from '@/hooks/useMentorSessions';
 import { ActionItemsManager } from '@/components/startup-hub/ActionItemsManager';
-
-// Unified session type for calendar display
-type CalendarSession = MentoringSession & {
-  mentor_name?: string;
-};
 import { cn } from '@/lib/utils';
 
 interface CalendarGridProps {
-  sessions: CalendarSession[];
+  sessions: MentoringSession[];
   isMentor: boolean;
   onCreateSession?: (date: Date) => void;
-  onEditSession?: (session: CalendarSession) => void;
+  onEditSession?: (session: MentoringSession) => void;
   selectedMonth: Date;
   onMonthChange: (date: Date) => void;
 }
+
+const getMentorInitials = (name?: string) => {
+  if (!name) return 'M';
+  return name.split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+};
 
 export const CalendarGrid: React.FC<CalendarGridProps> = ({
   sessions,
@@ -36,41 +36,32 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 }) => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDayModalOpen, setIsDayModalOpen] = useState(false);
-  const [selectedSession, setSelectedSession] = useState<CalendarSession | null>(null);
+  const [selectedSession, setSelectedSession] = useState<MentoringSession | null>(null);
   const [isSessionDetailOpen, setIsSessionDetailOpen] = useState(false);
 
-  // Get calendar grid with proper Monday start
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
-  
-  // Start calendar from Monday of the week containing the first day of month
   const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-  // End calendar on Sunday of the week containing the last day of month  
   const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-  
   const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd });
 
-  // Get sessions for a specific day
   const getSessionsForDay = (date: Date) => {
     return sessions.filter(session => 
       isSameDay(parseISO(session.session_date), date)
     );
   };
 
-  // Handle day click
   const handleDayClick = (date: Date) => {
     setSelectedDate(date);
     setIsDayModalOpen(true);
   };
 
-  // Handle session click for detailed view
-  const handleSessionClick = (session: CalendarSession) => {
+  const handleSessionClick = (session: MentoringSession) => {
     setSelectedSession(session);
     setIsSessionDetailOpen(true);
     setIsDayModalOpen(false);
   };
 
-  // Get session types for display
   const getSessionTypeLabel = (type: string) => {
     const sessionTypes = [
       { value: 'general', label: 'Geral' },
@@ -85,7 +76,6 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
     return sessionTypes.find(t => t.value === type)?.label || type;
   };
 
-  // Navigation handlers
   const goToPreviousMonth = () => {
     const newDate = new Date(selectedMonth);
     newDate.setMonth(newDate.getMonth() - 1);
@@ -120,7 +110,6 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
       {/* Calendar Grid */}
       <Card>
         <CardContent className="p-0">
-          {/* Days of week header */}
           <div className="grid grid-cols-7 border-b">
             {['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day) => (
               <div key={day} className="p-3 text-center text-sm font-medium text-muted-foreground border-r last:border-r-0">
@@ -129,7 +118,6 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
             ))}
           </div>
 
-          {/* Calendar Days */}
           <div className="grid grid-cols-7">
             {calendarDays.map((date) => {
               const daySessions = getSessionsForDay(date);
@@ -180,7 +168,6 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                     )}
                   </div>
 
-                  {/* Sessions for this day */}
                   <div className="space-y-1">
                     {daySessions.slice(0, 2).map((session) => (
                       <div
@@ -191,7 +178,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                           handleSessionClick(session);
                         }}
                       >
-                        {isMentor ? session.startup_name : session.mentor_name || 'Mentor'}
+                        {session.startup_name} • {session.mentor_name || 'Mentor'}
                       </div>
                     ))}
                     {daySessions.length > 2 && (
@@ -244,7 +231,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                           <div className="flex-1">
                              <div className="flex items-center gap-3 mb-2">
                                <h4 className="font-medium">
-                                 {isMentor ? session.startup_name : session.mentor_name || 'Mentor'}
+                                 {session.startup_name}
                                </h4>
                                <Badge variant="outline">
                                  {getSessionTypeLabel(session.session_type)}
@@ -254,8 +241,20 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                                  {session.duration}min
                                </div>
                              </div>
+                             {/* Mentor info */}
+                             <div className="flex items-center gap-2 mt-1">
+                               <Avatar className="h-5 w-5">
+                                 <AvatarImage src={session.mentor_avatar_url || undefined} />
+                                 <AvatarFallback className="text-[10px]">
+                                   {getMentorInitials(session.mentor_name)}
+                                 </AvatarFallback>
+                               </Avatar>
+                               <span className="text-xs text-muted-foreground">
+                                 {session.is_own_session ? 'Sua sessão' : session.mentor_name}
+                               </span>
+                             </div>
                            {session.notes && (
-                             <p className="text-sm text-muted-foreground line-clamp-2">
+                             <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
                                {session.notes}
                              </p>
                            )}
@@ -270,7 +269,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                            >
                              <Eye className="h-4 w-4" />
                            </Button>
-                           {isMentor && onEditSession && (
+                           {isMentor && onEditSession && session.is_own_session && (
                              <Button 
                                variant="outline" 
                                size="sm"
@@ -323,7 +322,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <CardTitle className="text-lg">
-                          {isMentor ? selectedSession.startup_name : selectedSession.mentor_name || 'Mentor'}
+                          {selectedSession.startup_name}
                         </CardTitle>
                         <Badge variant="outline">
                           {getSessionTypeLabel(selectedSession.session_type)}
@@ -337,8 +336,20 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                           {selectedSession.duration}min
                         </div>
                       </div>
+                      {/* Mentor info */}
+                      <div className="flex items-center gap-2 mt-1">
+                        <Avatar className="h-7 w-7">
+                          <AvatarImage src={selectedSession.mentor_avatar_url || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {getMentorInitials(selectedSession.mentor_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm text-muted-foreground">
+                          {selectedSession.is_own_session ? 'Sua sessão' : selectedSession.mentor_name}
+                        </span>
+                      </div>
                     </div>
-                    {isMentor && onEditSession && (
+                    {isMentor && onEditSession && selectedSession.is_own_session && (
                       <Button 
                         variant="outline" 
                         size="sm"
@@ -362,9 +373,8 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                     </div>
                   )}
                   
-                  {/* Action Items Manager */}
                   <div className="mt-4">
-                    <ActionItemsManager sessionId={selectedSession.id} canEdit={isMentor} />
+                    <ActionItemsManager sessionId={selectedSession.id} canEdit={selectedSession.is_own_session === true} />
                   </div>
                   
                   {selectedSession.follow_up_date && (

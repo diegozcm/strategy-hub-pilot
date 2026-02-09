@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Calendar, Users, Plus, Edit, Search, Clock, Building, Filter, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useMentorStartupDetails } from '@/hooks/useMentorStartupDetails';
@@ -26,6 +27,11 @@ const sessionTypes = [
   { value: 'team', label: 'Equipe' },
   { value: 'pitch', label: 'Pitch' }
 ];
+
+const getMentorInitials = (name?: string) => {
+  if (!name) return 'M';
+  return name.split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+};
 
 export const MentorSessionsPage: React.FC = () => {
   const { user } = useAuth();
@@ -50,7 +56,6 @@ export const MentorSessionsPage: React.FC = () => {
     status: 'completed'
   });
 
-  // Create or update session mutation
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -98,16 +103,15 @@ export const MentorSessionsPage: React.FC = () => {
     });
   };
 
-  // Filter sessions
   const filteredSessions = sessions?.filter(session => {
     const matchesSearch = session.startup_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         session.notes?.toLowerCase().includes(searchTerm.toLowerCase());
+                         session.notes?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         session.mentor_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === 'all' || session.session_type === typeFilter;
     const matchesStartup = startupFilter === 'all' || session.startup_company_id === startupFilter;
     return matchesSearch && matchesType && matchesStartup;
   }) || [];
 
-  // Get unique startups from sessions for filter
   const availableStartups = sessions?.reduce((acc, session) => {
     if (!acc.find(s => s.id === session.startup_company_id)) {
       acc.push({
@@ -248,7 +252,7 @@ export const MentorSessionsPage: React.FC = () => {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por startup ou notas..."
+            placeholder="Buscar por startup, mentor ou notas..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -332,23 +336,37 @@ export const MentorSessionsPage: React.FC = () => {
                         {session.duration}min
                       </div>
                     </div>
+                    {/* Mentor info */}
+                    <div className="flex items-center gap-2 mt-1">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={session.mentor_avatar_url || undefined} />
+                        <AvatarFallback className="text-xs">
+                          {getMentorInitials(session.mentor_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm text-muted-foreground">
+                        {session.is_own_session ? 'Sua sessão' : session.mentor_name}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleEdit(session)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setSessionToDelete(session)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {session.is_own_session && (
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEdit(session)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setSessionToDelete(session)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -359,9 +377,8 @@ export const MentorSessionsPage: React.FC = () => {
                   </div>
                 )}
                 
-                {/* Action Items Manager */}
                 <div className="mt-4">
-                  <ActionItemsManager sessionId={session.id} canEdit={true} />
+                  <ActionItemsManager sessionId={session.id} canEdit={session.is_own_session === true} />
                 </div>
                 
                 {session.follow_up_date && (

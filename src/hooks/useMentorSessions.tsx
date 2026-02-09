@@ -18,6 +18,9 @@ export interface MentoringSession {
   updated_at: string;
   startup_name?: string;
   beep_related_items?: Json;
+  mentor_name?: string;
+  mentor_avatar_url?: string;
+  is_own_session?: boolean;
 }
 
 export const useMentorSessions = () => {
@@ -35,13 +38,12 @@ export const useMentorSessions = () => {
     }
 
     try {
-      // Only show loading if we don't have sessions data yet
       if (sessions.length === 0) {
         setLoading(true);
       }
       setError(null);
 
-      // Fetch sessions for all startups where the user is a mentor
+      // RLS handles visibility - no need for .eq('mentor_id', user.id)
       const { data: sessionsData, error: sessionsError } = await supabase
         .from('mentoring_sessions')
         .select(`
@@ -51,18 +53,39 @@ export const useMentorSessions = () => {
             name
           )
         `)
-        .eq('mentor_id', user.id)
         .order('session_date', { ascending: false });
 
       if (sessionsError) throw sessionsError;
 
-      // Map company name from the joined companies table
-      const sessionsWithCompany = (sessionsData || []).map(session => ({
-        ...session,
-        startup_name: session.companies?.name || 'Startup'
-      }));
+      // Get unique mentor IDs and fetch their profiles
+      const mentorIds = [...new Set((sessionsData || []).map(s => s.mentor_id))];
+      const { data: mentorProfiles } = mentorIds.length > 0
+        ? await supabase
+            .from('profiles')
+            .select('user_id, first_name, last_name, avatar_url')
+            .in('user_id', mentorIds)
+        : { data: [] };
 
-      setSessions(sessionsWithCompany);
+      const mentorMap = new Map(
+        (mentorProfiles || []).map(p => [p.user_id, p])
+      );
+
+      const sessionsWithDetails = (sessionsData || []).map((session: any) => {
+        const mentor = mentorMap.get(session.mentor_id);
+        const mentorName = mentor
+          ? [mentor.first_name, mentor.last_name].filter(Boolean).join(' ') || 'Mentor'
+          : 'Mentor';
+
+        return {
+          ...session,
+          startup_name: session.companies?.name || 'Startup',
+          mentor_name: mentorName,
+          mentor_avatar_url: mentor?.avatar_url || null,
+          is_own_session: session.mentor_id === user.id,
+        };
+      });
+
+      setSessions(sessionsWithDetails);
     } catch (err: any) {
       console.error('Error fetching sessions:', err);
       setError(err.message || 'Erro inesperado ao buscar sessões');
@@ -80,7 +103,8 @@ export const useMentorSessions = () => {
         .insert([{
           ...sessionData,
           mentor_id: user.id,
-          follow_up_date: sessionData.follow_up_date || null
+          session_date: new Date(sessionData.session_date + 'T12:00:00').toISOString(),
+          follow_up_date: sessionData.follow_up_date ? new Date(sessionData.follow_up_date + 'T12:00:00').toISOString() : null
         }])
         .select()
         .single();
@@ -107,11 +131,10 @@ export const useMentorSessions = () => {
 
   const updateSession = async (id: string, updates: Partial<MentoringSession>) => {
     try {
-      // Handle empty date fields by converting them to null and ensure proper date formatting
       const processedUpdates = {
         ...updates,
-        session_date: updates.session_date ? new Date(updates.session_date + 'T00:00:00').toISOString() : updates.session_date,
-        follow_up_date: updates.follow_up_date ? new Date(updates.follow_up_date + 'T00:00:00').toISOString() : null
+        session_date: updates.session_date ? new Date(updates.session_date + 'T12:00:00').toISOString() : updates.session_date,
+        follow_up_date: updates.follow_up_date ? new Date(updates.follow_up_date + 'T12:00:00').toISOString() : null
       };
 
       const { data, error: updateError } = await supabase
