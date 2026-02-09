@@ -5,7 +5,7 @@ interface AnalyticsOverview {
   totalVisitors: number;
   totalSessions: number;
   avgSessionDuration: number; // in seconds
-  avgPagesPerVisit: number;
+  avgLoginsPerUser: number;
   bounceRate: number; // percentage
 }
 
@@ -74,7 +74,7 @@ export const useAnalyticsOverview = (days: number = 7) => {
           sessionsWithDuration > 0
             ? Math.round(totalDuration / sessionsWithDuration)
             : 0,
-        avgPagesPerVisit: uniqueUsers.size > 0
+        avgLoginsPerUser: uniqueUsers.size > 0
           ? Math.round((logs.length / uniqueUsers.size) * 10) / 10
           : 0,
         bounceRate: 0, // We don't track page-level navigation
