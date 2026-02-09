@@ -66,13 +66,13 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    --sidebar-background: 207 62% 14%;
-    --sidebar-foreground: 0 0% 97%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 207 62% 14%;
     --sidebar-primary: 66 59% 63%;
     --sidebar-primary-foreground: 207 62% 14%;
-    --sidebar-accent: 207 50% 22%;
-    --sidebar-accent-foreground: 0 0% 97%;
-    --sidebar-border: 207 50% 20%;
+    --sidebar-accent: 66 59% 63%;
+    --sidebar-accent-foreground: 207 62% 14%;
+    --sidebar-border: 207 18% 90%;
     --sidebar-ring: 203 100% 61%;
   }
 
@@ -109,13 +109,13 @@ All colors MUST be HSL.
     --ring: 203 100% 61%;
 
     /* Sidebar dark theme */
-    --sidebar-background: 207 62% 10%;
-    --sidebar-foreground: 0 0% 97%;
+    --sidebar-background: 207 55% 10%;
+    --sidebar-foreground: 0 0% 90%;
     --sidebar-primary: 66 59% 63%;
     --sidebar-primary-foreground: 207 62% 14%;
-    --sidebar-accent: 207 50% 18%;
-    --sidebar-accent-foreground: 0 0% 97%;
-    --sidebar-border: 207 50% 15%;
+    --sidebar-accent: 66 45% 50%;
+    --sidebar-accent-foreground: 207 62% 14%;
+    --sidebar-border: 207 35% 16%;
     --sidebar-ring: 203 100% 61%;
 
     /* Start Together Dark Colors */
