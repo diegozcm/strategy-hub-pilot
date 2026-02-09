@@ -21,10 +21,10 @@ interface ExportModalProps {
     krTitle: string;
     objective: string;
     pillar: string;
-    target: number;
-    actual: number;
-    result: number;
-    efficiency: number;
+    target: number | null;
+    actual: number | null;
+    result: number | null;
+    efficiency: number | null;
     unit: string;
   }[];
   title?: string;
@@ -261,7 +261,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     }
   };
 
-  const formatValue = (value: number, unit: string): string => {
+  const formatValue = (value: number | null | undefined, unit: string): string => {
+    if (value == null) return '—';
     if (unit === '%') {
       return `${value.toFixed(1)}%`;
     } else if (unit === 'R$') {
@@ -282,7 +283,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           formatValue(row.target, row.unit),
           formatValue(row.actual, row.unit),
           formatValue(row.result, row.unit),
-          `${row.efficiency.toFixed(1)}%`
+          row.efficiency != null ? `${row.efficiency.toFixed(1)}%` : '—'
         ])
       ];
       
