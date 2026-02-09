@@ -96,7 +96,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
               <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={getThumbnailUrl()} />
-                  <AvatarFallback className="text-xs font-medium bg-primary text-primary-foreground">
+                  <AvatarFallback className="text-xs font-medium bg-brand text-brand-foreground">
                     {getInitials()}
                   </AvatarFallback>
                 </Avatar>

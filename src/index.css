@@ -12,32 +12,35 @@ All colors MUST be HSL.
 @layer base {
   :root {
     --background: 0 0% 97%;
-    --foreground: 0 0% 10%;
+    --foreground: 207 62% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 207 62% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover-foreground: 207 62% 14%;
 
-    --primary: 208 67% 14%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 207 62% 14%;
+    --primary-foreground: 0 0% 97%;
 
-    --secondary: 208 55% 21%;
-    --secondary-foreground: 0 0% 100%;
+    --brand: 66 59% 63%;
+    --brand-foreground: 207 62% 14%;
 
-    --muted: 0 0% 97%;
-    --muted-foreground: 220 13% 46%;
+    --secondary: 0 0% 100%;
+    --secondary-foreground: 207 62% 14%;
 
-    --accent: 201 100% 62%;
-    --accent-foreground: 0 0% 100%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 207 18% 38%;
+
+    --accent: 203 100% 61%;
+    --accent-foreground: 207 62% 14%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 210 40% 98%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 201 100% 62%;
+    --border: 207 18% 88%;
+    --input: 207 18% 88%;
+    --ring: 203 100% 61%;
 
     /* Start Together Custom Colors */
     --strategy-red-dark: 208 67% 14%;
@@ -61,73 +64,69 @@ All colors MUST be HSL.
     --cofound-lime: 68 100% 42%;
     --cofound-light-gray: 0 0% 96%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 207 62% 14%;
+    --sidebar-foreground: 0 0% 97%;
+    --sidebar-primary: 66 59% 63%;
+    --sidebar-primary-foreground: 207 62% 14%;
+    --sidebar-accent: 207 50% 22%;
+    --sidebar-accent-foreground: 0 0% 97%;
+    --sidebar-border: 207 50% 20%;
+    --sidebar-ring: 203 100% 61%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 207 62% 8%;
+    --foreground: 0 0% 97%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 207 55% 10%;
+    --card-foreground: 0 0% 97%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 207 55% 10%;
+    --popover-foreground: 0 0% 97%;
 
-    --primary: 201 100% 62%;
-    --primary-foreground: 0 0% 9%;
+    --primary: 0 0% 97%;
+    --primary-foreground: 207 62% 14%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --brand: 66 59% 63%;
+    --brand-foreground: 207 62% 14%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --secondary: 207 55% 12%;
+    --secondary-foreground: 0 0% 97%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --muted: 207 40% 14%;
+    --muted-foreground: 210 15% 70%;
+
+    --accent: 203 100% 61%;
+    --accent-foreground: 207 62% 14%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 207 35% 16%;
+    --input: 207 35% 16%;
+    --ring: 203 100% 61%;
 
     /* Sidebar dark theme */
-    --sidebar-background: 222.2 84% 4.9%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 201 100% 62%;
-    --sidebar-primary-foreground: 0 0% 9%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 207 62% 10%;
+    --sidebar-foreground: 0 0% 97%;
+    --sidebar-primary: 66 59% 63%;
+    --sidebar-primary-foreground: 207 62% 14%;
+    --sidebar-accent: 207 50% 18%;
+    --sidebar-accent-foreground: 0 0% 97%;
+    --sidebar-border: 207 50% 15%;
+    --sidebar-ring: 203 100% 61%;
 
     /* Start Together Dark Colors */
-    --strategy-red-dark: 201 100% 62%;
-    --strategy-red-light: 201 86% 54%;
-    --strategy-blue-navy: 210 40% 98%;
-    --strategy-blue-navy-light: 215 20.2% 65.1%;
-    --strategy-blue-bright: 201 100% 62%;
-    --strategy-blue-bright-hover: 201 86% 54%;
-    --strategy-gray-light: 222.2 84% 4.9%;
-    --strategy-gray-medium: 215 20.2% 65.1%;
+    --strategy-red-dark: 203 100% 61%;
+    --strategy-red-light: 203 86% 54%;
+    --strategy-blue-navy: 0 0% 97%;
+    --strategy-blue-navy-light: 210 15% 70%;
+    --strategy-blue-bright: 203 100% 61%;
+    --strategy-blue-bright-hover: 203 86% 54%;
+    --strategy-gray-light: 207 62% 8%;
+    --strategy-gray-medium: 210 15% 70%;
   }
 }
 
@@ -137,7 +136,11 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
   }
 
   /* Custom scrollbar styles for dark mode */

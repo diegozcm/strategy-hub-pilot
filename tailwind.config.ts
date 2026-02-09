@@ -72,7 +72,11 @@ export default {
 					'gray-light': 'hsl(var(--strategy-gray-light))',
 					'gray-medium': 'hsl(var(--strategy-gray-medium))'
 				},
-				cofound: {
+			brand: {
+				DEFAULT: 'hsl(var(--brand))',
+				foreground: 'hsl(var(--brand-foreground))'
+			},
+			cofound: {
 					'blue-light': 'hsl(var(--cofound-blue-light))',
 					'green': 'hsl(var(--cofound-green))',
 					'blue-dark': 'hsl(var(--cofound-blue-dark))',
@@ -84,9 +88,15 @@ export default {
 					'light-gray': 'hsl(var(--cofound-light-gray))'
 				}
 			},
-			fontFamily: {
-				lexend: ['Lexend', 'sans-serif'],
-			},
+		fontFamily: {
+			sans: ['Lexend', 'sans-serif'],
+			lexend: ['Lexend', 'sans-serif'],
+			display: ['Saira', 'sans-serif'],
+		},
+		boxShadow: {
+			soft: '0 10px 30px -18px hsl(207 62% 14% / 0.25)',
+			elev: '0 18px 40px -24px hsl(207 62% 14% / 0.45)',
+		},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
