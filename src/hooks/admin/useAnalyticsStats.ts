@@ -27,10 +27,10 @@ interface DeviceBreakdown {
 }
 
 function parseDevice(userAgent: string | null): string {
-  if (!userAgent) return "Desconhecido";
+  if (!userAgent) return "Desktop"; // Default to Desktop when user_agent not captured
   const ua = userAgent.toLowerCase();
-  if (/mobile|android|iphone|ipad|ipod/.test(ua)) return "Mobile";
-  if (/tablet/.test(ua)) return "Tablet";
+  if (/mobile|android|iphone|ipod/.test(ua)) return "Mobile";
+  if (/tablet|ipad/.test(ua)) return "Tablet";
   return "Desktop";
 }
 
