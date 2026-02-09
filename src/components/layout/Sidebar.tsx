@@ -173,7 +173,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                             : "text-sidebar-foreground/60 hover:bg-sidebar-accent/10 hover:text-sidebar-foreground"
                         )}
                       >
-                        <Calendar className={cn("h-4 w-4 text-[hsl(var(--cofound-blue-light))]", (!collapsed || isMobile) && "mr-3")} />
+                        <Calendar className={cn("h-4 w-4", isActive ? "text-[hsl(66,45%,42%)]" : "text-sidebar-foreground/60", (!collapsed || isMobile) && "mr-3")} />
                         {(!collapsed || isMobile) && <span className="text-sm">{calendarName}</span>}
                       </NavLink>
                     );
@@ -191,7 +191,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                           : "text-sidebar-foreground/60 hover:bg-sidebar-accent/10 hover:text-sidebar-foreground"
                       )}
                     >
-                      <item.icon className={cn("h-4 w-4 text-[hsl(var(--cofound-blue-light))]", (!collapsed || isMobile) && "mr-3")} />
+                      <item.icon className={cn("h-4 w-4", isActive ? "text-[hsl(66,45%,42%)]" : "text-sidebar-foreground/60", (!collapsed || isMobile) && "mr-3")} />
                       {(!collapsed || isMobile) && <span className="text-sm">{item.name}</span>}
                     </NavLink>
                   );
