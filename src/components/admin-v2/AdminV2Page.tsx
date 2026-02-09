@@ -1,7 +1,10 @@
 import { Outlet } from "react-router-dom";
 import { AdminV2Sidebar } from "./layout/AdminV2Sidebar";
+import { useAdminRealtimeSync } from "@/hooks/admin/useAdminRealtimeSync";
 
 const AdminV2Page = () => {
+  useAdminRealtimeSync();
+
   return (
     <div className="flex h-screen bg-cofound-white overflow-hidden font-lexend">
       {/* Sidebar - Fixed height */}
