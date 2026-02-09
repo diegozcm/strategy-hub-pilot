@@ -152,7 +152,25 @@ const handler = async (req: Request): Promise<Response> => {
           `;
     }
     
-    console.log('Step 5: Replacing template variables...');
+    console.log('Step 5: Fetching password policy for expiration...');
+    
+    // Fetch password policy for temp password validity
+    let validityHours = 168; // default 7 days
+    try {
+      const { data: policyData } = await supabase
+        .from('password_policies')
+        .select('temp_password_validity_hours')
+        .is('company_id', null)
+        .maybeSingle();
+
+      if (policyData) {
+        validityHours = policyData.temp_password_validity_hours;
+      }
+    } catch (e) {
+      console.warn('Could not fetch password policy, using default:', e);
+    }
+
+    console.log('Step 6: Replacing template variables...');
     
     // Replace template variables
     const loginUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'https://seu-app.lovable.app'}`;

@@ -143,14 +143,35 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Update profile to require password change AND store reset token
-    const expirationTime = new Date();
-    expirationTime.setMinutes(expirationTime.getMinutes() + 15); // 15 minutes validity
+    // Fetch password policy for expiration time
+    let validityHours = 168; // default 7 days
+    try {
+      const { data: policyData } = await supabaseAdmin
+        .from('password_policies')
+        .select('temp_password_validity_hours')
+        .is('company_id', null)
+        .maybeSingle();
+
+      if (policyData) {
+        validityHours = policyData.temp_password_validity_hours;
+      }
+    } catch (e) {
+      console.warn('Could not fetch password policy, using default:', e);
+    }
+
+    let tempResetExpires: string | null;
+    if (validityHours === 0) {
+      tempResetExpires = null; // No expiration
+    } else {
+      const expirationTime = new Date();
+      expirationTime.setHours(expirationTime.getHours() + validityHours);
+      tempResetExpires = expirationTime.toISOString();
+    }
 
     // Only set must_change_password based on forcePasswordChange flag or source
     const profileUpdate: any = {
       temp_reset_token: passwordToSet,
-      temp_reset_expires: expirationTime.toISOString(),
+      temp_reset_expires: tempResetExpires,
       updated_at: new Date().toISOString()
     };
 
