@@ -120,8 +120,8 @@ export const RumoDashboard = () => {
       {/* Header with filters and score */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Compass className="w-6 h-6 text-primary" />
+          <div className="p-2 rounded-lg bg-brand/10">
+            <Compass className="w-6 h-6 text-brand" />
           </div>
           <div>
             <h2 className="text-2xl font-bold text-foreground">Rumo</h2>
@@ -160,7 +160,7 @@ export const RumoDashboard = () => {
           />
 
           {/* Final Score */}
-          <Card className={`px-6 py-3 border-2 ${getFinalScoreColor()}`}>
+          <Card className={`px-6 py-3 border-2 shadow-soft ${getFinalScoreColor()}`}>
             <div className="text-center">
               <p className="text-xs font-medium opacity-80 mb-1">Score Geral</p>
               <p className="text-3xl font-extrabold">
@@ -179,7 +179,7 @@ export const RumoDashboard = () => {
           const pillarObjectives = pillar.objectives || [];
 
           return (
-            <Card key={pillar.id} className="p-6 bg-card/50 backdrop-blur animate-scale-in">
+            <Card key={pillar.id} className="p-6 bg-card/50 backdrop-blur shadow-soft animate-scale-in">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 {/* Pillar Block - Left Side */}
                 <div className="lg:col-span-3">

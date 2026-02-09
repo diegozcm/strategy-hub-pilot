@@ -79,31 +79,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       )}
       
       <div className={cn(
-        "bg-card border-r border-border flex flex-col transition-all duration-300",
+        "bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300",
         isMobile ? (
-          // Mobile: fixed sidebar that slides in/out
           `fixed z-40 h-full w-64 transition-transform duration-300 ${
             isOpen ? 'translate-x-0' : '-translate-x-full'
           }`
         ) : (
-          // Desktop: normal collapsible sidebar
           `min-h-screen ${collapsed ? 'w-16' : 'w-64'}`
         )
       )}>
       {/* Header */}
-      <div className="px-4 lg:px-6 py-4 border-b border-border shrink-0">
+      <div className="px-4 lg:px-6 py-4 border-b border-sidebar-border shrink-0">
         <div className="flex items-center justify-between">
           {(!collapsed || isMobile) && (
             <div className="flex items-center space-x-2">
-              <Target className="h-6 w-6 text-primary" />
+              <Target className="h-6 w-6 text-sidebar-primary" />
               <div>
-                <h1 className="text-lg font-bold text-foreground">Strategy HUB</h1>
-                <p className="text-xs text-muted-foreground">By COFOUND</p>
+                <h1 className="text-lg font-bold text-sidebar-foreground">Strategy HUB</h1>
+                <p className="text-xs text-sidebar-foreground/60">By COFOUND</p>
               </div>
             </div>
           )}
+          {collapsed && !isMobile && (
+            <Target className="h-6 w-6 text-sidebar-primary mx-auto" />
+          )}
           {!isMobile && (
-            <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)} className="ml-auto">
+            <Button variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)} className="ml-auto text-sidebar-foreground hover:bg-sidebar-accent">
               {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
             </Button>
           )}
@@ -113,7 +114,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
         {menuStructure.map((group) => {
-          // Check if user has access to at least one item in this group
           const hasAccessToGroup = group.items.some(item => {
             if (item.href.includes('/startup-hub')) {
               return hasModuleAccess('startup-hub');
@@ -128,11 +128,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
 
           return (
             <div key={group.name} className="space-y-2">
-              {/* Module Title - Non-clickable with emphasis */}
               {(!collapsed || isMobile) && (
                 <div className="flex items-center px-3 py-2">
-                  <group.icon className="h-5 w-5 mr-3 text-foreground" />
-                  <span className="text-sm font-semibold text-foreground uppercase tracking-wider">
+                  <group.icon className="h-5 w-5 mr-3 text-sidebar-primary" />
+                  <span className="text-sm font-semibold text-sidebar-foreground/80 uppercase tracking-wider">
                     {group.name}
                   </span>
                 </div>
@@ -162,7 +161,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                   // Special handling for calendar with conditional naming
                   if (item.href.includes('tab=calendar')) {
                     const calendarName = 'Mentorias';
-                    return (
+                      return (
                       <NavLink 
                         key="calendar" 
                         to={item.href} 
@@ -170,8 +169,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                           "flex items-center py-2 rounded-lg transition-colors",
                           isMobile ? "px-3 ml-4" : (collapsed ? "px-3 justify-center" : "px-3 ml-4"),
                           isActive 
-                            ? "bg-accent text-accent-foreground font-medium" 
-                            : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                         )}
                       >
                         <Calendar className={cn("h-4 w-4", (!collapsed || isMobile) && "mr-3")} />
@@ -188,8 +187,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                         "flex items-center py-2 rounded-lg transition-colors",
                         isMobile ? "px-3 ml-4" : (collapsed ? "px-3 justify-center" : "px-3 ml-4"),
                         isActive 
-                          ? "bg-accent text-accent-foreground font-medium" 
-                          : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
+                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
                       )}
                     >
                       <item.icon className={cn("h-4 w-4", (!collapsed || isMobile) && "mr-3")} />
@@ -204,15 +203,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       </nav>
 
       {/* Footer - Settings Button */}
-      <div className="border-t border-border p-4 shrink-0">
+      <div className="border-t border-sidebar-border p-4 shrink-0">
         <NavLink 
           to="/app/settings"
           className={cn(
             "flex items-center py-2.5 px-3 rounded-lg transition-colors w-full",
             isMobile ? "" : (collapsed ? "justify-center" : ""),
             isRouteActive('/app/settings')
-              ? "bg-accent text-accent-foreground font-medium"
-              : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"
+              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+              : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
           )}
         >
           <Settings className={cn("h-4 w-4", (!collapsed || isMobile) && "mr-3")} />

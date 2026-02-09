@@ -353,7 +353,7 @@ export const StrategicMapPage = () => {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Pilares Estratégicos</h2>
               {canCreatePillar && (
-                <Button onClick={() => setShowPillarForm(true)}>
+                <Button variant="brand" onClick={() => setShowPillarForm(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Adicionar Pilar
                 </Button>
@@ -417,7 +417,7 @@ export const StrategicMapPage = () => {
                     const pillarObjectives = objectives.filter(obj => obj.pillar_id === pillar.id);
 
                     return (
-                      <Card key={pillar.id} className="relative overflow-hidden">
+                      <Card key={pillar.id} className="relative overflow-hidden shadow-soft hover:shadow-elev transition-shadow duration-300">
                         <div
                           className="absolute top-0 left-0 w-full h-1"
                           style={{ backgroundColor: pillar.color }}
