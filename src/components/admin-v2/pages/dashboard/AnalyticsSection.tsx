@@ -1,4 +1,4 @@
-import { Eye, MousePointerClick, Clock, Monitor, Smartphone, Tablet, HelpCircle, Info } from "lucide-react";
+import { Eye, MousePointerClick, Clock, Monitor, Smartphone, Tablet, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "../../components/StatCard";
 import {
@@ -20,7 +20,6 @@ const DEVICE_ICONS: Record<string, React.ElementType> = {
   Desktop: Monitor,
   Mobile: Smartphone,
   Tablet: Tablet,
-  Desconhecido: HelpCircle,
 };
 
 const DEVICE_COLORS = [

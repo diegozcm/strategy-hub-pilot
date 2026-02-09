@@ -398,16 +398,16 @@ export default function RecentActivityPage() {
                 ))}
               </div>
             ) : groupedActivities.length > 0 ? (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {groupedActivities.map(group => (
                   <div key={group.date}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                         {group.label}
                       </span>
                       <div className="flex-1 h-px bg-border" />
                     </div>
-                    <div className="space-y-1">
+                    <div className="relative pl-4 border-l-2 border-muted space-y-0">
                       {group.items.map((activity) => {
                         const config = activityConfig[activity.type];
                         const Icon = config.icon;
@@ -416,44 +416,56 @@ export default function RecentActivityPage() {
                         return (
                           <div 
                             key={activity.id} 
-                            className="flex items-center gap-3 py-2 px-2 -mx-2 rounded-md hover:bg-muted/50 transition-colors group"
+                            className="relative flex items-center gap-3 py-2.5 pl-4 -ml-[1px] hover:bg-muted/40 rounded-r-lg transition-colors group"
                           >
+                            {/* Timeline dot */}
+                            <div className="absolute -left-[9px] top-1/2 -translate-y-1/2">
+                              <div className={cn(
+                                "h-4 w-4 rounded-full border-2 border-background flex items-center justify-center",
+                                config.bgColor
+                              )}>
+                                <div className={cn("h-1.5 w-1.5 rounded-full", config.color.replace("text-", "bg-"))} />
+                              </div>
+                            </div>
+
                             {/* Time */}
-                            <span className="text-xs text-muted-foreground w-12 shrink-0 font-mono">
+                            <span className="text-xs text-muted-foreground w-11 shrink-0 font-mono tabular-nums">
                               {format(new Date(activity.timestamp), "HH:mm")}
                             </span>
                             
                             {/* Icon */}
                             <div className={cn(
-                              "h-7 w-7 rounded-full flex items-center justify-center shrink-0",
+                              "h-8 w-8 rounded-lg flex items-center justify-center shrink-0",
                               config.bgColor
                             )}>
-                              <Icon className={cn("h-3.5 w-3.5", config.color)} />
+                              <Icon className={cn("h-4 w-4", config.color)} />
                             </div>
                             
                             {/* Content */}
-                            <div className="flex-1 min-w-0 flex items-center gap-2">
-                              <span className="text-sm font-medium truncate">{activity.title}</span>
-                              <span className="text-sm text-muted-foreground truncate hidden sm:inline">
-                                {activity.description}
-                              </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium">{activity.title}</span>
+                                <span className="text-sm text-muted-foreground truncate hidden sm:inline">
+                                  {activity.description}
+                                </span>
+                              </div>
                             </div>
                             
                             {/* User */}
                             {activity.user_name && (
                               <div className="hidden md:flex items-center gap-1.5 shrink-0">
-                                <Avatar className="h-5 w-5">
+                                <Avatar className="h-6 w-6 border border-border">
                                   <AvatarImage src={activity.user_avatar} />
-                                  <AvatarFallback className="text-[10px]">
+                                  <AvatarFallback className="text-[10px] bg-muted">
                                     {activity.user_name.charAt(0)}
                                   </AvatarFallback>
                                 </Avatar>
                                 {activity.target_user_name && (
                                   <>
                                     <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                                    <Avatar className="h-5 w-5">
+                                    <Avatar className="h-6 w-6 border border-border">
                                       <AvatarImage src={activity.target_user_avatar} />
-                                      <AvatarFallback className="text-[10px]">
+                                      <AvatarFallback className="text-[10px] bg-muted">
                                         {activity.target_user_name.charAt(0)}
                                       </AvatarFallback>
                                     </Avatar>
@@ -466,7 +478,7 @@ export default function RecentActivityPage() {
                             {statusConfig && (
                               <Badge 
                                 variant="outline" 
-                                className={cn("text-[10px] px-1.5 py-0 h-5 shrink-0 border-0", statusConfig.className)}
+                                className={cn("text-[10px] px-2 py-0.5 h-5 shrink-0 border-0 font-medium", statusConfig.className)}
                               >
                                 {statusConfig.label}
                               </Badge>
