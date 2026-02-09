@@ -1,179 +1,88 @@
 
 
-## Auditoria Completa do Admin-V2 - Diagnostico e Plano Estrategico
+## Correcao da Exclusao de Usuarios + Fase 3 (Templates de Email)
 
 ---
 
-### 1. Inventario de Paginas
+### Parte 1: Correcao do Bug de Exclusao de Usuarios
 
-Das **70+ rotas** registradas no admin-v2, aqui esta o status real de cada uma:
+#### Problema Identificado
 
-#### Paginas Implementadas (com dados reais do banco)
+O erro na imagem e claro: `relation "public.company_user_relations" does not exist`.
 
-| Secao | Pagina | Status |
-|-------|--------|--------|
-| Dashboard | Painel Principal | Funcional - stats, graficos, analytics |
-| Dashboard | Atividade Recente | Funcional - timeline de atividades |
-| Dashboard | Usuarios Ativos | Funcional |
-| Dashboard | Empresas Cadastradas | Funcional |
-| Dashboard | Logins Recentes | Funcional |
-| Dashboard | Usuarios por Empresa | Funcional |
-| Dashboard | Status do Sistema | Funcional |
-| Empresas | Todas as Empresas | Funcional - lista, busca, modal detalhes |
-| Empresas | Filtrar Empresas | Funcional - filtros avancados |
-| Empresas | Nova Empresa | **Parcial** - formulario existe mas NAO salva no banco |
-| Empresas | Ativas/Inativas/Startups/Mentores/Arquivadas | Funcional - filtros pre-aplicados |
-| Usuarios | Todos os Usuarios | Funcional - lista, filtros, modais |
-| Usuarios | Criar Usuario | Funcional completo - auth + perfil + modulos + email |
-| Usuarios | Filtrar Usuarios | Funcional |
-| Usuarios | Ativos/Inativos/Pendentes/Primeiro Login/Admins | Funcional |
-| Modulos | Modulos Disponiveis | Funcional - stats de uso |
-| Modulos | Planejamento Estrategico/Startup Hub/AI Copilot | Funcional - detalhes por modulo |
-| Modulos | Modulos por Empresa | Funcional |
-| Modulos | Roles e Permissoes | Funcional - cards de roles |
-| Monitoramento | Saude do Sistema | Funcional - diagnosticos client-side |
-| Monitoramento | Performance | Funcional - metricas de navegador |
-| Monitoramento | Alertas | Funcional - com sub-categorias |
-| Monitoramento | Logs de Acesso/Banco | Funcional |
+A tabela real no banco se chama `user_company_relations`, mas as duas funcoes SQL de exclusao referenciam o nome errado `company_user_relations`:
 
-#### Paginas Placeholder (25 paginas - apenas "Em desenvolvimento")
+| Funcao | Arquivo de Migracao | Linha com erro |
+|--------|---------------------|----------------|
+| `safe_delete_user` | `20260204201951_*.sql` | Linha 35: `DELETE FROM public.company_user_relations` |
+| `safe_delete_user_with_replacement` | `20260204201537_*.sql` | Linha 192: `DELETE FROM company_user_relations` |
 
-| Secao | Paginas |
-|-------|---------|
-| Dashboard (4) | Estatisticas do Sistema, Ultimas 24h, Ultima Semana, Ultimo Mes |
-| Configuracoes (12) | **TODAS** - Config Gerais, Seguranca, Politicas de Senha, MFA, Sessoes Ativas, Notificacoes, Backup (criar/restaurar/agendamentos), Limpeza de Dados, Admins do Sistema |
-| Landing Page (3) | **TODAS** - Editar, Preview, Publicar |
-| Templates de Email (7) | **TODAS** - Todos Templates, Boas-vindas, Credenciais, Recuperacao, Notificacoes, Novo Template, Preview |
+#### Solucao
+
+Criar uma nova migracao SQL que recria ambas as funcoes com o nome correto da tabela (`user_company_relations`), removendo a referencia errada a `company_user_relations`.
+
+**Alteracoes especificas:**
+- Na funcao `safe_delete_user`: remover a linha `DELETE FROM public.company_user_relations` (linha 35), ja que a linha seguinte (36) ja faz `DELETE FROM public.user_company_relations` corretamente
+- Na funcao `safe_delete_user_with_replacement`: trocar `DELETE FROM company_user_relations` para `DELETE FROM user_company_relations`
 
 ---
 
-### 2. Erros e Problemas Encontrados
+### Parte 2: Fase 3 - Templates de Email
 
-#### Erros Criticos
+#### Contexto
 
-| ID | Problema | Arquivo | Impacto |
-|----|----------|---------|---------|
-| E1 | **Nova Empresa nao salva**: O botao "Criar Empresa" chama `handleNotImplemented()` em vez de inserir no banco | `NewCompanyPage.tsx` | Impossivel criar empresas pelo admin-v2 |
-| E2 | **Botao Cancelar com rota errada**: Navega para `/companies/all` mas a rota correta e `/companies` | `NewCompanyPage.tsx` | 404 ao cancelar criacao |
-| E3 | **Upload de logo nao implementado**: Botao "Selecionar Arquivo" chama `handleNotImplemented` | `NewCompanyPage.tsx` | Empresas criadas sem logo |
+A tabela `email_templates` ja existe no banco com 2 templates cadastrados:
+- `welcome_credentials` - Credenciais de Boas-vindas
+- `password_reset` - Reset de Senha
 
-#### Problemas de Dados
+Estrutura da tabela: `id`, `template_key`, `template_name`, `subject`, `body_html`, `available_variables`, `description`, `is_active`, `created_at`, `updated_at`, `created_by`, `updated_by`
 
-| ID | Problema | Arquivo | Impacto |
-|----|----------|---------|---------|
-| D1 | **Contagem de usuarios por empresa**: Usa `profiles.company_id` em vez de `user_company_relations`, pode estar desatualizada para usuarios com multiplas empresas | `AllCompaniesPage.tsx` | Numeros potencialmente incorretos |
-| D2 | **Monitoramento client-side apenas**: SystemHealth e Performance medem apenas o navegador do admin, nao o servidor real | `SystemHealthPage.tsx`, `PerformancePage.tsx` | Metricas nao refletem saude real do backend |
+#### 7 paginas placeholder a implementar:
 
-#### Problemas de UX
+**2.1 AllEmailTemplatesPage** - Lista todos os templates do banco com status, acoes de editar/duplicar/ativar-desativar
 
-| ID | Problema | Impacto |
-|----|----------|---------|
-| U1 | 25 paginas mostram apenas "Em desenvolvimento" sem indicacao de quando serao implementadas | Experiencia confusa para admins |
-| U2 | Secao de Configuracoes inteira e placeholder - nenhuma configuracao pode ser alterada | Admin sem controle sobre o sistema |
-| U3 | Templates de Email inteiros sao placeholder - impossivel personalizar comunicacoes | Emails sao genericos |
+**2.2 WelcomeTemplatePage** - Editor do template `welcome_credentials` com preview ao vivo e variaveis disponiveis
 
----
+**2.3 CredentialsTemplatePage** - Mesma estrutura, filtrando por `welcome_credentials`
 
-### 3. Plano Estrategico de Implementacao
+**2.4 PasswordRecoveryTemplatePage** - Editor do template `password_reset`
 
-Priorizado por impacto no negocio e dependencias tecnicas:
+**2.5 NotificationTemplatePage** - Editor para templates de notificacao (pode criar novo se nao existir)
 
-#### Fase 1 - Correcoes Criticas (Prioridade Maxima)
+**2.6 NewTemplatePage** - Formulario para criar novo template com campos: chave, nome, assunto, corpo HTML, variaveis, descricao
 
-**1.1 Corrigir criacao de empresas**
-- Implementar logica de `INSERT` no banco em `NewCompanyPage.tsx`
-- Corrigir rota do botao Cancelar (`/companies/all` -> `/companies`)
-- Implementar upload de logo via Supabase Storage
-- Adicionar validacao de campos obrigatorios
+**2.7 PreviewEmailPage** - Preview de template com dados simulados preenchendo as variaveis
 
-**1.2 Corrigir contagem de usuarios**
-- Alterar `AllCompaniesPage.tsx` para usar `user_company_relations` em vez de `profiles.company_id`
-- Garantir que a contagem reflita usuarios com multiplas empresas
+#### Abordagem de Implementacao
 
-#### Fase 2 - Configuracoes do Sistema (Alta Prioridade)
-
-**2.1 Configuracoes Gerais**
-- Implementar `GeneralSettingsPage` com nome do sistema, logo, timezone, idioma padrao
-
-**2.2 Admins do Sistema**
-- Implementar `SystemAdminsSettingsPage` para gerenciar quem e system admin
-- Permitir promover/revogar admin status
-
-**2.3 Seguranca Basica**
-- Implementar `SecurityPage` com overview de politicas
-- Implementar `ActiveSessionsPage` para ver/encerrar sessoes
-
-#### Fase 3 - Templates de Email (Media Prioridade)
-
-**3.1 Editor de Templates**
-- Implementar `AllEmailTemplatesPage` listando templates do banco
-- Implementar editor visual para cada template (Welcome, Credentials, etc.)
-- Implementar Preview com dados simulados
-
-#### Fase 4 - Landing Page (Media Prioridade)
-
-**4.1 Editor de Landing Page**
-- Implementar `EditLandingPage` conectado a tabela `landing_page_content`
-- Implementar Preview ao vivo
-- Implementar Publicacao com confirmacao
-
-#### Fase 5 - Dashboard Avancado (Baixa Prioridade)
-
-**5.1 Sub-paginas de atividade**
-- Implementar filtros de 24h, Semana, Mes em `RecentActivity*Page`
-- Implementar `SystemStatsPage` com graficos detalhados
-
-#### Fase 6 - Monitoramento Real (Baixa Prioridade)
-
-**6.1 Metricas server-side**
-- Considerar criar edge functions para monitoramento real do backend
-- Atualmente tudo e client-side (apenas mede o navegador do admin)
+Criar um componente reutilizavel `EmailTemplateEditor` que sera compartilhado entre todas as paginas de edicao de template. Este componente tera:
+- Editor de HTML com syntax highlighting basico (textarea com monospace)
+- Painel lateral com variaveis disponiveis (clicaveis para inserir)
+- Preview ao vivo renderizando o HTML com dados de exemplo
+- Botoes para salvar e ativar/desativar
 
 ---
 
-### 4. Detalhes Tecnicos
+### Detalhes Tecnicos
 
-#### Fase 1 - Arquivos a modificar
+#### Arquivos a criar/modificar:
 
-| Arquivo | Alteracao |
-|---------|----------|
-| `src/components/admin-v2/pages/companies/NewCompanyPage.tsx` | Implementar `handleCreateCompany` com insert no Supabase, upload de logo, validacao, toast de sucesso e redirect |
-| `src/components/admin-v2/pages/companies/AllCompaniesPage.tsx` | Trocar query de contagem de usuarios para usar `user_company_relations` |
+| Arquivo | Acao |
+|---------|------|
+| Nova migracao SQL | Recriar `safe_delete_user` e `safe_delete_user_with_replacement` com nome correto da tabela |
+| `src/components/admin-v2/pages/emails/EmailTemplateEditor.tsx` | **Novo** - Componente reutilizavel de edicao |
+| `src/components/admin-v2/pages/emails/AllEmailTemplatesPage.tsx` | Reescrever - Lista de templates do banco |
+| `src/components/admin-v2/pages/emails/WelcomeTemplatePage.tsx` | Reescrever - Editor do template welcome |
+| `src/components/admin-v2/pages/emails/CredentialsTemplatePage.tsx` | Reescrever - Editor do template credentials |
+| `src/components/admin-v2/pages/emails/PasswordRecoveryTemplatePage.tsx` | Reescrever - Editor do template password_reset |
+| `src/components/admin-v2/pages/emails/NotificationTemplatePage.tsx` | Reescrever - Editor/criacao de template notificacao |
+| `src/components/admin-v2/pages/emails/NewTemplatePage.tsx` | Reescrever - Formulario de novo template |
+| `src/components/admin-v2/pages/emails/PreviewEmailPage.tsx` | Reescrever - Preview com dados simulados |
 
-#### Nova empresa - logica necessaria
-
-```text
-1. Validar nome obrigatorio
-2. Insert em companies (name, company_type, mission, vision, values, ai_enabled, status='active')
-3. Upload logo para storage bucket 'company-logos' (se existir)
-4. Update company com logo_url
-5. Toast de sucesso + navigate para /companies
-```
-
-#### Contagem correta de usuarios
-
-```text
-Query atual (incorreta):
-  profiles.company_id -> conta apenas empresa primaria
-
-Query correta:
-  user_company_relations -> conta todas as relacoes ativas
-  Agrupa por company_id, filtra status='active'
-```
-
----
-
-### 5. Resumo Executivo
-
-| Metrica | Valor |
-|---------|-------|
-| Total de rotas admin-v2 | ~70 |
-| Paginas funcionais | ~45 (64%) |
-| Paginas placeholder | 25 (36%) |
-| Erros criticos encontrados | 3 |
-| Problemas de dados | 2 |
-| Problemas de UX | 3 |
-| Secoes inteiras sem implementacao | 3 (Config, Landing, Emails) |
-
-A prioridade imediata e corrigir a **Fase 1** (criacao de empresas e contagem de usuarios), pois sao funcionalidades core que ja tem UI mas nao funcionam. As demais fases podem ser implementadas incrementalmente.
+#### Logica do EmailTemplateEditor:
+- Recebe `templateKey` como prop para carregar template existente
+- Query via `supabase.from('email_templates').select('*').eq('template_key', key)`
+- Update via `supabase.from('email_templates').update({...}).eq('id', id)`
+- Preview usa `dangerouslySetInnerHTML` com DOMPurify (ja instalado) em um iframe sandbox
+- Variaveis sao renderizadas substituindo `{{variavel}}` por valores de exemplo
 
