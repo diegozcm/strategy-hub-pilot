@@ -1,4 +1,5 @@
-import { PlaceholderPage } from "../PlaceholderPage";
+import EmailTemplateEditor from './EmailTemplateEditor';
+
 export default function CredentialsTemplatePage() {
-  return <PlaceholderPage title="Credenciais de Acesso" section="Templates de Email › Templates" />;
+  return <EmailTemplateEditor templateKey="welcome_credentials" title="Credenciais de Acesso" />;
 }

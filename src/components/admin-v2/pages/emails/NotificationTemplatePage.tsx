@@ -1,4 +1,5 @@
-import { PlaceholderPage } from "../PlaceholderPage";
+import EmailTemplateEditor from './EmailTemplateEditor';
+
 export default function NotificationTemplatePage() {
-  return <PlaceholderPage title="Notificações" section="Templates de Email › Templates" />;
+  return <EmailTemplateEditor templateKey="notification" title="Template de Notificações" />;
 }
