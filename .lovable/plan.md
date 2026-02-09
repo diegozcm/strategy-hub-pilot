@@ -1,69 +1,179 @@
 
 
-## Analise dos Dados de Analytics - Problemas Encontrados
+## Auditoria Completa do Admin-V2 - Diagnostico e Plano Estrategico
 
-### Diagnostico
+---
 
-Analisei os dados reais do banco e encontrei **3 problemas graves** que tornam as metricas atuais pouco confiaveis:
+### 1. Inventario de Paginas
 
-| Metrica | Problema | Dados Reais |
-|---------|----------|-------------|
-| **Total de Sessoes** | Inflado. Cada refresh de pagina cria um novo registro de login | 3.246 "sessoes" em 7 dias para apenas 26 usuarios |
-| **Duracao Media** | Sempre mostra 0s. O campo `logout_time` nunca e preenchido | 0 de 3.246 registros tem `logout_time` |
-| **Dispositivos** | Sempre vazio. O campo `user_agent` nunca e capturado no insert | 0 de 3.246 registros tem `user_agent` |
-| **Sessoes/Usuario** | Valor distorcido (124.8) por causa da contagem inflada | Um usuario sozinho tem 1.126 "sessoes" |
+Das **70+ rotas** registradas no admin-v2, aqui esta o status real de cada uma:
 
-### Causa Raiz
+#### Paginas Implementadas (com dados reais do banco)
 
-A funcao `logUserLogin()` e chamada tanto no evento `SIGNED_IN` quanto no `INITIAL_SESSION` do Supabase Auth. O `INITIAL_SESSION` dispara em **cada carregamento de pagina** quando o usuario ja esta logado, criando registros duplicados massivamente.
+| Secao | Pagina | Status |
+|-------|--------|--------|
+| Dashboard | Painel Principal | Funcional - stats, graficos, analytics |
+| Dashboard | Atividade Recente | Funcional - timeline de atividades |
+| Dashboard | Usuarios Ativos | Funcional |
+| Dashboard | Empresas Cadastradas | Funcional |
+| Dashboard | Logins Recentes | Funcional |
+| Dashboard | Usuarios por Empresa | Funcional |
+| Dashboard | Status do Sistema | Funcional |
+| Empresas | Todas as Empresas | Funcional - lista, busca, modal detalhes |
+| Empresas | Filtrar Empresas | Funcional - filtros avancados |
+| Empresas | Nova Empresa | **Parcial** - formulario existe mas NAO salva no banco |
+| Empresas | Ativas/Inativas/Startups/Mentores/Arquivadas | Funcional - filtros pre-aplicados |
+| Usuarios | Todos os Usuarios | Funcional - lista, filtros, modais |
+| Usuarios | Criar Usuario | Funcional completo - auth + perfil + modulos + email |
+| Usuarios | Filtrar Usuarios | Funcional |
+| Usuarios | Ativos/Inativos/Pendentes/Primeiro Login/Admins | Funcional |
+| Modulos | Modulos Disponiveis | Funcional - stats de uso |
+| Modulos | Planejamento Estrategico/Startup Hub/AI Copilot | Funcional - detalhes por modulo |
+| Modulos | Modulos por Empresa | Funcional |
+| Modulos | Roles e Permissoes | Funcional - cards de roles |
+| Monitoramento | Saude do Sistema | Funcional - diagnosticos client-side |
+| Monitoramento | Performance | Funcional - metricas de navegador |
+| Monitoramento | Alertas | Funcional - com sub-categorias |
+| Monitoramento | Logs de Acesso/Banco | Funcional |
 
-### Plano de Correcao
+#### Paginas Placeholder (25 paginas - apenas "Em desenvolvimento")
 
-**1. Corrigir a contagem de sessoes (evitar duplicatas)**
+| Secao | Paginas |
+|-------|---------|
+| Dashboard (4) | Estatisticas do Sistema, Ultimas 24h, Ultima Semana, Ultimo Mes |
+| Configuracoes (12) | **TODAS** - Config Gerais, Seguranca, Politicas de Senha, MFA, Sessoes Ativas, Notificacoes, Backup (criar/restaurar/agendamentos), Limpeza de Dados, Admins do Sistema |
+| Landing Page (3) | **TODAS** - Editar, Preview, Publicar |
+| Templates de Email (7) | **TODAS** - Todos Templates, Boas-vindas, Credenciais, Recuperacao, Notificacoes, Novo Template, Preview |
 
-No `useMultiTenant.tsx`, chamar `logUserLogin` apenas no evento `SIGNED_IN` (login real), e nao no `INITIAL_SESSION` (refresh de pagina). Isso resolve a inflacao de dados.
+---
 
-**2. Capturar o `user_agent` no insert**
+### 2. Erros e Problemas Encontrados
 
-Adicionar `navigator.userAgent` ao insert do login log:
+#### Erros Criticos
 
-```typescript
-await supabase.from('user_login_logs').insert({
-  user_id: userId,
-  company_id: companyId,
-  login_time: new Date().toISOString(),
-  user_agent: navigator.userAgent,
-});
+| ID | Problema | Arquivo | Impacto |
+|----|----------|---------|---------|
+| E1 | **Nova Empresa nao salva**: O botao "Criar Empresa" chama `handleNotImplemented()` em vez de inserir no banco | `NewCompanyPage.tsx` | Impossivel criar empresas pelo admin-v2 |
+| E2 | **Botao Cancelar com rota errada**: Navega para `/companies/all` mas a rota correta e `/companies` | `NewCompanyPage.tsx` | 404 ao cancelar criacao |
+| E3 | **Upload de logo nao implementado**: Botao "Selecionar Arquivo" chama `handleNotImplemented` | `NewCompanyPage.tsx` | Empresas criadas sem logo |
+
+#### Problemas de Dados
+
+| ID | Problema | Arquivo | Impacto |
+|----|----------|---------|---------|
+| D1 | **Contagem de usuarios por empresa**: Usa `profiles.company_id` em vez de `user_company_relations`, pode estar desatualizada para usuarios com multiplas empresas | `AllCompaniesPage.tsx` | Numeros potencialmente incorretos |
+| D2 | **Monitoramento client-side apenas**: SystemHealth e Performance medem apenas o navegador do admin, nao o servidor real | `SystemHealthPage.tsx`, `PerformancePage.tsx` | Metricas nao refletem saude real do backend |
+
+#### Problemas de UX
+
+| ID | Problema | Impacto |
+|----|----------|---------|
+| U1 | 25 paginas mostram apenas "Em desenvolvimento" sem indicacao de quando serao implementadas | Experiencia confusa para admins |
+| U2 | Secao de Configuracoes inteira e placeholder - nenhuma configuracao pode ser alterada | Admin sem controle sobre o sistema |
+| U3 | Templates de Email inteiros sao placeholder - impossivel personalizar comunicacoes | Emails sao genericos |
+
+---
+
+### 3. Plano Estrategico de Implementacao
+
+Priorizado por impacto no negocio e dependencias tecnicas:
+
+#### Fase 1 - Correcoes Criticas (Prioridade Maxima)
+
+**1.1 Corrigir criacao de empresas**
+- Implementar logica de `INSERT` no banco em `NewCompanyPage.tsx`
+- Corrigir rota do botao Cancelar (`/companies/all` -> `/companies`)
+- Implementar upload de logo via Supabase Storage
+- Adicionar validacao de campos obrigatorios
+
+**1.2 Corrigir contagem de usuarios**
+- Alterar `AllCompaniesPage.tsx` para usar `user_company_relations` em vez de `profiles.company_id`
+- Garantir que a contagem reflita usuarios com multiplas empresas
+
+#### Fase 2 - Configuracoes do Sistema (Alta Prioridade)
+
+**2.1 Configuracoes Gerais**
+- Implementar `GeneralSettingsPage` com nome do sistema, logo, timezone, idioma padrao
+
+**2.2 Admins do Sistema**
+- Implementar `SystemAdminsSettingsPage` para gerenciar quem e system admin
+- Permitir promover/revogar admin status
+
+**2.3 Seguranca Basica**
+- Implementar `SecurityPage` com overview de politicas
+- Implementar `ActiveSessionsPage` para ver/encerrar sessoes
+
+#### Fase 3 - Templates de Email (Media Prioridade)
+
+**3.1 Editor de Templates**
+- Implementar `AllEmailTemplatesPage` listando templates do banco
+- Implementar editor visual para cada template (Welcome, Credentials, etc.)
+- Implementar Preview com dados simulados
+
+#### Fase 4 - Landing Page (Media Prioridade)
+
+**4.1 Editor de Landing Page**
+- Implementar `EditLandingPage` conectado a tabela `landing_page_content`
+- Implementar Preview ao vivo
+- Implementar Publicacao com confirmacao
+
+#### Fase 5 - Dashboard Avancado (Baixa Prioridade)
+
+**5.1 Sub-paginas de atividade**
+- Implementar filtros de 24h, Semana, Mes em `RecentActivity*Page`
+- Implementar `SystemStatsPage` com graficos detalhados
+
+#### Fase 6 - Monitoramento Real (Baixa Prioridade)
+
+**6.1 Metricas server-side**
+- Considerar criar edge functions para monitoramento real do backend
+- Atualmente tudo e client-side (apenas mede o navegador do admin)
+
+---
+
+### 4. Detalhes Tecnicos
+
+#### Fase 1 - Arquivos a modificar
+
+| Arquivo | Alteracao |
+|---------|----------|
+| `src/components/admin-v2/pages/companies/NewCompanyPage.tsx` | Implementar `handleCreateCompany` com insert no Supabase, upload de logo, validacao, toast de sucesso e redirect |
+| `src/components/admin-v2/pages/companies/AllCompaniesPage.tsx` | Trocar query de contagem de usuarios para usar `user_company_relations` |
+
+#### Nova empresa - logica necessaria
+
+```text
+1. Validar nome obrigatorio
+2. Insert em companies (name, company_type, mission, vision, values, ai_enabled, status='active')
+3. Upload logo para storage bucket 'company-logos' (se existir)
+4. Update company com logo_url
+5. Toast de sucesso + navigate para /companies
 ```
 
-**3. Corrigir a duracao media da sessao**
+#### Contagem correta de usuarios
 
-O `logUserLogout` ja existe e funciona corretamente, mas so e chamado no `SIGNED_OUT`. O problema e que muitos usuarios simplesmente fecham o navegador sem fazer logout. Solucao:
+```text
+Query atual (incorreta):
+  profiles.company_id -> conta apenas empresa primaria
 
-- Adicionar um listener de `beforeunload` no navegador para registrar logout ao fechar aba/janela
-- Usar `visibilitychange` como fallback para detectar quando o usuario sai
+Query correta:
+  user_company_relations -> conta todas as relacoes ativas
+  Agrupa por company_id, filtra status='active'
+```
 
-**4. Renomear metricas para refletir a realidade**
+---
 
-- "Sessoes/Usuario" -> "Logins/Usuario" (mais preciso)
-- Adicionar tooltip explicativo nas metricas
+### 5. Resumo Executivo
 
-**5. Limpar dados historicos inflados**
+| Metrica | Valor |
+|---------|-------|
+| Total de rotas admin-v2 | ~70 |
+| Paginas funcionais | ~45 (64%) |
+| Paginas placeholder | 25 (36%) |
+| Erros criticos encontrados | 3 |
+| Problemas de dados | 2 |
+| Problemas de UX | 3 |
+| Secoes inteiras sem implementacao | 3 (Config, Landing, Emails) |
 
-Executar uma query para remover os registros duplicados de `INITIAL_SESSION`, mantendo apenas o primeiro login por usuario por dia. Isso corrige o historico.
-
-### Arquivos a modificar
-
-| Arquivo | Mudanca |
-|---------|---------|
-| `src/hooks/useMultiTenant.tsx` | Chamar `logUserLogin` apenas no `SIGNED_IN`; adicionar `user_agent`; adicionar listener de `beforeunload` para logout |
-| `src/hooks/admin/useAnalyticsStats.ts` | Renomear campo `avgPagesPerVisit` para `avgLoginsPerUser` |
-| `src/components/admin-v2/pages/dashboard/AnalyticsSection.tsx` | Atualizar labels e adicionar tooltips |
-
-### Resultado esperado
-
-- **Sessoes**: Numero real de logins (nao inflado por refreshes)
-- **Duracao Media**: Valor real baseado em login/logout
-- **Dispositivos**: Dados reais de user agent
-- **Sessoes/Usuario**: Valor coerente (ex: 2-3 em vez de 124)
+A prioridade imediata e corrigir a **Fase 1** (criacao de empresas e contagem de usuarios), pois sao funcionalidades core que ja tem UI mas nao funcionam. As demais fases podem ser implementadas incrementalmente.
 
