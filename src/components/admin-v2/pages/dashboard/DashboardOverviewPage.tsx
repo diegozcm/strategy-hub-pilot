@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { AnalyticsSection } from "./AnalyticsSection";
 
 export default function DashboardOverviewPage() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
@@ -228,6 +229,9 @@ export default function DashboardOverviewPage() {
             </CardContent>
           </Card>
         )}
+
+        {/* Analytics Section */}
+        <AnalyticsSection />
       </div>
     </AdminPageContainer>
   );
