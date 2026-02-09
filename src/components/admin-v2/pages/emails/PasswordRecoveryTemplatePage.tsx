@@ -1,4 +1,5 @@
-import { PlaceholderPage } from "../PlaceholderPage";
+import EmailTemplateEditor from './EmailTemplateEditor';
+
 export default function PasswordRecoveryTemplatePage() {
-  return <PlaceholderPage title="Recuperação de Senha" section="Templates de Email › Templates" />;
+  return <EmailTemplateEditor templateKey="password_reset" title="Recuperação de Senha" />;
 }
