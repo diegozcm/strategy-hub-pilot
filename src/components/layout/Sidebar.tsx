@@ -168,12 +168,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                         className={cn(
                           "flex items-center py-2 rounded-lg transition-colors",
                           isMobile ? "px-3 ml-4" : (collapsed ? "px-3 justify-center" : "px-3 ml-4"),
-                          isActive 
-                            ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
-                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                        isActive 
+                            ? "bg-sidebar-accent/20 text-sidebar-accent-foreground font-medium border-l-2 border-sidebar-accent" 
+                            : "text-sidebar-foreground/60 hover:bg-sidebar-accent/10 hover:text-sidebar-foreground"
                         )}
                       >
-                        <Calendar className={cn("h-4 w-4", (!collapsed || isMobile) && "mr-3")} />
+                        <Calendar className={cn("h-4 w-4", isActive && "text-sidebar-primary", (!collapsed || isMobile) && "mr-3")} />
                         {(!collapsed || isMobile) && <span className="text-sm">{calendarName}</span>}
                       </NavLink>
                     );
@@ -187,11 +187,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                         "flex items-center py-2 rounded-lg transition-colors",
                         isMobile ? "px-3 ml-4" : (collapsed ? "px-3 justify-center" : "px-3 ml-4"),
                         isActive 
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
-                          : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                          ? "bg-sidebar-accent/20 text-sidebar-accent-foreground font-medium border-l-2 border-sidebar-accent" 
+                          : "text-sidebar-foreground/60 hover:bg-sidebar-accent/10 hover:text-sidebar-foreground"
                       )}
                     >
-                      <item.icon className={cn("h-4 w-4", (!collapsed || isMobile) && "mr-3")} />
+                      <item.icon className={cn("h-4 w-4", isActive && "text-sidebar-primary", (!collapsed || isMobile) && "mr-3")} />
                       {(!collapsed || isMobile) && <span className="text-sm">{item.name}</span>}
                     </NavLink>
                   );
@@ -210,8 +210,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
             "flex items-center py-2.5 px-3 rounded-lg transition-colors w-full",
             isMobile ? "" : (collapsed ? "justify-center" : ""),
             isRouteActive('/app/settings')
-              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-              : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+              ? "bg-sidebar-accent/20 text-sidebar-accent-foreground font-medium border-l-2 border-sidebar-accent"
+              : "text-sidebar-foreground/60 hover:bg-sidebar-accent/10 hover:text-sidebar-foreground"
           )}
         >
           <Settings className={cn("h-4 w-4", (!collapsed || isMobile) && "mr-3")} />
