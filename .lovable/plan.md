@@ -1,41 +1,72 @@
 
 
-# Redesign das Notificacoes (Toasts) com Identidade COFOUND
+# Correcao da Politica RLS da Tabela Companies
 
-## Resumo
-Alterar o estilo e posicionamento das notificacoes do sistema para aparecerem centralizadas na parte inferior da tela, com animacao de entrada de baixo para cima e saida de cima para baixo. Design mais fino, com cantos arredondados e cores COFOUND. Erros usarao vermelho.
+## Problema
+A politica de SELECT `Users can view companies` na tabela `companies` nao permite que system admins vejam empresas do tipo `startup` a menos que tenham uma relacao direta na tabela `user_company_relations`. Por isso a empresa Nexo (tipo startup) nao aparece para o Bernardo no painel admin.
 
-## O que muda visualmente
-- Posicao: de canto inferior direito para **centro inferior** da tela
-- Formato: mais fino/compacto (padding reduzido de p-6 para py-3 px-5)
-- Cantos: mais arredondados (rounded-xl)
-- Animacao: entrada de baixo para cima, saida para baixo (em vez de deslizar para a direita)
-- Cor padrao (sucesso): fundo branco com borda verde COFOUND (#CDD966), texto navy (#10283F)
-- Cor erro (destructive): fundo vermelho suave com borda vermelha, texto vermelho escuro
-- Largura maxima reduzida para ficar mais elegante
+## Solucao
+Alterar a politica RLS de SELECT para adicionar `OR public.is_system_admin(auth.uid())`, permitindo que system admins vejam todas as empresas independentemente do tipo.
 
 ## Detalhes Tecnicos
 
-### 1. `src/components/ui/toast.tsx` - ToastViewport
-Alterar o posicionamento do viewport:
-- De: `fixed top-0 ... sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]`
-- Para: `fixed bottom-0 left-1/2 -translate-x-1/2 z-[100] flex max-h-screen w-auto flex-col p-4 max-w-[480px]`
-- Centralizado horizontalmente com `left-1/2 -translate-x-1/2`
+### Politica atual (SELECT)
+```text
+auth.uid() IS NOT NULL
+AND (
+  company_type = 'regular'
+  OR (
+    company_type = 'startup'
+    AND EXISTS (
+      SELECT 1 FROM user_company_relations ucr
+      WHERE ucr.company_id = companies.id AND ucr.user_id = auth.uid()
+    )
+  )
+)
+```
 
-### 2. `src/components/ui/toast.tsx` - toastVariants
-Alterar o estilo do toast:
-- Padding mais compacto: `py-3 px-5` em vez de `p-6 pr-8`
-- Cantos mais arredondados: `rounded-xl`
-- Animacoes: trocar `slide-in-from-top/bottom` por `slide-in-from-bottom-full` na entrada e `slide-out-to-bottom-full` na saida
-- Variante default: borda verde COFOUND `border-[#CDD966]`, fundo branco, texto navy `text-[#10283F]`
-- Variante destructive: borda vermelha `border-red-500`, fundo `bg-red-50`, texto `text-red-800`
+### Politica corrigida
+```text
+auth.uid() IS NOT NULL
+AND (
+  public.is_system_admin(auth.uid())
+  OR company_type = 'regular'
+  OR (
+    company_type = 'startup'
+    AND EXISTS (
+      SELECT 1 FROM user_company_relations ucr
+      WHERE ucr.company_id = companies.id AND ucr.user_id = auth.uid()
+    )
+  )
+)
+```
 
-### 3. `src/components/ui/sonner.tsx` - Toaster do Sonner
-Alterar o posicionamento e estilo do Sonner (usado nas paginas admin-v2):
-- Adicionar `position="bottom-center"` no componente Sonner
-- Atualizar classNames para seguir o mesmo visual COFOUND
+### Implementacao
+Executar o seguinte SQL via migration:
+
+```text
+DROP POLICY IF EXISTS "Users can view companies" ON public.companies;
+
+CREATE POLICY "Users can view companies"
+ON public.companies
+FOR SELECT
+TO authenticated
+USING (
+  auth.uid() IS NOT NULL
+  AND (
+    public.is_system_admin(auth.uid())
+    OR company_type = 'regular'
+    OR (
+      company_type = 'startup'
+      AND EXISTS (
+        SELECT 1 FROM user_company_relations ucr
+        WHERE ucr.company_id = companies.id AND ucr.user_id = auth.uid()
+      )
+    )
+  )
+);
+```
 
 ### Arquivos alterados
-1. `src/components/ui/toast.tsx` - viewport + variantes
-2. `src/components/ui/sonner.tsx` - posicao e estilos
+1. Nova migration SQL para atualizar a politica RLS
 
