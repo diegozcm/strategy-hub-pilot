@@ -677,7 +677,7 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
           onOpenChange={setExportModalOpen}
           tableRef={tableRef}
           exportData={exportData}
-          title={`Tabela RMRE - ${getPeriodLabel()}`}
+          title={`RMRE ${getPeriodLabel()}`}
         />
       </div>
     </TooltipProvider>

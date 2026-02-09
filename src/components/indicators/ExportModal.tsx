@@ -179,7 +179,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       document.body.removeChild(clone);
       
       const link = document.createElement('a');
-      link.download = `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.png`;
+      link.download = `${title.replace(/[\s\-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')}_${new Date().toISOString().split('T')[0]}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
       
@@ -249,7 +249,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
       const y = margin;
       
       pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
-      pdf.save(`${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+      pdf.save(`${title.replace(/[\s\-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')}_${new Date().toISOString().split('T')[0]}.pdf`);
       
       toast({ title: 'Sucesso!', description: 'PDF exportado com sucesso' });
       onOpenChange(false);
@@ -302,7 +302,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         { wch: 15 }, // Eficiência
       ];
       
-      XLSX.writeFile(workbook, `${title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`);
+      XLSX.writeFile(workbook, `${title.replace(/[\s\-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')}_${new Date().toISOString().split('T')[0]}.xlsx`);
       
       toast({ title: 'Sucesso!', description: 'Planilha Excel exportada com sucesso' });
       onOpenChange(false);
