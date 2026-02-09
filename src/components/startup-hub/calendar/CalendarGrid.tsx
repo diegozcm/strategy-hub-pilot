@@ -168,21 +168,40 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                     )}
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     {daySessions.slice(0, 2).map((session) => (
                       <div
                         key={session.id}
-                        className="p-1 rounded text-xs bg-primary/10 text-primary truncate"
+                        className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-all hover:scale-[1.02] hover:shadow-sm"
+                        style={{
+                          backgroundColor: session.is_own_session ? '#CDD966' : '#0E263D',
+                          color: session.is_own_session ? '#10283F' : '#ffffff',
+                          borderLeft: `3px solid ${session.is_own_session ? '#10283F' : '#CDD966'}`,
+                        }}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleSessionClick(session);
                         }}
                       >
-                        {session.startup_name} • {session.mentor_name || 'Mentor'}
+                        <Avatar className="h-4 w-4 shrink-0">
+                          <AvatarImage src={session.mentor_avatar_url || undefined} />
+                          <AvatarFallback
+                            className="text-[8px] font-bold"
+                            style={{
+                              backgroundColor: session.is_own_session ? '#10283F' : '#CDD966',
+                              color: session.is_own_session ? '#CDD966' : '#10283F',
+                            }}
+                          >
+                            {getMentorInitials(session.mentor_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate leading-tight">
+                          {session.startup_name}
+                        </span>
                       </div>
                     ))}
                     {daySessions.length > 2 && (
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-[10px] font-medium text-muted-foreground pl-1">
                         +{daySessions.length - 2} mais
                       </div>
                     )}
