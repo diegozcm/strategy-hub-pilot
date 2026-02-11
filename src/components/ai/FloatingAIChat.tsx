@@ -508,6 +508,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
           user_id: user.id,
           company_id: company.id,
           stream: true,
+          plan_mode: isPlanMode,
           ...(pastedImages.length > 0 ? { image: pastedImages[0] } : {}),
         }),
         signal: abortController.signal,
