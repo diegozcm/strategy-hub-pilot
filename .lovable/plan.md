@@ -1,89 +1,101 @@
 
+# Fix: Resolucao de Referencias e Suporte a Metas/Valores no Atlas Agent
 
-# Redesign dos Botoes do Chat Atlas: Microfone + Plan Toggle
+## Problemas Identificados
 
-## Resumo
+### Bug 1: Referencias cascata falham silenciosamente
+Quando o Atlas propoe um plano com Objetivo + KRs + Iniciativas, se o Objetivo (indice 0) falha por qualquer motivo (pilar nao encontrado, etc.), todos os KRs que referenciam `objective_ref: 0` falham com "Objetivo de referencia nao encontrado" sem explicar a causa raiz. O mesmo acontece com iniciativas que dependem de KRs.
 
-Tres ajustes na barra de input do chat:
+### Bug 2: Handler de update_key_result muito limitado
+O handler so atualiza `current_value` e `monthly_actual`. Nao suporta:
+- `monthly_targets` (metas periodicas)
+- `yearly_target` (meta anual)
+- `target_value` (valor alvo)
+- `frequency` (frequencia)
+- `unit` (unidade)
+- `description`, `weight`, etc.
 
-1. **Botao de microfone** - Quando gravando, trocar o icone para um quadrado dentro de circulo (icone `Square` do Lucide), sem piscar vermelho agressivo - apenas fundo vermelho solido
-2. **Botao Plan** - Vira um toggle com texto "Plan" (como no Lovable). Quando ativo, fica destacado (azul). Quando ativo, a mensagem enviada forca o Atlas a criar um plano obrigatorio com Aprovar/Reprovar
-3. **Layout** - Ordem: `[Input] [Mic/Stop] [Plan] [Send]`
+### Bug 3: .single() em buscas fuzzy pode gerar erros 406
+Todas as buscas por pilar, objetivo e KR usam `.single()` que falha quando 0 resultados sao retornados (PostgREST 406). Deve usar `.maybeSingle()`.
+
+### Bug 4: Pilares com caracteres especiais
+Pilares como "Inovacao & Crescimento" podem nao ser encontrados se o LLM enviar "Inovacao e Crescimento" (sem o `&`).
 
 ---
 
-## O que muda para o usuario
+## Correcoes
 
-### Botao de audio
-- Estado normal: icone de microfone
-- Gravando: icone de quadrado (stop), fundo vermelho sem animacao pulsante
+### Arquivo: `supabase/functions/ai-agent-execute/index.ts`
 
-### Botao Plan
-- Texto "Plan" com P maiusculo
-- Funciona como toggle: clica para ativar, clica de novo para desativar
-- Quando ativo: fundo azul (primary), texto claro
-- Quando desativado: estilo outline normal
-- Quando ativo, a mensagem do usuario e enviada com uma instrucao interna que obriga o Atlas a responder com um plano formal (com `[ATLAS_PLAN]`) que exige aprovacao
+**Correcao 1 - Trocar .single() por .maybeSingle() em todas as buscas fuzzy:**
 
-### Envio com Plan ativo
-- O texto do usuario e enviado normalmente, mas internamente adiciona-se um prefixo/sufixo invisivel que instrui o Atlas: "O usuario esta no modo Plan. Voce DEVE responder com um plano detalhado humanizado seguido do bloco [ATLAS_PLAN]. O usuario precisara aprovar antes da execucao."
-- O usuario nao ve essa instrucao, apenas sua mensagem original aparece no chat
+Linhas 170-176 (pilar), 210-216 (objetivo), 267-277 (KR), 321-326 (KR por titulo) — todas devem usar `.maybeSingle()` em vez de `.single()`.
+
+**Correcao 2 - Melhorar matching de pilares:**
+
+Na busca de pilar, normalizar o nome removendo `&` e comparando com `e`:
+```typescript
+// Tentar busca direta primeiro
+let pillar = await buscarPilar(d.pillar_name);
+// Se nao encontrou, tentar substituindo & por e / e por &
+if (!pillar) {
+  const altName = d.pillar_name.replace(/&/g, 'e').replace(/ e /g, ' & ');
+  pillar = await buscarPilar(altName);
+}
+```
+
+**Correcao 3 - Mensagens de erro com contexto de cascata:**
+
+Quando um KR falha por nao achar o objetivo, incluir na mensagem se o objetivo referenciado tambem falhou:
+```typescript
+if (!objectiveId) {
+  const refResult = d.objective_ref !== null ? results[d.objective_ref] : null;
+  const reason = refResult && !refResult.success 
+    ? `(o objetivo na posicao ${d.objective_ref} falhou: ${refResult.error})` 
+    : '';
+  results.push({ type: actionType, success: false, error: `Objetivo de referencia nao encontrado. ${reason}` });
+}
+```
+
+**Correcao 4 - Expandir handler update_key_result:**
+
+Adicionar suporte a todos os campos atualizaveis:
+```typescript
+if (d.monthly_targets) updateData.monthly_targets = d.monthly_targets;
+if (d.yearly_target !== undefined) updateData.yearly_target = d.yearly_target;
+if (d.target_value !== undefined) updateData.target_value = d.target_value;
+if (d.frequency) updateData.frequency = d.frequency;
+if (d.unit) updateData.unit = d.unit;
+if (d.description) updateData.description = d.description;
+if (d.weight !== undefined) updateData.weight = d.weight;
+if (d.due_date) updateData.due_date = d.due_date;
+```
+
+**Correcao 5 - Adicionar handler update_initiative:**
+
+Novo action type `update_initiative` para atualizar status, progresso e dados de iniciativas existentes.
 
 ---
 
 ## Secao Tecnica
 
-### Arquivo: `src/components/ai/FloatingAIChat.tsx`
+### Arquivo unico a editar
+- `supabase/functions/ai-agent-execute/index.ts`
 
-1. **Novo estado `isPlanMode`** (boolean, default false)
+### Detalhes das mudancas
 
-2. **Remover `handlePlanButton`** - nao sera mais necessario
+1. **Linhas 170-176**: `.single()` → `.maybeSingle()` na busca de pilar
+2. **Linhas 210-216**: `.single()` → `.maybeSingle()` na busca de objetivo por titulo
+3. **Linhas 267-277**: `.single()` → `.maybeSingle()` na busca de KR por titulo  
+4. **Linhas 321-326**: `.single()` → `.maybeSingle()` na busca de KR para update
+5. **Linha 164-181**: Adicionar fallback de nome de pilar (& vs e)
+6. **Linhas 220-223**: Melhorar mensagem de erro com contexto de cascata
+7. **Linhas 281-283**: Mesma melhoria para iniciativas
+8. **Linhas 335-337**: Expandir campos do updateData para suportar monthly_targets, yearly_target, target_value, frequency, unit, description, weight
+9. **Apos linha 348**: Adicionar novo handler `update_initiative`
 
-3. **Importar `Square`** do lucide-react (substituir `ClipboardList` e `MicOff`)
-
-4. **Botao de microfone (linhas 726-735):**
-   ```tsx
-   <Button
-     onClick={toggleRecording}
-     disabled={isLoading || isStreaming || isExecuting}
-     size="icon"
-     variant={isRecording ? "destructive" : "outline"}
-     title={isRecording ? "Parar gravacao" : "Gravar audio"}
-   >
-     {isRecording ? <Square className="h-3.5 w-3.5 fill-current" /> : <Mic className="h-4 w-4" />}
-   </Button>
-   ```
-
-5. **Botao Plan (linhas 736-744):**
-   ```tsx
-   <Button
-     onClick={() => setIsPlanMode(prev => !prev)}
-     disabled={isLoading || isStreaming || isExecuting}
-     size="sm"
-     variant={isPlanMode ? "default" : "outline"}
-     className="text-xs font-medium px-3"
-   >
-     Plan
-   </Button>
-   ```
-
-6. **handleSendMessage** - quando `isPlanMode` esta ativo, adicionar prefixo interno a mensagem enviada ao backend:
-   ```typescript
-   const effectiveMessage = isPlanMode
-     ? `[MODO PLAN ATIVO] O usuario pede que voce elabore um plano detalhado e obrigatorio antes de executar. Responda com descricao humanizada + bloco [ATLAS_PLAN]. A mensagem do usuario e: ${textToSend}`
-     : textToSend;
-   ```
-   - A `userMessage.content` exibida no chat continua sendo apenas `textToSend` (sem o prefixo)
-   - O prefixo e enviado apenas no body do fetch para o backend
-
-### Arquivo: `supabase/functions/ai-chat/index.ts`
-
-Nenhuma mudanca necessaria - o prefixo `[MODO PLAN ATIVO]` na mensagem ja sera interpretado pelo LLM como instrucao para gerar o plano obrigatorio.
-
----
-
-## Resultado esperado
-
-- Microfone: icone limpo de quadrado (stop) quando gravando, sem piscamento
-- Plan: toggle "Plan" textual, ativa/desativa modo de planejamento obrigatorio
-- Layout: `[Input] [Mic] [Plan] [Enviar]`
+### Resultado esperado
+- Pilares com `&` ou `e` sao encontrados corretamente
+- Erros de cascata mostram a causa raiz ("o objetivo na posicao 0 falhou porque pilar X nao foi encontrado")
+- O Atlas pode definir metas (monthly_targets), valores alvo e frequencia nos KRs
+- O Atlas pode atualizar iniciativas existentes
