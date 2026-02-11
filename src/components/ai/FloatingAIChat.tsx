@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Minus, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, History, Plus, Trash2, ArrowLeft, Check, XCircle, Mic, MicOff, ClipboardList } from 'lucide-react';
+import { X, Minus, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, History, Plus, Trash2, ArrowLeft, Check, XCircle, Mic, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -113,6 +113,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [pastedImages, setPastedImages] = useState<string[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [isPlanMode, setIsPlanMode] = useState(false);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -169,9 +170,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
     setIsRecording(true);
   }, [isRecording, toast]);
 
-  const handlePlanButton = useCallback(() => {
-    setChatInput('Analise a situação estratégica atual da empresa e proponha um plano de ações com objetivos, KRs e iniciativas');
-  }, []);
+  // handlePlanButton removed — Plan is now a toggle mode
 
   const quickActions = [
     { icon: TrendingUp, label: 'Análise de Performance', prompt: 'Me dê uma análise da performance atual' },
@@ -403,6 +402,11 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
       const abortController = new AbortController();
       abortRef.current = abortController;
 
+      // If Plan mode is active, inject a hidden prefix for the AI
+      const effectiveMessage = isPlanMode
+        ? `[MODO PLAN ATIVO] O usuario está no modo Plan. Você DEVE responder com um plano detalhado e humanizado descrevendo o que será feito, seguido OBRIGATORIAMENTE do bloco [ATLAS_PLAN] com o JSON técnico. O usuario precisará aprovar antes da execução. A mensagem do usuario é: ${textToSend}`
+        : textToSend;
+
       const response = await fetch(`${supabaseUrl}/functions/v1/ai-chat`, {
         method: 'POST',
         headers: {
@@ -411,7 +415,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkcHp4amxuYXF3bHlxb3lveWhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIyNTE1ODYsImV4cCI6MjA2NzgyNzU4Nn0.RUAqyDG5-eM35mH3QNFO3iuR_Wqe5q1tiJSHroH_upk',
         },
         body: JSON.stringify({
-          message: textToSend,
+          message: effectiveMessage,
           session_id: currentSessionId,
           user_id: user.id,
           company_id: company.id,
@@ -503,7 +507,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [chatInput, isLoading, isStreaming, user, company, messages, sessionId, onMessagesChange, toast, pastedImages]);
+  }, [chatInput, isLoading, isStreaming, user, company, messages, sessionId, onMessagesChange, toast, pastedImages, isPlanMode]);
 
   if (!isOpen) return null;
 
@@ -728,19 +732,18 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                     disabled={isLoading || isStreaming || isExecuting}
                     size="icon"
                     variant={isRecording ? "destructive" : "outline"}
-                    className={cn(isRecording && "animate-pulse")}
                     title={isRecording ? "Parar gravação" : "Gravar áudio"}
                   >
-                    {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    {isRecording ? <Square className="h-3.5 w-3.5 fill-current" /> : <Mic className="h-4 w-4" />}
                   </Button>
                   <Button
-                    onClick={handlePlanButton}
+                    onClick={() => setIsPlanMode(prev => !prev)}
                     disabled={isLoading || isStreaming || isExecuting}
-                    size="icon"
-                    variant="outline"
-                    title="Solicitar plano estratégico"
+                    size="sm"
+                    variant={isPlanMode ? "default" : "outline"}
+                    className="text-xs font-medium px-3"
                   >
-                    <ClipboardList className="h-4 w-4" />
+                    Plan
                   </Button>
                   <Button onClick={() => handleSendMessage()} disabled={isLoading || isStreaming || isExecuting || !chatInput.trim()} size="icon">
                     <Send className="h-4 w-4" />
