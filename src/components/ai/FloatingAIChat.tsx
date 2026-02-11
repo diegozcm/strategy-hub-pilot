@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Minus, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, History, Plus, Trash2, ArrowLeft, Check, XCircle } from 'lucide-react';
+import { X, Minus, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, History, Plus, Trash2, ArrowLeft, Check, XCircle, Mic, MicOff, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -86,8 +86,10 @@ function extractPlan(content: string): { cleanContent: string; plan: any | null 
       }));
     }
     
-    const cleanContent = content
+    let cleanContent = content
       .replace(/\[ATLAS_PLAN\][\s\S]*?(\[\/ATLAS_PLAN\]|$)/, '')
+      .replace(/Preparei o plano acima\.?\s*Clique em \*?\*?Aprovar\*?\*? para que eu execute.*$/gi, '')
+      .replace(/Clique em \*?\*?Aprovar\*?\*? para executar.*$/gi, '')
       .trim();
     return { cleanContent, plan };
   } catch {
@@ -110,9 +112,66 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [pastedImages, setPastedImages] = useState<string[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
+
+  const toggleRecording = useCallback(() => {
+    if (isRecording) {
+      // Stop recording
+      recognitionRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast({ title: 'Navegador não suporta reconhecimento de voz', description: 'Use Chrome ou Edge para esta funcionalidade.', variant: 'destructive' });
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    let finalTranscript = '';
+
+    recognition.onresult = (event: any) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interim = transcript;
+        }
+      }
+      setChatInput((finalTranscript + interim).trim());
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error:', event.error);
+      setIsRecording(false);
+      if (event.error !== 'aborted') {
+        toast({ title: 'Erro no reconhecimento de voz', variant: 'destructive' });
+      }
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  }, [isRecording, toast]);
+
+  const handlePlanButton = useCallback(() => {
+    setChatInput('Analise a situação estratégica atual da empresa e proponha um plano de ações com objetivos, KRs e iniciativas');
+  }, []);
 
   const quickActions = [
     { icon: TrendingUp, label: 'Análise de Performance', prompt: 'Me dê uma análise da performance atual' },
@@ -664,6 +723,25 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                     disabled={isLoading || isStreaming || isExecuting}
                     className="flex-1"
                   />
+                  <Button
+                    onClick={toggleRecording}
+                    disabled={isLoading || isStreaming || isExecuting}
+                    size="icon"
+                    variant={isRecording ? "destructive" : "outline"}
+                    className={cn(isRecording && "animate-pulse")}
+                    title={isRecording ? "Parar gravação" : "Gravar áudio"}
+                  >
+                    {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </Button>
+                  <Button
+                    onClick={handlePlanButton}
+                    disabled={isLoading || isStreaming || isExecuting}
+                    size="icon"
+                    variant="outline"
+                    title="Solicitar plano estratégico"
+                  >
+                    <ClipboardList className="h-4 w-4" />
+                  </Button>
                   <Button onClick={() => handleSendMessage()} disabled={isLoading || isStreaming || isExecuting || !chatInput.trim()} size="icon">
                     <Send className="h-4 w-4" />
                   </Button>
