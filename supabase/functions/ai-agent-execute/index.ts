@@ -150,7 +150,13 @@ serve(async (req) => {
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
       try {
-        const actionType = action.type.toLowerCase().replace('create_kr', 'create_key_result');
+        if (!action.data) {
+          results.push({ type: action.type, success: false, error: 'Dados da ação ausentes.' });
+          continue;
+        }
+        const actionType = action.type.toLowerCase()
+          .replace('create_kr', 'create_key_result')
+          .replace('update_kr', 'update_key_result');
 
         if (actionType === 'create_objective') {
           const d = normalizeObjectiveData(action.data);
@@ -293,6 +299,46 @@ serve(async (req) => {
 
           if (initError) throw initError;
           results.push({ type: actionType, success: true, id: initiative.id, title: initiative.title });
+
+        } else if (actionType === 'update_key_result_progress' || actionType === 'update_kr_progress') {
+          const d = action.data;
+          const krId = d.key_result_id || d.kr_id;
+          const currentValue = d.current_value ?? d.value;
+
+          if (!krId && !d.kr_title) {
+            results.push({ type: actionType, success: false, error: 'ID ou título do KR não informado.' });
+            continue;
+          }
+
+          let resolvedKrId = krId;
+          if (!resolvedKrId && d.kr_title) {
+            const { data: foundKR } = await supabase
+              .from('key_results')
+              .select('id')
+              .ilike('title', `%${d.kr_title}%`)
+              .limit(1)
+              .single();
+            if (foundKR) resolvedKrId = foundKR.id;
+          }
+
+          if (!resolvedKrId) {
+            results.push({ type: actionType, success: false, error: `KR "${d.kr_title}" não encontrado.` });
+            continue;
+          }
+
+          const updateData: any = {};
+          if (currentValue !== undefined && currentValue !== null) updateData.current_value = currentValue;
+          if (d.monthly_actual) updateData.monthly_actual = d.monthly_actual;
+
+          const { data: updated, error: updateErr } = await supabase
+            .from('key_results')
+            .update(updateData)
+            .eq('id', resolvedKrId)
+            .select('id, title')
+            .single();
+
+          if (updateErr) throw updateErr;
+          results.push({ type: actionType, success: true, id: updated.id, title: updated.title });
 
         } else {
           results.push({ type: actionType, success: false, error: `Tipo de ação desconhecido: ${actionType}` });
