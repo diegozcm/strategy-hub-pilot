@@ -143,14 +143,23 @@ function extractPlan(content: string): { cleanContent: string; plan: any | null 
     
     // Normalize action types to lowercase + aliases
     if (plan.actions && Array.isArray(plan.actions)) {
-      plan.actions = plan.actions.map((a: any) => ({
-        ...a,
-        type: (a.type || '').toLowerCase()
+      plan.actions = plan.actions.map((a: any) => {
+        // If action uses "action" field instead of "type", normalize it
+        let type = (a.type || a.action || '').toLowerCase()
           .replace('create_kr', 'create_key_result')
           .replace('create_strategic_objective', 'create_objective')
           .replace('create_strategic_pillar', 'create_pillar')
-          .replace('create_strategic_project', 'create_project'),
-      }));
+          .replace('create_strategic_project', 'create_project');
+
+        // If "data" is missing, extract all non-meta fields as "data"
+        let data = a.data;
+        if (!data) {
+          const { type: _t, action: _a, ...rest } = a;
+          data = rest;
+        }
+
+        return { type, data };
+      });
 
       // Auto-inject objective_ref / key_result_ref when missing
       const firstObjIdx = plan.actions.findIndex((a: any) => a.type === 'create_objective');
