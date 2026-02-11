@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Minus, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, History, Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { X, Minus, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, History, Plus, Trash2, ArrowLeft, Check, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +17,10 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  images?: string[];
+  plan?: any;
+  planStatus?: 'pending' | 'approved' | 'rejected' | 'executing' | 'done' | 'error';
+  planResult?: any;
 }
 
 interface ChatSession {
@@ -37,7 +41,7 @@ interface FloatingAIChatProps {
   onMessagesChange: (messages: ChatMessage[]) => void;
 }
 
-const TypingIndicator = () => (
+const TypingIndicator = ({ text = 'digitando' }: { text?: string }) => (
   <div className="flex justify-start">
     <div className="bg-muted rounded-lg px-4 py-3 flex items-center gap-1.5">
       <div className="flex items-center gap-1">
@@ -45,33 +49,40 @@ const TypingIndicator = () => (
         <span className="w-2 h-2 rounded-full bg-foreground/40 animate-[typing-bounce_1.4s_ease-in-out_0.2s_infinite]" />
         <span className="w-2 h-2 rounded-full bg-foreground/40 animate-[typing-bounce_1.4s_ease-in-out_0.4s_infinite]" />
       </div>
-      <span className="text-xs text-muted-foreground ml-1.5">digitando</span>
+      <span className="text-xs text-muted-foreground ml-1.5">{text}</span>
     </div>
   </div>
 );
 
+function extractPlan(content: string): { cleanContent: string; plan: any | null } {
+  const planRegex = /\[ATLAS_PLAN\]\s*([\s\S]*?)\s*\[\/ATLAS_PLAN\]/;
+  const match = content.match(planRegex);
+  if (!match) return { cleanContent: content, plan: null };
+  try {
+    const plan = JSON.parse(match[1]);
+    const cleanContent = content.replace(planRegex, '').trim();
+    return { cleanContent, plan };
+  } catch {
+    return { cleanContent: content, plan: null };
+  }
+}
+
 export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
-  isOpen,
-  isMinimized,
-  position,
-  messages,
-  onClose,
-  onMinimize,
-  onPositionChange,
-  onMessagesChange
+  isOpen, isMinimized, position, messages, onClose, onMinimize, onPositionChange, onMessagesChange
 }) => {
   const { user, company } = useAuth();
   const [chatInput, setChatInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [showHistory, setShowHistory] = useState(false);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
-  const [pastedImage, setPastedImage] = useState<string | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [pastedImages, setPastedImages] = useState<string[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
 
@@ -83,23 +94,18 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
-    }, 50);
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 80);
   }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading, isStreaming, scrollToBottom]);
+  }, [messages, isLoading, isStreaming, isExecuting, scrollToBottom]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('.drag-handle')) {
       setIsDragging(true);
-      setDragOffset({
-        x: e.clientX - position.x,
-        y: e.clientY - position.y
-      });
+      setDragOffset({ x: e.clientX - position.x, y: e.clientY - position.y });
     }
   };
 
@@ -113,7 +119,6 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
       }
     };
     const handleMouseUp = () => setIsDragging(false);
-
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
@@ -135,7 +140,6 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
         .eq('company_id', company.id)
         .order('updated_at', { ascending: false })
         .limit(30);
-
       if (error) throw error;
       setSessions(data || []);
     } catch (error) {
@@ -152,15 +156,16 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
         .select('role, content, created_at')
         .eq('session_id', session.id)
         .order('created_at', { ascending: true });
-
       if (error) throw error;
-
-      const loadedMessages: ChatMessage[] = (data || []).map(m => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-        timestamp: new Date(m.created_at || Date.now()),
-      }));
-
+      const loadedMessages: ChatMessage[] = (data || []).map(m => {
+        const { cleanContent, plan } = extractPlan(m.content);
+        return {
+          role: m.role as 'user' | 'assistant',
+          content: cleanContent,
+          timestamp: new Date(m.created_at || Date.now()),
+          ...(plan ? { plan, planStatus: 'done' as const } : {}),
+        };
+      });
       onMessagesChange(loadedMessages);
       setSessionId(session.id);
       setShowHistory(false);
@@ -175,14 +180,11 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
     try {
       await supabase.from('ai_chat_messages').delete().eq('session_id', sessionIdToDelete);
       await supabase.from('ai_chat_sessions').delete().eq('id', sessionIdToDelete);
-
       setSessions(prev => prev.filter(s => s.id !== sessionIdToDelete));
-
       if (sessionIdToDelete === sessionId) {
         setSessionId(null);
         onMessagesChange([]);
       }
-
       toast({ title: 'Conversa excluída' });
     } catch (error) {
       console.error('Error deleting session:', error);
@@ -196,11 +198,81 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
     setShowHistory(false);
   };
 
+  const handleExecutePlan = useCallback(async (plan: any, msgIndex: number) => {
+    if (!user || !company?.id) return;
+    setIsExecuting(true);
+
+    // Update message to executing
+    const updated = [...messages];
+    updated[msgIndex] = { ...updated[msgIndex], planStatus: 'executing' };
+    onMessagesChange(updated);
+
+    try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      const accessToken = authSession?.access_token;
+      if (!accessToken) throw new Error('No auth session');
+
+      const response = await fetch('https://pdpzxjlnaqwlyqoyoyhr.supabase.co/functions/v1/ai-agent-execute', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkcHp4amxuYXF3bHlxb3lveWhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIyNTE1ODYsImV4cCI6MjA2NzgyNzU4Nn0.RUAqyDG5-eM35mH3QNFO3iuR_Wqe5q1tiJSHroH_upk',
+        },
+        body: JSON.stringify({ company_id: company.id, actions: plan.actions }),
+      });
+
+      const result = await response.json();
+
+      const updatedAfter = [...messages];
+      updatedAfter[msgIndex] = {
+        ...updatedAfter[msgIndex],
+        planStatus: result.success ? 'done' : 'error',
+        planResult: result,
+      };
+      onMessagesChange(updatedAfter);
+
+      if (result.success) {
+        toast({ title: '✅ Plano executado com sucesso!' });
+        // Add a confirmation message
+        const confirmMsg: ChatMessage = {
+          role: 'assistant',
+          content: `✅ **Plano executado com sucesso!** Foram criados:\n${result.results.map((r: any) => `- ${r.type === 'create_objective' ? '🎯 Objetivo' : r.type === 'create_key_result' ? '📈 KR' : '🚀 Iniciativa'}: **${r.title}**`).join('\n')}\n\nVocê pode visualizar tudo no **Mapa Estratégico** pelo menu lateral.`,
+          timestamp: new Date(),
+        };
+        onMessagesChange([...updatedAfter, confirmMsg]);
+      } else {
+        const errors = result.results?.filter((r: any) => !r.success).map((r: any) => r.error).join(', ');
+        toast({ title: 'Erro ao executar plano', description: errors, variant: 'destructive' });
+      }
+    } catch (error: any) {
+      console.error('Error executing plan:', error);
+      const updatedErr = [...messages];
+      updatedErr[msgIndex] = { ...updatedErr[msgIndex], planStatus: 'error' };
+      onMessagesChange(updatedErr);
+      toast({ title: 'Erro ao executar plano', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [user, company, messages, onMessagesChange, toast]);
+
+  const handleRejectPlan = useCallback((msgIndex: number) => {
+    const updated = [...messages];
+    updated[msgIndex] = { ...updated[msgIndex], planStatus: 'rejected' };
+    onMessagesChange(updated);
+    toast({ title: 'Plano recusado' });
+  }, [messages, onMessagesChange, toast]);
+
   const handleSendMessage = useCallback(async (messageText?: string) => {
     const textToSend = messageText || chatInput.trim();
     if (!textToSend || isLoading || isStreaming || !user || !company?.id) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: textToSend, timestamp: new Date() };
+    const userMessage: ChatMessage = {
+      role: 'user',
+      content: textToSend,
+      timestamp: new Date(),
+      images: pastedImages.length > 0 ? [...pastedImages] : undefined,
+    };
     const updatedMessages = [...messages, userMessage];
     onMessagesChange(updatedMessages);
     setChatInput('');
@@ -214,13 +286,11 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
           .insert([{ user_id: user.id, company_id: company.id, session_title: textToSend.substring(0, 60) }])
           .select()
           .single();
-
         if (sessionError) throw sessionError;
         currentSessionId = newSession.id;
         setSessionId(currentSessionId);
       }
 
-      // Save user message
       await supabase.from('ai_chat_messages').insert([{
         session_id: currentSessionId,
         role: 'user',
@@ -228,17 +298,15 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
         message_type: 'text'
       }]);
 
-      // Get auth token for streaming fetch
       const { data: { session: authSession } } = await supabase.auth.getSession();
       const accessToken = authSession?.access_token;
       if (!accessToken) throw new Error('No auth session');
 
       const supabaseUrl = 'https://pdpzxjlnaqwlyqoyoyhr.supabase.co';
 
-      // Start streaming
       setIsLoading(false);
       setIsStreaming(true);
-      setPastedImage(null);
+      setPastedImages([]);
 
       const abortController = new AbortController();
       abortRef.current = abortController;
@@ -256,7 +324,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
           user_id: user.id,
           company_id: company.id,
           stream: true,
-          ...(pastedImage ? { image: pastedImage } : {}),
+          ...(pastedImages.length > 0 ? { image: pastedImages[0] } : {}),
         }),
         signal: abortController.signal,
       });
@@ -266,11 +334,9 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
         throw new Error(errorData.response || `HTTP ${response.status}`);
       }
 
-      // Check if response is SSE stream or JSON fallback
       const contentType = response.headers.get('Content-Type') || '';
 
       if (contentType.includes('text/event-stream')) {
-        // Process SSE stream — accumulate fully, then show complete message
         const reader = response.body?.getReader();
         if (!reader) throw new Error('No reader available');
 
@@ -290,35 +356,35 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
             if (!line.startsWith('data: ')) continue;
             const data = line.slice(6);
             if (data === '[DONE]') continue;
-
             try {
               const parsed = JSON.parse(data);
               const delta = parsed.choices?.[0]?.delta?.content;
-              if (delta) {
-                fullContent += delta;
-              }
-            } catch {
-              // Skip unparseable lines
-            }
+              if (delta) fullContent += delta;
+            } catch { /* skip */ }
           }
         }
 
-        // Show complete message at once
         if (fullContent) {
-          onMessagesChange([...updatedMessages, { role: 'assistant', content: fullContent, timestamp: new Date() }]);
+          const { cleanContent, plan } = extractPlan(fullContent);
+          const assistantMsg: ChatMessage = {
+            role: 'assistant',
+            content: cleanContent,
+            timestamp: new Date(),
+            ...(plan ? { plan, planStatus: 'pending' as const } : {}),
+          };
+          onMessagesChange([...updatedMessages, assistantMsg]);
           await supabase.from('ai_chat_messages').insert([{
             session_id: currentSessionId,
             role: 'assistant',
-            content: fullContent,
+            content: fullContent, // store raw content with plan
             message_type: 'text',
           }]);
         }
       } else {
-        // JSON fallback (non-streaming response)
         const data = await response.json();
-        if (data.success === false || data.error) {
-          throw new Error(data.response || 'Erro desconhecido');
-        }
+        if (data.success === false || data.error) throw new Error(data.response || 'Erro desconhecido');
+
+        const { cleanContent, plan } = extractPlan(data.response);
 
         await supabase.from('ai_chat_messages').insert([{
           session_id: currentSessionId,
@@ -328,7 +394,12 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
           metadata: { model_used: data.model_used, context_summary: data.context_summary }
         }]);
 
-        const assistantMessage: ChatMessage = { role: 'assistant', content: data.response, timestamp: new Date() };
+        const assistantMessage: ChatMessage = {
+          role: 'assistant',
+          content: cleanContent,
+          timestamp: new Date(),
+          ...(plan ? { plan, planStatus: 'pending' as const } : {}),
+        };
         onMessagesChange([...updatedMessages, assistantMessage]);
       }
     } catch (error: any) {
@@ -340,9 +411,12 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [chatInput, isLoading, isStreaming, user, company, messages, sessionId, onMessagesChange, toast]);
+  }, [chatInput, isLoading, isStreaming, user, company, messages, sessionId, onMessagesChange, toast, pastedImages]);
 
   if (!isOpen) return null;
+
+  const statusText = isExecuting ? 'executando' : (isLoading ? 'planejando' : 'digitando');
+  const showIndicator = isLoading || isStreaming || isExecuting;
 
   return (
     <>
@@ -402,14 +476,10 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                   ) : (
                     <div className="space-y-2">
                       {sessions.map((session) => (
-                        <div
-                          key={session.id}
-                          className={cn(
-                            "p-3 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors border group",
-                            session.id === sessionId ? "border-primary bg-primary/5" : "border-transparent"
-                          )}
-                          onClick={() => loadSession(session)}
-                        >
+                        <div key={session.id} className={cn(
+                          "p-3 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors border group",
+                          session.id === sessionId ? "border-primary bg-primary/5" : "border-transparent"
+                        )} onClick={() => loadSession(session)}>
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium truncate">{session.session_title || 'Sem título'}</p>
@@ -417,12 +487,8 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                                 {format(new Date(session.created_at), "dd MMM yyyy, HH:mm", { locale: ptBR })}
                               </p>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-                              onClick={(e) => deleteSession(session.id, e)}
-                            >
+                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                              onClick={(e) => deleteSession(session.id, e)}>
                               <Trash2 className="h-3.5 w-3.5 text-destructive" />
                             </Button>
                           </div>
@@ -448,11 +514,19 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                   </div>
                 )}
 
-                <ScrollArea ref={scrollRef} className="flex-1 pr-4">
+                <ScrollArea className="flex-1 pr-4">
                   <div className="space-y-4">
                     {messages.map((msg, index) => (
                       <div key={index} className={cn("flex", msg.role === 'user' ? "justify-end" : "justify-start")}>
                         <div className={cn("rounded-lg px-4 py-2 max-w-[80%]", msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted")}>
+                          {/* User images */}
+                          {msg.images && msg.images.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {msg.images.map((img, imgIdx) => (
+                                <img key={imgIdx} src={img} alt={`Imagem ${imgIdx + 1}`} className="max-h-20 rounded border" />
+                              ))}
+                            </div>
+                          )}
                           {msg.role === 'user' ? (
                             <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                           ) : (
@@ -474,19 +548,56 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                               >{msg.content}</ReactMarkdown>
                             </div>
                           )}
+                          {/* Plan approval buttons */}
+                          {msg.plan && msg.planStatus === 'pending' && (
+                            <div className="flex gap-2 mt-3 pt-2 border-t border-border/50">
+                              <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white" onClick={() => handleExecutePlan(msg.plan, index)}>
+                                <Check className="h-3.5 w-3.5 mr-1" /> Aprovar
+                              </Button>
+                              <Button size="sm" variant="outline" className="flex-1 text-destructive border-destructive/50 hover:bg-destructive/10" onClick={() => handleRejectPlan(index)}>
+                                <XCircle className="h-3.5 w-3.5 mr-1" /> Reprovar
+                              </Button>
+                            </div>
+                          )}
+                          {msg.plan && msg.planStatus === 'executing' && (
+                            <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border/50 text-xs text-muted-foreground">
+                              <LoadingSpinner size="sm" /> Executando plano...
+                            </div>
+                          )}
+                          {msg.plan && msg.planStatus === 'done' && (
+                            <div className="mt-3 pt-2 border-t border-border/50 text-xs text-green-600 font-medium">
+                              ✅ Plano executado
+                            </div>
+                          )}
+                          {msg.plan && msg.planStatus === 'rejected' && (
+                            <div className="mt-3 pt-2 border-t border-border/50 text-xs text-muted-foreground">
+                              ❌ Plano recusado
+                            </div>
+                          )}
+                          {msg.plan && msg.planStatus === 'error' && (
+                            <div className="mt-3 pt-2 border-t border-border/50 text-xs text-destructive">
+                              ⚠️ Erro ao executar
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
-                    {(isLoading || (isStreaming && (messages.length === 0 || messages[messages.length - 1]?.role !== 'assistant'))) && <TypingIndicator />}
+                    {showIndicator && <TypingIndicator text={statusText} />}
+                    <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
 
-                {pastedImage && (
-                  <div className="relative mb-2 inline-block">
-                    <img src={pastedImage} alt="Preview" className="max-h-24 rounded-lg border" />
-                    <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 h-5 w-5 rounded-full" onClick={() => setPastedImage(null)}>
-                      <X className="h-3 w-3" />
-                    </Button>
+                {pastedImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {pastedImages.map((img, idx) => (
+                      <div key={idx} className="relative inline-block">
+                        <img src={img} alt="Preview" className="max-h-16 rounded-lg border" />
+                        <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 h-5 w-5 rounded-full"
+                          onClick={() => setPastedImages(prev => prev.filter((_, i) => i !== idx))}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -501,12 +612,15 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                       for (const item of Array.from(items)) {
                         if (item.type.startsWith('image/')) {
                           e.preventDefault();
+                          if (pastedImages.length >= 5) {
+                            toast({ title: 'Limite de 5 imagens atingido', variant: 'destructive' });
+                            return;
+                          }
                           const file = item.getAsFile();
                           if (!file) return;
                           const reader = new FileReader();
                           reader.onload = () => {
-                            const base64 = reader.result as string;
-                            setPastedImage(base64);
+                            setPastedImages(prev => [...prev, reader.result as string]);
                           };
                           reader.readAsDataURL(file);
                           return;
@@ -514,10 +628,10 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                       }
                     }}
                     placeholder="Digite sua mensagem..."
-                    disabled={isLoading || isStreaming}
+                    disabled={isLoading || isStreaming || isExecuting}
                     className="flex-1"
                   />
-                  <Button onClick={() => handleSendMessage()} disabled={isLoading || isStreaming || !chatInput.trim()} size="icon">
+                  <Button onClick={() => handleSendMessage()} disabled={isLoading || isStreaming || isExecuting || !chatInput.trim()} size="icon">
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
