@@ -228,7 +228,7 @@ serve(async (req) => {
     }
 
     const validUserId = user.id;
-    const { message, session_id, user_id, company_id, stream: useStream, image } = await req.json();
+    const { message, session_id, user_id, company_id, stream: useStream, image, plan_mode } = await req.json();
 
     if (user_id && user_id !== validUserId) {
       return new Response(
@@ -322,9 +322,11 @@ serve(async (req) => {
 
     const allowedModels = ['openai/gpt-5-mini', 'openai/gpt-5', 'openai/gpt-5-nano', 'openai/gpt-5.2', 'google/gemini-2.5-pro', 'google/gemini-2.5-flash', 'google/gemini-2.5-flash-lite', 'google/gemini-2.5-flash-image', 'google/gemini-3-pro-preview', 'google/gemini-3-flash-preview', 'google/gemini-3-pro-image-preview'];
     const rawModel = aiSettings?.model || 'google/gemini-3-flash-preview';
-    const model = allowedModels.includes(rawModel) ? rawModel : 'google/gemini-3-flash-preview';
+    const model = plan_mode
+      ? 'google/gemini-2.5-pro'
+      : (allowedModels.includes(rawModel) ? rawModel : 'google/gemini-3-flash-preview');
     const temperature = aiSettings?.temperature || 0.7;
-    const maxTokens = aiSettings?.max_tokens || 2000;
+    const maxTokens = plan_mode ? 4000 : (aiSettings?.max_tokens || 2000);
 
     const finalSystemPrompt = buildSystemPrompt(userName, userPosition, userDepartment, companyName, aiSettings?.system_prompt || null, userPermissions);
 
