@@ -1,99 +1,116 @@
 
 
-# Identificacao do Usuario, Memoria de Conversa e Historico do Chat
+# Humanizar o Account Pilot: Respostas Inteligentes e Indicador de Digitacao
 
-## Problemas Identificados
+## Problema Atual
 
-### 1. IA nao identifica o usuario pelo nome
-A edge function `ai-chat` nao busca o perfil do usuario (first_name, last_name) na tabela `profiles`. O prompt enviado a IA so menciona a empresa, entao quando o usuario pergunta "quem sou eu", a IA responde como se fosse a empresa falando — nao sabe o nome, cargo ou departamento do usuario.
+1. **Respostas sempre longas**: O system prompt atual obriga a IA a responder "baseando-se EXCLUSIVAMENTE nos dados" e o contexto completo da empresa e sempre anexado a TODA mensagem -- ate um simples "ola". Isso faz a IA responder com analises detalhadas mesmo para cumprimentos simples.
 
-### 2. Sem memoria de conversa (historico de mensagens)
-A funcao envia apenas a mensagem atual para a IA. As mensagens anteriores da sessao (salvas em `ai_chat_messages`) nao sao carregadas e enviadas no array `messages`. Isso significa que a IA nao tem contexto das perguntas anteriores da mesma conversa.
+2. **Loading generico**: Enquanto a IA processa, aparece apenas um spinner generico. Nao ha indicacao visual de "digitando" como no WhatsApp, o que faz parecer lento e impessoal.
 
-### 3. Sem painel de historico de sessoes
-O chat flutuante nao tem interface para listar sessoes anteriores, trocar entre elas, ou deletar conversas antigas.
-
-### 4. Seguranca
-As politicas RLS estao bem configuradas: INSERT tem WITH CHECK validando `auth.uid()` e `company_id`, SELECT filtra por `user_id` e `company_id`. A edge function valida JWT, verifica pertencimento a empresa, e usa service role key apenas para operacoes de leitura de dados contextuais. **A seguranca esta OK.**
+3. **Sem streaming**: A resposta so aparece quando esta 100% pronta. Em mensagens longas isso pode levar varios segundos de espera sem feedback.
 
 ---
 
 ## Plano de Acao
 
-### Etapa 1: Buscar perfil do usuario na edge function
+### Etapa 1: Reformular o System Prompt para calibrar tamanho da resposta
+
 **Arquivo**: `supabase/functions/ai-chat/index.ts`
-- Apos autenticar o usuario, buscar `first_name`, `last_name`, `position`, `department` da tabela `profiles`
-- Incluir nome e cargo do usuario no system prompt e no contexto
-- Exemplo: "Voce esta conversando com **Bernardo**, que ocupa o cargo de **Diretor** no departamento **Estrategia** da empresa COFOUND."
 
-### Etapa 2: Carregar historico da sessao e enviar para a IA
+O novo system prompt vai instruir a IA a:
+- Responder de forma curta e direta para cumprimentos e perguntas simples ("Ola!", "Quem sou eu?", "O que e o Strategy?")
+- Responder de forma media para perguntas conceituais sobre a plataforma (sem precisar do banco)
+- Responder de forma detalhada apenas quando o usuario pedir analise de dados, metricas ou diagnosticos
+- Nunca despejar dados nao solicitados
+
+Nova diretriz central:
+```text
+"Calibre o tamanho da sua resposta conforme a complexidade da pergunta:
+- Cumprimentos e perguntas simples: responda em 1-2 frases, de forma amigavel e direta.
+- Perguntas sobre a plataforma ou conceitos: responda em 1-2 paragrafos objetivos.
+- Analises de dados, diagnosticos e metricas: use os dados contextuais disponibilizados abaixo e responda de forma completa com formatacao markdown.
+NAO despeje dados ou analises que o usuario nao pediu."
+```
+
+### Etapa 2: Separar dados contextuais da mensagem do usuario
+
 **Arquivo**: `supabase/functions/ai-chat/index.ts`
-- Buscar as ultimas N mensagens (ex: 20) da sessao atual em `ai_chat_messages`
-- Montar o array `messages` com o historico completo: system prompt + mensagens anteriores + mensagem atual com contexto
-- Isso da memoria a IA dentro da mesma sessao
 
-### Etapa 3: Adicionar painel de historico no chat flutuante
-**Arquivo**: `src/components/ai/FloatingAIChat.tsx`
-- Adicionar botao de historico no header do chat
-- Criar painel lateral/drawer listando sessoes anteriores (titulo, data)
-- Ao clicar numa sessao, carregar suas mensagens
-- Botao para criar nova conversa
-- Botao para deletar sessao (ja tem RLS de DELETE configurado)
+Atualmente, os dados da empresa sao injetados DENTRO da mensagem do usuario (`contextPrompt`), forcando a IA a sempre analisar tudo. A mudanca:
+- Mover os dados contextuais para uma mensagem de sistema separada (role: "system"), como contexto de referencia
+- Enviar a mensagem do usuario pura, sem os dados embutidos
+- Instruir no system prompt: "Use os dados contextuais abaixo SOMENTE quando o usuario solicitar analises, metricas ou diagnosticos"
 
-### Etapa 4: Carregar mensagens ao reabrir sessao
+Estrutura de mensagens:
+```text
+[system] -> Prompt principal com diretrizes e identidade
+[system] -> Dados contextuais da empresa (para referencia)
+[historico de mensagens anteriores]
+[user] -> Mensagem pura do usuario (sem dados embutidos)
+```
+
+### Etapa 3: Implementar streaming SSE no backend
+
+**Arquivo**: `supabase/functions/ai-chat/index.ts`
+
+- Adicionar parametro `stream: true` na chamada ao AI Gateway quando o body da requisicao incluir `stream: true`
+- Retornar o body da resposta como stream SSE diretamente para o frontend
+- Manter o modo nao-streaming como fallback (para salvar analytics e mensagens no banco)
+
+Decisao de design: Usar streaming completo com salvamento da mensagem ao final. O backend faz stream da resposta, e ao final do stream o frontend envia a mensagem completa para salvar no banco.
+
+### Etapa 4: Indicador "digitando..." estilo WhatsApp
+
 **Arquivo**: `src/components/ai/FloatingAIChat.tsx`
-- Ao selecionar uma sessao do historico, buscar `ai_chat_messages` dessa sessao
-- Renderizar no chat como se fosse a conversa atual
+
+Substituir o spinner generico por uma animacao de tres pontinhos pulsantes:
+```text
+Account Pilot
+  [bolinha] [bolinha] [bolinha]   <- animacao CSS pulsante
+  "digitando..."
+```
+
+Usando CSS `@keyframes` com `animation-delay` escalonado nos tres pontinhos para criar o efeito de "onda" do WhatsApp.
+
+### Etapa 5: Implementar streaming SSE no frontend
+
+**Arquivo**: `src/components/ai/FloatingAIChat.tsx`
+
+- Ao enviar mensagem, fazer `fetch` direto para a edge function com `stream: true`
+- Processar SSE linha por linha (conforme padrao do Lovable AI)
+- Renderizar tokens progressivamente na tela (a mensagem do assistente vai "aparecendo" em tempo real)
+- Ao receber `[DONE]`, salvar a mensagem completa no banco
+
+Fluxo:
+```text
+1. Usuario envia mensagem
+2. Mostra indicador "digitando..."
+3. Primeiro token chega -> substitui indicador por mensagem real
+4. Tokens vao sendo adicionados ao vivo
+5. Stream termina -> salva no banco
+```
+
+### Etapa 6: Treinamento do agente sobre a plataforma
+
+**Arquivo**: `supabase/functions/ai-chat/index.ts`
+
+Adicionar ao system prompt conhecimento embutido sobre o COFOUND/Strategy HUB para que a IA responda perguntas sobre a plataforma sem precisar consultar o banco:
+- O que e o Strategy HUB e suas funcionalidades
+- Menus disponiveis (Mapa Estrategico, OKRs, Projetos, FCA, RMRE, etc.)
+- O que e o Account Pilot
+- Como usar cada ferramenta
 
 ---
 
-## Detalhes Tecnicos
+## Arquivos a serem editados
 
-### Busca do perfil (Etapa 1)
-```text
-// Na edge function, apos validar o usuario:
-const { data: userProfile } = await supabase
-  .from('profiles')
-  .select('first_name, last_name, position, department')
-  .eq('user_id', validUserId)
-  .single();
+1. `supabase/functions/ai-chat/index.ts` - System prompt + separacao de contexto + streaming SSE + conhecimento da plataforma
+2. `src/components/ai/FloatingAIChat.tsx` - Indicador "digitando..." + streaming frontend + renderizacao progressiva
 
-const userName = [userProfile?.first_name, userProfile?.last_name].filter(Boolean).join(' ') || 'Usuario';
-const userPosition = userProfile?.position || '';
-const userDepartment = userProfile?.department || '';
-```
+## Resultado Esperado
 
-Incluir no system prompt:
-```text
-`Voce esta conversando com ${userName}${userPosition ? `, ${userPosition}` : ''}${userDepartment ? ` do departamento ${userDepartment}` : ''} da empresa "${companyName}". Trate-o pelo nome e personalize suas respostas.`
-```
-
-### Historico de mensagens (Etapa 2)
-```text
-// Buscar mensagens anteriores da sessao
-const { data: previousMessages } = await supabase
-  .from('ai_chat_messages')
-  .select('role, content')
-  .eq('session_id', session_id)
-  .order('created_at', { ascending: true })
-  .limit(20);
-
-// Montar array completo para a IA
-const aiMessages = [
-  { role: 'system', content: systemPrompt },
-  ...(previousMessages || []).map(m => ({ role: m.role, content: m.content })),
-  { role: 'user', content: contextPrompt }
-];
-```
-
-### Interface de historico (Etapa 3)
-- Icone de relogio/lista no header do chat
-- Lista de sessoes com: titulo, data, preview da ultima mensagem
-- Sessao ativa destacada
-- Botao "Nova conversa" que cria sessao nova e limpa o chat
-- Botao de lixeira em cada sessao para deletar
-
-### Arquivos a serem editados
-1. `supabase/functions/ai-chat/index.ts` - perfil do usuario + historico de mensagens
-2. `src/components/ai/FloatingAIChat.tsx` - painel de historico + carregamento de sessoes
+- "Ola" -> resposta em ~1 segundo: "Ola, Bernardo! Como posso te ajudar?"
+- "O que e o Strategy?" -> resposta em ~2 segundos com explicacao concisa
+- "Me de uma analise da performance" -> resposta em ~5-8 segundos com dados reais, renderizados progressivamente enquanto sao gerados
 
