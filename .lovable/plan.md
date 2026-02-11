@@ -1,101 +1,81 @@
 
-# Fix: Resolucao de Referencias e Suporte a Metas/Valores no Atlas Agent
+# Fix: Parser Robusto para Planos Atlas + Reforço do Prompt
 
-## Problemas Identificados
+## Problema
 
-### Bug 1: Referencias cascata falham silenciosamente
-Quando o Atlas propoe um plano com Objetivo + KRs + Iniciativas, se o Objetivo (indice 0) falha por qualquer motivo (pilar nao encontrado, etc.), todos os KRs que referenciam `objective_ref: 0` falham com "Objetivo de referencia nao encontrado" sem explicar a causa raiz. O mesmo acontece com iniciativas que dependem de KRs.
+O LLM esta gerando o JSON do `[ATLAS_PLAN]` em um formato alternativo:
 
-### Bug 2: Handler de update_key_result muito limitado
-O handler so atualiza `current_value` e `monthly_actual`. Nao suporta:
-- `monthly_targets` (metas periodicas)
-- `yearly_target` (meta anual)
-- `target_value` (valor alvo)
-- `frequency` (frequencia)
-- `unit` (unidade)
-- `description`, `weight`, etc.
+```json
+{
+  "action": "create_strategic_objective",
+  "data": {
+    "objective": { "title": "...", "pillar": "..." },
+    "key_results": [ { "title": "...", "goal": 50 } ]
+  }
+}
+```
 
-### Bug 3: .single() em buscas fuzzy pode gerar erros 406
-Todas as buscas por pilar, objetivo e KR usam `.single()` que falha quando 0 resultados sao retornados (PostgREST 406). Deve usar `.maybeSingle()`.
+Mas o sistema espera:
 
-### Bug 4: Pilares com caracteres especiais
-Pilares como "Inovacao & Crescimento" podem nao ser encontrados se o LLM enviar "Inovacao e Crescimento" (sem o `&`).
+```json
+{
+  "actions": [
+    { "type": "create_objective", "data": { "title": "...", "pillar_name": "..." } },
+    { "type": "create_key_result", "data": { "title": "...", "target_value": 50 } }
+  ]
+}
+```
+
+O `extractPlan` faz parse do JSON mas nao encontra o array `actions`, resultando em "Plano sem acoes validas para executar."
 
 ---
 
 ## Correcoes
 
-### Arquivo: `supabase/functions/ai-agent-execute/index.ts`
+### 1. Frontend: Normalizar estruturas alternativas do LLM
 
-**Correcao 1 - Trocar .single() por .maybeSingle() em todas as buscas fuzzy:**
+**Arquivo: `src/components/ai/FloatingAIChat.tsx`** - funcao `extractPlan`
 
-Linhas 170-176 (pilar), 210-216 (objetivo), 267-277 (KR), 321-326 (KR por titulo) — todas devem usar `.maybeSingle()` em vez de `.single()`.
+Adicionar logica de normalizacao apos o `JSON.parse`:
 
-**Correcao 2 - Melhorar matching de pilares:**
+- Se o JSON tem `action` (singular) + `data.objective` + `data.key_results` -> converter para o formato `actions[]`
+- Mapear campos alternativos: `pillar` -> `pillar_name`, `goal` -> `target_value`, `metric_type` -> `unit`, `deadline` -> `target_date`
+- Isso garante resiliencia independente do formato que o LLM gerar
 
-Na busca de pilar, normalizar o nome removendo `&` e comparando com `e`:
-```typescript
-// Tentar busca direta primeiro
-let pillar = await buscarPilar(d.pillar_name);
-// Se nao encontrou, tentar substituindo & por e / e por &
-if (!pillar) {
-  const altName = d.pillar_name.replace(/&/g, 'e').replace(/ e /g, ' & ');
-  pillar = await buscarPilar(altName);
-}
+Pseudo-logica:
+```
+Se plan.action && plan.data.objective:
+  actions = []
+  actions.push({ type: "create_objective", data: { title, pillar_name, description, target_date } })
+  Para cada kr em plan.data.key_results:
+    actions.push({ type: "create_key_result", data: { title, target_value, unit, objective_ref: 0 } })
+  plan = { actions }
 ```
 
-**Correcao 3 - Mensagens de erro com contexto de cascata:**
+### 2. Backend: Reforcar exemplos no system prompt
 
-Quando um KR falha por nao achar o objetivo, incluir na mensagem se o objetivo referenciado tambem falhou:
-```typescript
-if (!objectiveId) {
-  const refResult = d.objective_ref !== null ? results[d.objective_ref] : null;
-  const reason = refResult && !refResult.success 
-    ? `(o objetivo na posicao ${d.objective_ref} falhou: ${refResult.error})` 
-    : '';
-  results.push({ type: actionType, success: false, error: `Objetivo de referencia nao encontrado. ${reason}` });
-}
+**Arquivo: `supabase/functions/ai-chat/index.ts`**
+
+Adicionar um contra-exemplo explicito no prompt:
+
+```
+FORMATO ERRADO (NAO USE):
+{ "action": "create_strategic_objective", "data": { "objective": {...}, "key_results": [...] } }
+
+FORMATO CORRETO (USE ESTE):
+{ "actions": [ { "type": "create_objective", "data": {...} }, { "type": "create_key_result", "data": {...} } ] }
 ```
 
-**Correcao 4 - Expandir handler update_key_result:**
+Tambem reforcar: "O JSON DEVE ser um objeto com chave 'actions' contendo um array. Cada item do array DEVE ter 'type' e 'data'."
 
-Adicionar suporte a todos os campos atualizaveis:
-```typescript
-if (d.monthly_targets) updateData.monthly_targets = d.monthly_targets;
-if (d.yearly_target !== undefined) updateData.yearly_target = d.yearly_target;
-if (d.target_value !== undefined) updateData.target_value = d.target_value;
-if (d.frequency) updateData.frequency = d.frequency;
-if (d.unit) updateData.unit = d.unit;
-if (d.description) updateData.description = d.description;
-if (d.weight !== undefined) updateData.weight = d.weight;
-if (d.due_date) updateData.due_date = d.due_date;
-```
+### 3. Backend: Remover markdown code fences do prompt exemplo
 
-**Correcao 5 - Adicionar handler update_initiative:**
-
-Novo action type `update_initiative` para atualizar status, progresso e dados de iniciativas existentes.
+O LLM as vezes copia o formato do prompt incluindo code fences. Ja temos strip de fences no parser, mas garantir que o exemplo no prompt NAO use code fences.
 
 ---
 
-## Secao Tecnica
+## Resultado esperado
 
-### Arquivo unico a editar
-- `supabase/functions/ai-agent-execute/index.ts`
-
-### Detalhes das mudancas
-
-1. **Linhas 170-176**: `.single()` → `.maybeSingle()` na busca de pilar
-2. **Linhas 210-216**: `.single()` → `.maybeSingle()` na busca de objetivo por titulo
-3. **Linhas 267-277**: `.single()` → `.maybeSingle()` na busca de KR por titulo  
-4. **Linhas 321-326**: `.single()` → `.maybeSingle()` na busca de KR para update
-5. **Linha 164-181**: Adicionar fallback de nome de pilar (& vs e)
-6. **Linhas 220-223**: Melhorar mensagem de erro com contexto de cascata
-7. **Linhas 281-283**: Mesma melhoria para iniciativas
-8. **Linhas 335-337**: Expandir campos do updateData para suportar monthly_targets, yearly_target, target_value, frequency, unit, description, weight
-9. **Apos linha 348**: Adicionar novo handler `update_initiative`
-
-### Resultado esperado
-- Pilares com `&` ou `e` sao encontrados corretamente
-- Erros de cascata mostram a causa raiz ("o objetivo na posicao 0 falhou porque pilar X nao foi encontrado")
-- O Atlas pode definir metas (monthly_targets), valores alvo e frequencia nos KRs
-- O Atlas pode atualizar iniciativas existentes
+- Planos gerados no formato alternativo sao automaticamente convertidos para o formato correto
+- O LLM recebe instrucoes mais claras sobre o formato exato esperado
+- Menos falhas de "Plano sem acoes validas"
