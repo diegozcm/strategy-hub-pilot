@@ -139,7 +139,7 @@ O formato acima com "action" singular e objetos aninhados NÃO funciona. Use SEM
 
 ### REGRAS DO PLANO:
 - objective_ref/key_result_ref = índice da action anterior no array (ex: 0 = primeira action criada)
-- pillar_name deve corresponder a um pilar existente (ex: "Inovação", "Financeiro", "Clientes", "Processos Internos")
+- pillar_name DEVE ser EXATAMENTE um dos pilares listados no CONTEXTO DA EMPRESA abaixo. Copie o nome exato do pilar. NÃO invente pilares.
 - ANTES do bloco [ATLAS_PLAN], descreva detalhadamente em linguagem natural e humanizada:
   * Qual o objetivo que será criado e por quê
   * Quais KRs serão vinculados e suas metas
@@ -342,7 +342,7 @@ serve(async (req) => {
       const { data: plans } = await supabase.from('strategic_plans').select('id').eq('company_id', company_id);
       const planIds = plans?.map(p => p.id) || [];
 
-      const [objectivesResult, projectsResult, startupResult, mentoringResult] = await Promise.all([
+      const [objectivesResult, projectsResult, startupResult, mentoringResult, pillarsResult] = await Promise.all([
         planIds.length > 0
           ? supabase.from('strategic_objectives').select('id, title, progress, status, target_date').in('plan_id', planIds).limit(20)
           : Promise.resolve({ data: [] }),
@@ -351,6 +351,7 @@ serve(async (req) => {
           : Promise.resolve({ data: [] }),
         supabase.from('startup_hub_profiles').select('*').eq('company_id', company_id).single(),
         supabase.from('mentoring_sessions').select('session_date, session_type, status, notes').eq('startup_company_id', company_id).order('session_date', { ascending: false }).limit(10),
+        supabase.from('strategic_pillars').select('name').eq('company_id', company_id),
       ]);
 
       objectives = objectivesResult.data || [];
@@ -366,7 +367,12 @@ serve(async (req) => {
       mentoringSessions = mentoringResult.data || [];
 
       // Build context data string
+      const pillars = pillarsResult.data || [];
       const contextParts: string[] = [`CONTEXTO DE REFERÊNCIA da ${companyName} — Use SOMENTE quando a mensagem do usuário pedir análises, métricas ou dados específicos:`];
+
+      if (pillars.length > 0) {
+        contextParts.push(`\n🏛️ Pilares Estratégicos disponíveis (USE EXATAMENTE estes nomes no pillar_name):\n${pillars.map(p => `• ${p.name}`).join('\n')}`);
+      }
 
       if (objectives.length > 0) {
         contextParts.push(`\n📊 Objetivos Estratégicos:\n${objectives.map(obj => `• ${obj.title}: ${obj.progress || 0}% concluído (Status: ${obj.status})`).join('\n')}`);
