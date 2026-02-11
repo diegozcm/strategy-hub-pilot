@@ -45,7 +45,7 @@ const TypingIndicator = () => (
         <span className="w-2 h-2 rounded-full bg-foreground/40 animate-[typing-bounce_1.4s_ease-in-out_0.2s_infinite]" />
         <span className="w-2 h-2 rounded-full bg-foreground/40 animate-[typing-bounce_1.4s_ease-in-out_0.4s_infinite]" />
       </div>
-      <span className="text-xs text-muted-foreground ml-1.5">digitando...</span>
+      <span className="text-xs text-muted-foreground ml-1.5">digitando</span>
     </div>
   </div>
 );
@@ -70,6 +70,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
   const [showHistory, setShowHistory] = useState(false);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(false);
+  const [pastedImage, setPastedImage] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
@@ -231,6 +232,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
       // Start streaming
       setIsLoading(false);
       setIsStreaming(true);
+      setPastedImage(null);
 
       const abortController = new AbortController();
       abortRef.current = abortController;
@@ -248,6 +250,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
           user_id: user.id,
           company_id: company.id,
           stream: true,
+          ...(pastedImage ? { image: pastedImage } : {}),
         }),
         signal: abortController.signal,
       });
@@ -364,7 +367,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                 </Button>
               )}
               <Sparkles className="h-5 w-5 text-primary" />
-              <CardTitle className="text-base">{showHistory ? 'Histórico' : 'Account Pilot'}</CardTitle>
+              <CardTitle className="text-base">{showHistory ? 'Histórico' : 'Atlas'}</CardTitle>
             </div>
             <div className="flex items-center gap-1">
               {!showHistory && (
@@ -476,11 +479,38 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                   </div>
                 </ScrollArea>
 
+                {pastedImage && (
+                  <div className="relative mb-2 inline-block">
+                    <img src={pastedImage} alt="Preview" className="max-h-24 rounded-lg border" />
+                    <Button variant="destructive" size="icon" className="absolute -top-2 -right-2 h-5 w-5 rounded-full" onClick={() => setPastedImage(null)}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+
                 <div className="flex gap-2 mt-4">
                   <Input
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+                    onPaste={(e) => {
+                      const items = e.clipboardData?.items;
+                      if (!items) return;
+                      for (const item of Array.from(items)) {
+                        if (item.type.startsWith('image/')) {
+                          e.preventDefault();
+                          const file = item.getAsFile();
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            const base64 = reader.result as string;
+                            setPastedImage(base64);
+                          };
+                          reader.readAsDataURL(file);
+                          return;
+                        }
+                      }
+                    }}
                     placeholder="Digite sua mensagem..."
                     disabled={isLoading || isStreaming}
                     className="flex-1"
