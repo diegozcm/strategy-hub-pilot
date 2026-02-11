@@ -269,9 +269,8 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
         let fullContent = '';
         let buffer = '';
 
-        // Add empty assistant message that we'll update progressively
-        const streamingMessage: ChatMessage = { role: 'assistant', content: '', timestamp: new Date() };
-        onMessagesChange([...updatedMessages, streamingMessage]);
+        // Don't add empty bubble — wait for first token
+        let firstTokenReceived = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -291,8 +290,8 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
               const delta = parsed.choices?.[0]?.delta?.content;
               if (delta) {
                 fullContent += delta;
-                streamingMessage.content = fullContent;
-                onMessagesChange([...updatedMessages, { ...streamingMessage }]);
+                firstTokenReceived = true;
+                onMessagesChange([...updatedMessages, { role: 'assistant', content: fullContent, timestamp: new Date() }]);
               }
             } catch {
               // Skip unparseable lines
@@ -473,7 +472,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                         </div>
                       </div>
                     ))}
-                    {isLoading && <TypingIndicator />}
+                    {(isLoading || (isStreaming && (messages.length === 0 || messages[messages.length - 1]?.role !== 'assistant'))) && <TypingIndicator />}
                   </div>
                 </ScrollArea>
 
