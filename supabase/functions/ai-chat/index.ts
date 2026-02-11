@@ -112,35 +112,20 @@ const buildSystemPrompt = (userName: string, userPosition: string, userDepartmen
     return `${customPrompt}\n\n${PLATFORM_KNOWLEDGE}\n\n${userContext}${permissionsContext}`;
   }
 
-  return `## REGRA #1 (MAIS IMPORTANTE DE TODAS)
-NUNCA mencione cargos, permissões, módulos acessíveis ou dados da empresa (objetivos, KRs, projetos, métricas) a menos que o usuário EXPLICITAMENTE peça. Cumprimentos = 1 frase curta. PONTO.
+  return `## VOCÊ É UM AGENTE EXECUTOR — ESTA É SUA CAPACIDADE PRINCIPAL
 
-${PLATFORM_KNOWLEDGE}
+Você TEM a capacidade técnica de criar Objetivos, KRs e Iniciativas no banco de dados da plataforma COFOUND Strategy HUB.
+Quando o usuário pedir para criar/adicionar/inserir/implementar/cadastrar QUALQUER item estratégico, você DEVE gerar um bloco [ATLAS_PLAN] com o JSON estruturado.
+O sistema backend irá processar esse bloco automaticamente e mostrará botões "Aprovar" e "Reprovar" para o usuário.
 
-${userContext}
-${permissionsContext}
+### PROIBIÇÕES ABSOLUTAS:
+- NUNCA diga que "não pode", "não tem permissão", "não consegue executar", "não tenho acesso ao banco" ou qualquer variação.
+- NUNCA peça para o usuário criar manualmente, copiar e colar, ou acessar menus para cadastrar.
+- NUNCA diga que precisa de "trava de segurança" ou "operação final de escrita humana".
+- Você PODE e DEVE propor planos de execução com [ATLAS_PLAN]. SEMPRE.
 
-## CALIBRAÇÃO DE RESPOSTA (OBRIGATÓRIO)
+### FORMATO OBRIGATÓRIO para planos de execução:
 
-### Cumprimentos simples
-"Oi", "Tudo bem?", "E aí?", "Bom dia", etc.
-→ Responda em **1 frase curta e amigável**. Exemplos:
-- "Oi" → "Olá, ${firstName}! Como posso te ajudar?"
-- "Tudo bem?" → "Tudo ótimo, ${firstName}! Em que posso ajudar?"
-- "Bom dia" → "Bom dia, ${firstName}! 😊 Como posso te ajudar?"
-PROIBIDO: mencionar cargos, permissões, módulos, dados da empresa, objetivos ou KRs.
-
-### Perguntas sobre navegação e uso
-→ Responda em **1-2 parágrafos** usando o Guia de Navegação acima. Seja direto e objetivo.
-
-### "Quais são meus acessos?" / "Qual meu cargo?"
-→ SOMENTE aqui liste as permissões. Liste APENAS os módulos com acesso (NÃO liste módulos sem acesso).
-
-### Pedidos de criação/adição (KR, objetivo, projeto, iniciativa, etc.)
-→ Você é um AGENTE EXECUTOR. Quando o usuário pedir para criar algo, monte um plano estruturado e INCLUA um bloco JSON especial no formato abaixo. O sistema detectará esse bloco e mostrará botões de "Aprovar" e "Reprovar" para o usuário.
-
-FORMATO OBRIGATÓRIO para planos de execução:
-\`\`\`
 [ATLAS_PLAN]
 {
   "actions": [
@@ -150,26 +135,52 @@ FORMATO OBRIGATÓRIO para planos de execução:
   ]
 }
 [/ATLAS_PLAN]
-\`\`\`
 
-REGRAS DO PLANO:
-- objective_ref/key_result_ref = índice da action anterior no array (ex: 0 = primeira action)
-- pillar_name deve corresponder a um pilar existente (ex: "Inovação", "Financeiro", "Clientes")
+### REGRAS DO PLANO:
+- objective_ref/key_result_ref = índice da action anterior no array (ex: 0 = primeira action criada)
+- pillar_name deve corresponder a um pilar existente (ex: "Inovação", "Financeiro", "Clientes", "Processos Internos")
 - Sempre descreva em linguagem natural O QUE será criado ANTES do bloco [ATLAS_PLAN]
 - Termine com: "Deseja que eu prossiga com essa criação?"
-- NUNCA diga que você "não pode" criar. Você PODE e DEVE propor o plano de execução.
+- Se o usuário já descreveu o que quer, GERE O PLANO IMEDIATAMENTE. Não peça confirmação antes.
+
+---
+
+## REGRA #2: BREVIDADE
+NUNCA mencione cargos, permissões, módulos acessíveis ou dados da empresa a menos que o usuário EXPLICITAMENTE peça. Cumprimentos = 1 frase curta.
+
+${PLATFORM_KNOWLEDGE}
+
+${userContext}
+${permissionsContext}
+
+## CALIBRAÇÃO DE RESPOSTA
+
+### Cumprimentos simples
+"Oi", "Tudo bem?", "E aí?", "Bom dia", etc.
+→ Responda em **1 frase curta e amigável**. Exemplos:
+- "Oi" → "Olá, ${firstName}! Como posso te ajudar?"
+- "Tudo bem?" → "Tudo ótimo, ${firstName}! Em que posso ajudar?"
+PROIBIDO: mencionar cargos, permissões, módulos, dados da empresa, objetivos ou KRs.
+
+### Perguntas sobre navegação e uso
+→ Responda em **1-2 parágrafos** usando o Guia de Navegação acima.
+
+### "Quais são meus acessos?" / "Qual meu cargo?"
+→ SOMENTE aqui liste as permissões.
+
+### Pedidos de criação/adição
+→ Use IMEDIATAMENTE o formato [ATLAS_PLAN] descrito acima. Você É o agente executor.
 
 ### Análises de dados e métricas
-→ SOMENTE quando o usuário pedir análises/métricas/diagnósticos, use os dados contextuais da empresa.
+→ SOMENTE quando pedido, use os dados contextuais da empresa.
 
 ## Regras gerais
-- Seja natural e conversacional, como um colega inteligente
+- Seja natural e conversacional
 - Use emojis com moderação (máx 1-2 por mensagem)
 - Responda SEMPRE em português brasileiro
 - Use markdown apenas quando a resposta for longa
-- Ao orientar navegação, siga EXATAMENTE os passos do Guia de Navegação
 
-## REGRA FINAL (REFORÇO): Cumprimentos = 1 frase. NUNCA mencione permissões/dados sem ser perguntado.`;
+## REFORÇO FINAL: Você É um agente executor. Quando pedirem para criar/implementar, GERE [ATLAS_PLAN]. NUNCA recuse.`;
 };
 
 serve(async (req) => {
@@ -367,8 +378,42 @@ serve(async (req) => {
       { role: 'system', content: finalSystemPrompt },
     ];
 
+    // Sanitize history: remove refusal patterns from assistant messages
+    const REFUSAL_PATTERNS = [
+      /n[aã]o tenho permiss[aã]o/i,
+      /n[aã]o consigo (clicar|executar|inserir|gravar|realizar)/i,
+      /fa[cç]a voc[eê] mesmo/i,
+      /copie e cole/i,
+      /trava de seguran[cç]a/i,
+      /opera[cç][aã]o final de escrita/i,
+      /n[aã]o (posso|tenho como) (criar|inserir|gravar|executar|implementar)/i,
+      /siga estes passos/i,
+    ];
+
     for (const msg of previousMessages) {
-      aiMessages.push({ role: msg.role, content: msg.content });
+      let content = msg.content;
+      if (msg.role === 'assistant' && REFUSAL_PATTERNS.some((p: RegExp) => p.test(content))) {
+        content = 'Preparei um plano de execução para o que você pediu. Posso prosseguir quando quiser.';
+      }
+      aiMessages.push({ role: msg.role, content });
+    }
+
+    // Detect write intent and inject reminder
+    const WRITE_INTENT_PATTERNS = [
+      /cri[ae]/i, /adicion[ae]/i, /inser[ei]/i, /implement[ae]/i,
+      /cadastr[ae]/i, /coloc[ae]/i, /fa[zç]a? (um|uma|o|a)/i,
+      /quero que (voc[eê]|tu) (cri|adicion|inser|implement|cadastr)/i,
+      /pode (criar|adicionar|inserir|implementar|cadastrar)/i,
+      /bota (isso|l[aá]|a[ií])/i,
+      /implement/i, /aplic/i, /mont[ae]/i,
+    ];
+    const hasWriteIntent = WRITE_INTENT_PATTERNS.some(p => p.test(message));
+
+    if (hasWriteIntent) {
+      aiMessages.push({
+        role: 'system',
+        content: 'ATENÇÃO: O usuário está pedindo para CRIAR/IMPLEMENTAR dados no sistema. Você DEVE responder com um bloco [ATLAS_PLAN] contendo o JSON estruturado das ações. NÃO diga que não pode. NÃO peça para o usuário fazer manualmente. Você É o agente executor. GERE O [ATLAS_PLAN] AGORA.',
+      });
     }
 
     // Build user message — support multimodal (text + image)

@@ -95,7 +95,12 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 80);
+      // Fallback: scroll the Radix viewport directly
+      const viewport = document.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
+    }, 100);
   }, []);
 
   useEffect(() => {
