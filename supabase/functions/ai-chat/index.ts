@@ -128,9 +128,35 @@ O sistema backend irá processar esse bloco automaticamente e mostrará botões 
 
 O JSON DEVE ser um objeto com a chave "actions" contendo um array. Cada item do array DEVE ter "type" e "data". NÃO use nenhum outro formato.
 
+### TIPOS DE AÇÃO DISPONÍVEIS:
+1. **create_pillar** — Cria um pilar estratégico
+   - Campos: name (obrigatório), color (hex, default #3B82F6), description
+2. **create_objective** — Cria um objetivo estratégico
+   - Campos: title (obrigatório), pillar_name (obrigatório, EXATAMENTE como listado nos pilares), description, target_date (YYYY-MM-DD), weight (1-10, default 1)
+3. **create_key_result** — Cria um resultado-chave
+   - Campos: title (obrigatório), objective_ref (índice no array, obrigatório se não tiver objective_id), target_value (obrigatório), unit (obrigatório), description, frequency, monthly_targets ({"YYYY-MM": valor}), yearly_target, weight (1-10), aggregation_type, comparison_type, target_direction, start_month ("YYYY-MM"), end_month ("YYYY-MM")
+4. **create_initiative** — Cria uma iniciativa vinculada a um KR
+   - Campos: title (obrigatório), key_result_ref (índice no array, obrigatório se não tiver key_result_id), description, priority, start_date, end_date, responsible, budget
+5. **create_project** — Cria um projeto estratégico
+   - Campos: name (obrigatório), description, priority, start_date, end_date, budget, objective_refs (array de índices), kr_refs (array de índices)
+6. **update_key_result** — Atualiza um KR existente
+   - Campos: kr_id ou kr_title, current_value, target_value, monthly_actual, monthly_targets, etc.
+7. **update_initiative** — Atualiza uma iniciativa existente
+   - Campos: initiative_id ou initiative_title, status, progress_percentage, etc.
+
+### VALORES VÁLIDOS DE REFERÊNCIA:
+- **Unidades de KR**: %, R$, un, dias, score, points
+- **Frequências**: monthly, bimonthly, quarterly, semesterly, yearly
+- **Agregação**: sum, average, max, min
+- **Direção da meta**: maximize, minimize
+- **Comparação**: cumulative, period
+- **Prioridades**: low, medium, high
+- **Status de iniciativa**: planned, in_progress, completed, cancelled, on_hold
+- **monthly_targets formato**: {"2026-01": 100, "2026-02": 150, "2026-03": 200}
+
 FORMATO CORRETO (USE ESTE):
 [ATLAS_PLAN]
-{"actions": [{"type": "create_objective", "data": {"title": "...", "pillar_name": "...", "description": "...", "target_date": "YYYY-MM-DD"}}, {"type": "create_key_result", "data": {"title": "...", "target_value": 100, "unit": "%", "objective_ref": 0, "description": "...", "monthly_targets": {"jan": 5, "fev": 10}, "frequency": "mensal"}}, {"type": "create_initiative", "data": {"title": "...", "key_result_ref": 1, "description": "...", "priority": "high", "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD"}}]}
+{"actions": [{"type": "create_pillar", "data": {"name": "Financeiro", "color": "#22C55E", "description": "Pilar financeiro"}}, {"type": "create_objective", "data": {"title": "Aumentar receita", "pillar_name": "Financeiro", "description": "...", "target_date": "2026-12-31", "weight": 3}}, {"type": "create_key_result", "data": {"title": "Receita mensal", "target_value": 500000, "unit": "R$", "objective_ref": 1, "frequency": "monthly", "aggregation_type": "sum", "target_direction": "maximize", "start_month": "2026-01", "end_month": "2026-12", "monthly_targets": {"2026-01": 300000, "2026-06": 400000, "2026-12": 500000}, "weight": 2, "description": "..."}}, {"type": "create_initiative", "data": {"title": "Campanha de vendas Q1", "key_result_ref": 2, "description": "...", "priority": "high", "start_date": "2026-01-15", "end_date": "2026-03-31", "responsible": "João Silva", "budget": 50000}}, {"type": "create_project", "data": {"name": "Projeto Expansão", "description": "...", "priority": "high", "start_date": "2026-01-01", "end_date": "2026-12-31", "budget": 200000, "objective_refs": [1]}}]}
 [/ATLAS_PLAN]
 
 FORMATO ERRADO (NUNCA USE):

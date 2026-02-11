@@ -9,6 +9,7 @@ function normalizeObjectiveData(data: any) {
     description: data.description || null,
     pillar_name: data.pillar_name || data.pilar || data.pillar || data.perspective || null,
     target_date: data.target_date || data.deadline || data.due_date || null,
+    weight: data.weight || 1,
   };
 }
 
@@ -28,6 +29,12 @@ function normalizeKRData(data: any) {
     frequency: data.frequency || null,
     monthly_targets: data.monthly_targets || null,
     yearly_target: data.yearly_target || null,
+    aggregation_type: data.aggregation_type || 'sum',
+    comparison_type: data.comparison_type || 'cumulative',
+    target_direction: data.target_direction || 'maximize',
+    start_month: data.start_month || null,
+    end_month: data.end_month || null,
+    assigned_owner_id: data.assigned_owner_id || null,
   };
 }
 
@@ -48,12 +55,36 @@ function normalizeInitiativeData(data: any) {
     end_date: data.end_date || null,
     status,
     progress_percentage: data.progress_percentage || 0,
+    responsible: data.responsible || null,
+    budget: data.budget ? parseFloat(String(data.budget)) : null,
+  };
+}
+
+function normalizePillarData(data: any) {
+  return {
+    name: data.name || data.title,
+    description: data.description || null,
+    color: data.color || '#3B82F6',
+  };
+}
+
+function normalizeProjectData(data: any) {
+  return {
+    name: data.name || data.title,
+    description: data.description || null,
+    priority: data.priority || 'medium',
+    start_date: data.start_date || null,
+    end_date: data.end_date || null,
+    budget: data.budget ? parseFloat(String(data.budget)) : null,
+    objective_refs: data.objective_refs || [],
+    objective_ids: data.objective_ids || [],
+    kr_refs: data.kr_refs || [],
+    kr_ids: data.kr_ids || [],
   };
 }
 
 // Helper: search pillar by name with fallback for & vs e
 async function findPillar(supabase: any, companyId: string, pillarName: string) {
-  // Direct search
   const { data: pillar } = await supabase
     .from('strategic_pillars')
     .select('id')
@@ -64,7 +95,6 @@ async function findPillar(supabase: any, companyId: string, pillarName: string) 
 
   if (pillar) return pillar;
 
-  // Fallback: swap & <-> e
   const altName = pillarName.includes('&')
     ? pillarName.replace(/&/g, 'e')
     : pillarName.replace(/ e /gi, ' & ');
@@ -183,9 +213,46 @@ serve(async (req) => {
         }
         const actionType = action.type.toLowerCase()
           .replace('create_kr', 'create_key_result')
-          .replace('update_kr', 'update_key_result');
+          .replace('update_kr', 'update_key_result')
+          .replace('create_strategic_pillar', 'create_pillar')
+          .replace('create_strategic_project', 'create_project');
 
-        if (actionType === 'create_objective') {
+        // ===================== CREATE PILLAR =====================
+        if (actionType === 'create_pillar') {
+          const d = normalizePillarData(action.data);
+
+          if (!d.name) {
+            results.push({ type: actionType, success: false, error: 'Nome do pilar não informado.' });
+            continue;
+          }
+
+          // Get next order_index
+          const { data: existingPillars } = await supabase
+            .from('strategic_pillars')
+            .select('order_index')
+            .eq('company_id', company_id)
+            .order('order_index', { ascending: false })
+            .limit(1);
+
+          const nextOrder = (existingPillars?.[0]?.order_index ?? -1) + 1;
+
+          const { data: pillar, error: pillarError } = await supabase
+            .from('strategic_pillars')
+            .insert({
+              company_id,
+              name: d.name,
+              description: d.description,
+              color: d.color,
+              order_index: nextOrder,
+            })
+            .select()
+            .single();
+
+          if (pillarError) throw pillarError;
+          results.push({ type: actionType, success: true, id: pillar.id, title: pillar.name });
+
+        // ===================== CREATE OBJECTIVE =====================
+        } else if (actionType === 'create_objective') {
           const d = normalizeObjectiveData(action.data);
 
           if (!d.pillar_name) {
@@ -193,7 +260,16 @@ serve(async (req) => {
             continue;
           }
 
-          const pillar = await findPillar(supabase, company_id, d.pillar_name);
+          // Try finding pillar, also check if a pillar was just created in this batch
+          let pillar = await findPillar(supabase, company_id, d.pillar_name);
+
+          if (!pillar) {
+            // Check if a pillar was created earlier in this batch with a matching name
+            const createdPillar = results.find(r => r.success && r.type === 'create_pillar' && r.title?.toLowerCase().includes(d.pillar_name!.toLowerCase()));
+            if (createdPillar) {
+              pillar = { id: createdPillar.id };
+            }
+          }
 
           if (!pillar) {
             results.push({ type: actionType, success: false, error: `Pilar "${d.pillar_name}" não encontrado.` });
@@ -210,6 +286,7 @@ serve(async (req) => {
               owner_id: user.id,
               target_date: d.target_date,
               status: 'not_started',
+              weight: d.weight,
             })
             .select()
             .single();
@@ -217,6 +294,7 @@ serve(async (req) => {
           if (objError) throw objError;
           results.push({ type: actionType, success: true, id: obj.id, title: obj.title });
 
+        // ===================== CREATE KEY RESULT =====================
         } else if (actionType === 'create_key_result') {
           const d = normalizeKRData(action.data);
 
@@ -236,7 +314,6 @@ serve(async (req) => {
           }
 
           if (!objectiveId) {
-            // Cascade error context
             const refResult = d.objective_ref !== null ? results[d.objective_ref] : null;
             const reason = refResult && !refResult.success
               ? ` (o objetivo na posição ${d.objective_ref} falhou: ${refResult.error})`
@@ -248,6 +325,7 @@ serve(async (req) => {
           let unit = d.unit;
           if (unit === 'percentage' || unit === 'percent' || unit === 'porcentagem') unit = '%';
           if (unit === 'unit' || unit === 'units' || unit === 'unidade' || unit === 'unidades' || unit === 'número' || unit === 'numero') unit = 'un';
+          if (unit === 'reais' || unit === 'real' || unit === 'BRL') unit = 'R$';
 
           const krData: any = {
             objective_id: objectiveId,
@@ -265,6 +343,12 @@ serve(async (req) => {
           if (d.description) krData.description = d.description;
           if (d.monthly_targets) krData.monthly_targets = d.monthly_targets;
           if (d.yearly_target) krData.yearly_target = d.yearly_target;
+          if (d.aggregation_type) krData.aggregation_type = d.aggregation_type;
+          if (d.comparison_type) krData.comparison_type = d.comparison_type;
+          if (d.target_direction) krData.target_direction = d.target_direction;
+          if (d.start_month) krData.start_month = d.start_month;
+          if (d.end_month) krData.end_month = d.end_month;
+          if (d.assigned_owner_id) krData.assigned_owner_id = d.assigned_owner_id;
 
           const { data: kr, error: krError } = await supabase
             .from('key_results')
@@ -275,6 +359,7 @@ serve(async (req) => {
           if (krError) throw krError;
           results.push({ type: actionType, success: true, id: kr.id, title: kr.title });
 
+        // ===================== CREATE INITIATIVE =====================
         } else if (actionType === 'create_initiative') {
           const d = normalizeInitiativeData(action.data);
 
@@ -300,7 +385,6 @@ serve(async (req) => {
           }
 
           if (!keyResultId) {
-            // Cascade error context
             const refResult = d.key_result_ref !== null ? results[d.key_result_ref] : null;
             const reason = refResult && !refResult.success
               ? ` (o KR na posição ${d.key_result_ref} falhou: ${refResult.error})`
@@ -325,6 +409,8 @@ serve(async (req) => {
               priority: d.priority,
               created_by: user.id,
               progress_percentage: d.progress_percentage,
+              responsible: d.responsible,
+              budget: d.budget,
             })
             .select()
             .single();
@@ -332,6 +418,62 @@ serve(async (req) => {
           if (initError) throw initError;
           results.push({ type: actionType, success: true, id: initiative.id, title: initiative.title });
 
+        // ===================== CREATE PROJECT =====================
+        } else if (actionType === 'create_project') {
+          const d = normalizeProjectData(action.data);
+
+          if (!d.name) {
+            results.push({ type: actionType, success: false, error: 'Nome do projeto não informado.' });
+            continue;
+          }
+
+          const { data: project, error: projError } = await supabase
+            .from('strategic_projects')
+            .insert({
+              plan_id: plan.id,
+              company_id: company_id,
+              owner_id: user.id,
+              name: d.name,
+              description: d.description,
+              priority: d.priority,
+              start_date: d.start_date,
+              end_date: d.end_date,
+              budget: d.budget,
+              status: 'planning',
+              progress: 0,
+            })
+            .select()
+            .single();
+
+          if (projError) throw projError;
+
+          // Resolve objective relations
+          const objectiveIds: string[] = [...d.objective_ids];
+          for (const ref of d.objective_refs) {
+            if (results[ref]?.id) objectiveIds.push(results[ref].id);
+          }
+          for (const objId of objectiveIds) {
+            await supabase.from('project_objective_relations').insert({
+              project_id: project.id,
+              objective_id: objId,
+            });
+          }
+
+          // Resolve KR relations
+          const krIds: string[] = [...d.kr_ids];
+          for (const ref of d.kr_refs) {
+            if (results[ref]?.id) krIds.push(results[ref].id);
+          }
+          for (const krId of krIds) {
+            await supabase.from('project_kr_relations').insert({
+              project_id: project.id,
+              kr_id: krId,
+            });
+          }
+
+          results.push({ type: actionType, success: true, id: project.id, title: project.name });
+
+        // ===================== UPDATE KEY RESULT =====================
         } else if (actionType === 'update_key_result_progress' || actionType === 'update_kr_progress' || actionType === 'update_key_result') {
           const d = action.data;
           const krId = d.key_result_id || d.kr_id;
@@ -380,6 +522,7 @@ serve(async (req) => {
           if (updateErr) throw updateErr;
           results.push({ type: actionType, success: true, id: updated.id, title: updated.title });
 
+        // ===================== UPDATE INITIATIVE =====================
         } else if (actionType === 'update_initiative') {
           const d = action.data;
           const initId = d.initiative_id || d.id;
