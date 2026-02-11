@@ -2,6 +2,50 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
 
+// Normalize action data field names to handle LLM variations
+function normalizeObjectiveData(data: any) {
+  return {
+    title: data.title,
+    description: data.description || null,
+    pillar_name: data.pillar_name || data.pilar || data.pillar || data.perspective || null,
+    target_date: data.target_date || data.deadline || data.due_date || null,
+  };
+}
+
+function normalizeKRData(data: any) {
+  return {
+    title: data.title,
+    description: data.description || null,
+    objective_id: data.objective_id || null,
+    objective_ref: data.objective_ref ?? null,
+    parent_objective: data.parent_objective || data.parent_objective_title || null,
+    target_value: data.target_value || 100,
+    current_value: data.current_value || data.initial_value || 0,
+    unit: data.unit || data.metric_type || '%',
+    weight: data.weight || 1,
+    due_date: data.due_date || data.deadline || null,
+    priority: data.priority || null,
+    frequency: data.frequency || null,
+    monthly_targets: data.monthly_targets || null,
+    yearly_target: data.yearly_target || null,
+  };
+}
+
+function normalizeInitiativeData(data: any) {
+  return {
+    title: data.title,
+    description: data.description || null,
+    key_result_id: data.key_result_id || null,
+    key_result_ref: data.key_result_ref ?? null,
+    parent_kr: data.parent_kr || data.parent_kr_title || null,
+    priority: data.priority || 'medium',
+    start_date: data.start_date || null,
+    end_date: data.end_date || null,
+    status: data.status || 'planning',
+    progress_percentage: data.progress_percentage || 0,
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -58,14 +102,6 @@ serve(async (req) => {
       );
     }
 
-    // Verify user has manager or admin role in strategic-planning
-    const { data: moduleRole } = await supabase
-      .from('user_module_roles')
-      .select('role, system_modules!inner(slug)')
-      .eq('user_id', user.id)
-      .eq('active', true)
-      .single();
-
     // Check if any role is manager/admin for strategic-planning
     const { data: roles } = await supabase
       .from('user_module_roles')
@@ -109,18 +145,26 @@ serve(async (req) => {
       const action = actions[i];
       try {
         const actionType = action.type.toLowerCase().replace('create_kr', 'create_key_result');
+
         if (actionType === 'create_objective') {
-          // Find pillar by name
+          const d = normalizeObjectiveData(action.data);
+
+          if (!d.pillar_name) {
+            results.push({ type: actionType, success: false, error: 'Nome do pilar não informado.' });
+            continue;
+          }
+
+          // Find pillar by name (fuzzy match)
           const { data: pillar } = await supabase
             .from('strategic_pillars')
             .select('id')
             .eq('company_id', company_id)
-            .ilike('name', `%${action.data.pillar_name}%`)
+            .ilike('name', `%${d.pillar_name}%`)
             .limit(1)
             .single();
 
           if (!pillar) {
-            results.push({ type: action.type, success: false, error: `Pilar "${action.data.pillar_name}" não encontrado.` });
+            results.push({ type: actionType, success: false, error: `Pilar "${d.pillar_name}" não encontrado.` });
             continue;
           }
 
@@ -129,46 +173,64 @@ serve(async (req) => {
             .insert({
               plan_id: plan.id,
               pillar_id: pillar.id,
-              title: action.data.title,
-              description: action.data.description || null,
+              title: d.title,
+              description: d.description,
               owner_id: user.id,
-              target_date: action.data.target_date || null,
+              target_date: d.target_date,
               status: 'not_started',
             })
             .select()
             .single();
 
           if (objError) throw objError;
-          results.push({ type: action.type, success: true, id: obj.id, title: obj.title });
+          results.push({ type: actionType, success: true, id: obj.id, title: obj.title });
 
         } else if (actionType === 'create_key_result') {
-          // Resolve objective reference
-          let objectiveId = action.data.objective_id;
-          if (action.data.objective_ref !== undefined && results[action.data.objective_ref]?.id) {
-            objectiveId = results[action.data.objective_ref].id;
+          const d = normalizeKRData(action.data);
+
+          // Resolve objective: by ref index, by id, or by title search
+          let objectiveId = d.objective_id;
+          if (!objectiveId && d.objective_ref !== null && results[d.objective_ref]?.id) {
+            objectiveId = results[d.objective_ref].id;
+          }
+          if (!objectiveId && d.parent_objective) {
+            // Search by title
+            const { data: foundObj } = await supabase
+              .from('strategic_objectives')
+              .select('id')
+              .eq('plan_id', plan.id)
+              .ilike('title', `%${d.parent_objective}%`)
+              .limit(1)
+              .single();
+            if (foundObj) objectiveId = foundObj.id;
           }
 
           if (!objectiveId) {
-            results.push({ type: action.type, success: false, error: 'Objetivo de referência não encontrado.' });
+            results.push({ type: actionType, success: false, error: 'Objetivo de referência não encontrado.' });
             continue;
           }
 
+          // Normalize unit: convert descriptive types to symbols
+          let unit = d.unit;
+          if (unit === 'percentage' || unit === 'percent' || unit === 'porcentagem') unit = '%';
+          if (unit === 'unit' || unit === 'units' || unit === 'unidade' || unit === 'unidades' || unit === 'número' || unit === 'numero') unit = 'un';
+
           const krData: any = {
             objective_id: objectiveId,
-            title: action.data.title,
-            target_value: action.data.target_value || 100,
-            unit: action.data.unit || '%',
+            title: d.title,
+            target_value: d.target_value,
+            unit,
             owner_id: user.id,
-            current_value: action.data.current_value || 0,
-            weight: action.data.weight || 1,
+            current_value: d.current_value,
+            weight: d.weight,
           };
 
-          if (action.data.due_date) krData.due_date = action.data.due_date;
-          if (action.data.priority) krData.priority = action.data.priority;
-          if (action.data.frequency) krData.frequency = action.data.frequency;
-          if (action.data.description) krData.description = action.data.description;
-          if (action.data.monthly_targets) krData.monthly_targets = action.data.monthly_targets;
-          if (action.data.yearly_target) krData.yearly_target = action.data.yearly_target;
+          if (d.due_date) krData.due_date = d.due_date;
+          if (d.priority) krData.priority = d.priority;
+          if (d.frequency) krData.frequency = d.frequency;
+          if (d.description) krData.description = d.description;
+          if (d.monthly_targets) krData.monthly_targets = d.monthly_targets;
+          if (d.yearly_target) krData.yearly_target = d.yearly_target;
 
           const { data: kr, error: krError } = await supabase
             .from('key_results')
@@ -177,17 +239,29 @@ serve(async (req) => {
             .single();
 
           if (krError) throw krError;
-          results.push({ type: action.type, success: true, id: kr.id, title: kr.title });
+          results.push({ type: actionType, success: true, id: kr.id, title: kr.title });
 
         } else if (actionType === 'create_initiative') {
-          // Resolve key_result reference
-          let keyResultId = action.data.key_result_id;
-          if (action.data.key_result_ref !== undefined && results[action.data.key_result_ref]?.id) {
-            keyResultId = results[action.data.key_result_ref].id;
+          const d = normalizeInitiativeData(action.data);
+
+          // Resolve key_result: by ref index, by id, or by title search
+          let keyResultId = d.key_result_id;
+          if (!keyResultId && d.key_result_ref !== null && results[d.key_result_ref]?.id) {
+            keyResultId = results[d.key_result_ref].id;
+          }
+          if (!keyResultId && d.parent_kr) {
+            const { data: foundKR } = await supabase
+              .from('key_results')
+              .select('id')
+              .eq('objective_id', results.find(r => r.success && r.type === 'create_objective')?.id || '')
+              .ilike('title', `%${d.parent_kr}%`)
+              .limit(1)
+              .single();
+            if (foundKR) keyResultId = foundKR.id;
           }
 
           if (!keyResultId) {
-            results.push({ type: action.type, success: false, error: 'Resultado-chave de referência não encontrado.' });
+            results.push({ type: actionType, success: false, error: 'Resultado-chave de referência não encontrado.' });
             continue;
           }
 
@@ -199,20 +273,20 @@ serve(async (req) => {
             .insert({
               key_result_id: keyResultId,
               company_id: company_id,
-              title: action.data.title,
-              description: action.data.description || null,
-              start_date: action.data.start_date || today,
-              end_date: action.data.end_date || sixMonthsLater,
-              status: action.data.status || 'planning',
-              priority: action.data.priority || 'medium',
+              title: d.title,
+              description: d.description,
+              start_date: d.start_date || today,
+              end_date: d.end_date || sixMonthsLater,
+              status: d.status,
+              priority: d.priority,
               created_by: user.id,
-              progress_percentage: action.data.progress_percentage || 0,
+              progress_percentage: d.progress_percentage,
             })
             .select()
             .single();
 
           if (initError) throw initError;
-          results.push({ type: action.type, success: true, id: initiative.id, title: initiative.title });
+          results.push({ type: actionType, success: true, id: initiative.id, title: initiative.title });
 
         } else {
           results.push({ type: actionType, success: false, error: `Tipo de ação desconhecido: ${actionType}` });
@@ -225,7 +299,7 @@ serve(async (req) => {
 
     const allSucceeded = results.every(r => r.success);
 
-    console.log(`✅ Atlas Agent Execute - user: ${user.id}, company: ${company_id}, actions: ${actions.length}, success: ${allSucceeded}`);
+    console.log(`✅ Atlas Agent Execute - user: ${user.id}, company: ${company_id}, actions: ${actions.length}, success: ${allSucceeded}, results: ${JSON.stringify(results)}`);
 
     return new Response(
       JSON.stringify({ success: allSucceeded, results }),
