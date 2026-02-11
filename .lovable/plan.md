@@ -1,226 +1,161 @@
 
-# Atlas: Agente Executor + Correcoes de UX
+# Diagnostico e Plano: Fazer o Atlas Realmente Executar
 
-## Resumo dos Problemas e Solucoes
+## O Problema Real
 
-### 1. Atlas se recusa a implementar dados no sistema
-O Atlas diz "nao tenho permissao" quando o usuario pede para criar OKRs. Precisamos transformar o Atlas em um **agente executor** que pode inserir dados diretamente no banco via uma nova edge function dedicada.
+O codigo do frontend (botoes Aprovar/Reprovar, chamada ao `ai-agent-execute`) e o backend (`ai-agent-execute` edge function) ja existem e estao corretos. O problema e que **o modelo de IA simplesmente ignora a instrucao de gerar blocos `[ATLAS_PLAN]`** e continua dizendo "nao tenho permissao".
 
-### 2. Auto-scroll nao funciona
-O `scrollRef` aponta para o componente `ScrollArea` (Radix), mas o elemento que faz scroll e o `div[data-radix-scroll-area-viewport]` interno. O `scrollTop` nao funciona no wrapper externo.
+**Causas raiz identificadas:**
 
-### 3. Imagens coladas nao aparecem no historico do chat
-As imagens sao enviadas para a IA mas nao sao renderizadas nas mensagens do usuario dentro do chat.
+1. **Historico envenenado**: As mensagens anteriores da conversa (salvas no banco) contem respostas como "eu nao tenho permissao para realizar cliques e gravacoes diretas". Quando o modelo ve esse historico, ele replica o mesmo comportamento -- modelos de linguagem tendem a seguir o padrao do historico.
 
-### 4. Indicador "digitando" vs "planejando"
-Quando o Atlas esta preparando um plano de execucao, o indicador deve mudar de "digitando" para "planejando".
+2. **Instrucao perdida no meio do prompt**: A instrucao de agente esta enterrada na secao "Calibracao de Resposta" junto com dezenas de outras regras. O modelo prioriza o padrao do historico sobre uma instrucao no meio do prompt.
 
-### 5. Prompt ainda despeja dados em cumprimentos
-Apesar das regras, a IA continua mencionando cargos e dados nao solicitados.
+3. **Falta de enforcement no codigo**: O frontend confia que o modelo vai gerar `[ATLAS_PLAN]` naturalmente. Nao ha nenhum mecanismo de fallback quando o modelo se recusa.
 
----
+## Plano de Correcao
 
-## Plano de Acao
-
-### Etapa 1: Criar edge function `ai-agent-execute`
-
-**Novo arquivo**: `supabase/functions/ai-agent-execute/index.ts`
-
-Uma edge function dedicada que recebe um plano estruturado (JSON) e executa as operacoes no banco de dados. Operacoes suportadas:
-- `create_objective`: Insere em `strategic_objectives`
-- `create_key_result`: Insere em `key_results`
-- `create_initiative`: Insere em `kr_initiatives`
-
-A funcao:
-1. Valida o token JWT do usuario
-2. Verifica que o usuario tem papel `manager` ou `admin` no modulo `strategic-planning`
-3. Busca o `plan_id` ativo da empresa
-4. Executa as insercoes em sequencia (objetivo -> KR -> iniciativas)
-5. Retorna os IDs criados
-
-### Etapa 2: Atualizar o system prompt para comportamento de agente
+### Etapa 1: Reescrever o system prompt com agente como prioridade #1
 
 **Arquivo**: `supabase/functions/ai-chat/index.ts`
 
-Mudar as instrucoes de "eu nao posso fazer isso" para:
-- Quando o usuario pede para criar algo, o Atlas monta um JSON estruturado dentro de um bloco especial `[ATLAS_PLAN]...[/ATLAS_PLAN]`
-- O JSON contem: tipo de operacao, campos preenchidos, pilar/objetivo alvo
-- Fora do bloco, o Atlas descreve o que vai fazer em linguagem natural e pergunta "Posso prosseguir?"
+Mover a instrucao de agente executor para o TOPO ABSOLUTO do prompt, ANTES de qualquer outra regra. Usar linguagem imperativa e repetitiva:
 
-Formato do plano:
-```text
-[ATLAS_PLAN]
-{
-  "actions": [
-    {
-      "type": "create_objective",
-      "data": { "title": "...", "pillar_name": "...", "description": "..." }
-    },
-    {
-      "type": "create_key_result",
-      "data": { "title": "...", "target_value": 30, "unit": "%", ... }
-    },
-    {
-      "type": "create_initiative",
-      "data": { "title": "...", "priority": "high", ... }
+```
+## VOCE E UM AGENTE EXECUTOR
+Voce TEM a capacidade tecnica de criar Objetivos, KRs e Iniciativas no banco de dados da plataforma.
+Quando o usuario pedir para criar/adicionar/inserir algo, voce DEVE gerar um bloco [ATLAS_PLAN] com o JSON.
+O sistema backend ira processar esse bloco automaticamente.
+
+PROIBIDO: Dizer que "nao pode", "nao tem permissao", "nao consegue executar" ou pedir para o usuario fazer manualmente.
+Voce PODE e DEVE propor planos de execucao com [ATLAS_PLAN].
+```
+
+### Etapa 2: Sanitizar historico de conversa antes de enviar ao modelo
+
+**Arquivo**: `supabase/functions/ai-chat/index.ts`
+
+Ao carregar `previousMessages` do banco, filtrar ou modificar mensagens antigas que contenham frases como "nao tenho permissao para executar", "nao consigo clicar", "faca voce mesmo". Isso impede que o modelo replique o comportamento antigo.
+
+Implementacao: percorrer o array de mensagens do historico e, se uma mensagem de `assistant` contiver padroes como "nao tenho permissao" ou "nao consigo executar", substituir por uma versao que diz "Preparei o plano para execucao" (ou simplesmente remover a mensagem).
+
+### Etapa 3: Adicionar deteccao de intencao de escrita no backend
+
+**Arquivo**: `supabase/functions/ai-chat/index.ts`
+
+Criar uma funcao `isWriteIntent(msg)` que detecta quando o usuario quer criar algo:
+- "cria um", "adiciona um", "insere", "implementa", "cadastra", "coloca", "faz um objetivo", "quero que voce adicione"
+
+Quando detectado, injetar uma mensagem de sistema EXTRA imediatamente antes da mensagem do usuario:
+```
+[system] "O usuario esta pedindo para CRIAR dados. Voce DEVE responder com um bloco [ATLAS_PLAN] contendo o JSON estruturado. NAO diga que nao pode. Voce e o agente executor."
+```
+
+Isso funciona como um "lembrete" forcado que o modelo recebe no momento exato em que precisa agir como agente.
+
+### Etapa 4: Corrigir auto-scroll (reforco)
+
+**Arquivo**: `src/components/ai/FloatingAIChat.tsx`
+
+O sentinel `div` e `scrollIntoView` ja existem no codigo (linha 86 e 95-99). Verificar se o `useEffect` esta sendo disparado corretamente. O problema pode ser que o `ScrollArea` do Radix nao permite `scrollIntoView` no elemento interno. Alternativa: usar `querySelector('[data-radix-scroll-area-viewport]')` para obter o viewport real e fazer o scroll manualmente, como fallback.
+
+### Etapa 5: Garantir que imagens aparecem nas mensagens do historico
+
+**Arquivo**: `src/components/ai/FloatingAIChat.tsx`
+
+As imagens ja sao renderizadas no template (linhas 523-529). O problema e que ao enviar, o `pastedImages` e limpo (linha 309) mas as imagens sao passadas na mensagem do usuario (linha 274). Verificar se a passagem esta correta e se as imagens persistem no array `messages`.
+
+### Etapa 6: Indicador "planejando" quando detecta intencao de escrita
+
+**Arquivo**: `src/components/ai/FloatingAIChat.tsx`
+
+A logica atual (linha 418) mostra "planejando" quando `isLoading` e true (antes do stream comecar). Mudanca: quando `isWriteIntent` detecta uma mensagem de criacao, setar um estado `isPlanning = true` que muda o indicador para "planejando" durante o streaming tambem, nao so durante o loading inicial.
+
+---
+
+## Secao Tecnica: Detalhes de Implementacao
+
+### Sanitizacao do historico (Etapa 2)
+
+```
+const REFUSAL_PATTERNS = [
+  /n[aã]o tenho permiss[aã]o/i,
+  /n[aã]o consigo (clicar|executar|inserir|gravar)/i,
+  /fa[cç]a voc[eê] mesmo/i,
+  /copie e cole/i,
+  /trava de seguran[cç]a/i,
+  /opera[cç][aã]o final de escrita/i,
+];
+
+function sanitizeHistory(messages) {
+  return messages.map(msg => {
+    if (msg.role === 'assistant' && REFUSAL_PATTERNS.some(p => p.test(msg.content))) {
+      return { ...msg, content: 'Preparei um plano de execucao para o que voce pediu. Deseja que eu prossiga?' };
     }
-  ]
+    return msg;
+  });
 }
-[/ATLAS_PLAN]
 ```
 
-### Etapa 3: Frontend -- detectar plano e mostrar botoes Aprovar/Reprovar
+### Deteccao de intencao de escrita (Etapa 3)
 
-**Arquivo**: `src/components/ai/FloatingAIChat.tsx`
-
-Quando a mensagem do assistente contem `[ATLAS_PLAN]...[/ATLAS_PLAN]`:
-1. Parsear o JSON do plano
-2. Renderizar a mensagem de texto SEM o bloco JSON (so a explicacao)
-3. Mostrar dois botoes abaixo da mensagem: **"Aprovar"** (verde) e **"Reprovar"** (vermelho)
-4. Ao clicar "Aprovar": chamar a edge function `ai-agent-execute` com o plano JSON
-5. Mostrar resultado (sucesso com links para os itens criados, ou erro)
-6. Ao clicar "Reprovar": adicionar mensagem "Plano recusado pelo usuario" e seguir conversa
-
-### Etapa 4: Corrigir auto-scroll
-
-**Arquivo**: `src/components/ai/FloatingAIChat.tsx`
-
-O problema: `ScrollArea` do Radix UI cria um viewport interno. O `ref` no `ScrollArea` nao aponta para o elemento scrollavel.
-
-Solucao: Em vez de `scrollRef` no `ScrollArea`, colocar um `div` invisivel (sentinel) no final da lista de mensagens e usar `scrollIntoView()`:
-
-```text
-// No final da lista de mensagens:
-<div ref={messagesEndRef} />
-
-// scrollToBottom:
-messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+```
+function isWriteIntent(msg) {
+  const normalized = msg.toLowerCase();
+  const patterns = [
+    /cri[ae]/i, /adicion[ae]/i, /inser[ei]/i, /implement[ae]/i,
+    /cadastr[ae]/i, /coloc[ae]/i, /fa[zç]a? (um|uma|o|a)/i,
+    /quero que (voc[eê]|tu) (cri|adicion|inser|implement|cadastr)/i,
+    /pode (criar|adicionar|inserir|implementar|cadastrar)/i,
+    /bota (isso|l[aá]|a[ií])/i,
+  ];
+  return patterns.some(p => p.test(normalized));
+}
 ```
 
-### Etapa 5: Mostrar imagens coladas no historico do chat
+### Reforco de scroll (Etapa 4)
 
-**Arquivo**: `src/components/ai/FloatingAIChat.tsx`
-
-Expandir a interface `ChatMessage` para incluir `images?: string[]` (ate 5).
-
-Quando o usuario cola uma imagem e envia:
-1. Armazenar a imagem (base64) na mensagem do usuario
-2. Suportar ate 5 imagens simultaneas (array `pastedImages` em vez de `pastedImage`)
-3. Renderizar as imagens como thumbnails na bolha da mensagem do usuario
-4. Enviar todas as imagens para a edge function
-
-### Etapa 6: Indicador "planejando" durante execucao de agente
-
-**Arquivo**: `src/components/ai/FloatingAIChat.tsx`
-
-Adicionar um novo estado `isPlanning` (boolean). O `TypingIndicator` recebe um prop para alternar o texto:
-- `isLoading || isStreaming` -> "digitando"
-- `isPlanning` -> "planejando"
-
-Quando o usuario clica "Aprovar" no plano, o indicador muda para "executando..." ate a resposta da edge function.
-
-### Etapa 7: Reforcar prompt -- brevidade em cumprimentos
-
-**Arquivo**: `supabase/functions/ai-chat/index.ts`
-
-Ajustes finais:
-- Mover TODA a informacao de permissoes para ser enviada APENAS quando `isSimpleMessage` retorna `false`
-- Para mensagens simples, enviar um system prompt minimo (so identidade + regra de brevidade + nome do usuario)
-- Isso elimina completamente a possibilidade da IA mencionar cargos em cumprimentos
+```
+const scrollToBottom = useCallback(() => {
+  setTimeout(() => {
+    // Tentativa 1: sentinel div
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Fallback: viewport direto do Radix
+    const viewport = document.querySelector('[data-radix-scroll-area-viewport]');
+    if (viewport) {
+      viewport.scrollTop = viewport.scrollHeight;
+    }
+  }, 100);
+}, []);
+```
 
 ---
 
-## Detalhes Tecnicos
+## Arquivos a editar
 
-### Estrutura da edge function `ai-agent-execute`
+1. **`supabase/functions/ai-chat/index.ts`**
+   - Reescrever o topo do system prompt com instrucoes de agente ANTES de tudo
+   - Adicionar sanitizacao do historico (remover mensagens de recusa)
+   - Adicionar deteccao `isWriteIntent` + mensagem de sistema extra
+   - Reforcar no prompt FINAL que o Atlas NUNCA deve dizer que nao pode
 
-```text
-Entrada (POST):
-{
-  "company_id": "uuid",
-  "actions": [
-    { "type": "create_objective", "data": { "title": "...", "pillar_name": "Inovacao", "description": "..." } },
-    { "type": "create_key_result", "data": { "title": "...", "target_value": 30, "unit": "%", "objective_ref": 0 } },
-    { "type": "create_initiative", "data": { "title": "...", "key_result_ref": 0 } }
-  ]
-}
+2. **`src/components/ai/FloatingAIChat.tsx`**
+   - Reforcar auto-scroll com fallback para viewport do Radix
+   - Adicionar deteccao de `isWriteIntent` no frontend para mudar indicador para "planejando"
+   - Garantir que imagens persistem corretamente no array de mensagens
 
-Saida:
-{
-  "success": true,
-  "results": [
-    { "type": "create_objective", "id": "uuid-criado", "title": "..." },
-    { "type": "create_key_result", "id": "uuid-criado", "title": "..." },
-    ...
-  ]
-}
-```
-
-O campo `objective_ref: 0` referencia o indice da action anterior no array (o objetivo criado no indice 0). Assim o KR se vincula ao objetivo recem-criado.
-
-### Tabelas e campos obrigatorios
-
-**strategic_objectives**: id, plan_id (NOT NULL), title, pillar_id (NOT NULL), owner_id (NOT NULL), status (default 'not_started')
-
-**key_results**: id, objective_id (NOT NULL), title, target_value (NOT NULL), unit (NOT NULL), owner_id (NOT NULL)
-
-**kr_initiatives**: id, key_result_id (NOT NULL), company_id (NOT NULL), title, start_date (NOT NULL), end_date (NOT NULL), status, priority, created_by (NOT NULL)
-
-### Permissoes RLS
-- `strategic_objectives`: INSERT permitido para usuarios da empresa
-- `key_results`: INSERT permitido para managers
-- `kr_initiatives`: INSERT permitido para managers
-
-A edge function usara o `SUPABASE_SERVICE_ROLE_KEY` para inserir, mas validara as permissoes manualmente antes (checando `user_module_roles`).
-
-### Correcao do scroll -- por que nao funciona
-
-O componente `ScrollArea` do Radix cria esta estrutura:
-```text
-<ScrollArea ref={scrollRef}>        <-- ref aponta aqui (NAO e scrollavel)
-  <div data-radix-scroll-area-viewport>  <-- ESTE e o scrollavel
-    <div>  <-- conteudo
-```
-
-Portanto `scrollRef.current.scrollTop = scrollRef.current.scrollHeight` nao faz nada porque o elemento com `ref` nao e o que faz scroll.
-
-Solucao com sentinel `div`:
-```text
-const messagesEndRef = useRef<HTMLDivElement>(null);
-
-// Dentro do ScrollArea, apos o map de mensagens:
-<div ref={messagesEndRef} />
-
-// scrollToBottom:
-messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-```
-
-### Suporte a multiplas imagens (ate 5)
-
-Mudar de `pastedImage: string | null` para `pastedImages: string[]` (max 5).
-
-Na UI, mostrar as imagens como grid de thumbnails com botao de remover individual.
-
----
-
-## Arquivos a serem editados/criados
-
-1. **`supabase/functions/ai-agent-execute/index.ts`** (NOVO)
-   - Edge function para executar planos do Atlas no banco de dados
-   - Validacao de permissoes, insercao de objectives/KRs/initiatives
-
-2. **`supabase/functions/ai-chat/index.ts`**
-   - Atualizar prompt para comportamento de agente (gerar `[ATLAS_PLAN]`)
-   - Separar prompt minimo para mensagens simples (sem permissoes)
-   - Reforcar brevidade
-
-3. **`src/components/ai/FloatingAIChat.tsx`**
-   - Corrigir auto-scroll com sentinel div + scrollIntoView
-   - Detectar `[ATLAS_PLAN]` em mensagens e renderizar botoes Aprovar/Reprovar
-   - Chamar `ai-agent-execute` ao aprovar
-   - Mostrar imagens coladas no historico de mensagens
-   - Suportar ate 5 imagens simultaneas
-   - Indicadores dinamicos: "digitando", "planejando", "executando"
+3. **`supabase/functions/ai-agent-execute/index.ts`**
+   - Sem mudancas necessarias -- ja esta correto
 
 4. **`supabase/config.toml`**
-   - Adicionar configuracao `[functions.ai-agent-execute]` com `verify_jwt = false`
+   - Sem mudancas necessarias -- ja configurado
+
+## Resultado Esperado
+
+- Usuario: "Cria um KR de testes no pilar Inovacao" 
+- Atlas: descreve o plano em linguagem natural + gera `[ATLAS_PLAN]` com JSON 
+- Frontend: detecta o bloco, mostra botoes Aprovar/Reprovar
+- Usuario clica Aprovar 
+- Frontend chama `ai-agent-execute` 
+- Dados sao inseridos no banco
+- Atlas confirma: "Plano executado com sucesso!"
