@@ -108,7 +108,8 @@ serve(async (req) => {
     for (let i = 0; i < actions.length; i++) {
       const action = actions[i];
       try {
-        if (action.type === 'create_objective') {
+        const actionType = action.type.toLowerCase().replace('create_kr', 'create_key_result');
+        if (actionType === 'create_objective') {
           // Find pillar by name
           const { data: pillar } = await supabase
             .from('strategic_pillars')
@@ -140,7 +141,7 @@ serve(async (req) => {
           if (objError) throw objError;
           results.push({ type: action.type, success: true, id: obj.id, title: obj.title });
 
-        } else if (action.type === 'create_key_result') {
+        } else if (actionType === 'create_key_result') {
           // Resolve objective reference
           let objectiveId = action.data.objective_id;
           if (action.data.objective_ref !== undefined && results[action.data.objective_ref]?.id) {
@@ -178,7 +179,7 @@ serve(async (req) => {
           if (krError) throw krError;
           results.push({ type: action.type, success: true, id: kr.id, title: kr.title });
 
-        } else if (action.type === 'create_initiative') {
+        } else if (actionType === 'create_initiative') {
           // Resolve key_result reference
           let keyResultId = action.data.key_result_id;
           if (action.data.key_result_ref !== undefined && results[action.data.key_result_ref]?.id) {
@@ -214,7 +215,7 @@ serve(async (req) => {
           results.push({ type: action.type, success: true, id: initiative.id, title: initiative.title });
 
         } else {
-          results.push({ type: action.type, success: false, error: `Tipo de ação desconhecido: ${action.type}` });
+          results.push({ type: actionType, success: false, error: `Tipo de ação desconhecido: ${actionType}` });
         }
       } catch (err: any) {
         console.error(`❌ Error executing action ${i} (${action.type}):`, err);
