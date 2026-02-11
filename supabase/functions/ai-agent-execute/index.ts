@@ -5,8 +5,8 @@ import { corsHeaders } from '../_shared/cors.ts';
 // Normalize action data field names to handle LLM variations
 function normalizeObjectiveData(data: any) {
   return {
-    title: data.title,
-    description: data.description || null,
+    title: data.title || data.name,
+    description: data.description || data.descricao || null,
     pillar_name: data.pillar_name || data.pilar || data.pillar || data.perspective || null,
     target_date: data.target_date || data.deadline || data.due_date || null,
     weight: data.weight || 1,
@@ -15,18 +15,18 @@ function normalizeObjectiveData(data: any) {
 
 function normalizeKRData(data: any) {
   return {
-    title: data.title,
-    description: data.description || null,
+    title: data.title || data.name,
+    description: data.description || data.descricao || null,
     objective_id: data.objective_id || null,
     objective_ref: data.objective_ref ?? null,
     parent_objective: data.parent_objective || data.parent_objective_title || data.objective_title || null,
-    target_value: data.target_value || 100,
+    target_value: data.target_value || data.goal_value || data.meta || 100,
     current_value: data.current_value || data.initial_value || 0,
-    unit: data.unit || data.metric_type || '%',
+    unit: data.unit || data.metric_type || data.unidade || '%',
     weight: data.weight || 1,
     due_date: data.due_date || data.deadline || null,
     priority: data.priority || null,
-    frequency: data.frequency || null,
+    frequency: data.frequency || data.frequencia || null,
     monthly_targets: data.monthly_targets || null,
     yearly_target: data.yearly_target || null,
     aggregation_type: data.aggregation_type || 'sum',
@@ -35,6 +35,7 @@ function normalizeKRData(data: any) {
     start_month: data.start_month || null,
     end_month: data.end_month || null,
     assigned_owner_id: data.assigned_owner_id || null,
+    responsible: data.responsible || null,
   };
 }
 
@@ -205,13 +206,24 @@ serve(async (req) => {
     const results: any[] = [];
 
     for (let i = 0; i < actions.length; i++) {
-      const action = actions[i];
+      let action = actions[i];
       try {
-        if (!action.data) {
-          results.push({ type: action.type, success: false, error: 'Dados da ação ausentes.' });
-          continue;
+        // Normalize: if "action" field used instead of "type", fix it
+        if (!action.type && action.action) {
+          const { action: actionName, ...rest } = action;
+          action = { type: actionName, data: action.data || rest };
         }
-        const actionType = action.type.toLowerCase()
+        // If "data" is missing, extract all non-meta fields as "data"
+        if (!action.data) {
+          const { type: _t, action: _a, ...rest } = action;
+          if (Object.keys(rest).length > 0) {
+            action = { ...action, data: rest };
+          } else {
+            results.push({ type: action.type || '', success: false, error: 'Dados da ação ausentes.' });
+            continue;
+          }
+        }
+        const actionType = (action.type || '').toLowerCase()
           .replace('create_kr', 'create_key_result')
           .replace('update_kr', 'update_key_result')
           .replace('create_strategic_pillar', 'create_pillar')
