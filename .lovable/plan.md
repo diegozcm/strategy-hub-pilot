@@ -1,48 +1,55 @@
 
-# Fix: Fornecer nomes dos pilares ao LLM no contexto
 
-## Problema raiz
+# Fix: 3 Problemas do Atlas Chat
 
-O erro "Nome do pilar nao informado" ocorre porque a edge function `ai-chat` **nunca busca os pilares estrategicos** (`strategic_pillars`) da empresa. O LLM nao sabe quais pilares existem, entao gera o plano sem `pillar_name` ou com um nome inventado.
+## Problema 1: KRs falham com "Objetivo de referencia nao encontrado"
 
-Os pilares da empresa COFOUND sao:
-- Inovacao & Crescimento
-- Pessoas & Cultura
-- Economico & Financeiro.
-- Mercado e Imagem
-- Tecnologia e Processos
+O LLM gera KRs com `objective_title` como referencia ao objetivo, mas o backend (`normalizeKRData`) so reconhece `parent_objective` e `parent_objective_title`. O campo `objective_title` e ignorado.
 
-Mas o LLM nunca recebe essa lista.
+Alem disso, o LLM nao inclui `objective_ref: 0` nos KRs, que seria a forma mais confiavel de vincular ao objetivo criado na mesma batch.
 
-## Correcao
+### Correcoes:
 
-### Arquivo: `supabase/functions/ai-chat/index.ts`
+**Backend (`supabase/functions/ai-agent-execute/index.ts`):**
+- Adicionar `objective_title` como alias em `normalizeKRData`:
+  ```
+  parent_objective: data.parent_objective || data.parent_objective_title || data.objective_title || null
+  ```
 
-**1. Buscar pilares junto com os outros dados contextuais (linha ~345)**
+**Frontend (`FloatingAIChat.tsx` - funcao `extractPlan`):**
+- Apos normalizar os action types, adicionar logica para injetar `objective_ref: 0` em KRs que nao tenham `objective_ref`, `objective_id` nem `parent_objective` - quando existir um `create_objective` antes no array.
+- Mesma logica para iniciativas: injetar `key_result_ref` apontando para o primeiro KR criado.
 
-Adicionar uma query paralela:
-```typescript
-supabase.from('strategic_pillars')
-  .select('name')
-  .eq('company_id', company_id)
-```
+---
 
-**2. Incluir pilares no contexto enviado ao LLM (linha ~371)**
+## Problema 2: Botoes de feedback ausentes em mensagens com plano
 
-Adicionar no `contextParts`:
-```
-Pilares Estrategicos disponiveis: Inovacao & Crescimento, Pessoas & Cultura, ...
-```
+Linha 750 tem a condicao `!msg.plan` que exclui mensagens com plano dos botoes de Reiniciar/ThumbsUp/ThumbsDown.
 
-**3. Reforcar no system prompt (linha ~142)**
+### Correcao:
 
-Alterar a regra do `pillar_name`:
-```
-- pillar_name DEVE ser EXATAMENTE um dos pilares listados no contexto da empresa. 
-  Copie o nome exato. Nao invente pilares.
-```
+- Remover `!msg.plan` da condicao. Mostrar botoes de feedback em TODAS as mensagens do assistente.
+- Ajustar para nao mostrar apenas durante status `executing`.
 
-### Resultado esperado
-- O LLM recebe a lista exata de pilares e consegue preencher `pillar_name` corretamente
-- Eliminacao total do erro "Nome do pilar nao informado"
-- Os planos gerados passam a funcionar na primeira tentativa
+---
+
+## Problema 3: Botao Reiniciar envia mensagem duplicada
+
+O botao Reiniciar chama `handleSendMessage(prevUserMsg.content)` que cria uma NOVA mensagem do usuario na conversa. O comportamento correto e:
+1. Remover a resposta atual do assistente
+2. Regenerar a resposta sem adicionar nova mensagem do usuario
+
+### Correcao:
+
+- Criar uma funcao `handleRegenerate(msgIndex)` que:
+  1. Encontra a mensagem do usuario anterior
+  2. Remove a resposta do assistente atual
+  3. Chama a API diretamente (sem adicionar nova user message) passando o conteudo da mensagem anterior
+
+---
+
+## Arquivos alterados
+
+1. `supabase/functions/ai-agent-execute/index.ts` - adicionar alias `objective_title`
+2. `src/components/ai/FloatingAIChat.tsx` - corrigir feedback buttons, restart, e auto-inject objective_ref
+
