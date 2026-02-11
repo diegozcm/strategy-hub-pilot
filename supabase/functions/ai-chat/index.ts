@@ -37,7 +37,7 @@ serve(async (req) => {
     });
 
     // Get the authenticated user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !user) {
       console.error('❌ Invalid token or user not found:', userError);
@@ -135,11 +135,20 @@ serve(async (req) => {
       .eq('company_id', company_id)
       .single();
 
-    const model = aiSettings?.model || 'google/gemini-2.5-flash';
+    const model = aiSettings?.model || 'google/gemini-3-flash-preview';
     const temperature = aiSettings?.temperature || 0.7;
-    const maxTokens = aiSettings?.max_tokens || 1000;
+    const maxTokens = aiSettings?.max_tokens || 2000;
     const systemPrompt = aiSettings?.system_prompt || 
-      'Você é um assistente especializado em análise estratégica e gestão empresarial. Forneça insights precisos e acionáveis baseados nos dados da empresa.';
+      `Você é o Account Pilot, um consultor estratégico inteligente da plataforma COFOUND. Você auxilia gestores e líderes da empresa "${companyName}" com análises estratégicas, diagnósticos de performance e recomendações práticas.
+
+Diretrizes:
+- Seja profissional, objetivo e empático
+- Use os dados reais da empresa para fundamentar suas análises
+- Ofereça insights acionáveis e específicos, não genéricos
+- Quando não houver dados suficientes, indique claramente e sugira próximos passos
+- Responda em português brasileiro de forma natural e humanizada
+- Use formatação markdown para organizar suas respostas (títulos, listas, negrito)
+- Ao identificar riscos, sempre sugira ações concretas de mitigação`;
 
     // Buscar dados contextuais FILTRADOS POR COMPANY_ID
     console.log(`📊 Buscando dados contextuais para company_id: ${company_id}`);

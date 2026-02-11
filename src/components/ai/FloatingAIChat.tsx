@@ -152,7 +152,28 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
 
       if (response.error) {
         console.error('Error calling ai-chat function:', response.error);
-        throw response.error;
+        // Check for specific HTTP error statuses
+        const errorMessage = response.error?.message || '';
+        if (errorMessage.includes('429') || errorMessage.includes('rate')) {
+          toast({
+            title: "Limite de requisições",
+            description: "Muitas requisições em pouco tempo. Aguarde alguns segundos e tente novamente.",
+            variant: "destructive",
+          });
+        } else if (errorMessage.includes('402') || errorMessage.includes('payment')) {
+          toast({
+            title: "Créditos esgotados",
+            description: "Os créditos de IA foram esgotados. Entre em contato com o administrador.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro da IA",
+            description: "Não foi possível processar sua solicitação. Tente novamente.",
+            variant: "destructive",
+          });
+        }
+        return;
       }
 
       // Verificar se a resposta indica erro
