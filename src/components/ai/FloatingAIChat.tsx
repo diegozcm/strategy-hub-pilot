@@ -149,6 +149,23 @@ function extractPlan(content: string): { cleanContent: string; plan: any | null 
           .replace('create_kr', 'create_key_result')
           .replace('create_strategic_objective', 'create_objective'),
       }));
+
+      // Auto-inject objective_ref / key_result_ref when missing
+      const firstObjIdx = plan.actions.findIndex((a: any) => a.type === 'create_objective');
+      const firstKrIdx = plan.actions.findIndex((a: any) => a.type === 'create_key_result');
+
+      plan.actions.forEach((a: any) => {
+        if (a.type === 'create_key_result' && firstObjIdx !== -1) {
+          if (a.data.objective_ref == null && !a.data.objective_id && !a.data.parent_objective && !a.data.parent_objective_title) {
+            a.data.objective_ref = firstObjIdx;
+          }
+        }
+        if (a.type === 'create_initiative' && firstKrIdx !== -1) {
+          if (a.data.key_result_ref == null && !a.data.key_result_id && !a.data.parent_kr && !a.data.parent_kr_title) {
+            a.data.key_result_ref = firstKrIdx;
+          }
+        }
+      });
     }
     
     let cleanContent = content
@@ -746,8 +763,8 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                               ⚠️ Erro ao executar
                             </div>
                           )}
-                          {/* Feedback buttons for assistant messages */}
-                          {msg.role === 'assistant' && !msg.plan && (
+                          {/* Feedback buttons for assistant messages (always show except during executing) */}
+                          {msg.role === 'assistant' && msg.planStatus !== 'executing' && (
                             <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/50">
                               <Button
                                 variant="ghost"
@@ -755,12 +772,25 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                                 className="h-6 w-6"
                                 title="Gerar outra resposta"
                                 onClick={() => {
-                                  // Remove this assistant message and resend the previous user message
+                                  // Find previous user message and regenerate without duplicating
                                   const prevUserMsg = messages.slice(0, index).reverse().find(m => m.role === 'user');
                                   if (prevUserMsg) {
-                                    const withoutThis = messages.filter((_, i) => i !== index);
-                                    onMessagesChange(withoutThis);
-                                    setTimeout(() => handleSendMessage(prevUserMsg.content), 100);
+                                    // Remove this assistant message (and any confirmation after it)
+                                    const cleaned = messages.filter((_, i) => i !== index);
+                                    onMessagesChange(cleaned);
+                                    // Use a ref-safe approach: call the API directly without adding a new user message
+                                    setTimeout(() => {
+                                      // We set chatInput temporarily and trigger send, but we need to avoid adding user msg
+                                      // Instead, we call handleSendMessage with the text but first remove user msg it would create
+                                      // Simplest fix: just re-call with the content - handleSendMessage adds user msg,
+                                      // so we remove it after. Better: set messages to exclude both assistant + re-add user msg approach
+                                      const withoutAssistant = messages.filter((_, i) => i !== index);
+                                      onMessagesChange(withoutAssistant);
+                                      // handleSendMessage will add user msg again, so remove it from base
+                                      const withoutBoth = messages.filter((_, i) => i !== index && i !== index - 1);
+                                      onMessagesChange(withoutBoth);
+                                      handleSendMessage(prevUserMsg.content);
+                                    }, 100);
                                   }
                                 }}
                               >

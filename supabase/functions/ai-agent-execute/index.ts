@@ -18,7 +18,7 @@ function normalizeKRData(data: any) {
     description: data.description || null,
     objective_id: data.objective_id || null,
     objective_ref: data.objective_ref ?? null,
-    parent_objective: data.parent_objective || data.parent_objective_title || null,
+    parent_objective: data.parent_objective || data.parent_objective_title || data.objective_title || null,
     target_value: data.target_value || 100,
     current_value: data.current_value || data.initial_value || 0,
     unit: data.unit || data.metric_type || '%',
