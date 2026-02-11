@@ -81,11 +81,17 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
     { icon: Lightbulb, label: 'Sugestões', prompt: 'Me dê sugestões de melhorias' },
   ];
 
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    }, 50);
+  }, []);
+
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, isLoading, isStreaming]);
+    scrollToBottom();
+  }, [messages, isLoading, isStreaming, scrollToBottom]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('.drag-handle')) {
@@ -264,16 +270,13 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
       const contentType = response.headers.get('Content-Type') || '';
 
       if (contentType.includes('text/event-stream')) {
-        // Process SSE stream
+        // Process SSE stream — accumulate fully, then show complete message
         const reader = response.body?.getReader();
         if (!reader) throw new Error('No reader available');
 
         const decoder = new TextDecoder();
         let fullContent = '';
         let buffer = '';
-
-        // Don't add empty bubble — wait for first token
-        let firstTokenReceived = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -293,8 +296,6 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
               const delta = parsed.choices?.[0]?.delta?.content;
               if (delta) {
                 fullContent += delta;
-                firstTokenReceived = true;
-                onMessagesChange([...updatedMessages, { role: 'assistant', content: fullContent, timestamp: new Date() }]);
               }
             } catch {
               // Skip unparseable lines
@@ -302,8 +303,9 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
           }
         }
 
-        // Save completed assistant message to DB
+        // Show complete message at once
         if (fullContent) {
+          onMessagesChange([...updatedMessages, { role: 'assistant', content: fullContent, timestamp: new Date() }]);
           await supabase.from('ai_chat_messages').insert([{
             session_id: currentSessionId,
             role: 'assistant',
