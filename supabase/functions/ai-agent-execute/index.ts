@@ -32,6 +32,12 @@ function normalizeKRData(data: any) {
 }
 
 function normalizeInitiativeData(data: any) {
+  // Normalize status to valid values
+  const VALID_STATUSES = ['planned', 'in_progress', 'completed', 'cancelled', 'on_hold'];
+  let status = data.status || 'planned';
+  if (status === 'planning') status = 'planned';
+  if (!VALID_STATUSES.includes(status)) status = 'planned';
+
   return {
     title: data.title,
     description: data.description || null,
@@ -41,7 +47,7 @@ function normalizeInitiativeData(data: any) {
     priority: data.priority || 'medium',
     start_date: data.start_date || null,
     end_date: data.end_date || null,
-    status: data.status || 'planning',
+    status,
     progress_percentage: data.progress_percentage || 0,
   };
 }
