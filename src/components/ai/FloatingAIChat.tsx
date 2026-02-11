@@ -147,7 +147,9 @@ function extractPlan(content: string): { cleanContent: string; plan: any | null 
         ...a,
         type: (a.type || '').toLowerCase()
           .replace('create_kr', 'create_key_result')
-          .replace('create_strategic_objective', 'create_objective'),
+          .replace('create_strategic_objective', 'create_objective')
+          .replace('create_strategic_pillar', 'create_pillar')
+          .replace('create_strategic_project', 'create_project'),
       }));
 
       // Auto-inject objective_ref / key_result_ref when missing
@@ -414,9 +416,18 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
       if (result.success) {
         toast({ title: '✅ Plano executado com sucesso!' });
         // Add a confirmation message
+        const typeLabel = (type: string) => {
+          if (type === 'create_pillar') return '🏛️ Pilar';
+          if (type === 'create_objective') return '🎯 Objetivo';
+          if (type === 'create_key_result') return '📈 KR';
+          if (type === 'create_initiative') return '🚀 Iniciativa';
+          if (type === 'create_project') return '📂 Projeto';
+          if (type.includes('update')) return '✏️ Atualização';
+          return '📌 Item';
+        };
         const confirmMsg: ChatMessage = {
           role: 'assistant',
-          content: `✅ **Plano executado com sucesso!** Foram criados:\n${result.results.map((r: any) => `- ${r.type === 'create_objective' ? '🎯 Objetivo' : r.type === 'create_key_result' ? '📈 KR' : '🚀 Iniciativa'}: **${r.title}**`).join('\n')}\n\nVocê pode visualizar tudo no **Mapa Estratégico** pelo menu lateral.`,
+          content: `✅ **Plano executado com sucesso!** Foram criados:\n${result.results.filter((r: any) => r.success).map((r: any) => `- ${typeLabel(r.type)}: **${r.title}**`).join('\n')}\n\nVocê pode visualizar tudo no **Mapa Estratégico** pelo menu lateral.`,
           timestamp: new Date(),
         };
         onMessagesChange([...updatedAfter, confirmMsg]);
