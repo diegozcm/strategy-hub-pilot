@@ -262,13 +262,19 @@ serve(async (req) => {
             keyResultId = results[d.key_result_ref].id;
           }
           if (!keyResultId && d.parent_kr) {
-            const { data: foundKR } = await supabase
+            const batchObjectiveId = results.find(r => r.success && r.type === 'create_objective')?.id;
+            
+            let query = supabase
               .from('key_results')
-              .select('id')
-              .eq('objective_id', results.find(r => r.success && r.type === 'create_objective')?.id || '')
+              .select('id, objective_id')
               .ilike('title', `%${d.parent_kr}%`)
-              .limit(1)
-              .single();
+              .limit(1);
+            
+            if (batchObjectiveId) {
+              query = query.eq('objective_id', batchObjectiveId);
+            }
+            
+            const { data: foundKR } = await query.single();
             if (foundKR) keyResultId = foundKR.id;
           }
 
@@ -300,7 +306,7 @@ serve(async (req) => {
           if (initError) throw initError;
           results.push({ type: actionType, success: true, id: initiative.id, title: initiative.title });
 
-        } else if (actionType === 'update_key_result_progress' || actionType === 'update_kr_progress') {
+        } else if (actionType === 'update_key_result_progress' || actionType === 'update_kr_progress' || actionType === 'update_key_result') {
           const d = action.data;
           const krId = d.key_result_id || d.kr_id;
           const currentValue = d.current_value ?? d.value;
