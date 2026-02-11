@@ -82,12 +82,72 @@ function extractPlan(content: string): { cleanContent: string; plan: any | null 
       plan = { actions: plan };
     }
     
+    // Normalize alternative LLM structure: { action: "create_strategic_objective", data: { objective: {...}, key_results: [...] } }
+    if (plan.action && plan.data && !plan.actions) {
+      const actions: any[] = [];
+      const d = plan.data;
+      
+      // Extract objective
+      if (d.objective) {
+        const obj = d.objective;
+        actions.push({
+          type: 'create_objective',
+          data: {
+            title: obj.title || obj.name,
+            pillar_name: obj.pillar_name || obj.pillar || obj.pilar,
+            description: obj.description || obj.descricao,
+            target_date: obj.target_date || obj.deadline || obj.prazo,
+          }
+        });
+      }
+      
+      // Extract key results
+      if (Array.isArray(d.key_results)) {
+        d.key_results.forEach((kr: any, idx: number) => {
+          actions.push({
+            type: 'create_key_result',
+            data: {
+              title: kr.title || kr.name,
+              target_value: kr.target_value ?? kr.goal ?? kr.meta ?? kr.value,
+              unit: kr.unit || kr.metric_type || kr.unidade || '%',
+              description: kr.description || kr.descricao,
+              objective_ref: kr.objective_ref ?? 0,
+              monthly_targets: kr.monthly_targets,
+              frequency: kr.frequency || kr.frequencia,
+            }
+          });
+        });
+      }
+      
+      // Extract initiatives
+      if (Array.isArray(d.initiatives)) {
+        d.initiatives.forEach((init: any) => {
+          actions.push({
+            type: 'create_initiative',
+            data: {
+              title: init.title || init.name,
+              description: init.description || init.descricao,
+              priority: init.priority || init.prioridade || 'medium',
+              start_date: init.start_date || init.inicio,
+              end_date: init.end_date || init.fim || init.deadline,
+              key_result_ref: init.key_result_ref ?? 1,
+            }
+          });
+        });
+      }
+      
+      if (actions.length > 0) {
+        plan = { actions };
+      }
+    }
+    
     // Normalize action types to lowercase + aliases
     if (plan.actions && Array.isArray(plan.actions)) {
       plan.actions = plan.actions.map((a: any) => ({
         ...a,
         type: (a.type || '').toLowerCase()
-          .replace('create_kr', 'create_key_result'),
+          .replace('create_kr', 'create_key_result')
+          .replace('create_strategic_objective', 'create_objective'),
       }));
     }
     

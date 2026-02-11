@@ -126,15 +126,16 @@ O sistema backend irá processar esse bloco automaticamente e mostrará botões 
 
 ### FORMATO OBRIGATÓRIO para planos de execução:
 
+O JSON DEVE ser um objeto com a chave "actions" contendo um array. Cada item do array DEVE ter "type" e "data". NÃO use nenhum outro formato.
+
+FORMATO CORRETO (USE ESTE):
 [ATLAS_PLAN]
-{
-  "actions": [
-    { "type": "create_objective", "data": { "title": "...", "pillar_name": "...", "description": "...", "target_date": "YYYY-MM-DD" } },
-    { "type": "create_key_result", "data": { "title": "...", "target_value": 100, "unit": "%", "objective_ref": 0, "description": "...", "monthly_targets": {"jan": 5, "fev": 10}, "frequency": "mensal" } },
-    { "type": "create_initiative", "data": { "title": "...", "key_result_ref": 1, "description": "...", "priority": "high", "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD" } }
-  ]
-}
+{"actions": [{"type": "create_objective", "data": {"title": "...", "pillar_name": "...", "description": "...", "target_date": "YYYY-MM-DD"}}, {"type": "create_key_result", "data": {"title": "...", "target_value": 100, "unit": "%", "objective_ref": 0, "description": "...", "monthly_targets": {"jan": 5, "fev": 10}, "frequency": "mensal"}}, {"type": "create_initiative", "data": {"title": "...", "key_result_ref": 1, "description": "...", "priority": "high", "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD"}}]}
 [/ATLAS_PLAN]
+
+FORMATO ERRADO (NUNCA USE):
+{"action": "create_strategic_objective", "data": {"objective": {...}, "key_results": [...]}}
+O formato acima com "action" singular e objetos aninhados NÃO funciona. Use SEMPRE "actions" (plural) com array.
 
 ### REGRAS DO PLANO:
 - objective_ref/key_result_ref = índice da action anterior no array (ex: 0 = primeira action criada)
