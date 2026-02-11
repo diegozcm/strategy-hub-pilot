@@ -16,71 +16,39 @@ serve(async (req) => {
     // Verify JWT token from Authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.error('❌ No authorization header provided');
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'authentication_required',
-          response: 'Autenticação necessária para usar o chat de IA.' 
-        }),
+        JSON.stringify({ success: false, error: 'authentication_required', response: 'Autenticação necessária para usar o chat de IA.' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const token = authHeader.replace('Bearer ', '');
-
-    // Create client with user token to verify identity
     const supabaseClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: {
-        headers: { Authorization: `Bearer ${token}` }
-      }
+      global: { headers: { Authorization: `Bearer ${token}` } }
     });
 
-    // Get the authenticated user
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    
     if (userError || !user) {
-      console.error('❌ Invalid token or user not found:', userError);
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'invalid_token',
-          response: 'Sessão expirada. Por favor, faça login novamente.' 
-        }),
+        JSON.stringify({ success: false, error: 'invalid_token', response: 'Sessão expirada. Por favor, faça login novamente.' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const authenticatedUserId = user.id;
-    console.log(`🔐 Authenticated user: ${authenticatedUserId} (${user.email})`);
-
+    const validUserId = user.id;
     const { message, session_id, user_id, company_id } = await req.json();
 
     // Verify the user_id in request matches the authenticated user
-    if (user_id && user_id !== authenticatedUserId) {
-      console.error(`❌ User ID mismatch: request=${user_id}, authenticated=${authenticatedUserId}`);
+    if (user_id && user_id !== validUserId) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'forbidden',
-          response: 'Você não tem permissão para esta ação.' 
-        }),
+        JSON.stringify({ success: false, error: 'forbidden', response: 'Você não tem permissão para esta ação.' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Use authenticated user ID for all operations
-    const validUserId = authenticatedUserId;
-    console.log(`🤖 AI Chat - user: ${validUserId}, company: ${company_id}`);
-
     if (!LOVABLE_API_KEY) {
-      console.error('❌ LOVABLE_API_KEY não configurada');
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: 'API key não configurada',
-          response: 'Desculpe, o serviço de IA não está configurado corretamente.' 
-        }),
+        JSON.stringify({ success: false, error: 'API key não configurada', response: 'Desculpe, o serviço de IA não está configurado corretamente.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -97,51 +65,48 @@ serve(async (req) => {
       .single();
 
     if (relationError || !userCompanyRelation) {
-      console.error(`❌ User ${validUserId} is not a member of company ${company_id}`);
       return new Response(
-        JSON.stringify({ 
-          success: false,
-          error: 'forbidden',
-          response: 'Você não tem acesso a esta empresa.' 
-        }),
+        JSON.stringify({ success: false, error: 'forbidden', response: 'Você não tem acesso a esta empresa.' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Verificar se a empresa tem AI habilitado e buscar nome
-    const { data: companyData } = await supabase
-      .from('companies')
-      .select('ai_enabled, name')
-      .eq('id', company_id)
-      .single();
+    // Fetch company data, user profile, AI settings, and conversation history in parallel
+    const [companyResult, profileResult, aiSettingsResult, historyResult] = await Promise.all([
+      supabase.from('companies').select('ai_enabled, name').eq('id', company_id).single(),
+      supabase.from('profiles').select('first_name, last_name, position, department').eq('user_id', validUserId).single(),
+      supabase.from('ai_company_settings').select('model, temperature, max_tokens, system_prompt').eq('company_id', company_id).single(),
+      session_id
+        ? supabase.from('ai_chat_messages').select('role, content').eq('session_id', session_id).order('created_at', { ascending: true }).limit(20)
+        : Promise.resolve({ data: [] }),
+    ]);
 
-    if (!companyData?.ai_enabled) {
-      console.log(`⚠️ Company ${company_id} não tem AI habilitada`);
+    if (!companyResult.data?.ai_enabled) {
       return new Response(
-        JSON.stringify({ 
-          success: false,
-          response: 'O acesso à IA não está habilitado para sua empresa. Entre em contato com o administrador.' 
-        }),
+        JSON.stringify({ success: false, response: 'O acesso à IA não está habilitado para sua empresa. Entre em contato com o administrador.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const companyName = companyData.name || 'Empresa';
-
-    // Buscar configurações de IA da empresa
-    const { data: aiSettings } = await supabase
-      .from('ai_company_settings')
-      .select('model, temperature, max_tokens, system_prompt')
-      .eq('company_id', company_id)
-      .single();
+    const companyName = companyResult.data.name || 'Empresa';
+    const profile = profileResult.data;
+    const userName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || 'Usuário';
+    const userPosition = profile?.position || '';
+    const userDepartment = profile?.department || '';
+    const aiSettings = aiSettingsResult.data;
+    const previousMessages = historyResult.data || [];
 
     const allowedModels = ['openai/gpt-5-mini', 'openai/gpt-5', 'openai/gpt-5-nano', 'openai/gpt-5.2', 'google/gemini-2.5-pro', 'google/gemini-2.5-flash', 'google/gemini-2.5-flash-lite', 'google/gemini-2.5-flash-image', 'google/gemini-3-pro-preview', 'google/gemini-3-flash-preview', 'google/gemini-3-pro-image-preview'];
     const rawModel = aiSettings?.model || 'google/gemini-3-flash-preview';
     const model = allowedModels.includes(rawModel) ? rawModel : 'google/gemini-3-flash-preview';
     const temperature = aiSettings?.temperature || 0.7;
     const maxTokens = aiSettings?.max_tokens || 2000;
-    const systemPrompt = aiSettings?.system_prompt || 
-      `Você é o Account Pilot, um consultor estratégico inteligente da plataforma COFOUND. Você auxilia gestores e líderes da empresa "${companyName}" com análises estratégicas, diagnósticos de performance e recomendações práticas.
+
+    // Build user context string for the system prompt
+    const userContext = `Você está conversando com ${userName}${userPosition ? `, ${userPosition}` : ''}${userDepartment ? ` do departamento ${userDepartment}` : ''} da empresa "${companyName}". Trate-o pelo primeiro nome e personalize suas respostas.`;
+
+    const systemPrompt = aiSettings?.system_prompt ||
+      `Você é o Account Pilot, um consultor estratégico inteligente da plataforma COFOUND. ${userContext}
 
 Diretrizes:
 - Seja profissional, objetivo e empático
@@ -152,108 +117,74 @@ Diretrizes:
 - Use formatação markdown para organizar suas respostas (títulos, listas, negrito)
 - Ao identificar riscos, sempre sugira ações concretas de mitigação`;
 
-    // Buscar dados contextuais FILTRADOS POR COMPANY_ID
-    console.log(`📊 Buscando dados contextuais para company_id: ${company_id}`);
+    // If using custom system_prompt, append user context
+    const finalSystemPrompt = aiSettings?.system_prompt
+      ? `${aiSettings.system_prompt}\n\n${userContext}`
+      : systemPrompt;
 
-    // 1. Buscar strategic_plans da empresa
-    const { data: plans } = await supabase
-      .from('strategic_plans')
-      .select('id')
-      .eq('company_id', company_id);
-    
+    // Fetch contextual data filtered by company_id
+    const { data: plans } = await supabase.from('strategic_plans').select('id').eq('company_id', company_id);
     const planIds = plans?.map(p => p.id) || [];
-    console.log(`📋 Planos encontrados: ${planIds.length}`);
 
-    // 2. Buscar strategic_objectives dos planos
-    const { data: objectives } = await supabase
-      .from('strategic_objectives')
-      .select('id, title, progress, status, target_date')
-      .in('plan_id', planIds)
-      .limit(20);
-    
-    const objectiveIds = objectives?.map(o => o.id) || [];
-    console.log(`🎯 Objetivos encontrados: ${objectiveIds.length}`);
+    const [objectivesResult, projectsResult, startupResult, mentoringResult] = await Promise.all([
+      planIds.length > 0
+        ? supabase.from('strategic_objectives').select('id, title, progress, status, target_date').in('plan_id', planIds).limit(20)
+        : Promise.resolve({ data: [] }),
+      planIds.length > 0
+        ? supabase.from('strategic_projects').select('name, progress, status, start_date, end_date, priority').in('plan_id', planIds).limit(20)
+        : Promise.resolve({ data: [] }),
+      supabase.from('startup_hub_profiles').select('*').eq('company_id', company_id).single(),
+      supabase.from('mentoring_sessions').select('session_date, session_type, status, notes').eq('startup_company_id', company_id).order('session_date', { ascending: false }).limit(10),
+    ]);
 
-    // 3. Buscar key_results dos objetivos
-    const { data: keyResults } = await supabase
-      .from('key_results')
-      .select('title, current_value, target_value, unit, due_date, priority')
-      .in('objective_id', objectiveIds)
-      .limit(30);
-    
-    console.log(`📊 KRs encontrados: ${keyResults?.length || 0}`);
+    const objectives = objectivesResult.data || [];
+    const objectiveIds = objectives.map(o => o.id);
 
-    // 4. Buscar strategic_projects dos planos
-    const { data: projects } = await supabase
-      .from('strategic_projects')
-      .select('name, progress, status, start_date, end_date, priority')
-      .in('plan_id', planIds)
-      .limit(20);
-    
-    console.log(`🚀 Projetos encontrados: ${projects?.length || 0}`);
+    const { data: keyResults } = objectiveIds.length > 0
+      ? await supabase.from('key_results').select('title, current_value, target_value, unit, due_date, priority').in('objective_id', objectiveIds).limit(30)
+      : { data: [] };
 
-    // 5. Buscar dados do Startup Hub (se aplicável)
-    const { data: startupProfile } = await supabase
-      .from('startup_hub_profiles')
-      .select('*')
-      .eq('company_id', company_id)
-      .single();
+    const projects = projectsResult.data || [];
+    const startupProfile = startupResult.data;
+    const mentoringSessions = mentoringResult.data || [];
 
-    const { data: mentoringSessions } = await supabase
-      .from('mentoring_sessions')
-      .select('session_date, session_type, status, notes')
-      .eq('startup_company_id', company_id)
-      .order('session_date', { ascending: false })
-      .limit(10);
+    // Build context prompt with company data
+    const contextParts: string[] = [`Dados disponíveis de ${companyName}:`];
 
-    // Construir contexto rico
-    const contextData = {
-      objectives: objectives || [],
-      keyResults: keyResults || [],
-      projects: projects || [],
-      startupProfile: startupProfile || null,
-      mentoringSessions: mentoringSessions || []
-    };
+    if (objectives.length > 0) {
+      contextParts.push(`\n📊 Objetivos Estratégicos:\n${objectives.map(obj => `• ${obj.title}: ${obj.progress || 0}% concluído (Status: ${obj.status})`).join('\n')}`);
+    }
+    if (keyResults && keyResults.length > 0) {
+      contextParts.push(`\n📊 Resultados Chave:\n${keyResults.map(kr => `• ${kr.title}: ${kr.current_value || 0}${kr.unit} de ${kr.target_value}${kr.unit}`).join('\n')}`);
+    }
+    if (projects.length > 0) {
+      contextParts.push(`\n🚀 Projetos Estratégicos:\n${projects.map(proj => `• ${proj.name}: ${proj.progress || 0}% concluído (Status: ${proj.status})`).join('\n')}`);
+    }
+    if (startupProfile) {
+      contextParts.push(`\n🎯 Startup Hub:\n• Startup: ${startupProfile.startup_name || 'Não informado'}\n• Setor: ${startupProfile.sector || 'Não informado'}\n• Estágio: ${startupProfile.stage || 'Não informado'}`);
+    }
+    if (mentoringSessions.length > 0) {
+      contextParts.push(`\n👥 Sessões de Mentoria Recentes:\n${mentoringSessions.map(s => `• ${s.session_date}: ${s.session_type} (${s.status})`).join('\n')}`);
+    }
 
-    const contextPrompt = `
-Dados disponíveis de ${companyName}:
+    contextParts.push(`\nPergunta do usuário: "${message}"\n\nResponda de forma clara, objetiva e acionável, baseando-se EXCLUSIVAMENTE nos dados acima.`);
+    const contextPrompt = contextParts.join('\n');
 
-${contextData.objectives.length > 0 ? `
-📊 Strategy Hub - Objetivos Estratégicos:
-${contextData.objectives.map(obj => `• ${obj.title}: ${obj.progress || 0}% concluído (Status: ${obj.status})`).join('\n')}
-` : ''}
+    // Build messages array with conversation history
+    const aiMessages: { role: string; content: string }[] = [
+      { role: 'system', content: finalSystemPrompt },
+    ];
 
-${contextData.keyResults.length > 0 ? `
-📊 Strategy Hub - Resultados Chave:
-${contextData.keyResults.map(kr => `• ${kr.title}: ${kr.current_value || 0}${kr.unit} de ${kr.target_value}${kr.unit} (${Math.round(((kr.current_value || 0) / kr.target_value) * 100)}% concluído)`).join('\n')}
-` : ''}
+    // Add previous messages from this session (conversation memory)
+    for (const msg of previousMessages) {
+      aiMessages.push({ role: msg.role, content: msg.content });
+    }
 
-${contextData.projects.length > 0 ? `
-🚀 Projetos Estratégicos:
-${contextData.projects.map(proj => `• ${proj.name}: ${proj.progress || 0}% concluído (Status: ${proj.status})`).join('\n')}
-` : ''}
+    // Add current user message with context data
+    aiMessages.push({ role: 'user', content: contextPrompt });
 
-${contextData.startupProfile ? `
-🎯 Startup Hub:
-• Startup: ${contextData.startupProfile.startup_name || 'Não informado'}
-• Setor: ${contextData.startupProfile.sector || 'Não informado'}
-• Estágio: ${contextData.startupProfile.stage || 'Não informado'}
-` : ''}
+    console.log(`🤖 AI Chat - user: ${userName}, company: ${companyName}, model: ${model}, history: ${previousMessages.length} msgs`);
 
-${contextData.mentoringSessions.length > 0 ? `
-👥 Sessões de Mentoria Recentes:
-${contextData.mentoringSessions.map(s => `• ${s.session_date}: ${s.session_type} (${s.status})`).join('\n')}
-` : ''}
-
-Pergunta do usuário: "${message}"
-
-Responda de forma clara, objetiva e acionável, baseando-se EXCLUSIVAMENTE nos dados acima.
-`.trim();
-
-    console.log(`🤖 Chamando Lovable AI (modelo: ${model})`);
-    console.log(`📝 Contexto: ${contextData.objectives.length} objetivos, ${contextData.keyResults.length} KRs, ${contextData.projects.length} projetos`);
-
-    // Chamar Lovable AI Gateway
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -262,10 +193,7 @@ Responda de forma clara, objetiva e acionável, baseando-se EXCLUSIVAMENTE nos d
       },
       body: JSON.stringify({
         model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: contextPrompt }
-        ],
+        messages: aiMessages,
         temperature,
         max_tokens: maxTokens,
       }),
@@ -274,38 +202,26 @@ Responda de forma clara, objetiva e acionável, baseando-se EXCLUSIVAMENTE nos d
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error(`❌ Lovable AI error (${aiResponse.status}):`, errorText);
-      
+
       if (aiResponse.status === 429) {
         return new Response(
-          JSON.stringify({ 
-            success: false,
-            error: 'rate_limit',
-            response: 'O limite de requisições foi atingido. Por favor, tente novamente em alguns instantes.' 
-          }),
+          JSON.stringify({ success: false, error: 'rate_limit', response: 'O limite de requisições foi atingido. Por favor, tente novamente em alguns instantes.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      
       if (aiResponse.status === 402) {
         return new Response(
-          JSON.stringify({ 
-            success: false,
-            error: 'payment_required',
-            response: 'Os créditos de IA foram esgotados. Entre em contato com o administrador.' 
-          }),
+          JSON.stringify({ success: false, error: 'payment_required', response: 'Os créditos de IA foram esgotados. Entre em contato com o administrador.' }),
           { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-
       throw new Error(`AI Gateway error: ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
     const assistantMessage = aiData.choices?.[0]?.message?.content || 'Desculpe, não consegui processar sua pergunta.';
 
-    console.log('✅ Resposta gerada com sucesso');
-
-    // Log de analytics
+    // Log analytics
     await supabase.from('ai_analytics').insert({
       user_id: validUserId,
       event_type: 'chat_completion',
@@ -313,29 +229,31 @@ Responda de forma clara, objetiva e acionável, baseando-se EXCLUSIVAMENTE nos d
         company_id,
         session_id,
         model_used: model,
+        user_name: userName,
         prompt_tokens: aiData.usage?.prompt_tokens,
         completion_tokens: aiData.usage?.completion_tokens,
         total_tokens: aiData.usage?.total_tokens,
+        history_messages_count: previousMessages.length,
         context_summary: {
-          objectives_count: contextData.objectives.length,
-          key_results_count: contextData.keyResults.length,
-          projects_count: contextData.projects.length,
-          has_startup_profile: !!contextData.startupProfile,
-          mentoring_sessions_count: contextData.mentoringSessions.length
+          objectives_count: objectives.length,
+          key_results_count: keyResults?.length || 0,
+          projects_count: projects.length,
+          has_startup_profile: !!startupProfile,
+          mentoring_sessions_count: mentoringSessions.length
         }
       }
     });
 
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
         response: assistantMessage,
         model_used: model,
         company_id,
         context_summary: {
-          objectives: contextData.objectives.length,
-          keyResults: contextData.keyResults.length,
-          projects: contextData.projects.length
+          objectives: objectives.length,
+          keyResults: keyResults?.length || 0,
+          projects: projects.length
         }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -343,13 +261,8 @@ Responda de forma clara, objetiva e acionável, baseando-se EXCLUSIVAMENTE nos d
 
   } catch (error) {
     console.error('❌ Erro no ai-chat:', error);
-    
     return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: error.message,
-        response: 'Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.' 
-      }),
+      JSON.stringify({ success: false, error: error.message, response: 'Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
