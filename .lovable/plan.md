@@ -1,113 +1,100 @@
 
-# Ajustes no Modulo de Mentorias do Startup HUB
+# Correcao Completa do Modulo IA Copilot
 
-## Resumo
-Tres ajustes principais: (1) permitir que mentores vejam sessoes de outros mentores com foto e nome, (2) corrigir bug de data que registra no dia anterior, (3) atualizar as tres visualizacoes (lista, calendario, to do).
+## Problemas Identificados
 
----
+### 1. Insights mostrando "undefined" no titulo
+**Causa raiz**: A edge function `generate-insights` busca `key_results` com o campo `title`, mas no codigo de analise rule-based (linhas 174-176, 411, 418, 419) referencia `indicator.name` -- campo que nao existe na tabela. O campo correto e `title`. Por isso todos os insights de KRs mostram `Meta Critica: "undefined"`.
 
-## 1. Visibilidade entre mentores (RLS + Dados)
+### 2. Chat da IA dando erro sem mensagem
+**Causa raiz**: Os logs mostram `AuthSessionMissingError: Auth session missing!`. A edge function `ai-chat` tenta validar o token do usuario criando um client Supabase com `SUPABASE_ANON_KEY` e passando o token no header. Porem, o metodo `supabaseClient.auth.getUser()` precisa do token no formato correto. O problema e que o `supabase.functions.invoke` ja envia o token automaticamente, mas a funcao tenta extrair e re-criar o client de forma incorreta. Vamos simplificar usando `supabaseClient.auth.getUser(token)` diretamente.
 
-### Problema atual
-A policy RLS `Mentors can view their sessions` so permite ver sessoes onde `mentor_id = auth.uid()`. Mentores nao veem sessoes de outros mentores.
+### 3. Tabelas erradas no generate-insights
+**Causa raiz**: A funcao consulta `startup_profiles` e `mentor_sessions`, mas as tabelas reais se chamam `startup_hub_profiles` e `mentoring_sessions`. Isso faz com que os dados do Startup HUB nunca sejam carregados para analise.
 
-### Solucao
+### 4. CORS incompleto
+**Causa raiz**: O `generate-insights` usa CORS inline sem os headers `x-supabase-client-platform*` e `x-supabase-client-runtime*`. O `_shared/cors.ts` tambem esta incompleto.
 
-**1a. Nova policy RLS** - Criar policy que permite mentores verem sessoes de startups onde ambos sao mentores atribuidos:
-
-```text
-CREATE POLICY "Mentors can view sessions of shared startups"
-ON public.mentoring_sessions
-FOR SELECT
-TO authenticated
-USING (
-  EXISTS (
-    SELECT 1 FROM mentor_startup_relations msr1
-    JOIN mentor_startup_relations msr2 ON msr1.startup_company_id = msr2.startup_company_id
-    WHERE msr1.mentor_id = auth.uid()
-    AND msr2.mentor_id = mentoring_sessions.mentor_id
-    AND msr1.status = 'active'
-    AND msr2.status = 'active'
-  )
-);
-```
-
-Isso garante que um mentor so ve sessoes de outros mentores que estao atribuidos as mesmas startups.
-
-**1b. Alterar `useMentorSessions` hook** - Remover o filtro `.eq('mentor_id', user.id)` e buscar todas as sessoes visiveis (RLS cuida da seguranca). Incluir join com `profiles` para pegar `first_name`, `last_name`, e `avatar_url` do mentor.
-
-### Arquivos alterados
-- Migration SQL (nova policy RLS)
-- `src/hooks/useMentorSessions.tsx` - remover filtro mentor_id, adicionar dados do mentor
+### 5. Modelo desatualizado
+O sistema usa `google/gemini-2.5-flash`. O modelo padrao recomendado e `google/gemini-3-flash-preview`.
 
 ---
 
-## 2. Correcao do bug de data
+## Plano de Acao
 
-### Problema
-Ao criar uma sessao clicando no dia 05, o sistema registra no dia 04. O problema esta em dois pontos:
+### Etapa 1: Corrigir CORS compartilhado
+**Arquivo**: `supabase/functions/_shared/cors.ts`
+- Atualizar para incluir todos os headers necessarios (authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version)
 
-- No `createSession`, a data `yyyy-MM-dd` e enviada diretamente ao Supabase. O banco interpreta como UTC, e dependendo do fuso, converte para o dia anterior.
-- No `handleCreateSession` do `MentorCalendarPage`, usa `format(date, 'yyyy-MM-dd')` que pode ser afetado pelo fuso.
+### Etapa 2: Corrigir edge function `ai-chat`
+**Arquivo**: `supabase/functions/ai-chat/index.ts`
+- Corrigir autenticacao: usar `supabaseClient.auth.getUser(token)` passando o token diretamente em vez de confiar na sessao
+- Atualizar modelo padrao para `google/gemini-3-flash-preview`
+- Melhorar o system prompt para ser mais profissional e humanizado
+- Aumentar max_tokens padrao para 2000
 
-### Solucao
-No `createSession` do hook `useMentorSessions.tsx`, converter a data da mesma forma que ja e feito no `updateSession`:
+### Etapa 3: Corrigir edge function `generate-insights`
+**Arquivo**: `supabase/functions/generate-insights/index.ts`
+- Corrigir nomes das tabelas: `startup_profiles` para `startup_hub_profiles`, `mentor_sessions` para `mentoring_sessions`
+- Corrigir campo `indicator.name` para `indicator.title` em todas as ocorrencias (analise rule-based)
+- Atualizar CORS para usar o modulo compartilhado `_shared/cors.ts`
+- Atualizar modelo para `google/gemini-3-flash-preview`
+- Corrigir mapeamento `kr.name` para `kr.title` no contextData
 
-```typescript
-session_date: new Date(sessionData.session_date + 'T12:00:00').toISOString()
-```
+### Etapa 4: Melhorar tratamento de erro no frontend
+**Arquivo**: `src/components/ai/FloatingAIChat.tsx`
+- Tratar erros 429 e 402 com mensagens amigaveis
+- Garantir que erros de rede mostrem toast com mensagem clara
+- Usar `FunctionsHttpError` para capturar respostas nao-2xx corretamente
 
-Usar `T12:00:00` (meio-dia) em vez de `T00:00:00` para evitar que qualquer fuso horario empurre para o dia anterior.
+**Arquivo**: `src/components/ai/AICopilotPage.tsx`
+- Mesmo tratamento de erros para a geracao de insights
 
-### Arquivos alterados
-- `src/hooks/useMentorSessions.tsx` - createSession e updateSession
-
----
-
-## 3. Exibir foto e nome do mentor nas visualizacoes
-
-### 3a. Vista Lista (`MentorSessionsPage.tsx`)
-- Adicionar avatar e nome do mentor em cada card de sessao
-- Usar componente Avatar com fallback de iniciais
-- Diferenciar visualmente sessoes proprias vs de outros mentores
-
-### 3b. Vista Calendario (`CalendarGrid.tsx`)
-- Nos chips de sessao dentro do calendario, mostrar nome do mentor junto ao nome da startup
-- No modal de detalhe da sessao, exibir avatar + nome do mentor
-
-### 3c. Vista To Do (`MentorTodosList.tsx`)
-- Sem alteracoes necessarias (todos sao pessoais do mentor)
-
-### Arquivos alterados
-- `src/hooks/useMentorSessions.tsx` - tipo MentoringSession com campos `mentor_name` e `mentor_avatar_url`
-- `src/components/startup-hub/mentor/MentorSessionsPage.tsx` - exibir info do mentor
-- `src/components/startup-hub/calendar/CalendarGrid.tsx` - exibir info do mentor nos chips e modais
-- `src/components/startup-hub/calendar/MentorCalendarPage.tsx` - passar dados do mentor
-- `src/components/startup-hub/calendar/SessionsStatsCard.tsx` - possivel ajuste de tipo
+### Etapa 5: Deploy e teste
+- Deploy das duas edge functions
+- Testar chat enviando mensagem
+- Testar geracao de insights
 
 ---
 
 ## Detalhes Tecnicos
 
-### Hook `useMentorSessions.tsx` - Alteracoes principais
+### Correcao do campo `name` para `title` no generate-insights
 
-1. **Remover filtro `.eq('mentor_id', user.id)`** na query de fetchSessions
-2. **Adicionar join com profiles**: buscar `first_name`, `last_name`, `avatar_url` via mentor_id
-3. **Adicionar campos ao tipo**: `mentor_name`, `mentor_avatar_url`, `is_own_session`
-4. **Corrigir data no createSession**: `session_date: new Date(sessionData.session_date + 'T12:00:00').toISOString()`
-5. **Corrigir data no updateSession**: trocar `T00:00:00` por `T12:00:00`
-
-### Tipo MentoringSession atualizado
-```typescript
-export interface MentoringSession {
-  // ... campos existentes
-  mentor_name?: string;
-  mentor_avatar_url?: string;
-  is_own_session?: boolean;
-}
+O select ja busca `title`:
+```text
+.select('id, title, current_value, target_value, unit, due_date, priority, objective_id')
 ```
 
-### Componentes visuais
-- Usar `Avatar` + `AvatarImage` + `AvatarFallback` (ja existem no projeto)
-- Mostrar badge "Sua sessao" vs nome do outro mentor
-- Manter botoes de edicao/exclusao apenas para sessoes proprias (`is_own_session`)
+Mas o mapeamento usa `kr.name`:
+```text
+name: kr.name  -->  deve ser  name: kr.title
+```
+
+E a analise rule-based usa `indicator.name`:
+```text
+indicator.name  -->  deve ser  indicator.title
+```
+
+Isso afeta aproximadamente 15 ocorrencias no arquivo.
+
+### Correcao da autenticacao no ai-chat
+
+De:
+```text
+const { data: { user }, error } = await supabaseClient.auth.getUser();
+```
+
+Para:
+```text
+const { data: { user }, error } = await supabaseClient.auth.getUser(token);
+```
+
+Isso permite validar o token sem depender de uma sessao ativa no servidor.
+
+### Arquivos a serem editados
+1. `supabase/functions/_shared/cors.ts`
+2. `supabase/functions/ai-chat/index.ts`
+3. `supabase/functions/generate-insights/index.ts`
+4. `src/components/ai/FloatingAIChat.tsx`
+5. `src/components/ai/AICopilotPage.tsx`
