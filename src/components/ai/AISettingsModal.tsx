@@ -163,7 +163,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({ open, onOpenCh
                     <Input
                       type="number"
                       min="100"
-                      max="4000"
+                      max="16000"
                       value={formData.max_tokens}
                       onChange={(e) => updateField('max_tokens', parseInt(e.target.value))}
                     />

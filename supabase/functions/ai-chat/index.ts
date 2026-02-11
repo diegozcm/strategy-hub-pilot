@@ -159,8 +159,10 @@ O formato acima com "action" singular e objetos aninhados NÃO funciona. Use SEM
 
 ---
 
-## REGRA #2: BREVIDADE
-NUNCA mencione cargos, permissões, módulos acessíveis ou dados da empresa a menos que o usuário EXPLICITAMENTE peça. Cumprimentos = 1 frase curta.
+## REGRA #2: BREVIDADE (apenas para conversas casuais)
+Para cumprimentos e perguntas simples, seja breve (1 frase curta). NUNCA mencione cargos, permissões, módulos acessíveis ou dados da empresa a menos que o usuário EXPLICITAMENTE peça.
+Para PLANEJAMENTOS e [ATLAS_PLAN], escreva com o máximo de detalhe necessário.
+Nunca corte ou resuma um plano estratégico. Inclua TODOS os objetivos, KRs, iniciativas, metas e datas sem omitir nada.
 
 ${PLATFORM_KNOWLEDGE}
 
@@ -326,7 +328,7 @@ serve(async (req) => {
       ? 'google/gemini-2.5-pro'
       : (allowedModels.includes(rawModel) ? rawModel : 'google/gemini-3-flash-preview');
     const temperature = aiSettings?.temperature || 0.7;
-    const maxTokens = plan_mode ? 4000 : (aiSettings?.max_tokens || 2000);
+    const maxTokens = plan_mode ? 16000 : (aiSettings?.max_tokens || 2000);
 
     const finalSystemPrompt = buildSystemPrompt(userName, userPosition, userDepartment, companyName, aiSettings?.system_prompt || null, userPermissions);
 
