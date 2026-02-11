@@ -1,116 +1,83 @@
 
+# Corrigir Indicador de Digitacao e Respostas Longas Desnecessarias
 
-# Humanizar o Account Pilot: Respostas Inteligentes e Indicador de Digitacao
+## Problemas
 
-## Problema Atual
+### 1. Indicador "digitando" desaparece antes do streaming
+Na linha 232, `isLoading` e definido como `false` antes do streaming comecar. Na linha 476, o `TypingIndicator` so aparece quando `isLoading === true`. Resultado: durante o tempo entre o fim do loading e a chegada do primeiro token, o usuario ve uma bolha de mensagem vazia -- a experiencia de "tela branca" relatada.
 
-1. **Respostas sempre longas**: O system prompt atual obriga a IA a responder "baseando-se EXCLUSIVAMENTE nos dados" e o contexto completo da empresa e sempre anexado a TODA mensagem -- ate um simples "ola". Isso faz a IA responder com analises detalhadas mesmo para cumprimentos simples.
-
-2. **Loading generico**: Enquanto a IA processa, aparece apenas um spinner generico. Nao ha indicacao visual de "digitando" como no WhatsApp, o que faz parecer lento e impessoal.
-
-3. **Sem streaming**: A resposta so aparece quando esta 100% pronta. Em mensagens longas isso pode levar varios segundos de espera sem feedback.
+### 2. IA ainda despeja dados em respostas simples
+Mesmo com o prompt dizendo "use somente quando solicitado", os dados contextuais da empresa sao enviados como mensagem de sistema em TODA requisicao (linha 235). A IA ve os dados e sente necessidade de menciona-los. O prompt precisa ser mais enfatico e a estrutura de mensagens precisa reforcar isso.
 
 ---
 
 ## Plano de Acao
 
-### Etapa 1: Reformular o System Prompt para calibrar tamanho da resposta
-
-**Arquivo**: `supabase/functions/ai-chat/index.ts`
-
-O novo system prompt vai instruir a IA a:
-- Responder de forma curta e direta para cumprimentos e perguntas simples ("Ola!", "Quem sou eu?", "O que e o Strategy?")
-- Responder de forma media para perguntas conceituais sobre a plataforma (sem precisar do banco)
-- Responder de forma detalhada apenas quando o usuario pedir analise de dados, metricas ou diagnosticos
-- Nunca despejar dados nao solicitados
-
-Nova diretriz central:
-```text
-"Calibre o tamanho da sua resposta conforme a complexidade da pergunta:
-- Cumprimentos e perguntas simples: responda em 1-2 frases, de forma amigavel e direta.
-- Perguntas sobre a plataforma ou conceitos: responda em 1-2 paragrafos objetivos.
-- Analises de dados, diagnosticos e metricas: use os dados contextuais disponibilizados abaixo e responda de forma completa com formatacao markdown.
-NAO despeje dados ou analises que o usuario nao pediu."
-```
-
-### Etapa 2: Separar dados contextuais da mensagem do usuario
-
-**Arquivo**: `supabase/functions/ai-chat/index.ts`
-
-Atualmente, os dados da empresa sao injetados DENTRO da mensagem do usuario (`contextPrompt`), forcando a IA a sempre analisar tudo. A mudanca:
-- Mover os dados contextuais para uma mensagem de sistema separada (role: "system"), como contexto de referencia
-- Enviar a mensagem do usuario pura, sem os dados embutidos
-- Instruir no system prompt: "Use os dados contextuais abaixo SOMENTE quando o usuario solicitar analises, metricas ou diagnosticos"
-
-Estrutura de mensagens:
-```text
-[system] -> Prompt principal com diretrizes e identidade
-[system] -> Dados contextuais da empresa (para referencia)
-[historico de mensagens anteriores]
-[user] -> Mensagem pura do usuario (sem dados embutidos)
-```
-
-### Etapa 3: Implementar streaming SSE no backend
-
-**Arquivo**: `supabase/functions/ai-chat/index.ts`
-
-- Adicionar parametro `stream: true` na chamada ao AI Gateway quando o body da requisicao incluir `stream: true`
-- Retornar o body da resposta como stream SSE diretamente para o frontend
-- Manter o modo nao-streaming como fallback (para salvar analytics e mensagens no banco)
-
-Decisao de design: Usar streaming completo com salvamento da mensagem ao final. O backend faz stream da resposta, e ao final do stream o frontend envia a mensagem completa para salvar no banco.
-
-### Etapa 4: Indicador "digitando..." estilo WhatsApp
+### Etapa 1: Mostrar "digitando..." durante streaming ate o primeiro token chegar
 
 **Arquivo**: `src/components/ai/FloatingAIChat.tsx`
 
-Substituir o spinner generico por uma animacao de tres pontinhos pulsantes:
-```text
-Account Pilot
-  [bolinha] [bolinha] [bolinha]   <- animacao CSS pulsante
-  "digitando..."
-```
+- Na linha 476, mudar a condicao de `{isLoading && <TypingIndicator />}` para `{(isLoading || (isStreaming && messages[messages.length - 1]?.content === '')) && <TypingIndicator />}`
+- Isso faz o indicador "digitando..." aparecer tanto durante o loading quanto enquanto o streaming nao produziu conteudo ainda
+- Quando o primeiro token chegar e o content deixar de ser vazio, o indicador desaparece e a mensagem real aparece
 
-Usando CSS `@keyframes` com `animation-delay` escalonado nos tres pontinhos para criar o efeito de "onda" do WhatsApp.
-
-### Etapa 5: Implementar streaming SSE no frontend
+### Etapa 2: Nao adicionar bolha vazia no inicio do streaming
 
 **Arquivo**: `src/components/ai/FloatingAIChat.tsx`
 
-- Ao enviar mensagem, fazer `fetch` direto para a edge function com `stream: true`
-- Processar SSE linha por linha (conforme padrao do Lovable AI)
-- Renderizar tokens progressivamente na tela (a mensagem do assistente vai "aparecendo" em tempo real)
-- Ao receber `[DONE]`, salvar a mensagem completa no banco
+- Na linha 274, o codigo cria uma mensagem vazia (`content: ''`) e adiciona ao chat antes de qualquer token chegar. Isso gera a bolha vazia visivel.
+- Mudar para so adicionar a mensagem do assistente quando o primeiro token chegar (mover o `onMessagesChange` para dentro do loop de parsing, no primeiro delta recebido)
+- Usar uma flag `firstToken` para controlar isso
 
-Fluxo:
-```text
-1. Usuario envia mensagem
-2. Mostra indicador "digitando..."
-3. Primeiro token chega -> substitui indicador por mensagem real
-4. Tokens vao sendo adicionados ao vivo
-5. Stream termina -> salva no banco
-```
-
-### Etapa 6: Treinamento do agente sobre a plataforma
+### Etapa 3: Reforcar o system prompt
 
 **Arquivo**: `supabase/functions/ai-chat/index.ts`
 
-Adicionar ao system prompt conhecimento embutido sobre o COFOUND/Strategy HUB para que a IA responda perguntas sobre a plataforma sem precisar consultar o banco:
-- O que e o Strategy HUB e suas funcionalidades
-- Menus disponiveis (Mapa Estrategico, OKRs, Projetos, FCA, RMRE, etc.)
-- O que e o Account Pilot
-- Como usar cada ferramenta
+Adicionar diretriz mais explicita e enfatica no prompt:
+```text
+"REGRA CRITICA: Para cumprimentos como 'Oi', 'Ola', 'Tudo bem?', 'Quem sou eu?', voce DEVE responder em NO MAXIMO 1-2 frases curtas. NUNCA mencione dados da empresa, objetivos, KRs ou projetos a menos que o usuario EXPLICITAMENTE peca. Responda APENAS o que foi perguntado."
+```
+
+Adicionar exemplos concretos de resposta:
+```text
+Exemplos:
+- Usuario: "Oi" -> "Ola, Bernardo! Como posso te ajudar hoje?"
+- Usuario: "Quem sou eu?" -> "Voce e o Bernardo, [cargo] da [empresa]."
+- Usuario: "O que e o Strategy?" -> [1-2 paragrafos sobre a plataforma]
+- Usuario: "Analise meus OKRs" -> [resposta completa com dados]
+```
 
 ---
 
-## Arquivos a serem editados
+## Detalhes Tecnicos
 
-1. `supabase/functions/ai-chat/index.ts` - System prompt + separacao de contexto + streaming SSE + conhecimento da plataforma
-2. `src/components/ai/FloatingAIChat.tsx` - Indicador "digitando..." + streaming frontend + renderizacao progressiva
+### Logica do primeiro token (Etapa 2)
+```text
+let firstTokenReceived = false;
 
-## Resultado Esperado
+// No loop de parsing:
+if (delta) {
+  fullContent += delta;
+  if (!firstTokenReceived) {
+    firstTokenReceived = true;
+  }
+  onMessagesChange([...updatedMessages, { role: 'assistant', content: fullContent, timestamp: new Date() }]);
+}
+```
 
-- "Ola" -> resposta em ~1 segundo: "Ola, Bernardo! Como posso te ajudar?"
-- "O que e o Strategy?" -> resposta em ~2 segundos com explicacao concisa
-- "Me de uma analise da performance" -> resposta em ~5-8 segundos com dados reais, renderizados progressivamente enquanto sao gerados
+Remover a linha 274 que faz `onMessagesChange([...updatedMessages, streamingMessage])` com conteudo vazio.
 
+### Condicao do TypingIndicator (Etapa 1)
+```text
+// De:
+{isLoading && <TypingIndicator />}
+
+// Para:
+{(isLoading || (isStreaming && !messages.some((m, i) => i === messages.length - 1 && m.role === 'assistant' && m.content))) && <TypingIndicator />}
+```
+
+Simplificando: mostrar "digitando" enquanto `isLoading` OU enquanto `isStreaming` e a ultima mensagem do assistente ainda nao tem conteudo.
+
+### Arquivos a serem editados
+1. `src/components/ai/FloatingAIChat.tsx` - Indicador de digitacao + remover bolha vazia
+2. `supabase/functions/ai-chat/index.ts` - Reforcar prompt com exemplos e regra critica
