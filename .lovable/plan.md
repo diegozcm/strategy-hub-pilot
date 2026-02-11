@@ -1,81 +1,48 @@
 
-# Fix: Parser Robusto para Planos Atlas + Reforço do Prompt
+# Fix: Fornecer nomes dos pilares ao LLM no contexto
 
-## Problema
+## Problema raiz
 
-O LLM esta gerando o JSON do `[ATLAS_PLAN]` em um formato alternativo:
+O erro "Nome do pilar nao informado" ocorre porque a edge function `ai-chat` **nunca busca os pilares estrategicos** (`strategic_pillars`) da empresa. O LLM nao sabe quais pilares existem, entao gera o plano sem `pillar_name` ou com um nome inventado.
 
-```json
-{
-  "action": "create_strategic_objective",
-  "data": {
-    "objective": { "title": "...", "pillar": "..." },
-    "key_results": [ { "title": "...", "goal": 50 } ]
-  }
-}
+Os pilares da empresa COFOUND sao:
+- Inovacao & Crescimento
+- Pessoas & Cultura
+- Economico & Financeiro.
+- Mercado e Imagem
+- Tecnologia e Processos
+
+Mas o LLM nunca recebe essa lista.
+
+## Correcao
+
+### Arquivo: `supabase/functions/ai-chat/index.ts`
+
+**1. Buscar pilares junto com os outros dados contextuais (linha ~345)**
+
+Adicionar uma query paralela:
+```typescript
+supabase.from('strategic_pillars')
+  .select('name')
+  .eq('company_id', company_id)
 ```
 
-Mas o sistema espera:
+**2. Incluir pilares no contexto enviado ao LLM (linha ~371)**
 
-```json
-{
-  "actions": [
-    { "type": "create_objective", "data": { "title": "...", "pillar_name": "..." } },
-    { "type": "create_key_result", "data": { "title": "...", "target_value": 50 } }
-  ]
-}
+Adicionar no `contextParts`:
+```
+Pilares Estrategicos disponiveis: Inovacao & Crescimento, Pessoas & Cultura, ...
 ```
 
-O `extractPlan` faz parse do JSON mas nao encontra o array `actions`, resultando em "Plano sem acoes validas para executar."
+**3. Reforcar no system prompt (linha ~142)**
 
----
-
-## Correcoes
-
-### 1. Frontend: Normalizar estruturas alternativas do LLM
-
-**Arquivo: `src/components/ai/FloatingAIChat.tsx`** - funcao `extractPlan`
-
-Adicionar logica de normalizacao apos o `JSON.parse`:
-
-- Se o JSON tem `action` (singular) + `data.objective` + `data.key_results` -> converter para o formato `actions[]`
-- Mapear campos alternativos: `pillar` -> `pillar_name`, `goal` -> `target_value`, `metric_type` -> `unit`, `deadline` -> `target_date`
-- Isso garante resiliencia independente do formato que o LLM gerar
-
-Pseudo-logica:
+Alterar a regra do `pillar_name`:
 ```
-Se plan.action && plan.data.objective:
-  actions = []
-  actions.push({ type: "create_objective", data: { title, pillar_name, description, target_date } })
-  Para cada kr em plan.data.key_results:
-    actions.push({ type: "create_key_result", data: { title, target_value, unit, objective_ref: 0 } })
-  plan = { actions }
+- pillar_name DEVE ser EXATAMENTE um dos pilares listados no contexto da empresa. 
+  Copie o nome exato. Nao invente pilares.
 ```
 
-### 2. Backend: Reforcar exemplos no system prompt
-
-**Arquivo: `supabase/functions/ai-chat/index.ts`**
-
-Adicionar um contra-exemplo explicito no prompt:
-
-```
-FORMATO ERRADO (NAO USE):
-{ "action": "create_strategic_objective", "data": { "objective": {...}, "key_results": [...] } }
-
-FORMATO CORRETO (USE ESTE):
-{ "actions": [ { "type": "create_objective", "data": {...} }, { "type": "create_key_result", "data": {...} } ] }
-```
-
-Tambem reforcar: "O JSON DEVE ser um objeto com chave 'actions' contendo um array. Cada item do array DEVE ter 'type' e 'data'."
-
-### 3. Backend: Remover markdown code fences do prompt exemplo
-
-O LLM as vezes copia o formato do prompt incluindo code fences. Ja temos strip de fences no parser, mas garantir que o exemplo no prompt NAO use code fences.
-
----
-
-## Resultado esperado
-
-- Planos gerados no formato alternativo sao automaticamente convertidos para o formato correto
-- O LLM recebe instrucoes mais claras sobre o formato exato esperado
-- Menos falhas de "Plano sem acoes validas"
+### Resultado esperado
+- O LLM recebe a lista exata de pilares e consegue preencher `pillar_name` corretamente
+- Eliminacao total do erro "Nome do pilar nao informado"
+- Os planos gerados passam a funcionar na primeira tentativa
