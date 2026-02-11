@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Minus, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, History, Plus, Trash2, ArrowLeft, Check, XCircle, Mic, Square } from 'lucide-react';
+import { X, Minus, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, History, Plus, Trash2, ArrowLeft, Check, XCircle, Mic, Square, RefreshCw, ThumbsUp, ThumbsDown, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -686,6 +686,60 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                               ⚠️ Erro ao executar
                             </div>
                           )}
+                          {/* Feedback buttons for assistant messages */}
+                          {msg.role === 'assistant' && !msg.plan && (
+                            <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/50">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                title="Gerar outra resposta"
+                                onClick={() => {
+                                  // Remove this assistant message and resend the previous user message
+                                  const prevUserMsg = messages.slice(0, index).reverse().find(m => m.role === 'user');
+                                  if (prevUserMsg) {
+                                    const withoutThis = messages.filter((_, i) => i !== index);
+                                    onMessagesChange(withoutThis);
+                                    setTimeout(() => handleSendMessage(prevUserMsg.content), 100);
+                                  }
+                                }}
+                              >
+                                <RefreshCw className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 hover:text-green-600"
+                                title="Resposta boa"
+                                onClick={() => {
+                                  supabase.from('ai_analytics').insert([{
+                                    user_id: user?.id || '',
+                                    event_type: 'feedback_positive',
+                                    event_data: { message_content: msg.content.substring(0, 200), session_id: sessionId }
+                                  }]);
+                                  toast({ title: '👍 Feedback registrado!', description: 'Obrigado por nos ajudar a melhorar.' });
+                                }}
+                              >
+                                <ThumbsUp className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 hover:text-destructive"
+                                title="Resposta ruim"
+                                onClick={() => {
+                                  supabase.from('ai_analytics').insert([{
+                                    user_id: user?.id || '',
+                                    event_type: 'feedback_negative',
+                                    event_data: { message_content: msg.content.substring(0, 200), session_id: sessionId }
+                                  }]);
+                                  toast({ title: '👎 Feedback registrado!', description: 'Vamos melhorar com base no seu retorno.' });
+                                }}
+                              >
+                                <ThumbsDown className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -708,7 +762,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                   </div>
                 )}
 
-                <div className="flex gap-2 mt-4">
+                <div className="flex items-center gap-2 mt-4">
                   <Input
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
@@ -739,25 +793,31 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                     className="flex-1"
                   />
                   <Button
+                    onClick={() => setIsPlanMode(prev => !prev)}
+                    disabled={isLoading || isStreaming || isExecuting}
+                    size="sm"
+                    variant={isPlanMode ? "default" : "outline"}
+                    className="text-xs font-semibold px-3 shrink-0"
+                  >
+                    Plan
+                  </Button>
+                  <Button
                     onClick={toggleRecording}
                     disabled={isLoading || isStreaming || isExecuting}
                     size="icon"
                     variant={isRecording ? "destructive" : "outline"}
                     title={isRecording ? "Parar gravação" : "Gravar áudio"}
+                    className="shrink-0"
                   >
                     {isRecording ? <Square className="h-3.5 w-3.5 fill-current" /> : <Mic className="h-4 w-4" />}
                   </Button>
                   <Button
-                    onClick={() => setIsPlanMode(prev => !prev)}
-                    disabled={isLoading || isStreaming || isExecuting}
-                    size="sm"
-                    variant={isPlanMode ? "default" : "outline"}
-                    className="text-xs font-medium px-3"
+                    onClick={() => handleSendMessage()}
+                    disabled={isLoading || isStreaming || isExecuting || !chatInput.trim()}
+                    size="icon"
+                    className="shrink-0 bg-foreground text-background hover:bg-foreground/90 rounded-full"
                   >
-                    Plan
-                  </Button>
-                  <Button onClick={() => handleSendMessage()} disabled={isLoading || isStreaming || isExecuting || !chatInput.trim()} size="icon">
-                    <Send className="h-4 w-4" />
+                    <Navigation className="h-4 w-4" />
                   </Button>
                 </div>
               </>
