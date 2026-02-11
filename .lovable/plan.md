@@ -1,112 +1,89 @@
 
-# Melhorias no Chat do Atlas: Microfone, Botao de Plano e Plano Humanizado
+
+# Redesign dos Botoes do Chat Atlas: Microfone + Plan Toggle
 
 ## Resumo
 
-Vamos adicionar 3 funcionalidades ao chat do Atlas:
+Tres ajustes na barra de input do chat:
 
-1. **Botao de microfone** - Gravar audio por voz, transcrever automaticamente e enviar como texto
-2. **Botao de planejamento** - Acao rapida para pedir ao Atlas que elabore um plano estrategico
-3. **Plano 100% humanizado** - O JSON tecnico ([ATLAS_PLAN]) nunca aparece para o usuario. O Atlas descreve em texto natural o que vai fazer, e o codigo fica completamente invisivel
+1. **Botao de microfone** - Quando gravando, trocar o icone para um quadrado dentro de circulo (icone `Square` do Lucide), sem piscar vermelho agressivo - apenas fundo vermelho solido
+2. **Botao Plan** - Vira um toggle com texto "Plan" (como no Lovable). Quando ativo, fica destacado (azul). Quando ativo, a mensagem enviada forca o Atlas a criar um plano obrigatorio com Aprovar/Reprovar
+3. **Layout** - Ordem: `[Input] [Mic/Stop] [Plan] [Send]`
 
 ---
 
 ## O que muda para o usuario
 
-### Barra de entrada (area de digitar mensagem)
+### Botao de audio
+- Estado normal: icone de microfone
+- Gravando: icone de quadrado (stop), fundo vermelho sem animacao pulsante
 
-A barra de input tera 3 botoes ao lado:
+### Botao Plan
+- Texto "Plan" com P maiusculo
+- Funciona como toggle: clica para ativar, clica de novo para desativar
+- Quando ativo: fundo azul (primary), texto claro
+- Quando desativado: estilo outline normal
+- Quando ativo, a mensagem do usuario e enviada com uma instrucao interna que obriga o Atlas a responder com um plano formal (com `[ATLAS_PLAN]`) que exige aprovacao
 
-```text
-[  Digite sua mensagem...  ] [Mic] [Plan] [Enviar]
-```
-
-- **Mic (microfone)**: Clica para comecar a gravar. O botao fica vermelho pulsando. Clica de novo para parar. O audio e transcrito automaticamente e o texto aparece no campo de input, pronto para enviar.
-- **Plan (planejamento)**: Clica e o Atlas recebe um pedido automatico: "Analise minha situacao estrategica atual e proponha um plano de acoes". O usuario pode editar antes de enviar.
-- **Enviar**: Igual ao atual.
-
-### Gravacao de audio
-- Usa a API nativa do navegador (Web Speech API) para transcricao em tempo real
-- Nao precisa de API externa nem custos adicionais
-- Funciona em Chrome, Edge e outros navegadores modernos
-- Enquanto grava, o texto vai aparecendo no campo de input em tempo real
-- Ao parar, o texto final fica no input para o usuario revisar/editar antes de enviar
-
-### Plano humanizado
-- O Atlas ja descreve o plano em texto natural (como nas screenshots que voce enviou: "Novo Objetivo: ...", "KRs: ...", "Iniciativas: ...")
-- O bloco `[ATLAS_PLAN]...` com o JSON tecnico sera **completamente removido** da exibicao
-- O usuario ve apenas o texto descritivo + botoes Aprovar/Reprovar
-- O codigo JSON fica armazenado internamente para execucao, mas NUNCA e mostrado
+### Envio com Plan ativo
+- O texto do usuario e enviado normalmente, mas internamente adiciona-se um prefixo/sufixo invisivel que instrui o Atlas: "O usuario esta no modo Plan. Voce DEVE responder com um plano detalhado humanizado seguido do bloco [ATLAS_PLAN]. O usuario precisara aprovar antes da execucao."
+- O usuario nao ve essa instrucao, apenas sua mensagem original aparece no chat
 
 ---
 
 ## Secao Tecnica
 
-### Arquivo 1: `src/components/ai/FloatingAIChat.tsx`
+### Arquivo: `src/components/ai/FloatingAIChat.tsx`
 
-**Mudancas:**
+1. **Novo estado `isPlanMode`** (boolean, default false)
 
-1. **Adicionar estado para gravacao de audio:**
-   - `isRecording` (boolean)
-   - `recognition` (ref para SpeechRecognition)
+2. **Remover `handlePlanButton`** - nao sera mais necessario
 
-2. **Funcao `toggleRecording`:**
-   - Se nao esta gravando: inicia `SpeechRecognition` com `lang: 'pt-BR'`, `continuous: true`, `interimResults: true`
-   - `onresult`: atualiza `chatInput` com o texto transcrito em tempo real
-   - Se esta gravando: para o `SpeechRecognition`
+3. **Importar `Square`** do lucide-react (substituir `ClipboardList` e `MicOff`)
 
-3. **Botao de microfone no JSX:**
-   - Icone `Mic` (do lucide-react) ao lado do input
-   - Quando gravando: icone `MicOff` com estilo vermelho pulsante
-   - Disabled quando `isLoading || isStreaming || isExecuting`
-
-4. **Botao de planejamento:**
-   - Icone `ClipboardList` (do lucide-react)
-   - Ao clicar: preenche o input com "Analise a situacao estrategica atual da empresa e proponha um plano de acoes com objetivos, KRs e iniciativas"
-   - O usuario pode editar antes de enviar
-
-5. **Layout da barra de input:**
-   ```
-   <div className="flex gap-2 mt-4">
-     <Input ... className="flex-1" />
-     <Button (mic) />
-     <Button (plan) />
-     <Button (send) />
-   </div>
+4. **Botao de microfone (linhas 726-735):**
+   ```tsx
+   <Button
+     onClick={toggleRecording}
+     disabled={isLoading || isStreaming || isExecuting}
+     size="icon"
+     variant={isRecording ? "destructive" : "outline"}
+     title={isRecording ? "Parar gravacao" : "Gravar audio"}
+   >
+     {isRecording ? <Square className="h-3.5 w-3.5 fill-current" /> : <Mic className="h-4 w-4" />}
+   </Button>
    ```
 
-6. **extractPlan - garantir que cleanContent nunca mostra o JSON:**
-   - O `extractPlan` ja remove o bloco `[ATLAS_PLAN]...[/ATLAS_PLAN]` do `cleanContent`
-   - Verificar e reforcar que qualquer rastro de JSON e removido
-   - Adicionar limpeza extra para remover a frase "Preparei o plano acima..." (redundante se os botoes ja aparecem)
+5. **Botao Plan (linhas 736-744):**
+   ```tsx
+   <Button
+     onClick={() => setIsPlanMode(prev => !prev)}
+     disabled={isLoading || isStreaming || isExecuting}
+     size="sm"
+     variant={isPlanMode ? "default" : "outline"}
+     className="text-xs font-medium px-3"
+   >
+     Plan
+   </Button>
+   ```
 
-### Arquivo 2: `supabase/functions/ai-chat/index.ts`
+6. **handleSendMessage** - quando `isPlanMode` esta ativo, adicionar prefixo interno a mensagem enviada ao backend:
+   ```typescript
+   const effectiveMessage = isPlanMode
+     ? `[MODO PLAN ATIVO] O usuario pede que voce elabore um plano detalhado e obrigatorio antes de executar. Responda com descricao humanizada + bloco [ATLAS_PLAN]. A mensagem do usuario e: ${textToSend}`
+     : textToSend;
+   ```
+   - A `userMessage.content` exibida no chat continua sendo apenas `textToSend` (sem o prefixo)
+   - O prefixo e enviado apenas no body do fetch para o backend
 
-**Mudanca no prompt:**
+### Arquivo: `supabase/functions/ai-chat/index.ts`
 
-Reforcar no `buildSystemPrompt` que a descricao humanizada deve ser DETALHADA:
-
-```
-- ANTES do bloco [ATLAS_PLAN], descreva detalhadamente em linguagem natural e humanizada:
-  * Qual o objetivo que sera criado e por que
-  * Quais KRs serao vinculados e suas metas
-  * Quais iniciativas serao propostas
-  * Use marcadores numerados (1., 2., 3.) para organizar
-  * Seja especifico: inclua nomes, valores, datas
-  * Tom conversacional e claro para qualquer usuario entender
-- O bloco [ATLAS_PLAN] com JSON e SOMENTE para uso interno do sistema. O usuario NUNCA vera esse codigo.
-```
+Nenhuma mudanca necessaria - o prefixo `[MODO PLAN ATIVO]` na mensagem ja sera interpretado pelo LLM como instrucao para gerar o plano obrigatorio.
 
 ---
 
-## Arquivos a editar
-
-1. **`src/components/ai/FloatingAIChat.tsx`** - Adicionar botoes de microfone e planejamento, melhorar extractPlan
-2. **`supabase/functions/ai-chat/index.ts`** - Reforcar prompt para descricoes humanizadas detalhadas
-
 ## Resultado esperado
 
-- Usuario clica no microfone, fala, clica de novo, texto aparece no input
-- Usuario clica no botao de plano, prompt pre-preenchido aparece
-- Atlas responde com texto humanizado detalhado + botoes Aprovar/Reprovar
-- JSON tecnico NUNCA aparece na interface
+- Microfone: icone limpo de quadrado (stop) quando gravando, sem piscamento
+- Plan: toggle "Plan" textual, ativa/desativa modo de planejamento obrigatorio
+- Layout: `[Input] [Mic] [Plan] [Enviar]`
