@@ -32,7 +32,6 @@ function normalizeKRData(data: any) {
 }
 
 function normalizeInitiativeData(data: any) {
-  // Normalize status to valid values
   const VALID_STATUSES = ['planned', 'in_progress', 'completed', 'cancelled', 'on_hold'];
   let status = data.status || 'planned';
   if (status === 'planning') status = 'planned';
@@ -52,6 +51,37 @@ function normalizeInitiativeData(data: any) {
   };
 }
 
+// Helper: search pillar by name with fallback for & vs e
+async function findPillar(supabase: any, companyId: string, pillarName: string) {
+  // Direct search
+  const { data: pillar } = await supabase
+    .from('strategic_pillars')
+    .select('id')
+    .eq('company_id', companyId)
+    .ilike('name', `%${pillarName}%`)
+    .limit(1)
+    .maybeSingle();
+
+  if (pillar) return pillar;
+
+  // Fallback: swap & <-> e
+  const altName = pillarName.includes('&')
+    ? pillarName.replace(/&/g, 'e')
+    : pillarName.replace(/ e /gi, ' & ');
+
+  if (altName === pillarName) return null;
+
+  const { data: altPillar } = await supabase
+    .from('strategic_pillars')
+    .select('id')
+    .eq('company_id', companyId)
+    .ilike('name', `%${altName}%`)
+    .limit(1)
+    .maybeSingle();
+
+  return altPillar;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -61,7 +91,6 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Authenticate user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
@@ -99,7 +128,7 @@ serve(async (req) => {
       .select('id')
       .eq('user_id', user.id)
       .eq('company_id', company_id)
-      .single();
+      .maybeSingle();
 
     if (!relation) {
       return new Response(
@@ -108,7 +137,6 @@ serve(async (req) => {
       );
     }
 
-    // Check if any role is manager/admin for strategic-planning
     const { data: roles } = await supabase
       .from('user_module_roles')
       .select('role, system_modules!inner(slug)')
@@ -127,7 +155,7 @@ serve(async (req) => {
       );
     }
 
-    // Get active strategic plan for the company
+    // Get active strategic plan
     const { data: plan } = await supabase
       .from('strategic_plans')
       .select('id')
@@ -135,7 +163,7 @@ serve(async (req) => {
       .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (!plan) {
       return new Response(
@@ -144,7 +172,6 @@ serve(async (req) => {
       );
     }
 
-    // Execute actions sequentially (order matters for references)
     const results: any[] = [];
 
     for (let i = 0; i < actions.length; i++) {
@@ -166,14 +193,7 @@ serve(async (req) => {
             continue;
           }
 
-          // Find pillar by name (fuzzy match)
-          const { data: pillar } = await supabase
-            .from('strategic_pillars')
-            .select('id')
-            .eq('company_id', company_id)
-            .ilike('name', `%${d.pillar_name}%`)
-            .limit(1)
-            .single();
+          const pillar = await findPillar(supabase, company_id, d.pillar_name);
 
           if (!pillar) {
             results.push({ type: actionType, success: false, error: `Pilar "${d.pillar_name}" não encontrado.` });
@@ -200,29 +220,31 @@ serve(async (req) => {
         } else if (actionType === 'create_key_result') {
           const d = normalizeKRData(action.data);
 
-          // Resolve objective: by ref index, by id, or by title search
           let objectiveId = d.objective_id;
           if (!objectiveId && d.objective_ref !== null && results[d.objective_ref]?.id) {
             objectiveId = results[d.objective_ref].id;
           }
           if (!objectiveId && d.parent_objective) {
-            // Search by title
             const { data: foundObj } = await supabase
               .from('strategic_objectives')
               .select('id')
               .eq('plan_id', plan.id)
               .ilike('title', `%${d.parent_objective}%`)
               .limit(1)
-              .single();
+              .maybeSingle();
             if (foundObj) objectiveId = foundObj.id;
           }
 
           if (!objectiveId) {
-            results.push({ type: actionType, success: false, error: 'Objetivo de referência não encontrado.' });
+            // Cascade error context
+            const refResult = d.objective_ref !== null ? results[d.objective_ref] : null;
+            const reason = refResult && !refResult.success
+              ? ` (o objetivo na posição ${d.objective_ref} falhou: ${refResult.error})`
+              : '';
+            results.push({ type: actionType, success: false, error: `Objetivo de referência não encontrado.${reason}` });
             continue;
           }
 
-          // Normalize unit: convert descriptive types to symbols
           let unit = d.unit;
           if (unit === 'percentage' || unit === 'percent' || unit === 'porcentagem') unit = '%';
           if (unit === 'unit' || unit === 'units' || unit === 'unidade' || unit === 'unidades' || unit === 'número' || unit === 'numero') unit = 'un';
@@ -256,30 +278,34 @@ serve(async (req) => {
         } else if (actionType === 'create_initiative') {
           const d = normalizeInitiativeData(action.data);
 
-          // Resolve key_result: by ref index, by id, or by title search
           let keyResultId = d.key_result_id;
           if (!keyResultId && d.key_result_ref !== null && results[d.key_result_ref]?.id) {
             keyResultId = results[d.key_result_ref].id;
           }
           if (!keyResultId && d.parent_kr) {
             const batchObjectiveId = results.find(r => r.success && r.type === 'create_objective')?.id;
-            
+
             let query = supabase
               .from('key_results')
               .select('id, objective_id')
               .ilike('title', `%${d.parent_kr}%`)
               .limit(1);
-            
+
             if (batchObjectiveId) {
               query = query.eq('objective_id', batchObjectiveId);
             }
-            
-            const { data: foundKR } = await query.single();
+
+            const { data: foundKR } = await query.maybeSingle();
             if (foundKR) keyResultId = foundKR.id;
           }
 
           if (!keyResultId) {
-            results.push({ type: actionType, success: false, error: 'Resultado-chave de referência não encontrado.' });
+            // Cascade error context
+            const refResult = d.key_result_ref !== null ? results[d.key_result_ref] : null;
+            const reason = refResult && !refResult.success
+              ? ` (o KR na posição ${d.key_result_ref} falhou: ${refResult.error})`
+              : '';
+            results.push({ type: actionType, success: false, error: `Resultado-chave de referência não encontrado.${reason}` });
             continue;
           }
 
@@ -323,7 +349,7 @@ serve(async (req) => {
               .select('id')
               .ilike('title', `%${d.kr_title}%`)
               .limit(1)
-              .single();
+              .maybeSingle();
             if (foundKR) resolvedKrId = foundKR.id;
           }
 
@@ -335,11 +361,69 @@ serve(async (req) => {
           const updateData: any = {};
           if (currentValue !== undefined && currentValue !== null) updateData.current_value = currentValue;
           if (d.monthly_actual) updateData.monthly_actual = d.monthly_actual;
+          if (d.monthly_targets) updateData.monthly_targets = d.monthly_targets;
+          if (d.yearly_target !== undefined && d.yearly_target !== null) updateData.yearly_target = d.yearly_target;
+          if (d.target_value !== undefined && d.target_value !== null) updateData.target_value = d.target_value;
+          if (d.frequency) updateData.frequency = d.frequency;
+          if (d.unit) updateData.unit = d.unit;
+          if (d.description) updateData.description = d.description;
+          if (d.weight !== undefined && d.weight !== null) updateData.weight = d.weight;
+          if (d.due_date) updateData.due_date = d.due_date;
 
           const { data: updated, error: updateErr } = await supabase
             .from('key_results')
             .update(updateData)
             .eq('id', resolvedKrId)
+            .select('id, title')
+            .single();
+
+          if (updateErr) throw updateErr;
+          results.push({ type: actionType, success: true, id: updated.id, title: updated.title });
+
+        } else if (actionType === 'update_initiative') {
+          const d = action.data;
+          const initId = d.initiative_id || d.id;
+
+          if (!initId && !d.initiative_title) {
+            results.push({ type: actionType, success: false, error: 'ID ou título da iniciativa não informado.' });
+            continue;
+          }
+
+          let resolvedInitId = initId;
+          if (!resolvedInitId && d.initiative_title) {
+            const { data: foundInit } = await supabase
+              .from('kr_initiatives')
+              .select('id')
+              .eq('company_id', company_id)
+              .ilike('title', `%${d.initiative_title}%`)
+              .limit(1)
+              .maybeSingle();
+            if (foundInit) resolvedInitId = foundInit.id;
+          }
+
+          if (!resolvedInitId) {
+            results.push({ type: actionType, success: false, error: `Iniciativa "${d.initiative_title}" não encontrada.` });
+            continue;
+          }
+
+          const VALID_STATUSES = ['planned', 'in_progress', 'completed', 'cancelled', 'on_hold'];
+          const updateData: any = {};
+          if (d.title) updateData.title = d.title;
+          if (d.description) updateData.description = d.description;
+          if (d.status) {
+            let status = d.status;
+            if (status === 'planning') status = 'planned';
+            if (VALID_STATUSES.includes(status)) updateData.status = status;
+          }
+          if (d.progress_percentage !== undefined && d.progress_percentage !== null) updateData.progress_percentage = d.progress_percentage;
+          if (d.priority) updateData.priority = d.priority;
+          if (d.start_date) updateData.start_date = d.start_date;
+          if (d.end_date) updateData.end_date = d.end_date;
+
+          const { data: updated, error: updateErr } = await supabase
+            .from('kr_initiatives')
+            .update(updateData)
+            .eq('id', resolvedInitId)
             .select('id, title')
             .single();
 
