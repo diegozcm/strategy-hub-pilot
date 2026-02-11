@@ -55,12 +55,40 @@ const TypingIndicator = ({ text = 'digitando' }: { text?: string }) => (
 );
 
 function extractPlan(content: string): { cleanContent: string; plan: any | null } {
-  const planRegex = /\[ATLAS_PLAN\]\s*([\s\S]*?)\s*\[\/ATLAS_PLAN\]/;
-  const match = content.match(planRegex);
+  // Try with closing tag first
+  let match = content.match(/\[ATLAS_PLAN\]\s*([\s\S]*?)\s*\[\/ATLAS_PLAN\]/);
+  
+  // Fallback: no closing tag — grab everything after [ATLAS_PLAN]
+  if (!match) {
+    match = content.match(/\[ATLAS_PLAN\]\s*([\s\S]*)/);
+  }
+  
   if (!match) return { cleanContent: content, plan: null };
+  
   try {
-    const plan = JSON.parse(match[1]);
-    const cleanContent = content.replace(planRegex, '').trim();
+    // Strip markdown code fences if present
+    let jsonStr = match[1].trim();
+    jsonStr = jsonStr.replace(/^```json?\s*/i, '').replace(/\s*```\s*$/, '');
+    // Remove any trailing text after the JSON object
+    const lastBrace = jsonStr.lastIndexOf('}');
+    if (lastBrace !== -1 && lastBrace < jsonStr.length - 1) {
+      jsonStr = jsonStr.substring(0, lastBrace + 1);
+    }
+    
+    const plan = JSON.parse(jsonStr);
+    
+    // Normalize action types to lowercase + aliases
+    if (plan.actions) {
+      plan.actions = plan.actions.map((a: any) => ({
+        ...a,
+        type: a.type.toLowerCase()
+          .replace('create_kr', 'create_key_result'),
+      }));
+    }
+    
+    const cleanContent = content
+      .replace(/\[ATLAS_PLAN\][\s\S]*?(\[\/ATLAS_PLAN\]|$)/, '')
+      .trim();
     return { cleanContent, plan };
   } catch {
     return { cleanContent: content, plan: null };
