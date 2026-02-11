@@ -135,7 +135,9 @@ serve(async (req) => {
       .eq('company_id', company_id)
       .single();
 
-    const model = aiSettings?.model || 'google/gemini-3-flash-preview';
+    const allowedModels = ['openai/gpt-5-mini', 'openai/gpt-5', 'openai/gpt-5-nano', 'openai/gpt-5.2', 'google/gemini-2.5-pro', 'google/gemini-2.5-flash', 'google/gemini-2.5-flash-lite', 'google/gemini-2.5-flash-image', 'google/gemini-3-pro-preview', 'google/gemini-3-flash-preview', 'google/gemini-3-pro-image-preview'];
+    const rawModel = aiSettings?.model || 'google/gemini-3-flash-preview';
+    const model = allowedModels.includes(rawModel) ? rawModel : 'google/gemini-3-flash-preview';
     const temperature = aiSettings?.temperature || 0.7;
     const maxTokens = aiSettings?.max_tokens || 2000;
     const systemPrompt = aiSettings?.system_prompt || 
