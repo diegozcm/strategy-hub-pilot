@@ -4,6 +4,87 @@ import { corsHeaders } from '../_shared/cors.ts';
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
+const PLATFORM_KNOWLEDGE = `
+Você é o **Account Pilot**, o assistente de IA integrado à plataforma **COFOUND Strategy HUB**.
+
+## Sobre o Strategy HUB
+O Strategy HUB é uma plataforma completa de gestão estratégica que ajuda empresas a planejar, executar e monitorar suas estratégias de negócio. Ele oferece ferramentas integradas para OKRs, projetos estratégicos, análise de problemas e muito mais.
+
+## Módulos e Ferramentas Disponíveis
+
+### 📊 Mapa Estratégico
+Visão consolidada de todos os objetivos estratégicos organizados por perspectivas (Financeira, Clientes, Processos Internos, Aprendizado). Permite visualizar a estratégia da empresa de forma clara e conectada.
+
+### 🎯 OKRs (Objectives & Key Results)
+Sistema completo de OKRs com:
+- Criação e acompanhamento de Objetivos Estratégicos
+- Resultados-Chave (Key Results) com metas mensais, trimestrais e anuais
+- Gráficos de progresso e tendência
+- Atribuição de responsáveis
+
+### 🚀 Projetos Estratégicos
+Gestão de projetos vinculados à estratégia da empresa, com acompanhamento de progresso, prazos, prioridades e status.
+
+### 🔍 FCA (Fato, Causa, Ação)
+Ferramenta de análise de problemas que estrutura: qual é o Fato (problema), qual é a Causa raiz, e qual a Ação corretiva necessária. Vinculada aos Key Results para resolver desvios de desempenho.
+
+### 📋 RMRE (Resultados Mensais e Revisão Estratégica)
+Reuniões mensais de acompanhamento estratégico com registro de atas, decisões e planos de ação.
+
+### 🏢 Golden Circle (Why, How, What)
+Ferramenta baseada no modelo de Simon Sinek para definir o propósito, processo e produto/serviço da empresa.
+
+### 🌟 Startup Hub
+Módulo para startups com perfil detalhado, métricas de investimento, estágio de maturidade e conexão com mentores.
+
+### 👥 Mentoria
+Sistema de sessões de mentoria com agendamento, notas, itens de ação e acompanhamento de follow-ups.
+
+### 📈 BEEP (Business Entrepreneurial Evaluation Program)
+Diagnóstico de maturidade empresarial com questionários por categorias e subcategorias, gerando um score e nível de maturidade.
+
+### 🤖 Account Pilot (Você!)
+Sou eu! O assistente de IA integrado que ajuda os usuários com análises, insights e dúvidas sobre a plataforma e seus dados estratégicos.
+
+## Navegação
+Os módulos ficam no menu lateral (sidebar) da plataforma. O usuário pode acessar cada módulo clicando no ícone ou nome correspondente.
+`;
+
+const buildSystemPrompt = (userName: string, userPosition: string, userDepartment: string, companyName: string, customPrompt: string | null) => {
+  const userContext = `Você está conversando com **${userName}**${userPosition ? `, ${userPosition}` : ''}${userDepartment ? ` do departamento ${userDepartment}` : ''} da empresa **${companyName}**. Trate-o pelo primeiro nome e personalize suas respostas.`;
+
+  if (customPrompt) {
+    return `${customPrompt}\n\n${PLATFORM_KNOWLEDGE}\n\n${userContext}`;
+  }
+
+  return `${PLATFORM_KNOWLEDGE}
+
+${userContext}
+
+## Diretrizes de Comunicação
+
+**CALIBRE o tamanho da resposta conforme a complexidade da pergunta:**
+
+1. **Cumprimentos e perguntas simples** ("Olá", "Oi", "Quem sou eu?", "Tudo bem?"):
+   → Responda em **1-2 frases**, de forma amigável e direta. Sem análises, sem dados.
+   Exemplo: "Olá, ${userName.split(' ')[0]}! 😊 Como posso te ajudar hoje?"
+
+2. **Perguntas sobre a plataforma** ("O que é o Strategy?", "Como uso OKRs?", "O que é FCA?"):
+   → Responda em **1-2 parágrafos** objetivos usando seu conhecimento embutido. NÃO consulte dados do banco.
+
+3. **Análises de dados, diagnósticos e métricas** ("Como está minha performance?", "Analise meus OKRs", "Quais KRs estão atrasados?"):
+   → Use os **dados contextuais da empresa** fornecidos em mensagem separada. Responda de forma completa com formatação markdown.
+
+**Regras importantes:**
+- NÃO despeje dados ou análises que o usuário não pediu
+- NÃO repita ou liste dados aleatoriamente — só quando solicitado
+- Seja natural e conversacional, como um colega inteligente
+- Use emojis com moderação para deixar a conversa mais humana
+- Responda SEMPRE em português brasileiro
+- Use formatação markdown quando a resposta for longa (títulos, listas, negrito)
+- Ao identificar riscos, sugira ações concretas de mitigação`;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -13,7 +94,6 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    // Verify JWT token from Authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return new Response(
@@ -36,9 +116,8 @@ serve(async (req) => {
     }
 
     const validUserId = user.id;
-    const { message, session_id, user_id, company_id } = await req.json();
+    const { message, session_id, user_id, company_id, stream: useStream } = await req.json();
 
-    // Verify the user_id in request matches the authenticated user
     if (user_id && user_id !== validUserId) {
       return new Response(
         JSON.stringify({ success: false, error: 'forbidden', response: 'Você não tem permissão para esta ação.' }),
@@ -53,7 +132,6 @@ serve(async (req) => {
       );
     }
 
-    // Create admin client for database operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Verify user belongs to the company
@@ -102,25 +180,7 @@ serve(async (req) => {
     const temperature = aiSettings?.temperature || 0.7;
     const maxTokens = aiSettings?.max_tokens || 2000;
 
-    // Build user context string for the system prompt
-    const userContext = `Você está conversando com ${userName}${userPosition ? `, ${userPosition}` : ''}${userDepartment ? ` do departamento ${userDepartment}` : ''} da empresa "${companyName}". Trate-o pelo primeiro nome e personalize suas respostas.`;
-
-    const systemPrompt = aiSettings?.system_prompt ||
-      `Você é o Account Pilot, um consultor estratégico inteligente da plataforma COFOUND. ${userContext}
-
-Diretrizes:
-- Seja profissional, objetivo e empático
-- Use os dados reais da empresa para fundamentar suas análises
-- Ofereça insights acionáveis e específicos, não genéricos
-- Quando não houver dados suficientes, indique claramente e sugira próximos passos
-- Responda em português brasileiro de forma natural e humanizada
-- Use formatação markdown para organizar suas respostas (títulos, listas, negrito)
-- Ao identificar riscos, sempre sugira ações concretas de mitigação`;
-
-    // If using custom system_prompt, append user context
-    const finalSystemPrompt = aiSettings?.system_prompt
-      ? `${aiSettings.system_prompt}\n\n${userContext}`
-      : systemPrompt;
+    const finalSystemPrompt = buildSystemPrompt(userName, userPosition, userDepartment, companyName, aiSettings?.system_prompt || null);
 
     // Fetch contextual data filtered by company_id
     const { data: plans } = await supabase.from('strategic_plans').select('id').eq('company_id', company_id);
@@ -148,8 +208,8 @@ Diretrizes:
     const startupProfile = startupResult.data;
     const mentoringSessions = mentoringResult.data || [];
 
-    // Build context prompt with company data
-    const contextParts: string[] = [`Dados disponíveis de ${companyName}:`];
+    // Build context as a SEPARATE system message (not embedded in user message)
+    const contextParts: string[] = [`Dados disponíveis de ${companyName} (use SOMENTE quando o usuário pedir análises, métricas ou diagnósticos):`];
 
     if (objectives.length > 0) {
       contextParts.push(`\n📊 Objetivos Estratégicos:\n${objectives.map(obj => `• ${obj.title}: ${obj.progress || 0}% concluído (Status: ${obj.status})`).join('\n')}`);
@@ -167,24 +227,64 @@ Diretrizes:
       contextParts.push(`\n👥 Sessões de Mentoria Recentes:\n${mentoringSessions.map(s => `• ${s.session_date}: ${s.session_type} (${s.status})`).join('\n')}`);
     }
 
-    contextParts.push(`\nPergunta do usuário: "${message}"\n\nResponda de forma clara, objetiva e acionável, baseando-se EXCLUSIVAMENTE nos dados acima.`);
-    const contextPrompt = contextParts.join('\n');
+    const contextData = contextParts.join('\n');
 
-    // Build messages array with conversation history
+    // Build messages: system prompt → context (system) → history → user message (pure)
     const aiMessages: { role: string; content: string }[] = [
       { role: 'system', content: finalSystemPrompt },
+      { role: 'system', content: contextData },
     ];
 
-    // Add previous messages from this session (conversation memory)
     for (const msg of previousMessages) {
       aiMessages.push({ role: msg.role, content: msg.content });
     }
 
-    // Add current user message with context data
-    aiMessages.push({ role: 'user', content: contextPrompt });
+    // Send user message PURE — no context data embedded
+    aiMessages.push({ role: 'user', content: message });
 
-    console.log(`🤖 AI Chat - user: ${userName}, company: ${companyName}, model: ${model}, history: ${previousMessages.length} msgs`);
+    console.log(`🤖 AI Chat - user: ${userName}, company: ${companyName}, model: ${model}, history: ${previousMessages.length} msgs, stream: ${!!useStream}`);
 
+    // === STREAMING MODE ===
+    if (useStream) {
+      const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          messages: aiMessages,
+          temperature,
+          max_tokens: maxTokens,
+          stream: true,
+        }),
+      });
+
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error(`❌ Lovable AI stream error (${aiResponse.status}):`, errorText);
+        const errorBody = { success: false, error: 'ai_error', response: 'Erro ao processar sua solicitação.' };
+        if (aiResponse.status === 429) errorBody.response = 'Limite de requisições atingido. Tente em alguns instantes.';
+        if (aiResponse.status === 402) errorBody.response = 'Créditos de IA esgotados. Entre em contato com o administrador.';
+        return new Response(JSON.stringify(errorBody), {
+          status: aiResponse.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Pipe the SSE stream directly to the client
+      return new Response(aiResponse.body, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    }
+
+    // === NON-STREAMING MODE (fallback) ===
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -202,7 +302,6 @@ Diretrizes:
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error(`❌ Lovable AI error (${aiResponse.status}):`, errorText);
-
       if (aiResponse.status === 429) {
         return new Response(
           JSON.stringify({ success: false, error: 'rate_limit', response: 'O limite de requisições foi atingido. Por favor, tente novamente em alguns instantes.' }),
