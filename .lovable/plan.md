@@ -1,55 +1,53 @@
 
+# Switch de Modelo: Plan Mode usa Gemini Pro
 
-# Fix: 3 Problemas do Atlas Chat
+## Resumo
 
-## Problema 1: KRs falham com "Objetivo de referencia nao encontrado"
+Quando o botao "Plan" estiver ativado, o sistema usara o modelo `google/gemini-2.5-pro` (raciocinio avancado, respostas mais completas). Com Plan desativado, continua usando o modelo configurado nas settings (default: `google/gemini-3-flash-preview`).
 
-O LLM gera KRs com `objective_title` como referencia ao objetivo, mas o backend (`normalizeKRData`) so reconhece `parent_objective` e `parent_objective_title`. O campo `objective_title` e ignorado.
+## Mudancas
 
-Alem disso, o LLM nao inclui `objective_ref: 0` nos KRs, que seria a forma mais confiavel de vincular ao objetivo criado na mesma batch.
+### 1. Frontend: Enviar flag `plan_mode` para o backend
 
-### Correcoes:
+**Arquivo: `src/components/ai/FloatingAIChat.tsx`** (~linha 505)
 
-**Backend (`supabase/functions/ai-agent-execute/index.ts`):**
-- Adicionar `objective_title` como alias em `normalizeKRData`:
-  ```
-  parent_objective: data.parent_objective || data.parent_objective_title || data.objective_title || null
-  ```
+Adicionar `plan_mode: isPlanMode` no body do fetch:
 
-**Frontend (`FloatingAIChat.tsx` - funcao `extractPlan`):**
-- Apos normalizar os action types, adicionar logica para injetar `objective_ref: 0` em KRs que nao tenham `objective_ref`, `objective_id` nem `parent_objective` - quando existir um `create_objective` antes no array.
-- Mesma logica para iniciativas: injetar `key_result_ref` apontando para o primeiro KR criado.
+```
+body: JSON.stringify({
+  message: effectiveMessage,
+  session_id: currentSessionId,
+  user_id: user.id,
+  company_id: company.id,
+  stream: true,
+  plan_mode: isPlanMode,   // <-- NOVO
+  ...(pastedImages.length > 0 ? { image: pastedImages[0] } : {}),
+})
+```
 
----
+### 2. Backend: Usar modelo Pro quando plan_mode = true
 
-## Problema 2: Botoes de feedback ausentes em mensagens com plano
+**Arquivo: `supabase/functions/ai-chat/index.ts`** (~linha 323-327)
 
-Linha 750 tem a condicao `!msg.plan` que exclui mensagens com plano dos botoes de Reiniciar/ThumbsUp/ThumbsDown.
+Extrair `plan_mode` do body e sobrescrever o modelo:
 
-### Correcao:
+```
+const { plan_mode } = await req.json(); // ja desestruturado junto com message, etc.
 
-- Remover `!msg.plan` da condicao. Mostrar botoes de feedback em TODAS as mensagens do assistente.
-- Ajustar para nao mostrar apenas durante status `executing`.
+const rawModel = aiSettings?.model || 'google/gemini-3-flash-preview';
+const model = plan_mode
+  ? 'google/gemini-2.5-pro'
+  : (allowedModels.includes(rawModel) ? rawModel : 'google/gemini-3-flash-preview');
+```
 
----
+Tambem aumentar `max_tokens` no modo Plan para evitar respostas truncadas:
 
-## Problema 3: Botao Reiniciar envia mensagem duplicada
+```
+const maxTokens = plan_mode ? 4000 : (aiSettings?.max_tokens || 2000);
+```
 
-O botao Reiniciar chama `handleSendMessage(prevUserMsg.content)` que cria uma NOVA mensagem do usuario na conversa. O comportamento correto e:
-1. Remover a resposta atual do assistente
-2. Regenerar a resposta sem adicionar nova mensagem do usuario
+## Resultado
 
-### Correcao:
-
-- Criar uma funcao `handleRegenerate(msgIndex)` que:
-  1. Encontra a mensagem do usuario anterior
-  2. Remove a resposta do assistente atual
-  3. Chama a API diretamente (sem adicionar nova user message) passando o conteudo da mensagem anterior
-
----
-
-## Arquivos alterados
-
-1. `supabase/functions/ai-agent-execute/index.ts` - adicionar alias `objective_title`
-2. `src/components/ai/FloatingAIChat.tsx` - corrigir feedback buttons, restart, e auto-inject objective_ref
-
+- Plan ON: Gemini 2.5 Pro (raciocinio profundo, respostas completas, JSON mais preciso)
+- Plan OFF: Gemini Flash (rapido e economico para conversas normais)
+- Tokens aumentados no modo Plan para evitar cortes no JSON
