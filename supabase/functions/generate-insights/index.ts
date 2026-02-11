@@ -3,10 +3,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { corsHeaders } from '../_shared/cors.ts';
 
 interface AnalysisResult {
   projects: any[];
@@ -79,12 +76,12 @@ serve(async (req) => {
         : Promise.resolve({ data: [], error: null }),
       
       // Startup Hub data (already filtered by company_id)
-      supabaseClient.from('startup_profiles').select('*').eq('company_id', company_id),
+      supabaseClient.from('startup_hub_profiles').select('*').eq('company_id', company_id),
       
       // Mentoring sessions (already filtered by company_id)
-      supabaseClient.from('mentor_sessions')
+      supabaseClient.from('mentoring_sessions')
         .select('*')
-        .eq('company_id', company_id)
+        .eq('startup_company_id', company_id)
         .order('session_date', { ascending: false })
         .limit(20)
     ]);
@@ -172,7 +169,7 @@ serve(async (req) => {
             priority: p.priority
           })) || [],
           keyResults: analysis.indicators?.map(kr => ({
-            name: kr.name,
+            name: kr.title,
             current: kr.current_value,
             target: kr.target_value,
             unit: kr.unit,
@@ -247,7 +244,7 @@ STARTUP HUB:
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model: 'google/gemini-3-flash-preview',
             messages: [
               {
                 role: 'system',
@@ -408,22 +405,22 @@ STARTUP HUB:
         const targetValue = indicator.target_value || 0;
         const achievement = targetValue > 0 ? (currentValue / targetValue) * 100 : 0;
         
-        console.log(`Indicator: ${indicator.name}, Current: ${currentValue}, Target: ${targetValue}, Achievement: ${achievement.toFixed(1)}%`);
+        console.log(`Indicator: ${indicator.title}, Current: ${currentValue}, Target: ${targetValue}, Achievement: ${achievement.toFixed(1)}%`);
 
         // Critical underperformance
         if (achievement < 50) {
           insights.push({
             insight_type: 'risk',
             category: 'indicators',
-            title: `Meta Crítica: "${indicator.name}"`,
-            description: `O resultado-chave "${indicator.name}" está severamente abaixo da meta com apenas ${achievement.toFixed(1)}% de atingimento. Valor: ${currentValue} ${indicator.unit || ''} / Meta: ${targetValue} ${indicator.unit || ''}. Intervenção imediata necessária.`,
+            title: `Meta Crítica: "${indicator.title}"`,
+            description: `O resultado-chave "${indicator.title}" está severamente abaixo da meta com apenas ${achievement.toFixed(1)}% de atingimento. Valor: ${currentValue} ${indicator.unit || ''} / Meta: ${targetValue} ${indicator.unit || ''}. Intervenção imediata necessária.`,
             severity: 'critical',
             confidence_score: 0.95,
             related_entity_type: 'key_result',
             related_entity_id: indicator.id,
             actionable: true,
             metadata: {
-              indicator_name: indicator.name,
+              indicator_name: indicator.title,
               current_value: currentValue,
               target_value: targetValue,
               achievement_percentage: achievement,
@@ -435,15 +432,15 @@ STARTUP HUB:
           insights.push({
             insight_type: 'risk',
             category: 'indicators',
-            title: `Atenção: "${indicator.name}" Abaixo da Meta`,
-            description: `Resultado-chave "${indicator.name}" com ${achievement.toFixed(1)}% da meta atingida. Necessário plano de ação para alcançar ${targetValue} ${indicator.unit || ''}.`,
+            title: `Atenção: "${indicator.title}" Abaixo da Meta`,
+            description: `Resultado-chave "${indicator.title}" com ${achievement.toFixed(1)}% da meta atingida. Necessário plano de ação para alcançar ${targetValue} ${indicator.unit || ''}.`,
             severity: 'high',
             confidence_score: 0.85,
             related_entity_type: 'key_result',
             related_entity_id: indicator.id,
             actionable: true,
             metadata: {
-              indicator_name: indicator.name,
+              indicator_name: indicator.title,
               current_value: currentValue,
               target_value: targetValue,
               achievement_percentage: achievement
@@ -456,15 +453,15 @@ STARTUP HUB:
           insights.push({
             insight_type: 'opportunity',
             category: 'indicators',
-            title: `Desempenho Excepcional: "${indicator.name}"`,
-            description: `Parabéns! O resultado "${indicator.name}" está ${achievement.toFixed(1)}% acima da meta. Valor: ${currentValue} vs Meta: ${targetValue} ${indicator.unit || ''}. Considere revisar metas ou identificar fatores de sucesso para replicar.`,
+            title: `Desempenho Excepcional: "${indicator.title}"`,
+            description: `Parabéns! O resultado "${indicator.title}" está ${achievement.toFixed(1)}% acima da meta. Valor: ${currentValue} vs Meta: ${targetValue} ${indicator.unit || ''}. Considere revisar metas ou identificar fatores de sucesso para replicar.`,
             severity: 'low',
             confidence_score: 0.90,
             related_entity_type: 'key_result',
             related_entity_id: indicator.id,
             actionable: true,
             metadata: {
-              indicator_name: indicator.name,
+              indicator_name: indicator.title,
               current_value: currentValue,
               target_value: targetValue,
               achievement_percentage: achievement,

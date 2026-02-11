@@ -110,6 +110,23 @@ export const AICopilotPage: React.FC = () => {
 
       if (response.error) {
         console.error('Edge function error:', response.error);
+        const errorMessage = response.error?.message || '';
+        if (errorMessage.includes('429') || errorMessage.includes('rate')) {
+          toast({
+            title: "Limite de requisições",
+            description: "Muitas requisições em pouco tempo. Aguarde alguns segundos e tente novamente.",
+            variant: "destructive",
+          });
+          return;
+        }
+        if (errorMessage.includes('402') || errorMessage.includes('payment')) {
+          toast({
+            title: "Créditos esgotados",
+            description: "Os créditos de IA foram esgotados. Entre em contato com o administrador.",
+            variant: "destructive",
+          });
+          return;
+        }
         throw response.error;
       }
 
