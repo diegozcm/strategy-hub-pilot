@@ -75,13 +75,18 @@ function extractPlan(content: string): { cleanContent: string; plan: any | null 
       jsonStr = jsonStr.substring(0, lastBrace + 1);
     }
     
-    const plan = JSON.parse(jsonStr);
+    let plan = JSON.parse(jsonStr);
+    
+    // If the parsed JSON is an array, wrap it as actions
+    if (Array.isArray(plan)) {
+      plan = { actions: plan };
+    }
     
     // Normalize action types to lowercase + aliases
-    if (plan.actions) {
+    if (plan.actions && Array.isArray(plan.actions)) {
       plan.actions = plan.actions.map((a: any) => ({
         ...a,
-        type: a.type.toLowerCase()
+        type: (a.type || '').toLowerCase()
           .replace('create_kr', 'create_key_result'),
       }));
     }
@@ -303,6 +308,12 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
       const accessToken = authSession?.access_token;
       if (!accessToken) throw new Error('No auth session');
 
+      // Resolve actions from plan - handle different structures
+      const actions = plan.actions || (Array.isArray(plan) ? plan : null);
+      if (!actions || !Array.isArray(actions) || actions.length === 0) {
+        throw new Error('Plano sem ações válidas para executar.');
+      }
+
       const response = await fetch('https://pdpzxjlnaqwlyqoyoyhr.supabase.co/functions/v1/ai-agent-execute', {
         method: 'POST',
         headers: {
@@ -310,7 +321,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
           'Content-Type': 'application/json',
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkcHp4amxuYXF3bHlxb3lveWhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIyNTE1ODYsImV4cCI6MjA2NzgyNzU4Nn0.RUAqyDG5-eM35mH3QNFO3iuR_Wqe5q1tiJSHroH_upk',
         },
-        body: JSON.stringify({ company_id: company.id, actions: plan.actions }),
+        body: JSON.stringify({ company_id: company.id, actions }),
       });
 
       const result = await response.json();
