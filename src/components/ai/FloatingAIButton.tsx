@@ -39,9 +39,9 @@ export const FloatingAIButton: React.FC<FloatingAIButtonProps> = ({
             )}
             style={{
               '--base': 'oklch(10% 0.02 240)',
-              '--accent1': 'oklch(65% 0.18 155)',
-              '--accent2': 'oklch(72% 0.2 230)',
-              '--accent3': 'oklch(70% 0.16 195)',
+              '--accent1': 'oklch(68% 0.22 150)',
+              '--accent2': 'oklch(75% 0.22 230)',
+              '--accent3': 'oklch(72% 0.20 200)',
               '--blur': '0.8px',
               '--contrast': '1.6',
               '--dot': '0.08rem',
