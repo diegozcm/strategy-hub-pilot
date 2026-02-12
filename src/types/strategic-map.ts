@@ -104,6 +104,8 @@ export interface KeyResult {
     email: string;
     avatar_url?: string;
   };
+  // Propriedades de validação
+  variation_threshold?: number | null; // Percentual máximo de variação permitido (null = desativado)
 }
 
 export interface StrategicProject {

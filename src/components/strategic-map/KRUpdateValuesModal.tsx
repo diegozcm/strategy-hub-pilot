@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -6,10 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { KeyResult } from '@/types/strategic-map';
 import { useToast } from '@/hooks/use-toast';
-import { X } from 'lucide-react';
+import { X, AlertTriangle } from 'lucide-react';
 import { calculateKRStatus } from '@/lib/krHelpers';
 import { cn } from '@/lib/utils';
 import { usePeriodFilter } from '@/hooks/usePeriodFilter';
+import { KRFCAModal } from './KRFCAModal';
 import { 
   KRFrequency, 
   getPeriodsForFrequency, 
@@ -57,8 +58,64 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
   const hasInitialized = useRef(false);
+  
+  // Variation threshold states
+  const [blockedMonths, setBlockedMonths] = useState<Record<string, { variation: number; previousValue: number; newValue: number }>>({});
+  const [showFCAModal, setShowFCAModal] = useState(false);
+  const [fcaMonthKey, setFcaMonthKey] = useState<string | null>(null);
+  const [resolvedMonths, setResolvedMonths] = useState<Set<string>>(new Set());
+
+  const variationThreshold = keyResult?.variation_threshold ?? null;
 
   const frequency = (keyResult?.frequency as KRFrequency) || 'monthly';
+
+  // Variation threshold check function
+  const checkVariation = useCallback((monthKey: string, newValue: number, currentActuals: Record<string, number>) => {
+    if (variationThreshold === null || variationThreshold === undefined) return null;
+    
+    // Get existing actuals from DB (original data)
+    const existingActual = (keyResult?.monthly_actual as Record<string, number>) || {};
+    
+    // Find the previous month with data (from existing DB data, sorted)
+    const allMonthKeys = Object.keys(existingActual)
+      .filter(k => existingActual[k] !== null && existingActual[k] !== undefined)
+      .sort();
+    
+    // Get the last value before this month key
+    const previousKeys = allMonthKeys.filter(k => k < monthKey);
+    if (previousKeys.length === 0) return null; // First value is always free
+    
+    const lastKey = previousKeys[previousKeys.length - 1];
+    const lastValue = existingActual[lastKey];
+    
+    if (lastValue === 0) return null; // Avoid division by zero
+    
+    const variation = Math.abs(newValue - lastValue) / Math.abs(lastValue) * 100;
+    
+    if (variation > variationThreshold) {
+      return { variation, previousValue: lastValue, newValue };
+    }
+    return null;
+  }, [variationThreshold, keyResult?.monthly_actual]);
+
+  // Re-check all blocked months when monthlyActual changes
+  useEffect(() => {
+    if (variationThreshold === null || variationThreshold === undefined) return;
+    
+    const newBlocked: Record<string, { variation: number; previousValue: number; newValue: number }> = {};
+    
+    for (const [key, value] of Object.entries(monthlyActual)) {
+      if (value === null || value === undefined) continue;
+      const result = checkVariation(key, value, monthlyActual);
+      if (result && !resolvedMonths.has(key)) {
+        newBlocked[key] = result;
+      }
+    }
+    
+    setBlockedMonths(newBlocked);
+  }, [monthlyActual, variationThreshold, checkVariation, resolvedMonths]);
+
+  const hasBlockedMonths = Object.keys(blockedMonths).length > 0;
 
   // Inicialização inteligente: usar o ano da vigência do KR quando o modal abre
   useEffect(() => {
@@ -407,10 +464,12 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
                     className={cn(
                       "grid grid-cols-[150px_180px_240px_140px_50px] gap-4 items-center p-3 border rounded-lg",
                       isMonthInValidity(month.key, keyResult.start_month, keyResult.end_month) && 
-                        "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                        "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800",
+                      blockedMonths[month.key] && "border-red-400 bg-red-50 dark:bg-red-900/20"
                     )}
                   >
-                    <div className="font-medium text-sm">
+                    <div className="font-medium text-sm flex items-center gap-1">
+                      {blockedMonths[month.key] && <AlertTriangle className="h-3.5 w-3.5 text-red-500" />}
                       {month.name}
                     </div>
                     <div className="text-right text-base font-medium pr-2">
@@ -512,15 +571,83 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
             )}
           </div>
 
+          {/* Variation Threshold Warning Banner */}
+          {hasBlockedMonths && (
+            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  {Object.keys(blockedMonths).length} mês(es) excedem a taxa de variação de {variationThreshold}%
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                  É obrigatório criar um FCA para cada mês bloqueado antes de salvar.
+                </p>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {Object.entries(blockedMonths).map(([key, info]) => {
+                    const monthName = months.find(m => m.key === key)?.name || key;
+                    return (
+                      <Button
+                        key={key}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-amber-700 border-amber-300 hover:bg-amber-100 text-xs"
+                        onClick={() => {
+                          setFcaMonthKey(key);
+                          setShowFCAModal(true);
+                        }}
+                      >
+                        Criar FCA - {monthName} ({info.variation.toFixed(1)}%)
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex justify-end space-x-2 pt-4">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? 'Salvando...' : 'Salvar Valores'}
+            <Button type="submit" disabled={isSaving || hasBlockedMonths}>
+              {isSaving ? 'Salvando...' : hasBlockedMonths ? 'Resolva os FCAs para salvar' : 'Salvar Valores'}
             </Button>
           </div>
         </form>
+
+        {/* FCA Modal for blocked months */}
+        {showFCAModal && fcaMonthKey && keyResult && (
+          <KRFCAModal
+            open={showFCAModal}
+            onClose={() => {
+              setShowFCAModal(false);
+              setFcaMonthKey(null);
+            }}
+            onSave={async (fcaData) => {
+              // After FCA is created, unblock the month
+              setResolvedMonths(prev => new Set(prev).add(fcaMonthKey));
+              setBlockedMonths(prev => {
+                const next = { ...prev };
+                delete next[fcaMonthKey];
+                return next;
+              });
+              setShowFCAModal(false);
+              setFcaMonthKey(null);
+              toast({ title: 'FCA criado', description: 'O mês foi desbloqueado para atualização.' });
+            }}
+            fca={{
+              key_result_id: keyResult.id,
+              title: `Variação acima do limite em ${months.find(m => m.key === fcaMonthKey)?.name || fcaMonthKey}`,
+              fact: `Valor atualizado de ${blockedMonths[fcaMonthKey]?.previousValue?.toLocaleString('pt-BR')} para ${blockedMonths[fcaMonthKey]?.newValue?.toLocaleString('pt-BR')} (variação de ${blockedMonths[fcaMonthKey]?.variation?.toFixed(1)}%)`,
+              cause: '',
+              description: '',
+              priority: 'high' as const,
+              status: 'active' as const,
+            } as any}
+            keyResultId={keyResult.id}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

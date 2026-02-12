@@ -15,7 +15,8 @@ import { getKRQuarters } from '@/lib/krValidityFilter';
 import { SmartPeriodSelector } from '@/components/ui/SmartPeriodSelector';
 import { type KRFrequency } from '@/lib/krFrequencyHelpers';
 
-import { Edit, Calendar, User, Target, Trash2, FileEdit, ListChecks, FileBarChart, Rocket } from 'lucide-react';
+import { Edit, Calendar, User, Target, Trash2, FileEdit, ListChecks, FileBarChart, Rocket, Settings2 } from 'lucide-react';
+import { KRPropertiesPopover } from './KRPropertiesPopover';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { usePeriodFilter } from '@/hooks/usePeriodFilter';
@@ -468,6 +469,15 @@ export const KROverviewModal = ({
                   </span>
                 )}
               </div>
+              {canEditThisKR && (
+                <KRPropertiesPopover 
+                  keyResult={currentKeyResult} 
+                  onSave={async () => {
+                    await refreshKeyResult();
+                    onSave();
+                  }} 
+                />
+              )}
             </div>
             <SmartPeriodSelector
               selectedPeriod={selectedPeriod}
