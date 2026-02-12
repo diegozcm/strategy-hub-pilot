@@ -16,6 +16,7 @@ interface KanbanColumnProps {
   getProjectCoverUrl?: (projectId: string) => string | undefined;
   isOver?: boolean;
   onEditTask?: (task: ProjectTask) => void;
+  onToggleComplete?: (taskId: string, currentStatus: string) => void;
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
@@ -29,6 +30,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   getProjectCoverUrl,
   isOver = false,
   onEditTask,
+  onToggleComplete,
 }) => {
   const { setNodeRef, isOver: isDroppableOver } = useDroppable({ id });
 
@@ -76,6 +78,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
                 projectCoverUrl={getProjectCoverUrl?.(task.project_id)}
                 pillarColor={getPillarColor?.(task.project_id)}
                 onEdit={onEditTask}
+                onToggleComplete={onToggleComplete}
               />
             ))
           )}

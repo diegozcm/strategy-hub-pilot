@@ -1829,8 +1829,18 @@ export const ProjectsPage: React.FC = () => {
                                     setIsTaskEditModalOpen(true);
                                   }}
                                 >
-                                  {getTaskStatusIcon(task.status)}
-                                  <span className="flex-1 truncate min-w-0">{task.title}</span>
+                                  <button
+                                    className="flex-shrink-0 hover:scale-110 transition-transform"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const newStatus = task.status === 'done' ? 'todo' : 'done';
+                                      updateTaskStatus(task.id, newStatus);
+                                    }}
+                                    title={task.status === 'done' ? 'Marcar como pendente' : 'Marcar como concluída'}
+                                  >
+                                    {getTaskStatusIcon(task.status)}
+                                  </button>
+                                  <span className={`flex-1 truncate min-w-0 ${task.status === 'done' ? 'line-through text-muted-foreground' : ''}`}>{task.title}</span>
                                   {task.priority && (
                                     <Badge 
                                       variant="outline" 
@@ -2051,6 +2061,10 @@ export const ProjectsPage: React.FC = () => {
             companyUsers={companyUsers}
             onEditTask={handleEditTask}
             onProjectStatusUpdate={updateProjectStatusIfNeeded}
+            onToggleComplete={(taskId, currentStatus) => {
+              const newStatus = currentStatus === 'done' ? 'todo' : 'done';
+              updateTaskStatus(taskId, newStatus);
+            }}
           />
         </TabsContent>
       </Tabs>
