@@ -73,22 +73,26 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
   const checkVariation = useCallback((monthKey: string, newValue: number, currentActuals: Record<string, number>) => {
     if (variationThreshold === null || variationThreshold === undefined) return null;
     
-    // Get existing actuals from DB (original data)
+    // Combine DB data with current form state (form takes priority)
     const existingActual = (keyResult?.monthly_actual as Record<string, number>) || {};
+    const merged = { ...existingActual, ...currentActuals };
     
-    // Find the previous month with data (from existing DB data, sorted)
-    const allMonthKeys = Object.keys(existingActual)
-      .filter(k => existingActual[k] !== null && existingActual[k] !== undefined)
+    // Find the previous month with data from merged source
+    const allMonthKeys = Object.keys(merged)
+      .filter(k => k < monthKey && merged[k] !== null && merged[k] !== undefined)
       .sort();
     
-    // Get the last value before this month key
-    const previousKeys = allMonthKeys.filter(k => k < monthKey);
-    if (previousKeys.length === 0) return null; // First value is always free
+    if (allMonthKeys.length === 0) return null; // First value is always free
     
-    const lastKey = previousKeys[previousKeys.length - 1];
-    const lastValue = existingActual[lastKey];
+    const lastKey = allMonthKeys[allMonthKeys.length - 1];
+    const lastValue = merged[lastKey];
     
-    if (lastValue === 0) return null; // Avoid division by zero
+    // Handle lastValue === 0
+    if (lastValue === 0) {
+      if (newValue === 0) return null; // 0 -> 0, no change
+      // 0 -> any non-zero is infinite variation, always block
+      return { variation: Infinity, previousValue: lastValue, newValue };
+    }
     
     const variation = Math.abs(newValue - lastValue) / Math.abs(lastValue) * 100;
     
@@ -215,7 +219,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keyResult || isSaving) return;
+    if (!keyResult || isSaving || hasBlockedMonths) return;
     
     setIsSaving(true);
     
