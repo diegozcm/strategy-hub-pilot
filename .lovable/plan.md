@@ -1,142 +1,60 @@
 
 
-# Propriedades do Resultado-Chave: Taxa de Variacao com FCA Obrigatorio
+# Correcao da Validacao de Taxa de Variacao no KR
 
-## Resumo da Feature
+## Problema Identificado
 
-Adicionar um botao "Propriedades" no modal do Resultado-Chave que abre um painel de configuracoes. A primeira propriedade sera uma **Taxa de Variacao (%)** que, quando ativada, bloqueia a atualizacao de valores se o novo valor ultrapassar o limite configurado (para cima ou para baixo) em relacao ao ultimo valor cadastrado -- exigindo que o usuario preencha e publique um FCA antes de confirmar a atualizacao.
+A validacao de taxa de variacao nao esta funcionando por 3 bugs no codigo atual:
+
+1. **Divisao por zero ignorada**: Quando o ultimo valor cadastrado e `0` (como no caso de Janeiro = 0 unidades), o codigo simplesmente pula a verificacao (`if (lastValue === 0) return null`). Isso significa que qualquer valor colocado em Fevereiro nunca dispara o bloqueio.
+
+2. **Valores editados na mesma sessao nao sao considerados**: A funcao `checkVariation` busca o valor anterior apenas nos dados salvos no banco (`keyResult.monthly_actual`). Se o usuario editar Janeiro e Fevereiro na mesma sessao sem salvar, Janeiro nao e considerado como referencia.
+
+3. **Falta de guarda no submit**: O `handleFormSubmit` nao verifica `hasBlockedMonths` antes de salvar, confiando apenas no botao desabilitado (que pode ser contornado).
 
 ---
 
-## Fluxo do Usuario
+## Solucao
+
+### Arquivo: `src/components/strategic-map/KRUpdateValuesModal.tsx`
+
+**Correcao 1 - Tratar lastValue = 0**:
+- Quando o ultimo valor e `0` e o novo valor e diferente de `0`, considerar como variacao infinita (sempre bloqueia se threshold esta ativo)
+- Logica: se `lastValue === 0` e `newValue !== 0`, retornar variacao como 100% (ou "infinita"), disparando o bloqueio
+
+**Correcao 2 - Considerar valores do formulario atual**:
+- A funcao `checkVariation` deve buscar o valor anterior primeiro no estado `monthlyActual` (formulario atual) e depois no `keyResult.monthly_actual` (banco de dados)
+- Isso garante que se o usuario editar Jan=10 e depois Feb=20, o sistema use Jan=10 como referencia
+
+**Correcao 3 - Guarda no handleFormSubmit**:
+- Adicionar `if (hasBlockedMonths) return;` no inicio do `handleFormSubmit`
+
+---
+
+## Detalhes Tecnicos
+
+Alteracao na funcao `checkVariation` (linhas 73-99):
 
 ```text
-1. Usuario abre KR Overview Modal
-2. Clica no botao "Propriedades" (novo botao na barra de acoes)
-3. Popover/dialog abre com configuracoes:
-   - Toggle: "Taxa de Variacao"
-   - Input: percentual (ex: 15%)
-4. Salva a configuracao
-
-Ao atualizar valores (KRUpdateValuesModal):
-5. Usuario digita novo valor para um mes
-6. Sistema calcula: variacao = |novo - ultimo| / |ultimo| * 100
-7. Se variacao > threshold configurado:
-   a. Bloqueia o botao "Salvar"
-   b. Exibe alerta: "Variacao de X% excede o limite de Y%. Preencha um FCA."
-   c. Abre formulario de FCA inline ou redireciona para FCA modal
-   d. Apos FCA ser criado com status "published", libera o salvamento
-8. Se variacao <= threshold: salva normalmente
+checkVariation(monthKey, newValue, currentActuals):
+  1. Se threshold nao esta configurado -> retorna null
+  2. Combinar dados do banco + dados do formulario atual
+  3. Encontrar o mes anterior mais recente com dado
+  4. Se nao ha mes anterior -> retorna null (primeiro valor e livre)
+  5. Se lastValue === 0 e newValue !== 0 -> retorna variacao como "infinita" (bloqueia)
+  6. Se lastValue === 0 e newValue === 0 -> retorna null (sem mudanca)
+  7. Calcular variacao normalmente
+  8. Se variacao > threshold -> retorna dados do bloqueio
 ```
 
----
-
-## 1. Alteracao no Banco de Dados
-
-Adicionar coluna na tabela `key_results`:
-
-```sql
-ALTER TABLE key_results 
-ADD COLUMN variation_threshold numeric DEFAULT NULL;
-```
-
-- `NULL` = feature desativada (sem verificacao)
-- Valor numerico (ex: `15`) = threshold ativo em percentual
-
-Adicionar coluna na tabela `kr_fca` para rastrear FCAs vinculados a atualizacoes bloqueadas:
-
-```sql
-ALTER TABLE kr_fca
-ADD COLUMN linked_update_month varchar DEFAULT NULL,
-ADD COLUMN linked_update_value numeric DEFAULT NULL;
-```
+Alteracao no `handleFormSubmit` (linha 218):
+- Adicionar verificacao: `if (hasBlockedMonths) return;`
 
 ---
 
-## 2. Componente: KRPropertiesPopover (novo)
-
-**Arquivo:** `src/components/strategic-map/KRPropertiesPopover.tsx`
-
-- Popover (Radix) acionado pelo botao "Propriedades"
-- Conteudo:
-  - Toggle switch "Taxa de Variacao" (ativa/desativa)
-  - Quando ativo: Input numerico para percentual (ex: 15%)
-  - Botao "Salvar" que atualiza `key_results.variation_threshold` via Supabase
-- Props: `keyResult`, `onSave` (callback para refresh)
-
----
-
-## 3. Botao "Propriedades" no KROverviewModal
-
-**Arquivo:** `src/components/strategic-map/KROverviewModal.tsx`
-
-- Adicionar botao "Propriedades" na barra de acoes (ao lado de "Iniciativas")
-- Icone: `Settings2` do Lucide
-- Cor: roxo (para diferenciar dos outros botoes)
-- Visivel apenas para usuarios com permissao `canEditThisKR`
-- Abre o `KRPropertiesPopover`
-
----
-
-## 4. Validacao no KRUpdateValuesModal
-
-**Arquivo:** `src/components/strategic-map/KRUpdateValuesModal.tsx`
-
-Logica de validacao antes do salvamento:
-
-```text
-Para cada mes com valor alterado:
-  1. Buscar ultimo valor cadastrado (mes anterior com dado)
-  2. Calcular variacao: |novo - ultimo| / |ultimo| * 100
-  3. Se variacao > variation_threshold:
-     - Marcar mes como "bloqueado"
-     - Exibir alerta visual no campo
-     - Bloquear submit geral
-
-Se algum mes esta bloqueado:
-  - Mostrar banner: "X mes(es) excedem a taxa de variacao de Y%"
-  - Botao "Criar FCA" que abre KRFCAModal pre-preenchido
-  - Apos FCA criado e publicado, desbloquear o mes
-```
-
-**Alteracoes especificas:**
-- No `handleFormSubmit`: verificar se ha meses bloqueados antes de salvar
-- Novo state: `blockedMonths: Record<string, { variation: number; fcaRequired: boolean; fcaId?: string }>`
-- Funcao `checkVariationThreshold(monthKey, newValue)` para validar cada campo ao sair (onBlur)
-- Indicador visual: borda vermelha + icone de alerta nos campos bloqueados
-
----
-
-## 5. Integracao com FCA
-
-Quando o threshold e excedido:
-- Abrir `KRFCAModal` com dados pre-preenchidos:
-  - `title`: "Variacao acima do limite em [Mes/Ano]"
-  - `fact`: "Valor atualizado de [anterior] para [novo] (variacao de X%)"
-  - `linked_update_month`: chave do mes (ex: "2026-02")
-  - `linked_update_value`: valor novo proposto
-- Apos FCA ser criado com status diferente de rascunho, o mes e desbloqueado
-- Sistema verifica se existe FCA com `linked_update_month` correspondente para liberar
-
----
-
-## Arquivos a Criar/Editar
+## Arquivo Afetado
 
 | Arquivo | Acao |
 |---------|------|
-| `src/components/strategic-map/KRPropertiesPopover.tsx` | Criar |
-| `src/components/strategic-map/KROverviewModal.tsx` | Editar - adicionar botao Propriedades |
-| `src/components/strategic-map/KRUpdateValuesModal.tsx` | Editar - adicionar validacao de threshold |
-| `src/types/strategic-map.ts` | Editar - adicionar `variation_threshold` ao KeyResult |
-| Migracao SQL | Criar - adicionar colunas ao banco |
-
----
-
-## Consideracoes
-
-- A verificacao de threshold usa o **ultimo valor cadastrado** (mes anterior com dado no `monthly_actual`), nao a meta
-- Se o KR nao tem nenhum valor anterior, nao ha bloqueio (primeiro valor e sempre livre)
-- O threshold e bidirecional: bloqueia tanto aumentos quanto diminuicoes que excedam o percentual
-- A propriedade fica salva no KR e vale para todos os usuarios que fazem check-in
-- Apenas managers/admins podem configurar as propriedades
+| `src/components/strategic-map/KRUpdateValuesModal.tsx` | Editar - corrigir `checkVariation` e `handleFormSubmit` |
 
