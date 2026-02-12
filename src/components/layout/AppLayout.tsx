@@ -10,6 +10,7 @@ import { useFloatingAI } from '@/hooks/useFloatingAI';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyAIAccess } from '@/hooks/useCompanyAIAccess';
 import { useRealtimePresence } from '@/hooks/useRealtimePresence';
+import { LayoutGroup } from 'motion/react';
 
 export const AppLayout: React.FC = () => {
   const isMobile = useIsMobile();
@@ -44,7 +45,7 @@ export const AppLayout: React.FC = () => {
 
       {/* Floating AI Copilot - Desktop Only + AI Access Enabled */}
       {!isMobile && hasAIAccess && (
-        <>
+        <LayoutGroup>
           {!floatingAI.isOpen && (
             <FloatingAIButton
               onClick={floatingAI.openChat}
@@ -61,7 +62,7 @@ export const AppLayout: React.FC = () => {
             onPositionChange={floatingAI.updatePosition}
             onMessagesChange={floatingAI.setMessages}
           />
-        </>
+        </LayoutGroup>
       )}
     </div>
   );
