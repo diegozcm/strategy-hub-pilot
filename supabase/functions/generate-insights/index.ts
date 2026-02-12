@@ -5,12 +5,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { corsHeaders } from '../_shared/cors.ts';
 
-interface AnalysisResult {
-  projects: any[];
-  indicators: any[];
-  objectives: any[];
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -30,212 +24,361 @@ serve(async (req) => {
       throw new Error('User ID and Company ID are required');
     }
 
-    // Verify company has AI access enabled and get company name
+    // Verify company has AI access enabled and get company details
     const { data: company, error: companyError } = await supabaseClient
       .from('companies')
-      .select('ai_enabled, name')
+      .select('ai_enabled, name, mission, vision, values')
       .eq('id', company_id)
       .single();
 
     if (companyError || !company?.ai_enabled) {
       return new Response(
         JSON.stringify({ error: 'Empresa não tem acesso aos recursos de IA' }),
-        { 
-          status: 403, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const companyName = company.name || 'Empresa';
     console.log(`Generating insights for user: ${user_id}, company: ${companyName} (${company_id})`);
 
-    // CRITICAL: Fetch data ONLY for the selected company
-    // Step 1: Get strategic plans for the company
-    const { data: strategicPlans, error: plansError } = await supabaseClient
+    // ========== FETCH ALL DATA ==========
+
+    // Step 1: Get strategic plans
+    const { data: strategicPlans } = await supabaseClient
       .from('strategic_plans')
       .select('id')
       .eq('company_id', company_id);
 
-    if (plansError) {
-      console.error('Error fetching strategic plans:', plansError);
-      throw plansError;
-    }
-
     const planIds = strategicPlans?.map(p => p.id) || [];
-    console.log(`Found ${planIds.length} strategic plans for company ${company_id}`);
 
-    // Step 2: Fetch objectives, key results, and projects filtered by company plans
-    const [objectivesResponse, startupProfilesResponse, mentorSessionsResponse] = await Promise.all([
-      // Objectives for company plans
-      planIds.length > 0 
+    // Step 2: Fetch pillars, objectives, and strategic tools in parallel
+    const [
+      pillarsRes,
+      objectivesRes,
+      goldenCircleRes,
+      swotRes,
+      visionAlignmentRes,
+      beepRes,
+      startupProfilesRes,
+      mentorSessionsRes,
+      projectsRes
+    ] = await Promise.all([
+      // Pillars
+      supabaseClient
+        .from('strategic_pillars')
+        .select('id, name, description, color, order_index')
+        .eq('company_id', company_id),
+      // Objectives
+      planIds.length > 0
         ? supabaseClient
             .from('strategic_objectives')
-            .select('id, title, progress, status, target_date, plan_id')
+            .select('id, title, progress, status, target_date, plan_id, pillar_id, weight, responsible, deadline')
             .in('plan_id', planIds)
         : Promise.resolve({ data: [], error: null }),
-      
-      // Startup Hub data (already filtered by company_id)
-      supabaseClient.from('startup_hub_profiles').select('*').eq('company_id', company_id),
-      
-      // Mentoring sessions (already filtered by company_id)
-      supabaseClient.from('mentoring_sessions')
+      // Golden Circle
+      supabaseClient
+        .from('golden_circle')
+        .select('why_question, how_question, what_question')
+        .eq('company_id', company_id)
+        .maybeSingle(),
+      // SWOT
+      supabaseClient
+        .from('swot_analysis')
+        .select('*')
+        .eq('company_id', company_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      // Vision Alignment
+      supabaseClient
+        .from('vision_alignment')
+        .select('*')
+        .eq('company_id', company_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      // BEEP Assessments
+      supabaseClient
+        .from('beep_assessments')
+        .select('id, status, final_score, maturity_level, progress_percentage, completed_at')
+        .eq('company_id', company_id)
+        .order('created_at', { ascending: false })
+        .limit(3),
+      // Startup profiles
+      supabaseClient
+        .from('startup_hub_profiles')
+        .select('*')
+        .eq('company_id', company_id),
+      // Mentoring sessions
+      supabaseClient
+        .from('mentoring_sessions')
         .select('*')
         .eq('startup_company_id', company_id)
         .order('session_date', { ascending: false })
-        .limit(20)
-    ]);
-
-    if (objectivesResponse.error) {
-      console.error('Error fetching objectives:', objectivesResponse.error);
-      throw objectivesResponse.error;
-    }
-
-    const objectives = objectivesResponse.data || [];
-    const objectiveIds = objectives.map(o => o.id);
-    console.log(`Found ${objectives.length} objectives for company ${company_id}`);
-
-    // Step 3: Fetch key results and projects
-    const [keyResultsResponse, projectsResponse] = await Promise.all([
-      // Key results for company objectives
-      objectiveIds.length > 0
-        ? supabaseClient
-            .from('key_results')
-            .select('id, title, current_value, target_value, unit, due_date, priority, objective_id')
-            .in('objective_id', objectiveIds)
-        : Promise.resolve({ data: [], error: null }),
-      
-      // Projects for company plans
+        .limit(20),
+      // Projects
       planIds.length > 0
         ? supabaseClient
             .from('strategic_projects')
-            .select('id, name, progress, status, start_date, end_date, budget, priority, plan_id')
+            .select('id, name, progress, status, start_date, end_date, budget, priority, plan_id, responsible')
             .in('plan_id', planIds)
         : Promise.resolve({ data: [], error: null })
     ]);
 
-    if (keyResultsResponse.error) {
-      console.error('Error fetching key results:', keyResultsResponse.error);
-      throw keyResultsResponse.error;
-    }
+    const pillars = pillarsRes.data || [];
+    const objectives = objectivesRes.data || [];
+    const objectiveIds = objectives.map(o => o.id);
+    const projects = projectsRes.data || [];
+    const projectIds = projects.map(p => p.id);
+    const goldenCircle = goldenCircleRes.data;
+    const swot = swotRes.data;
+    const visionAlignment = visionAlignmentRes.data;
+    const beepAssessments = beepRes.data || [];
+    const startupProfiles = startupProfilesRes.data || [];
+    const mentorSessions = mentorSessionsRes.data || [];
 
-    if (projectsResponse.error) {
-      console.error('Error fetching projects:', projectsResponse.error);
-      throw projectsResponse.error;
-    }
+    // Step 3: Fetch KRs (with full fields), initiatives, monthly actions, FCA, project tasks
+    const [keyResultsRes, initiativesRes, projectTasksRes] = await Promise.all([
+      objectiveIds.length > 0
+        ? supabaseClient
+            .from('key_results')
+            .select('id, title, current_value, target_value, unit, due_date, priority, objective_id, frequency, monthly_targets, monthly_actual, yearly_target, yearly_actual, start_month, end_month, weight, ytd_percentage, monthly_percentage, yearly_percentage, responsible, assigned_owner_id')
+            .in('objective_id', objectiveIds)
+        : Promise.resolve({ data: [], error: null }),
+      objectiveIds.length > 0
+        ? supabaseClient
+            .from('kr_initiatives')
+            .select('id, key_result_id, title, status, priority, progress_percentage, budget, responsible, start_date, end_date')
+            .eq('company_id', company_id)
+        : Promise.resolve({ data: [], error: null }),
+      projectIds.length > 0
+        ? supabaseClient
+            .from('project_tasks')
+            .select('id, project_id, title, status, priority, estimated_hours, actual_hours, due_date')
+            .in('project_id', projectIds)
+        : Promise.resolve({ data: [], error: null })
+    ]);
 
-    const keyResults = keyResultsResponse.data || [];
-    const projects = projectsResponse.data || [];
-    const startupProfiles = startupProfilesResponse.data || [];
-    const mentorSessions = mentorSessionsResponse.data || [];
-    
-    // Build analysis object with company-filtered data
-    const analysis: AnalysisResult = {
-      projects: projects,
-      indicators: keyResults,
-      objectives: objectives
-    };
+    const keyResults = keyResultsRes.data || [];
+    const krIds = keyResults.map(kr => kr.id);
+    const initiatives = initiativesRes.data || [];
+    const projectTasks = projectTasksRes.data || [];
 
-    // Log telemetry for audit trail
-    console.log('Company-filtered analysis data:', { 
-      company_id,
-      user_id,
-      strategic_plans: planIds.length,
-      projects: projects.length,
+    // Step 4: Fetch FCA and monthly actions for KRs
+    const [fcaRes, monthlyActionsRes] = await Promise.all([
+      krIds.length > 0
+        ? supabaseClient
+            .from('kr_fca')
+            .select('id, key_result_id, title, fact, cause, priority, status')
+            .in('key_result_id', krIds)
+        : Promise.resolve({ data: [], error: null }),
+      krIds.length > 0
+        ? supabaseClient
+            .from('kr_monthly_actions')
+            .select('id, key_result_id, action_title, status, completion_percentage, planned_value, actual_value, month_year, priority')
+            .in('key_result_id', krIds)
+        : Promise.resolve({ data: [], error: null })
+    ]);
+
+    const fcaAnalyses = fcaRes.data || [];
+    const monthlyActions = monthlyActionsRes.data || [];
+
+    console.log('Data fetched:', {
+      pillars: pillars.length,
       objectives: objectives.length,
       key_results: keyResults.length,
-      startup_profiles: startupProfiles.length,
-      mentor_sessions: mentorSessions.length,
-      plan_ids: planIds.slice(0, 3), // Log first 3 plan IDs for reference
-      sample_projects: projects.slice(0, 2).map(p => p.name),
-      sample_objectives: objectives.slice(0, 2).map(o => o.title)
+      initiatives: initiatives.length,
+      monthly_actions: monthlyActions.length,
+      fca: fcaAnalyses.length,
+      projects: projects.length,
+      project_tasks: projectTasks.length,
+      golden_circle: !!goldenCircle,
+      swot: !!swot,
+      vision_alignment: !!visionAlignment,
+      beep: beepAssessments.length,
+      startups: startupProfiles.length,
+      mentoring: mentorSessions.length
     });
 
+    // ========== BUILD CONTEXT FOR AI ==========
+    const contextData = {
+      company: {
+        name: companyName,
+        mission: company.mission,
+        vision: company.vision,
+        values: company.values
+      },
+      pillars: pillars.map(p => ({ name: p.name, description: p.description })),
+      objectives: objectives.map(o => ({
+        id: o.id,
+        title: o.title,
+        progress: o.progress,
+        status: o.status,
+        target_date: o.target_date,
+        weight: o.weight,
+        responsible: o.responsible
+      })),
+      keyResults: keyResults.map(kr => ({
+        id: kr.id,
+        title: kr.title,
+        current_value: kr.current_value,
+        target_value: kr.target_value,
+        unit: kr.unit,
+        frequency: kr.frequency,
+        ytd_percentage: kr.ytd_percentage,
+        monthly_percentage: kr.monthly_percentage,
+        yearly_percentage: kr.yearly_percentage,
+        weight: kr.weight,
+        due_date: kr.due_date,
+        priority: kr.priority,
+        objective_id: kr.objective_id
+      })),
+      initiatives: initiatives.map(i => ({
+        title: i.title,
+        status: i.status,
+        progress: i.progress_percentage,
+        priority: i.priority,
+        budget: i.budget,
+        responsible: i.responsible,
+        key_result_id: i.key_result_id
+      })),
+      monthlyActions: monthlyActions.slice(0, 50).map(a => ({
+        title: a.action_title,
+        status: a.status,
+        completion: a.completion_percentage,
+        planned: a.planned_value,
+        actual: a.actual_value,
+        month: a.month_year,
+        priority: a.priority
+      })),
+      fcaAnalyses: fcaAnalyses.map(f => ({
+        title: f.title,
+        fact: f.fact,
+        cause: f.cause,
+        priority: f.priority,
+        status: f.status
+      })),
+      projects: projects.map(p => ({
+        id: p.id,
+        name: p.name,
+        progress: p.progress,
+        status: p.status,
+        start_date: p.start_date,
+        end_date: p.end_date,
+        budget: p.budget,
+        priority: p.priority
+      })),
+      projectTasks: projectTasks.slice(0, 50).map(t => ({
+        title: t.title,
+        status: t.status,
+        priority: t.priority,
+        estimated_hours: t.estimated_hours,
+        actual_hours: t.actual_hours,
+        due_date: t.due_date,
+        project_id: t.project_id
+      })),
+      goldenCircle: goldenCircle ? {
+        why: goldenCircle.why_question,
+        how: goldenCircle.how_question,
+        what: goldenCircle.what_question
+      } : null,
+      swot: swot ? {
+        strengths: swot.strengths,
+        weaknesses: swot.weaknesses,
+        opportunities: swot.opportunities,
+        threats: swot.threats
+      } : null,
+      visionAlignment: visionAlignment || null,
+      beepAssessments: beepAssessments.map(b => ({
+        score: b.final_score,
+        maturity: b.maturity_level,
+        status: b.status,
+        completed_at: b.completed_at
+      })),
+      startupProfiles: startupProfiles.map(sp => ({
+        name: sp.startup_name,
+        stage: sp.stage,
+        description: sp.business_description,
+        industry: sp.industry
+      })),
+      mentoringSessions: mentorSessions.slice(0, 10).map(ms => ({
+        date: ms.session_date,
+        type: ms.session_type,
+        status: ms.status,
+        notes: ms.notes?.substring(0, 200)
+      }))
+    };
+
+    // ========== GENERATE INSIGHTS ==========
     const insights = [];
     const aiRecommendations = [];
 
-    // Enhanced analysis with AI integration including Startup Hub data
-    if (lovableApiKey && (analysis.projects?.length > 0 || analysis.indicators?.length > 0 || analysis.objectives?.length > 0 || startupProfiles.length > 0 || mentorSessions.length > 0)) {
+    const hasData = objectives.length > 0 || keyResults.length > 0 || projects.length > 0 || 
+                    startupProfiles.length > 0 || mentorSessions.length > 0 || initiatives.length > 0;
+
+    if (lovableApiKey && hasData) {
       try {
-        // Prepare data for OpenAI analysis including Startup Hub
-        const contextData = {
-          projects: analysis.projects?.map(p => ({
-            name: p.name,
-            progress: p.progress,
-            status: p.status,
-            start_date: p.start_date,
-            end_date: p.end_date,
-            budget: p.budget,
-            priority: p.priority
-          })) || [],
-          keyResults: analysis.indicators?.map(kr => ({
-            name: kr.title,
-            current: kr.current_value,
-            target: kr.target_value,
-            unit: kr.unit,
-            due_date: kr.due_date,
-            priority: kr.priority
-          })) || [],
-          objectives: analysis.objectives?.map(o => ({
-            title: o.title,
-            progress: o.progress,
-            status: o.status,
-            target_date: o.target_date
-          })) || [],
-          startupProfiles: startupProfiles.map(sp => ({
-            name: sp.startup_name,
-            stage: sp.stage,
-            description: sp.business_description,
-            industry: sp.industry,
-            employees: sp.employee_count,
-            revenue: sp.annual_revenue
-          })),
-          mentoringSessions: mentorSessions.map(ms => ({
-            title: ms.session_title,
-            date: ms.session_date,
-            summary: ms.session_summary,
-            type: ms.session_type,
-            participants: ms.participants_count
-          }))
-        };
+        const prompt = `Você é o Atlas, consultor estratégico da empresa "${companyName}". Analise TODOS os dados abaixo e gere um diagnóstico completo em português.
 
-        const prompt = `Analise os seguintes dados de ${companyName} e gere insights estratégicos em português considerando TODOS os módulos disponíveis:
+IDENTIDADE DA EMPRESA:
+- Missão: ${company.mission || 'Não definida'}
+- Visão: ${company.vision || 'Não definida'}
+- Valores: ${company.values?.join(', ') || 'Não definidos'}
+${goldenCircle ? `- Golden Circle: WHY: ${goldenCircle.why_question || '—'} | HOW: ${goldenCircle.how_question || '—'} | WHAT: ${goldenCircle.what_question || '—'}` : ''}
+${swot ? `- SWOT: Forças: ${JSON.stringify(swot.strengths)} | Fraquezas: ${JSON.stringify(swot.weaknesses)} | Oportunidades: ${JSON.stringify(swot.opportunities)} | Ameaças: ${JSON.stringify(swot.threats)}` : ''}
 
-STRATEGY HUB:
-PROJETOS: ${JSON.stringify(contextData.projects, null, 2)}
-RESULTADOS-CHAVE: ${JSON.stringify(contextData.keyResults, null, 2)}
-OBJETIVOS: ${JSON.stringify(contextData.objectives, null, 2)}
+PILARES ESTRATÉGICOS (${pillars.length}):
+${JSON.stringify(contextData.pillars, null, 1)}
 
-STARTUP HUB:
-STARTUPS CADASTRADAS: ${JSON.stringify(contextData.startupProfiles, null, 2)}
-SESSÕES DE MENTORIA: ${JSON.stringify(contextData.mentoringSessions, null, 2)}
+OBJETIVOS ESTRATÉGICOS (${objectives.length}):
+${JSON.stringify(contextData.objectives, null, 1)}
 
-Para cada insight, forneça:
-1. Tipo (risk/opportunity/info)
-2. Categoria (projects/indicators/objectives/startups/mentoring/strategic)
-3. Título conciso
-4. Descrição detalhada
-5. Severidade (low/medium/high/critical)
-6. Ações recomendadas específicas
-7. Prioridade das ações (low/medium/high)
-8. Impacto estimado (low/medium/high)
+RESULTADOS-CHAVE (${keyResults.length}):
+${JSON.stringify(contextData.keyResults, null, 1)}
 
-Formato JSON: {"insights": [{"type": "", "category": "", "title": "", "description": "", "severity": "", "recommendations": []}]}
+INICIATIVAS DOS KRs (${initiatives.length}):
+${JSON.stringify(contextData.initiatives, null, 1)}
 
-Foque em:
-STRATEGY HUB:
-- Projetos atrasados ou em risco
-- Metas não atingidas ou super executadas  
-- Tendências preocupantes ou positivas
-- Oportunidades de melhoria
+AÇÕES MENSAIS (${monthlyActions.length}):
+${JSON.stringify(contextData.monthlyActions, null, 1)}
 
-STARTUP HUB:
-- Qualidade do programa de aceleração baseado nas sessões
-- Diversidade e potencial das startups cadastradas
-- Efetividade das mentorias (frequência, qualidade, resultados)
-- Padrões de sucesso/insucesso nas startups
-- Gaps no programa de mentoria
-- Oportunidades de crescimento do ecossistema`;
+ANÁLISES FCA (${fcaAnalyses.length}):
+${JSON.stringify(contextData.fcaAnalyses, null, 1)}
+
+PROJETOS (${projects.length}):
+${JSON.stringify(contextData.projects, null, 1)}
+
+TAREFAS DOS PROJETOS (${projectTasks.length}):
+${JSON.stringify(contextData.projectTasks, null, 1)}
+
+${beepAssessments.length > 0 ? `AVALIAÇÃO BEEP DE MATURIDADE: ${JSON.stringify(contextData.beepAssessments, null, 1)}` : ''}
+
+${startupProfiles.length > 0 ? `STARTUP HUB (${startupProfiles.length} startups): ${JSON.stringify(contextData.startupProfiles, null, 1)}` : ''}
+
+${mentorSessions.length > 0 ? `MENTORIAS (${mentorSessions.length} sessões): ${JSON.stringify(contextData.mentoringSessions, null, 1)}` : ''}
+
+INSTRUÇÕES:
+1. Escreva em tom conversacional e consultivo, como um consultor falando diretamente com o gestor. Use frases como "Identifiquei que...", "Recomendo que...", "Atenção:".
+2. Para cada insight, OBRIGATORIAMENTE inclua o campo "related_entity_id" com o UUID real da entidade analisada (objective, key_result, project) quando disponível nos dados.
+3. Faça análise cruzada: compare SWOT com performance dos KRs, Golden Circle com alinhamento dos objetivos, FCA com ações pendentes.
+4. Gere entre 5 e 15 insights cobrindo diferentes módulos.
+
+Formato JSON OBRIGATÓRIO:
+{
+  "insights": [
+    {
+      "type": "risk|opportunity|info|recommendation",
+      "category": "projects|indicators|objectives|startups|mentoring|strategic|initiatives|tools",
+      "title": "Título conciso",
+      "description": "Texto narrativo do Atlas, em tom de consultor, detalhando a situação e recomendação",
+      "severity": "low|medium|high|critical",
+      "confidence": 0.85,
+      "related_entity_type": "key_result|objective|project|startup|initiative",
+      "related_entity_id": "uuid-da-entidade-se-disponível",
+      "recommendations": ["Recomendação 1", "Recomendação 2"]
+    }
+  ]
+}`;
 
         const openAIResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
           method: 'POST',
@@ -248,21 +391,21 @@ STARTUP HUB:
             messages: [
               {
                 role: 'system',
-                content: 'Você é um consultor estratégico especializado em análise de dados empresariais. Forneça insights práticos e acionáveis.'
+                content: 'Você é o Atlas, um consultor estratégico especializado. Responda APENAS com JSON válido, sem markdown ou texto extra. Sempre inclua related_entity_id quando os dados fornecerem UUIDs.'
               },
-              {
-                role: 'user',
-                content: prompt
-              }
+              { role: 'user', content: prompt }
             ],
             temperature: 0.7,
-            max_tokens: 2000
+            max_tokens: 4000
           }),
         });
 
         if (openAIResponse.ok) {
           const aiResult = await openAIResponse.json();
-          const aiContent = aiResult.choices[0]?.message?.content;
+          let aiContent = aiResult.choices[0]?.message?.content || '';
+          
+          // Clean markdown if present
+          aiContent = aiContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
           
           try {
             const parsedAI = JSON.parse(aiContent);
@@ -274,27 +417,30 @@ STARTUP HUB:
                   title: aiInsight.title,
                   description: aiInsight.description,
                   severity: aiInsight.severity || 'medium',
-                  confidence_score: 0.85,
-                  related_entity_type: aiInsight.category === 'projects' ? 'project' : 
-                                     aiInsight.category === 'indicators' ? 'key_result' : 'objective',
+                  confidence_score: aiInsight.confidence || 0.85,
+                  related_entity_type: aiInsight.related_entity_type || (
+                    aiInsight.category === 'projects' ? 'project' :
+                    aiInsight.category === 'indicators' ? 'key_result' :
+                    aiInsight.category === 'objectives' ? 'objective' : null
+                  ),
+                  related_entity_id: aiInsight.related_entity_id || null,
                   actionable: true,
                   metadata: {
-                    source: 'ai_analysis',
+                    source: 'atlas_ai_analysis',
                     recommendations: aiInsight.recommendations || [],
                     ai_generated: true
                   }
                 });
 
-                // Create recommendations for each insight
                 if (aiInsight.recommendations && Array.isArray(aiInsight.recommendations)) {
-                  aiInsight.recommendations.forEach((rec: any) => {
+                  aiInsight.recommendations.forEach((rec) => {
                     aiRecommendations.push({
                       title: typeof rec === 'string' ? rec : rec.title || rec.action,
                       description: typeof rec === 'string' ? rec : rec.description,
                       action_type: 'improvement',
-                      priority: rec.priority || 'medium',
-                      estimated_impact: rec.impact || 'medium',
-                      effort_required: rec.effort || 'medium',
+                      priority: aiInsight.severity === 'critical' ? 'high' : aiInsight.severity === 'high' ? 'high' : 'medium',
+                      estimated_impact: 'medium',
+                      effort_required: 'medium',
                       status: 'pending'
                     });
                   });
@@ -302,529 +448,114 @@ STARTUP HUB:
               }
             }
           } catch (parseError) {
-            console.log('AI response was not valid JSON, using fallback analysis');
+            console.log('AI response was not valid JSON, using fallback:', parseError.message);
+            console.log('AI content preview:', aiContent.substring(0, 200));
           }
+        } else {
+          console.log('AI API error:', openAIResponse.status, await openAIResponse.text());
         }
       } catch (aiError) {
-        console.log('AI analysis failed, continuing with rule-based analysis:', aiError);
+        console.log('AI analysis failed:', aiError.message);
       }
     }
 
-    // Enhanced rule-based analysis (improved from original)
-    console.log('Starting rule-based analysis...');
-    console.log(`Projects: ${analysis.projects?.length || 0}, Indicators: ${analysis.indicators?.length || 0}, Objectives: ${analysis.objectives?.length || 0}`);
-    
-    if (analysis.projects && analysis.projects.length > 0) {
-      console.log('Analyzing projects...');
-      for (const project of analysis.projects) {
+    // ========== RULE-BASED FALLBACK ==========
+    // Projects analysis
+    if (projects.length > 0) {
+      for (const project of projects) {
         const progress = project.progress || 0;
-        const startDate = project.start_date ? new Date(project.start_date) : null;
         const endDate = project.end_date ? new Date(project.end_date) : null;
         const now = new Date();
-        
-        console.log(`Project: ${project.name}, Progress: ${progress}%, Status: ${project.status}`);
 
-        // Critical: Overdue projects
         if (endDate && endDate < now && project.status !== 'completed') {
           const daysOverdue = Math.ceil((now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24));
           insights.push({
             insight_type: 'risk',
             category: 'projects',
             title: `Projeto "${project.name}" Atrasado`,
-            description: `O projeto "${project.name}" está ${daysOverdue} dias atrasado (prazo: ${endDate.toLocaleDateString('pt-BR')}). Status: ${project.status}, Progresso: ${progress}%. Ação urgente necessária.`,
+            description: `Identifiquei que o projeto "${project.name}" está ${daysOverdue} dias atrasado com apenas ${progress}% concluído. Recomendo uma reunião de realinhamento urgente para definir novas prioridades e prazos.`,
             severity: daysOverdue > 30 ? 'critical' : 'high',
             confidence_score: 0.95,
             related_entity_type: 'project',
             related_entity_id: project.id,
             actionable: true,
-            metadata: {
-              project_name: project.name,
-              days_overdue: daysOverdue,
-              current_progress: progress,
-              status: project.status,
-              priority: project.priority
-            }
+            metadata: { project_name: project.name, days_overdue: daysOverdue, current_progress: progress, recommendations: ['Realizar reunião de realinhamento', 'Redefinir prioridades e prazos', 'Verificar alocação de recursos'] }
           });
-        }
-
-        // Risk: Projects at risk
-        if (endDate && progress < 75) {
-          const daysUntilDeadline = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          if (daysUntilDeadline <= 30 && daysUntilDeadline > 0) {
-            insights.push({
-              insight_type: 'risk',
-              category: 'projects',
-              title: `Risco de Atraso: "${project.name}"`,
-              description: `Projeto "${project.name}" com ${progress}% concluído e apenas ${daysUntilDeadline} dias restantes. Taxa atual sugere possível atraso.`,
-              severity: progress < 50 ? 'high' : 'medium',
-              confidence_score: 0.80,
-              related_entity_type: 'project',
-              related_entity_id: project.id,
-              actionable: true,
-              metadata: {
-                project_name: project.name,
-                days_until_deadline: daysUntilDeadline,
-                current_progress: progress,
-                expected_progress: Math.max(0, 100 - (daysUntilDeadline * 2))
-              }
-            });
-          }
-        }
-
-        // Opportunity: Ahead of schedule
-        if (progress > 80 && endDate) {
-          const daysUntilDeadline = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          if (daysUntilDeadline > 15) {
-            insights.push({
-              insight_type: 'opportunity',
-              category: 'projects',
-              title: `Projeto "${project.name}" Adiantado`,
-              description: `Excelente progresso! O projeto está ${progress}% concluído com ${daysUntilDeadline} dias de folga. Considere realocar recursos ou antecipar entrega.`,
-              severity: 'low',
-              confidence_score: 0.85,
-              related_entity_type: 'project',
-              related_entity_id: project.id,
-              actionable: true,
-              metadata: {
-                project_name: project.name,
-                days_ahead: daysUntilDeadline,
-                current_progress: progress,
-                potential_early_delivery: true
-              }
-            });
-          }
         }
       }
     }
 
-    // Enhanced Key Results analysis
-    if (analysis.indicators && analysis.indicators.length > 0) {
-      console.log('Analyzing indicators...');
-      for (const indicator of analysis.indicators) {
-        const currentValue = indicator.current_value || 0;
-        const targetValue = indicator.target_value || 0;
-        const achievement = targetValue > 0 ? (currentValue / targetValue) * 100 : 0;
-        
-        console.log(`Indicator: ${indicator.title}, Current: ${currentValue}, Target: ${targetValue}, Achievement: ${achievement.toFixed(1)}%`);
+    // KR analysis
+    if (keyResults.length > 0) {
+      for (const kr of keyResults) {
+        const current = kr.current_value || 0;
+        const target = kr.target_value || 0;
+        const achievement = target > 0 ? (current / target) * 100 : 0;
 
-        // Critical underperformance
-        if (achievement < 50) {
+        if (achievement < 50 && target > 0) {
           insights.push({
             insight_type: 'risk',
             category: 'indicators',
-            title: `Meta Crítica: "${indicator.title}"`,
-            description: `O resultado-chave "${indicator.title}" está severamente abaixo da meta com apenas ${achievement.toFixed(1)}% de atingimento. Valor: ${currentValue} ${indicator.unit || ''} / Meta: ${targetValue} ${indicator.unit || ''}. Intervenção imediata necessária.`,
+            title: `KR Crítico: "${kr.title}"`,
+            description: `O resultado-chave "${kr.title}" está com apenas ${achievement.toFixed(1)}% de atingimento (${current} ${kr.unit || ''} de ${target} ${kr.unit || ''}). Recomendo revisar as iniciativas vinculadas e criar um plano de ação imediato.`,
             severity: 'critical',
             confidence_score: 0.95,
             related_entity_type: 'key_result',
-            related_entity_id: indicator.id,
+            related_entity_id: kr.id,
             actionable: true,
-            metadata: {
-              indicator_name: indicator.title,
-              current_value: currentValue,
-              target_value: targetValue,
-              achievement_percentage: achievement,
-              unit: indicator.unit,
-              gap: targetValue - currentValue
-            }
-          });
-        } else if (achievement < 70) {
-          insights.push({
-            insight_type: 'risk',
-            category: 'indicators',
-            title: `Atenção: "${indicator.title}" Abaixo da Meta`,
-            description: `Resultado-chave "${indicator.title}" com ${achievement.toFixed(1)}% da meta atingida. Necessário plano de ação para alcançar ${targetValue} ${indicator.unit || ''}.`,
-            severity: 'high',
-            confidence_score: 0.85,
-            related_entity_type: 'key_result',
-            related_entity_id: indicator.id,
-            actionable: true,
-            metadata: {
-              indicator_name: indicator.title,
-              current_value: currentValue,
-              target_value: targetValue,
-              achievement_percentage: achievement
-            }
-          });
-        }
-
-        // Outstanding performance
-        if (achievement > 130) {
-          insights.push({
-            insight_type: 'opportunity',
-            category: 'indicators',
-            title: `Desempenho Excepcional: "${indicator.title}"`,
-            description: `Parabéns! O resultado "${indicator.title}" está ${achievement.toFixed(1)}% acima da meta. Valor: ${currentValue} vs Meta: ${targetValue} ${indicator.unit || ''}. Considere revisar metas ou identificar fatores de sucesso para replicar.`,
-            severity: 'low',
-            confidence_score: 0.90,
-            related_entity_type: 'key_result',
-            related_entity_id: indicator.id,
-            actionable: true,
-            metadata: {
-              indicator_name: indicator.title,
-              current_value: currentValue,
-              target_value: targetValue,
-              achievement_percentage: achievement,
-              overperformance_factor: achievement / 100,
-              success_story: true
-            }
+            metadata: { indicator_name: kr.title, current_value: current, target_value: target, achievement_percentage: achievement, unit: kr.unit, recommendations: ['Revisar iniciativas vinculadas', 'Criar plano de ação imediato', 'Agendar check-in semanal'] }
           });
         }
       }
     }
 
-    // Enhanced Objectives analysis
-    if (analysis.objectives && analysis.objectives.length > 0) {
-      console.log('Analyzing objectives...');
-      for (const objective of analysis.objectives) {
-        const progress = objective.progress || 0;
-        const targetDate = objective.target_date ? new Date(objective.target_date) : null;
+    // Objectives analysis
+    if (objectives.length > 0) {
+      for (const obj of objectives) {
+        const progress = obj.progress || 0;
+        const targetDate = obj.target_date ? new Date(obj.target_date) : null;
         const now = new Date();
-        
-        console.log(`Objective: ${objective.title}, Progress: ${progress}%, Status: ${objective.status}`);
 
         if (targetDate) {
-          const daysUntilTarget = Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (progress < 60 && daysUntilTarget <= 60 && daysUntilTarget > 0) {
+          const daysLeft = Math.ceil((targetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          if (progress < 60 && daysLeft <= 60 && daysLeft > 0) {
             insights.push({
               insight_type: 'risk',
               category: 'objectives',
-              title: `Objetivo em Risco: "${objective.title}"`,
-              description: `O objetivo "${objective.title}" tem ${progress}% de progresso com ${daysUntilTarget} dias restantes. Velocidade atual insuficiente para atingir meta no prazo.`,
+              title: `Objetivo em Risco: "${obj.title}"`,
+              description: `O objetivo "${obj.title}" tem ${progress}% de progresso com apenas ${daysLeft} dias restantes. A velocidade atual é insuficiente. Recomendo priorizar os KRs vinculados e revisar as metas.`,
               severity: progress < 40 ? 'critical' : 'high',
               confidence_score: 0.80,
               related_entity_type: 'objective',
-              related_entity_id: objective.id,
+              related_entity_id: obj.id,
               actionable: true,
-              metadata: {
-                objective_title: objective.title,
-                current_progress: progress,
-                days_until_target: daysUntilTarget,
-                required_velocity: Math.ceil((100 - progress) / (daysUntilTarget / 7))
-              }
+              metadata: { objective_title: obj.title, current_progress: progress, days_until_target: daysLeft, recommendations: ['Priorizar KRs vinculados', 'Revisar metas', 'Realocar recursos'] }
             });
-      }
-    }
-
-    // STARTUP HUB: Analysis for startup profiles
-    if (startupProfiles && startupProfiles.length > 0) {
-      console.log('Analyzing startup profiles...');
-      
-      const stageDistribution = {};
-      const industries = {};
-      
-      for (const startup of startupProfiles) {
-        // Count stages
-        const stage = startup.stage || 'unknown';
-        stageDistribution[stage] = (stageDistribution[stage] || 0) + 1;
-        
-        // Count industries
-        const industry = startup.industry || 'não definida';
-        industries[industry] = (industries[industry] || 0) + 1;
-        
-        // Individual startup analysis
-        if (!startup.business_description || startup.business_description.length < 50) {
-          insights.push({
-            insight_type: 'risk',
-            category: 'startups',
-            title: `Perfil Incompleto: "${startup.startup_name}"`,
-            description: `A startup "${startup.startup_name}" possui descrição do negócio incompleta ou muito superficial. Isso pode prejudicar a qualidade do processo de mentoria e avaliação de progresso.`,
-            severity: 'medium',
-            confidence_score: 0.90,
-            related_entity_type: 'startup',
-            related_entity_id: startup.id,
-            actionable: true,
-            metadata: {
-              startup_name: startup.startup_name,
-              missing_data: 'business_description',
-              stage: startup.stage
-            }
-          });
-        }
-      }
-      
-      // Portfolio analysis
-      const totalStartups = startupProfiles.length;
-      const earlyStageCount = (stageDistribution['ideation'] || 0) + (stageDistribution['validation'] || 0);
-      const matureStageCount = (stageDistribution['growth'] || 0) + (stageDistribution['scale'] || 0);
-      
-      if (totalStartups >= 3) {
-        if (earlyStageCount > totalStartups * 0.8) {
-          insights.push({
-            insight_type: 'opportunity',
-            category: 'startups',
-            title: 'Portfolio Focado em Early Stage',
-            description: `${earlyStageCount} de ${totalStartups} startups estão em estágios iniciais. Considere desenvolver programas específicos para validação de produto e tração inicial para maximizar o sucesso das startups.`,
-            severity: 'low',
-            confidence_score: 0.85,
-            related_entity_type: 'startup',
-            actionable: true,
-            metadata: {
-              total_startups: totalStartups,
-              early_stage_count: earlyStageCount,
-              portfolio_composition: stageDistribution
-            }
-          });
-        }
-        
-        if (matureStageCount > totalStartups * 0.6) {
-          insights.push({
-            insight_type: 'opportunity',
-            category: 'startups',
-            title: 'Portfolio com Startups Maduras',
-            description: `${matureStageCount} de ${totalStartups} startups estão em estágios avançados. Considere programas de scale-up e conexões com investidores para acelerar o crescimento.`,
-            severity: 'low',
-            confidence_score: 0.85,
-            related_entity_type: 'startup',
-            actionable: true,
-            metadata: {
-              total_startups: totalStartups,
-              mature_stage_count: matureStageCount,
-              portfolio_composition: stageDistribution
-            }
-          });
+          }
         }
       }
     }
 
-    // STARTUP HUB: Analysis for mentoring sessions
-    if (mentorSessions && mentorSessions.length > 0) {
-      console.log('Analyzing mentoring sessions...');
-      
-      const now = new Date();
-      const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
-      const recentSessions = mentorSessions.filter(session => 
-        new Date(session.session_date) >= thirtyDaysAgo
-      );
-      
-      const sessionsWithoutSummary = mentorSessions.filter(session => 
-        !session.session_summary || session.session_summary.trim().length < 20
-      );
-      
-      // Session frequency analysis
-      if (recentSessions.length === 0 && mentorSessions.length > 0) {
-        insights.push({
-          insight_type: 'risk',
-          category: 'mentoring',
-          title: 'Atividade de Mentoria em Declínio',
-          description: `Não foram realizadas sessões de mentoria nos últimos 30 dias, apesar do histórico de ${mentorSessions.length} sessões. Isso pode indicar redução no engajamento ou problemas na programação.`,
-          severity: 'high',
-          confidence_score: 0.90,
-          related_entity_type: 'mentoring_session',
-          actionable: true,
-          metadata: {
-            total_sessions: mentorSessions.length,
-            recent_sessions: recentSessions.length,
-            last_session_date: mentorSessions[0]?.session_date
-          }
-        });
-      } else if (recentSessions.length < 3 && mentorSessions.length >= 10) {
-        insights.push({
-          insight_type: 'risk',
-          category: 'mentoring',
-          title: 'Baixa Frequência de Mentorias',
-          description: `Apenas ${recentSessions.length} sessões realizadas nos últimos 30 dias, comparado ao histórico de ${mentorSessions.length} sessões. Considere aumentar a frequência para manter o momentum das startups.`,
-          severity: 'medium',
-          confidence_score: 0.80,
-          related_entity_type: 'mentoring_session',
-          actionable: true,
-          metadata: {
-            total_sessions: mentorSessions.length,
-            recent_sessions: recentSessions.length,
-            recommended_frequency: 'weekly'
-          }
-        });
-      }
-      
-      // Session quality analysis
-      if (sessionsWithoutSummary.length > mentorSessions.length * 0.3) {
-        insights.push({
-          insight_type: 'risk',
-          category: 'mentoring',
-          title: 'Documentação Inadequada das Mentorias',
-          description: `${sessionsWithoutSummary.length} de ${mentorSessions.length} sessões não possuem resumos adequados. Isso prejudica o acompanhamento do progresso e a continuidade do processo de mentoria.`,
-          severity: 'medium',
-          confidence_score: 0.85,
-          related_entity_type: 'mentoring_session',
-          actionable: true,
-          metadata: {
-            total_sessions: mentorSessions.length,
-            sessions_without_summary: sessionsWithoutSummary.length,
-            documentation_rate: ((mentorSessions.length - sessionsWithoutSummary.length) / mentorSessions.length * 100).toFixed(1)
-          }
-        });
-      }
-      
-      // Positive mentoring patterns
-      if (recentSessions.length >= 4) {
-        insights.push({
-          insight_type: 'opportunity',
-          category: 'mentoring',
-          title: 'Programa de Mentoria Ativo',
-          description: `Excelente! ${recentSessions.length} sessões realizadas nos últimos 30 dias demonstram um programa de mentoria engajado. Continue mantendo essa frequência para maximizar o impacto nas startups.`,
-          severity: 'low',
-          confidence_score: 0.90,
-          related_entity_type: 'mentoring_session',
-          actionable: true,
-          metadata: {
-            recent_sessions: recentSessions.length,
-            engagement_level: 'high',
-            program_health: 'excellent'
-          }
-        });
-      }
-    }
-
-    // Always generate at least some basic insights about the data state
+    // If no data at all
     if (insights.length === 0) {
-      console.log('No specific insights generated, creating general overview...');
-      
-      // Generate overview insights
-      if (analysis.projects && analysis.projects.length > 0) {
-        const totalProjects = analysis.projects.length;
-        const activeProjects = analysis.projects.filter(p => p.status !== 'completed').length;
-        const completedProjects = totalProjects - activeProjects;
-        
-        insights.push({
-          insight_type: 'info',
-          category: 'projects',
-          title: 'Visão Geral dos Projetos',
-          description: `Você possui ${totalProjects} projetos no total: ${activeProjects} em andamento e ${completedProjects} concluídos. Continue acompanhando o progresso para manter o controle estratégico.`,
-          severity: 'low',
-          confidence_score: 1.0,
-          related_entity_type: 'project',
-          actionable: true,
-          metadata: {
-            total_projects: totalProjects,
-            active_projects: activeProjects,
-            completed_projects: completedProjects,
-            source: 'overview_analysis'
-          }
-        });
-      }
-
-      if (analysis.indicators && analysis.indicators.length > 0) {
-        const totalIndicators = analysis.indicators.length;
-        const averageAchievement = analysis.indicators.reduce((acc, ind) => {
-          const achievement = ind.target_value > 0 ? (ind.current_value / ind.target_value) * 100 : 0;
-          return acc + achievement;
-        }, 0) / totalIndicators;
-
-        insights.push({
-          insight_type: 'info',
-          category: 'indicators',
-          title: 'Performance dos Indicadores',
-          description: `Você está monitorando ${totalIndicators} indicadores-chave com uma média de ${averageAchievement.toFixed(1)}% de atingimento das metas. Continue acompanhando para identificar oportunidades de melhoria.`,
-          severity: 'low',
-          confidence_score: 0.85,
-          related_entity_type: 'key_result',
-          actionable: true,
-          metadata: {
-            total_indicators: totalIndicators,
-            average_achievement: averageAchievement,
-            source: 'overview_analysis'
-          }
-        });
-      }
-
-      if (analysis.objectives && analysis.objectives.length > 0) {
-        const totalObjectives = analysis.objectives.length;
-        const inProgressObjectives = analysis.objectives.filter(o => o.status === 'in_progress').length;
-        const averageProgress = analysis.objectives.reduce((acc, obj) => acc + (obj.progress || 0), 0) / totalObjectives;
-
-        insights.push({
-          insight_type: 'info',
-          category: 'objectives',
-          title: 'Status dos Objetivos Estratégicos',
-          description: `Você possui ${totalObjectives} objetivos estratégicos, sendo ${inProgressObjectives} em progresso ativo. O progresso médio é de ${averageProgress.toFixed(1)}%. Mantenha o foco na execução.`,
-          severity: 'low',
-          confidence_score: 0.90,
-          related_entity_type: 'objective',
-          actionable: true,
-          metadata: {
-            total_objectives: totalObjectives,
-            in_progress_objectives: inProgressObjectives,
-            average_progress: averageProgress,
-            source: 'overview_analysis'
-          }
-        });
-      }
-
-      // STARTUP HUB overview insights
-      if (startupProfiles && startupProfiles.length > 0) {
-        insights.push({
-          insight_type: 'info',
-          category: 'startups',
-          title: 'Portfolio de Startups',
-          description: `Seu programa possui ${startupProfiles.length} startups cadastradas. Continue acompanhando o desenvolvimento de cada uma através das sessões de mentoria para maximizar o sucesso do portfólio.`,
-          severity: 'low',
-          confidence_score: 1.0,
-          related_entity_type: 'startup',
-          actionable: true,
-          metadata: {
-            total_startups: startupProfiles.length,
-            source: 'overview_analysis'
-          }
-        });
-      }
-
-      if (mentorSessions && mentorSessions.length > 0) {
-        const now = new Date();
-        const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
-        const recentSessions = mentorSessions.filter(session => 
-          new Date(session.session_date) >= thirtyDaysAgo
-        );
-
-        insights.push({
-          insight_type: 'info',
-          category: 'mentoring',
-          title: 'Atividade de Mentoria',
-          description: `Total de ${mentorSessions.length} sessões de mentoria realizadas, sendo ${recentSessions.length} nos últimos 30 dias. O acompanhamento contínuo é essencial para o sucesso das startups.`,
-          severity: 'low',
-          confidence_score: 0.90,
-          related_entity_type: 'mentoring_session',
-          actionable: true,
-          metadata: {
-            total_sessions: mentorSessions.length,
-            recent_sessions: recentSessions.length,
-            source: 'overview_analysis'
-          }
-        });
-      }
-
-      // If no data at all, provide guidance
-      if ((!analysis.projects || analysis.projects.length === 0) && 
-          (!analysis.indicators || analysis.indicators.length === 0) && 
-          (!analysis.objectives || analysis.objectives.length === 0) &&
-          (!startupProfiles || startupProfiles.length === 0) &&
-          (!mentorSessions || mentorSessions.length === 0)) {
-        insights.push({
-          insight_type: 'info',
-          category: 'strategic',
-          title: 'Começando sua Jornada Estratégica e de Startups',
-          description: 'Para gerar insights mais específicos, comece adicionando projetos, objetivos estratégicos e indicadores-chave no Strategy Hub, e cadastre startups e sessões de mentoria no Startup Hub. O sistema analisará automaticamente seu progresso e identificará oportunidades de melhoria.',
-          severity: 'low',
-          confidence_score: 1.0,
-          actionable: true,
-          metadata: {
-            recommendation: 'setup_data',
-            modules: ['strategy_hub', 'startup_hub'],
-            source: 'onboarding_guidance'
-          }
-        });
-      }
+      insights.push({
+        insight_type: 'info',
+        category: 'strategic',
+        title: 'Começando sua Jornada Estratégica',
+        description: 'Para gerar diagnósticos mais completos, adicione projetos, objetivos, KRs e ferramentas estratégicas (Golden Circle, SWOT) no Strategy Hub. O Atlas analisará automaticamente seu progresso.',
+        severity: 'low',
+        confidence_score: 1.0,
+        actionable: true,
+        metadata: { source: 'onboarding', recommendations: ['Cadastrar pilares estratégicos', 'Definir objetivos e KRs', 'Preencher Golden Circle e SWOT'] }
+      });
     }
 
     console.log(`Total insights generated: ${insights.length}`);
-      }
-    }
 
-    // Insert insights into database with audit metadata
+    // ========== INSERT INTO DATABASE ==========
     let insertedInsights = 0;
     for (const insight of insights) {
       try {
-        // Enrich metadata with company information for audit trail
         const enrichedMetadata = {
           ...(insight.metadata || {}),
           source_company_id: company_id,
@@ -841,56 +572,53 @@ STARTUP HUB:
             status: 'active',
             metadata: enrichedMetadata
           }]);
-        
-        if (!error) {
-          insertedInsights++;
-        } else {
-          console.error('Error inserting insight:', error);
-        }
+
+        if (!error) insertedInsights++;
+        else console.error('Error inserting insight:', error);
       } catch (err) {
         console.error('Error processing insight:', err);
       }
     }
 
-    // Insert AI recommendations
     let insertedRecommendations = 0;
     for (const rec of aiRecommendations) {
       try {
         const { error } = await supabaseClient
           .from('ai_recommendations')
           .insert([rec]);
-        
-        if (!error) {
-          insertedRecommendations++;
-        }
+        if (!error) insertedRecommendations++;
       } catch (err) {
         console.error('Error inserting recommendation:', err);
       }
     }
 
-    console.log(`Generated ${insights.length} insights, inserted ${insertedInsights}`);
-    console.log(`Generated ${aiRecommendations.length} recommendations, inserted ${insertedRecommendations}`);
-    console.log(`AUDIT: All insights generated for company_id: ${company_id}, user_id: ${user_id}`);
+    console.log(`Inserted ${insertedInsights}/${insights.length} insights, ${insertedRecommendations}/${aiRecommendations.length} recommendations`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        company_id: company_id,
-        user_id: user_id,
+      JSON.stringify({
+        success: true,
+        company_id,
+        user_id,
         insights_generated: insights.length,
         insights_inserted: insertedInsights,
         recommendations_generated: aiRecommendations.length,
         recommendations_inserted: insertedRecommendations,
-        ai_enhanced: lovableApiKey ? true : false,
+        ai_enhanced: !!lovableApiKey,
         data_summary: {
-          strategic_plans: planIds.length,
-          projects: projects.length,
+          pillars: pillars.length,
           objectives: objectives.length,
           key_results: keyResults.length,
-          startup_profiles: startupProfiles.length,
-          mentor_sessions: mentorSessions.length
-        },
-        insights: insights.slice(0, 5) // Return first 5 for preview
+          initiatives: initiatives.length,
+          monthly_actions: monthlyActions.length,
+          fca_analyses: fcaAnalyses.length,
+          projects: projects.length,
+          project_tasks: projectTasks.length,
+          golden_circle: !!goldenCircle,
+          swot: !!swot,
+          beep: beepAssessments.length,
+          startups: startupProfiles.length,
+          mentoring: mentorSessions.length
+        }
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -898,14 +626,8 @@ STARTUP HUB:
   } catch (error) {
     console.error('Error generating insights:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        success: false 
-      }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ error: error.message, success: false }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

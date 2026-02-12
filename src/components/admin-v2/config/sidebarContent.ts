@@ -127,7 +127,7 @@ export function getSidebarContent(activeSection: NavSection): SidebarContent {
             { icon: Package, label: "Módulos Disponíveis", href: "/app/admin-v2/modules", hasDropdown: true, children: [
               { label: "Planejamento Estratégico", href: "/app/admin-v2/modules/strategic-planning" },
               { label: "Startup Hub", href: "/app/admin-v2/modules/startup-hub" },
-              { label: "IA Copilot", href: "/app/admin-v2/modules/ai-copilot" },
+              { label: "Atlas Hub", href: "/app/admin-v2/modules/ai-copilot" },
             ]},
             { icon: Building2, label: "Módulos por Empresa", href: "/app/admin-v2/modules/by-company" },
           ],

@@ -196,7 +196,7 @@ export default function RegisteredCompaniesPage() {
                     <div className="p-1.5 rounded-md bg-cofound-blue-dark/20">
                       <Sparkles className="h-4 w-4 text-cofound-blue-dark" />
                     </div>
-                    <span className="font-medium text-sm">IA Copilot</span>
+                    <span className="font-medium text-sm">Atlas Hub</span>
                   </div>
                   <p className="text-2xl font-bold text-cofound-blue-dark">
                     {isLoading ? "..." : stats?.withAI || 0}

@@ -78,17 +78,18 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onToggleSideba
         
         <div className="flex items-center justify-end flex-1">
         <div className="flex items-center space-x-3">
-          {/* Company Display */}
-          <CompanyDisplay />
-          
+          {/* Atlas Hub - antes da empresa */}
           {hasAIAccess && (
             <NavLink to="/app/ai-copilot">
               <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                 <Brain className="h-4 w-4" />
-                <span className="hidden sm:block text-sm font-medium">Copilot HUB</span>
+                <span className="hidden sm:block text-sm font-medium">Atlas Hub</span>
               </Button>
             </NavLink>
           )}
+          
+          {/* Company Display */}
+          <CompanyDisplay />
           
           
           <DropdownMenu>
