@@ -92,7 +92,7 @@ const getPreviousPeriodKey = (currentKey: string, frequency: KRFrequency): strin
 export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpdateValuesModalProps) => {
   const { toast } = useToast();
   const { selectedYear, setSelectedYear, yearOptions } = usePeriodFilter();
-  const { createFCA } = useKRFCA(keyResult?.id);
+  const { createFCA, fcas, loadFCAs } = useKRFCA(keyResult?.id);
   const [isSaving, setIsSaving] = useState(false);
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
   const [periodActual, setPeriodActual] = useState<Record<string, number>>({});
@@ -105,6 +105,25 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
   const [showFCAModal, setShowFCAModal] = useState(false);
   const [fcaMonthKey, setFcaMonthKey] = useState<string | null>(null);
   const [resolvedMonths, setResolvedMonths] = useState<Set<string>>(new Set());
+
+  // Pre-populate resolvedMonths from existing FCAs with linked_update_month
+  useEffect(() => {
+    if (fcas && fcas.length > 0) {
+      const resolved = new Set<string>();
+      fcas.forEach(fca => {
+        if ((fca as any).linked_update_month) {
+          resolved.add((fca as any).linked_update_month);
+        }
+      });
+      if (resolved.size > 0) {
+        setResolvedMonths(prev => {
+          const merged = new Set(prev);
+          resolved.forEach(m => merged.add(m));
+          return merged;
+        });
+      }
+    }
+  }, [fcas]);
 
   const variationThreshold = keyResult?.variation_threshold ?? null;
 
@@ -679,8 +698,12 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
               setFcaMonthKey(null);
             }}
             onSave={async (fcaData) => {
-              // Save FCA to database
-              await createFCA(fcaData);
+              // Save FCA to database with linked month info
+              await createFCA({
+                ...fcaData,
+                linked_update_month: fcaMonthKey,
+                linked_update_value: blockedMonths[fcaMonthKey!]?.newValue ?? null,
+              } as any);
               // After FCA is created, unblock the period
               setResolvedMonths(prev => new Set(prev).add(fcaMonthKey));
               setBlockedMonths(prev => {
