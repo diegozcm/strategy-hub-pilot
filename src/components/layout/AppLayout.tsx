@@ -54,11 +54,9 @@ export const AppLayout: React.FC = () => {
           )}
           <FloatingAIChat
             isOpen={floatingAI.isOpen}
-            isMinimized={floatingAI.isMinimized}
             position={floatingAI.position}
             messages={floatingAI.messages}
             onClose={floatingAI.closeChat}
-            onMinimize={floatingAI.toggleMinimize}
             onPositionChange={floatingAI.updatePosition}
             onMessagesChange={floatingAI.setMessages}
           />
