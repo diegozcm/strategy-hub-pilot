@@ -11,6 +11,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useCompanyAIAccess } from '@/hooks/useCompanyAIAccess';
 import { useRealtimePresence } from '@/hooks/useRealtimePresence';
 import { LayoutGroup } from 'motion/react';
+import LiquidGlassFilter from '@/components/ui/LiquidGlassFilter';
 
 export const AppLayout: React.FC = () => {
   const isMobile = useIsMobile();
@@ -29,6 +30,7 @@ export const AppLayout: React.FC = () => {
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
+      <LiquidGlassFilter />
       <ImpersonationBanner />
       <div className="flex-1 flex overflow-hidden">
         <Sidebar 

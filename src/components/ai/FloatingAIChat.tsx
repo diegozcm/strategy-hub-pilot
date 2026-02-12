@@ -41,7 +41,7 @@ interface FloatingAIChatProps {
 
 const TypingIndicator = ({ text = 'digitando' }: { text?: string }) => (
   <div className="flex justify-start">
-    <div className="rounded-lg px-4 py-3 flex items-center gap-1.5" style={{ background: '#151525' }}>
+    <div className="rounded-lg px-4 py-3 flex items-center gap-1.5 liquid-bubble">
       <div className="flex items-center gap-1">
         <span className="w-2 h-2 rounded-full animate-[typing-bounce_1.4s_ease-in-out_infinite]" style={{ background: 'oklch(68% 0.22 150)' }} />
         <span className="w-2 h-2 rounded-full animate-[typing-bounce_1.4s_ease-in-out_0.2s_infinite]" style={{ background: 'oklch(75% 0.22 230)' }} />
@@ -595,14 +595,13 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
       {/* Animated gradient border wrapper */}
       <div className="atlas-chat-border-wrapper relative rounded-2xl p-[1.5px]">
         <div
-          className="rounded-2xl overflow-hidden shadow-2xl w-96 h-[600px] flex flex-col"
-          style={{ background: '#0a0a0f' }}
+          className="rounded-2xl overflow-hidden shadow-2xl w-96 h-[600px] flex flex-col liquid-card"
           onMouseDown={handleMouseDown}
         >
           {/* Header */}
           <div 
-            className="drag-handle cursor-move px-4 py-3 flex items-center justify-between border-b"
-            style={{ background: 'rgba(13, 13, 26, 0.95)', borderColor: 'rgba(56, 182, 255, 0.1)' }}
+            className="drag-handle cursor-move px-4 py-3 flex items-center justify-between border-b relative z-10"
+            style={{ background: 'rgba(13, 13, 26, 0.6)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderColor: 'rgba(255, 255, 255, 0.08)' }}
           >
             <div className="flex items-center gap-2.5">
               {showHistory && (
@@ -650,16 +649,12 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
           </div>
 
           {/* Content */}
-          <div className="flex-1 flex flex-col overflow-hidden p-4">
+          <div className="flex-1 flex flex-col overflow-hidden p-4 relative z-10">
             {showHistory ? (
               <div className="flex flex-col h-full">
                 <button 
-                  className="mb-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-colors border"
-                  style={{ 
-                    background: 'rgba(56, 182, 255, 0.08)', 
-                    borderColor: 'rgba(56, 182, 255, 0.2)', 
-                    color: '#e0e0e0' 
-                  }}
+                  className="mb-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-sm font-medium transition-all liquid-glass-btn"
+                  style={{ color: '#e0e0e0' }}
                   onClick={startNewConversation}
                 >
                   <Plus className="h-4 w-4" /> Nova conversa
@@ -679,10 +674,10 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                             session.id === sessionId ? "border" : "border border-transparent"
                           )} 
                           style={{
-                            background: session.id === sessionId ? 'rgba(56, 182, 255, 0.08)' : 'transparent',
-                            borderColor: session.id === sessionId ? 'rgba(56, 182, 255, 0.2)' : 'transparent',
+                            background: session.id === sessionId ? 'rgba(255, 255, 255, 0.06)' : 'transparent',
+                            borderColor: session.id === sessionId ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
                           }}
-                          onMouseEnter={(e) => { if (session.id !== sessionId) e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; }}
+                          onMouseEnter={(e) => { if (session.id !== sessionId) e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; }}
                           onMouseLeave={(e) => { if (session.id !== sessionId) e.currentTarget.style.background = 'transparent'; }}
                           onClick={() => loadSession(session)}
                         >
@@ -715,20 +710,8 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                       {quickActions.map((action, index) => (
                         <button 
                           key={index} 
-                          className="flex items-center gap-2 py-2.5 px-3 rounded-lg text-left text-xs transition-all border"
-                          style={{ 
-                            background: 'rgba(255, 255, 255, 0.03)', 
-                            borderColor: 'rgba(56, 182, 255, 0.1)',
-                            color: '#e0e0e0',
-                          }}
-                          onMouseEnter={(e) => { 
-                            e.currentTarget.style.background = 'rgba(56, 182, 255, 0.08)';
-                            e.currentTarget.style.borderColor = 'rgba(56, 182, 255, 0.25)';
-                          }}
-                          onMouseLeave={(e) => { 
-                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                            e.currentTarget.style.borderColor = 'rgba(56, 182, 255, 0.1)';
-                          }}
+                          className="flex items-center gap-2 py-2.5 px-3 rounded-lg text-left text-xs transition-all liquid-glass-btn"
+                          style={{ color: '#e0e0e0' }}
                           onClick={() => handleSendMessage(action.prompt)}
                         >
                           <action.icon className="h-4 w-4 flex-shrink-0" style={{ color: 'rgba(56, 182, 255, 0.7)' }} />
@@ -744,11 +727,10 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                     {messages.map((msg, index) => (
                       <div key={index} className={cn("flex", msg.role === 'user' ? "justify-end" : "justify-start")}>
                         <div 
-                          className="rounded-xl px-4 py-2.5 max-w-[85%]"
-                          style={msg.role === 'user' 
-                            ? { background: 'linear-gradient(135deg, #0a2a4a, #0a3a5a)' }
-                            : { background: '#151525' }
-                          }
+                          className={cn(
+                            "rounded-xl px-4 py-2.5 max-w-[85%]",
+                            msg.role === 'user' ? 'liquid-bubble-user' : 'liquid-bubble'
+                          )}
                         >
                           {/* User images */}
                           {msg.images && msg.images.length > 0 && (
@@ -920,14 +902,8 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                       }}
                       placeholder="Digite sua mensagem..."
                       disabled={isLoading || isStreaming || isExecuting}
-                      className="w-full h-10 rounded-lg px-3 py-2 text-sm outline-none transition-all border"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.04)',
-                        borderColor: 'rgba(56, 182, 255, 0.12)',
-                        color: '#e0e0e0',
-                      }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = 'rgba(56, 182, 255, 0.4)'}
-                      onBlur={(e) => e.currentTarget.style.borderColor = 'rgba(56, 182, 255, 0.12)'}
+                      className="w-full h-10 rounded-lg px-3 py-2 text-sm outline-none liquid-input"
+                      style={{ color: '#e0e0e0' }}
                     />
                   </div>
                   {/* Plan toggle */}

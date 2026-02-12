@@ -278,3 +278,64 @@ All colors MUST be HSL.
 .atlas-chat-scrollarea ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* Liquid Glass utilities */
+.liquid-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 10, 20, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.liquid-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.03) 20%, transparent 100%);
+  z-index: 1;
+}
+
+.liquid-bubble {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.liquid-bubble-user {
+  background: linear-gradient(135deg, rgba(10, 42, 74, 0.7), rgba(10, 58, 90, 0.7));
+  border: 1px solid rgba(56, 182, 255, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.liquid-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(56, 182, 255, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color 0.5s ease-out, background 0.5s ease-out;
+}
+
+.liquid-input:focus {
+  border-color: rgba(56, 182, 255, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.liquid-glass-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.5s ease-out;
+}
+
+.liquid-glass-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
