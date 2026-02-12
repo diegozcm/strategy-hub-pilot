@@ -263,7 +263,7 @@ export const KeyResultMetrics = ({
             <Target className="h-3.5 w-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground font-medium">{targetLabel}</span>
           </div>
-          <div className="text-lg font-bold">
+          <div className="text-xl font-bold">
             {formatMetricValue(currentMetrics.target, keyResult.unit)}
           </div>
         </div>
@@ -282,7 +282,7 @@ export const KeyResultMetrics = ({
             )}
             <span className="text-xs text-muted-foreground font-medium">{actualLabel}</span>
           </div>
-          <div className="text-lg font-bold">
+          <div className="text-xl font-bold">
             {formatMetricValue(currentMetrics.actual, keyResult.unit)}
           </div>
         </div>
@@ -294,7 +294,7 @@ export const KeyResultMetrics = ({
           </div>
           {hasData ? (
             <div className="flex items-center gap-2">
-              <span className={`text-lg font-bold ${krStatus.color}`}>
+              <span className={`text-xl font-bold ${krStatus.color}`}>
                 {krStatus.percentage.toFixed(1)}%
               </span>
               <Badge 
@@ -310,7 +310,7 @@ export const KeyResultMetrics = ({
               </Badge>
             </div>
           ) : (
-            <span className="text-lg font-bold text-muted-foreground">—</span>
+            <span className="text-xl font-bold text-muted-foreground">—</span>
           )}
         </div>
 
