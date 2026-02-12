@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrendingUp, TrendingDown, Target, Calendar } from 'lucide-react';
-import { useKRMetrics, formatMetricValue, getAchievementStatus } from '@/hooks/useKRMetrics';
+import { useKRMetrics, formatMetricValue } from '@/hooks/useKRMetrics';
 import { KeyResult } from '@/types/strategic-map';
 import { calculateKRStatus, getStatusBackgroundColors, getDefaultBackgroundColors } from '@/lib/krHelpers';
 
@@ -64,7 +64,6 @@ export const KeyResultMetrics = ({
 }: KeyResultMetricsProps) => {
   const [isComboOpen, setIsComboOpen] = useState(false);
 
-  // Get metrics from database (with optional custom month, quarter, semester, or bimonth)
   const metrics = useKRMetrics(keyResult, {
     selectedMonth,
     selectedYear,
@@ -76,7 +75,6 @@ export const KeyResultMetrics = ({
     selectedBimonthYear,
   });
   
-  // Select appropriate metrics based on period
   const currentMetrics = 
     selectedPeriod === 'monthly' ? metrics.monthly :
     selectedPeriod === 'yearly' ? metrics.yearly :
@@ -85,7 +83,6 @@ export const KeyResultMetrics = ({
     selectedPeriod === 'bimonthly' ? metrics.bimonthly :
     metrics.ytd;
 
-  // Verificar se há dados realizados para calcular (incluindo valores negativos e zero)
   const hasActualData = currentMetrics.actual !== null && currentMetrics.actual !== undefined;
   const hasTarget = currentMetrics.target !== null && currentMetrics.target !== undefined && currentMetrics.target !== 0;
   const hasData = hasTarget && hasActualData;
@@ -96,9 +93,8 @@ export const KeyResultMetrics = ({
         currentMetrics.target,
         keyResult.target_direction || 'maximize'
       )
-    : { percentage: 0, isExcellent: false, isGood: false, color: 'text-gray-500' };
+    : { percentage: 0, isExcellent: false, isGood: false, color: 'text-muted-foreground' };
 
-  // Get dynamic background colors based on performance
   const statusBgColors = hasData
     ? getStatusBackgroundColors(
         currentMetrics.actual,
@@ -109,10 +105,26 @@ export const KeyResultMetrics = ({
 
   const isExcellent = krStatus.isExcellent;
   const isGood = krStatus.isGood;
-  const isOnTrack = isGood;
   const isOverTarget = krStatus.percentage >= 100;
 
-  // Format current period display
+  const targetLabel = selectedPeriod === 'ytd' ? 'Meta YTD' : 
+    selectedPeriod === 'yearly' ? 'Meta Anual' : 
+    selectedPeriod === 'quarterly' ? 'Meta Quarter' :
+    selectedPeriod === 'semesterly' ? 'Meta Semestre' :
+    selectedPeriod === 'bimonthly' ? 'Meta Bimestre' : 'Meta Mensal';
+
+  const actualLabel = selectedPeriod === 'ytd' ? 'Realizado YTD' : 
+    selectedPeriod === 'yearly' ? 'Realizado Anual' : 
+    selectedPeriod === 'quarterly' ? 'Realizado Quarter' :
+    selectedPeriod === 'semesterly' ? 'Realizado Semestre' :
+    selectedPeriod === 'bimonthly' ? 'Realizado Bimestre' : 'Realizado Mensal';
+
+  const percentLabel = selectedPeriod === 'ytd' ? '% Atingimento YTD' : 
+    selectedPeriod === 'yearly' ? '% Atingimento Anual' : 
+    selectedPeriod === 'quarterly' ? '% Atingimento Quarter' :
+    selectedPeriod === 'semesterly' ? '% Atingimento Semestre' :
+    selectedPeriod === 'bimonthly' ? '% Atingimento Bimestre' : '% Atingimento Mensal';
+
   const currentPeriodDisplay = selectedPeriod === 'ytd'
     ? `YTD ${new Date().getFullYear()}`
     : selectedPeriod === 'yearly'
@@ -127,281 +139,190 @@ export const KeyResultMetrics = ({
     ? new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
     : new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
-  const currentPeriodSubtext = selectedPeriod === 'ytd'
-    ? `Jan-${new Date().toLocaleString('pt-BR', { month: 'short' })}`
-    : selectedPeriod === 'yearly'
-    ? 'Todos os 12 meses'
-    : selectedPeriod === 'quarterly'
-    ? '3 meses do quarter'
-    : selectedPeriod === 'semesterly'
-    ? '6 meses do semestre'
-    : selectedPeriod === 'bimonthly'
-    ? '2 meses do bimestre'
-    : 'Mês de referência';
+  const renderPeriodSelector = () => {
+    if (selectedPeriod === 'monthly' && onMonthChange && onYearChange) {
+      return (
+        <Select
+          value={`${selectedYear}-${selectedMonth?.toString().padStart(2, '0')}`}
+          onValueChange={(value) => {
+            const [year, month] = value.split('-');
+            onYearChange(parseInt(year));
+            onMonthChange(parseInt(month));
+          }}
+          onOpenChange={setIsComboOpen}
+        >
+          <SelectTrigger className="w-full h-7 text-sm font-bold border-0 shadow-none px-0">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {monthOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
+    if (selectedPeriod === 'quarterly' && onQuarterChange && onQuarterYearChange) {
+      return (
+        <Select
+          value={`${selectedQuarterYear}-Q${selectedQuarter}`}
+          onValueChange={(value) => {
+            const [year, q] = value.split('-Q');
+            onQuarterYearChange(parseInt(year));
+            onQuarterChange(parseInt(q) as 1 | 2 | 3 | 4);
+          }}
+          onOpenChange={setIsComboOpen}
+          disabled={quarterOptions.length === 0}
+        >
+          <SelectTrigger className="w-full h-7 text-sm font-bold border-0 shadow-none px-0">
+            <SelectValue placeholder={quarterOptions.length === 0 ? "Sem quarters" : undefined} />
+          </SelectTrigger>
+          <SelectContent>
+            {quarterOptions.length > 0 ? (
+              quarterOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+              ))
+            ) : (
+              <SelectItem value="empty" disabled>Nenhum quarter disponível</SelectItem>
+            )}
+          </SelectContent>
+        </Select>
+      );
+    }
+    if (selectedPeriod === 'yearly' && onYearlyYearChange && yearOptions && yearOptions.length > 0) {
+      return (
+        <Select
+          value={selectedYearlyYear?.toString()}
+          onValueChange={(value) => onYearlyYearChange(parseInt(value))}
+          onOpenChange={setIsComboOpen}
+        >
+          <SelectTrigger className="w-full h-7 text-sm font-bold border-0 shadow-none px-0">
+            <SelectValue placeholder="Selecione o ano" />
+          </SelectTrigger>
+          <SelectContent>
+            {yearOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value.toString()}>{option.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
+    if (selectedPeriod === 'semesterly' && onSemesterChange && onSemesterYearChange && semesterOptions.length > 0) {
+      return (
+        <Select
+          value={`${selectedSemesterYear}-S${selectedSemester}`}
+          onValueChange={(value) => {
+            const [year, s] = value.split('-S');
+            onSemesterYearChange(parseInt(year));
+            onSemesterChange(parseInt(s) as 1 | 2);
+          }}
+          onOpenChange={setIsComboOpen}
+        >
+          <SelectTrigger className="w-full h-7 text-sm font-bold border-0 shadow-none px-0">
+            <SelectValue placeholder="Selecione o semestre" />
+          </SelectTrigger>
+          <SelectContent>
+            {semesterOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
+    if (selectedPeriod === 'bimonthly' && onBimonthChange && onBimonthYearChange && bimonthlyOptions.length > 0) {
+      return (
+        <Select
+          value={`${selectedBimonthYear}-B${selectedBimonth}`}
+          onValueChange={(value) => {
+            const [year, b] = value.split('-B');
+            onBimonthYearChange(parseInt(year));
+            onBimonthChange(parseInt(b) as 1 | 2 | 3 | 4 | 5 | 6);
+          }}
+          onOpenChange={setIsComboOpen}
+        >
+          <SelectTrigger className="w-full h-7 text-sm font-bold border-0 shadow-none px-0">
+            <SelectValue placeholder="Selecione o bimestre" />
+          </SelectTrigger>
+          <SelectContent>
+            {bimonthlyOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
+    return <span className="text-sm font-bold">{currentPeriodDisplay}</span>;
+  };
 
   return (
-    <div className="space-y-4">
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="h-24">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
-            <CardTitle className="text-sm font-medium">
-              {selectedPeriod === 'ytd' ? 'Meta YTD' : 
-               selectedPeriod === 'yearly' ? 'Meta Anual' : 
-               selectedPeriod === 'quarterly' ? 'Meta Quarter' :
-               selectedPeriod === 'semesterly' ? 'Meta Semestre' :
-               selectedPeriod === 'bimonthly' ? 'Meta Bimestre' :
-               'Meta Mensal'}
-            </CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent className="px-4 pb-3 pt-0">
-            <div className="text-xl font-bold">
-              {formatMetricValue(currentMetrics.target, keyResult.unit)}
-            </div>
-          </CardContent>
-        </Card>
+    <Card className="overflow-hidden">
+      <div className="grid grid-cols-4 divide-x">
+        {/* Meta */}
+        <div className="px-4 py-3">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Target className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground font-medium">{targetLabel}</span>
+          </div>
+          <div className="text-lg font-bold">
+            {formatMetricValue(currentMetrics.target, keyResult.unit)}
+          </div>
+        </div>
 
-        <Card className="h-24">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
-            <CardTitle className="text-sm font-medium">
-              {selectedPeriod === 'ytd' ? 'Realizado YTD' : 
-               selectedPeriod === 'yearly' ? 'Realizado Anual' : 
-               selectedPeriod === 'quarterly' ? 'Realizado Quarter' :
-               selectedPeriod === 'semesterly' ? 'Realizado Semestre' :
-               selectedPeriod === 'bimonthly' ? 'Realizado Bimestre' :
-               'Realizado Mensal'}
-            </CardTitle>
+        {/* Realizado */}
+        <div className="px-4 py-3">
+          <div className="flex items-center gap-1.5 mb-1">
             {hasData ? (
               isOverTarget ? (
-                <TrendingUp className="h-4 w-4 text-green-600" />
+                <TrendingUp className="h-3.5 w-3.5 text-green-600" />
               ) : (
-                <TrendingDown className="h-4 w-4 text-red-600" />
+                <TrendingDown className="h-3.5 w-3.5 text-red-600" />
               )
-            ) : null}
-          </CardHeader>
-          <CardContent className="px-4 pb-3 pt-0">
-            <div className="text-xl font-bold">
-              {formatMetricValue(currentMetrics.actual, keyResult.unit)}
+            ) : (
+              <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+            <span className="text-xs text-muted-foreground font-medium">{actualLabel}</span>
+          </div>
+          <div className="text-lg font-bold">
+            {formatMetricValue(currentMetrics.actual, keyResult.unit)}
+          </div>
+        </div>
+
+        {/* % Atingimento */}
+        <div className="px-4 py-3">
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-xs text-muted-foreground font-medium">{percentLabel}</span>
+          </div>
+          {hasData ? (
+            <div className="flex items-center gap-2">
+              <span className={`text-lg font-bold ${krStatus.color}`}>
+                {krStatus.percentage.toFixed(1)}%
+              </span>
+              <Badge 
+                variant={
+                  isExcellent || (isGood && krStatus.percentage >= 100) ? "default" : 
+                  isGood ? "secondary" : 
+                  "destructive"
+                } 
+                className="text-[10px] px-1.5 py-0 h-4"
+              >
+                {isExcellent || (isGood && krStatus.percentage >= 100) ? "✓" : 
+                 isGood ? "~" : "!"}
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
+          ) : (
+            <span className="text-lg font-bold text-muted-foreground">—</span>
+          )}
+        </div>
 
-      <Card className="h-24">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
-          <CardTitle className="text-sm font-medium">
-            {selectedPeriod === 'ytd' ? '% Atingimento YTD' : 
-             selectedPeriod === 'yearly' ? '% Atingimento Anual' : 
-             selectedPeriod === 'quarterly' ? '% Atingimento Quarter' :
-             selectedPeriod === 'semesterly' ? '% Atingimento Semestre' :
-             selectedPeriod === 'bimonthly' ? '% Atingimento Bimestre' :
-             '% Atingimento Mensal'}
-          </CardTitle>
-        </CardHeader>
-          <CardContent className="px-4 pb-3 pt-0">
-            {hasData ? (
-              <>
-                <div className={`text-xl font-bold ${krStatus.color}`}>
-                  {krStatus.percentage.toFixed(1)}%
-                </div>
-                <div className="flex items-center justify-between mt-1">
-                  <p className="text-xs text-muted-foreground">
-                    {isOverTarget 
-                      ? `+${(krStatus.percentage - 100).toFixed(1)}%`
-                      : `-${(100 - krStatus.percentage).toFixed(1)}%`
-                    }
-                  </p>
-                  <Badge 
-                    variant={
-                      isExcellent || (isGood && krStatus.percentage >= 100) ? "default" : 
-                      isGood ? "secondary" : 
-                      "destructive"
-                    } 
-                    className="text-xs px-2 py-0"
-                  >
-                    {isExcellent || (isGood && krStatus.percentage >= 100) ? "✓" : 
-                     isGood ? "~" : 
-                     "!"}
-                  </Badge>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="text-xl font-bold text-gray-500">
-                  —
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Sem dados realizados
-                </p>
-              </>
-            )}
-          </CardContent>
-      </Card>
-
-        <Card className={`h-24 transition-colors duration-300 ${statusBgColors.bg} ${statusBgColors.border}`}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
-            <CardTitle className="text-sm font-medium">Período Atual</CardTitle>
-            <Calendar className={`h-4 w-4 ${statusBgColors.icon}`} />
-          </CardHeader>
-          <CardContent className="px-4 pb-3 pt-0">
-            {selectedPeriod === 'monthly' && onMonthChange && onYearChange ? (
-              <>
-                <Select
-                  value={`${selectedYear}-${selectedMonth?.toString().padStart(2, '0')}`}
-                  onValueChange={(value) => {
-                    const [year, month] = value.split('-');
-                    onYearChange(parseInt(year));
-                    onMonthChange(parseInt(month));
-                  }}
-                  onOpenChange={setIsComboOpen}
-                >
-                  <SelectTrigger className="w-full h-9 text-base font-bold">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {monthOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!isComboOpen && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Mês de referência
-                  </p>
-                )}
-              </>
-            ) : selectedPeriod === 'quarterly' && onQuarterChange && onQuarterYearChange ? (
-              <>
-                <Select
-                  value={`${selectedQuarterYear}-Q${selectedQuarter}`}
-                  onValueChange={(value) => {
-                    const [year, q] = value.split('-Q');
-                    onQuarterYearChange(parseInt(year));
-                    onQuarterChange(parseInt(q) as 1 | 2 | 3 | 4);
-                  }}
-                  onOpenChange={setIsComboOpen}
-                  disabled={quarterOptions.length === 0}
-                >
-                  <SelectTrigger className="w-full h-9 text-base font-bold">
-                    <SelectValue placeholder={quarterOptions.length === 0 ? "Sem quarters" : undefined} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {quarterOptions.length > 0 ? (
-                      quarterOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="empty" disabled>
-                        Nenhum quarter disponível
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-                {!isComboOpen && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {quarterOptions.length === 0 ? "KR sem vigência neste período" : "Quarter de referência"}
-                  </p>
-                )}
-              </>
-            ) : selectedPeriod === 'yearly' && onYearlyYearChange && yearOptions && yearOptions.length > 0 ? (
-              <>
-                <Select
-                  value={selectedYearlyYear?.toString()}
-                  onValueChange={(value) => {
-                    onYearlyYearChange(parseInt(value));
-                  }}
-                  onOpenChange={setIsComboOpen}
-                >
-                  <SelectTrigger className="w-full h-9 text-base font-bold">
-                    <SelectValue placeholder="Selecione o ano" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {yearOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value.toString()}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!isComboOpen && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Todos os 12 meses
-                  </p>
-                )}
-              </>
-            ) : selectedPeriod === 'semesterly' && onSemesterChange && onSemesterYearChange && semesterOptions.length > 0 ? (
-              <>
-                <Select
-                  value={`${selectedSemesterYear}-S${selectedSemester}`}
-                  onValueChange={(value) => {
-                    const [year, s] = value.split('-S');
-                    onSemesterYearChange(parseInt(year));
-                    onSemesterChange(parseInt(s) as 1 | 2);
-                  }}
-                  onOpenChange={setIsComboOpen}
-                >
-                  <SelectTrigger className="w-full h-9 text-base font-bold">
-                    <SelectValue placeholder="Selecione o semestre" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {semesterOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!isComboOpen && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    6 meses do semestre
-                  </p>
-                )}
-              </>
-            ) : selectedPeriod === 'bimonthly' && onBimonthChange && onBimonthYearChange && bimonthlyOptions.length > 0 ? (
-              <>
-                <Select
-                  value={`${selectedBimonthYear}-B${selectedBimonth}`}
-                  onValueChange={(value) => {
-                    const [year, b] = value.split('-B');
-                    onBimonthYearChange(parseInt(year));
-                    onBimonthChange(parseInt(b) as 1 | 2 | 3 | 4 | 5 | 6);
-                  }}
-                  onOpenChange={setIsComboOpen}
-                >
-                  <SelectTrigger className="w-full h-9 text-base font-bold">
-                    <SelectValue placeholder="Selecione o bimestre" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bimonthlyOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {!isComboOpen && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    2 meses do bimestre
-                  </p>
-                )}
-              </>
-            ) : (
-              <>
-                <div className="text-xl font-bold">
-                  {currentPeriodDisplay}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {currentPeriodSubtext}
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+        {/* Período Atual */}
+        <div className={`px-4 py-3 transition-colors duration-300 ${statusBgColors.bg} ${statusBgColors.border}`}>
+          <div className="flex items-center gap-1.5 mb-1">
+            <Calendar className={`h-3.5 w-3.5 ${statusBgColors.icon}`} />
+            <span className="text-xs text-muted-foreground font-medium">Período Atual</span>
+          </div>
+          {renderPeriodSelector()}
+        </div>
       </div>
-    </div>
+    </Card>
   );
 };
