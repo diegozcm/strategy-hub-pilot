@@ -332,7 +332,7 @@ export const KROverviewModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1100px] w-[calc(100vw-2rem)] p-0">
+      <DialogContent className="sm:max-w-[1400px] w-[calc(100vw-2rem)] p-0">
         <DialogHeader className="sr-only">
           <DialogTitle>Visão do Resultado-Chave</DialogTitle>
           <DialogDescription>Detalhes e evolução do resultado-chave</DialogDescription>
@@ -420,8 +420,8 @@ export const KROverviewModal = ({
           </div>
 
           {/* Action Buttons & Period Filters - single row */}
-          <div className="flex flex-wrap items-center justify-between gap-2 py-4 flex-shrink-0 px-6">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center justify-between gap-2 py-4 flex-shrink-0 px-6 overflow-x-auto">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {canCheckIn && (
                 <Button
                   variant="outline"
@@ -507,7 +507,7 @@ export const KROverviewModal = ({
               isYTDCalculable={isYTDApplicable}
               ytdInfoMessage={ytdWarningMessage}
               onYTDClick={handleYTDClick}
-              className="flex-wrap"
+              className="flex-shrink-0"
               compact={true}
               hideYearSelect={true}
               krFrequency={(currentKeyResult.frequency as KRFrequency) || 'monthly'}
