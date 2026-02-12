@@ -241,3 +241,40 @@ All colors MUST be HSL.
     animation: none;
   }
 }
+
+/* Atlas Chat - Animated gradient border */
+@property --atlas-border-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.atlas-chat-border-wrapper {
+  background: conic-gradient(
+    from var(--atlas-border-angle),
+    oklch(68% 0.22 150),
+    oklch(75% 0.22 230),
+    oklch(72% 0.20 200),
+    oklch(68% 0.22 150)
+  );
+  animation: atlas-border-spin 4s linear infinite;
+}
+
+@keyframes atlas-border-spin {
+  to { --atlas-border-angle: 360deg; }
+}
+
+/* Atlas Chat scrollbar dark */
+.atlas-chat-scrollarea ::-webkit-scrollbar {
+  width: 4px;
+}
+.atlas-chat-scrollarea ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.atlas-chat-scrollarea ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+.atlas-chat-scrollarea ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
