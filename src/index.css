@@ -183,3 +183,13 @@ All colors MUST be HSL.
     scrollbar-color: hsl(var(--muted)) hsl(var(--background));
   }
 }
+
+/* Atlas floating button LED spin animation */
+@keyframes spin-glow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-spin-glow {
+  animation: spin-glow 3s linear infinite;
+}
