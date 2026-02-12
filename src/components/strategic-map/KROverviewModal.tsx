@@ -332,7 +332,7 @@ export const KROverviewModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1280px] w-[calc(100vw-2rem)] p-0">
+      <DialogContent className="sm:max-w-[1100px] w-[calc(100vw-2rem)] p-0">
         <DialogHeader className="sr-only">
           <DialogTitle>Visão do Resultado-Chave</DialogTitle>
           <DialogDescription>Detalhes e evolução do resultado-chave</DialogDescription>
@@ -419,102 +419,100 @@ export const KROverviewModal = ({
             )}
           </div>
 
-          {/* Action Buttons & Period Filters */}
-          <div className="flex flex-col gap-3 py-4 flex-shrink-0 px-6">
-            {/* Linha 1: Botões de ação */}
-            <div className="flex flex-wrap items-center gap-2">
-              {canCheckIn && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowUpdateValuesModal(true)}
-                  className="text-cyan-600 border-cyan-200 hover:bg-cyan-100 hover:border-cyan-300 hover:text-cyan-600"
-                >
-                  <FileEdit className="h-4 w-4 mr-2" />
-                  Atualizar Valores
-                </Button>
-              )}
+          {/* Action Buttons & Period Filters - single row */}
+          <div className="flex flex-wrap items-center gap-2 py-4 flex-shrink-0 px-6">
+            {canCheckIn && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowFCAModal(true)}
-                className="text-blue-600 border-blue-200 hover:bg-blue-100 hover:border-blue-300 hover:text-blue-600"
+                onClick={() => setShowUpdateValuesModal(true)}
+                className="text-cyan-600 border-cyan-200 hover:bg-cyan-100 hover:border-cyan-300 hover:text-cyan-600"
               >
-                <ListChecks className="h-4 w-4 mr-2" />
-                FCA & Ações
+                <FileEdit className="h-4 w-4 mr-2" />
+                Atualizar Valores
               </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFCAModal(true)}
+              className="text-blue-600 border-blue-200 hover:bg-blue-100 hover:border-blue-300 hover:text-blue-600"
+            >
+              <ListChecks className="h-4 w-4 mr-2" />
+              FCA & Ações
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowStatusReportModal(true)}
+              className="text-green-600 border-green-200 hover:bg-green-100 hover:border-green-300 hover:text-green-600"
+            >
+              <FileBarChart className="h-4 w-4 mr-2" />
+              Status Report
+            </Button>
+            <div className="relative">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowStatusReportModal(true)}
-                className="text-green-600 border-green-200 hover:bg-green-100 hover:border-green-300 hover:text-green-600"
+                onClick={() => setShowInitiativesModal(true)}
+                className="text-purple-600 border-purple-200 hover:bg-purple-100 hover:border-purple-300 hover:text-purple-600"
               >
-                <FileBarChart className="h-4 w-4 mr-2" />
-                Status Report
+                <Rocket className="h-4 w-4 mr-2" />
+                Iniciativas
               </Button>
-              <div className="relative">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowInitiativesModal(true)}
-                  className="text-purple-600 border-purple-200 hover:bg-purple-100 hover:border-purple-300 hover:text-purple-600"
+              {initiatives.length > 0 && (
+                <span 
+                  className="absolute -top-2 -right-2 h-5 min-w-5 px-1.5 text-xs font-medium bg-purple-600 text-white rounded-full flex items-center justify-center pointer-events-none"
                 >
-                  <Rocket className="h-4 w-4 mr-2" />
-                  Iniciativas
-                </Button>
-                {initiatives.length > 0 && (
-                  <span 
-                    className="absolute -top-2 -right-2 h-5 min-w-5 px-1.5 text-xs font-medium bg-purple-600 text-white rounded-full flex items-center justify-center pointer-events-none"
-                  >
-                    {initiatives.length}
-                  </span>
-                )}
-              </div>
-              {canEditThisKR && (
-                <KRPropertiesPopover 
-                  keyResult={currentKeyResult} 
-                  onSave={async () => {
-                    await refreshKeyResult();
-                    onSave();
-                  }} 
-                />
+                  {initiatives.length}
+                </span>
               )}
             </div>
-            {/* Linha 2: Filtros de período */}
-            <div className="flex items-center gap-2 pt-1 border-t border-border">
-              <SmartPeriodSelector
-                selectedPeriod={selectedPeriod}
-                selectedYear={selectedYear}
-                selectedMonth={selectedMonth}
-                selectedQuarter={selectedQuarter}
-                selectedQuarterYear={selectedQuarterYear}
-                selectedSemester={selectedSemester}
-                selectedSemesterYear={selectedSemesterYear}
-                selectedBimonth={selectedBimonth}
-                selectedBimonthYear={selectedBimonthYear}
-                setSelectedPeriod={setSelectedPeriod}
-                setSelectedYear={handleYearChange}
-                setSelectedMonth={setSelectedMonth}
-                setSelectedQuarter={setSelectedQuarter}
-                setSelectedQuarterYear={setSelectedQuarterYear}
-                setSelectedSemester={setSelectedSemester}
-                setSelectedSemesterYear={setSelectedSemesterYear}
-                setSelectedBimonth={setSelectedBimonth}
-                setSelectedBimonthYear={setSelectedBimonthYear}
-                yearOptions={yearOptions}
-                quarterOptions={krQuarterOptions}
-                semesterOptions={semesterOptions}
-                bimonthlyOptions={bimonthlyOptions}
-                monthOptions={monthOptions}
-                isYTDCalculable={isYTDApplicable}
-                ytdInfoMessage={ytdWarningMessage}
-                onYTDClick={handleYTDClick}
-                className="flex-wrap"
-                compact={true}
-                hideYearSelect={true}
-                krFrequency={(currentKeyResult.frequency as KRFrequency) || 'monthly'}
+            {canEditThisKR && (
+              <KRPropertiesPopover 
+                keyResult={currentKeyResult} 
+                onSave={async () => {
+                  await refreshKeyResult();
+                  onSave();
+                }} 
               />
-            </div>
+            )}
+
+            {/* Separador vertical */}
+            <div className="h-6 w-px bg-border mx-1" />
+
+            <SmartPeriodSelector
+              selectedPeriod={selectedPeriod}
+              selectedYear={selectedYear}
+              selectedMonth={selectedMonth}
+              selectedQuarter={selectedQuarter}
+              selectedQuarterYear={selectedQuarterYear}
+              selectedSemester={selectedSemester}
+              selectedSemesterYear={selectedSemesterYear}
+              selectedBimonth={selectedBimonth}
+              selectedBimonthYear={selectedBimonthYear}
+              setSelectedPeriod={setSelectedPeriod}
+              setSelectedYear={handleYearChange}
+              setSelectedMonth={setSelectedMonth}
+              setSelectedQuarter={setSelectedQuarter}
+              setSelectedQuarterYear={setSelectedQuarterYear}
+              setSelectedSemester={setSelectedSemester}
+              setSelectedSemesterYear={setSelectedSemesterYear}
+              setSelectedBimonth={setSelectedBimonth}
+              setSelectedBimonthYear={setSelectedBimonthYear}
+              yearOptions={yearOptions}
+              quarterOptions={krQuarterOptions}
+              semesterOptions={semesterOptions}
+              bimonthlyOptions={bimonthlyOptions}
+              monthOptions={monthOptions}
+              isYTDCalculable={isYTDApplicable}
+              ytdInfoMessage={ytdWarningMessage}
+              onYTDClick={handleYTDClick}
+              className="flex-wrap"
+              compact={true}
+              hideYearSelect={true}
+              krFrequency={(currentKeyResult.frequency as KRFrequency) || 'monthly'}
+            />
           </div>
           
           <div className="flex-1 overflow-y-auto px-6">

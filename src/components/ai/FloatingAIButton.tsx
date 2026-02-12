@@ -25,8 +25,8 @@ export const FloatingAIButton: React.FC<FloatingAIButtonProps> = ({
     const dx = e.clientX - centerX;
     const dy = e.clientY - centerY;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    const maxOffset = 3;
-    const factor = Math.min(dist / 200, 1);
+    const maxOffset = 2.5;
+    const factor = Math.min(dist / 250, 1);
     const angle = Math.atan2(dy, dx);
     setEyeOffset({
       x: Math.cos(angle) * maxOffset * factor,
@@ -39,90 +39,120 @@ export const FloatingAIButton: React.FC<FloatingAIButtonProps> = ({
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [handleMouseMove]);
 
-  const eyeRadius = isHovered ? 3.5 : 3;
-  const pupilRadius = isHovered ? 2 : 1.8;
-
   return (
     <div className={cn(
       "fixed bottom-6 right-6 z-[100] animate-fade-in block",
       className
     )}>
-      {/* LED glow ring */}
       <div className="relative">
+        {/* Outer LED glow ring */}
         <div
-          className="absolute -inset-[3px] rounded-full animate-spin-glow"
+          className="absolute -inset-[3px] rounded-full animate-spin-glow opacity-80"
           style={{
-            background: 'conic-gradient(from 0deg, transparent 0%, #38B6FF 25%, transparent 50%, #0EA5E9 75%, transparent 100%)',
+            background: 'conic-gradient(from 0deg, transparent 0%, hsl(var(--cofound-blue-light)) 20%, transparent 40%, hsl(var(--cofound-blue-light)) 60%, transparent 80%, hsl(var(--cofound-blue-light)) 100%)',
           }}
         />
-        <div className="absolute -inset-[3px] rounded-full animate-spin-glow opacity-50 blur-sm"
+        {/* Blurred glow layer */}
+        <div
+          className="absolute -inset-[4px] rounded-full animate-spin-glow opacity-40 blur-md"
           style={{
-            background: 'conic-gradient(from 180deg, transparent 0%, #38B6FF 25%, transparent 50%, #0EA5E9 75%, transparent 100%)',
+            background: 'conic-gradient(from 90deg, transparent 0%, hsl(var(--cofound-blue-light)) 30%, transparent 50%, hsl(var(--cofound-blue-light)) 80%, transparent 100%)',
           }}
         />
+
         <button
           ref={buttonRef}
           onClick={onClick}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className="relative h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 cursor-pointer border-0 p-0 overflow-hidden"
-          style={{ background: 'hsl(var(--cofound-blue-dark))' }}
         >
           <svg viewBox="0 0 56 56" className="w-full h-full">
-            {/* Face background */}
-            <circle cx="28" cy="28" r="28" fill="url(#faceGradient)" />
+            <defs>
+              <radialGradient id="atlasGrad" cx="38%" cy="36%" r="60%">
+                <stop offset="0%" stopColor="#5BC8FF" />
+                <stop offset="50%" stopColor="#38B6FF" />
+                <stop offset="100%" stopColor="#1A8AD4" />
+              </radialGradient>
+              <filter id="eyeShadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="0.5" stdDeviation="0.5" floodColor="#0a4a7a" floodOpacity="0.3" />
+              </filter>
+            </defs>
+
+            {/* Background circle */}
+            <circle cx="28" cy="28" r="28" fill="url(#atlasGrad)" />
             
-            {/* Left eye white */}
-            <circle cx="19" cy="24" r={eyeRadius} fill="white"
-              style={{ transition: 'r 0.2s ease' }} />
-            {/* Left pupil */}
-            <circle
-              cx={19 + eyeOffset.x}
-              cy={24 + eyeOffset.y}
-              r={pupilRadius}
-              fill="hsl(208, 67%, 14%)"
-              style={{ transition: 'cx 0.1s ease, cy 0.1s ease, r 0.2s ease' }}
+            {/* Subtle highlight arc */}
+            <ellipse cx="24" cy="18" rx="14" ry="9" fill="rgba(255,255,255,0.12)" />
+
+            {/* Left eye */}
+            <ellipse
+              cx={20 + eyeOffset.x * 0.3}
+              cy={23 + eyeOffset.y * 0.3}
+              rx={isHovered ? 5 : 4.5}
+              ry={isHovered ? 5.5 : 5}
+              fill="white"
+              filter="url(#eyeShadow)"
+              style={{ transition: 'all 0.15s ease-out' }}
             />
-            
-            {/* Right eye white */}
-            <circle cx="37" cy="24" r={eyeRadius} fill="white"
-              style={{ transition: 'r 0.2s ease' }} />
-            {/* Right pupil */}
             <circle
-              cx={37 + eyeOffset.x}
-              cy={24 + eyeOffset.y}
-              r={pupilRadius}
-              fill="hsl(208, 67%, 14%)"
-              style={{ transition: 'cx 0.1s ease, cy 0.1s ease, r 0.2s ease' }}
+              cx={20 + eyeOffset.x}
+              cy={23.5 + eyeOffset.y}
+              r={isHovered ? 2.8 : 2.4}
+              fill="#0E263D"
+              style={{ transition: 'all 0.1s ease-out' }}
             />
-            
+            <circle
+              cx={20 + eyeOffset.x + 0.8}
+              cy={22.5 + eyeOffset.y - 0.5}
+              r={0.8}
+              fill="rgba(255,255,255,0.8)"
+            />
+
+            {/* Right eye */}
+            <ellipse
+              cx={36 + eyeOffset.x * 0.3}
+              cy={23 + eyeOffset.y * 0.3}
+              rx={isHovered ? 5 : 4.5}
+              ry={isHovered ? 5.5 : 5}
+              fill="white"
+              filter="url(#eyeShadow)"
+              style={{ transition: 'all 0.15s ease-out' }}
+            />
+            <circle
+              cx={36 + eyeOffset.x}
+              cy={23.5 + eyeOffset.y}
+              r={isHovered ? 2.8 : 2.4}
+              fill="#0E263D"
+              style={{ transition: 'all 0.1s ease-out' }}
+            />
+            <circle
+              cx={36 + eyeOffset.x + 0.8}
+              cy={22.5 + eyeOffset.y - 0.5}
+              r={0.8}
+              fill="rgba(255,255,255,0.8)"
+            />
+
             {/* Mouth */}
             <path
               d={isHovered
-                ? "M 19 35 Q 28 46 37 35"
-                : "M 20 35 Q 28 42 36 35"
+                ? "M 21 34 Q 28 43 35 34"
+                : "M 22 34 Q 28 40 34 34"
               }
               fill="none"
               stroke="white"
-              strokeWidth="2.5"
+              strokeWidth="2"
               strokeLinecap="round"
-              style={{ transition: 'd 0.3s ease' }}
+              style={{ transition: 'd 0.25s ease' }}
             />
-            
-            {/* Cheek blush on hover */}
+
+            {/* Cheeks on hover */}
             {isHovered && (
               <>
-                <circle cx="14" cy="32" r="4" fill="rgba(255,255,255,0.15)" />
-                <circle cx="42" cy="32" r="4" fill="rgba(255,255,255,0.15)" />
+                <circle cx="13" cy="30" r="3.5" fill="rgba(255,255,255,0.13)" />
+                <circle cx="43" cy="30" r="3.5" fill="rgba(255,255,255,0.13)" />
               </>
             )}
-            
-            <defs>
-              <radialGradient id="faceGradient" cx="40%" cy="35%" r="65%">
-                <stop offset="0%" stopColor="#38B6FF" />
-                <stop offset="100%" stopColor="#0E7CC0" />
-              </radialGradient>
-            </defs>
           </svg>
         </button>
 
