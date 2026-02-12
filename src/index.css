@@ -225,11 +225,10 @@ All colors MUST be HSL.
 }
 
 .color-orb-atlas::after {
-  background-image: radial-gradient(circle at center, var(--base) var(--dot), transparent var(--dot));
-  background-size: calc(var(--dot) * 2) calc(var(--dot) * 2);
-  backdrop-filter: blur(calc(var(--blur) * 2)) contrast(calc(var(--contrast) * 2));
-  mix-blend-mode: overlay;
-  mask-image: radial-gradient(black var(--mask), transparent 75%);
+  background: transparent;
+  backdrop-filter: none;
+  mix-blend-mode: normal;
+  mask-image: none;
 }
 
 @keyframes orb-spin {
