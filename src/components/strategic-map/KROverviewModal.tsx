@@ -332,7 +332,7 @@ export const KROverviewModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1000px] w-[calc(100vw-2rem)] p-0">
+      <DialogContent className="sm:max-w-[1280px] w-[calc(100vw-2rem)] p-0">
         <DialogHeader className="sr-only">
           <DialogTitle>Visão do Resultado-Chave</DialogTitle>
           <DialogDescription>Detalhes e evolução do resultado-chave</DialogDescription>
@@ -419,8 +419,9 @@ export const KROverviewModal = ({
             )}
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap items-center justify-between gap-2 py-4 flex-shrink-0 px-6">
+          {/* Action Buttons & Period Filters */}
+          <div className="flex flex-col gap-3 py-4 flex-shrink-0 px-6">
+            {/* Linha 1: Botões de ação */}
             <div className="flex flex-wrap items-center gap-2">
               {canCheckIn && (
                 <Button
@@ -479,38 +480,41 @@ export const KROverviewModal = ({
                 />
               )}
             </div>
-            <SmartPeriodSelector
-              selectedPeriod={selectedPeriod}
-              selectedYear={selectedYear}
-              selectedMonth={selectedMonth}
-              selectedQuarter={selectedQuarter}
-              selectedQuarterYear={selectedQuarterYear}
-              selectedSemester={selectedSemester}
-              selectedSemesterYear={selectedSemesterYear}
-              selectedBimonth={selectedBimonth}
-              selectedBimonthYear={selectedBimonthYear}
-              setSelectedPeriod={setSelectedPeriod}
-              setSelectedYear={handleYearChange}
-              setSelectedMonth={setSelectedMonth}
-              setSelectedQuarter={setSelectedQuarter}
-              setSelectedQuarterYear={setSelectedQuarterYear}
-              setSelectedSemester={setSelectedSemester}
-              setSelectedSemesterYear={setSelectedSemesterYear}
-              setSelectedBimonth={setSelectedBimonth}
-              setSelectedBimonthYear={setSelectedBimonthYear}
-              yearOptions={yearOptions}
-              quarterOptions={krQuarterOptions}
-              semesterOptions={semesterOptions}
-              bimonthlyOptions={bimonthlyOptions}
-              monthOptions={monthOptions}
-              isYTDCalculable={isYTDApplicable}
-              ytdInfoMessage={ytdWarningMessage}
-              onYTDClick={handleYTDClick}
-              className="flex-wrap"
-              compact={true}
-              hideYearSelect={true}
-              krFrequency={(currentKeyResult.frequency as KRFrequency) || 'monthly'}
-            />
+            {/* Linha 2: Filtros de período */}
+            <div className="flex items-center gap-2 pt-1 border-t border-border">
+              <SmartPeriodSelector
+                selectedPeriod={selectedPeriod}
+                selectedYear={selectedYear}
+                selectedMonth={selectedMonth}
+                selectedQuarter={selectedQuarter}
+                selectedQuarterYear={selectedQuarterYear}
+                selectedSemester={selectedSemester}
+                selectedSemesterYear={selectedSemesterYear}
+                selectedBimonth={selectedBimonth}
+                selectedBimonthYear={selectedBimonthYear}
+                setSelectedPeriod={setSelectedPeriod}
+                setSelectedYear={handleYearChange}
+                setSelectedMonth={setSelectedMonth}
+                setSelectedQuarter={setSelectedQuarter}
+                setSelectedQuarterYear={setSelectedQuarterYear}
+                setSelectedSemester={setSelectedSemester}
+                setSelectedSemesterYear={setSelectedSemesterYear}
+                setSelectedBimonth={setSelectedBimonth}
+                setSelectedBimonthYear={setSelectedBimonthYear}
+                yearOptions={yearOptions}
+                quarterOptions={krQuarterOptions}
+                semesterOptions={semesterOptions}
+                bimonthlyOptions={bimonthlyOptions}
+                monthOptions={monthOptions}
+                isYTDCalculable={isYTDApplicable}
+                ytdInfoMessage={ytdWarningMessage}
+                onYTDClick={handleYTDClick}
+                className="flex-wrap"
+                compact={true}
+                hideYearSelect={true}
+                krFrequency={(currentKeyResult.frequency as KRFrequency) || 'monthly'}
+              />
+            </div>
           </div>
           
           <div className="flex-1 overflow-y-auto px-6">
