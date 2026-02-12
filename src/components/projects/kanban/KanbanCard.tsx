@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, Clock, GripVertical, Edit3, Folder } from 'lucide-react';
+import { Calendar, Clock, GripVertical, Edit3, Folder, CheckCircle, Circle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -34,6 +34,7 @@ interface KanbanCardProps {
   pillarColor?: string;
   isDragging?: boolean;
   onEdit?: (task: ProjectTask) => void;
+  onToggleComplete?: (taskId: string, currentStatus: string) => void;
 }
 
 const getPriorityConfig = (priority: string | null) => {
@@ -62,7 +63,8 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
   projectCoverUrl,
   pillarColor,
   isDragging = false,
-  onEdit 
+  onEdit,
+  onToggleComplete
 }) => {
   const {
     attributes,
@@ -85,6 +87,12 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
     e.stopPropagation();
     e.preventDefault();
     onEdit?.(task);
+  };
+
+  const handleToggleComplete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onToggleComplete?.(task.id, task.status);
   };
 
   return (
@@ -118,9 +126,18 @@ export const KanbanCard: React.FC<KanbanCardProps> = ({
       )}
       
       <div className="relative space-y-2.5">
-        {/* Header with grip and title */}
+        {/* Header with toggle and title */}
         <div className="flex items-start gap-2">
-          <GripVertical className="w-3.5 h-3.5 text-muted-foreground/40 mt-0.5 flex-shrink-0" />
+          <button
+            className="flex-shrink-0 mt-0.5 hover:scale-110 transition-transform"
+            onClick={handleToggleComplete}
+            title={task.status === 'done' ? 'Marcar como pendente' : 'Marcar como concluída'}
+          >
+            {task.status === 'done' 
+              ? <CheckCircle className="w-4 h-4 text-emerald-500" />
+              : <Circle className="w-4 h-4 text-muted-foreground" />
+            }
+          </button>
           <div className="flex-1 min-w-0">
             <h4 className={cn(
               'font-medium text-sm text-foreground leading-snug',

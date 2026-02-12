@@ -45,6 +45,7 @@ interface KanbanBoardProps {
   companyUsers?: CompanyUser[];
   onEditTask?: (task: ProjectTask) => void;
   onProjectStatusUpdate?: (projectId: string) => void;
+  onToggleComplete?: (taskId: string, currentStatus: string) => void;
 }
 
 const COLUMNS = [
@@ -63,6 +64,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   companyUsers = [],
   onEditTask,
   onProjectStatusUpdate,
+  onToggleComplete,
 }) => {
   const { toast } = useToast();
   const [activeTask, setActiveTask] = useState<ProjectTask | null>(null);
@@ -387,6 +389,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               getProjectCoverUrl={getProjectCoverUrl}
               isOver={overId === column.id}
               onEditTask={onEditTask}
+              onToggleComplete={onToggleComplete}
             />
           ))}
         </div>
