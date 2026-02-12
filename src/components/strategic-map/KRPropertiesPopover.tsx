@@ -76,7 +76,7 @@ export const KRPropertiesPopover = ({ keyResult, onSave }: KRPropertiesPopoverPr
           Propriedades
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80" align="start">
+      <PopoverContent className="w-80 z-[9999]" align="start" sideOffset={5}>
         <div className="space-y-4">
           <div>
             <h4 className="font-medium text-sm">Propriedades do KR</h4>
