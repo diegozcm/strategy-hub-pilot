@@ -123,12 +123,13 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         {/* Progress Bar */}
         {taskCount > 0 && (() => {
           const percentage = Math.round((completedTasks / taskCount) * 100);
+          const progressColor = percentage >= 100 ? '#3b82f6' : percentage >= 70 ? '#22c55e' : percentage >= 40 ? '#f59e0b' : '#ef4444';
           return (
             <div className="flex items-center gap-2">
               <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
                 <div 
                   className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${percentage}%`, backgroundColor: pillarColor }}
+                  style={{ width: `${percentage}%`, backgroundColor: progressColor }}
                 />
               </div>
               <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">{percentage}%</span>
