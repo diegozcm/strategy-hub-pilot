@@ -182,7 +182,7 @@ export default function ModulesByCompanyPage() {
                   <SelectItem value="all">Todos os Módulos</SelectItem>
                   <SelectItem value="strategic">Strategy HUB</SelectItem>
                   <SelectItem value="startup">Startup Hub</SelectItem>
-                  <SelectItem value="ai">IA Copilot</SelectItem>
+                  <SelectItem value="ai">Atlas Hub</SelectItem>
                   <SelectItem value="none">Sem Módulos</SelectItem>
                 </SelectContent>
               </Select>
@@ -219,7 +219,7 @@ export default function ModulesByCompanyPage() {
                     <TableHead>Empresa</TableHead>
                     <TableHead className="text-center">Strategy HUB</TableHead>
                     <TableHead className="text-center">Startup Hub</TableHead>
-                    <TableHead className="text-center">IA Copilot</TableHead>
+                    <TableHead className="text-center">Atlas Hub</TableHead>
                     <TableHead className="text-center">Ações</TableHead>
                   </TableRow>
                 </TableHeader>

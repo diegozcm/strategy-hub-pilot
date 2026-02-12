@@ -76,7 +76,7 @@ export default function DashboardOverviewPage() {
           <StatCard
             title="Empresas com IA"
             value={stats?.companiesWithAI || 0}
-            description="IA Copilot habilitado"
+            description="Atlas Hub habilitado"
             icon={Sparkles}
             variant="info"
             isLoading={statsLoading}
