@@ -38,10 +38,10 @@ export const FloatingAIButton: React.FC<FloatingAIButtonProps> = ({
               isHovered ? "brightness-150 saturate-200" : ""
             )}
             style={{
-              '--base': 'oklch(25% 0.04 240)',
+              '--base': 'oklch(10% 0.02 240)',
               '--accent1': 'oklch(65% 0.18 155)',
               '--accent2': 'oklch(72% 0.2 230)',
-              '--accent3': 'oklch(55% 0.16 250)',
+              '--accent3': 'oklch(70% 0.16 195)',
               '--blur': '0.8px',
               '--contrast': '1.6',
               '--dot': '0.08rem',
@@ -51,17 +51,6 @@ export const FloatingAIButton: React.FC<FloatingAIButtonProps> = ({
               filter: isHovered ? 'brightness(1.5) saturate(2)' : undefined,
             } as React.CSSProperties}
           />
-          {/* IA label */}
-          <motion.span
-            className="absolute inset-0 flex items-center justify-center text-white font-bold text-sm pointer-events-none select-none drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]"
-            animate={{ 
-              scale: isHovered ? 1.15 : 1,
-              opacity: isHovered ? 1 : 0.9,
-            }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          >
-            IA
-          </motion.span>
         </motion.button>
 
         {/* Notification badge */}
