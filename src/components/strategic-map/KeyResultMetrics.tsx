@@ -151,7 +151,7 @@ export const KeyResultMetrics = ({
           }}
           onOpenChange={setIsComboOpen}
         >
-          <SelectTrigger className="w-full h-7 text-sm font-bold border-0 shadow-none px-0">
+          <SelectTrigger className="w-full h-8 text-xl font-bold border-0 shadow-none px-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -174,7 +174,7 @@ export const KeyResultMetrics = ({
           onOpenChange={setIsComboOpen}
           disabled={quarterOptions.length === 0}
         >
-          <SelectTrigger className="w-full h-7 text-sm font-bold border-0 shadow-none px-0">
+          <SelectTrigger className="w-full h-8 text-xl font-bold border-0 shadow-none px-0">
             <SelectValue placeholder={quarterOptions.length === 0 ? "Sem quarters" : undefined} />
           </SelectTrigger>
           <SelectContent>
@@ -196,7 +196,7 @@ export const KeyResultMetrics = ({
           onValueChange={(value) => onYearlyYearChange(parseInt(value))}
           onOpenChange={setIsComboOpen}
         >
-          <SelectTrigger className="w-full h-7 text-sm font-bold border-0 shadow-none px-0">
+          <SelectTrigger className="w-full h-8 text-xl font-bold border-0 shadow-none px-0">
             <SelectValue placeholder="Selecione o ano" />
           </SelectTrigger>
           <SelectContent>
@@ -218,7 +218,7 @@ export const KeyResultMetrics = ({
           }}
           onOpenChange={setIsComboOpen}
         >
-          <SelectTrigger className="w-full h-7 text-sm font-bold border-0 shadow-none px-0">
+          <SelectTrigger className="w-full h-8 text-xl font-bold border-0 shadow-none px-0">
             <SelectValue placeholder="Selecione o semestre" />
           </SelectTrigger>
           <SelectContent>
@@ -240,7 +240,7 @@ export const KeyResultMetrics = ({
           }}
           onOpenChange={setIsComboOpen}
         >
-          <SelectTrigger className="w-full h-7 text-sm font-bold border-0 shadow-none px-0">
+          <SelectTrigger className="w-full h-8 text-xl font-bold border-0 shadow-none px-0">
             <SelectValue placeholder="Selecione o bimestre" />
           </SelectTrigger>
           <SelectContent>
@@ -251,7 +251,7 @@ export const KeyResultMetrics = ({
         </Select>
       );
     }
-    return <span className="text-sm font-bold">{currentPeriodDisplay}</span>;
+    return <span className="text-xl font-bold">{currentPeriodDisplay}</span>;
   };
 
   return (
