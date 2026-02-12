@@ -337,7 +337,7 @@ export const KROverviewModal = ({
           <DialogTitle>Visão do Resultado-Chave</DialogTitle>
           <DialogDescription>Detalhes e evolução do resultado-chave</DialogDescription>
         </DialogHeader>
-        <div className="max-h-[95vh] md:max-h-[92vh] overflow-hidden flex flex-col">
+        <div className="max-h-[95vh] md:max-h-[94vh] overflow-hidden flex flex-col">
           {/* Header colorido com pilar */}
           {pillar && (
           <div 
