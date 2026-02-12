@@ -420,66 +420,65 @@ export const KROverviewModal = ({
           </div>
 
           {/* Action Buttons & Period Filters - single row */}
-          <div className="flex flex-wrap items-center gap-2 py-4 flex-shrink-0 px-6">
-            {canCheckIn && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowUpdateValuesModal(true)}
-                className="text-cyan-600 border-cyan-200 hover:bg-cyan-100 hover:border-cyan-300 hover:text-cyan-600"
-              >
-                <FileEdit className="h-4 w-4 mr-2" />
-                Atualizar Valores
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFCAModal(true)}
-              className="text-blue-600 border-blue-200 hover:bg-blue-100 hover:border-blue-300 hover:text-blue-600"
-            >
-              <ListChecks className="h-4 w-4 mr-2" />
-              FCA & Ações
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowStatusReportModal(true)}
-              className="text-green-600 border-green-200 hover:bg-green-100 hover:border-green-300 hover:text-green-600"
-            >
-              <FileBarChart className="h-4 w-4 mr-2" />
-              Status Report
-            </Button>
-            <div className="relative">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowInitiativesModal(true)}
-                className="text-purple-600 border-purple-200 hover:bg-purple-100 hover:border-purple-300 hover:text-purple-600"
-              >
-                <Rocket className="h-4 w-4 mr-2" />
-                Iniciativas
-              </Button>
-              {initiatives.length > 0 && (
-                <span 
-                  className="absolute -top-2 -right-2 h-5 min-w-5 px-1.5 text-xs font-medium bg-purple-600 text-white rounded-full flex items-center justify-center pointer-events-none"
+          <div className="flex flex-wrap items-center justify-between gap-2 py-4 flex-shrink-0 px-6">
+            <div className="flex flex-wrap items-center gap-2">
+              {canCheckIn && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowUpdateValuesModal(true)}
+                  className="text-cyan-600 border-cyan-200 hover:bg-cyan-100 hover:border-cyan-300 hover:text-cyan-600"
                 >
-                  {initiatives.length}
-                </span>
+                  <FileEdit className="h-4 w-4 mr-2" />
+                  Atualizar Valores
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFCAModal(true)}
+                className="text-blue-600 border-blue-200 hover:bg-blue-100 hover:border-blue-300 hover:text-blue-600"
+              >
+                <ListChecks className="h-4 w-4 mr-2" />
+                FCA & Ações
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowStatusReportModal(true)}
+                className="text-green-600 border-green-200 hover:bg-green-100 hover:border-green-300 hover:text-green-600"
+              >
+                <FileBarChart className="h-4 w-4 mr-2" />
+                Status Report
+              </Button>
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowInitiativesModal(true)}
+                  className="text-purple-600 border-purple-200 hover:bg-purple-100 hover:border-purple-300 hover:text-purple-600"
+                >
+                  <Rocket className="h-4 w-4 mr-2" />
+                  Iniciativas
+                </Button>
+                {initiatives.length > 0 && (
+                  <span 
+                    className="absolute -top-2 -right-2 h-5 min-w-5 px-1.5 text-xs font-medium bg-purple-600 text-white rounded-full flex items-center justify-center pointer-events-none"
+                  >
+                    {initiatives.length}
+                  </span>
+                )}
+              </div>
+              {canEditThisKR && (
+                <KRPropertiesPopover 
+                  keyResult={currentKeyResult} 
+                  onSave={async () => {
+                    await refreshKeyResult();
+                    onSave();
+                  }} 
+                />
               )}
             </div>
-            {canEditThisKR && (
-              <KRPropertiesPopover 
-                keyResult={currentKeyResult} 
-                onSave={async () => {
-                  await refreshKeyResult();
-                  onSave();
-                }} 
-              />
-            )}
-
-            {/* Separador vertical */}
-            <div className="h-6 w-px bg-border mx-1" />
 
             <SmartPeriodSelector
               selectedPeriod={selectedPeriod}

@@ -45,21 +45,6 @@ export const FloatingAIButton: React.FC<FloatingAIButtonProps> = ({
       className
     )}>
       <div className="relative">
-        {/* Outer LED glow ring */}
-        <div
-          className="absolute -inset-[3px] rounded-full animate-spin-glow opacity-80"
-          style={{
-            background: 'conic-gradient(from 0deg, transparent 0%, hsl(var(--cofound-blue-light)) 20%, transparent 40%, hsl(var(--cofound-blue-light)) 60%, transparent 80%, hsl(var(--cofound-blue-light)) 100%)',
-          }}
-        />
-        {/* Blurred glow layer */}
-        <div
-          className="absolute -inset-[4px] rounded-full animate-spin-glow opacity-40 blur-md"
-          style={{
-            background: 'conic-gradient(from 90deg, transparent 0%, hsl(var(--cofound-blue-light)) 30%, transparent 50%, hsl(var(--cofound-blue-light)) 80%, transparent 100%)',
-          }}
-        />
-
         <button
           ref={buttonRef}
           onClick={onClick}
