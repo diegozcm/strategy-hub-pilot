@@ -21,7 +21,9 @@ export const KRPropertiesPopover = ({ keyResult, onSave }: KRPropertiesPopoverPr
   const [enabled, setEnabled] = useState(false);
   const [threshold, setThreshold] = useState('');
 
+  // Only initialize when popover opens
   useEffect(() => {
+    if (!open) return;
     const val = keyResult.variation_threshold;
     if (val !== null && val !== undefined) {
       setEnabled(true);
@@ -30,7 +32,8 @@ export const KRPropertiesPopover = ({ keyResult, onSave }: KRPropertiesPopoverPr
       setEnabled(false);
       setThreshold('');
     }
-  }, [keyResult.variation_threshold, open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleSave = async () => {
     setSaving(true);
