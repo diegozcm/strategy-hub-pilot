@@ -11,6 +11,7 @@ import { calculateKRStatus } from '@/lib/krHelpers';
 import { cn } from '@/lib/utils';
 import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 import { KRFCAModal } from './KRFCAModal';
+import { useKRFCA } from '@/hooks/useKRFCA';
 import { 
   KRFrequency, 
   getPeriodsForFrequency, 
@@ -49,9 +50,49 @@ interface KRUpdateValuesModalProps {
   onSave: (keyResultData: Partial<KeyResult>) => Promise<any>;
 }
 
+// Helper: get the immediately previous period key for a given frequency
+const getPreviousPeriodKey = (currentKey: string, frequency: KRFrequency): string | null => {
+  switch (frequency) {
+    case 'monthly': {
+      // "YYYY-MM" -> previous month; null if MM=01
+      const [year, monthStr] = currentKey.split('-');
+      const month = parseInt(monthStr);
+      if (month === 1) return null; // Jan is exempt
+      return `${year}-${(month - 1).toString().padStart(2, '0')}`;
+    }
+    case 'bimonthly': {
+      // "YYYY-BN" -> null if N=1
+      const match = currentKey.match(/^(\d{4})-B(\d+)$/);
+      if (!match) return null;
+      const n = parseInt(match[2]);
+      if (n === 1) return null;
+      return `${match[1]}-B${n - 1}`;
+    }
+    case 'quarterly': {
+      const match = currentKey.match(/^(\d{4})-Q(\d+)$/);
+      if (!match) return null;
+      const n = parseInt(match[2]);
+      if (n === 1) return null;
+      return `${match[1]}-Q${n - 1}`;
+    }
+    case 'semesterly': {
+      const match = currentKey.match(/^(\d{4})-S(\d+)$/);
+      if (!match) return null;
+      const n = parseInt(match[2]);
+      if (n === 1) return null;
+      return `${match[1]}-S${n - 1}`;
+    }
+    case 'yearly':
+      return null; // Always exempt
+    default:
+      return null;
+  }
+};
+
 export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpdateValuesModalProps) => {
   const { toast } = useToast();
   const { selectedYear, setSelectedYear, yearOptions } = usePeriodFilter();
+  const { createFCA } = useKRFCA(keyResult?.id);
   const [isSaving, setIsSaving] = useState(false);
   const [monthlyActual, setMonthlyActual] = useState<Record<string, number>>({});
   const [periodActual, setPeriodActual] = useState<Record<string, number>>({});
@@ -69,53 +110,62 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
 
   const frequency = (keyResult?.frequency as KRFrequency) || 'monthly';
 
-  // Variation threshold check function - uses previous period's TARGET as denominator
-  const checkVariation = useCallback((monthKey: string, newValue: number, currentActuals: Record<string, number>) => {
+  // Variation threshold check - uses previous period's TARGET as denominator
+  const checkVariation = useCallback((periodKey: string, newValue: number) => {
     if (variationThreshold === null || variationThreshold === undefined) return null;
     
-    // Combine DB data with current form state (form takes priority)
-    const existingActual = (keyResult?.monthly_actual as Record<string, number>) || {};
-    const merged = { ...existingActual, ...currentActuals };
-    const targets = (keyResult?.monthly_targets as Record<string, number>) || {};
-    
-    // Find the previous month with data from merged source
-    const allMonthKeys = Object.keys(merged)
-      .filter(k => k < monthKey && merged[k] !== null && merged[k] !== undefined)
-      .sort();
-    
-    if (allMonthKeys.length === 0) return null; // First value is always free
-    
-    const lastKey = allMonthKeys[allMonthKeys.length - 1];
-    const lastValue = merged[lastKey];
-    
-    // Use the previous period's TARGET as denominator (not actual)
-    const lastTarget = targets[lastKey];
-    if (lastTarget === null || lastTarget === undefined || lastTarget === 0) return null; // No target base to compare
-    
+    const prevKey = getPreviousPeriodKey(periodKey, frequency);
+    if (prevKey === null) return null; // Exempt period (first of cycle)
+
+    // Get targets - for period-based frequencies, targets are stored at period keys
+    // For monthly, targets are stored at month keys
+    const rawTargets = (keyResult?.monthly_targets as Record<string, number>) || {};
+    const rawActuals = (keyResult?.monthly_actual as Record<string, number>) || {};
+
+    let targets: Record<string, number>;
+    let mergedActuals: Record<string, number>;
+
+    if (isFrequencyPeriodBased(frequency)) {
+      targets = monthlyTargetsToPeriod(rawTargets, frequency, selectedYear);
+      mergedActuals = { ...monthlyTargetsToPeriod(rawActuals, frequency, selectedYear), ...periodActual };
+    } else {
+      targets = rawTargets;
+      mergedActuals = { ...rawActuals, ...monthlyActual };
+    }
+
+    // Get previous period's target as denominator
+    const lastTarget = targets[prevKey];
+    if (lastTarget === null || lastTarget === undefined || lastTarget === 0) return null;
+
+    // Get previous period's actual (default to 0 if not set)
+    const lastValue = mergedActuals[prevKey] ?? 0;
+
     const variation = Math.abs(newValue - lastValue) / Math.abs(lastTarget) * 100;
     
     if (variation > variationThreshold) {
       return { variation, previousValue: lastValue, newValue };
     }
     return null;
-  }, [variationThreshold, keyResult?.monthly_actual, keyResult?.monthly_targets]);
+  }, [variationThreshold, frequency, keyResult?.monthly_actual, keyResult?.monthly_targets, selectedYear, monthlyActual, periodActual]);
 
-  // Re-check all blocked months when monthlyActual changes
+  // Re-check all blocked periods when actuals change
   useEffect(() => {
     if (variationThreshold === null || variationThreshold === undefined) return;
     
     const newBlocked: Record<string, { variation: number; previousValue: number; newValue: number }> = {};
     
-    for (const [key, value] of Object.entries(monthlyActual)) {
+    const actualsToCheck = isFrequencyPeriodBased(frequency) ? periodActual : monthlyActual;
+    
+    for (const [key, value] of Object.entries(actualsToCheck)) {
       if (value === null || value === undefined) continue;
-      const result = checkVariation(key, value, monthlyActual);
+      const result = checkVariation(key, value);
       if (result && !resolvedMonths.has(key)) {
         newBlocked[key] = result;
       }
     }
     
     setBlockedMonths(newBlocked);
-  }, [monthlyActual, variationThreshold, checkVariation, resolvedMonths]);
+  }, [monthlyActual, periodActual, variationThreshold, checkVariation, resolvedMonths, frequency]);
 
   const hasBlockedMonths = Object.keys(blockedMonths).length > 0;
 
@@ -579,14 +629,16 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
               <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                  {Object.keys(blockedMonths).length} mês(es) excedem a taxa de variação de {variationThreshold}%
+                  {Object.keys(blockedMonths).length} período(s) excedem a taxa de variação de {variationThreshold}%
                 </p>
                 <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-                  É obrigatório criar um FCA para cada mês bloqueado antes de salvar.
+                  É obrigatório criar um FCA para cada período bloqueado antes de salvar.
                 </p>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {Object.entries(blockedMonths).map(([key, info]) => {
-                    const monthName = months.find(m => m.key === key)?.name || key;
+                    const periodLabel = isFrequencyPeriodBased(frequency)
+                      ? (getPeriodsForFrequency(frequency, selectedYear).find(p => p.key === key)?.label || key)
+                      : (months.find(m => m.key === key)?.name || key);
                     return (
                       <Button
                         key={key}
@@ -599,7 +651,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
                           setShowFCAModal(true);
                         }}
                       >
-                        Criar FCA - {monthName} ({info.variation.toFixed(1)}%)
+                        Criar FCA - {periodLabel} ({info.variation.toFixed(1)}%)
                       </Button>
                     );
                   })}
@@ -627,7 +679,9 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
               setFcaMonthKey(null);
             }}
             onSave={async (fcaData) => {
-              // After FCA is created, unblock the month
+              // Save FCA to database
+              await createFCA(fcaData);
+              // After FCA is created, unblock the period
               setResolvedMonths(prev => new Set(prev).add(fcaMonthKey));
               setBlockedMonths(prev => {
                 const next = { ...prev };
@@ -636,17 +690,22 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
               });
               setShowFCAModal(false);
               setFcaMonthKey(null);
-              toast({ title: 'FCA criado', description: 'O mês foi desbloqueado para atualização.' });
+              toast({ title: 'FCA criado', description: 'O período foi desbloqueado para atualização.' });
             }}
-            fca={{
-              key_result_id: keyResult.id,
-              title: `Variação acima do limite em ${months.find(m => m.key === fcaMonthKey)?.name || fcaMonthKey}`,
-              fact: `Valor atualizado de ${blockedMonths[fcaMonthKey]?.previousValue?.toLocaleString('pt-BR')} para ${blockedMonths[fcaMonthKey]?.newValue?.toLocaleString('pt-BR')} (variação de ${blockedMonths[fcaMonthKey]?.variation?.toFixed(1)}%)`,
-              cause: '',
-              description: '',
-              priority: 'high' as const,
-              status: 'active' as const,
-            } as any}
+            fca={(() => {
+              const periodLabel = isFrequencyPeriodBased(frequency)
+                ? (getPeriodsForFrequency(frequency, selectedYear).find(p => p.key === fcaMonthKey)?.label || fcaMonthKey)
+                : (months.find(m => m.key === fcaMonthKey)?.name || fcaMonthKey);
+              return {
+                key_result_id: keyResult.id,
+                title: `Variação acima do limite em ${periodLabel}`,
+                fact: `Valor atualizado de ${blockedMonths[fcaMonthKey]?.previousValue?.toLocaleString('pt-BR')} para ${blockedMonths[fcaMonthKey]?.newValue?.toLocaleString('pt-BR')} (variação de ${blockedMonths[fcaMonthKey]?.variation?.toFixed(1)}%)`,
+                cause: '',
+                description: '',
+                priority: 'high' as const,
+                status: 'active' as const,
+              };
+            })() as any}
             keyResultId={keyResult.id}
           />
         )}
