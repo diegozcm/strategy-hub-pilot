@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, Minus, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, History, Plus, Trash2, ArrowLeft, Check, XCircle, Mic, Square, RefreshCw, ThumbsUp, ThumbsDown, Navigation } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -618,25 +619,33 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
     }
   }, [chatInput, isLoading, isStreaming, user, company, messages, sessionId, onMessagesChange, toast, pastedImages, isPlanMode]);
 
-  if (!isOpen) return null;
-
   const statusText = isExecuting ? 'executando' : (isLoading ? 'planejando' : 'digitando');
   const showIndicator = isLoading || isStreaming || isExecuting;
 
   return (
-    <>
+    <AnimatePresence>
+      {isOpen && (
+      <>
       <style>{`
         @keyframes typing-bounce {
           0%, 60%, 100% { transform: translateY(0); }
           30% { transform: translateY(-4px); }
         }
       `}</style>
+      <motion.div
+        layoutId="atlas-chat-morph"
+        initial={{ borderRadius: '50%' }}
+        animate={{ borderRadius: '12px' }}
+        exit={{ borderRadius: '50%' }}
+        transition={{ type: "spring", stiffness: 400, damping: 35 }}
+        className="fixed z-50"
+        style={{ left: `${position.x}px`, top: `${position.y}px` }}
+      >
       <Card
         className={cn(
-          "fixed z-50 shadow-2xl border-2 transition-all duration-300 bg-background",
+          "shadow-2xl border-2 bg-background overflow-hidden",
           isMinimized ? "w-80 h-14" : "w-96 h-[600px]"
         )}
-        style={{ left: `${position.x}px`, top: `${position.y}px` }}
         onMouseDown={handleMouseDown}
       >
         <CardHeader className="drag-handle cursor-move p-4 border-b bg-muted/30">
@@ -936,6 +945,9 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
           </CardContent>
         )}
       </Card>
-    </>
+      </motion.div>
+      </>
+      )}
+    </AnimatePresence>
   );
 };
