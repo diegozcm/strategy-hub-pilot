@@ -120,6 +120,22 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           </Badge>
         )}
         
+        {/* Progress Bar */}
+        {taskCount > 0 && (() => {
+          const percentage = Math.round((completedTasks / taskCount) * 100);
+          return (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                <div 
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${percentage}%`, backgroundColor: pillarColor }}
+                />
+              </div>
+              <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">{percentage}%</span>
+            </div>
+          );
+        })()}
+        
         {/* Footer Info */}
         <div className="flex items-center justify-between pt-2 border-t border-border/50">
           {/* Left side - Tasks and Date */}

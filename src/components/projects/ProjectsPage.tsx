@@ -1494,6 +1494,55 @@ export const ProjectsPage: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Segmented Progress Bar */}
+                    {(() => {
+                      const total = projectTasks.length;
+                      if (total === 0) {
+                        return (
+                          <div className="px-4 pt-3 pb-1 flex-shrink-0">
+                            <div className="h-2 rounded-full bg-muted w-full" />
+                            <p className="text-[10px] text-muted-foreground text-center mt-1">Sem tarefas</p>
+                          </div>
+                        );
+                      }
+                      const done = projectTasks.filter(t => t.status === 'done').length;
+                      const review = projectTasks.filter(t => t.status === 'review').length;
+                      const inProgress = projectTasks.filter(t => t.status === 'in_progress').length;
+                      const todo = projectTasks.filter(t => t.status === 'todo').length;
+                      const pct = (n: number) => Math.round((n / total) * 100);
+                      const segments = [
+                        { count: done, pct: pct(done), color: '#10b981', label: 'Concluído' },
+                        { count: review, pct: pct(review), color: '#3b82f6', label: 'Em Revisão' },
+                        { count: inProgress, pct: pct(inProgress), color: '#f59e0b', label: 'Em Andamento' },
+                        { count: todo, pct: pct(todo), color: '#94a3b8', label: 'A Fazer' },
+                      ].filter(s => s.count > 0);
+
+                      const tooltipText = segments.map(s => `${s.label}: ${s.count} (${s.pct}%)`).join(' · ');
+
+                      return (
+                        <div className="px-4 pt-3 pb-1 flex-shrink-0">
+                          <div className="flex h-2 rounded-full overflow-hidden bg-muted w-full" title={tooltipText}>
+                            {segments.map((s, i) => (
+                              <div
+                                key={i}
+                                className="h-full transition-all duration-500"
+                                style={{ width: `${(s.count / total) * 100}%`, backgroundColor: s.color }}
+                                title={`${s.label}: ${s.count} (${s.pct}%)`}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                            {segments.map((s, i) => (
+                              <div key={i} className="flex items-center gap-1">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                                <span className="text-[10px] text-muted-foreground">{s.label}: {s.pct}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* Scrollable Content */}
                     <div className="overflow-y-auto flex-1 p-4">
                       <div className="grid grid-cols-1 lg:grid-cols-[60%_1fr] gap-8">
