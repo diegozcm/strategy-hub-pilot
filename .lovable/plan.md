@@ -1,97 +1,68 @@
 
+# Duas Melhorias: Layout do Modal KR + Botao Atlas Interativo
 
-# Correcao Completa: Taxa de Variacao e FCA
+## Melhoria 1: Ajustar Layout do Modal de Resultados-Chave
 
-## Problemas Identificados
+### Problema atual
+O modal KR (`KROverviewModal.tsx`) tem `max-w-[1000px]`, e os botoes de acao e filtros de periodo ficam na mesma linha com `flex-wrap`, causando empilhamento e ma organizacao quando ha muitos botoes.
 
-### 1. FCA nao e salvo no banco de dados
-O problema mais critico: quando o usuario preenche o FCA no modal, o callback `onSave` (linha 629) apenas atualiza o estado local (`resolvedMonths`/`blockedMonths`) mas **nunca chama `createFCA`** do hook `useKRFCA`. Por isso a tela de FCAs mostra "0 FCA(s)".
+### Solucao
+- Aumentar largura maxima do modal de `1000px` para `1280px`
+- Reorganizar o bloco de botoes de acao e filtros de periodo em duas linhas distintas:
+  - Linha 1: Botoes de acao (Atualizar Valores, FCA, Status Report, Iniciativas, Propriedades)
+  - Linha 2: Filtros de periodo (YTD, Ano, Periodo) alinhados a esquerda com separador visual
 
-### 2. Logica de periodo anterior esta errada
-O `checkVariation` busca "o ultimo mes com dado anterior ao atual" (`k < monthKey`), mas deveria buscar o **periodo imediatamente anterior** na sequencia da frequencia. Exemplo:
-- Mensal: Fev compara com Jan, Mar com Fev, Jun com Mai
-- Trimestral: Q2 compara com Q1, Q3 com Q2
-- Bimestral: B2 compara com B1, B4 compara com B3
-
-Alem disso, para frequencias baseadas em periodo (Q1, B1, S1), as chaves como "2026-Q1" nao comparam corretamente com operador `<` contra chaves mensais.
-
-### 3. Periodos isentos nao sao tratados
-Jan, B1, Q1, S1 e Ano devem ser isentos da verificacao (nao ha periodo anterior), mas nao existe logica explicita para isso.
-
-### 4. Alerta persiste apos criar FCA
-O alerta deveria sumir do mes especifico apos o FCA ser criado e salvo, mas como o FCA nao e salvo de fato, o fluxo completo nao funciona.
-
----
-
-## Solucao
-
-### Arquivo: `src/components/strategic-map/KRUpdateValuesModal.tsx`
-
-**Correcao 1 - Importar e usar `useKRFCA`**:
-- Importar o hook `useKRFCA`
-- Chamar `createFCA` dentro do callback `onSave` do `KRFCAModal` para salvar no banco de dados
-
-**Correcao 2 - Reescrever `checkVariation` com logica de periodo imediatamente anterior**:
-- Criar funcao auxiliar `getPreviousPeriodKey(currentKey, frequency)` que retorna a chave do periodo anterior direto:
-  - Mensal: "2026-02" retorna "2026-01", "2026-06" retorna "2026-05"
-  - Bimestral: "2026-B2" retorna "2026-B1"
-  - Trimestral: "2026-Q2" retorna "2026-Q1"  
-  - Semestral: "2026-S2" retorna "2026-S1"
-- Retornar `null` para periodos isentos (Jan, B1, Q1, S1, Ano) - significando "sem verificacao"
-
-**Correcao 3 - Usar meta do periodo anterior como denominador**:
-- Formula: `variacao = |novoValor - realizadoAnterior| / |metaAnterior| * 100`
-- Se nao houver meta anterior ou meta anterior = 0, pular verificacao
-- Se nao houver realizado anterior (null/undefined), considerar como 0
-
-**Correcao 4 - Suportar frequencias baseadas em periodo no banner de alerta**:
-- O banner de alerta deve encontrar o nome do periodo correto para todas as frequencias (nao apenas mensal)
-
----
-
-## Detalhes Tecnicos
-
-### Nova funcao auxiliar `getPreviousPeriodKey`:
-```text
-getPreviousPeriodKey(currentKey, frequency):
-  monthly: "YYYY-MM" -> "YYYY-(MM-1)" (null se MM=01)
-  bimonthly: "YYYY-BN" -> "YYYY-B(N-1)" (null se N=1)
-  quarterly: "YYYY-QN" -> "YYYY-Q(N-1)" (null se N=1)
-  semesterly: "YYYY-SN" -> "YYYY-S(N-1)" (null se N=1)
-  yearly: sempre null (isento)
-```
-
-### checkVariation reescrito:
-```text
-checkVariation(periodKey, newValue):
-  1. Se threshold nao configurado -> null
-  2. prevKey = getPreviousPeriodKey(periodKey, frequency)
-  3. Se prevKey === null -> null (periodo isento)
-  4. Buscar meta anterior (targets[prevKey])
-  5. Se meta anterior = 0 ou nao existe -> null
-  6. Buscar realizado anterior (merged actuals[prevKey], default 0)
-  7. variacao = |newValue - realizadoAnterior| / |metaAnterior| * 100
-  8. Se variacao > threshold -> retorna bloqueio
-```
-
-### Callback onSave do KRFCAModal:
-```text
-onSave:
-  1. Chamar createFCA(fcaData) do useKRFCA -> salva no banco
-  2. Adicionar mes ao resolvedMonths
-  3. Remover mes do blockedMonths
-  4. Fechar modal
-```
-
-### useEffect de re-check:
-- Para mensal: iterar sobre `monthlyActual`
-- Para frequencias de periodo: iterar sobre `periodActual`
-
----
-
-## Arquivos Afetados
-
+### Arquivo afetado
 | Arquivo | Acao |
 |---------|------|
-| `src/components/strategic-map/KRUpdateValuesModal.tsx` | Reescrever checkVariation, integrar useKRFCA, corrigir banner para todas as frequencias |
+| `src/components/strategic-map/KROverviewModal.tsx` | Alterar max-w e reorganizar layout dos botoes/filtros |
 
+---
+
+## Melhoria 2: Botao Flutuante Atlas com Rosto Interativo e LED Azul
+
+### Conceito
+Substituir o botao simples com icone de robo por um personagem circular com rosto expressivo (inspirado no sol do flowfest.co.uk):
+- Rosto desenhado em SVG com olhos que acompanham o cursor do mouse
+- Expressao muda ao hover (sorriso abre mais, olhos "brilham")
+- Contorno com efeito de LED azul animado girando ao redor do botao (conic-gradient animado)
+
+### Detalhes tecnicos
+
+**Componente `FloatingAIButton.tsx` - reescrita completa:**
+
+1. **Rosto SVG interativo**:
+   - Circulo com gradiente (usando cores da marca: azul claro `#38B6FF`)
+   - Dois olhos (circulos pequenos) cujas posicoes `cx`/`cy` sao calculadas via `onMouseMove` global, criando o efeito de "seguir o mouse"
+   - Boca (path SVG) que muda de um sorriso sutil para um sorriso aberto no hover
+   - Transicao suave via CSS transition nas propriedades dos olhos
+
+2. **Efeito LED azul animado no contorno**:
+   - Container com `border-radius: 50%` e `padding: 3px`
+   - Background com `conic-gradient` que gira usando CSS `@keyframes spin`:
+     ```text
+     @keyframes spin-glow {
+       0% { transform: rotate(0deg); }
+       100% { transform: rotate(360deg); }
+     }
+     ```
+   - Gradiente conico com segmentos transparentes e azul brilhante (`#38B6FF`, `#0EA5E9`) criando o efeito de luz percorrendo a borda
+   - Camada interna com background solido para "recortar" o gradiente, deixando apenas a borda visivel
+
+3. **Interatividade**:
+   - `useEffect` com listener `mousemove` no `window` para capturar posicao do mouse
+   - Calculo do angulo e distancia entre mouse e centro do botao
+   - Deslocamento dos olhos proporcional (max ~3px) na direcao do cursor
+   - No hover: olhos se arregalam levemente (raio aumenta), boca abre mais
+
+4. **Badge de notificacao**: Mantido como esta, posicionado no canto superior direito
+
+### Animacoes CSS necessarias (em `index.css` ou `tailwind.config`):
+- Novo keyframe `spin-glow` para rotacao do conic-gradient
+- Classe utilitaria `animate-spin-glow` com duracao de ~3s linear infinite
+
+### Arquivos afetados
+| Arquivo | Acao |
+|---------|------|
+| `src/components/ai/FloatingAIButton.tsx` | Reescrever com rosto SVG interativo e efeito LED |
+| `src/index.css` | Adicionar keyframe `spin-glow` para animacao do contorno LED |
