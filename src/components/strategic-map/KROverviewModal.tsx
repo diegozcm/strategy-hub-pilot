@@ -420,7 +420,7 @@ export const KROverviewModal = ({
           </div>
 
           {/* Action Buttons & Period Filters - single row */}
-          <div className="flex items-center justify-between gap-2 py-4 flex-shrink-0 px-6 overflow-x-auto">
+          <div className="flex items-center justify-between gap-2 py-2 flex-shrink-0 px-6 overflow-x-auto">
             <div className="flex items-center gap-2 flex-shrink-0">
               {canCheckIn && (
                 <Button
@@ -515,7 +515,7 @@ export const KROverviewModal = ({
           </div>
           
           <div className="flex-1 overflow-y-auto px-6">
-            <div className="space-y-4 pr-2 py-4">
+            <div className="space-y-2 pr-2 pt-2 pb-4">
 
             {/* Key Metrics */}
             <KeyResultMetrics
