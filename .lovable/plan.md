@@ -1,68 +1,36 @@
 
-# Duas Melhorias: Layout do Modal KR + Botao Atlas Interativo
+# Reduzir Espacamento Superior e Redesenhar Cards de Metricas
 
-## Melhoria 1: Ajustar Layout do Modal de Resultados-Chave
+## Problema identificado
 
-### Problema atual
-O modal KR (`KROverviewModal.tsx`) tem `max-w-[1000px]`, e os botoes de acao e filtros de periodo ficam na mesma linha com `flex-wrap`, causando empilhamento e ma organizacao quando ha muitos botoes.
+1. **Espacamento vermelho**: A area entre os botoes de acao e os cards de metricas tem padding excessivo (`py-4` na linha dos botoes + `py-4` e `space-y-4` no container de conteudo). Isso cria um gap grande comparado a parte inferior do modal.
 
-### Solucao
-- Aumentar largura maxima do modal de `1000px` para `1280px`
-- Reorganizar o bloco de botoes de acao e filtros de periodo em duas linhas distintas:
-  - Linha 1: Botoes de acao (Atualizar Valores, FCA, Status Report, Iniciativas, Propriedades)
-  - Linha 2: Filtros de periodo (YTD, Ano, Periodo) alinhados a esquerda com separador visual
+2. **Cards de metricas (area azul)**: Os 4 cards (Meta, Realizado, % Atingimento, Periodo Atual) usam `h-24` com `Card` completo (CardHeader + CardContent), ocupando altura desnecessaria.
 
-### Arquivo afetado
-| Arquivo | Acao |
-|---------|------|
-| `src/components/strategic-map/KROverviewModal.tsx` | Alterar max-w e reorganizar layout dos botoes/filtros |
+## Solucao
 
----
+### Arquivo: `src/components/strategic-map/KROverviewModal.tsx`
+- Reduzir `py-4` para `py-2` na linha dos botoes de acao (linha 423)
+- Reduzir `py-4` para `pt-2 pb-4` no container scrollavel (linha 518)
 
-## Melhoria 2: Botao Flutuante Atlas com Rosto Interativo e LED Azul
+### Arquivo: `src/components/strategic-map/KeyResultMetrics.tsx`
+- Substituir os 4 `Card` separados por um layout inline mais compacto
+- Usar um unico container com divisores verticais entre as metricas
+- Reduzir a altura dos cards de `h-24` para `h-auto` com padding minimo
+- Layout: uma barra horizontal com os 4 valores lado a lado, sem bordas individuais pesadas
+- Estilo: fundo sutil, texto compacto com label em cima e valor embaixo, icones menores
+- Manter o card de "Periodo Atual" com o select funcional mas tambem compacto
 
-### Conceito
-Substituir o botao simples com icone de robo por um personagem circular com rosto expressivo (inspirado no sol do flowfest.co.uk):
-- Rosto desenhado em SVG com olhos que acompanham o cursor do mouse
-- Expressao muda ao hover (sorriso abre mais, olhos "brilham")
-- Contorno com efeito de LED azul animado girando ao redor do botao (conic-gradient animado)
+## Secao Tecnica
 
-### Detalhes tecnicos
+**KROverviewModal.tsx** - Reducao de padding:
+- Linha 423: `py-4` -> `py-2`
+- Linha 518: `py-4` -> `pt-2 pb-4`
+- Linha 143 (KeyResultMetrics): `space-y-4` -> `space-y-2`
 
-**Componente `FloatingAIButton.tsx` - reescrita completa:**
-
-1. **Rosto SVG interativo**:
-   - Circulo com gradiente (usando cores da marca: azul claro `#38B6FF`)
-   - Dois olhos (circulos pequenos) cujas posicoes `cx`/`cy` sao calculadas via `onMouseMove` global, criando o efeito de "seguir o mouse"
-   - Boca (path SVG) que muda de um sorriso sutil para um sorriso aberto no hover
-   - Transicao suave via CSS transition nas propriedades dos olhos
-
-2. **Efeito LED azul animado no contorno**:
-   - Container com `border-radius: 50%` e `padding: 3px`
-   - Background com `conic-gradient` que gira usando CSS `@keyframes spin`:
-     ```text
-     @keyframes spin-glow {
-       0% { transform: rotate(0deg); }
-       100% { transform: rotate(360deg); }
-     }
-     ```
-   - Gradiente conico com segmentos transparentes e azul brilhante (`#38B6FF`, `#0EA5E9`) criando o efeito de luz percorrendo a borda
-   - Camada interna com background solido para "recortar" o gradiente, deixando apenas a borda visivel
-
-3. **Interatividade**:
-   - `useEffect` com listener `mousemove` no `window` para capturar posicao do mouse
-   - Calculo do angulo e distancia entre mouse e centro do botao
-   - Deslocamento dos olhos proporcional (max ~3px) na direcao do cursor
-   - No hover: olhos se arregalam levemente (raio aumenta), boca abre mais
-
-4. **Badge de notificacao**: Mantido como esta, posicionado no canto superior direito
-
-### Animacoes CSS necessarias (em `index.css` ou `tailwind.config`):
-- Novo keyframe `spin-glow` para rotacao do conic-gradient
-- Classe utilitaria `animate-spin-glow` com duracao de ~3s linear infinite
-
-### Arquivos afetados
-| Arquivo | Acao |
-|---------|------|
-| `src/components/ai/FloatingAIButton.tsx` | Reescrever com rosto SVG interativo e efeito LED |
-| `src/index.css` | Adicionar keyframe `spin-glow` para animacao do contorno LED |
+**KeyResultMetrics.tsx** - Novo layout compacto:
+- Trocar `grid grid-cols-4 gap-4` com cards `h-24` por um unico `Card` contendo uma grid interna de 4 colunas
+- Cada coluna: label (text-xs) + valor (text-lg font-bold) + subinfo
+- Separadores verticais (`border-r`) entre colunas
+- Altura total reduzida de ~96px para ~64px
+- Card de periodo mantem o Select funcional dentro da coluna compacta
