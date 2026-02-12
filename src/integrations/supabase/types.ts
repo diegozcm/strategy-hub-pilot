@@ -1180,6 +1180,7 @@ export type Database = {
           title: string
           unit: string
           updated_at: string
+          variation_threshold: number | null
           weight: number
           yearly_actual: number | null
           yearly_percentage: number | null
@@ -1230,6 +1231,7 @@ export type Database = {
           title: string
           unit?: string
           updated_at?: string
+          variation_threshold?: number | null
           weight?: number
           yearly_actual?: number | null
           yearly_percentage?: number | null
@@ -1280,6 +1282,7 @@ export type Database = {
           title?: string
           unit?: string
           updated_at?: string
+          variation_threshold?: number | null
           weight?: number
           yearly_actual?: number | null
           yearly_percentage?: number | null
@@ -1409,6 +1412,8 @@ export type Database = {
           fact: string
           id: string
           key_result_id: string
+          linked_update_month: string | null
+          linked_update_value: number | null
           priority: string
           status: string
           title: string
@@ -1422,6 +1427,8 @@ export type Database = {
           fact: string
           id?: string
           key_result_id: string
+          linked_update_month?: string | null
+          linked_update_value?: number | null
           priority?: string
           status?: string
           title: string
@@ -1435,6 +1442,8 @@ export type Database = {
           fact?: string
           id?: string
           key_result_id?: string
+          linked_update_month?: string | null
+          linked_update_value?: number | null
           priority?: string
           status?: string
           title?: string
