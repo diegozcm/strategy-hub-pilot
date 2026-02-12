@@ -69,13 +69,14 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
 
   const frequency = (keyResult?.frequency as KRFrequency) || 'monthly';
 
-  // Variation threshold check function
+  // Variation threshold check function - uses previous period's TARGET as denominator
   const checkVariation = useCallback((monthKey: string, newValue: number, currentActuals: Record<string, number>) => {
     if (variationThreshold === null || variationThreshold === undefined) return null;
     
     // Combine DB data with current form state (form takes priority)
     const existingActual = (keyResult?.monthly_actual as Record<string, number>) || {};
     const merged = { ...existingActual, ...currentActuals };
+    const targets = (keyResult?.monthly_targets as Record<string, number>) || {};
     
     // Find the previous month with data from merged source
     const allMonthKeys = Object.keys(merged)
@@ -87,20 +88,17 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
     const lastKey = allMonthKeys[allMonthKeys.length - 1];
     const lastValue = merged[lastKey];
     
-    // Handle lastValue === 0
-    if (lastValue === 0) {
-      if (newValue === 0) return null; // 0 -> 0, no change
-      // 0 -> any non-zero is infinite variation, always block
-      return { variation: Infinity, previousValue: lastValue, newValue };
-    }
+    // Use the previous period's TARGET as denominator (not actual)
+    const lastTarget = targets[lastKey];
+    if (lastTarget === null || lastTarget === undefined || lastTarget === 0) return null; // No target base to compare
     
-    const variation = Math.abs(newValue - lastValue) / Math.abs(lastValue) * 100;
+    const variation = Math.abs(newValue - lastValue) / Math.abs(lastTarget) * 100;
     
     if (variation > variationThreshold) {
       return { variation, previousValue: lastValue, newValue };
     }
     return null;
-  }, [variationThreshold, keyResult?.monthly_actual]);
+  }, [variationThreshold, keyResult?.monthly_actual, keyResult?.monthly_targets]);
 
   // Re-check all blocked months when monthlyActual changes
   useEffect(() => {
