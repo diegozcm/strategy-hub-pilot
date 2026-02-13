@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useCompanyUsers } from '@/hooks/useCompanyUsers';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
@@ -126,7 +126,7 @@ export const InlineKeyResultForm = ({
 
   return (
     <div className="space-y-4">
-      <DialogHeader>
+      <div className="flex flex-col space-y-1.5">
         <div className="flex items-center gap-3">
           <Button 
             variant="ghost" 
@@ -137,16 +137,16 @@ export const InlineKeyResultForm = ({
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <DialogTitle className="text-lg">Novo Resultado-Chave</DialogTitle>
-            <DialogDescription className="flex items-center gap-2 mt-1 text-xs">
+            <h2 className="text-lg font-semibold leading-none tracking-tight">Novo Resultado-Chave</h2>
+            <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1 text-xs">
               Vinculado ao objetivo:
               <Badge variant="secondary" className="font-normal text-xs">
                 {objectiveTitle}
               </Badge>
-            </DialogDescription>
+            </p>
           </div>
         </div>
-      </DialogHeader>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
         {/* Nome do KR - full width */}
