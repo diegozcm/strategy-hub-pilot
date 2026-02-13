@@ -290,17 +290,28 @@ export const RumoObjectiveBlock = ({
           setIsKROverviewModalOpen(false);
           setSelectedKeyResultForOverview(null);
         }}
-        onDelete={() => {
-          toast({
-            title: "Funcionalidade em desenvolvimento",
-            description: "A exclusão de Resultados-Chave será implementada em breve.",
-          });
+        onDelete={async () => {
+          if (!selectedKeyResultForOverview) return;
+          try {
+            const { error } = await supabase
+              .from('key_results')
+              .delete()
+              .eq('id', selectedKeyResultForOverview.id);
+            if (error) throw error;
+            toast({ title: "Sucesso", description: "Resultado-chave excluído com sucesso!" });
+            setIsKROverviewModalOpen(false);
+            setSelectedKeyResultForOverview(null);
+            window.location.reload();
+          } catch (error) {
+            console.error('Error deleting key result:', error);
+            toast({ title: "Erro", description: "Erro ao excluir resultado-chave.", variant: "destructive" });
+          }
         }}
         onSave={async () => {
           window.location.reload();
         }}
         objectives={[{ id: objective.id, title: objective.title }]}
-        showDeleteButton={false}
+        showDeleteButton={true}
         initialPeriod={selectedPeriod}
         initialMonth={selectedMonth}
         initialYear={selectedYear}

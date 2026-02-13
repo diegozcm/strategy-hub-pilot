@@ -85,7 +85,8 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
     start_month: '',
     end_month: '',
     assigned_owner_id: '',
-    weight: 1
+    weight: 1,
+    target_direction: 'maximize'
   });
 
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
@@ -181,6 +182,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
         monthly_actual: {},
         aggregation_type: aggregationType,
         comparison_type: comparisonType,
+        target_direction: formData.target_direction || 'maximize',
         status: 'not_started',
         due_date: formData.deadline || null,
         start_month: formData.start_month || null,
@@ -194,6 +196,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
 
       await onSave({
         ...resultadoChaveData,
+        target_direction: resultadoChaveData.target_direction as 'maximize' | 'minimize',
         frequency: resultadoChaveData.frequency as 'monthly' | 'bimonthly' | 'quarterly' | 'semesterly' | 'yearly'
       });
       
@@ -213,7 +216,8 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
         start_month: '',
         end_month: '',
         assigned_owner_id: '',
-        weight: 1
+        weight: 1,
+        target_direction: 'maximize'
       });
       
       onClose();
@@ -387,6 +391,22 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Direcionamento</Label>
+                <Select 
+                  value={formData.target_direction} 
+                  onValueChange={(value) => setFormData({...formData, target_direction: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o direcionamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="maximize">📈 Maior é melhor</SelectItem>
+                    <SelectItem value="minimize">📉 Menor é melhor</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
