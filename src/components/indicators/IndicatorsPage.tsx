@@ -1049,7 +1049,7 @@ export const IndicatorsPage: React.FC = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2 lg:gap-4 items-center">
-          <Select value={pillarFilter} onValueChange={setPillarFilter}>
+          <Select value={pillarFilter} onValueChange={(v) => { setPillarFilter(v); setObjectiveFilter('all'); }}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Todos os pilares" />
             </SelectTrigger>
@@ -1066,6 +1066,22 @@ export const IndicatorsPage: React.FC = () => {
                   </div>
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={objectiveFilter} onValueChange={setObjectiveFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="Todos os objetivos" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os objetivos</SelectItem>
+              {objectives
+                .filter(obj => pillarFilter === 'all' || obj.pillar_id === pillarFilter)
+                .map((objective) => (
+                  <SelectItem key={objective.id} value={objective.id}>
+                    {objective.title}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
 
