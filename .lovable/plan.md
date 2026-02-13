@@ -1,90 +1,64 @@
 
+# Plano: Realtime Sync Gradual (Fase 1)
 
-# Plano: Corrigir KRs em todas as paginas
+## Escopo: Apenas `useActivePlan` + `useObjectivesData` + hook de Realtime
 
-## Problemas identificados
-
-### 1. Botao de exclusao escondido/nao-funcional em 3 locais
-
-| Pagina | Arquivo | `showDeleteButton` | `onDelete` |
-|---|---|---|---|
-| Dashboard (principal) | `DashboardHome.tsx` | `true` | Funcional (Supabase delete) |
-| Mapa Estrategico (2 modais) | `ObjectiveCard.tsx` | `false` | Toast placeholder |
-| Objetivos | `ObjectivesPage.tsx` | `false` | Toast placeholder |
-| Dashboard Rumo | `RumoObjectiveBlock.tsx` | `false` | Toast placeholder |
-
-### 2. `AddResultadoChaveModal` nao define `target_direction`
-
-O formulario usado no Mapa Estrategico (`AddResultadoChaveModal.tsx`) nao inclui o campo `target_direction`. O KR e salvo com esse campo como `null` no banco. Os outros formularios (`InlineKeyResultForm` e `StandaloneKeyResultForm`) definem corretamente como `'maximize'`.
-
-### 3. `InlineKeyResultForm` usa componentes `DialogHeader`/`DialogTitle` aninhados
-
-O formulario na pagina de Objetivos renderiza `DialogHeader`, `DialogTitle` e `DialogDescription` do Radix. Como ele ja esta dentro de um `DialogContent` (do `ObjectiveDetailModal`), isso causa conflito DOM (`Failed to execute 'removeChild' on 'Node'`).
+**NÃO** mexer em `useStrategicMap` nesta fase. Deixar para Fase 2 futura.
 
 ---
 
-## Mudancas propostas
+## Mudança 1: Criar `useStrategyRealtimeSync.ts` (NOVO)
 
-### Arquivo 1: `src/components/strategic-map/ObjectiveCard.tsx`
+Hook leve que escuta Supabase Realtime em tabelas estratégicas e invalida queries do react-query. Montado no `AppLayout`.
 
-**Duas mudancas identicas** (linhas ~442-452 e ~608-618):
-- Mudar `showDeleteButton={false}` para `showDeleteButton={true}`
-- Substituir o toast placeholder do `onDelete` por exclusao real via Supabase:
+**Tabelas monitoradas:**
+- `strategic_plans` → invalida `["active-plan"]`, `["strategic-plans"]`
+- `strategic_pillars` → invalida `["strategic-pillars"]`
+- `strategic_objectives` → invalida `["strategic-objectives"]`
+- `key_results` → invalida `["key-results"]`
+- `kr_fca`, `kr_monthly_actions`, `kr_initiatives` → invalida `["key-results"]`
 
-```typescript
-onDelete={async () => {
-  if (!selectedKeyResultForOverview) return;
-  try {
-    const { error } = await supabase
-      .from('key_results')
-      .delete()
-      .eq('id', selectedKeyResultForOverview.id);
-    if (error) throw error;
-    toast({ title: "Sucesso", description: "Resultado-chave excluído!" });
-    setIsKROverviewModalOpen(false);
-    setSelectedKeyResultForOverview(null);
-    if (onRefreshData) await onRefreshData();
-  } catch (error) {
-    toast({ title: "Erro", description: "Erro ao excluir.", variant: "destructive" });
-  }
-}}
-```
+**Padrão:** idêntico ao `useAdminRealtimeSync` que já funciona no Admin V2.
 
-### Arquivo 2: `src/components/objectives/ObjectivesPage.tsx`
+---
 
-**Uma mudanca** (linhas ~874-884):
-- Mudar `showDeleteButton={false}` para `showDeleteButton={true}`
-- Substituir toast placeholder por exclusao real + `await refreshData()`
+## Mudança 2: Migrar `useActivePlan.tsx` para react-query
 
-### Arquivo 3: `src/components/dashboard/RumoObjectiveBlock.tsx`
+- Substituir `useState` + `useEffect` + `useCallback` por `useQuery`
+- Query key: `["active-plan", companyId]`
+- Manter mesma interface de retorno: `{ activePlan, loading, hasActivePlan, refreshActivePlan }`
 
-**Uma mudanca** (linhas ~293-303):
-- Mudar `showDeleteButton={false}` para `showDeleteButton={true}`
-- Substituir toast placeholder por exclusao real + `window.location.reload()`
+---
 
-### Arquivo 4: `src/components/strategic-map/AddResultadoChaveModal.tsx`
+## Mudança 3: Migrar `useObjectivesData.tsx` para react-query
 
-**Duas mudancas:**
-1. Adicionar `target_direction: 'maximize'` ao estado inicial `formData` (linha ~88)
-2. Incluir `target_direction: formData.target_direction` no objeto `resultadoChaveData` enviado ao `onSave` (linha ~175)
-3. Adicionar um campo Select de "Direcionamento" na aba "Dados Gerais" com opcoes "Maior e melhor" (`maximize`) e "Menor e melhor" (`minimize`)
+- Substituir 4 `useState` por 4 `useQuery`:
+  - `["strategic-plans", companyId]`
+  - `["strategic-pillars", companyId]`
+  - `["strategic-objectives", planId]`
+  - `["key-results", planId]` (busca por objective_ids do plano ativo)
+- `refreshData()` vira `invalidateQueries`
+- Manter mesma interface de retorno para não quebrar consumidores
+- Remover `useHealthMonitor` e `useOperationState` (simplificar)
 
-### Arquivo 5: `src/components/objectives/InlineKeyResultForm.tsx`
+---
 
-**Uma mudanca** (linhas ~9, 129, 140-141):
-- Remover import de `DialogHeader`, `DialogTitle`, `DialogDescription`
-- Substituir `<DialogHeader>` por `<div className="flex flex-col space-y-1.5">`
-- Substituir `<DialogTitle>` por `<h2 className="text-lg font-semibold leading-none tracking-tight">`
-- Substituir `<DialogDescription>` por `<p className="text-sm text-muted-foreground">`
+## Mudança 4: Montar hook no `AppLayout.tsx`
 
-Isso evita o crash DOM causado por componentes Radix Dialog aninhados.
+Adicionar `useStrategyRealtimeSync()` ao lado do `useRealtimePresence()` já existente.
+
+---
+
+## O que NÃO muda nesta fase
+
+- `useStrategicMap.tsx` — continua com `useState`/`loadData` (Fase 2)
+- Nenhuma página/componente consumidor precisa mudar (interface idêntica)
+- Nenhum modal precisa mudar
 
 ---
 
 ## Resultado esperado
 
-- Botao "Apagar" visivel e funcional em TODAS as paginas
-- KRs criados no Mapa Estrategico terao `target_direction` definido (default: `maximize`)
-- Formulario inline na pagina de Objetivos nao causara crash DOM
-- Experiencia consistente em todas as paginas
-
+- Dashboard, Objetivos e Indicadores atualizam automaticamente quando dados mudam no banco
+- Dois usuários na mesma página veem mudanças em tempo real
+- Risco mínimo: se algo falhar, apenas essas 2 hooks são afetadas
