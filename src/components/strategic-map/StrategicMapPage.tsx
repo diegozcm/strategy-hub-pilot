@@ -515,7 +515,10 @@ export const StrategicMapPage = () => {
                                 variant="outline" 
                                 size="sm" 
                                 className="mt-2"
-                                onClick={() => navigate('/app/objectives')}
+                                onClick={() => {
+                                  setSelectedPillarId(pillar.id);
+                                  setShowObjectiveForm(true);
+                                }}
                               >
                                 <Plus className="mr-2 h-3 w-3" />
                                 Adicionar Objetivo
