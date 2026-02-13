@@ -403,16 +403,6 @@ export const KROverviewModal = ({
                       <Edit className="h-4 w-4" />
                     </Button>
                   )}
-                  {showDeleteButton && canDeleteKR && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={onDelete}
-                      className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
                 </div>
               </div>
             </div>
@@ -484,6 +474,17 @@ export const KROverviewModal = ({
                     onSave();
                   }} 
                 />
+              )}
+              {showDeleteButton && canDeleteKR && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onDelete}
+                  className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50 hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Apagar
+                </Button>
               )}
             </div>
 
