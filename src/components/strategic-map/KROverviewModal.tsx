@@ -154,6 +154,13 @@ export const KROverviewModal = ({
     setCurrentKeyResult(keyResult);
   }, [keyResult]);
 
+  // Refresh full KR data when modal opens (Dashboard may pass incomplete data)
+  useEffect(() => {
+    if (open && keyResult?.id) {
+      refreshKeyResult();
+    }
+  }, [open, keyResult?.id]);
+
   // Sincronização bidirecional: quando o ano local muda, atualizar o context
   const handleYearChange = useCallback((year: number) => {
     setSelectedYear(year);
