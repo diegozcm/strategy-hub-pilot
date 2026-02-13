@@ -1,69 +1,90 @@
 
 
-# Fix: KR criado na Dashboard exibe dados incorretos no modal de edição
+# Plano: Corrigir KRs em todas as paginas
 
-## Problema identificado
+## Problemas identificados
 
-Existem **dois problemas distintos** causando a exibição incorreta do KR criado na Dashboard:
+### 1. Botao de exclusao escondido/nao-funcional em 3 locais
 
-### 1. Dados incompletos ao abrir KR Overview/Edit Modal
+| Pagina | Arquivo | `showDeleteButton` | `onDelete` |
+|---|---|---|---|
+| Dashboard (principal) | `DashboardHome.tsx` | `true` | Funcional (Supabase delete) |
+| Mapa Estrategico (2 modais) | `ObjectiveCard.tsx` | `false` | Toast placeholder |
+| Objetivos | `ObjectivesPage.tsx` | `false` | Toast placeholder |
+| Dashboard Rumo | `RumoObjectiveBlock.tsx` | `false` | Toast placeholder |
 
-Quando um KR é aberto a partir da Dashboard, o `DashboardHome.tsx` busca os KRs com uma query **limitada** que nao inclui campos importantes como `weight`, `start_month`, `end_month`, `assigned_owner_id`, `comparison_type`, entre outros.
+### 2. `AddResultadoChaveModal` nao define `target_direction`
 
-O `KROverviewModal` inicializa `currentKeyResult` a partir dessa prop incompleta. Quando o usuario clica em "Editar", o `KREditModal` recebe esse objeto incompleto e os campos aparecem vazios.
+O formulario usado no Mapa Estrategico (`AddResultadoChaveModal.tsx`) nao inclui o campo `target_direction`. O KR e salvo com esse campo como `null` no banco. Os outros formularios (`InlineKeyResultForm` e `StandaloneKeyResultForm`) definem corretamente como `'maximize'`.
 
-A funcao `refreshKeyResult()` existe no `KROverviewModal` e busca `SELECT *` (todos os campos), mas so eh chamada **apos salvar**, nunca no momento em que o modal abre.
+### 3. `InlineKeyResultForm` usa componentes `DialogHeader`/`DialogTitle` aninhados
 
-### 2. Valores de unidade inconsistentes entre formularios
+O formulario na pagina de Objetivos renderiza `DialogHeader`, `DialogTitle` e `DialogDescription` do Radix. Como ele ja esta dentro de um `DialogContent` (do `ObjectiveDetailModal`), isso causa conflito DOM (`Failed to execute 'removeChild' on 'Node'`).
 
-O formulario de criacao (`InlineKeyResultForm.tsx` e `StandaloneKeyResultForm.tsx`) usa estes valores de unidade:
-- `%`, `R$`, **`number`**, `dias`, **`score`**
+---
 
-O formulario de edicao (`KREditModal.tsx`) usa valores **diferentes**:
-- `%`, `R$`, **`un`**, `h`, `dias`
+## Mudancas propostas
 
-Quando um KR eh criado com `unit: "number"`, o Select do formulario de edicao nao encontra esse valor nas suas opcoes e exibe vazio.
+### Arquivo 1: `src/components/strategic-map/ObjectiveCard.tsx`
 
-## Solucao
-
-### Arquivo 1: `src/components/strategic-map/KROverviewModal.tsx`
-
-Chamar `refreshKeyResult()` automaticamente quando o modal abrir, garantindo que todos os campos estejam disponíveis independentemente de qual pagina o KR foi aberto.
-
-Adicionar um `useEffect` que chama `refreshKeyResult` quando `open` muda para `true`:
+**Duas mudancas identicas** (linhas ~442-452 e ~608-618):
+- Mudar `showDeleteButton={false}` para `showDeleteButton={true}`
+- Substituir o toast placeholder do `onDelete` por exclusao real via Supabase:
 
 ```typescript
-useEffect(() => {
-  if (open && keyResult?.id) {
-    refreshKeyResult();
+onDelete={async () => {
+  if (!selectedKeyResultForOverview) return;
+  try {
+    const { error } = await supabase
+      .from('key_results')
+      .delete()
+      .eq('id', selectedKeyResultForOverview.id);
+    if (error) throw error;
+    toast({ title: "Sucesso", description: "Resultado-chave excluído!" });
+    setIsKROverviewModalOpen(false);
+    setSelectedKeyResultForOverview(null);
+    if (onRefreshData) await onRefreshData();
+  } catch (error) {
+    toast({ title: "Erro", description: "Erro ao excluir.", variant: "destructive" });
   }
-}, [open, keyResult?.id]);
+}}
 ```
 
-### Arquivo 2: `src/components/strategic-map/KREditModal.tsx`
+### Arquivo 2: `src/components/objectives/ObjectivesPage.tsx`
 
-Padronizar as opcoes de unidade para serem consistentes com os formularios de criacao:
+**Uma mudanca** (linhas ~874-884):
+- Mudar `showDeleteButton={false}` para `showDeleteButton={true}`
+- Substituir toast placeholder por exclusao real + `await refreshData()`
 
-De:
-```
-% | R$ | un | h | dias
-```
+### Arquivo 3: `src/components/dashboard/RumoObjectiveBlock.tsx`
 
-Para:
-```
-% | R$ | number | dias | score
-```
+**Uma mudanca** (linhas ~293-303):
+- Mudar `showDeleteButton={false}` para `showDeleteButton={true}`
+- Substituir toast placeholder por exclusao real + `window.location.reload()`
 
-### Arquivo 3: `src/components/objectives/InlineKeyResultForm.tsx`
+### Arquivo 4: `src/components/strategic-map/AddResultadoChaveModal.tsx`
 
-Nenhuma mudanca necessaria (ja usa os valores corretos).
+**Duas mudancas:**
+1. Adicionar `target_direction: 'maximize'` ao estado inicial `formData` (linha ~88)
+2. Incluir `target_direction: formData.target_direction` no objeto `resultadoChaveData` enviado ao `onSave` (linha ~175)
+3. Adicionar um campo Select de "Direcionamento" na aba "Dados Gerais" com opcoes "Maior e melhor" (`maximize`) e "Menor e melhor" (`minimize`)
 
-### Arquivo 4: `src/components/indicators/StandaloneKeyResultForm.tsx`
+### Arquivo 5: `src/components/objectives/InlineKeyResultForm.tsx`
 
-Nenhuma mudanca necessaria (ja usa os valores corretos).
+**Uma mudanca** (linhas ~9, 129, 140-141):
+- Remover import de `DialogHeader`, `DialogTitle`, `DialogDescription`
+- Substituir `<DialogHeader>` por `<div className="flex flex-col space-y-1.5">`
+- Substituir `<DialogTitle>` por `<h2 className="text-lg font-semibold leading-none tracking-tight">`
+- Substituir `<DialogDescription>` por `<p className="text-sm text-muted-foreground">`
+
+Isso evita o crash DOM causado por componentes Radix Dialog aninhados.
+
+---
 
 ## Resultado esperado
 
-- Ao abrir um KR de qualquer pagina (Dashboard, Mapa, Indicadores), o modal de edicao sempre exibira todos os campos corretamente preenchidos.
-- As unidades serao consistentes entre criacao e edicao, sem campos aparecendo vazios.
+- Botao "Apagar" visivel e funcional em TODAS as paginas
+- KRs criados no Mapa Estrategico terao `target_direction` definido (default: `maximize`)
+- Formulario inline na pagina de Objetivos nao causara crash DOM
+- Experiencia consistente em todas as paginas
 
