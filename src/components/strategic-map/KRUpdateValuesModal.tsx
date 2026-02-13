@@ -100,8 +100,8 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
   const [tempValue, setTempValue] = useState<string>('');
   const hasInitialized = useRef(false);
   
-  // Variation threshold states
-  const [blockedMonths, setBlockedMonths] = useState<Record<string, { variation: number; previousValue: number; newValue: number }>>({});
+// Variation threshold states
+  const [blockedMonths, setBlockedMonths] = useState<Record<string, { variation: number; targetValue: number; newValue: number }>>({});
   const [showFCAModal, setShowFCAModal] = useState(false);
   const [fcaMonthKey, setFcaMonthKey] = useState<string | null>(null);
   const [resolvedMonths, setResolvedMonths] = useState<Set<string>>(new Set());
@@ -129,40 +129,37 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
 
   const frequency = (keyResult?.frequency as KRFrequency) || 'monthly';
 
-  // Variation threshold check - uses previous period's ACTUAL as denominator
+  // Variation threshold check - compares actual vs TARGET of the same period
   const checkVariation = useCallback((periodKey: string, newValue: number) => {
     if (variationThreshold === null || variationThreshold === undefined) return null;
     
-    const prevKey = getPreviousPeriodKey(periodKey, frequency);
-    if (prevKey === null) return null; // Exempt period (first of cycle)
+    const rawTargets = (keyResult?.monthly_targets as Record<string, number>) || {};
 
-    const rawActuals = (keyResult?.monthly_actual as Record<string, number>) || {};
-
-    let mergedActuals: Record<string, number>;
+    let targetValue: number | undefined;
 
     if (isFrequencyPeriodBased(frequency)) {
-      mergedActuals = { ...monthlyTargetsToPeriod(rawActuals, frequency, selectedYear), ...periodActual };
+      const periodTargets = monthlyTargetsToPeriod(rawTargets, frequency, selectedYear);
+      targetValue = periodTargets[periodKey];
     } else {
-      mergedActuals = { ...rawActuals, ...monthlyActual };
+      targetValue = rawTargets[periodKey];
     }
 
-    // Get previous period's actual as denominator
-    const lastValue = mergedActuals[prevKey];
-    if (lastValue === null || lastValue === undefined || Math.abs(lastValue) === 0) return null;
+    // Can't calculate variation without a target or if target is zero
+    if (targetValue === null || targetValue === undefined || Math.abs(targetValue) === 0) return null;
 
-    const variation = Math.abs(newValue - lastValue) / Math.abs(lastValue) * 100;
+    const variation = Math.abs(newValue - targetValue) / Math.abs(targetValue) * 100;
     
     if (variation > variationThreshold) {
-      return { variation, previousValue: lastValue, newValue };
+      return { variation, targetValue, newValue };
     }
     return null;
-  }, [variationThreshold, frequency, keyResult?.monthly_actual, keyResult?.monthly_targets, selectedYear, monthlyActual, periodActual]);
+  }, [variationThreshold, frequency, keyResult?.monthly_targets, selectedYear]);
 
   // Re-check all blocked periods when actuals change
   useEffect(() => {
     if (variationThreshold === null || variationThreshold === undefined) return;
     
-    const newBlocked: Record<string, { variation: number; previousValue: number; newValue: number }> = {};
+    const newBlocked: Record<string, { variation: number; targetValue: number; newValue: number }> = {};
     
     const actualsToCheck = isFrequencyPeriodBased(frequency) ? periodActual : monthlyActual;
     
@@ -713,7 +710,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
               return {
                 key_result_id: keyResult.id,
                 title: `Variação acima do limite em ${periodLabel}`,
-                fact: `Valor atualizado de ${blockedMonths[fcaMonthKey]?.previousValue?.toLocaleString('pt-BR')} para ${blockedMonths[fcaMonthKey]?.newValue?.toLocaleString('pt-BR')} (variação de ${blockedMonths[fcaMonthKey]?.variation?.toFixed(1)}%)`,
+                fact: `Meta: ${blockedMonths[fcaMonthKey]?.targetValue?.toLocaleString('pt-BR')}, Realizado: ${blockedMonths[fcaMonthKey]?.newValue?.toLocaleString('pt-BR')} (variação de ${blockedMonths[fcaMonthKey]?.variation?.toFixed(1)}% em relação à meta)`,
                 cause: '',
                 description: '',
                 priority: 'high' as const,
