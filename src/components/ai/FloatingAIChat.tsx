@@ -585,7 +585,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
         animate={{ borderRadius: '16px', opacity: 1, scale: 1 }}
         exit={{ borderRadius: '50%', opacity: 0, scale: 0.8 }}
         transition={{ type: "spring", stiffness: 400, damping: 35 }}
-        className="fixed z-50"
+        className="fixed z-[9999]"
         style={{ 
           left: `${position.x}px`, 
           top: `${position.y}px`,
