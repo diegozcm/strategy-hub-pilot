@@ -536,10 +536,10 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="%">% (Percentual)</SelectItem>
-                      <SelectItem value="R$">R$ (Reais)</SelectItem>
-                      <SelectItem value="un">Unidades</SelectItem>
-                      <SelectItem value="h">Horas</SelectItem>
+                      <SelectItem value="R$">R$ (Real)</SelectItem>
+                      <SelectItem value="number">Número</SelectItem>
                       <SelectItem value="dias">Dias</SelectItem>
+                      <SelectItem value="score">Score</SelectItem>
                       <SelectItem value="pontos">Pontos</SelectItem>
                     </SelectContent>
                   </Select>
