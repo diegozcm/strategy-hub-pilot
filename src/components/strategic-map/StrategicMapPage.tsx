@@ -625,6 +625,7 @@ export const StrategicMapPage = () => {
         onClose={() => setShowObjectiveForm(false)}
         pillarId={selectedPillarId}
         planId={strategicPlan?.id || ''}
+        pillars={pillars}
         onSave={createObjective}
       />
 

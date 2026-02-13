@@ -1,21 +1,12 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -26,23 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
-const objectiveSchema = z.object({
-  title: z.string().min(1, 'Título é obrigatório'),
-  description: z.string().optional(),
-  responsible: z.string().optional(),
-  target_date: z.string().optional(),
-  status: z.enum(['not_started', 'in_progress', 'completed', 'suspended']),
-  weight: z.number().min(1).max(10).optional(),
-});
-
-type ObjectiveFormData = z.infer<typeof objectiveSchema>;
+import { StrategicPillar } from '@/types/strategic-map';
 
 interface ObjectiveFormModalProps {
   open: boolean;
   onClose: () => void;
   pillarId: string;
   planId: string;
+  pillars: StrategicPillar[];
   onSave: (data: any) => Promise<any>;
 }
 
@@ -51,38 +33,54 @@ export const ObjectiveFormModal = ({
   onClose, 
   pillarId, 
   planId,
+  pillars,
   onSave 
 }: ObjectiveFormModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm<ObjectiveFormData>({
-    resolver: zodResolver(objectiveSchema),
-    defaultValues: {
-      title: '',
-      description: '',
-      responsible: '',
-      target_date: '',
-      status: 'not_started',
-      weight: 1,
-    },
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    target_date: '',
+    weight: 5,
+    pillar_id: pillarId,
   });
 
-  const onSubmit = async (data: ObjectiveFormData) => {
+  // Sync pillarId when it changes
+  useEffect(() => {
+    if (pillarId) {
+      setForm(prev => ({ ...prev, pillar_id: pillarId }));
+    }
+  }, [pillarId]);
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setForm({
+        title: '',
+        description: '',
+        target_date: '',
+        weight: 5,
+        pillar_id: pillarId,
+      });
+    }
+  }, [open, pillarId]);
+
+  const handleSubmit = async () => {
+    if (!form.title.trim()) return;
     setIsSubmitting(true);
     
     try {
       const objectiveData = {
-        ...data,
-        pillar_id: pillarId,
+        title: form.title,
+        description: form.description,
+        target_date: form.target_date || null,
+        weight: form.weight,
+        pillar_id: form.pillar_id,
         plan_id: planId,
-        target_date: data.target_date ? new Date(data.target_date).toISOString().split('T')[0] : null,
+        status: 'not_started',
       };
 
-      console.log('Creating objective with data:', objectiveData);
-      console.log('Plan ID being used:', planId);
-      
       await onSave(objectiveData);
-      form.reset();
       onClose();
     } catch (error) {
       console.error('Error saving objective:', error);
@@ -91,139 +89,82 @@ export const ObjectiveFormModal = ({
     }
   };
 
-  const handleClose = () => {
-    form.reset();
-    onClose();
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Novo Objetivo Estratégico</DialogTitle>
+          <DialogTitle>Criar Objetivo Estratégico</DialogTitle>
+          <DialogDescription>
+            Defina um novo objetivo estratégico para sua organização.
+          </DialogDescription>
         </DialogHeader>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Título *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Digite o título do objetivo" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="obj-title">Título do Objetivo</Label>
+            <Input
+              id="obj-title"
+              value={form.title}
+              onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
+              placeholder="Ex: Aumentar receita em 30%"
             />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Descreva o objetivo estratégico"
-                      rows={3}
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+          </div>
+          <div>
+            <Label htmlFor="obj-description">Descrição</Label>
+            <Textarea
+              id="obj-description"
+              value={form.description}
+              onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Descreva o objetivo..."
             />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="responsible"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Responsável</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome do responsável" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="target_date"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data Meta</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="obj-target-date">Data Meta</Label>
+              <Input
+                id="obj-target-date"
+                type="date"
+                value={form.target_date}
+                onChange={(e) => setForm(prev => ({ ...prev, target_date: e.target.value }))}
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="not_started">Não Iniciado</SelectItem>
-                        <SelectItem value="in_progress">Em Progresso</SelectItem>
-                        <SelectItem value="completed">Concluído</SelectItem>
-                        <SelectItem value="suspended">Suspenso</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="weight"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Peso (1-10)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        min={1} 
-                        max={10} 
-                        placeholder="1"
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            <div>
+              <Label htmlFor="obj-weight">Peso (1-10)</Label>
+              <Input
+                id="obj-weight"
+                type="number"
+                min={1}
+                max={10}
+                value={form.weight}
+                onChange={(e) => setForm(prev => ({ ...prev, weight: parseInt(e.target.value) || 5 }))}
+                placeholder="5"
               />
             </div>
-
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={handleClose}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Salvando...' : 'Salvar Objetivo'}
-              </Button>
-            </div>
-          </form>
-        </Form>
+          </div>
+          <div>
+            <Label htmlFor="obj-pillar">Pilar Estratégico</Label>
+            <Select value={form.pillar_id} onValueChange={(value) => setForm(prev => ({ ...prev, pillar_id: value }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um pilar" />
+              </SelectTrigger>
+              <SelectContent>
+                {pillars.map((pillar) => (
+                  <SelectItem key={pillar.id} value={pillar.id}>
+                    {pillar.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex justify-end space-x-2">
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={handleSubmit} disabled={isSubmitting || !form.title.trim()}>
+            {isSubmitting ? 'Criando...' : 'Criar Objetivo'}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
