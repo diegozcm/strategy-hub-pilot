@@ -18,7 +18,7 @@ export const FloatingAIButton: React.FC<FloatingAIButtonProps> = ({
 
   return (
     <div className={cn(
-      "fixed bottom-6 right-6 z-[100] animate-fade-in block",
+      "fixed bottom-6 right-6 z-[9999] animate-fade-in block",
       className
     )}>
       <div className="relative">
