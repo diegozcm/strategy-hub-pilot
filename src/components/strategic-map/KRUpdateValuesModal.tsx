@@ -129,37 +129,28 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
 
   const frequency = (keyResult?.frequency as KRFrequency) || 'monthly';
 
-  // Variation threshold check - uses previous period's TARGET as denominator
+  // Variation threshold check - uses previous period's ACTUAL as denominator
   const checkVariation = useCallback((periodKey: string, newValue: number) => {
     if (variationThreshold === null || variationThreshold === undefined) return null;
     
     const prevKey = getPreviousPeriodKey(periodKey, frequency);
     if (prevKey === null) return null; // Exempt period (first of cycle)
 
-    // Get targets - for period-based frequencies, targets are stored at period keys
-    // For monthly, targets are stored at month keys
-    const rawTargets = (keyResult?.monthly_targets as Record<string, number>) || {};
     const rawActuals = (keyResult?.monthly_actual as Record<string, number>) || {};
 
-    let targets: Record<string, number>;
     let mergedActuals: Record<string, number>;
 
     if (isFrequencyPeriodBased(frequency)) {
-      targets = monthlyTargetsToPeriod(rawTargets, frequency, selectedYear);
       mergedActuals = { ...monthlyTargetsToPeriod(rawActuals, frequency, selectedYear), ...periodActual };
     } else {
-      targets = rawTargets;
       mergedActuals = { ...rawActuals, ...monthlyActual };
     }
 
-    // Get previous period's target as denominator
-    const lastTarget = targets[prevKey];
-    if (lastTarget === null || lastTarget === undefined || lastTarget === 0) return null;
+    // Get previous period's actual as denominator
+    const lastValue = mergedActuals[prevKey];
+    if (lastValue === null || lastValue === undefined || Math.abs(lastValue) === 0) return null;
 
-    // Get previous period's actual (default to 0 if not set)
-    const lastValue = mergedActuals[prevKey] ?? 0;
-
-    const variation = Math.abs(newValue - lastValue) / Math.abs(lastTarget) * 100;
+    const variation = Math.abs(newValue - lastValue) / Math.abs(lastValue) * 100;
     
     if (variation > variationThreshold) {
       return { variation, previousValue: lastValue, newValue };
