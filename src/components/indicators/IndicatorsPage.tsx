@@ -32,6 +32,7 @@ import { useKRMetrics } from '@/hooks/useKRMetrics';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
 import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 import { filterKRsByValidity, getPopulatedQuarters } from '@/lib/krValidityFilter';
+import { isFrequencyPeriodBased, getMonthPeriodKey, KRFrequency } from '@/lib/krFrequencyHelpers';
 import { useObjectivesData } from '@/hooks/useObjectivesData';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
@@ -212,6 +213,8 @@ export const IndicatorsPage: React.FC = () => {
       const targets = (kr.monthly_targets as Record<string, number>) || {};
       const actuals = (kr.monthly_actual as Record<string, number>) || {};
       const coveredMonths = fcasByKR[kr.id] || [];
+      const frequency = (kr.frequency || 'monthly') as KRFrequency;
+      const isPeriodBased = isFrequencyPeriodBased(frequency);
       let hasVariation = false;
       let hasPending = false;
       for (const month of Object.keys(actuals)) {
@@ -221,7 +224,13 @@ export const IndicatorsPage: React.FC = () => {
         const variation = Math.abs(actual - target) / Math.abs(target) * 100;
         if (variation > kr.variation_threshold) {
           hasVariation = true;
-          if (!coveredMonths.includes(month)) {
+          // For period-based KRs, also check if the period key is covered
+          let isCovered = coveredMonths.includes(month);
+          if (!isCovered && isPeriodBased) {
+            const periodKey = getMonthPeriodKey(month, frequency);
+            isCovered = coveredMonths.includes(periodKey);
+          }
+          if (!isCovered) {
             hasPending = true;
           }
         }
