@@ -1,122 +1,56 @@
 
 
-# Plano: Diferenciar KRs com alerta pendente vs resolvido (Cards + Tabela RMRE)
+# Plano: Corrigir deteccao de alerta resolvido para KRs com frequencia nao-mensal
 
-## Problema atual
+## Problema identificado
 
-Hoje so existe um estado visual: "em alerta" (laranja). Nao ha distincao entre KRs que ja tiveram o FCA respondido e os que ainda estao pendentes. Alem disso, a borda laranja estatica no card nao ficou visualmente atrativa.
+A logica de calculo de alertas na `IndicatorsPage.tsx` compara as chaves de `monthly_actual` (ex: `"2026-04"`) diretamente com o `linked_update_month` dos FCAs. Porem, para KRs com frequencia trimestral, semestral, bimestral ou anual, o FCA e salvo com a chave do periodo (ex: `"2026-Q2"`), nao com a chave do mes.
 
-## Nova logica de estados
+**Dados reais do bug:**
+- NPS (trimestral): `monthly_actual` tem chave `"2026-04"`, mas o FCA foi salvo com `linked_update_month = "2026-Q2"`
+- A comparacao `coveredMonths.includes("2026-04")` falha porque o array contem `"2026-Q2"`
+- Resultado: NPS aparece como "pendente" (piscando laranja) mesmo tendo FCA criado
 
-Cada KR com `variation_threshold` pode estar em 3 estados:
+## Solucao
 
-| Estado | Condicao | Significado |
-|---|---|---|
-| Sem alerta | Nao tem `variation_threshold` ou nenhum mes excede o limite | Nada a exibir |
-| Alerta resolvido | Tem meses que excedem o limite, mas TODOS ja possuem FCA vinculado | Ja justificado |
-| Alerta pendente | Tem meses que excedem o limite e PELO MENOS UM nao tem FCA | Precisa de atencao |
+Criar um mapeamento bidirecional entre chaves de meses e chaves de periodos na hora de verificar se um mes esta coberto por um FCA. 
 
----
+Para KRs com frequencia nao-mensal:
+- Obter os periodos via `getPeriodsForFrequency(frequency, year)`
+- Para cada mes em `monthly_actual`, encontrar qual periodo contem aquele mes (usando `monthKeys`)
+- Verificar se existe um FCA com `linked_update_month` igual a chave do periodo OU a chave do mes
 
-## Design visual
+## Mudancas tecnicas
 
-### Card - Alerta PENDENTE (sem FCA)
+### Arquivo: `src/components/indicators/IndicatorsPage.tsx`
 
-- Remover a borda `ring-2 ring-orange-400` estatica
-- Adicionar animacao de "pulse wave" (ondas pulsantes de dentro pra fora) na borda do card em laranja
-- Icone `AlertTriangle` laranja com tooltip "Variacao pendente de FCA" (ja existe, manter)
-- A animacao sera um `@keyframes` customizado com box-shadow animado criando efeito de onda radiante laranja
+Na query de FCAs (linhas 189-203):
+- Tambem carregar o campo `frequency` de cada KR junto para usar na conversao (ja temos `keyResults` com frequency disponivel, entao nao precisa mudar a query)
 
-```text
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+   <-- ondas pulsantes laranja
-|  [Titulo do KR]           P:3   |
-|  [Pilar]                        |
-+----------------------------------+
-| Atingimento YTD          59.7%   |
-| [=========>          ]           |
-|                                  |
-| ⚠ ◉ ○ ○ ○    (icone laranja)    |
-+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
-```
+No `useMemo` de calculo de alertas (linhas 207-236):
+1. Importar `getPeriodsForFrequency` e `isFrequencyPeriodBased` de `@/lib/krFrequencyHelpers`
+2. Para cada KR, verificar se a frequencia e baseada em periodos
+3. Se for baseada em periodos, construir um mapa de mes-para-periodo usando `getPeriodsForFrequency`
+4. Na verificacao `coveredMonths.includes(month)`, tambem verificar se o periodo correspondente ao mes esta coberto
 
-### Card - Alerta RESOLVIDO (FCA feito)
-
-- Sem animacao de onda, sem borda especial
-- Icone `CheckCircle` azul/verde ao lado dos indicadores mensais com tooltip "Variacao justificada via FCA"
-- Visual discreto, so para informar que havia variacao mas ja foi tratada
-
-```text
-+----------------------------------+
-|  [Titulo do KR]           P:3   |
-|  [Pilar]                        |
-+----------------------------------+
-| Atingimento YTD          92.9%   |
-| [==================>   ]         |
-|                                  |
-| ✓ ◉ ○ ○ ○    (icone azul)       |
-+----------------------------------+
-```
-
-### Tabela RMRE - Alerta PENDENTE
-
-- Fundo laranja sutil na linha (`bg-orange-50/40`) - manter como esta
-- Icone `AlertTriangle` laranja ao lado do titulo - manter como esta
-- Tooltip: "Variacao acima do limite sem FCA vinculado"
-
-### Tabela RMRE - Alerta RESOLVIDO
-
-- Fundo azul/verde sutil na linha (`bg-blue-50/30 dark:bg-blue-950/10`)
-- Icone `CheckCircle` azul ao lado do titulo
-- Tooltip: "Variacao justificada via FCA"
-
----
-
-## Secao tecnica
-
-### 1. `IndicatorsPage.tsx` - Novo calculo: `resolvedKRIds`
-
-Adicionar um segundo `useMemo` que calcula os KRs com variacao que JA foram todos resolvidos:
+Logica simplificada:
 
 ```
-Para cada KR com variation_threshold:
-  Para cada mes com actual:
-    Se variacao > threshold:
-      Se NÃO tem FCA -> KR esta pendente (ja calculado em alertedKRIds)
-  Se TODOS os meses com variacao tem FCA -> KR esta resolvido
+Para cada mes com variacao excedida:
+  Se frequencia e mensal:
+    Verificar se coveredMonths inclui o mes (ex: "2026-04")
+  Se frequencia e baseada em periodo:
+    Encontrar o periodo que contem o mes (ex: "2026-04" -> "2026-Q2")
+    Verificar se coveredMonths inclui o periodo OU o mes
 ```
 
-Passa `resolvedKRIds` (Set) para `KRCard` e `KRTableView`.
+### Nenhum outro arquivo precisa ser alterado
 
-### 2. `KRCard.tsx` - Nova prop `isResolved`
+O problema e exclusivamente na logica de comparacao dentro do `useMemo`. Os componentes visuais (KRCard, KRTableView) ja recebem `isAlerted` e `isResolved` corretamente - so os IDs calculados estao errados.
 
-- Adicionar prop `isResolved?: boolean`
-- Importar `CheckCircle` do lucide-react
-- Remover `ring-2 ring-orange-400` da classe do Card
-- Quando `isAlerted` (pendente): aplicar classe CSS com animacao de pulse-wave (keyframes customizado via Tailwind `animate-` ou inline style)
-- Quando `isResolved`: mostrar icone `CheckCircle` azul com tooltip "Variacao justificada via FCA"
-- Adicionar keyframes no `index.css` para a animacao de onda:
+## Resultado esperado
 
-```css
-@keyframes pulse-wave {
-  0% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.5); }
-  70% { box-shadow: 0 0 0 10px rgba(251, 146, 60, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0); }
-}
-```
-
-### 3. `KRTableView.tsx` - Nova prop `resolvedKRIds`
-
-- Adicionar prop `resolvedKRIds?: Set<string>`
-- Na renderizacao de cada linha:
-  - Se pendente (alertedKRIds): manter fundo laranja + icone laranja (atual)
-  - Se resolvido (resolvedKRIds): fundo azul claro + icone `CheckCircle` azul + tooltip
-
-### Resumo dos arquivos
-
-| Arquivo | Mudanca |
-|---|---|
-| `src/components/indicators/IndicatorsPage.tsx` | Adicionar `resolvedKRIds` useMemo, passar para filhos |
-| `src/components/indicators/KRCard.tsx` | Nova prop `isResolved`, animacao pulse-wave para pendente, icone azul para resolvido |
-| `src/components/indicators/KRTableView.tsx` | Nova prop `resolvedKRIds`, fundo azul + icone para resolvidos |
-| `src/index.css` | Keyframes `pulse-wave` para animacao de onda laranja |
+- **Ticket Medio** (mensal, sem FCA): continua piscando laranja com icone de alerta (pendente)
+- **NPS** (trimestral, com FCA para Q2): para de piscar, exibe icone azul de check (resolvido)
+- Funciona corretamente para todas as frequencias: mensal, bimestral, trimestral, semestral e anual
 
