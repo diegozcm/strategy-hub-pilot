@@ -1182,16 +1182,16 @@ export const IndicatorsPage: React.FC = () => {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant={alertFilterActive ? "default" : "outline"}
-                size="default"
+              <button
                 className={cn(
-                  "relative gap-2 transition-all",
+                  "relative group flex items-center justify-center w-11 h-11 rounded-xl border-2 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                   alertTotalInContext === 0
-                    ? "text-muted-foreground opacity-50 cursor-default"
+                    ? "border-muted text-muted-foreground/40 cursor-default"
                     : alertFilterActive
-                      ? "bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
-                      : "text-orange-500 border-orange-300 hover:bg-orange-50 hover:border-orange-400"
+                      ? "border-orange-400 bg-orange-500 text-white shadow-[0_0_16px_rgba(249,115,22,0.4)] scale-105"
+                      : alertCountInContext > 0
+                        ? "border-orange-300 bg-orange-50 dark:bg-orange-950/30 text-orange-500 hover:border-orange-400 hover:shadow-[0_0_12px_rgba(249,115,22,0.2)] hover:scale-105"
+                        : "border-blue-300 bg-blue-50 dark:bg-blue-950/30 text-blue-500 hover:border-blue-400 hover:shadow-[0_0_12px_rgba(59,130,246,0.2)] hover:scale-105"
                 )}
                 onClick={() => {
                   if (alertTotalInContext > 0) {
@@ -1200,15 +1200,23 @@ export const IndicatorsPage: React.FC = () => {
                 }}
                 disabled={alertTotalInContext === 0}
               >
+                {/* Pulse ring behind icon when there are pending alerts */}
+                {alertCountInContext > 0 && !alertFilterActive && (
+                  <span className="absolute inset-0 rounded-xl animate-ping bg-orange-400/20 pointer-events-none" style={{ animationDuration: '2s' }} />
+                )}
+
                 <AlertTriangle className={cn(
-                  "w-4 h-4",
-                  alertTotalInContext === 0 ? "opacity-40" : ""
+                  "w-5 h-5 transition-transform duration-300",
+                  alertTotalInContext > 0 && !alertFilterActive && "group-hover:rotate-12",
+                  alertFilterActive && "rotate-0"
                 )} />
+
+                {/* Badge */}
                 {alertTotalInContext > 0 && (
                   <span className={cn(
-                    "absolute -top-2 -right-2 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center",
+                    "absolute -top-1.5 -right-1.5 text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center shadow-md transition-all duration-300 ring-2 ring-background",
                     alertFilterActive
-                      ? "bg-white text-orange-600"
+                      ? "bg-white text-orange-600 scale-110"
                       : alertCountInContext > 0
                         ? "bg-orange-500 text-white"
                         : "bg-blue-500 text-white"
@@ -1216,16 +1224,16 @@ export const IndicatorsPage: React.FC = () => {
                     {alertCountInContext > 0 ? alertCountInContext : '✓'}
                   </span>
                 )}
-              </Button>
+              </button>
             </TooltipTrigger>
-            <TooltipContent>
+            <TooltipContent side="bottom">
               {alertTotalInContext === 0
                 ? "Sem alertas de variação"
                 : alertFilterActive
-                  ? "Clique para desativar filtro de alertas"
+                  ? "Clique para desativar filtro"
                   : alertCountInContext > 0
-                    ? `${alertCountInContext} KR(s) com variação pendente de FCA`
-                    : "Todos os alertas de variação foram justificados"
+                    ? `${alertCountInContext} variação(ões) pendente(s) de FCA`
+                    : "Todas as variações justificadas ✓"
               }
             </TooltipContent>
           </Tooltip>
