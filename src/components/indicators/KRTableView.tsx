@@ -2,7 +2,7 @@ import React, { useMemo, useRef } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { TrendingUp, TrendingDown, Target, Activity, AlertTriangle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, Activity, AlertTriangle, CheckCircle } from 'lucide-react';
 import { KeyResult, StrategicObjective } from '@/types/strategic-map';
 import { cn } from '@/lib/utils';
 import { ExportModal } from './ExportModal';
@@ -37,6 +37,7 @@ interface KRTableViewProps {
   exportModalOpen: boolean;
   setExportModalOpen: (open: boolean) => void;
   alertedKRIds?: Set<string>;
+  resolvedKRIds?: Set<string>;
 }
 
 // Period ranges for each frequency type
@@ -171,6 +172,7 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
   exportModalOpen,
   setExportModalOpen,
   alertedKRIds,
+  resolvedKRIds,
 }) => {
   // Ref for table export
   const tableRef = useRef<HTMLDivElement>(null);
@@ -494,6 +496,7 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
                 const { objective, pillar } = getObjectiveInfo(kr.objective_id);
                 const efficiencyBadge = eficiencia !== null ? getEfficiencyBadge(eficiencia) : null;
                 const isKRAlerted = alertedKRIds?.has(kr.id) ?? false;
+                const isKRResolved = resolvedKRIds?.has(kr.id) ?? false;
                 
                 // Check if resultado is positive (considering minimize direction)
                 const isResultadoPositive = resultado !== null 
@@ -507,7 +510,8 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
                       "cursor-pointer transition-colors",
                       index % 2 === 0 ? "bg-background" : "bg-muted/20",
                       "hover:bg-accent/10",
-                      isKRAlerted && "bg-orange-50/40 dark:bg-orange-950/20"
+                      isKRAlerted && "bg-orange-50/40 dark:bg-orange-950/20",
+                      isKRResolved && !isKRAlerted && "bg-blue-50/30 dark:bg-blue-950/10"
                     )}
                     onClick={() => onKRClick(kr)}
                   >
@@ -521,6 +525,16 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
                               </TooltipTrigger>
                               <TooltipContent side="top" className="text-xs">
                                 Variação acima do limite sem FCA vinculado
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                          {isKRResolved && !isKRAlerted && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <CheckCircle className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs">
+                                Variação justificada via FCA
                               </TooltipContent>
                             </Tooltip>
                           )}
