@@ -86,7 +86,7 @@ export const KRFiltersSheet: React.FC<KRFiltersSheetProps> = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto overflow-x-hidden">
         <SheetHeader className="pb-4 border-b border-border">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-lg font-semibold">Filtros</SheetTitle>
@@ -102,20 +102,20 @@ export const KRFiltersSheet: React.FC<KRFiltersSheetProps> = ({
             <RadioGroup value={pillarFilter} onValueChange={handlePillarChange} className="gap-1.5">
               <label
                 className={cn(
-                  "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all",
+                  "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all min-w-0",
                   pillarFilter === 'all'
                     ? "border-primary bg-primary/5 shadow-sm"
                     : "border-border hover:bg-accent/50"
                 )}
               >
                 <RadioGroupItem value="all" id="pillar-all" />
-                <span className="text-sm font-medium">Todos os pilares</span>
+                <span className="text-sm font-medium truncate">Todos os pilares</span>
               </label>
               {pillars.map(pillar => (
                 <label
                   key={pillar.id}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all",
+                    "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all min-w-0",
                     pillarFilter === pillar.id
                       ? "border-primary bg-primary/5 shadow-sm"
                       : "border-border hover:bg-accent/50"
@@ -126,7 +126,7 @@ export const KRFiltersSheet: React.FC<KRFiltersSheetProps> = ({
                     className="w-3 h-3 rounded-full flex-shrink-0"
                     style={{ backgroundColor: pillar.color }}
                   />
-                  <span className="text-sm font-medium">{pillar.name}</span>
+                  <span className="text-sm font-medium truncate">{pillar.name}</span>
                 </label>
               ))}
             </RadioGroup>
@@ -140,20 +140,20 @@ export const KRFiltersSheet: React.FC<KRFiltersSheetProps> = ({
             <RadioGroup value={objectiveFilter} onValueChange={setObjectiveFilter} className="gap-1.5">
               <label
                 className={cn(
-                  "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all",
+                  "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all min-w-0",
                   objectiveFilter === 'all'
                     ? "border-primary bg-primary/5 shadow-sm"
                     : "border-border hover:bg-accent/50"
                 )}
               >
                 <RadioGroupItem value="all" id="obj-all" />
-                <span className="text-sm font-medium">Todos os objetivos</span>
+                <span className="text-sm font-medium truncate">Todos os objetivos</span>
               </label>
               {filteredObjectives.map(obj => (
                 <label
                   key={obj.id}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all",
+                    "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all min-w-0",
                     objectiveFilter === obj.id
                       ? "border-primary bg-primary/5 shadow-sm"
                       : "border-border hover:bg-accent/50"
@@ -174,20 +174,20 @@ export const KRFiltersSheet: React.FC<KRFiltersSheetProps> = ({
             <RadioGroup value={ownerFilter} onValueChange={setOwnerFilter} className="gap-1.5">
               <label
                 className={cn(
-                  "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all",
+                  "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all min-w-0",
                   ownerFilter === 'all'
                     ? "border-primary bg-primary/5 shadow-sm"
                     : "border-border hover:bg-accent/50"
                 )}
               >
                 <RadioGroupItem value="all" id="owner-all" />
-                <span className="text-sm font-medium">Todos os responsáveis</span>
+                <span className="text-sm font-medium truncate">Todos os responsáveis</span>
               </label>
               {companyUsers.map(user => (
                 <label
                   key={user.user_id}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all",
+                    "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all min-w-0",
                     ownerFilter === user.user_id
                       ? "border-primary bg-primary/5 shadow-sm"
                       : "border-border hover:bg-accent/50"
@@ -216,7 +216,7 @@ export const KRFiltersSheet: React.FC<KRFiltersSheetProps> = ({
                 <label
                   key={option.value}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all",
+                    "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all min-w-0",
                     progressFilter === option.value
                       ? "border-primary bg-primary/5 shadow-sm"
                       : "border-border hover:bg-accent/50"
@@ -229,7 +229,7 @@ export const KRFiltersSheet: React.FC<KRFiltersSheetProps> = ({
                       style={{ backgroundColor: option.color }}
                     />
                   )}
-                  <span className="text-sm font-medium">{option.label}</span>
+                  <span className="text-sm font-medium truncate">{option.label}</span>
                   {option.description && (
                     <span className="text-xs text-muted-foreground ml-auto">
                       {option.description}
