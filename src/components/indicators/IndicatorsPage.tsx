@@ -127,6 +127,7 @@ export const IndicatorsPage: React.FC = () => {
   const [objectiveFilter, setObjectiveFilter] = useState('all');
   const [pillarFilter, setPillarFilter] = useState('all');
   const [progressFilter, setProgressFilter] = useState('all');
+  const [ownerFilter, setOwnerFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [exportModalOpen, setExportModalOpen] = useState(false);
   const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
@@ -250,8 +251,9 @@ export const IndicatorsPage: React.FC = () => {
     if (pillarFilter !== 'all') count++;
     if (objectiveFilter !== 'all') count++;
     if (progressFilter !== 'all') count++;
+    if (ownerFilter !== 'all') count++;
     return count;
-  }, [pillarFilter, objectiveFilter, progressFilter]);
+  }, [pillarFilter, objectiveFilter, progressFilter, ownerFilter]);
 
   // Sincronizar selectedKeyResult com a lista atualizada de keyResults
   useEffect(() => {
@@ -839,7 +841,9 @@ export const IndicatorsPage: React.FC = () => {
       }
     }
     
-    return matchesSearch && matchesPriority && matchesObjective && matchesPillar;
+    const matchesOwner = ownerFilter === 'all' || keyResult.assigned_owner_id === ownerFilter;
+    
+    return matchesSearch && matchesPriority && matchesObjective && matchesPillar && matchesOwner;
   });
 
   // Alert count respecting context filters (pillar/objective/search)
@@ -1250,8 +1254,11 @@ export const IndicatorsPage: React.FC = () => {
         setObjectiveFilter={setObjectiveFilter}
         progressFilter={progressFilter}
         setProgressFilter={setProgressFilter}
+        ownerFilter={ownerFilter}
+        setOwnerFilter={setOwnerFilter}
         pillars={pillars}
         objectives={objectives}
+        companyUsers={companyUsers}
         activeFilterCount={activeFilterCount}
       />
 

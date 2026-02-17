@@ -3,8 +3,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { X, RotateCcw } from 'lucide-react';
+import { X, RotateCcw, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface Pillar {
   id: string;
@@ -18,6 +19,14 @@ interface Objective {
   pillar_id: string;
 }
 
+interface CompanyUser {
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  avatar_url?: string;
+}
+
 interface KRFiltersSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,8 +36,11 @@ interface KRFiltersSheetProps {
   setObjectiveFilter: (value: string) => void;
   progressFilter: string;
   setProgressFilter: (value: string) => void;
+  ownerFilter: string;
+  setOwnerFilter: (value: string) => void;
   pillars: Pillar[];
   objectives: Objective[];
+  companyUsers: CompanyUser[];
   activeFilterCount: number;
 }
 
@@ -49,8 +61,11 @@ export const KRFiltersSheet: React.FC<KRFiltersSheetProps> = ({
   setObjectiveFilter,
   progressFilter,
   setProgressFilter,
+  ownerFilter,
+  setOwnerFilter,
   pillars,
   objectives,
+  companyUsers,
   activeFilterCount,
 }) => {
   const filteredObjectives = objectives.filter(
@@ -61,6 +76,7 @@ export const KRFiltersSheet: React.FC<KRFiltersSheetProps> = ({
     setPillarFilter('all');
     setObjectiveFilter('all');
     setProgressFilter('all');
+    setOwnerFilter('all');
   };
 
   const handlePillarChange = (value: string) => {
@@ -145,6 +161,46 @@ export const KRFiltersSheet: React.FC<KRFiltersSheetProps> = ({
                 >
                   <RadioGroupItem value={obj.id} id={`obj-${obj.id}`} />
                   <span className="text-sm font-medium truncate">{obj.title}</span>
+                </label>
+              ))}
+            </RadioGroup>
+          </div>
+
+          {/* RESPONSÁVEL */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Responsável
+            </h3>
+            <RadioGroup value={ownerFilter} onValueChange={setOwnerFilter} className="gap-1.5">
+              <label
+                className={cn(
+                  "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all",
+                  ownerFilter === 'all'
+                    ? "border-primary bg-primary/5 shadow-sm"
+                    : "border-border hover:bg-accent/50"
+                )}
+              >
+                <RadioGroupItem value="all" id="owner-all" />
+                <span className="text-sm font-medium">Todos os responsáveis</span>
+              </label>
+              {companyUsers.map(user => (
+                <label
+                  key={user.user_id}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-all",
+                    ownerFilter === user.user_id
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-border hover:bg-accent/50"
+                  )}
+                >
+                  <RadioGroupItem value={user.user_id} id={`owner-${user.user_id}`} />
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={user.avatar_url} />
+                    <AvatarFallback className="text-[10px] bg-muted">
+                      {user.first_name?.[0]}{user.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium truncate">{user.first_name} {user.last_name}</span>
                 </label>
               ))}
             </RadioGroup>
