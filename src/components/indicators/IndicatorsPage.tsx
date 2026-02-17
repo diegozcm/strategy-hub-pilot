@@ -203,26 +203,36 @@ export const IndicatorsPage: React.FC = () => {
       });
   }, [keyResults]);
 
-  // Calculate alerted KR IDs
-  const alertedKRIds = useMemo(() => {
-    const ids = new Set<string>();
+  // Calculate alerted KR IDs (pendente) and resolved KR IDs (todos os meses com variação já têm FCA)
+  const { alertedKRIds, resolvedKRIds } = useMemo(() => {
+    const alerted = new Set<string>();
+    const resolved = new Set<string>();
     keyResults.forEach(kr => {
       if (kr.variation_threshold == null) return;
       const targets = (kr.monthly_targets as Record<string, number>) || {};
       const actuals = (kr.monthly_actual as Record<string, number>) || {};
       const coveredMonths = fcasByKR[kr.id] || [];
+      let hasVariation = false;
+      let hasPending = false;
       for (const month of Object.keys(actuals)) {
         const target = targets[month];
         const actual = actuals[month];
         if (target == null || actual == null || target === 0) continue;
         const variation = Math.abs(actual - target) / Math.abs(target) * 100;
-        if (variation > kr.variation_threshold && !coveredMonths.includes(month)) {
-          ids.add(kr.id);
-          break;
+        if (variation > kr.variation_threshold) {
+          hasVariation = true;
+          if (!coveredMonths.includes(month)) {
+            hasPending = true;
+          }
         }
       }
+      if (hasPending) {
+        alerted.add(kr.id);
+      } else if (hasVariation) {
+        resolved.add(kr.id);
+      }
     });
-    return ids;
+    return { alertedKRIds: alerted, resolvedKRIds: resolved };
   }, [keyResults, fcasByKR]);
 
   // Active filter count
@@ -1235,6 +1245,7 @@ export const IndicatorsPage: React.FC = () => {
           exportModalOpen={exportModalOpen}
           setExportModalOpen={setExportModalOpen}
           alertedKRIds={alertedKRIds}
+          resolvedKRIds={resolvedKRIds}
         />
       ) : (
         <>
@@ -1259,6 +1270,7 @@ export const IndicatorsPage: React.FC = () => {
                   onClick={() => openKROverviewModal(keyResult)}
                   isOwned={isOwned}
                   isAlerted={alertedKRIds.has(keyResult.id)}
+                  isResolved={resolvedKRIds.has(keyResult.id)}
                 />
               );
             })}

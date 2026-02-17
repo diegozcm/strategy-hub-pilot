@@ -5,7 +5,7 @@ import { KeyResult } from '@/types/strategic-map';
 import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
 import { formatValueWithUnit, cn } from '@/lib/utils';
 import { useKRMetrics } from '@/hooks/useKRMetrics';
-import { User, AlertTriangle } from 'lucide-react';
+import { User, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface KRCardProps {
@@ -25,6 +25,7 @@ interface KRCardProps {
   onClick: () => void;
   isOwned?: boolean;
   isAlerted?: boolean;
+  isResolved?: boolean;
 }
 
 export const KRCard: React.FC<KRCardProps> = ({
@@ -41,6 +42,7 @@ export const KRCard: React.FC<KRCardProps> = ({
   onClick,
   isOwned = false,
   isAlerted = false,
+  isResolved = false,
 }) => {
   const metrics = useKRMetrics(keyResult, {
     selectedMonth,
@@ -90,9 +92,9 @@ export const KRCard: React.FC<KRCardProps> = ({
     <TooltipProvider>
     <Card 
       className={cn(
-        "h-full cursor-pointer hover:shadow-lg transition-all overflow-hidden",
+        "h-full cursor-pointer hover:shadow-lg transition-all overflow-hidden rounded-lg",
         isOwned && "ring-2 ring-primary ring-offset-2",
-        isAlerted && "ring-2 ring-orange-400 ring-offset-2 shadow-orange-100 dark:shadow-orange-900/20"
+        isAlerted && "animate-pulse-wave"
       )}
       onClick={onClick}
     >
@@ -151,6 +153,18 @@ export const KRCard: React.FC<KRCardProps> = ({
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">
                 Variação pendente de FCA
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {isResolved && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex-shrink-0">
+                  <CheckCircle className="h-4 w-4 text-blue-500" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                Variação justificada via FCA
               </TooltipContent>
             </Tooltip>
           )}
