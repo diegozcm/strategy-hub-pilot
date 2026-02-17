@@ -1,56 +1,61 @@
 
+# Plano: Adicionar filtro de Responsavel no painel de filtros de KRs
 
-# Plano: Corrigir deteccao de alerta resolvido para KRs com frequencia nao-mensal
+## O que sera feito
 
-## Problema identificado
+Adicionar uma nova secao "Responsavel" no Sheet de filtros (KRFiltersSheet), permitindo filtrar KRs pelo dono atribuido (assigned_owner_id). Cada opcao mostrara a foto de perfil (avatar) do usuario.
 
-A logica de calculo de alertas na `IndicatorsPage.tsx` compara as chaves de `monthly_actual` (ex: `"2026-04"`) diretamente com o `linked_update_month` dos FCAs. Porem, para KRs com frequencia trimestral, semestral, bimestral ou anual, o FCA e salvo com a chave do periodo (ex: `"2026-Q2"`), nao com a chave do mes.
+## Design visual
 
-**Dados reais do bug:**
-- NPS (trimestral): `monthly_actual` tem chave `"2026-04"`, mas o FCA foi salvo com `linked_update_month = "2026-Q2"`
-- A comparacao `coveredMonths.includes("2026-04")` falha porque o array contem `"2026-Q2"`
-- Resultado: NPS aparece como "pendente" (piscando laranja) mesmo tendo FCA criado
+A nova secao aparecera entre "Objetivo" e "Status de Desempenho" no Sheet lateral:
 
-## Solucao
+```text
++----------------------------------+
+| Filtros                          |
++----------------------------------+
+| PILAR ESTRATEGICO                |
+| (o) Todos os pilares             |
+| (o) Financeiro                   |
++----------------------------------+
+| OBJETIVO                         |
+| (o) Todos os objetivos           |
+| (o) Aumentar receita             |
++----------------------------------+
+| RESPONSAVEL              << NOVO |
+| (o) Todos os responsaveis        |
+| (o) [avatar] Joao Silva          |
+| (o) [avatar] Maria Santos        |
++----------------------------------+
+| STATUS DE DESEMPENHO             |
+| (o) Todos os status              |
+| (o) Excelente  >105%             |
++----------------------------------+
+```
 
-Criar um mapeamento bidirecional entre chaves de meses e chaves de periodos na hora de verificar se um mes esta coberto por um FCA. 
-
-Para KRs com frequencia nao-mensal:
-- Obter os periodos via `getPeriodsForFrequency(frequency, year)`
-- Para cada mes em `monthly_actual`, encontrar qual periodo contem aquele mes (usando `monthKeys`)
-- Verificar se existe um FCA com `linked_update_month` igual a chave do periodo OU a chave do mes
+Cada item mostrara o Avatar do usuario com fallback de iniciais, seguindo o mesmo padrao visual ja usado no projeto (componente Avatar do shadcn).
 
 ## Mudancas tecnicas
 
-### Arquivo: `src/components/indicators/IndicatorsPage.tsx`
+### 1. `KRFiltersSheet.tsx`
 
-Na query de FCAs (linhas 189-203):
-- Tambem carregar o campo `frequency` de cada KR junto para usar na conversao (ja temos `keyResults` com frequency disponivel, entao nao precisa mudar a query)
+- Adicionar novas props: `ownerFilter`, `setOwnerFilter`, e `companyUsers` (array de usuarios)
+- Importar `Avatar`, `AvatarImage`, `AvatarFallback` de `@/components/ui/avatar`
+- Importar icone `User` do lucide-react
+- Renderizar nova secao "Responsavel" com RadioGroup entre Objetivo e Status
+- Cada usuario mostra avatar (foto ou iniciais) + nome completo
+- Opcao "Todos os responsaveis" como default
+- Incluir `ownerFilter` no `handleClearFilters`
 
-No `useMemo` de calculo de alertas (linhas 207-236):
-1. Importar `getPeriodsForFrequency` e `isFrequencyPeriodBased` de `@/lib/krFrequencyHelpers`
-2. Para cada KR, verificar se a frequencia e baseada em periodos
-3. Se for baseada em periodos, construir um mapa de mes-para-periodo usando `getPeriodsForFrequency`
-4. Na verificacao `coveredMonths.includes(month)`, tambem verificar se o periodo correspondente ao mes esta coberto
+### 2. `IndicatorsPage.tsx`
 
-Logica simplificada:
+- Adicionar estado `ownerFilter` (useState, default `'all'`)
+- Passar `ownerFilter`, `setOwnerFilter` e `companyUsers` para `KRFiltersSheet`
+- No filtro de `contextFilteredKeyResults`, adicionar verificacao: `ownerFilter === 'all' || kr.assigned_owner_id === ownerFilter`
+- Incrementar `activeFilterCount` quando `ownerFilter !== 'all'`
 
-```
-Para cada mes com variacao excedida:
-  Se frequencia e mensal:
-    Verificar se coveredMonths inclui o mes (ex: "2026-04")
-  Se frequencia e baseada em periodo:
-    Encontrar o periodo que contem o mes (ex: "2026-04" -> "2026-Q2")
-    Verificar se coveredMonths inclui o periodo OU o mes
-```
+### Resumo dos arquivos
 
-### Nenhum outro arquivo precisa ser alterado
-
-O problema e exclusivamente na logica de comparacao dentro do `useMemo`. Os componentes visuais (KRCard, KRTableView) ja recebem `isAlerted` e `isResolved` corretamente - so os IDs calculados estao errados.
-
-## Resultado esperado
-
-- **Ticket Medio** (mensal, sem FCA): continua piscando laranja com icone de alerta (pendente)
-- **NPS** (trimestral, com FCA para Q2): para de piscar, exibe icone azul de check (resolvido)
-- Funciona corretamente para todas as frequencias: mensal, bimestral, trimestral, semestral e anual
-
+| Arquivo | Mudanca |
+|---|---|
+| `src/components/indicators/KRFiltersSheet.tsx` | Nova secao "Responsavel" com avatares |
+| `src/components/indicators/IndicatorsPage.tsx` | Novo estado ownerFilter + logica de filtragem + passar props |
