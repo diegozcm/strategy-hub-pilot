@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, CalendarDays, User, Target, AlertTriangle, CheckCircle, Activity, Trash2, Save, X, MoreVertical, AlertCircle, LayoutGrid, Table2 } from 'lucide-react';
+import { Plus, Download, Search, Edit, BarChart3, TrendingUp, TrendingDown, Calendar, CalendarDays, User, Target, AlertTriangle, CheckCircle, Activity, Trash2, Save, X, MoreVertical, AlertCircle, LayoutGrid, Table2, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -38,6 +38,8 @@ import { usePlanPeriodOptions } from '@/hooks/usePlanPeriodOptions';
 import { useKRPermissions } from '@/hooks/useKRPermissions';
 import { cn } from '@/lib/utils';
 import { SmartPeriodSelector } from '@/components/ui/SmartPeriodSelector';
+import { KRFiltersSheet } from './KRFiltersSheet';
+import { supabase as supabaseClient } from '@/integrations/supabase/client';
 
 // Converte quarter + ano para start_month e end_month
 const quarterToMonths = (quarter: 1 | 2 | 3 | 4, year: number): { start_month: string; end_month: string } => {
@@ -126,6 +128,9 @@ export const IndicatorsPage: React.FC = () => {
   const [progressFilter, setProgressFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [filtersSheetOpen, setFiltersSheetOpen] = useState(false);
+  const [alertFilterActive, setAlertFilterActive] = useState(false);
+  const [fcasByKR, setFcasByKR] = useState<Record<string, string[]>>({});
   
   // Filtrar quarters para mostrar apenas os que têm KRs registrados
   const filteredQuarterOptions = useMemo(() => {
@@ -172,6 +177,62 @@ export const IndicatorsPage: React.FC = () => {
     setKeyResults(keyResultsData);
     setLoading(dataLoading);
   }, [objectivesData, pillarsData, keyResultsData, dataLoading]);
+
+  // Load FCAs for KRs with variation_threshold to detect alerts
+  useEffect(() => {
+    const krsWithThreshold = keyResults.filter(kr => kr.variation_threshold != null);
+    if (krsWithThreshold.length === 0) {
+      setFcasByKR({});
+      return;
+    }
+    const krIds = krsWithThreshold.map(kr => kr.id);
+    supabase
+      .from('kr_fca')
+      .select('key_result_id, linked_update_month')
+      .in('key_result_id', krIds)
+      .then(({ data, error }) => {
+        if (error) { console.error('Error loading FCAs for alerts:', error); return; }
+        const map: Record<string, string[]> = {};
+        (data || []).forEach(row => {
+          if (row.linked_update_month) {
+            if (!map[row.key_result_id]) map[row.key_result_id] = [];
+            map[row.key_result_id].push(row.linked_update_month);
+          }
+        });
+        setFcasByKR(map);
+      });
+  }, [keyResults]);
+
+  // Calculate alerted KR IDs
+  const alertedKRIds = useMemo(() => {
+    const ids = new Set<string>();
+    keyResults.forEach(kr => {
+      if (kr.variation_threshold == null) return;
+      const targets = (kr.monthly_targets as Record<string, number>) || {};
+      const actuals = (kr.monthly_actual as Record<string, number>) || {};
+      const coveredMonths = fcasByKR[kr.id] || [];
+      for (const month of Object.keys(actuals)) {
+        const target = targets[month];
+        const actual = actuals[month];
+        if (target == null || actual == null || target === 0) continue;
+        const variation = Math.abs(actual - target) / Math.abs(target) * 100;
+        if (variation > kr.variation_threshold && !coveredMonths.includes(month)) {
+          ids.add(kr.id);
+          break;
+        }
+      }
+    });
+    return ids;
+  }, [keyResults, fcasByKR]);
+
+  // Active filter count
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (pillarFilter !== 'all') count++;
+    if (objectiveFilter !== 'all') count++;
+    if (progressFilter !== 'all') count++;
+    return count;
+  }, [pillarFilter, objectiveFilter, progressFilter]);
 
   // Sincronizar selectedKeyResult com a lista atualizada de keyResults
   useEffect(() => {
@@ -762,8 +823,16 @@ export const IndicatorsPage: React.FC = () => {
     return matchesSearch && matchesPriority && matchesObjective && matchesPillar;
   });
 
-  // Final filtered KRs (adds progress filter on top of context filters)
+  // Alert count respecting context filters (pillar/objective/search)
+  const alertCountInContext = useMemo(() => {
+    return contextFilteredKeyResults.filter(kr => alertedKRIds.has(kr.id)).length;
+  }, [contextFilteredKeyResults, alertedKRIds]);
+
+  // Final filtered KRs (adds progress filter + alert filter on top of context filters)
   const filteredKeyResults = contextFilteredKeyResults.filter(keyResult => {
+    // Alert filter
+    if (alertFilterActive && !alertedKRIds.has(keyResult.id)) return false;
+
     // Check progress match
     let matchesProgress = progressFilter === 'all';
     if (!matchesProgress) {
@@ -1036,101 +1105,112 @@ export const IndicatorsPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col lg:flex-row gap-4 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Buscar por nome..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      {/* Filters Bar */}
+      <div className="flex items-center gap-3 mb-6">
+        {/* Left: Search + Filters button */}
+        <div className="flex items-center gap-2 flex-1">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Buscar por nome..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <Button
+            variant="outline"
+            size="default"
+            className="gap-2 relative"
+            onClick={() => setFiltersSheetOpen(true)}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            Filtros
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+
+          {viewMode === 'table' && (
+            <Button 
+              variant="outline" 
+              size="default" 
+              className="gap-2"
+              onClick={() => setExportModalOpen(true)}
+            >
+              <Download className="h-4 w-4" />
+              Exportar
+            </Button>
+          )}
         </div>
-        
-        <div className="flex flex-col sm:flex-row gap-2 lg:gap-4 items-center">
-          <Select value={pillarFilter} onValueChange={(v) => { setPillarFilter(v); setObjectiveFilter('all'); }}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Todos os pilares" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os pilares</SelectItem>
-              {pillars.map((pillar) => (
-                <SelectItem key={pillar.id} value={pillar.id}>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: pillar.color }}
-                    />
-                    {pillar.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
-          <Select value={objectiveFilter} onValueChange={setObjectiveFilter}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Todos os objetivos" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os objetivos</SelectItem>
-              {objectives
-                .filter(obj => pillarFilter === 'all' || obj.pillar_id === pillarFilter)
-                .map((objective) => (
-                  <SelectItem key={objective.id} value={objective.id}>
-                    {objective.title}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-
-           <Select value={progressFilter} onValueChange={setProgressFilter}>
-             <SelectTrigger className="w-full sm:w-48">
-               <SelectValue placeholder="Todos os status" />
-             </SelectTrigger>
-             <SelectContent>
-               <SelectItem value="all">Todos os status</SelectItem>
-               <SelectItem value="excellent">
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-full bg-blue-500" />
-                   Excelente (&gt;105%)
-                 </div>
-               </SelectItem>
-               <SelectItem value="success">
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-full bg-green-500" />
-                   No Alvo (100-105%)
-                 </div>
-               </SelectItem>
-               <SelectItem value="attention">
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                   Atenção (71-99%)
-                 </div>
-               </SelectItem>
-               <SelectItem value="critical">
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-full bg-red-500" />
-                   Críticos (&lt;71%)
-                 </div>
-               </SelectItem>
-             </SelectContent>
-           </Select>
-
-           {viewMode === 'table' && (
-             <Button 
-               variant="outline" 
-               size="sm" 
-               className="gap-2"
-               onClick={() => setExportModalOpen(true)}
-             >
-               <Download className="h-4 w-4" />
-               Exportar
-             </Button>
-           )}
-        </div>
+        {/* Right: Alerts button */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={alertFilterActive ? "default" : "outline"}
+                size="default"
+                className={cn(
+                  "relative gap-2 transition-all",
+                  alertCountInContext === 0
+                    ? "text-muted-foreground opacity-50 cursor-default"
+                    : alertFilterActive
+                      ? "bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
+                      : "text-orange-500 border-orange-300 hover:bg-orange-50 hover:border-orange-400"
+                )}
+                onClick={() => {
+                  if (alertCountInContext > 0) {
+                    setAlertFilterActive(prev => !prev);
+                  }
+                }}
+                disabled={alertCountInContext === 0}
+              >
+                <AlertTriangle className={cn(
+                  "w-4 h-4",
+                  alertCountInContext === 0 ? "opacity-40" : ""
+                )} />
+                {alertCountInContext > 0 && (
+                  <span className={cn(
+                    "absolute -top-2 -right-2 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center",
+                    alertFilterActive
+                      ? "bg-white text-orange-600"
+                      : "bg-orange-500 text-white"
+                  )}>
+                    {alertCountInContext}
+                  </span>
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {alertCountInContext === 0
+                ? "Sem alertas de variação"
+                : alertFilterActive
+                  ? "Clique para desativar filtro de alertas"
+                  : `${alertCountInContext} KR(s) com variação pendente de FCA`
+              }
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
+
+      {/* Filters Sheet */}
+      <KRFiltersSheet
+        open={filtersSheetOpen}
+        onOpenChange={setFiltersSheetOpen}
+        pillarFilter={pillarFilter}
+        setPillarFilter={setPillarFilter}
+        objectiveFilter={objectiveFilter}
+        setObjectiveFilter={setObjectiveFilter}
+        progressFilter={progressFilter}
+        setProgressFilter={setProgressFilter}
+        pillars={pillars}
+        objectives={objectives}
+        activeFilterCount={activeFilterCount}
+      />
 
       {/* Key Results View - Cards or Table */}
       {viewMode === 'table' ? (
