@@ -1,76 +1,122 @@
 
-# Plano: Indicador visual de alerta nos Cards e na Tabela RMRE
 
-## Objetivo
+# Plano: Diferenciar KRs com alerta pendente vs resolvido (Cards + Tabela RMRE)
 
-Adicionar um indicador visual nos KRs que estao em alerta (taxa de variacao sem FCA) tanto nos cards quanto nas linhas da tabela RMRE, para que o usuario identifique rapidamente quais KRs precisam de atencao mesmo sem clicar no botao de alertas.
+## Problema atual
+
+Hoje so existe um estado visual: "em alerta" (laranja). Nao ha distincao entre KRs que ja tiveram o FCA respondido e os que ainda estao pendentes. Alem disso, a borda laranja estatica no card nao ficou visualmente atrativa.
+
+## Nova logica de estados
+
+Cada KR com `variation_threshold` pode estar em 3 estados:
+
+| Estado | Condicao | Significado |
+|---|---|---|
+| Sem alerta | Nao tem `variation_threshold` ou nenhum mes excede o limite | Nada a exibir |
+| Alerta resolvido | Tem meses que excedem o limite, mas TODOS ja possuem FCA vinculado | Ja justificado |
+| Alerta pendente | Tem meses que excedem o limite e PELO MENOS UM nao tem FCA | Precisa de atencao |
 
 ---
 
 ## Design visual
 
-### No KRCard
+### Card - Alerta PENDENTE (sem FCA)
 
-Adicionar um icone de alerta (triangulo amarelo/laranja) na area de indicadores de performance, logo abaixo da barra de progresso, ao lado dos MonthlyPerformanceIndicators. O icone tera um tooltip explicando que o KR tem variacao pendente de FCA.
+- Remover a borda `ring-2 ring-orange-400` estatica
+- Adicionar animacao de "pulse wave" (ondas pulsantes de dentro pra fora) na borda do card em laranja
+- Icone `AlertTriangle` laranja com tooltip "Variacao pendente de FCA" (ja existe, manter)
+- A animacao sera um `@keyframes` customizado com box-shadow animado criando efeito de onda radiante laranja
 
-Layout do card com alerta:
+```text
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+   <-- ondas pulsantes laranja
+|  [Titulo do KR]           P:3   |
+|  [Pilar]                        |
++----------------------------------+
+| Atingimento YTD          59.7%   |
+| [=========>          ]           |
+|                                  |
+| ⚠ ◉ ○ ○ ○    (icone laranja)    |
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~+
+```
+
+### Card - Alerta RESOLVIDO (FCA feito)
+
+- Sem animacao de onda, sem borda especial
+- Icone `CheckCircle` azul/verde ao lado dos indicadores mensais com tooltip "Variacao justificada via FCA"
+- Visual discreto, so para informar que havia variacao mas ja foi tratada
 
 ```text
 +----------------------------------+
-| [Titulo do KR]           P:3    |
-| [Pilar]                         |
+|  [Titulo do KR]           P:3   |
+|  [Pilar]                        |
 +----------------------------------+
-| Atingimento YTD          59.7%  |
-| [=========>          ] vermelho  |
+| Atingimento YTD          92.9%   |
+| [==================>   ]         |
 |                                  |
-| ▲ ◉ ○ ○ ○    <-- indicadores    |
-|                                  |
-| Indicador YTD    Meta YTD       |
-| 185,0 score      310,0 score    |
-|                                  |
-| Ultima atualizacao: 17/02/2026  |
+| ✓ ◉ ○ ○ ○    (icone azul)       |
 +----------------------------------+
 ```
 
-O triangulo de alerta (▲) aparece ao lado dos indicadores mensais. E um icone `AlertTriangle` laranja com tooltip "Variacao pendente de FCA".
+### Tabela RMRE - Alerta PENDENTE
 
-### Na Tabela RMRE
+- Fundo laranja sutil na linha (`bg-orange-50/40`) - manter como esta
+- Icone `AlertTriangle` laranja ao lado do titulo - manter como esta
+- Tooltip: "Variacao acima do limite sem FCA vinculado"
 
-Na linha do KR em alerta:
-1. Um icone `AlertTriangle` laranja pequeno ao lado do nome do KR na primeira coluna
-2. Um leve fundo laranja transparente na linha inteira (`bg-orange-50/50` ou similar) para destaque sutil
+### Tabela RMRE - Alerta RESOLVIDO
+
+- Fundo azul/verde sutil na linha (`bg-blue-50/30 dark:bg-blue-950/10`)
+- Icone `CheckCircle` azul ao lado do titulo
+- Tooltip: "Variacao justificada via FCA"
 
 ---
 
 ## Secao tecnica
 
-### Arquivo 1: `src/components/indicators/IndicatorsPage.tsx`
+### 1. `IndicatorsPage.tsx` - Novo calculo: `resolvedKRIds`
 
-Passar `alertedKRIds` como prop para ambos os componentes:
+Adicionar um segundo `useMemo` que calcula os KRs com variacao que JA foram todos resolvidos:
 
-- No `KRCard`: adicionar prop `isAlerted={alertedKRIds.has(keyResult.id)}`
-- No `KRTableView`: adicionar prop `alertedKRIds={alertedKRIds}`
+```
+Para cada KR com variation_threshold:
+  Para cada mes com actual:
+    Se variacao > threshold:
+      Se NÃO tem FCA -> KR esta pendente (ja calculado em alertedKRIds)
+  Se TODOS os meses com variacao tem FCA -> KR esta resolvido
+```
 
-### Arquivo 2: `src/components/indicators/KRCard.tsx`
+Passa `resolvedKRIds` (Set) para `KRCard` e `KRTableView`.
 
-1. Adicionar prop `isAlerted?: boolean`
-2. Importar `AlertTriangle` do lucide-react e `Tooltip` do shadcn
-3. No body do card, na area dos MonthlyPerformanceIndicators, renderizar condicionalmente um icone de alerta laranja com tooltip quando `isAlerted` for true
-4. Opcionalmente adicionar uma borda ou sutil indicacao visual no card (ex: borda esquerda laranja, ou shadow laranja suave)
+### 2. `KRCard.tsx` - Nova prop `isResolved`
 
-### Arquivo 3: `src/components/indicators/KRTableView.tsx`
+- Adicionar prop `isResolved?: boolean`
+- Importar `CheckCircle` do lucide-react
+- Remover `ring-2 ring-orange-400` da classe do Card
+- Quando `isAlerted` (pendente): aplicar classe CSS com animacao de pulse-wave (keyframes customizado via Tailwind `animate-` ou inline style)
+- Quando `isResolved`: mostrar icone `CheckCircle` azul com tooltip "Variacao justificada via FCA"
+- Adicionar keyframes no `index.css` para a animacao de onda:
 
-1. Adicionar prop `alertedKRIds?: Set<string>` na interface
-2. Na renderizacao de cada `TableRow`, verificar se o KR esta no set
-3. Se estiver em alerta:
-   - Adicionar classe de fundo sutil laranja na linha (`bg-orange-50/40 dark:bg-orange-950/20`)
-   - Adicionar icone `AlertTriangle` laranja ao lado do titulo do KR na primeira celula
-   - Tooltip no icone explicando "Variacao acima do limite sem FCA vinculado"
+```css
+@keyframes pulse-wave {
+  0% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.5); }
+  70% { box-shadow: 0 0 0 10px rgba(251, 146, 60, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0); }
+}
+```
 
-### Resumo das mudancas
+### 3. `KRTableView.tsx` - Nova prop `resolvedKRIds`
 
-| Arquivo | Tipo | Mudanca |
-|---|---|---|
-| `IndicatorsPage.tsx` | Editar | Passar `isAlerted` para KRCard e `alertedKRIds` para KRTableView |
-| `KRCard.tsx` | Editar | Adicionar prop `isAlerted`, icone de alerta com tooltip |
-| `KRTableView.tsx` | Editar | Adicionar prop `alertedKRIds`, destaque na linha e icone de alerta |
+- Adicionar prop `resolvedKRIds?: Set<string>`
+- Na renderizacao de cada linha:
+  - Se pendente (alertedKRIds): manter fundo laranja + icone laranja (atual)
+  - Se resolvido (resolvedKRIds): fundo azul claro + icone `CheckCircle` azul + tooltip
+
+### Resumo dos arquivos
+
+| Arquivo | Mudanca |
+|---|---|
+| `src/components/indicators/IndicatorsPage.tsx` | Adicionar `resolvedKRIds` useMemo, passar para filhos |
+| `src/components/indicators/KRCard.tsx` | Nova prop `isResolved`, animacao pulse-wave para pendente, icone azul para resolvido |
+| `src/components/indicators/KRTableView.tsx` | Nova prop `resolvedKRIds`, fundo azul + icone para resolvidos |
+| `src/index.css` | Keyframes `pulse-wave` para animacao de onda laranja |
+
