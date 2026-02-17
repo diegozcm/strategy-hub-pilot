@@ -5,7 +5,8 @@ import { KeyResult } from '@/types/strategic-map';
 import { MonthlyPerformanceIndicators } from '@/components/strategic-map/MonthlyPerformanceIndicators';
 import { formatValueWithUnit, cn } from '@/lib/utils';
 import { useKRMetrics } from '@/hooks/useKRMetrics';
-import { User } from 'lucide-react';
+import { User, AlertTriangle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface KRCardProps {
   keyResult: KeyResult;
@@ -23,6 +24,7 @@ interface KRCardProps {
   selectedBimonthYear?: number;
   onClick: () => void;
   isOwned?: boolean;
+  isAlerted?: boolean;
 }
 
 export const KRCard: React.FC<KRCardProps> = ({
@@ -38,6 +40,7 @@ export const KRCard: React.FC<KRCardProps> = ({
   selectedBimonthYear,
   onClick,
   isOwned = false,
+  isAlerted = false,
 }) => {
   const metrics = useKRMetrics(keyResult, {
     selectedMonth,
@@ -84,10 +87,12 @@ export const KRCard: React.FC<KRCardProps> = ({
   };
 
   return (
+    <TooltipProvider>
     <Card 
       className={cn(
         "h-full cursor-pointer hover:shadow-lg transition-all overflow-hidden",
-        isOwned && "ring-2 ring-primary ring-offset-2"
+        isOwned && "ring-2 ring-primary ring-offset-2",
+        isAlerted && "ring-2 ring-orange-400 ring-offset-2 shadow-orange-100 dark:shadow-orange-900/20"
       )}
       onClick={onClick}
     >
@@ -136,7 +141,19 @@ export const KRCard: React.FC<KRCardProps> = ({
         </div>
 
         {/* Indicadores de performance por período */}
-        <div className="pt-2">
+        <div className="pt-2 flex items-center gap-2">
+          {isAlerted && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex-shrink-0">
+                  <AlertTriangle className="h-4 w-4 text-orange-500" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                Variação pendente de FCA
+              </TooltipContent>
+            </Tooltip>
+          )}
           <MonthlyPerformanceIndicators
             monthlyTargets={keyResult.monthly_targets}
             monthlyActual={keyResult.monthly_actual}
@@ -169,5 +186,6 @@ export const KRCard: React.FC<KRCardProps> = ({
         </p>
       </div>
     </Card>
+    </TooltipProvider>
   );
 };
