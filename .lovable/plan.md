@@ -1,156 +1,76 @@
 
-# Plano: Redesign dos filtros + Botao de Alertas de Variacao
+# Plano: Indicador visual de alerta nos Cards e na Tabela RMRE
 
-## Resumo
+## Objetivo
 
-Substituir os 3 Selects de filtro (Pilar, Objetivo, Status) por um unico botao "Filtros" que abre um modal/sheet bonito. Adicionar um botao de alerta na direita que mostra KRs com taxa de variacao pendente de FCA.
+Adicionar um indicador visual nos KRs que estao em alerta (taxa de variacao sem FCA) tanto nos cards quanto nas linhas da tabela RMRE, para que o usuario identifique rapidamente quais KRs precisam de atencao mesmo sem clicar no botao de alertas.
 
 ---
 
-## Layout final da barra de filtros
+## Design visual
+
+### No KRCard
+
+Adicionar um icone de alerta (triangulo amarelo/laranja) na area de indicadores de performance, logo abaixo da barra de progresso, ao lado dos MonthlyPerformanceIndicators. O icone tera um tooltip explicando que o KR tem variacao pendente de FCA.
+
+Layout do card com alerta:
 
 ```text
-[🔍 Buscar por nome...] [⚙ Filtros (badge count)] .............. [🔔 Alertas (badge count)]
-|<---------- ESQUERDA ----------->|                               |<--- DIREITA --->|
++----------------------------------+
+| [Titulo do KR]           P:3    |
+| [Pilar]                         |
++----------------------------------+
+| Atingimento YTD          59.7%  |
+| [=========>          ] vermelho  |
+|                                  |
+| ▲ ◉ ○ ○ ○    <-- indicadores    |
+|                                  |
+| Indicador YTD    Meta YTD       |
+| 185,0 score      310,0 score    |
+|                                  |
+| Ultima atualizacao: 17/02/2026  |
++----------------------------------+
 ```
 
-- **Buscar**: Input com icone de lupa (ja existe)
-- **Filtros**: Botao com icone `SlidersHorizontal`. Badge com numero de filtros ativos (ex: "2")
-- **Alertas**: Botao com icone `AlertTriangle`. Quando inativo: cinza/dessaturado. Quando tem alertas: laranja com badge contador
+O triangulo de alerta (▲) aparece ao lado dos indicadores mensais. E um icone `AlertTriangle` laranja com tooltip "Variacao pendente de FCA".
+
+### Na Tabela RMRE
+
+Na linha do KR em alerta:
+1. Um icone `AlertTriangle` laranja pequeno ao lado do nome do KR na primeira coluna
+2. Um leve fundo laranja transparente na linha inteira (`bg-orange-50/50` ou similar) para destaque sutil
 
 ---
 
-## Parte 1: Modal de Filtros
+## Secao tecnica
 
-### Design do modal
+### Arquivo 1: `src/components/indicators/IndicatorsPage.tsx`
 
-Usar um `Sheet` (drawer lateral direito) do shadcn ao inves de um Dialog centralizado. Isso e mais intuitivo para filtros - o usuario ve os resultados mudando atras enquanto filtra.
+Passar `alertedKRIds` como prop para ambos os componentes:
 
-### Layout interno do Sheet
+- No `KRCard`: adicionar prop `isAlerted={alertedKRIds.has(keyResult.id)}`
+- No `KRTableView`: adicionar prop `alertedKRIds={alertedKRIds}`
 
-```text
-+------------------------------------------+
-|  Filtros                            [X]  |
-+------------------------------------------+
-|                                          |
-|  PILAR ESTRATEGICO                       |
-|  +--------------------------------------+|
-|  | ○ Todos os pilares                   ||
-|  | ● [●] Financeiro                     ||
-|  | ○ [●] Inovacao                       ||
-|  | ○ [●] Pessoas                        ||
-|  +--------------------------------------+|
-|                                          |
-|  OBJETIVO                                |
-|  +--------------------------------------+|
-|  | ○ Todos os objetivos                 ||
-|  | ● Aumentar receita                   ||
-|  | ○ Reduzir custos                     ||
-|  +--------------------------------------+|
-|                                          |
-|  STATUS DE DESEMPENHO                    |
-|  +--------------------------------------+|
-|  | ○ Todos                              ||
-|  | ○ [🔵] Excelente (>105%)             ||
-|  | ○ [🟢] No Alvo (100-105%)           ||
-|  | ○ [🟡] Atencao (71-99%)             ||
-|  | ○ [🔴] Criticos (<71%)              ||
-|  +--------------------------------------+|
-|                                          |
-|  [Limpar filtros]        [Aplicar]       |
-+------------------------------------------+
-```
+### Arquivo 2: `src/components/indicators/KRCard.tsx`
 
-Cada secao usa **radio buttons estilizados** com visual de cards/chips selecionaveis. O pilar mostra a bolinha de cor ao lado do nome. Os objetivos sao filtrados dinamicamente pelo pilar selecionado.
+1. Adicionar prop `isAlerted?: boolean`
+2. Importar `AlertTriangle` do lucide-react e `Tooltip` do shadcn
+3. No body do card, na area dos MonthlyPerformanceIndicators, renderizar condicionalmente um icone de alerta laranja com tooltip quando `isAlerted` for true
+4. Opcionalmente adicionar uma borda ou sutil indicacao visual no card (ex: borda esquerda laranja, ou shadow laranja suave)
 
-Os filtros sao aplicados em tempo real (ao clicar), sem precisar de botao "Aplicar" - mas tera um botao "Limpar filtros" para resetar tudo.
+### Arquivo 3: `src/components/indicators/KRTableView.tsx`
 
-### Componente novo: `KRFiltersSheet.tsx`
+1. Adicionar prop `alertedKRIds?: Set<string>` na interface
+2. Na renderizacao de cada `TableRow`, verificar se o KR esta no set
+3. Se estiver em alerta:
+   - Adicionar classe de fundo sutil laranja na linha (`bg-orange-50/40 dark:bg-orange-950/20`)
+   - Adicionar icone `AlertTriangle` laranja ao lado do titulo do KR na primeira celula
+   - Tooltip no icone explicando "Variacao acima do limite sem FCA vinculado"
 
-Props:
-- `open` / `onOpenChange`
-- `pillarFilter` / `setPillarFilter`
-- `objectiveFilter` / `setObjectiveFilter`
-- `progressFilter` / `setProgressFilter`
-- `pillars` (lista de pilares com cores)
-- `objectives` (lista de objetivos)
-- `activeFilterCount` (numero de filtros ativos)
+### Resumo das mudancas
 
----
-
-## Parte 2: Botao de Alertas de Variacao
-
-### Logica de deteccao
-
-Um KR esta "em alerta" quando:
-1. Tem `variation_threshold` definido (nao null)
-2. Algum periodo (mes) tem valor `actual` cujo desvio em relacao ao `target` do mesmo periodo excede o threshold
-3. NAO tem um FCA vinculado (`linked_update_month`) para aquele periodo especifico
-
-### Calculo (client-side)
-
-Para cada KR com `variation_threshold`:
-```
-Para cada mes em monthly_actual:
-  target = monthly_targets[mes]
-  actual = monthly_actual[mes]
-  variacao = |actual - target| / |target| * 100
-  Se variacao > variation_threshold:
-    Verificar se existe FCA com linked_update_month = mes
-    Se NAO existe: KR esta em alerta para este mes
-```
-
-### Dados necessarios
-
-Os KRs ja tem `variation_threshold`, `monthly_targets` e `monthly_actual` carregados. Preciso carregar os FCAs de TODOS os KRs de uma vez para saber quais meses ja tem FCA vinculado.
-
-Query adicional no `IndicatorsPage`:
-```sql
-SELECT key_result_id, linked_update_month 
-FROM kr_fca 
-WHERE key_result_id IN (ids dos KRs com variation_threshold)
-```
-
-### Comportamento do botao
-
-| Estado | Visual | Acao ao clicar |
+| Arquivo | Tipo | Mudanca |
 |---|---|---|
-| Nenhum alerta | Icone cinza claro, sem badge, sem saturacao | Nada (desabilitado ou tooltip "Sem alertas") |
-| Com alertas (inativo) | Icone laranja, badge com numero | Ativa filtro: mostra apenas KRs em alerta |
-| Com alertas (ativo/filtrado) | Icone laranja com fundo, badge | Desativa filtro: volta a mostrar todos |
-
-O contador do badge respeita os filtros de Pilar/Objetivo/Busca. Exemplo:
-- Total de alertas = 5
-- Filtro pilar "Financeiro" ativo: alertas no pilar Financeiro = 2
-- Badge mostra "2"
-
-### Componente: logica inline no `IndicatorsPage`
-
-Nao precisa de componente separado para o botao, e apenas um `Button` com logica condicional.
-
----
-
-## Arquivos a criar/editar
-
-### Novo: `src/components/indicators/KRFiltersSheet.tsx`
-
-Sheet lateral com os 3 grupos de filtro (Pilar, Objetivo, Status) usando RadioGroup do shadcn com visual customizado de cards selecionaveis.
-
-### Editar: `src/components/indicators/IndicatorsPage.tsx`
-
-1. **Remover** os 3 `Select` de filtro da barra
-2. **Adicionar** botao "Filtros" com badge de contagem
-3. **Adicionar** state `alertFilterActive` e `fcasByKR` (mapa de FCAs por KR)
-4. **Adicionar** `useEffect` para carregar FCAs dos KRs com `variation_threshold`
-5. **Adicionar** `useMemo` para calcular `alertedKRIds` (set de KR IDs em alerta)
-6. **Adicionar** botao de Alertas na direita com badge e logica de toggle
-7. **Integrar** filtro de alerta no `filteredKeyResults` existente
-8. **Importar** e renderizar `KRFiltersSheet`
-
-### Resultado esperado
-
-- Barra de filtros limpa: so busca + botao filtros + botao alertas
-- Sheet lateral intuitivo com filtros visuais
-- Botao de alerta mostra quantos KRs precisam de FCA
-- Filtro de alerta se combina com os outros filtros
-- Tudo funciona tanto nos Cards quanto na Tabela RMRE
+| `IndicatorsPage.tsx` | Editar | Passar `isAlerted` para KRCard e `alertedKRIds` para KRTableView |
+| `KRCard.tsx` | Editar | Adicionar prop `isAlerted`, icone de alerta com tooltip |
+| `KRTableView.tsx` | Editar | Adicionar prop `alertedKRIds`, destaque na linha e icone de alerta |
