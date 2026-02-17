@@ -847,10 +847,14 @@ export const IndicatorsPage: React.FC = () => {
     return contextFilteredKeyResults.filter(kr => alertedKRIds.has(kr.id)).length;
   }, [contextFilteredKeyResults, alertedKRIds]);
 
+  const alertTotalInContext = useMemo(() => {
+    return contextFilteredKeyResults.filter(kr => alertedKRIds.has(kr.id) || resolvedKRIds.has(kr.id)).length;
+  }, [contextFilteredKeyResults, alertedKRIds, resolvedKRIds]);
+
   // Final filtered KRs (adds progress filter + alert filter on top of context filters)
   const filteredKeyResults = contextFilteredKeyResults.filter(keyResult => {
     // Alert filter
-    if (alertFilterActive && !alertedKRIds.has(keyResult.id)) return false;
+    if (alertFilterActive && !alertedKRIds.has(keyResult.id) && !resolvedKRIds.has(keyResult.id)) return false;
 
     // Check progress match
     let matchesProgress = progressFilter === 'all';
@@ -870,6 +874,14 @@ export const IndicatorsPage: React.FC = () => {
     
     return matchesProgress;
   }).sort((a, b) => {
+    // When alert filter is active, show pending (alerted) first, then resolved
+    if (alertFilterActive) {
+      const aAlerted = alertedKRIds.has(a.id);
+      const bAlerted = alertedKRIds.has(b.id);
+      if (aAlerted && !bAlerted) return -1;
+      if (!aAlerted && bAlerted) return 1;
+    }
+
     // Primeiro, KRs onde o usuário é dono vêm primeiro
     const aIsOwned = a.assigned_owner_id === currentUserId;
     const bIsOwned = b.assigned_owner_id === currentUserId;
@@ -1175,41 +1187,45 @@ export const IndicatorsPage: React.FC = () => {
                 size="default"
                 className={cn(
                   "relative gap-2 transition-all",
-                  alertCountInContext === 0
+                  alertTotalInContext === 0
                     ? "text-muted-foreground opacity-50 cursor-default"
                     : alertFilterActive
                       ? "bg-orange-500 hover:bg-orange-600 text-white border-orange-500"
                       : "text-orange-500 border-orange-300 hover:bg-orange-50 hover:border-orange-400"
                 )}
                 onClick={() => {
-                  if (alertCountInContext > 0) {
+                  if (alertTotalInContext > 0) {
                     setAlertFilterActive(prev => !prev);
                   }
                 }}
-                disabled={alertCountInContext === 0}
+                disabled={alertTotalInContext === 0}
               >
                 <AlertTriangle className={cn(
                   "w-4 h-4",
-                  alertCountInContext === 0 ? "opacity-40" : ""
+                  alertTotalInContext === 0 ? "opacity-40" : ""
                 )} />
-                {alertCountInContext > 0 && (
+                {alertTotalInContext > 0 && (
                   <span className={cn(
                     "absolute -top-2 -right-2 text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center",
                     alertFilterActive
                       ? "bg-white text-orange-600"
-                      : "bg-orange-500 text-white"
+                      : alertCountInContext > 0
+                        ? "bg-orange-500 text-white"
+                        : "bg-blue-500 text-white"
                   )}>
-                    {alertCountInContext}
+                    {alertCountInContext > 0 ? alertCountInContext : '✓'}
                   </span>
                 )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              {alertCountInContext === 0
+              {alertTotalInContext === 0
                 ? "Sem alertas de variação"
                 : alertFilterActive
                   ? "Clique para desativar filtro de alertas"
-                  : `${alertCountInContext} KR(s) com variação pendente de FCA`
+                  : alertCountInContext > 0
+                    ? `${alertCountInContext} KR(s) com variação pendente de FCA`
+                    : "Todos os alertas de variação foram justificados"
               }
             </TooltipContent>
           </Tooltip>
