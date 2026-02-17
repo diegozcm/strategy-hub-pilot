@@ -1234,6 +1234,7 @@ export const IndicatorsPage: React.FC = () => {
           searchTerm={searchTerm}
           exportModalOpen={exportModalOpen}
           setExportModalOpen={setExportModalOpen}
+          alertedKRIds={alertedKRIds}
         />
       ) : (
         <>
@@ -1257,6 +1258,7 @@ export const IndicatorsPage: React.FC = () => {
                   selectedBimonthYear={selectedPeriod === 'bimonthly' ? selectedBimonthYear : undefined}
                   onClick={() => openKROverviewModal(keyResult)}
                   isOwned={isOwned}
+                  isAlerted={alertedKRIds.has(keyResult.id)}
                 />
               );
             })}
