@@ -96,62 +96,69 @@ export const GovernanceMeetingsSection: React.FC = () => {
       {/* Calendar */}
       <Card>
         <CardContent className="p-4">
-          <GovernanceCalendarGrid
-            month={month}
-            onMonthChange={setMonth}
-            selectedDate={selectedDate}
-            onSelectDate={setSelectedDate}
-            meetings={meetings}
-          />
+          <div className="flex gap-4">
+            {/* Calendar - 80% */}
+            <div className="w-4/5 min-w-0">
+              <GovernanceCalendarGrid
+                month={month}
+                onMonthChange={setMonth}
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                meetings={meetings}
+              />
+            </div>
 
-          {/* Selected day details */}
-          <div className="mt-4 pt-4 border-t">
-            <h4 className="text-sm font-display font-semibold flex items-center gap-2 mb-3">
-              <CalendarDays className="h-4 w-4 text-cofound-blue-light" />
-              {format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-              {dayMeetings.length > 0 && (
-                <Badge variant="outline" className="text-[10px]">{dayMeetings.length} reunião(ões)</Badge>
-              )}
-            </h4>
+            {/* Day details - 20% */}
+            <div className="w-1/5 min-w-[200px] border-l pl-4">
+              <h4 className="text-sm font-display font-semibold flex flex-col gap-1 mb-3">
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-cofound-blue-light" />
+                  {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
+                </div>
+                {dayMeetings.length > 0 && (
+                  <Badge variant="outline" className="text-[10px] w-fit">{dayMeetings.length} reunião(ões)</Badge>
+                )}
+              </h4>
 
-            {dayMeetings.length > 0 ? (
-              <div className="space-y-3">
-                {dayMeetings.map(m => (
-                  <div
-                    key={m.id}
-                    onClick={() => setDetailMeeting(m)}
-                    className={cn(
-                      'group p-4 border rounded-xl bg-card border-l-[3px] cursor-pointer hover:bg-muted/60 transition-all',
-                      typeBorderColors[m.meeting_type] || 'border-l-muted-foreground'
-                    )}
-                  >
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className={cn('h-2.5 w-2.5 rounded-full shrink-0', typeColors[m.meeting_type] || 'bg-muted-foreground')} />
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{m.meeting_type === 'Extraordinaria' ? 'EX' : m.meeting_type}</span>
-                        <p className="font-display font-semibold text-sm truncate">{m.title}</p>
-                        {m.scheduled_time && (
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 ml-1">
-                            <Clock className="h-3 w-3" />
+              {dayMeetings.length > 0 ? (
+                <div className="space-y-2">
+                  {dayMeetings.map(m => (
+                    <div
+                      key={m.id}
+                      onClick={() => setDetailMeeting(m)}
+                      className={cn(
+                        'p-3 border rounded-lg bg-card border-l-[3px] cursor-pointer hover:bg-muted/60 transition-all',
+                        typeBorderColors[m.meeting_type] || 'border-l-muted-foreground'
+                      )}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={cn('h-2 w-2 rounded-full shrink-0', typeColors[m.meeting_type] || 'bg-muted-foreground')} />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{m.meeting_type === 'Extraordinaria' ? 'EX' : m.meeting_type}</span>
+                      </div>
+                      <p className="font-display font-semibold text-xs truncate">{m.title}</p>
+                      <div className="flex items-center justify-between mt-1.5">
+                        {m.scheduled_time ? (
+                          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                            <Clock className="h-2.5 w-2.5" />
                             {m.scheduled_time.slice(0, 5)}
                           </span>
-                        )}
+                        ) : <span />}
+                        <Badge variant={statusLabels[m.status]?.variant || 'default'} className="text-[9px] px-1.5 py-0">
+                          {statusLabels[m.status]?.label || m.status}
+                        </Badge>
                       </div>
-                      <Badge variant={statusLabels[m.status]?.variant || 'default'} className="text-[10px] px-2.5 py-0.5 shrink-0">
-                        {statusLabels[m.status]?.label || m.status}
-                      </Badge>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <p className="text-muted-foreground text-sm mb-2">Nenhuma reunião neste dia</p>
-                <Button variant="cofound" size="sm" onClick={() => setCreateDialogOpen(true)}>
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Agendar para este dia
-                </Button>
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-muted-foreground text-xs mb-2">Nenhuma reunião neste dia</p>
+                  <Button variant="cofound" size="sm" className="text-xs" onClick={() => setCreateDialogOpen(true)}>
+                    <Plus className="h-3 w-3 mr-1" /> Agendar
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
