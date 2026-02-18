@@ -121,7 +121,7 @@ export const GovernanceMeetingsSection: React.FC = () => {
                     key={m.id}
                     onClick={() => setDetailMeeting(m)}
                     className={cn(
-                      'group p-4 border rounded-xl bg-card border-l-[3px] cursor-pointer hover:shadow-md transition-all',
+                      'group p-4 border rounded-xl bg-card border-l-[3px] cursor-pointer hover:bg-muted/60 transition-all',
                       typeBorderColors[m.meeting_type] || 'border-l-muted-foreground'
                     )}
                   >
@@ -137,12 +137,9 @@ export const GovernanceMeetingsSection: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <Badge variant={statusLabels[m.status]?.variant || 'default'} className="text-[10px] px-2.5 py-0.5">
-                          {statusLabels[m.status]?.label || m.status}
-                        </Badge>
-                        <span className="text-xs text-cofound-blue-light font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Detalhes →</span>
-                      </div>
+                      <Badge variant={statusLabels[m.status]?.variant || 'default'} className="text-[10px] px-2.5 py-0.5 shrink-0">
+                        {statusLabels[m.status]?.label || m.status}
+                      </Badge>
                     </div>
                   </div>
                 ))}
