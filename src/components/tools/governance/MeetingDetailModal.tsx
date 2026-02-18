@@ -165,21 +165,23 @@ const MeetingDetailsView: React.FC<{
       </div>
     )}
 
-    <div className="flex flex-wrap gap-2 pt-3 border-t">
-      <Button size="sm" variant="cofound-ghost" onClick={onEdit}>
-        <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
-      </Button>
-      {meeting.status === 'scheduled' && (
-        <>
-          <Button size="sm" variant="cofound" onClick={() => onStatusChange({ id: meeting.id, status: 'completed' })}>
-            <CheckCircle className="h-3.5 w-3.5 mr-1" /> Concluir
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => onStatusChange({ id: meeting.id, status: 'cancelled' })}>
-            <XCircle className="h-3.5 w-3.5 mr-1" /> Cancelar
-          </Button>
-        </>
-      )}
-      <Button size="sm" variant="ghost" className="text-destructive ml-auto" onClick={onDelete}>
+    <div className="flex items-center justify-between pt-3 border-t">
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="cofound-ghost" onClick={onEdit}>
+          <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
+        </Button>
+        {meeting.status === 'scheduled' && (
+          <>
+            <Button size="sm" variant="cofound" onClick={() => onStatusChange({ id: meeting.id, status: 'completed' })}>
+              <CheckCircle className="h-3.5 w-3.5 mr-1" /> Concluir
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onStatusChange({ id: meeting.id, status: 'cancelled' })}>
+              <XCircle className="h-3.5 w-3.5 mr-1" /> Cancelar
+            </Button>
+          </>
+        )}
+      </div>
+      <Button size="sm" variant="ghost" className="text-destructive" onClick={onDelete}>
         <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir
       </Button>
     </div>
