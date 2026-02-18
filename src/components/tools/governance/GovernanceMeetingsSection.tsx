@@ -115,40 +115,34 @@ export const GovernanceMeetingsSection: React.FC = () => {
             </h4>
 
             {dayMeetings.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {dayMeetings.map(m => (
                   <div
                     key={m.id}
                     onClick={() => setDetailMeeting(m)}
                     className={cn(
-                      'p-4 border rounded-xl bg-card border-l-4 cursor-pointer hover:bg-muted/50 hover:shadow-sm transition-all flex items-center justify-between gap-4',
+                      'group p-4 border rounded-xl bg-card border-l-[3px] cursor-pointer hover:shadow-md transition-all',
                       typeBorderColors[m.meeting_type] || 'border-l-muted-foreground'
                     )}
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className={cn('h-2.5 w-2.5 rounded-full', typeColors[m.meeting_type] || 'bg-muted-foreground')} />
-                        <Badge variant="outline" className="text-[10px] font-semibold">{m.meeting_type}</Badge>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className={cn('h-2.5 w-2.5 rounded-full shrink-0', typeColors[m.meeting_type] || 'bg-muted-foreground')} />
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">{m.meeting_type === 'Extraordinaria' ? 'EX' : m.meeting_type}</span>
+                        <p className="font-display font-semibold text-sm truncate">{m.title}</p>
+                        {m.scheduled_time && (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 ml-1">
+                            <Clock className="h-3 w-3" />
+                            {m.scheduled_time.slice(0, 5)}
+                          </span>
+                        )}
                       </div>
-                      <p className="font-display font-semibold text-sm truncate">{m.title}</p>
-                      {m.scheduled_time && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
-                          <Clock className="h-3 w-3" />
-                          {m.scheduled_time.slice(0, 5)}
-                        </span>
-                      )}
-                      {m.location && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground truncate hidden sm:inline-flex">
-                          <MapPin className="h-3 w-3" />
-                          {m.location}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant={statusLabels[m.status]?.variant || 'default'} className="text-[10px] px-2 py-0.5">
-                        {statusLabels[m.status]?.label || m.status}
-                      </Badge>
-                      <span className="text-xs text-cofound-blue-light font-semibold">Detalhes →</span>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <Badge variant={statusLabels[m.status]?.variant || 'default'} className="text-[10px] px-2.5 py-0.5">
+                          {statusLabels[m.status]?.label || m.status}
+                        </Badge>
+                        <span className="text-xs text-cofound-blue-light font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Detalhes →</span>
+                      </div>
                     </div>
                   </div>
                 ))}
