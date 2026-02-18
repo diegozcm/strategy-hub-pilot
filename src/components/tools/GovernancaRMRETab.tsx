@@ -1,8 +1,13 @@
 import React from 'react';
-import { GovernancaSubTabs } from './governance/GovernancaSubTabs';
-import { Target } from 'lucide-react';
+import { GovernanceMeetingsSection } from './governance/GovernanceMeetingsSection';
+import { GovernanceRulesSection } from './governance/GovernanceRulesSection';
+import { Target, BookOpen, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Button } from '@/components/ui/button';
 
 export const GovernancaRMRETab: React.FC = () => {
+  const [rulesOpen, setRulesOpen] = React.useState(false);
+
   return (
     <div className="space-y-6">
       <div>
@@ -15,7 +20,22 @@ export const GovernancaRMRETab: React.FC = () => {
         </p>
       </div>
 
-      <GovernancaSubTabs />
+      <GovernanceMeetingsSection />
+
+      <Collapsible open={rulesOpen} onOpenChange={setRulesOpen}>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" className="w-full flex items-center justify-between p-4 h-auto border rounded-lg bg-muted/30 hover:bg-muted/50">
+            <span className="flex items-center gap-2 font-display font-semibold">
+              <BookOpen className="h-5 w-5 text-cofound-blue-light" />
+              Regras de Governança
+            </span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${rulesOpen ? 'rotate-180' : ''}`} />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-3">
+          <GovernanceRulesSection />
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 };
