@@ -56,18 +56,18 @@ export const GovernanceAtasSection: React.FC = () => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold">ATAs de Reunião</h3>
+          <FileText className="h-5 w-5 text-cofound-blue-light" />
+          <h3 className="text-lg font-display font-semibold">ATAs de Reunião</h3>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" onClick={() => setEditing({ meeting_id: '', content: '', decisions: '', participants: [] })} disabled={meetings.length === 0}>
+            <Button size="sm" variant="cofound" onClick={() => setEditing({ meeting_id: '', content: '', decisions: '', participants: [] })} disabled={meetings.length === 0}>
               <Plus className="h-4 w-4 mr-1" /> Nova ATA
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{editing?.id ? 'Editar ATA' : 'Nova ATA'}</DialogTitle>
+              <DialogTitle className="font-display">{editing?.id ? 'Editar ATA' : 'Nova ATA'}</DialogTitle>
             </DialogHeader>
             {editing && (
               <div className="space-y-4">
@@ -113,7 +113,7 @@ export const GovernanceAtasSection: React.FC = () => {
                         <Badge
                           key={u.user_id}
                           variant={isSelected ? 'default' : 'outline'}
-                          className="cursor-pointer"
+                          className={isSelected ? 'cursor-pointer bg-cofound-green text-cofound-blue-dark hover:bg-cofound-green/80' : 'cursor-pointer'}
                           onClick={() => toggleParticipant(name)}
                         >
                           {name}
@@ -122,7 +122,7 @@ export const GovernanceAtasSection: React.FC = () => {
                     })}
                   </div>
                 </div>
-                <Button onClick={handleSave} className="w-full" disabled={!editing.id && !editing.meeting_id}>
+                <Button onClick={handleSave} className="w-full" variant="cofound" disabled={!editing.id && !editing.meeting_id}>
                   Salvar
                 </Button>
               </div>
@@ -148,18 +148,18 @@ export const GovernanceAtasSection: React.FC = () => {
       ) : (
         <div className="space-y-3">
           {atas.map(ata => (
-            <Card key={ata.id}>
+            <Card key={ata.id} className="border-l-2 border-l-cofound-blue-light">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle className="text-base">{(ata as any).governance_meetings?.title || 'Reunião'}</CardTitle>
+                    <CardTitle className="text-base font-display">{(ata as any).governance_meetings?.title || 'Reunião'}</CardTitle>
                     <p className="text-xs text-muted-foreground">
                       {(ata as any).governance_meetings?.scheduled_date && format(parseISO((ata as any).governance_meetings.scheduled_date), 'dd/MM/yyyy', { locale: ptBR })}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     {ata.approved ? (
-                      <Badge className="text-xs bg-primary text-primary-foreground">Aprovada</Badge>
+                      <Badge className="text-xs bg-cofound-green text-cofound-blue-dark">Aprovada</Badge>
                     ) : (
                       <Badge variant="outline" className="text-xs">Pendente</Badge>
                     )}
@@ -189,11 +189,11 @@ export const GovernanceAtasSection: React.FC = () => {
                 )}
                 <div className="flex gap-1 pt-2">
                   {!ata.approved && (
-                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => approveAta.mutate(ata.id)}>
+                    <Button size="sm" variant="cofound" className="h-7 text-xs" onClick={() => approveAta.mutate(ata.id)}>
                       <CheckCircle className="h-3 w-3 mr-1" /> Aprovar
                     </Button>
                   )}
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => {
+                  <Button size="sm" variant="cofound-ghost" className="h-7 text-xs" onClick={() => {
                     setEditing({ id: ata.id, meeting_id: ata.meeting_id, content: ata.content || '', decisions: ata.decisions || '', participants: ata.participants || [] });
                     setDialogOpen(true);
                   }}>

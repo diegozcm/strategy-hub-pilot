@@ -36,13 +36,13 @@ export const GovernanceAgendaSection: React.FC = () => {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <ClipboardList className="h-5 w-5 text-primary" />
-        <h3 className="text-lg font-semibold">Pautas de Reunião</h3>
+        <ClipboardList className="h-5 w-5 text-cofound-blue-light" />
+        <h3 className="text-lg font-display font-semibold">Pautas de Reunião</h3>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Selecione uma reunião</CardTitle>
+          <CardTitle className="text-base font-display">Selecione uma reunião</CardTitle>
         </CardHeader>
         <CardContent>
           {meetings.length === 0 ? (
@@ -96,16 +96,16 @@ const AgendaItemsList: React.FC<{ meetingId: string; users: any[] }> = ({ meetin
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">Itens da Pauta</CardTitle>
+        <CardTitle className="text-base font-display">Itens da Pauta</CardTitle>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" onClick={() => setEditing({ title: '', description: '', responsible_user_id: '' })}>
+            <Button size="sm" variant="cofound" onClick={() => setEditing({ title: '', description: '', responsible_user_id: '' })}>
               <Plus className="h-4 w-4 mr-1" /> Adicionar
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{editing?.id ? 'Editar Item' : 'Novo Item de Pauta'}</DialogTitle>
+              <DialogTitle className="font-display">{editing?.id ? 'Editar Item' : 'Novo Item de Pauta'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -139,7 +139,7 @@ const AgendaItemsList: React.FC<{ meetingId: string; users: any[] }> = ({ meetin
                   </SelectContent>
                 </Select>
               </div>
-              <Button onClick={handleSave} className="w-full">Salvar</Button>
+              <Button onClick={handleSave} className="w-full" variant="cofound">Salvar</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -150,7 +150,7 @@ const AgendaItemsList: React.FC<{ meetingId: string; users: any[] }> = ({ meetin
         ) : (
           <div className="space-y-2">
             {items.map((item, idx) => (
-              <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30">
+              <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30 border-l-2 border-l-cofound-green">
                 <span className="text-muted-foreground font-medium text-sm mt-0.5">{idx + 1}.</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm">{item.title}</p>
@@ -175,7 +175,7 @@ const AgendaItemsList: React.FC<{ meetingId: string; users: any[] }> = ({ meetin
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditing({ id: item.id, title: item.title, description: item.description || '', responsible_user_id: item.responsible_user_id || '' }); setDialogOpen(true); }}>
+                  <Button variant="cofound-ghost" size="icon" className="h-7 w-7" onClick={() => { setEditing({ id: item.id, title: item.title, description: item.description || '', responsible_user_id: item.responsible_user_id || '' }); setDialogOpen(true); }}>
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteItem.mutate(item.id)}>

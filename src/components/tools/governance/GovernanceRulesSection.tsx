@@ -46,8 +46,8 @@ export const GovernanceRulesSection: React.FC = () => {
       {/* Texto descritivo geral */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <BookOpen className="h-5 w-5 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-lg font-display">
+            <BookOpen className="h-5 w-5 text-cofound-blue-light" />
             Descrição Geral das Regras
           </CardTitle>
         </CardHeader>
@@ -59,7 +59,7 @@ export const GovernanceRulesSection: React.FC = () => {
             className="min-h-[120px]"
           />
           {descDirty && (
-            <Button onClick={handleSaveDescription} disabled={upsertDescription.isPending} size="sm">
+            <Button onClick={handleSaveDescription} disabled={upsertDescription.isPending} size="sm" variant="cofound">
               <Save className="h-4 w-4 mr-1" /> Salvar
             </Button>
           )}
@@ -69,16 +69,16 @@ export const GovernanceRulesSection: React.FC = () => {
       {/* Lista de regras específicas */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Regras Específicas</CardTitle>
+          <CardTitle className="text-lg font-display">Regras Específicas</CardTitle>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" onClick={() => setEditingItem({ title: '', description: '' })}>
+              <Button size="sm" variant="cofound" onClick={() => setEditingItem({ title: '', description: '' })}>
                 <Plus className="h-4 w-4 mr-1" /> Adicionar
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{editingItem?.id ? 'Editar Regra' : 'Nova Regra'}</DialogTitle>
+                <DialogTitle className="font-display">{editingItem?.id ? 'Editar Regra' : 'Nova Regra'}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
@@ -97,7 +97,7 @@ export const GovernanceRulesSection: React.FC = () => {
                     placeholder="Detalhamento da regra"
                   />
                 </div>
-                <Button onClick={handleSaveItem} className="w-full">Salvar</Button>
+                <Button onClick={handleSaveItem} className="w-full" variant="cofound">Salvar</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -108,7 +108,7 @@ export const GovernanceRulesSection: React.FC = () => {
           ) : (
             <div className="space-y-3">
               {ruleItems.map((item, idx) => (
-                <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30">
+                <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30 border-l-2 border-l-cofound-green">
                   <span className="text-muted-foreground font-medium text-sm mt-0.5">{idx + 1}.</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{item.title}</p>
@@ -116,7 +116,7 @@ export const GovernanceRulesSection: React.FC = () => {
                   </div>
                   <div className="flex gap-1">
                     <Button
-                      variant="ghost"
+                      variant="cofound-ghost"
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => { setEditingItem({ id: item.id, title: item.title, description: item.description || '' }); setDialogOpen(true); }}
