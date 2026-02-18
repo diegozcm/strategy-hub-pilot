@@ -105,18 +105,12 @@ export const GovernanceCalendarGrid: React.FC<Props> = ({
                 </span>
 
                 {dayMeetings.length > 0 && (
-                  <div className="mt-1 space-y-0.5 overflow-hidden">
-                    {dayMeetings.slice(0, 2).map(m => (
-                      <div key={m.id} className="flex items-center gap-1">
-                        <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', typeColors[m.meeting_type] || 'bg-muted-foreground')} />
-                        <span className="text-[10px] leading-tight truncate text-foreground/70">
-                          {typeLabelsShort[m.meeting_type] || m.meeting_type}
-                          {m.scheduled_time && ` ${m.scheduled_time.slice(0, 5)}`}
-                        </span>
-                      </div>
+                  <div className="absolute bottom-1.5 left-1.5 right-1.5 flex items-center gap-1 flex-wrap">
+                    {dayMeetings.slice(0, 3).map(m => (
+                      <span key={m.id} className={cn('h-2 w-2 rounded-full shrink-0', typeColors[m.meeting_type] || 'bg-muted-foreground')} />
                     ))}
-                    {dayMeetings.length > 2 && (
-                      <span className="text-[10px] text-muted-foreground">+{dayMeetings.length - 2}</span>
+                    {dayMeetings.length > 3 && (
+                      <span className="text-[9px] font-semibold text-muted-foreground leading-none">+{dayMeetings.length - 3}</span>
                     )}
                   </div>
                 )}
