@@ -9,3 +9,4 @@ export { VisionAlignmentHistory } from './VisionAlignmentHistory';
 export { VisionObjectiveCard } from './VisionObjectiveCard';
 export { VisionObjectiveForm } from './VisionObjectiveForm';
 export { VisionDimensionSection } from './VisionDimensionSection';
+export { GovernancaRMRETab } from './GovernancaRMRETab';
