@@ -96,9 +96,9 @@ export const GovernanceMeetingsSection: React.FC = () => {
       {/* Calendar */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex gap-4">
-            {/* Calendar - 80% */}
-            <div className="w-4/5 min-w-0">
+          <div className="flex gap-5">
+            {/* Calendar - 70% */}
+            <div className="w-[70%] min-w-0">
               <GovernanceCalendarGrid
                 month={month}
                 onMonthChange={setMonth}
@@ -108,51 +108,55 @@ export const GovernanceMeetingsSection: React.FC = () => {
               />
             </div>
 
-            {/* Day details - 20% */}
-            <div className="w-1/5 min-w-[200px] border-l pl-4">
-              <h4 className="text-sm font-display font-semibold flex flex-col gap-1 mb-3">
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4 text-cofound-blue-light" />
+            {/* Day details - 30% */}
+            <div className="w-[30%] min-w-[240px] border-l pl-5">
+              <div className="flex items-center gap-2 mb-1">
+                <CalendarDays className="h-4 w-4 text-cofound-blue-light" />
+                <h4 className="text-sm font-display font-semibold">
                   {format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
-                </div>
-                {dayMeetings.length > 0 && (
-                  <Badge variant="outline" className="text-[10px] w-fit">{dayMeetings.length} reunião(ões)</Badge>
-                )}
-              </h4>
+                </h4>
+              </div>
+              {dayMeetings.length > 0 && (
+                <p className="text-[11px] text-muted-foreground mb-3 ml-6">{dayMeetings.length} reunião(ões)</p>
+              )}
+              {!dayMeetings.length && <p className="text-[11px] text-muted-foreground mb-3 ml-6">Sem reuniões</p>}
 
               {dayMeetings.length > 0 ? (
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   {dayMeetings.map(m => (
                     <div
                       key={m.id}
                       onClick={() => setDetailMeeting(m)}
                       className={cn(
-                        'p-3 border rounded-lg bg-card border-l-[3px] cursor-pointer hover:bg-muted/60 transition-all',
+                        'p-3.5 rounded-xl border border-border/60 bg-card cursor-pointer hover:bg-muted/50 hover:border-border transition-all border-l-[3px]',
                         typeBorderColors[m.meeting_type] || 'border-l-muted-foreground'
                       )}
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={cn('h-2 w-2 rounded-full shrink-0', typeColors[m.meeting_type] || 'bg-muted-foreground')} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{m.meeting_type === 'Extraordinaria' ? 'EX' : m.meeting_type}</span>
-                      </div>
-                      <p className="font-display font-semibold text-xs truncate">{m.title}</p>
-                      <div className="flex items-center justify-between mt-1.5">
-                        {m.scheduled_time ? (
-                          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                            <Clock className="h-2.5 w-2.5" />
-                            {m.scheduled_time.slice(0, 5)}
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className={cn('h-2.5 w-2.5 rounded-full shrink-0', typeColors[m.meeting_type] || 'bg-muted-foreground')} />
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                            {m.meeting_type === 'Extraordinaria' ? 'EX' : m.meeting_type}
                           </span>
-                        ) : <span />}
-                        <Badge variant={statusLabels[m.status]?.variant || 'default'} className="text-[9px] px-1.5 py-0">
+                        </div>
+                        <Badge variant={statusLabels[m.status]?.variant || 'default'} className="text-[10px] px-2 py-0.5">
                           {statusLabels[m.status]?.label || m.status}
                         </Badge>
                       </div>
+                      <p className="font-display font-semibold text-sm truncate">{m.title}</p>
+                      {m.scheduled_time && (
+                        <span className="flex items-center gap-1 text-[11px] text-muted-foreground mt-1">
+                          <Clock className="h-3 w-3" />
+                          {m.scheduled_time.slice(0, 5)}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-6">
-                  <p className="text-muted-foreground text-xs mb-2">Nenhuma reunião neste dia</p>
+                <div className="text-center py-8">
+                  <CalendarDays className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
+                  <p className="text-muted-foreground text-xs mb-3">Nenhuma reunião neste dia</p>
                   <Button variant="cofound" size="sm" className="text-xs" onClick={() => setCreateDialogOpen(true)}>
                     <Plus className="h-3 w-3 mr-1" /> Agendar
                   </Button>
