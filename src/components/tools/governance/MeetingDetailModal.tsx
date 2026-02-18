@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -102,7 +103,7 @@ export const MeetingDetailModal: React.FC<Props> = ({
 
           <TabsContent value="dados" className="mt-4">
             {isEditing ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <GovernanceMeetingForm
                   onSubmit={handleUpdate}
                   isPending={isUpdating}
@@ -116,9 +117,39 @@ export const MeetingDetailModal: React.FC<Props> = ({
                     notes: meeting.notes || undefined,
                   }}
                 />
-                <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} className="w-full">
-                  Cancelar edição
-                </Button>
+                <div className="flex items-center justify-between pt-3 border-t">
+                  <div className="flex flex-wrap gap-2">
+                    {meeting.status !== 'scheduled' && (
+                      <Button size="sm" variant="outline" onClick={() => { onStatusChange({ id: meeting.id, status: 'scheduled' }); setIsEditing(false); }}>
+                        <CalendarDays className="h-3.5 w-3.5 mr-1" /> Restaurar para Agendada
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>
+                      Cancelar edição
+                    </Button>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="ghost" className="text-destructive">
+                        <Trash2 className="h-3.5 w-3.5 mr-1" /> Apagar agendamento
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="font-display">Apagar agendamento?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação é irreversível. A reunião e todos os dados associados serão excluídos permanentemente.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Voltar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Apagar definitivamente
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             ) : (
               <MeetingDetailsView
@@ -167,22 +198,37 @@ const MeetingDetailsView: React.FC<{
 
     <div className="flex items-center justify-between pt-3 border-t">
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="cofound-ghost" onClick={onEdit}>
-          <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
-        </Button>
         {meeting.status === 'scheduled' && (
           <>
             <Button size="sm" variant="cofound" onClick={() => onStatusChange({ id: meeting.id, status: 'completed' })}>
               <CheckCircle className="h-3.5 w-3.5 mr-1" /> Concluir
             </Button>
-            <Button size="sm" variant="outline" onClick={() => onStatusChange({ id: meeting.id, status: 'cancelled' })}>
-              <XCircle className="h-3.5 w-3.5 mr-1" /> Cancelar
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline">
+                  <XCircle className="h-3.5 w-3.5 mr-1" /> Cancelar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="font-display">Cancelar reunião?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja cancelar esta reunião? Você poderá restaurar o status posteriormente pelo modo de edição.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Voltar</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onStatusChange({ id: meeting.id, status: 'cancelled' })}>
+                    Confirmar cancelamento
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </>
         )}
       </div>
-      <Button size="sm" variant="ghost" className="text-destructive" onClick={onDelete}>
-        <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir
+      <Button size="sm" variant="cofound-ghost" onClick={onEdit}>
+        <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
       </Button>
     </div>
   </div>
