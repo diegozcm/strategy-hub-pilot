@@ -49,20 +49,20 @@ export const GovernanceCalendarGrid: React.FC<Props> = ({
     <div className="w-full">
       {/* Navigation */}
       <div className="flex items-center justify-between mb-4">
-        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onMonthChange(subMonths(month, 1))}>
+        <Button variant="cofound-ghost" size="icon" className="h-8 w-8" onClick={() => onMonthChange(subMonths(month, 1))}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <div className="flex items-center gap-3">
-          <h3 className="text-base font-semibold capitalize">
+          <h3 className="text-base font-display font-semibold capitalize">
             {format(month, 'MMMM yyyy', { locale: ptBR })}
           </h3>
           {!isSameMonth(month, new Date()) && (
-            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { onMonthChange(new Date()); onSelectDate(new Date()); }}>
+            <Button variant="cofound-ghost" size="sm" className="h-7 text-xs" onClick={() => { onMonthChange(new Date()); onSelectDate(new Date()); }}>
               Hoje
             </Button>
           )}
         </div>
-        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => onMonthChange(addMonths(month, 1))}>
+        <Button variant="cofound-ghost" size="icon" className="h-8 w-8" onClick={() => onMonthChange(addMonths(month, 1))}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
@@ -92,14 +92,14 @@ export const GovernanceCalendarGrid: React.FC<Props> = ({
                 className={cn(
                   'relative h-20 border-r border-b border-border p-1.5 cursor-pointer transition-colors',
                   !inMonth && 'bg-muted/30',
-                  inMonth && 'hover:bg-accent/50',
-                  selected && 'bg-primary/10 ring-2 ring-primary/40 ring-inset',
+                  inMonth && 'hover:bg-cofound-blue-light/5',
+                  selected && 'bg-cofound-blue-light/10 ring-2 ring-cofound-blue-light/40 ring-inset',
                 )}
               >
                 <span className={cn(
                   'text-sm font-medium leading-none',
                   !inMonth && 'text-muted-foreground/40',
-                  today && 'inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs',
+                  today && 'inline-flex items-center justify-center h-6 w-6 rounded-full bg-cofound-blue-light text-cofound-blue-dark text-xs font-bold',
                 )}>
                   {format(day, 'd')}
                 </span>
@@ -129,7 +129,7 @@ export const GovernanceCalendarGrid: React.FC<Props> = ({
               <Tooltip key={day.toISOString()}>
                 <TooltipTrigger asChild>{cell}</TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-[220px]">
-                  <p className="font-medium text-xs mb-1">{format(day, "dd 'de' MMMM", { locale: ptBR })}</p>
+                  <p className="font-display font-medium text-xs mb-1">{format(day, "dd 'de' MMMM", { locale: ptBR })}</p>
                   {dayMeetings.map(m => (
                     <p key={m.id} className="text-xs text-muted-foreground">
                       • {m.title}{m.scheduled_time ? ` às ${m.scheduled_time.slice(0, 5)}` : ''}
