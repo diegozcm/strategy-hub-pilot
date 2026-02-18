@@ -1,92 +1,132 @@
 
-# Plano: Identidade Cofound + Funcionalidades de Edicao na Governanca RMRE
+# Plano: Pagina Unica de Governanca RMRE com Modal de Reuniao
 
-## Problemas identificados
+## Problema atual
 
-1. **Visual generico** - Os componentes usam apenas cores padroes do shadcn (primary, muted, etc.) sem nenhuma referencia as cores Cofound (cofound-blue-light, cofound-green, cofound-blue-dark)
-2. **Titulos sem fonte Cofound** - Titulos usam fonte padrão em vez de `font-display` (Saira)
-3. **Botoes sem variante brand/cofound** - Todos os botoes usam variantes genericas (default, outline, ghost)
-4. **Reunioes nao editaveis** - O hook `updateMeeting` existe mas nao e exposto no MeetingCard nem no MeetingsSection. Nao ha botao de "Editar" reuniao
-5. **Cards sem personalidade** - Sem bordas coloridas, icones com cores Cofound, ou destaque visual
-6. **Sub-abas genericas** - TabsList sem estilo Cofound (aba ativa deveria usar #CDD966 fundo com #10283F texto)
+As 4 sub-abas (Regras, Pautas, ATAs, Agenda) fragmentam a experiencia. O usuario precisa navegar entre abas para realizar tarefas que sao naturalmente conectadas (ex: ver reuniao na agenda, depois ir em Pautas selecionar a reuniao, depois ir em ATAs selecionar a mesma reuniao). Isso e confuso e redundante.
 
----
+## Conceito: Tudo em uma pagina, detalhes no modal
 
-## Mudancas planejadas
+A ideia central e: **a pagina mostra o calendario + regras de forma compacta. Ao clicar numa reuniao, abre um modal completo com tudo sobre aquela reuniao (editar, pautas, ATA).**
 
-### 1. Sub-abas com estilo Cofound
+```text
++====================================================================+
+| [icon] Governanca RMRE                          [+ Nova Reuniao]   |
+| Proxima: RM Semanal - 25/02 as 14:00                              |
++====================================================================+
+|                                                                     |
+|  CALENDARIO (100% largura, celulas h-20, indicadores visuais)      |
+|                                                                     |
+|  [< ]        Fevereiro 2026                           [hoje] [>]   |
+|  DOM    SEG    TER    QUA    QUI    SEX    SAB                     |
+|  +------+------+------+------+------+------+------+               |
+|  |      |      |      | *RM* |      |      |      |               |
+|  |  1   |  2   |  3   |  4   |  5   |  6   |  7   |               |
+|  +------+------+------+------+------+------+------+               |
+|  | ...                                              |               |
+|  +--------------------------------------------------+               |
+|                                                                     |
+|  --- Reunioes em 4 de fevereiro (1) ---                            |
+|  +------------------------------------------------------------------+
+|  | [RM] RM Semanal  14:00  Sala 1  [Agendada]  [Abrir detalhes >] |
+|  +------------------------------------------------------------------+
+|                                                                     |
++====================================================================+
+| REGRAS DE GOVERNANCA (colapsavel)                                  |
+| Descricao geral + lista de regras especificas                      |
++====================================================================+
 
-Aplicar no `GovernancaSubTabs.tsx`:
-- TabsTrigger ativa com fundo `bg-[#CDD966]` e texto `text-[#10283F]`
-- Icones nas abas (BookOpen, ClipboardList, FileText, CalendarDays)
 
-### 2. Header principal com identidade
+=== AO CLICAR "Abrir detalhes" ou clicar na reuniao ===
 
-No `GovernancaRMRETab.tsx`:
-- Titulo com `font-display` (Saira)
-- Icone com cor `text-cofound-blue-light`
-- Subtitulo com estilo Cofound
++============================================+
+|  MODAL: RM Semanal - 04/02/2026           |
+|============================================|
+|                                            |
+|  [Dados]  [Pautas]  [ATA]                 |
+|                                            |
+|  --- ABA DADOS ---                         |
+|  Tipo: RM  |  Horario: 14:00  |  60min    |
+|  Local: Sala de reunioes                   |
+|  Status: Agendada                          |
+|  Notas: ...                                |
+|  [Editar] [Concluir] [Cancelar] [Excluir] |
+|                                            |
+|  --- ABA PAUTAS ---                        |
+|  1. Item de pauta X  [Pendente]  [editar]  |
+|  2. Item de pauta Y  [Discutido] [editar]  |
+|  [+ Adicionar item]                        |
+|                                            |
+|  --- ABA ATA ---                           |
+|  Conteudo: ...                             |
+|  Decisoes: ...                             |
+|  Participantes: [Joao] [Maria]             |
+|  [Salvar] [Aprovar]                        |
+|                                            |
++============================================+
+```
 
-### 3. Agenda (GovernanceMeetingsSection)
+## Vantagens deste layout
 
-- Header: icone com `text-cofound-blue-light`, botao "Nova Reuniao" com `variant="brand"`
-- Badge "proximo reuniao" com fundo `bg-cofound-blue-light/10`
-- Botao "Agendar para este dia" com `variant="brand"`
-- **Adicionar botao "Editar"** no MeetingCard que abre dialog com GovernanceMeetingForm pre-preenchido
+1. **Zero fragmentacao** - O usuario ve tudo sobre uma reuniao em um unico modal, sem pular entre abas
+2. **Pagina limpa** - So calendario + regras na pagina principal, nada saturado
+3. **Contexto preservado** - Ao fechar o modal, o usuario volta exatamente para onde estava no calendario
+4. **Fluxo natural** - Clicou na reuniao, ve detalhes, adiciona pauta, registra ATA, tudo no mesmo lugar
 
-### 4. Calendario (GovernanceCalendarGrid)
+## Mudancas tecnicas
 
-- Header do mes com `font-display`
-- Dia de hoje com `bg-cofound-blue-light` em vez de `bg-primary`
-- Dia selecionado com `ring-cofound-blue-light`
-- Dots de tipo de reuniao mantidos (azul/verde/laranja)
+### 1. Eliminar GovernancaSubTabs
 
-### 5. MeetingCard com edicao e estilo Cofound
+Remover o sistema de sub-abas. A pagina principal renderiza diretamente:
+- Calendario (GovernanceMeetingsSection simplificado)
+- Secao de Regras (GovernanceRulesSection, dentro de um Collapsible)
 
-- Borda esquerda colorida por tipo (RM azul, RE verde, Extraordinaria amber)
-- **Botao "Editar" novo** que abre dialog com form pre-preenchido
-- Badges de status com cores mais Cofound
-- Botoes "Concluir" com `variant="cofound"`
+### 2. Novo componente: MeetingDetailModal
 
-### 6. Regras (GovernanceRulesSection)
+Modal grande (max-w-3xl) com mini-abas internas (Tabs do shadcn):
 
-- Titulos com `font-display`
-- Icone BookOpen com `text-cofound-blue-light`
-- Botao "Adicionar" com `variant="brand"`
-- Itens da lista com borda esquerda `border-l-2 border-cofound-green`
+**Aba "Dados":**
+- Informacoes da reuniao (tipo, data, horario, duracao, local, notas, status)
+- Botoes: Editar (abre form inline ou toggle), Concluir, Cancelar, Excluir
 
-### 7. Pautas (GovernanceAgendaSection)
+**Aba "Pautas":**
+- Lista de itens de pauta (reutiliza logica do AgendaItemsList atual)
+- Adicionar/editar/remover itens de pauta diretamente
+- Status por item (Pendente, Discutido, Adiado)
 
-- Titulos com `font-display`
-- Botao "Adicionar" com `variant="brand"`
-- Badges de status com cores Cofound
+**Aba "ATA":**
+- Formulario de conteudo, decisoes, participantes
+- Se ja tem ATA: mostra conteudo com botao Editar e Aprovar
+- Se nao tem: formulario para criar
+- Status de aprovacao
 
-### 8. ATAs (GovernanceAtasSection)
+### 3. Simplificar GovernanceMeetingsSection
 
-- Titulos com `font-display`
-- Botao "Nova ATA" com `variant="brand"`
-- Badge "Aprovada" com `bg-cofound-green text-cofound-blue-dark`
+Remover a tabela mensal separada (redundante com o calendario). Manter:
+- Header com proxima reuniao e botao Nova Reuniao
+- Calendario customizado (GovernanceCalendarGrid)
+- Cards do dia selecionado - agora com botao "Abrir detalhes" que abre o modal
+- Ou: clicar no card da reuniao ja abre o modal
 
----
+### 4. Regras como secao colapsavel
 
-## Detalhe tecnico: Edicao de reunioes
+Mover GovernanceRulesSection para baixo do calendario, dentro de um `Collapsible` do shadcn. Comeca colapsado para nao poluir. O usuario expande quando precisa ver/editar as regras.
 
-O hook `updateMeeting` ja existe. O que falta e:
-- No `GovernanceMeetingsSection`: passar `updateMeeting` para o `MeetingCard`
-- No `MeetingCard`: adicionar botao "Editar" que abre um `Dialog` com `GovernanceMeetingForm` usando `initialData` pre-preenchido
-- O `GovernanceMeetingForm` ja aceita `initialData` como prop
+### 5. Remover componentes obsoletos
 
----
+- `GovernancaSubTabs.tsx` - substituido pela pagina unica
+- `GovernanceAgendaSection.tsx` - logica movida para dentro do MeetingDetailModal
+- `GovernanceAtasSection.tsx` - logica movida para dentro do MeetingDetailModal
 
-## Resumo de arquivos
+## Arquivos a criar/modificar
 
-| Arquivo | Mudanca |
+| Arquivo | Acao |
 |---|---|
-| `GovernancaRMRETab.tsx` | Font-display no titulo, icone Cofound |
-| `GovernancaSubTabs.tsx` | Icones nas abas, estilo ativo Cofound (#CDD966) |
-| `GovernanceMeetingsSection.tsx` | Cores Cofound, passar updateMeeting ao MeetingCard |
-| `GovernanceCalendarGrid.tsx` | Cores Cofound no hoje/selecionado, font-display |
-| `MeetingCard.tsx` | Borda colorida por tipo, botao Editar com dialog, estilo Cofound |
-| `GovernanceRulesSection.tsx` | Font-display, cores Cofound, borda verde nos itens |
-| `GovernanceAgendaSection.tsx` | Font-display, cores Cofound nos botoes e badges |
-| `GovernanceAtasSection.tsx` | Font-display, cores Cofound, badge aprovada verde |
+| `GovernancaRMRETab.tsx` (GovernancaRMRETab) | Modificar - renderizar MeetingsSection + RulesSection diretamente |
+| `GovernancaSubTabs.tsx` | Remover |
+| `GovernanceMeetingsSection.tsx` | Modificar - simplificar, adicionar abertura do modal |
+| `MeetingDetailModal.tsx` | Criar - modal com 3 abas (Dados, Pautas, ATA) |
+| `MeetingCard.tsx` | Modificar - adicionar botao "Abrir detalhes" / click handler |
+| `GovernanceRulesSection.tsx` | Modificar - envolver em Collapsible |
+| `GovernanceAgendaSection.tsx` | Remover (logica vai para o modal) |
+| `GovernanceAtasSection.tsx` | Remover (logica vai para o modal) |
