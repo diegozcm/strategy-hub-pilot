@@ -17,9 +17,11 @@ import type { GovernanceMeeting, MeetingFormData } from '@/hooks/useGovernanceMe
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useGovernanceMeetings } from '@/hooks/useGovernanceMeetings';
 import {
   Clock, MapPin, CheckCircle, XCircle, Trash2, Pencil,
-  Plus, ClipboardList, FileText, CalendarDays,
+  Plus, ClipboardList, FileText, CalendarDays, Import,
 } from 'lucide-react';
 
 const statusLabels: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
@@ -247,9 +249,11 @@ const InfoField: React.FC<{ label: string; value: string; icon?: React.ReactNode
 // --- Pautas Tab ---
 const MeetingAgendaTab: React.FC<{ meetingId: string }> = ({ meetingId }) => {
   const { company } = useAuth();
-  const { items, isLoading, addItem, updateItem, deleteItem } = useGovernanceAgendaItems(meetingId);
+  const { items, otherItems, isLoading, addItem, updateItem, deleteItem, importItems } = useGovernanceAgendaItems(meetingId);
   const { users } = useCompanyUsers(company?.id);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [selectedImportIds, setSelectedImportIds] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<{ id?: string; title: string; description: string; responsible_user_id: string } | null>(null);
 
   const handleSave = () => {
@@ -263,6 +267,30 @@ const MeetingAgendaTab: React.FC<{ meetingId: string }> = ({ meetingId }) => {
     setDialogOpen(false);
   };
 
+  const handleImport = () => {
+    const toImport = otherItems.filter(i => selectedImportIds.has(i.id));
+    if (!toImport.length) return;
+    importItems.mutate(toImport.map(i => ({ title: i.title, description: i.description, responsible_user_id: i.responsible_user_id })));
+    setSelectedImportIds(new Set());
+    setImportDialogOpen(false);
+  };
+
+  const toggleImportItem = (id: string) => {
+    setSelectedImportIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  // Group other items by meeting
+  const groupedOtherItems = otherItems.reduce((acc, item) => {
+    const key = item._meeting?.id || 'unknown';
+    if (!acc[key]) acc[key] = { meeting: item._meeting, items: [] };
+    acc[key].items.push(item);
+    return acc;
+  }, {} as Record<string, { meeting: any; items: typeof otherItems }>);
+
   const getUserName = (userId: string | null) => {
     if (!userId) return null;
     const u = users.find(u => u.user_id === userId);
@@ -275,10 +303,16 @@ const MeetingAgendaTab: React.FC<{ meetingId: string }> = ({ meetingId }) => {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm font-display font-semibold">Itens da Pauta ({items.length})</p>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <Button size="sm" variant="cofound" onClick={() => { setEditing({ title: '', description: '', responsible_user_id: '' }); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 mr-1" /> Adicionar
-          </Button>
+        <div className="flex gap-2">
+          {otherItems.length > 0 && (
+            <Button size="sm" variant="outline" onClick={() => { setSelectedImportIds(new Set()); setImportDialogOpen(true); }}>
+              <Import className="h-4 w-4 mr-1" /> Importar
+            </Button>
+          )}
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <Button size="sm" variant="cofound" onClick={() => { setEditing({ title: '', description: '', responsible_user_id: '' }); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 mr-1" /> Adicionar
+            </Button>
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="font-display">{editing?.id ? 'Editar Item' : 'Novo Item de Pauta'}</DialogTitle>
@@ -319,7 +353,45 @@ const MeetingAgendaTab: React.FC<{ meetingId: string }> = ({ meetingId }) => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
+      {/* Import Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[70vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display">Importar Pautas de Outras Reuniões</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {Object.values(groupedOtherItems).map(({ meeting, items: meetingItems }) => (
+              <div key={meeting?.id} className="space-y-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  {meeting?.title} — {meeting?.scheduled_date ? format(parseISO(meeting.scheduled_date), "dd/MM/yyyy", { locale: ptBR }) : ''}
+                </p>
+                {meetingItems.map(item => (
+                  <label key={item.id} className="flex items-start gap-3 p-2.5 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors">
+                    <Checkbox
+                      checked={selectedImportIds.has(item.id)}
+                      onCheckedChange={() => toggleImportItem(item.id)}
+                      className="mt-0.5"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{item.title}</p>
+                      {item.description && <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            ))}
+            {Object.keys(groupedOtherItems).length === 0 && (
+              <p className="text-center text-sm text-muted-foreground py-4">Nenhuma pauta disponível para importar</p>
+            )}
+            <Button onClick={handleImport} className="w-full" variant="cofound" disabled={selectedImportIds.size === 0 || importItems.isPending}>
+              Importar {selectedImportIds.size > 0 ? `(${selectedImportIds.size})` : ''}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {items.length === 0 ? (
         <div className="text-center py-6 text-muted-foreground text-sm">
