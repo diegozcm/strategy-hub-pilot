@@ -25,6 +25,7 @@ export const GovernanceRulesSection: React.FC = () => {
   const handleSaveDescription = () => {
     upsertDescription.mutate(description);
     setDescDirty(false);
+    setDescFocused(false);
   };
 
   const handleSaveItem = () => {
@@ -43,9 +44,9 @@ export const GovernanceRulesSection: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex gap-4">
       {/* Texto descritivo geral */}
-      <Card>
+      <Card className="w-1/2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg font-display">
             <BookOpen className="h-5 w-5 text-cofound-blue-light" />
@@ -79,7 +80,7 @@ export const GovernanceRulesSection: React.FC = () => {
       </Card>
 
       {/* Lista de regras específicas */}
-      <Card>
+      <Card className="w-1/2">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg font-display">Regras Específicas</CardTitle>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
