@@ -17,7 +17,7 @@ export interface GovernanceAgendaItem {
 }
 
 export const useGovernanceAgendaItems = (meetingId?: string) => {
-  const { user } = useAuth();
+  const { user, company } = useAuth();
   const queryClient = useQueryClient();
 
   const itemsQuery = useQuery({
@@ -32,6 +32,37 @@ export const useGovernanceAgendaItems = (meetingId?: string) => {
       return data as GovernanceAgendaItem[];
     },
     enabled: !!meetingId,
+  });
+
+  // Fetch agenda items from OTHER meetings (for import feature)
+  const otherItemsQuery = useQuery({
+    queryKey: ['governance-agenda-items-other', meetingId, company?.id],
+    queryFn: async () => {
+      // First get meetings for this company
+      const { data: meetings, error: mErr } = await supabase
+        .from('governance_meetings')
+        .select('id, title, scheduled_date, meeting_type')
+        .eq('company_id', company!.id)
+        .neq('id', meetingId!)
+        .order('scheduled_date', { ascending: false });
+      if (mErr) throw mErr;
+
+      if (!meetings?.length) return [];
+
+      const meetingIds = meetings.map(m => m.id);
+      const { data: items, error: iErr } = await supabase
+        .from('governance_agenda_items')
+        .select('*')
+        .in('meeting_id', meetingIds)
+        .order('order_index');
+      if (iErr) throw iErr;
+
+      return (items || []).map(item => ({
+        ...item,
+        _meeting: meetings.find(m => m.id === item.meeting_id),
+      })) as (GovernanceAgendaItem & { _meeting?: { id: string; title: string; scheduled_date: string; meeting_type: string } })[];
+    },
+    enabled: !!meetingId && !!company?.id,
   });
 
   const addItem = useMutation({
@@ -82,11 +113,35 @@ export const useGovernanceAgendaItems = (meetingId?: string) => {
     onError: () => toast.error('Erro ao remover item'),
   });
 
+  const importItems = useMutation({
+    mutationFn: async (sourceItems: { title: string; description: string | null; responsible_user_id: string | null }[]) => {
+      const currentCount = itemsQuery.data?.length || 0;
+      const inserts = sourceItems.map((item, idx) => ({
+        meeting_id: meetingId!,
+        title: item.title,
+        description: item.description,
+        responsible_user_id: item.responsible_user_id,
+        order_index: currentCount + idx,
+        created_by: user.id,
+        status: 'pending',
+      }));
+      const { error } = await supabase.from('governance_agenda_items').insert(inserts);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['governance-agenda-items', meetingId] });
+      toast.success('Pautas importadas com sucesso');
+    },
+    onError: () => toast.error('Erro ao importar pautas'),
+  });
+
   return {
     items: itemsQuery.data || [],
+    otherItems: otherItemsQuery.data || [],
     isLoading: itemsQuery.isLoading,
     addItem,
     updateItem,
     deleteItem,
+    importItems,
   };
 };
