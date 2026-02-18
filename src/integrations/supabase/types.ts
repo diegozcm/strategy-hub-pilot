@@ -1099,6 +1099,238 @@ export type Database = {
         }
         Relationships: []
       }
+      governance_agenda_items: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          meeting_id: string
+          order_index: number
+          responsible_user_id: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          meeting_id: string
+          order_index?: number
+          responsible_user_id?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          meeting_id?: string
+          order_index?: number
+          responsible_user_id?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_agenda_items_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "governance_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      governance_atas: {
+        Row: {
+          approved: boolean
+          approved_at: string | null
+          approved_by: string | null
+          content: string | null
+          created_at: string
+          created_by: string
+          decisions: string | null
+          id: string
+          meeting_id: string
+          participants: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          approved?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
+          content?: string | null
+          created_at?: string
+          created_by: string
+          decisions?: string | null
+          id?: string
+          meeting_id: string
+          participants?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          approved?: boolean
+          approved_at?: string | null
+          approved_by?: string | null
+          content?: string | null
+          created_at?: string
+          created_by?: string
+          decisions?: string | null
+          id?: string
+          meeting_id?: string
+          participants?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_atas_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "governance_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      governance_meetings: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          duration_minutes: number | null
+          id: string
+          location: string | null
+          meeting_type: string
+          notes: string | null
+          scheduled_date: string
+          scheduled_time: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          duration_minutes?: number | null
+          id?: string
+          location?: string | null
+          meeting_type?: string
+          notes?: string | null
+          scheduled_date: string
+          scheduled_time?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          duration_minutes?: number | null
+          id?: string
+          location?: string | null
+          meeting_type?: string
+          notes?: string | null
+          scheduled_date?: string
+          scheduled_time?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_meetings_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      governance_rule_items: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          governance_rule_id: string
+          id: string
+          order_index: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          governance_rule_id: string
+          id?: string
+          order_index?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          governance_rule_id?: string
+          id?: string
+          order_index?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_rule_items_governance_rule_id_fkey"
+            columns: ["governance_rule_id"]
+            isOneToOne: false
+            referencedRelation: "governance_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      governance_rules: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_rules_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       key_result_values: {
         Row: {
           comments: string | null
