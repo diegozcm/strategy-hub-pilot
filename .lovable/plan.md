@@ -1,108 +1,92 @@
 
+# Plano: Identidade Cofound + Funcionalidades de Edicao na Governanca RMRE
 
-# Plano: Redesign completo da Agenda de Reunioes
+## Problemas identificados
 
-## Feedback sobre o layout atual
-
-1. **Calendario pequeno demais** - As celulas sao compactas e nao aproveitam os 85% de largura disponivel. O calendario parece "perdido" dentro do card.
-2. **Sidebar sem utilidade** - Com 0 reunioes, a sidebar so mostra "Sem reunioes neste mes" e desperdiça espaço. Mesmo com reunioes, a informacao e redundante.
-3. **Sem indicadores visuais** - Dias com reunioes nao tem dots, badges ou cores diferenciadas. O usuario precisa clicar dia a dia para descobrir se tem algo.
-4. **Area de detalhes pobre** - A mensagem "Nenhuma reuniao em 20 de fevereiro" nao oferece acao. Deveria convidar o usuario a criar uma reuniao.
-5. **Sem contadores no header** - Falta contexto: quantas reunioes no mes, proxima reuniao, etc.
-6. **Falta responsividade** - O layout side-by-side pode quebrar em telas menores.
+1. **Visual generico** - Os componentes usam apenas cores padroes do shadcn (primary, muted, etc.) sem nenhuma referencia as cores Cofound (cofound-blue-light, cofound-green, cofound-blue-dark)
+2. **Titulos sem fonte Cofound** - Titulos usam fonte padrão em vez de `font-display` (Saira)
+3. **Botoes sem variante brand/cofound** - Todos os botoes usam variantes genericas (default, outline, ghost)
+4. **Reunioes nao editaveis** - O hook `updateMeeting` existe mas nao e exposto no MeetingCard nem no MeetingsSection. Nao ha botao de "Editar" reuniao
+5. **Cards sem personalidade** - Sem bordas coloridas, icones com cores Cofound, ou destaque visual
+6. **Sub-abas genericas** - TabsList sem estilo Cofound (aba ativa deveria usar #CDD966 fundo com #10283F texto)
 
 ---
 
-## Novo layout proposto
+## Mudancas planejadas
 
-```text
-+------------------------------------------------------------------+
-| [calendar icon] Agenda de Reunioes                                |
-| Proxima: RM Semanal - 25/02 as 14:00          [+ Nova Reuniao]   |
-+------------------------------------------------------------------+
-|                                                                    |
-| [< ]       Fevereiro 2026                              [hoje] [>] |
-|                                                                    |
-| DOM      SEG      TER      QUA      QUI      SEX      SAB        |
-| +------+--------+--------+--------+--------+--------+--------+   |
-| |      |        |        |        |        |        |        |   |
-| |  1   |   2    |   3    |   4    |   5    |   6    |   7    |   |
-| |      |        |        |  *RM*  |        |        |        |   |
-| +------+--------+--------+--------+--------+--------+--------+   |
-| |      |        |        |        |        |        |        |   |
-| |  8   |   9    |  10    |  11    |  12    |  13    |  14    |   |
-| |      |        |        |        |  *RE*  |        |        |   |
-| +------+--------+--------+--------+--------+--------+--------+   |
-| | ...                                                         |   |
-| +-------------------------------------------------------------+   |
-|                                                                    |
-| --- Reunioes em 4 de fevereiro (1) ----------------------------- |
-| +--------------------------------------------------------------+ |
-| | [RM] RM Semanal           14:00 - 15:00     [Agendada]       | |
-| | Local: Sala de reunioes   Resp: Joao Silva                    | |
-| | Pautas: 3 itens                    [Concluir] [Cancelar] [x] | |
-| +--------------------------------------------------------------+ |
-|                                                                    |
-+------------------------------------------------------------------+
-|                                                                    |
-| Reunioes do mes (4)                                               |
-| +--------+------------------+-------+--------+---------+         |
-| | 04/02  | RM Semanal       | 14:00 | Sala 1 | Agendada|         |
-| | 12/02  | RE Mensal        | 09:00 | Online | Agendada|         |
-| | 18/02  | RM Semanal       | 14:00 | Sala 1 | Concluida|        |
-| | 25/02  | RM Semanal       | 14:00 | Sala 1 | Agendada|         |
-| +--------+------------------+-------+--------+---------+         |
-+------------------------------------------------------------------+
-```
+### 1. Sub-abas com estilo Cofound
 
-## Mudancas tecnicas
+Aplicar no `GovernancaSubTabs.tsx`:
+- TabsTrigger ativa com fundo `bg-[#CDD966]` e texto `text-[#10283F]`
+- Icones nas abas (BookOpen, ClipboardList, FileText, CalendarDays)
 
-### 1. Eliminar sidebar - layout single-column
+### 2. Header principal com identidade
 
-Remover o layout `flex` com sidebar de 15%. Usar layout de coluna unica com:
-- Calendario ocupando 100% da largura
-- Detalhes do dia selecionado logo abaixo do calendario
-- Lista mensal de reunioes em tabela/cards abaixo
+No `GovernancaRMRETab.tsx`:
+- Titulo com `font-display` (Saira)
+- Icone com cor `text-cofound-blue-light`
+- Subtitulo com estilo Cofound
 
-### 2. Calendario com celulas maiores e indicadores
+### 3. Agenda (GovernanceMeetingsSection)
 
-- Celulas de altura fixa maior (h-16 ou h-20) com espaco para mostrar dots/labels
-- Dias com reunioes mostram um dot colorido (azul para RM, verde para RE, laranja para extraordinaria)
-- Hover mostra tooltip com resumo das reunioes do dia
-- Dia selecionado com destaque mais forte
+- Header: icone com `text-cofound-blue-light`, botao "Nova Reuniao" com `variant="brand"`
+- Badge "proximo reuniao" com fundo `bg-cofound-blue-light/10`
+- Botao "Agendar para este dia" com `variant="brand"`
+- **Adicionar botao "Editar"** no MeetingCard que abre dialog com GovernanceMeetingForm pre-preenchido
 
-### 3. Header informativo
+### 4. Calendario (GovernanceCalendarGrid)
 
-- Adicionar linha "Proxima reuniao: [titulo] - [data] as [hora]" abaixo do titulo
-- Contador de reunioes do mes
-- Botao "Hoje" para voltar ao dia atual rapidamente
+- Header do mes com `font-display`
+- Dia de hoje com `bg-cofound-blue-light` em vez de `bg-primary`
+- Dia selecionado com `ring-cofound-blue-light`
+- Dots de tipo de reuniao mantidos (azul/verde/laranja)
 
-### 4. Painel de detalhes do dia melhorado
+### 5. MeetingCard com edicao e estilo Cofound
 
-- Quando tem reunioes: cards completos com tipo, horario, local, numero de pautas, acoes
-- Quando vazio: mensagem com botao "Agendar reuniao para este dia" (pre-preenchendo a data)
-- Transicao suave ao trocar de dia
+- Borda esquerda colorida por tipo (RM azul, RE verde, Extraordinaria amber)
+- **Botao "Editar" novo** que abre dialog com form pre-preenchido
+- Badges de status com cores mais Cofound
+- Botoes "Concluir" com `variant="cofound"`
 
-### 5. Lista mensal compacta abaixo
+### 6. Regras (GovernanceRulesSection)
 
-- Tabela/grid com todas as reunioes do mes visivel
-- Colunas: Data, Titulo, Horario, Local, Status
-- Clicavel para selecionar o dia no calendario
-- Badges coloridos por tipo (RM/RE/Extraordinaria) e status
+- Titulos com `font-display`
+- Icone BookOpen com `text-cofound-blue-light`
+- Botao "Adicionar" com `variant="brand"`
+- Itens da lista com borda esquerda `border-l-2 border-cofound-green`
 
-### 6. Implementacao customizada do calendario
+### 7. Pautas (GovernanceAgendaSection)
 
-Como o componente `Calendar` do shadcn/react-day-picker e limitado para celulas customizadas com conteudo extra, sera necessario:
-- Criar um componente `GovernanceCalendarGrid` customizado que renderiza o grid manualmente
-- Cada celula e um div com o numero do dia + indicadores de reunioes
-- Manter navegacao mes anterior/proximo com os mesmos controles
-- Ou alternativamente, usar `components` prop do DayPicker para customizar o conteudo de cada dia
+- Titulos com `font-display`
+- Botao "Adicionar" com `variant="brand"`
+- Badges de status com cores Cofound
 
-## Arquivos a modificar
+### 8. ATAs (GovernanceAtasSection)
+
+- Titulos com `font-display`
+- Botao "Nova ATA" com `variant="brand"`
+- Badge "Aprovada" com `bg-cofound-green text-cofound-blue-dark`
+
+---
+
+## Detalhe tecnico: Edicao de reunioes
+
+O hook `updateMeeting` ja existe. O que falta e:
+- No `GovernanceMeetingsSection`: passar `updateMeeting` para o `MeetingCard`
+- No `MeetingCard`: adicionar botao "Editar" que abre um `Dialog` com `GovernanceMeetingForm` usando `initialData` pre-preenchido
+- O `GovernanceMeetingForm` ja aceita `initialData` como prop
+
+---
+
+## Resumo de arquivos
 
 | Arquivo | Mudanca |
 |---|---|
-| `src/components/tools/governance/GovernanceMeetingsSection.tsx` | Reescrever layout completo: remover sidebar, calendario expandido, painel de detalhes, lista mensal |
-| `src/components/tools/governance/GovernanceCalendarGrid.tsx` | Novo - componente de calendario customizado com celulas grandes e indicadores |
-| `src/components/tools/governance/MeetingCard.tsx` | Novo - extrair card de reuniao como componente reutilizavel com layout melhorado |
-
+| `GovernancaRMRETab.tsx` | Font-display no titulo, icone Cofound |
+| `GovernancaSubTabs.tsx` | Icones nas abas, estilo ativo Cofound (#CDD966) |
+| `GovernanceMeetingsSection.tsx` | Cores Cofound, passar updateMeeting ao MeetingCard |
+| `GovernanceCalendarGrid.tsx` | Cores Cofound no hoje/selecionado, font-display |
+| `MeetingCard.tsx` | Borda colorida por tipo, botao Editar com dialog, estilo Cofound |
+| `GovernanceRulesSection.tsx` | Font-display, cores Cofound, borda verde nos itens |
+| `GovernanceAgendaSection.tsx` | Font-display, cores Cofound nos botoes e badges |
+| `GovernanceAtasSection.tsx` | Font-display, cores Cofound, badge aprovada verde |
