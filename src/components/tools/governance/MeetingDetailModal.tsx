@@ -150,22 +150,22 @@ const MeetingDetailsView: React.FC<{
   onStatusChange: (data: { id: string; status: string }) => void;
   onDelete: () => void;
 }> = ({ meeting, onEdit, onStatusChange, onDelete }) => (
-  <div className="space-y-4">
-    <div className="grid grid-cols-2 gap-4">
+  <div className="space-y-5">
+    <div className="grid grid-cols-2 gap-3">
       <InfoField label="Horário" value={meeting.scheduled_time?.slice(0, 5) || '—'} icon={<Clock className="h-4 w-4 text-cofound-blue-light" />} />
-      <InfoField label="Duração" value={meeting.duration_minutes ? `${meeting.duration_minutes} min` : '—'} />
+      <InfoField label="Duração" value={meeting.duration_minutes ? `${meeting.duration_minutes} min` : '—'} icon={<Clock className="h-4 w-4 text-muted-foreground" />} />
       <InfoField label="Local" value={meeting.location || '—'} icon={<MapPin className="h-4 w-4 text-cofound-blue-light" />} />
-      <InfoField label="Tipo" value={typeLabels[meeting.meeting_type] || meeting.meeting_type} />
+      <InfoField label="Tipo" value={typeLabels[meeting.meeting_type] || meeting.meeting_type} icon={<CalendarDays className="h-4 w-4 text-muted-foreground" />} />
     </div>
 
     {meeting.notes && (
-      <div className="p-3 rounded-lg bg-muted/40 border">
-        <p className="text-xs font-medium text-muted-foreground mb-1">Observações</p>
-        <p className="text-sm whitespace-pre-wrap">{meeting.notes}</p>
+      <div className="p-4 rounded-xl bg-muted/30 border">
+        <p className="text-xs font-display font-semibold text-muted-foreground mb-1.5">Observações</p>
+        <p className="text-sm whitespace-pre-wrap leading-relaxed">{meeting.notes}</p>
       </div>
     )}
 
-    <div className="flex flex-wrap gap-2 pt-2 border-t">
+    <div className="flex flex-wrap gap-2 pt-3 border-t">
       <Button size="sm" variant="cofound-ghost" onClick={onEdit}>
         <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
       </Button>
@@ -187,11 +187,11 @@ const MeetingDetailsView: React.FC<{
 );
 
 const InfoField: React.FC<{ label: string; value: string; icon?: React.ReactNode }> = ({ label, value, icon }) => (
-  <div className="flex items-start gap-2">
+  <div className="flex items-start gap-2.5 p-3 rounded-lg bg-muted/30 border border-border/50">
     {icon && <span className="mt-0.5">{icon}</span>}
     <div>
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium">{value}</p>
+      <p className="text-[11px] font-display text-muted-foreground">{label}</p>
+      <p className="text-sm font-semibold">{value}</p>
     </div>
   </div>
 );

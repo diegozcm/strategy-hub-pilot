@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useGovernanceMeetings, type MeetingFormData } from '@/hooks/useGovernanceMeetings';
-import { Plus, CalendarDays } from 'lucide-react';
+import { Plus, CalendarDays, Clock, MapPin } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { GovernanceMeetingForm } from './GovernanceMeetingForm';
 import { GovernanceCalendarGrid } from './GovernanceCalendarGrid';
@@ -89,7 +89,7 @@ export const GovernanceMeetingsSection: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="font-display">Agendar Reunião</DialogTitle>
           </DialogHeader>
-          <GovernanceMeetingForm onSubmit={handleAddMeeting} isPending={addMeeting.isPending} />
+          <GovernanceMeetingForm onSubmit={handleAddMeeting} isPending={addMeeting.isPending} initialData={{ scheduled_date: format(selectedDate, 'yyyy-MM-dd') }} />
         </DialogContent>
       </Dialog>
 
@@ -121,28 +121,34 @@ export const GovernanceMeetingsSection: React.FC = () => {
                     key={m.id}
                     onClick={() => setDetailMeeting(m)}
                     className={cn(
-                      'p-3 border rounded-lg bg-card border-l-4 cursor-pointer hover:bg-muted/40 transition-colors flex items-center justify-between gap-3',
+                      'p-4 border rounded-xl bg-card border-l-4 cursor-pointer hover:bg-muted/50 hover:shadow-sm transition-all flex items-center justify-between gap-4',
                       typeBorderColors[m.meeting_type] || 'border-l-muted-foreground'
                     )}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className={cn('h-2.5 w-2.5 rounded-full', typeColors[m.meeting_type] || 'bg-muted-foreground')} />
-                        <span className="text-xs font-medium text-muted-foreground">{m.meeting_type}</span>
+                        <Badge variant="outline" className="text-[10px] font-semibold">{m.meeting_type}</Badge>
                       </div>
-                      <p className="font-display font-medium text-sm truncate">{m.title}</p>
+                      <p className="font-display font-semibold text-sm truncate">{m.title}</p>
                       {m.scheduled_time && (
-                        <span className="text-xs text-muted-foreground shrink-0">{m.scheduled_time.slice(0, 5)}</span>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground shrink-0">
+                          <Clock className="h-3 w-3" />
+                          {m.scheduled_time.slice(0, 5)}
+                        </span>
                       )}
                       {m.location && (
-                        <span className="text-xs text-muted-foreground truncate hidden sm:inline">{m.location}</span>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground truncate hidden sm:inline-flex">
+                          <MapPin className="h-3 w-3" />
+                          {m.location}
+                        </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant={statusLabels[m.status]?.variant || 'default'} className="text-[10px]">
+                      <Badge variant={statusLabels[m.status]?.variant || 'default'} className="text-[10px] px-2 py-0.5">
                         {statusLabels[m.status]?.label || m.status}
                       </Badge>
-                      <span className="text-xs text-cofound-blue-light font-medium">Detalhes →</span>
+                      <span className="text-xs text-cofound-blue-light font-semibold">Detalhes →</span>
                     </div>
                   </div>
                 ))}
