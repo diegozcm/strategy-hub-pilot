@@ -12,6 +12,7 @@ export const GovernanceRulesSection: React.FC = () => {
   const { rule, ruleItems, isLoading, upsertDescription, addRuleItem, updateRuleItem, deleteRuleItem } = useGovernanceRules();
   const [description, setDescription] = useState('');
   const [descDirty, setDescDirty] = useState(false);
+  const [descFocused, setDescFocused] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<{ id?: string; title: string; description: string } | null>(null);
 
@@ -52,12 +53,23 @@ export const GovernanceRulesSection: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Textarea
-            value={description}
-            onChange={(e) => { setDescription(e.target.value); setDescDirty(true); }}
-            placeholder="Descreva as regras gerais de governança da empresa..."
-            className="min-h-[120px]"
-          />
+          {descFocused || descDirty ? (
+            <Textarea
+              value={description}
+              onChange={(e) => { setDescription(e.target.value); setDescDirty(true); }}
+              onBlur={() => { if (!descDirty) setDescFocused(false); }}
+              placeholder="Descreva as regras gerais de governança da empresa..."
+              className="min-h-[120px]"
+              autoFocus
+            />
+          ) : (
+            <div
+              onClick={() => setDescFocused(true)}
+              className="cursor-pointer rounded-lg p-3 text-sm whitespace-pre-wrap leading-relaxed text-foreground/80 hover:bg-muted/50 transition-colors min-h-[60px]"
+            >
+              {description || <span className="text-muted-foreground italic">Clique para adicionar uma descrição geral...</span>}
+            </div>
+          )}
           {descDirty && (
             <Button onClick={handleSaveDescription} disabled={upsertDescription.isPending} size="sm" variant="cofound">
               <Save className="h-4 w-4 mr-1" /> Salvar
