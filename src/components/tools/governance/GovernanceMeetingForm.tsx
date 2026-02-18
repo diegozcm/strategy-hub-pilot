@@ -39,11 +39,11 @@ export const GovernanceMeetingForm: React.FC<GovernanceMeetingFormProps> = ({ on
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <Label>Título *</Label>
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: RM Semanal" required />
+        <Label className="font-display">Título *</Label>
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: RM Semanal" required className="focus-visible:ring-cofound-blue-light" />
       </div>
       <div>
-        <Label>Tipo</Label>
+        <Label className="font-display">Tipo</Label>
         <Select value={meetingType} onValueChange={setMeetingType}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -55,29 +55,29 @@ export const GovernanceMeetingForm: React.FC<GovernanceMeetingFormProps> = ({ on
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label>Data *</Label>
-          <Input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} required />
+          <Label className="font-display">Data *</Label>
+          <Input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} required className="focus-visible:ring-cofound-blue-light" />
         </div>
         <div>
-          <Label>Horário</Label>
-          <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} />
+          <Label className="font-display">Horário</Label>
+          <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} className="focus-visible:ring-cofound-blue-light" />
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label>Duração (min)</Label>
-          <Input type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} />
+          <Label className="font-display">Duração (min)</Label>
+          <Input type="number" value={durationMinutes} onChange={(e) => setDurationMinutes(e.target.value)} className="focus-visible:ring-cofound-blue-light" />
         </div>
         <div>
-          <Label>Local</Label>
-          <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Sala ou link" />
+          <Label className="font-display">Local</Label>
+          <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Sala ou link" className="focus-visible:ring-cofound-blue-light" />
         </div>
       </div>
       <div>
-        <Label>Observações</Label>
-        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observações..." />
+        <Label className="font-display">Observações</Label>
+        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Observações..." className="focus-visible:ring-cofound-blue-light" />
       </div>
-      <Button type="submit" disabled={isPending} className="w-full">
+      <Button type="submit" disabled={isPending} className="w-full" variant="cofound">
         {isPending ? 'Salvando...' : 'Salvar'}
       </Button>
     </form>

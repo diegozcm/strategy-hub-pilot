@@ -108,7 +108,7 @@ export const GovernanceRulesSection: React.FC = () => {
           ) : (
             <div className="space-y-3">
               {ruleItems.map((item, idx) => (
-                <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30 border-l-2 border-l-cofound-green">
+                <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30 border-l-2 border-l-cofound-green hover:bg-muted/50 hover:shadow-sm transition-all">
                   <span className="text-muted-foreground font-medium text-sm mt-0.5">{idx + 1}.</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{item.title}</p>
