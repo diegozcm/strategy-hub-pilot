@@ -98,7 +98,12 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
     selectedMonth,
     selectedYear,
     selectedQuarter,
-    selectedQuarterYear
+    selectedQuarterYear,
+    selectedMonthYear,
+    selectedSemester,
+    selectedSemesterYear,
+    selectedBimonth,
+    selectedBimonthYear
   } = usePeriodFilter();
   
   // Modal navigation stack
@@ -204,14 +209,18 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                           ? `📈 Q${selectedQuarter} ${selectedQuarterYear}`
                           : selectedPeriod === 'yearly' && selectedYear
                           ? `📅 Ano ${selectedYear}`
+                          : selectedPeriod === 'semesterly' && selectedSemester && selectedSemesterYear
+                          ? `📊 S${selectedSemester} ${selectedSemesterYear}`
+                          : selectedPeriod === 'bimonthly' && selectedBimonth && selectedBimonthYear
+                          ? `📊 B${selectedBimonth} ${selectedBimonthYear}`
                           : selectedPeriod === 'monthly' 
-                          ? (selectedMonth && selectedYear
-                              ? `📆 ${new Date(selectedYear, selectedMonth - 1, 1)
+                          ? (selectedMonth && selectedMonthYear
+                              ? `📆 ${new Date(selectedMonthYear, selectedMonth - 1, 1)
                                   .toLocaleDateString('pt-BR', { month: 'long' })
                                   .charAt(0).toUpperCase() + 
-                                  new Date(selectedYear, selectedMonth - 1, 1)
+                                  new Date(selectedMonthYear, selectedMonth - 1, 1)
                                   .toLocaleDateString('pt-BR', { month: 'long' })
-                                  .slice(1)} ${selectedYear}`
+                                  .slice(1)} ${selectedMonthYear}`
                               : `📆 ${format(new Date(), 'MMMM', { locale: ptBR }).charAt(0).toUpperCase() + format(new Date(), 'MMMM', { locale: ptBR }).slice(1)}`)
                           : '📊 YTD'}
                       </Badge>
