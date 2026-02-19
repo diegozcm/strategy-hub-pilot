@@ -71,39 +71,37 @@ export const SpreadsheetViewer: React.FC<SpreadsheetViewerProps> = ({ url, class
   }
 
   const renderTable = (sheet: SheetData) => (
-    <ScrollArea className="h-[500px] w-full">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
-          <thead className="sticky top-0 z-10">
-            <tr className="bg-muted">
-              {sheet.headers.map((h, i) => (
-                <th
-                  key={i}
-                  className="px-3 py-2 text-left font-semibold text-foreground border border-border whitespace-nowrap"
+    <div className="h-[500px] overflow-auto w-full">
+      <table className="text-sm border-collapse min-w-max">
+        <thead className="sticky top-0 z-10">
+          <tr className="bg-muted">
+            {sheet.headers.map((h, i) => (
+              <th
+                key={i}
+                className="px-3 py-2 text-left font-semibold text-foreground border border-border whitespace-nowrap"
+              >
+                {h || `Col ${i + 1}`}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sheet.rows.map((row, ri) => (
+            <tr key={ri} className="hover:bg-muted/50 transition-colors">
+              {row.map((cell, ci) => (
+                <td
+                  key={ci}
+                  className="px-3 py-1.5 border border-border text-foreground whitespace-nowrap"
+                  title={cell}
                 >
-                  {h || `Col ${i + 1}`}
-                </th>
+                  {cell}
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody>
-            {sheet.rows.map((row, ri) => (
-              <tr key={ri} className="hover:bg-muted/50 transition-colors">
-                {row.map((cell, ci) => (
-                  <td
-                    key={ci}
-                    className="px-3 py-1.5 border border-border text-foreground whitespace-nowrap max-w-[300px] truncate"
-                    title={cell}
-                  >
-                    {cell}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </ScrollArea>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 
   if (sheets.length === 1) {
