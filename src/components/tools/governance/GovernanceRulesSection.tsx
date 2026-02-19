@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useGovernanceRuleDocument } from '@/hooks/useGovernanceRuleDocument';
 import { useCurrentModuleRole } from '@/hooks/useCurrentModuleRole';
-import { Upload, Download, Replace, Trash2, BookOpen, Maximize2, FileText, FileSpreadsheet, FileIcon, X } from 'lucide-react';
+import { Upload, Download, Replace, Trash2, BookOpen, Maximize2, FileText, FileSpreadsheet, FileIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { SpreadsheetViewer } from './SpreadsheetViewer';
@@ -223,31 +223,25 @@ export const GovernanceRulesSection: React.FC = () => {
 
       {/* Fullscreen document viewer */}
       <Dialog open={fullscreenOpen} onOpenChange={setFullscreenOpen}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0">
-          <DialogHeader className="p-4 pb-2 flex flex-row items-center justify-between">
+        <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-[95vh] p-0 flex flex-col">
+          <DialogHeader className="p-4 pb-2 flex flex-row items-center justify-between shrink-0">
             <DialogTitle className="font-display text-lg">{doc.file_name}</DialogTitle>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={downloadDocument}>
-                <Download className="h-4 w-4 mr-1" /> Baixar
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setFullscreenOpen(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button size="sm" variant="outline" onClick={downloadDocument}>
+              <Download className="h-4 w-4 mr-1" /> Baixar
+            </Button>
           </DialogHeader>
-          {signedUrl && isPdf(doc.file_type) && (
-            <iframe
-              src={signedUrl}
-              className="w-full flex-1 min-h-0"
-              style={{ height: 'calc(95vh - 80px)' }}
-              title={doc.file_name}
-            />
-          )}
-          {signedUrl && isSpreadsheet(doc.file_type) && (
-            <div className="px-4 pb-4 flex-1 min-h-0 overflow-auto" style={{ height: 'calc(95vh - 80px)' }}>
+          <div className="flex-1 min-h-0 overflow-auto px-4 pb-4">
+            {signedUrl && isPdf(doc.file_type) && (
+              <iframe
+                src={signedUrl}
+                className="w-full h-full rounded-lg border"
+                title={doc.file_name}
+              />
+            )}
+            {signedUrl && isSpreadsheet(doc.file_type) && (
               <SpreadsheetViewer url={signedUrl} className="h-full" />
-            </div>
-          )}
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </>
