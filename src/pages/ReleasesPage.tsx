@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import ReactMarkdown from 'react-markdown';
+import DOMPurify from 'dompurify';
 import { useReleaseNotes, type ReleaseNote } from '@/hooks/useReleaseNotes';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -89,7 +90,11 @@ const ReleaseCard: React.FC<{ release: ReleaseNote }> = ({ release }) => {
               prose-code:bg-muted prose-code:px-1 prose-code:rounded prose-code:text-xs
               prose-img:rounded-lg prose-img:border prose-img:border-border/50 prose-img:shadow-md prose-img:my-4
             ">
-              <ReactMarkdown>{release.content}</ReactMarkdown>
+              {release.content.trim().startsWith('<') ? (
+                <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(release.content) }} />
+              ) : (
+                <ReactMarkdown>{release.content}</ReactMarkdown>
+              )}
             </div>
           </CardContent>
         )}
