@@ -87,6 +87,7 @@ const ReleaseCard: React.FC<{ release: ReleaseNote }> = ({ release }) => {
               prose-li:text-muted-foreground
               prose-strong:text-cofound-navy
               prose-code:bg-muted prose-code:px-1 prose-code:rounded prose-code:text-xs
+              prose-img:rounded-lg prose-img:border prose-img:border-border/50 prose-img:shadow-md prose-img:my-4
             ">
               <ReactMarkdown>{release.content}</ReactMarkdown>
             </div>
