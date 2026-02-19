@@ -57,9 +57,9 @@ export const ResultadoChaveMiniCard = ({
     }
   };
 
-  const currentValue = getMetricsForPeriod('actual');
-  const targetValue = getMetricsForPeriod('target');
-  const percentage = getMetricsForPeriod('percentage') as number;
+  const currentValue = getMetricsForPeriod('actual') ?? 0;
+  const targetValue = getMetricsForPeriod('target') ?? 0;
+  const percentage = (getMetricsForPeriod('percentage') ?? 0) as number;
   
   // Determine status color based on percentage (already calculated in DB)
   const getStatusColor = (pct: number) => {
