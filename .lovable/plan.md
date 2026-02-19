@@ -1,82 +1,77 @@
 
 
-## Substituir "Landing Page" por "Novidades" no Painel Admin
+## Editor Rico (WYSIWYG) para Release Notes
 
-Remover toda a seção de edição da Landing Page do painel administrativo e substituir pelo gerenciamento de Release Notes (Novidades), conforme planejado anteriormente.
-
----
-
-### O que será removido
-
-1. **Sidebar**: A seção "Landing Page" com os itens "Editar Conteúdo", "Preview" e "Publicar Alterações"
-2. **Rotas do admin**: `landing/edit`, `landing/preview`, `landing/publish`
-3. **Páginas**: `EditLandingPage.tsx`, `PreviewLandingPage.tsx`, `PublishLandingPage.tsx` (pasta `admin-v2/pages/landing/`)
-4. **Componentes do editor antigo**: `LandingPageEditorPage.tsx` e pasta `admin-landing-page/` com seus sub-componentes (EditableField, ImageUploader, PublishButton, etc.)
-5. **Hooks de CMS**: `useLandingPageContentDraft.tsx`, `useTabEditor.tsx`
-6. **Rotas legadas**: `/app/admin/landing-page` e `/app/admin/landing-preview`
-7. **Página LandingPagePreview**: `src/pages/LandingPagePreview.tsx`
-
-**Nota**: O hook `useLandingPageContent.tsx` e a página `LandingPage.tsx` (rota `/`) serao mantidos por enquanto, pois a landing page publica ainda os utiliza. Quando voce decidir tornar a landing page fixa, eles tambem podem ser removidos.
+Substituir o editor Markdown atual por um editor visual rico estilo WordPress usando **Tiptap** -- um editor modular para React que permite formatar texto, inserir imagens arrastando, e ver o resultado final enquanto escreve, sem precisar conhecer Markdown.
 
 ---
 
-### O que será adicionado
+### O que muda para voce (usuario)
 
-A seção "Novidades" no lugar da "Landing Page", com CRUD completo de Release Notes:
+- Em vez de escrever `## Titulo` e `![img](url)`, voce vera uma **barra de ferramentas** com botoes para Negrito, Italico, Titulos (H1-H3), Listas, etc.
+- Para inserir uma imagem, basta **clicar no botao de imagem** e selecionar um arquivo, ou **arrastar e soltar** a imagem direto no editor -- ela aparece inline, como no Word/WordPress.
+- O conteudo e editado visualmente -- o que voce ve e o que o usuario final vera.
+- A aba "Preview" separada deixa de ser necessaria, pois o editor ja mostra o resultado formatado.
 
-**Sidebar** (icone `Sparkles`, label "Novidades"):
-- Todas as Novidades (`/app/admin/releases`)
-- Nova Publicação (`/app/admin/releases/new`)
+---
 
-**Novas páginas**:
-- `AllReleasesPage.tsx` -- Tabela com todas as releases (versao, titulo, data, tags, status, acoes)
-- `NewReleasePage.tsx` -- Formulario de criacao
-- `EditReleasePage.tsx` -- Formulario de edicao (rota `/app/admin/releases/:id/edit`)
+### Barra de Ferramentas do Editor
 
-**Novos componentes**:
-- `ReleaseNoteForm.tsx` -- Formulario compartilhado com editor Markdown e preview lado a lado
-- `ReleaseNoteTable.tsx` -- Tabela de listagem com badges de status e tags
-- `MarkdownPreview.tsx` -- Renderizacao do Markdown com ReactMarkdown
+```text
+[ H1 | H2 | H3 | B | I | --- | Lista | Lista Num. | Imagem | Desfazer | Refazer ]
+```
 
-**Novo hook**:
-- `useAdminReleaseNotes.ts` -- CRUD completo usando TanStack Query (listar, buscar por ID, criar, atualizar, excluir)
+Botoes planejados:
+- **Titulos**: H1, H2, H3
+- **Formatacao**: Negrito, Italico
+- **Separador**: Linha horizontal
+- **Listas**: Com marcadores e numeradas
+- **Imagem**: Upload de arquivo local (salvo em `/public/releases/`)
+- **Desfazer/Refazer**
+
+---
+
+### Estrategia de Armazenamento
+
+- O editor Tiptap gera **HTML** internamente.
+- O campo `content` no banco continuara sendo `text`, mas passara a armazenar HTML em vez de Markdown.
+- A pagina publica (`/releases`) sera atualizada para renderizar HTML diretamente em vez de usar ReactMarkdown.
+- O conteudo existente (v1.0.0 em Markdown) sera convertido para HTML via uma migracao SQL simples usando funcoes de replace.
 
 ---
 
 ### Detalhes Tecnicos
 
+**Dependencia nova**: `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-image`, `@tiptap/extension-placeholder`
+
+**Arquivos criados**:
+
+| Arquivo | Descricao |
+|---------|-----------|
+| `src/components/admin-v2/components/releases/RichTextEditor.tsx` | Componente do editor Tiptap com toolbar e area de edicao |
+| `src/components/admin-v2/components/releases/EditorToolbar.tsx` | Barra de ferramentas com botoes de formatacao |
+
 **Arquivos modificados**:
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `sidebarContent.ts` | Trocar `landing` por `releases` no `navItems` e no `contentMap` |
-| `App.tsx` | Remover rotas `landing/*` e adicionar rotas `releases`, `releases/new`, `releases/:id/edit` |
-| `pages/index.ts` | Remover exports de Landing, adicionar exports de Releases |
+| `ReleaseNoteForm.tsx` | Substituir Textarea + Tabs (Escrever/Preview) pelo componente `RichTextEditor`. Remover import do `MarkdownPreview` |
+| `MarkdownPreview.tsx` | Renomear para `ContentPreview.tsx` -- renderizar HTML com `dangerouslySetInnerHTML` (sanitizado com DOMPurify que ja esta instalado) em vez de ReactMarkdown |
+| `ReleasesPage.tsx` (pagina publica) | Trocar `ReactMarkdown` por renderizacao HTML sanitizada |
+| `EditReleasePage.tsx` | Sem mudancas estruturais, o `defaultValues.content` agora sera HTML |
 
-**Arquivos removidos**:
+**Fluxo de upload de imagem**:
+1. Usuario clica no botao de imagem ou arrasta arquivo para o editor
+2. O arquivo e enviado para o Supabase Storage (bucket `release-images`)
+3. A URL publica retornada e inserida como tag `<img>` no editor
+4. Alternativa simplificada: converter imagem para base64 inline (sem necessidade de storage, mas aumenta o tamanho do campo)
 
-| Arquivo |
-|---------|
-| `src/components/admin-v2/pages/landing/EditLandingPage.tsx` |
-| `src/components/admin-v2/pages/landing/PreviewLandingPage.tsx` |
-| `src/components/admin-v2/pages/landing/PublishLandingPage.tsx` |
-| `src/components/admin/LandingPageEditorPage.tsx` |
-| `src/components/admin/landing-page/*.tsx` (7 arquivos) |
-| `src/hooks/useLandingPageContentDraft.tsx` |
-| `src/hooks/useTabEditor.tsx` |
-| `src/pages/LandingPagePreview.tsx` |
+**Migracao do conteudo existente**:
+- Uma migracao SQL convertera o Markdown da v1.0.0 para HTML equivalente
+- Ou, mais seguro: manter o conteudo antigo como esta e detectar no frontend se e Markdown (comeca com `##`) ou HTML (comeca com `<`) para renderizar adequadamente
 
-**Arquivos criados**:
-
-| Arquivo |
-|---------|
-| `src/components/admin-v2/pages/releases/AllReleasesPage.tsx` |
-| `src/components/admin-v2/pages/releases/NewReleasePage.tsx` |
-| `src/components/admin-v2/pages/releases/EditReleasePage.tsx` |
-| `src/components/admin-v2/components/releases/ReleaseNoteForm.tsx` |
-| `src/components/admin-v2/components/releases/ReleaseNoteTable.tsx` |
-| `src/components/admin-v2/components/releases/MarkdownPreview.tsx` |
-| `src/hooks/useAdminReleaseNotes.ts` |
-
-**Nenhuma migracao de banco necessaria** -- a tabela `release_notes` ja existe com todos os campos.
+**Compatibilidade retroativa**:
+- A pagina publica verificara se o conteudo comeca com `<` (HTML) ou nao (Markdown legado)
+- Se for Markdown, usa ReactMarkdown; se for HTML, renderiza com DOMPurify
+- Isso permite que releases antigas continuem funcionando sem migracao
 
