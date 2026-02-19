@@ -224,7 +224,7 @@ export const GovernanceRulesSection: React.FC = () => {
       {/* Fullscreen document viewer */}
       <Dialog open={fullscreenOpen} onOpenChange={setFullscreenOpen}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-[95vh] p-0 flex flex-col">
-          <DialogHeader className="p-4 pb-2 flex flex-row items-center justify-between shrink-0">
+          <DialogHeader className="p-4 pb-2 pr-12 flex flex-row items-center justify-between shrink-0">
             <DialogTitle className="font-display text-lg">{doc.file_name}</DialogTitle>
             <Button size="sm" variant="outline" onClick={downloadDocument}>
               <Download className="h-4 w-4 mr-1" /> Baixar
