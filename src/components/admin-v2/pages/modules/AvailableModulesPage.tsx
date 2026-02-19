@@ -26,11 +26,11 @@ export default function AvailableModulesPage() {
 
   const getModuleHref = (slug: string) => {
     const slugMap: Record<string, string> = {
-      "strategic-planning": "/app/admin-v2/modules/strategic-planning",
-      "startup-hub": "/app/admin-v2/modules/startup-hub",
-      "ai": "/app/admin-v2/modules/ai-copilot",
+      "strategic-planning": "/app/admin/modules/strategic-planning",
+      "startup-hub": "/app/admin/modules/startup-hub",
+      "ai": "/app/admin/modules/ai-copilot",
     };
-    return slugMap[slug] || "/app/admin-v2/modules";
+    return slugMap[slug] || "/app/admin/modules";
   };
 
   return (

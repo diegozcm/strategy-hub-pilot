@@ -23,8 +23,8 @@ interface EmailTemplate {
 }
 
 const TEMPLATE_ROUTES: Record<string, string> = {
-  welcome_credentials: '/app/admin-v2/emails/welcome',
-  password_reset: '/app/admin-v2/emails/password-recovery',
+  welcome_credentials: '/app/admin/emails/welcome',
+  password_reset: '/app/admin/emails/password-recovery',
 };
 
 export default function AllEmailTemplatesPage() {
@@ -58,7 +58,7 @@ export default function AllEmailTemplatesPage() {
     },
   });
 
-  const getEditRoute = (key: string) => TEMPLATE_ROUTES[key] || `/app/admin-v2/emails/preview?key=${key}`;
+  const getEditRoute = (key: string) => TEMPLATE_ROUTES[key] || `/app/admin/emails/preview?key=${key}`;
 
   return (
     <div className="flex-1 p-6 space-y-6">
@@ -69,7 +69,7 @@ export default function AllEmailTemplatesPage() {
             <Mail className="h-6 w-6" /> Todos os Templates
           </h1>
         </div>
-        <Button onClick={() => navigate('/app/admin-v2/emails/new')}>
+        <Button onClick={() => navigate('/app/admin/emails/new')}>
           <Plus className="h-4 w-4 mr-2" /> Novo Template
         </Button>
       </div>
@@ -125,7 +125,7 @@ export default function AllEmailTemplatesPage() {
                       <Button variant="ghost" size="icon" onClick={() => navigate(getEditRoute(t.template_key))}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => navigate(`/app/admin-v2/emails/preview?key=${t.template_key}`)}>
+                      <Button variant="ghost" size="icon" onClick={() => navigate(`/app/admin/emails/preview?key=${t.template_key}`)}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </div>

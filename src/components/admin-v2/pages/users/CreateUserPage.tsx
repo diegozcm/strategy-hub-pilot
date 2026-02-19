@@ -1179,7 +1179,7 @@ export default function CreateUserPage() {
               variant="outline" 
               onClick={() => {
                 setShowSuccessModal(false);
-                navigate('/app/admin-v2/users');
+                navigate('/app/admin/users');
               }}
             >
               Voltar para Lista

@@ -30,7 +30,7 @@ export default function ManagerRolePage() {
     >
       <div className="space-y-6">
         {/* Back button */}
-        <Button variant="ghost" size="sm" onClick={() => navigate("/app/admin-v2/modules/roles")}>
+        <Button variant="ghost" size="sm" onClick={() => navigate("/app/admin/modules/roles")}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar para Roles
         </Button>

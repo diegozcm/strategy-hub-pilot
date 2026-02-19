@@ -162,7 +162,7 @@ export default function InfoLogsPage() {
       <div className="space-y-6">
         {/* Header with back button */}
         <div className="flex justify-between items-center">
-          <Button variant="outline" size="sm" onClick={() => navigate('/app/admin-v2/monitoring/alerts')}>
+          <Button variant="outline" size="sm" onClick={() => navigate('/app/admin/monitoring/alerts')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>
