@@ -1,37 +1,80 @@
 
-# Corrigir Filtros de Periodo nos KR Mini Cards (Modal de Objetivo)
+# Correcao Completa dos Filtros de Periodo (Objetivo + KR Cards)
 
-## Problema Raiz
+## Problema
 
-O `useKRMetrics` usa **early-returns** baseados na presenca de opcoes (`selectedSemester`, `selectedBimonth`, `selectedQuarter`, etc.). A ordem de verificacao e:
+Existem **3 arquivos** que nao passam os parametros corretos de periodo para o calculo de metricas. Isso faz com que o modal de objetivo e os KR cards exibam valores incorretos ou zerados para filtros como Semestre, Bimestre e Mensal.
 
-1. Semestre (linha 180) -- se `selectedSemester` e `selectedSemesterYear` existem, retorna imediatamente
-2. Bimestre (linha 201) -- nunca alcancado
-3. Trimestre (linha 222) -- nunca alcancado
-4. Ano (linha 320) -- nunca alcancado
-5. Mensal (linha 346) -- nunca alcancado
+---
 
-O problema: O `ResultadoChaveMiniCard` consome o `PeriodFilterContext`, que **sempre** tem TODOS os valores preenchidos (semestre=1, bimestre=1, quarter=1, etc. -- sao inicializados com valores padrao). Portanto, **a verificacao de semestre (linha 180) sempre ganha**, independentemente de qual periodo o usuario selecionou.
+## Arquivos e Correcoes
 
-Resultado: Quando o usuario seleciona "Trimestre", o hook retorna dados do semestre (que so preenche `metrics.semesterly`), e o card tenta ler `metrics.quarterly` que esta com valores padrao (0/null).
+### 1. `src/components/strategic-map/ObjectiveCard.tsx`
 
-Excecao: YTD funciona porque `ytd_target`, `ytd_actual`, `ytd_percentage` sao preenchidos em TODOS os branches de retorno.
+**Problema A** — Linhas 217-226: Faltam variaveis do contexto
+- Falta: `selectedMonthYear`, `selectedSemester`, `selectedSemesterYear`, `selectedBimonth`, `selectedBimonthYear`
 
-## Por que o KR Detail (KeyResultMetrics) funciona?
+**Problema B** — Linhas 238-248: `calculateObjectiveProgress` chamado com params errados
+- Para monthly: usa `selectedYear` em vez de `selectedMonthYear`
+- Falta semesterly e bimonthly completamente
 
-O `KeyResultMetrics` recebe as opcoes como **props do componente pai**, que so passa os valores relevantes para o periodo selecionado. Quando o periodo e "trimestre", `selectedSemester` e `undefined`. Ja o `ResultadoChaveMiniCard` puxa do contexto global que sempre tem tudo preenchido.
+**Problema C** — Linhas 35-206: A funcao `calculateObjectiveProgress` nao tem cases para `semesterly` e `bimonthly` no switch — cai no default (YTD)
 
-## Correcao
+**Correcao:**
+- Extrair TODAS as variaveis de periodo do contexto
+- Adicionar cases `semesterly` e `bimonthly` na funcao `calculateObjectiveProgress` (mesma logica ja existente no `getKRPercentageForPeriod` de `krHelpers.ts`)
+- Corrigir a chamada para passar `selectedMonthYear` no monthly e adicionar semester/bimonth
 
-### Arquivo: `src/components/strategic-map/ResultadoChaveMiniCard.tsx`
+---
 
-Alterar a chamada do `useKRMetrics` para **so passar as opcoes relevantes ao periodo selecionado**:
+### 2. `src/components/objectives/ObjectivesPage.tsx`
 
-```tsx
-const metrics = useKRMetrics(resultadoChave, { 
-  selectedMonth: selectedPeriod === 'monthly' ? selectedMonth : undefined, 
-  selectedYear: selectedPeriod === 'monthly' ? selectedMonthYear 
-              : selectedPeriod === 'yearly' ? selectedYear 
+**Problema A** — Linha 274-283 (filtro de status): Faltam params de semester/bimonth e usa `selectedYear` para monthly
+
+**Problema B** — Linha 830-837 (`progressPercentage` do modal): So trata monthly e quarterly, faltam semester/bimonth/yearly. Usa `selectedYear` em vez de `selectedMonthYear` para monthly
+
+**Correcao:**
+- Unificar TODAS as chamadas de `calculateObjectiveProgressWeighted` para passar o conjunto completo de opcoes:
+  - monthly: `{ selectedMonth, selectedYear: selectedMonthYear }` (corrigir o ano)
+  - quarterly: `{ selectedQuarter, selectedQuarterYear }`
+  - semesterly: `{ selectedSemester, selectedSemesterYear }`
+  - bimonthly: `{ selectedBimonth, selectedBimonthYear }`
+  - yearly: `{ selectedYear }`
+
+---
+
+### 3. `src/components/dashboard/RumoObjectiveBlock.tsx`
+
+**Problema** — Linhas 28-34: Faltam `selectedMonthYear`, `selectedSemester`, `selectedSemesterYear`, `selectedBimonth`, `selectedBimonthYear` no destructuring do contexto. O `progressPercentage` vem do pai (useRumoCalculations), entao os KR cards dentro do modal sao os afetados.
+
+**Correcao:**
+- Extrair todas as variaveis de periodo do contexto (mesmo que o progress venha do pai, os KR mini cards dentro do modal dependem do contexto global via `ResultadoChaveMiniCard`)
+
+---
+
+## Resumo das mudancas
+
+| Arquivo | Mudanca |
+|---------|---------|
+| `ObjectiveCard.tsx` | Adicionar semesterly/bimonthly na funcao `calculateObjectiveProgress` + corrigir destructuring e chamada |
+| `ObjectivesPage.tsx` | Corrigir 4 chamadas de `calculateObjectiveProgressWeighted` para incluir todos os periodos |
+| `RumoObjectiveBlock.tsx` | Extrair variaveis de periodo faltantes do contexto |
+
+Nenhuma mudanca em `ResultadoChaveMiniCard.tsx` (ja corrigido) nem em `useKRMetrics.tsx` (logica correta). A funcao `getKRPercentageForPeriod` em `krHelpers.ts` ja suporta todos os periodos — o problema esta exclusivamente nos componentes que a chamam com parametros incompletos.
+
+---
+
+## Detalhes Tecnicos
+
+### Helper para centralizar opcoes de periodo
+
+Para evitar repeticao, criar uma funcao helper ou extrair as opcoes em uma const reutilizavel:
+
+```text
+const periodOptions = {
+  selectedMonth: selectedPeriod === 'monthly' ? selectedMonth : undefined,
+  selectedYear: selectedPeriod === 'monthly' ? selectedMonthYear
+              : selectedPeriod === 'yearly' ? selectedYear
               : undefined,
   selectedQuarter: selectedPeriod === 'quarterly' ? selectedQuarter : undefined,
   selectedQuarterYear: selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined,
@@ -39,11 +82,11 @@ const metrics = useKRMetrics(resultadoChave, {
   selectedSemesterYear: selectedPeriod === 'semesterly' ? selectedSemesterYear : undefined,
   selectedBimonth: selectedPeriod === 'bimonthly' ? selectedBimonth : undefined,
   selectedBimonthYear: selectedPeriod === 'bimonthly' ? selectedBimonthYear : undefined,
-});
+};
 ```
 
-Isso garante que apenas o branch correto do hook sera ativado, e os dados certos serao retornados para cada periodo.
+Isso deve ser usado em todas as chamadas de `calculateObjectiveProgress` e `calculateObjectiveProgressWeighted`.
 
-### Verificacao
+### ObjectiveCard - funcao calculateObjectiveProgress
 
-Testar na conta Perville todos os filtros (YTD, Ano, Semestre, Trimestre, Bimestre, Mensal) no modal de objetivo "KPIs Macro" e confirmar que Faturamento Total mostra 11.8% no semestre (conforme o KR detail).
+Adicionar ao switch os cases faltantes (semesterly e bimonthly), replicando a logica existente em `getKRPercentageForPeriod` de `krHelpers.ts`. Alternativamente, substituir a funcao inteira pela chamada de `calculateObjectiveProgressWeighted` do `krHelpers.ts` que ja suporta todos os periodos.
