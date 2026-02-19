@@ -266,6 +266,9 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({
             <a href={getContent('hero', 'secondary_button_link', 'https://wa.me/554796342353?text=Tenho%20interesse%20em%20saber%20mais%20sobre%20o%20Strategy%20HUB%20by%20COFOUND')} className={t.navLink}>
               Contato
             </a>
+            <Link to="/releases" className={t.navLink}>
+              Novidades
+            </Link>
           </nav>
 
           <div className="flex items-center space-x-4">
