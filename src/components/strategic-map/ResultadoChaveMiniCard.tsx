@@ -35,14 +35,16 @@ export const ResultadoChaveMiniCard = ({
 
   // Usar useKRMetrics com todos os parâmetros de período
   const metrics = useKRMetrics(resultadoChave, { 
-    selectedMonth, 
-    selectedYear: selectedPeriod === 'monthly' ? selectedMonthYear : selectedYear,
-    selectedQuarter,
-    selectedQuarterYear,
-    selectedSemester,
-    selectedSemesterYear,
-    selectedBimonth,
-    selectedBimonthYear
+    selectedMonth: selectedPeriod === 'monthly' ? selectedMonth : undefined,
+    selectedYear: selectedPeriod === 'monthly' ? selectedMonthYear 
+                : selectedPeriod === 'yearly' ? selectedYear 
+                : undefined,
+    selectedQuarter: selectedPeriod === 'quarterly' ? selectedQuarter : undefined,
+    selectedQuarterYear: selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined,
+    selectedSemester: selectedPeriod === 'semesterly' ? selectedSemester : undefined,
+    selectedSemesterYear: selectedPeriod === 'semesterly' ? selectedSemesterYear : undefined,
+    selectedBimonth: selectedPeriod === 'bimonthly' ? selectedBimonth : undefined,
+    selectedBimonthYear: selectedPeriod === 'bimonthly' ? selectedBimonthYear : undefined,
   });
   
   // Calcular progresso baseado no período selecionado
