@@ -1,43 +1,49 @@
 
-# Corrigir Filtros de Periodo no Modal de Objetivo
+# Corrigir Filtros de Periodo nos KR Mini Cards (Modal de Objetivo)
 
-## Problema Identificado
+## Problema Raiz
 
-O `ResultadoChaveMiniCard` e o `ObjectiveDetailModal` nao suportam os periodos **Semestre** e **Bimestre**. Somente YTD, Ano, Trimestre e Mensal estao parcialmente implementados.
+O `useKRMetrics` usa **early-returns** baseados na presenca de opcoes (`selectedSemester`, `selectedBimonth`, `selectedQuarter`, etc.). A ordem de verificacao e:
 
-### Causa Raiz (2 arquivos)
+1. Semestre (linha 180) -- se `selectedSemester` e `selectedSemesterYear` existem, retorna imediatamente
+2. Bimestre (linha 201) -- nunca alcancado
+3. Trimestre (linha 222) -- nunca alcancado
+4. Ano (linha 320) -- nunca alcancado
+5. Mensal (linha 346) -- nunca alcancado
 
-1. **`ResultadoChaveMiniCard.tsx`** (linhas 24-62):
-   - So extrai do contexto: `periodType`, `selectedMonth`, `selectedYear`, `selectedQuarter`, `selectedQuarterYear`
-   - **Falta**: `selectedSemester`, `selectedSemesterYear`, `selectedBimonth`, `selectedBimonthYear`, `selectedMonthYear`
-   - Na logica de calculo (linhas 40-62), so trata `quarterly`, `monthly`, `yearly` e fallback para `ytd` — ignora `semesterly` e `bimonthly`
-   - Nao passa os parametros de semestre/bimestre para `useKRMetrics`
+O problema: O `ResultadoChaveMiniCard` consome o `PeriodFilterContext`, que **sempre** tem TODOS os valores preenchidos (semestre=1, bimestre=1, quarter=1, etc. -- sao inicializados com valores padrao). Portanto, **a verificacao de semestre (linha 180) sempre ganha**, independentemente de qual periodo o usuario selecionou.
 
-2. **`ObjectiveDetailModal.tsx`** (linhas 96-102):
-   - So extrai do contexto: `periodType`, `selectedMonth`, `selectedYear`, `selectedQuarter`, `selectedQuarterYear`
-   - **Falta**: `selectedSemester`, `selectedSemesterYear`, `selectedBimonth`, `selectedBimonthYear`, `selectedMonthYear`
-   - O badge de periodo (linhas 202-216) so exibe YTD, Trimestre, Ano e Mensal — nao exibe Semestre nem Bimestre
+Resultado: Quando o usuario seleciona "Trimestre", o hook retorna dados do semestre (que so preenche `metrics.semesterly`), e o card tenta ler `metrics.quarterly` que esta com valores padrao (0/null).
 
-O hook `useKRMetrics` ja suporta semesterly e bimonthly corretamente — o problema esta exclusivamente nos componentes que consomem o hook.
+Excecao: YTD funciona porque `ytd_target`, `ytd_actual`, `ytd_percentage` sao preenchidos em TODOS os branches de retorno.
 
----
+## Por que o KR Detail (KeyResultMetrics) funciona?
 
-## Plano de Correcao
+O `KeyResultMetrics` recebe as opcoes como **props do componente pai**, que so passa os valores relevantes para o periodo selecionado. Quando o periodo e "trimestre", `selectedSemester` e `undefined`. Ja o `ResultadoChaveMiniCard` puxa do contexto global que sempre tem tudo preenchido.
 
-### Etapa 1 — Corrigir `ResultadoChaveMiniCard.tsx`
+## Correcao
 
-- Extrair do contexto os campos faltantes: `selectedSemester`, `selectedSemesterYear`, `selectedBimonth`, `selectedBimonthYear`, `selectedMonthYear`
-- Passar todos para `useKRMetrics`
-- Adicionar `semesterly` e `bimonthly` na logica de selecao de `currentValue`, `targetValue` e `percentage`
-- Corrigir monthly para usar `selectedMonthYear` em vez de `selectedYear`
+### Arquivo: `src/components/strategic-map/ResultadoChaveMiniCard.tsx`
 
-### Etapa 2 — Corrigir `ObjectiveDetailModal.tsx`
+Alterar a chamada do `useKRMetrics` para **so passar as opcoes relevantes ao periodo selecionado**:
 
-- Extrair do contexto os campos faltantes: `selectedSemester`, `selectedSemesterYear`, `selectedBimonth`, `selectedBimonthYear`, `selectedMonthYear`
-- Atualizar o badge de periodo para exibir corretamente Semestre e Bimestre selecionados
+```tsx
+const metrics = useKRMetrics(resultadoChave, { 
+  selectedMonth: selectedPeriod === 'monthly' ? selectedMonth : undefined, 
+  selectedYear: selectedPeriod === 'monthly' ? selectedMonthYear 
+              : selectedPeriod === 'yearly' ? selectedYear 
+              : undefined,
+  selectedQuarter: selectedPeriod === 'quarterly' ? selectedQuarter : undefined,
+  selectedQuarterYear: selectedPeriod === 'quarterly' ? selectedQuarterYear : undefined,
+  selectedSemester: selectedPeriod === 'semesterly' ? selectedSemester : undefined,
+  selectedSemesterYear: selectedPeriod === 'semesterly' ? selectedSemesterYear : undefined,
+  selectedBimonth: selectedPeriod === 'bimonthly' ? selectedBimonth : undefined,
+  selectedBimonthYear: selectedPeriod === 'bimonthly' ? selectedBimonthYear : undefined,
+});
+```
 
-### Etapa 3 — Testar
+Isso garante que apenas o branch correto do hook sera ativado, e os dados certos serao retornados para cada periodo.
 
-- Acessar com usuario teste na empresa Perville
-- Testar cada filtro: YTD, Ano, Semestre (S1/S2), Trimestre (Q1-Q4), Bimestre (todos), Mensal (cada mes)
-- Verificar que valores e percentuais mudam conforme o periodo selecionado
+### Verificacao
+
+Testar na conta Perville todos os filtros (YTD, Ano, Semestre, Trimestre, Bimestre, Mensal) no modal de objetivo "KPIs Macro" e confirmar que Faturamento Total mostra 11.8% no semestre (conforme o KR detail).
