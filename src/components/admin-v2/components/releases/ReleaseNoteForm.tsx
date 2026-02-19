@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { RichTextEditor } from "./RichTextEditor";
-import { Loader2 } from "lucide-react";
+import { Loader2, X, Plus } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const schema = z.object({
   version: z.string().min(1, "Versão é obrigatória"),
@@ -23,13 +24,25 @@ const schema = z.object({
 
 export type ReleaseFormValues = z.infer<typeof schema>;
 
-const TAG_OPTIONS = ["Nova Funcionalidade", "Melhoria", "Correção"];
-
 interface ReleaseNoteFormProps {
   defaultValues?: Partial<ReleaseFormValues>;
   onSubmit: (values: ReleaseFormValues) => void;
   isSubmitting?: boolean;
   submitLabel?: string;
+}
+
+function useExistingTags() {
+  const [tags, setTags] = useState<string[]>([]);
+  useEffect(() => {
+    supabase
+      .from("release_notes")
+      .select("tags")
+      .then(({ data }) => {
+        const all = (data ?? []).flatMap((r) => r.tags ?? []);
+        setTags([...new Set(all)].sort());
+      });
+  }, []);
+  return tags;
 }
 
 export function ReleaseNoteForm({
@@ -53,17 +66,30 @@ export function ReleaseNoteForm({
   });
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = form;
-  const tagsValue = watch("tags");
+  const tagsValue = watch("tags") ?? [];
   const contentValue = watch("content");
 
-  const toggleTag = (tag: string) => {
-    const current = tagsValue ?? [];
-    setValue(
-      "tags",
-      current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag],
-      { shouldValidate: true }
-    );
+  const existingTags = useExistingTags();
+  const [tagInput, setTagInput] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const addTag = (tag: string) => {
+    const trimmed = tag.trim();
+    if (trimmed && !tagsValue.includes(trimmed)) {
+      setValue("tags", [...tagsValue, trimmed], { shouldValidate: true });
+    }
+    setTagInput("");
+    setShowSuggestions(false);
   };
+
+  const removeTag = (tag: string) => {
+    setValue("tags", tagsValue.filter((t) => t !== tag), { shouldValidate: true });
+  };
+
+  const suggestions = existingTags.filter(
+    (t) => !tagsValue.includes(t) && t.toLowerCase().includes(tagInput.toLowerCase())
+  );
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -92,16 +118,57 @@ export function ReleaseNoteForm({
 
       <div className="space-y-2">
         <Label>Tags</Label>
-        <div className="flex gap-4">
-          {TAG_OPTIONS.map((tag) => (
-            <label key={tag} className="flex items-center gap-2 text-sm cursor-pointer">
-              <Checkbox
-                checked={tagsValue?.includes(tag) ?? false}
-                onCheckedChange={() => toggleTag(tag)}
-              />
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-input bg-background p-2 min-h-[42px]">
+          {tagsValue.map((tag) => (
+            <Badge key={tag} variant="secondary" className="gap-1 pr-1">
               {tag}
-            </label>
+              <button
+                type="button"
+                onClick={() => removeTag(tag)}
+                className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
           ))}
+          <div className="relative flex-1 min-w-[120px]">
+            <Input
+              ref={inputRef}
+              value={tagInput}
+              onChange={(e) => {
+                setTagInput(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && tagInput.trim()) {
+                  e.preventDefault();
+                  addTag(tagInput);
+                } else if (e.key === "Backspace" && !tagInput && tagsValue.length) {
+                  removeTag(tagsValue[tagsValue.length - 1]);
+                }
+              }}
+              placeholder="Digite e pressione Enter..."
+              className="border-0 shadow-none focus-visible:ring-0 h-7 px-1 text-sm"
+            />
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full left-0 z-50 mt-1 w-56 rounded-md border bg-popover p-1 shadow-md">
+                {suggestions.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => addTag(s)}
+                    className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent cursor-pointer"
+                  >
+                    <Plus className="h-3 w-3 text-muted-foreground" />
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
