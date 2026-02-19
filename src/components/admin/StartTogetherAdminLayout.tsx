@@ -35,55 +35,55 @@ import {
 const adminMenuItems = [
   {
     name: 'Dashboard',
-    path: '/app/admin',
+    path: '/app/admin-v1',
     icon: Package,
     description: 'Visão geral do sistema'
   },
   {
     name: 'Empresas',
-    path: '/app/admin/companies',
+    path: '/app/admin-v1/companies',
     icon: Building2,
     description: 'Gerenciar empresas e startups'
   },
   {
     name: 'Usuários',
-    path: '/app/admin/users',
+    path: '/app/admin-v1/users',
     icon: Users,
     description: 'Gerenciar usuários, permissões e módulos'
   },
   {
     name: 'Módulos',
-    path: '/app/admin/modules',
+    path: '/app/admin-v1/modules',
     icon: Package,
     description: 'Configurar módulos do sistema'
   },
   {
     name: 'Configurações',
-    path: '/app/admin/settings',
+    path: '/app/admin-v1/settings',
     icon: Settings,
     description: 'Configurações gerais do sistema'
   },
   {
     name: 'Monitoramento',
-    path: '/app/admin/monitoring',
+    path: '/app/admin-v1/monitoring',
     icon: Monitor,
     description: 'Monitoramento e saúde do sistema'
   },
   {
     name: 'Landing Page',
-    path: '/app/admin/landing-page',
+    path: '/app/admin-v1/landing-page',
     icon: FileText,
     description: 'Editar conteúdo da página inicial'
   },
   {
     name: 'Landing Preview',
-    path: '/app/admin/landing-preview',
+    path: '/app/admin-v1/landing-preview',
     icon: Eye,
     description: 'Preview do novo design COFOUND'
   },
   {
     name: 'Templates de Email',
-    path: '/app/admin/email-templates',
+    path: '/app/admin-v1/email-templates',
     icon: Mail,
     description: 'Gerenciar templates de email'
   }

@@ -16,7 +16,7 @@ const roles = [
     icon: Shield,
     color: "bg-red-500",
     description: "Acesso total ao módulo, incluindo configurações avançadas e gestão de usuários.",
-    href: "/app/admin-v2/modules/roles/admin",
+    href: "/app/admin/modules/roles/admin",
   },
   {
     id: "manager",
@@ -24,7 +24,7 @@ const roles = [
     icon: UserCog,
     color: "bg-blue-500",
     description: "Gestão de equipes, criação e edição de objetivos e indicadores.",
-    href: "/app/admin-v2/modules/roles/manager",
+    href: "/app/admin/modules/roles/manager",
   },
   {
     id: "member",
@@ -32,7 +32,7 @@ const roles = [
     icon: User,
     color: "bg-green-500",
     description: "Visualização de dados e registro de check-ins.",
-    href: "/app/admin-v2/modules/roles/member",
+    href: "/app/admin/modules/roles/member",
   },
 ];
 

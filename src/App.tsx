@@ -191,26 +191,8 @@ const App = () => (
                   <Route path="startup-hub" element={<StartupHubPage />} />
                 </Route>
 
-                {/* Admin routes - Start Together Admin */}
+                {/* Admin routes - Official (V2) */}
                 <Route path="/app/admin" element={
-                  <AdminProtectedRoute>
-                    <StartTogetherAdminLayout />
-                  </AdminProtectedRoute>
-                }>
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="companies" element={<CompaniesPage />} />
-                  <Route path="users" element={<UserManagementPage />} />
-                  <Route path="users/create" element={<CreateUserPage />} />
-                  <Route path="modules" element={<ModulesManagementPage />} />
-                  <Route path="settings" element={<SystemSettingsPage />} />
-                  <Route path="monitoring" element={<MonitoringPage />} />
-                  <Route path="landing-page" element={<LandingPageEditorPage />} />
-                  <Route path="landing-preview" element={<LandingPagePreview />} />
-                  <Route path="email-templates" element={<EmailTemplatesPage />} />
-                </Route>
-
-                {/* Admin V2 - Nova versão em desenvolvimento (acesso via URL direta) */}
-                <Route path="/app/admin-v2" element={
                   <AdminProtectedRoute>
                     <AdminV2Page />
                   </AdminProtectedRoute>
@@ -299,6 +281,27 @@ const App = () => (
                   <Route path="emails/new" element={<NewTemplatePage />} />
                   <Route path="emails/preview" element={<PreviewEmailPage />} />
                 </Route>
+
+                {/* Legacy Admin (V1) - backup */}
+                <Route path="/app/admin-v1" element={
+                  <AdminProtectedRoute>
+                    <StartTogetherAdminLayout />
+                  </AdminProtectedRoute>
+                }>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="companies" element={<CompaniesPage />} />
+                  <Route path="users" element={<UserManagementPage />} />
+                  <Route path="users/create" element={<CreateUserPage />} />
+                  <Route path="modules" element={<ModulesManagementPage />} />
+                  <Route path="settings" element={<SystemSettingsPage />} />
+                  <Route path="monitoring" element={<MonitoringPage />} />
+                  <Route path="landing-page" element={<LandingPageEditorPage />} />
+                  <Route path="landing-preview" element={<LandingPagePreview />} />
+                  <Route path="email-templates" element={<EmailTemplatesPage />} />
+                </Route>
+
+                {/* Redirect old /app/admin-v2 URLs to /app/admin */}
+                <Route path="/app/admin-v2/*" element={<Navigate to="/app/admin" replace />} />
 
               {/* Redirect /admin to /app/admin */}
               <Route path="/admin" element={<Navigate to="/app/admin" replace />} />

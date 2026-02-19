@@ -99,7 +99,7 @@ export default function NewCompanyPage() {
       }
 
       toast({ title: "Empresa criada!", description: `"${formData.name}" foi cadastrada com sucesso.` });
-      navigate("/app/admin-v2/companies");
+      navigate("/app/admin/companies");
     } catch (err: any) {
       toast({ title: "Erro ao criar empresa", description: err.message, variant: "destructive" });
     } finally {
@@ -275,7 +275,7 @@ export default function NewCompanyPage() {
         <div className="flex justify-end gap-3">
           <Button 
             variant="outline"
-            onClick={() => navigate("/app/admin-v2/companies")}
+            onClick={() => navigate("/app/admin/companies")}
             disabled={isSubmitting}
           >
             Cancelar

@@ -55,7 +55,7 @@ export default function NewTemplatePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['email-templates'] });
       toast({ title: 'Template criado', description: 'O novo template foi salvo com sucesso.' });
-      navigate('/app/admin-v2/emails');
+      navigate('/app/admin/emails');
     },
     onError: (error: Error) => {
       toast({ title: 'Erro ao criar template', description: error.message, variant: 'destructive' });
@@ -68,7 +68,7 @@ export default function NewTemplatePage() {
     <div className="flex-1 p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/app/admin-v2/emails')} className="mb-2 -ml-2">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/app/admin/emails')} className="mb-2 -ml-2">
             <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
           </Button>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Novo Template de Email</h1>

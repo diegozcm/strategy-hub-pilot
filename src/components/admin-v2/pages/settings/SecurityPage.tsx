@@ -59,7 +59,7 @@ export default function SecurityPage() {
         ? `Mín. ${passwordPolicy.min_password_length} chars${passwordPolicy.require_uppercase ? ", maiúscula" : ""}${passwordPolicy.require_number ? ", número" : ""}${passwordPolicy.require_special_char ? ", especial" : ""}`
         : "Não configurada",
       status: passwordPolicy ? "configured" : "warning",
-      action: () => navigate("/app/admin-v2/settings/password-policies"),
+      action: () => navigate("/app/admin/settings/security/password"),
       actionLabel: "Configurar",
     },
     {
@@ -71,7 +71,7 @@ export default function SecurityPage() {
           : `Expira em ${passwordPolicy.temp_password_validity_hours}h`
         : "Não configurada",
       status: passwordPolicy?.temp_password_validity_hours === 0 ? "warning" : passwordPolicy ? "configured" : "warning",
-      action: () => navigate("/app/admin-v2/settings/password-policies"),
+      action: () => navigate("/app/admin/settings/security/password"),
       actionLabel: "Configurar",
     },
     {
@@ -79,7 +79,7 @@ export default function SecurityPage() {
       title: "Autenticação MFA",
       description: "Autenticação de dois fatores",
       status: "info",
-      action: () => navigate("/app/admin-v2/settings/mfa"),
+      action: () => navigate("/app/admin/settings/security/mfa"),
       actionLabel: "Gerenciar",
     },
     {
@@ -87,7 +87,7 @@ export default function SecurityPage() {
       title: "Timeout de Sessão",
       description: sessionSetting ? `${sessionSetting.value} minutos` : "60 minutos",
       status: "configured",
-      action: () => navigate("/app/admin-v2/settings/general"),
+      action: () => navigate("/app/admin/settings/general"),
       actionLabel: "Alterar",
     },
     {
@@ -95,7 +95,7 @@ export default function SecurityPage() {
       title: "Admins do Sistema",
       description: `${adminCount ?? "..."} administradores`,
       status: (adminCount ?? 0) > 0 ? "configured" : "warning",
-      action: () => navigate("/app/admin-v2/settings/system-admins"),
+      action: () => navigate("/app/admin/settings/admins"),
       actionLabel: "Gerenciar",
     },
   ];
@@ -167,15 +167,15 @@ export default function SecurityPage() {
             <CardTitle className="text-base">Ações Rápidas</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
-            <Button variant="outline" onClick={() => navigate("/app/admin-v2/settings/active-sessions")}>
+            <Button variant="outline" onClick={() => navigate("/app/admin/settings/security/sessions")}>
               <Clock className="h-4 w-4 mr-2" />
               Ver Sessões Ativas
             </Button>
-            <Button variant="outline" onClick={() => navigate("/app/admin-v2/settings/password-policies")}>
+            <Button variant="outline" onClick={() => navigate("/app/admin/settings/security/password")}>
               <Lock className="h-4 w-4 mr-2" />
               Políticas de Senha
             </Button>
-            <Button variant="outline" onClick={() => navigate("/app/admin-v2/settings/system-admins")}>
+            <Button variant="outline" onClick={() => navigate("/app/admin/settings/admins")}>
               <Shield className="h-4 w-4 mr-2" />
               Admins do Sistema
             </Button>

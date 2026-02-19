@@ -177,7 +177,7 @@ export default function PublishLandingPage() {
             <div className="flex flex-wrap gap-3">
               <Button
                 variant="outline"
-                onClick={() => navigate("/app/admin-v2/landing/preview")}
+                onClick={() => navigate("/app/admin/landing/preview")}
               >
                 <Eye className="h-4 w-4 mr-2" />
                 Ver Preview Antes
