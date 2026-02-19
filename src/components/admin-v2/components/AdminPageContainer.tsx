@@ -58,8 +58,8 @@ export function AdminPageContainer({ title, description, children }: AdminPageCo
   }
 
   return (
-    <div className="flex-1 flex flex-col">
-      <div className="border-b bg-cofound-white/95 backdrop-blur supports-[backdrop-filter]:bg-cofound-white/60">
+    <div className="flex-1 flex flex-col min-h-0">
+      <div className="border-b bg-cofound-white/95 backdrop-blur supports-[backdrop-filter]:bg-cofound-white/60 shrink-0">
         <div className="px-6 py-4">
           <h1 className="text-2xl font-semibold text-cofound-blue-dark">{title}</h1>
           {description && (
@@ -67,7 +67,7 @@ export function AdminPageContainer({ title, description, children }: AdminPageCo
           )}
         </div>
       </div>
-      <div className="flex-1 p-6 overflow-auto">
+      <div className="flex-1 p-6 overflow-y-auto min-h-0">
         {children}
       </div>
     </div>
