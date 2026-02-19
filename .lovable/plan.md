@@ -1,94 +1,82 @@
 
 
-# Pagina Publica de Release Notes
+## Substituir "Landing Page" por "Novidades" no Painel Admin
 
-## Visao Geral
-Criar uma pagina publica `/releases` acessivel a partir da Landing Page onde usuarios podem acompanhar todas as novidades e atualizacoes da plataforma. O conteudo sera armazenado no banco de dados Supabase para permitir gerenciamento futuro via painel admin.
-
-## Estrutura da Solucao
-
-### 1. Banco de Dados - Nova Tabela `release_notes`
-
-Campos:
-- `id` (UUID, PK)
-- `version` (text) - ex: "1.0.0"
-- `title` (text) - titulo do release
-- `date` (date) - data de publicacao
-- `summary` (text) - resumo curto
-- `content` (text) - conteudo completo em Markdown
-- `tags` (text[]) - categorias como "Nova Funcionalidade", "Melhoria", "Correcao"
-- `published` (boolean, default false) - controle de visibilidade
-- `created_at`, `updated_at` (timestamps)
-- `created_by` (UUID, nullable) - quem criou
-
-RLS: Leitura publica (anon) para releases com `published = true`. Escrita restrita a system admins.
-
-### 2. Pagina Publica `/releases`
-
-Nova pagina `src/pages/ReleasesPage.tsx` com:
-- Header reutilizando o estilo da Landing Page (cores Cofound)
-- Timeline vertical com cards para cada release
-- Tags coloridas por categoria (verde = nova funcionalidade, azul = melhoria, amarelo = correcao)
-- Conteudo renderizado em Markdown (usando `react-markdown` ja instalado)
-- Design responsivo mobile/desktop
-- Botao de voltar para a Landing Page
-
-### 3. Link na Landing Page
-
-Adicionar link "Novidades" no menu de navegacao do header da Landing Page, apontando para `/releases`.
-
-### 4. Primeiro Release Pre-Populado
-
-Inserir no banco o release v1.0.0 com o conteudo completo que foi gerado anteriormente, cobrindo:
-- Nova identidade visual Cofound
-- Taxa de Variacao do KR
-- Filtros avancados (YTD, Ano, Periodo)
-- Ferramenta Governanca RMRE
-
-### 5. Rota no App.tsx
-
-Adicionar `<Route path="/releases" element={<ReleasesPage />} />` nas rotas publicas.
+Remover toda a seção de edição da Landing Page do painel administrativo e substituir pelo gerenciamento de Release Notes (Novidades), conforme planejado anteriormente.
 
 ---
 
-## Detalhes Tecnicos
+### O que será removido
 
-### Tabela SQL
-```sql
-CREATE TABLE public.release_notes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  version TEXT NOT NULL,
-  title TEXT NOT NULL,
-  date DATE NOT NULL DEFAULT CURRENT_DATE,
-  summary TEXT,
-  content TEXT NOT NULL,
-  tags TEXT[] DEFAULT '{}',
-  published BOOLEAN DEFAULT false,
-  created_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
+1. **Sidebar**: A seção "Landing Page" com os itens "Editar Conteúdo", "Preview" e "Publicar Alterações"
+2. **Rotas do admin**: `landing/edit`, `landing/preview`, `landing/publish`
+3. **Páginas**: `EditLandingPage.tsx`, `PreviewLandingPage.tsx`, `PublishLandingPage.tsx` (pasta `admin-v2/pages/landing/`)
+4. **Componentes do editor antigo**: `LandingPageEditorPage.tsx` e pasta `admin-landing-page/` com seus sub-componentes (EditableField, ImageUploader, PublishButton, etc.)
+5. **Hooks de CMS**: `useLandingPageContentDraft.tsx`, `useTabEditor.tsx`
+6. **Rotas legadas**: `/app/admin/landing-page` e `/app/admin/landing-preview`
+7. **Página LandingPagePreview**: `src/pages/LandingPagePreview.tsx`
 
--- RLS: leitura publica para publicados
-ALTER TABLE release_notes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Public read published releases"
-  ON release_notes FOR SELECT USING (published = true);
-CREATE POLICY "Admins manage releases"
-  ON release_notes FOR ALL
-  USING (is_system_admin(auth.uid()))
-  WITH CHECK (is_system_admin(auth.uid()));
-```
+**Nota**: O hook `useLandingPageContent.tsx` e a página `LandingPage.tsx` (rota `/`) serao mantidos por enquanto, pois a landing page publica ainda os utiliza. Quando voce decidir tornar a landing page fixa, eles tambem podem ser removidos.
 
-### Arquivos a Criar/Modificar
-1. **`src/pages/ReleasesPage.tsx`** - Pagina principal com timeline de releases
-2. **`src/hooks/useReleaseNotes.ts`** - Hook para buscar releases do Supabase
-3. **`src/App.tsx`** - Adicionar rota `/releases`
-4. **`src/pages/landing/LandingPageBase.tsx`** - Adicionar link "Novidades" no nav
+---
 
-### Componentes da Pagina
-- Header fixo com logo + navegacao (estilo Cofound)
-- Lista de releases em formato timeline
-- Cada card mostra: versao, data, titulo, tags, resumo
-- Ao expandir: conteudo completo renderizado via `react-markdown`
-- Footer simplificado com link de volta
+### O que será adicionado
+
+A seção "Novidades" no lugar da "Landing Page", com CRUD completo de Release Notes:
+
+**Sidebar** (icone `Sparkles`, label "Novidades"):
+- Todas as Novidades (`/app/admin/releases`)
+- Nova Publicação (`/app/admin/releases/new`)
+
+**Novas páginas**:
+- `AllReleasesPage.tsx` -- Tabela com todas as releases (versao, titulo, data, tags, status, acoes)
+- `NewReleasePage.tsx` -- Formulario de criacao
+- `EditReleasePage.tsx` -- Formulario de edicao (rota `/app/admin/releases/:id/edit`)
+
+**Novos componentes**:
+- `ReleaseNoteForm.tsx` -- Formulario compartilhado com editor Markdown e preview lado a lado
+- `ReleaseNoteTable.tsx` -- Tabela de listagem com badges de status e tags
+- `MarkdownPreview.tsx` -- Renderizacao do Markdown com ReactMarkdown
+
+**Novo hook**:
+- `useAdminReleaseNotes.ts` -- CRUD completo usando TanStack Query (listar, buscar por ID, criar, atualizar, excluir)
+
+---
+
+### Detalhes Tecnicos
+
+**Arquivos modificados**:
+
+| Arquivo | Alteracao |
+|---------|-----------|
+| `sidebarContent.ts` | Trocar `landing` por `releases` no `navItems` e no `contentMap` |
+| `App.tsx` | Remover rotas `landing/*` e adicionar rotas `releases`, `releases/new`, `releases/:id/edit` |
+| `pages/index.ts` | Remover exports de Landing, adicionar exports de Releases |
+
+**Arquivos removidos**:
+
+| Arquivo |
+|---------|
+| `src/components/admin-v2/pages/landing/EditLandingPage.tsx` |
+| `src/components/admin-v2/pages/landing/PreviewLandingPage.tsx` |
+| `src/components/admin-v2/pages/landing/PublishLandingPage.tsx` |
+| `src/components/admin/LandingPageEditorPage.tsx` |
+| `src/components/admin/landing-page/*.tsx` (7 arquivos) |
+| `src/hooks/useLandingPageContentDraft.tsx` |
+| `src/hooks/useTabEditor.tsx` |
+| `src/pages/LandingPagePreview.tsx` |
+
+**Arquivos criados**:
+
+| Arquivo |
+|---------|
+| `src/components/admin-v2/pages/releases/AllReleasesPage.tsx` |
+| `src/components/admin-v2/pages/releases/NewReleasePage.tsx` |
+| `src/components/admin-v2/pages/releases/EditReleasePage.tsx` |
+| `src/components/admin-v2/components/releases/ReleaseNoteForm.tsx` |
+| `src/components/admin-v2/components/releases/ReleaseNoteTable.tsx` |
+| `src/components/admin-v2/components/releases/MarkdownPreview.tsx` |
+| `src/hooks/useAdminReleaseNotes.ts` |
+
+**Nenhuma migracao de banco necessaria** -- a tabela `release_notes` ja existe com todos os campos.
 
