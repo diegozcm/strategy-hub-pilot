@@ -44,7 +44,7 @@ export const ObjectivesPage: React.FC = () => {
   const {
     periodType: selectedPeriod, setPeriodType: setSelectedPeriod,
     selectedYear, setSelectedYear,
-    selectedMonth, setSelectedMonth,
+    selectedMonth, setSelectedMonth, selectedMonthYear,
     selectedQuarter, setSelectedQuarter,
     selectedQuarterYear, setSelectedQuarterYear,
     selectedSemester, setSelectedSemester,
@@ -275,11 +275,15 @@ export const ObjectivesPage: React.FC = () => {
         objectiveKeyResults, 
         selectedPeriod,
         selectedPeriod === 'monthly' 
-          ? { selectedMonth, selectedYear } 
+          ? { selectedMonth, selectedYear: selectedMonthYear } 
           : selectedPeriod === 'quarterly'
-          ? { selectedQuarter }
+          ? { selectedQuarter, selectedQuarterYear }
           : selectedPeriod === 'yearly'
           ? { selectedYear }
+          : selectedPeriod === 'semesterly'
+          ? { selectedSemester, selectedSemesterYear }
+          : selectedPeriod === 'bimonthly'
+          ? { selectedBimonth, selectedBimonthYear }
           : undefined
       );
       if (statusFilter === 'excellent') {
@@ -831,9 +835,15 @@ export const ObjectivesPage: React.FC = () => {
             getObjectiveKeyResults(selectedObjective.id),
             selectedPeriod,
             selectedPeriod === 'monthly' 
-              ? { selectedMonth, selectedYear } 
+              ? { selectedMonth, selectedYear: selectedMonthYear } 
               : selectedPeriod === 'quarterly'
-              ? { selectedQuarter }
+              ? { selectedQuarter, selectedQuarterYear }
+              : selectedPeriod === 'yearly'
+              ? { selectedYear }
+              : selectedPeriod === 'semesterly'
+              ? { selectedSemester, selectedSemesterYear }
+              : selectedPeriod === 'bimonthly'
+              ? { selectedBimonth, selectedBimonthYear }
               : undefined
           ) : 0}
           canEditObjective={canEditObjective}

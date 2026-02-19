@@ -29,8 +29,13 @@ export const RumoObjectiveBlock = ({
     periodType: selectedPeriod,
     selectedMonth,
     selectedYear,
+    selectedMonthYear,
     selectedQuarter,
-    selectedQuarterYear
+    selectedQuarterYear,
+    selectedSemester,
+    selectedSemesterYear,
+    selectedBimonth,
+    selectedBimonthYear
   } = usePeriodFilter();
 
   const performance = getPerformanceColor(progress);
