@@ -386,7 +386,7 @@ serve(async (req) => {
       const { data: plans } = await supabase.from('strategic_plans').select('id').eq('company_id', company_id);
       const planIds = plans?.map(p => p.id) || [];
 
-      const [objectivesResult, projectsResult, startupResult, mentoringResult, pillarsResult] = await Promise.all([
+      const [objectivesResult, projectsResult, startupResult, mentoringResult, pillarsResult, govMeetingsResult, govAtasResult, govRuleDocResult] = await Promise.all([
         planIds.length > 0
           ? supabase.from('strategic_objectives').select('id, title, progress, status, target_date').in('plan_id', planIds).limit(20)
           : Promise.resolve({ data: [] }),
@@ -396,6 +396,9 @@ serve(async (req) => {
         supabase.from('startup_hub_profiles').select('*').eq('company_id', company_id).single(),
         supabase.from('mentoring_sessions').select('session_date, session_type, status, notes').eq('startup_company_id', company_id).order('session_date', { ascending: false }).limit(10),
         supabase.from('strategic_pillars').select('name').eq('company_id', company_id),
+        supabase.from('governance_meetings').select('title, meeting_type, scheduled_date, status').eq('company_id', company_id).order('scheduled_date', { ascending: false }).limit(10),
+        supabase.from('governance_atas').select('content, decisions, participants, meeting_id, created_at').order('created_at', { ascending: false }).limit(5),
+        supabase.from('governance_rule_documents').select('file_name').eq('company_id', company_id).maybeSingle(),
       ]);
 
       objectives = objectivesResult.data || [];
@@ -432,6 +435,25 @@ serve(async (req) => {
       }
       if (mentoringSessions.length > 0) {
         contextParts.push(`\n👥 Sessões de Mentoria Recentes:\n${mentoringSessions.map(s => `• ${s.session_date}: ${s.session_type} (${s.status})`).join('\n')}`);
+      }
+
+      // Governance context
+      const govMeetings = govMeetingsResult.data || [];
+      const govAtas = govAtasResult.data || [];
+      const govRuleDoc = govRuleDocResult.data;
+
+      if (govMeetings.length > 0 || govAtas.length > 0 || govRuleDoc) {
+        const govParts: string[] = ['\n📋 Governança RMRE:'];
+        if (govMeetings.length > 0) {
+          govParts.push(`Reuniões:\n${govMeetings.map(m => `• ${m.title} (${m.meeting_type}) — ${m.scheduled_date} — ${m.status}`).join('\n')}`);
+        }
+        if (govAtas.length > 0) {
+          govParts.push(`Últimas Atas:\n${govAtas.map(a => `• Decisões: ${a.decisions || 'N/A'} | Participantes: ${(a.participants || []).join(', ')}`).join('\n')}`);
+        }
+        if (govRuleDoc) {
+          govParts.push(`Documento de regras: ${govRuleDoc.file_name}`);
+        }
+        contextParts.push(govParts.join('\n'));
       }
 
       contextData = contextParts.join('\n');

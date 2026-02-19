@@ -61,7 +61,10 @@ serve(async (req) => {
       beepRes,
       startupProfilesRes,
       mentorSessionsRes,
-      projectsRes
+      projectsRes,
+      govMeetingsRes,
+      govAtasRes,
+      govRuleDocRes
     ] = await Promise.all([
       // Pillars
       supabaseClient
@@ -122,7 +125,26 @@ serve(async (req) => {
             .from('strategic_projects')
             .select('id, name, progress, status, start_date, end_date, budget, priority, plan_id, responsible')
             .in('plan_id', planIds)
-        : Promise.resolve({ data: [], error: null })
+        : Promise.resolve({ data: [], error: null }),
+      // Governance meetings
+      supabaseClient
+        .from('governance_meetings')
+        .select('title, meeting_type, scheduled_date, status')
+        .eq('company_id', company_id)
+        .order('scheduled_date', { ascending: false })
+        .limit(10),
+      // Governance atas
+      supabaseClient
+        .from('governance_atas')
+        .select('content, decisions, participants, created_at')
+        .order('created_at', { ascending: false })
+        .limit(5),
+      // Governance rule document
+      supabaseClient
+        .from('governance_rule_documents')
+        .select('file_name')
+        .eq('company_id', company_id)
+        .maybeSingle(),
     ]);
 
     const pillars = pillarsRes.data || [];
@@ -136,6 +158,9 @@ serve(async (req) => {
     const beepAssessments = beepRes.data || [];
     const startupProfiles = startupProfilesRes.data || [];
     const mentorSessions = mentorSessionsRes.data || [];
+    const govMeetings = govMeetingsRes.data || [];
+    const govAtas = govAtasRes.data || [];
+    const govRuleDoc = govRuleDocRes.data;
 
     // Step 3: Fetch KRs (with full fields), initiatives, monthly actions, FCA, project tasks
     const [keyResultsRes, initiativesRes, projectTasksRes] = await Promise.all([
@@ -306,7 +331,12 @@ serve(async (req) => {
         type: ms.session_type,
         status: ms.status,
         notes: ms.notes?.substring(0, 200)
-      }))
+      })),
+      governance: {
+        meetings: govMeetings.map(m => ({ title: m.title, type: m.meeting_type, date: m.scheduled_date, status: m.status })),
+        atas: govAtas.map(a => ({ decisions: a.decisions, participants: a.participants, date: a.created_at })),
+        ruleDocument: govRuleDoc?.file_name || null,
+      }
     };
 
     // ========== GENERATE INSIGHTS ==========
@@ -314,7 +344,8 @@ serve(async (req) => {
     const aiRecommendations = [];
 
     const hasData = objectives.length > 0 || keyResults.length > 0 || projects.length > 0 || 
-                    startupProfiles.length > 0 || mentorSessions.length > 0 || initiatives.length > 0;
+                    startupProfiles.length > 0 || mentorSessions.length > 0 || initiatives.length > 0 ||
+                    govMeetings.length > 0;
 
     if (lovableApiKey && hasData) {
       try {
@@ -357,6 +388,11 @@ ${startupProfiles.length > 0 ? `STARTUP HUB (${startupProfiles.length} startups)
 
 ${mentorSessions.length > 0 ? `MENTORIAS (${mentorSessions.length} sessões): ${JSON.stringify(contextData.mentoringSessions, null, 1)}` : ''}
 
+${govMeetings.length > 0 || govAtas.length > 0 || govRuleDoc ? `GOVERNANÇA RMRE:
+${govMeetings.length > 0 ? `Reuniões: ${JSON.stringify(contextData.governance.meetings, null, 1)}` : ''}
+${govAtas.length > 0 ? `Atas: ${JSON.stringify(contextData.governance.atas, null, 1)}` : ''}
+${govRuleDoc ? `Documento de regras: ${govRuleDoc.file_name}` : ''}` : ''}
+
 INSTRUÇÕES:
 1. Escreva em tom conversacional e consultivo, como um consultor falando diretamente com o gestor. Use frases como "Identifiquei que...", "Recomendo que...", "Atenção:".
 2. Para cada insight, OBRIGATORIAMENTE inclua o campo "related_entity_id" com o UUID real da entidade analisada (objective, key_result, project) quando disponível nos dados.
@@ -368,7 +404,7 @@ Formato JSON OBRIGATÓRIO:
   "insights": [
     {
       "type": "risk|opportunity|info|recommendation",
-      "category": "projects|indicators|objectives|startups|mentoring|strategic|initiatives|tools",
+      "category": "projects|indicators|objectives|startups|mentoring|strategic|initiatives|tools|governance",
       "title": "Título conciso",
       "description": "Texto narrativo do Atlas, em tom de consultor, detalhando a situação e recomendação",
       "severity": "low|medium|high|critical",
