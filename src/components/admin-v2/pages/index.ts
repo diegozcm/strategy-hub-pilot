@@ -70,10 +70,10 @@ export { default as BackupSchedulesPage } from "./settings/BackupSchedulesPage";
 export { default as DataCleanupPage } from "./settings/DataCleanupPage";
 export { default as SystemAdminsSettingsPage } from "./settings/SystemAdminsSettingsPage";
 
-// Landing pages
-export { default as EditLandingPage } from "./landing/EditLandingPage";
-export { default as PreviewLandingPage } from "./landing/PreviewLandingPage";
-export { default as PublishLandingPage } from "./landing/PublishLandingPage";
+// Releases pages
+export { default as AllReleasesPage } from "./releases/AllReleasesPage";
+export { default as NewReleasePage } from "./releases/NewReleasePage";
+export { default as EditReleasePage } from "./releases/EditReleasePage";
 
 // Email templates pages
 export { default as AllEmailTemplatesPage } from "./emails/AllEmailTemplatesPage";
