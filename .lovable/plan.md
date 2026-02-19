@@ -1,141 +1,94 @@
 
-# Regras de Governanca — Documento Unico + Integracao Atlas
 
-## Resumo
+# Pagina Publica de Release Notes
 
-Substituir o sistema atual de regras de governanca (texto + lista de itens) por um sistema de **upload de documento unico** (PDF, DOCX, XLSX, etc.) que pode ser visualizado inline na pagina e em tela cheia, com opcoes de baixar, trocar e remover. Somente gestores (manager/admin) podem gerenciar o documento. Alem disso, integrar os dados de governanca (calendario, pautas, reunioes, atas e regras) ao contexto da IA Atlas.
+## Visao Geral
+Criar uma pagina publica `/releases` acessivel a partir da Landing Page onde usuarios podem acompanhar todas as novidades e atualizacoes da plataforma. O conteudo sera armazenado no banco de dados Supabase para permitir gerenciamento futuro via painel admin.
 
----
+## Estrutura da Solucao
 
-## Etapa 1 — Banco de Dados e Storage
+### 1. Banco de Dados - Nova Tabela `release_notes`
 
-### 1.1 Criar bucket de storage `governance-documents`
+Campos:
+- `id` (UUID, PK)
+- `version` (text) - ex: "1.0.0"
+- `title` (text) - titulo do release
+- `date` (date) - data de publicacao
+- `summary` (text) - resumo curto
+- `content` (text) - conteudo completo em Markdown
+- `tags` (text[]) - categorias como "Nova Funcionalidade", "Melhoria", "Correcao"
+- `published` (boolean, default false) - controle de visibilidade
+- `created_at`, `updated_at` (timestamps)
+- `created_by` (UUID, nullable) - quem criou
 
-Bucket privado para armazenar os documentos de regras de governanca.
+RLS: Leitura publica (anon) para releases com `published = true`. Escrita restrita a system admins.
 
-### 1.2 Criar tabela `governance_rule_documents`
+### 2. Pagina Publica `/releases`
 
-Nova tabela para registrar o documento unico por empresa:
+Nova pagina `src/pages/ReleasesPage.tsx` com:
+- Header reutilizando o estilo da Landing Page (cores Cofound)
+- Timeline vertical com cards para cada release
+- Tags coloridas por categoria (verde = nova funcionalidade, azul = melhoria, amarelo = correcao)
+- Conteudo renderizado em Markdown (usando `react-markdown` ja instalado)
+- Design responsivo mobile/desktop
+- Botao de voltar para a Landing Page
 
-```text
-governance_rule_documents
-  id: uuid (PK)
-  company_id: uuid (FK -> companies, UNIQUE)
-  file_name: text
-  file_path: text (caminho no storage)
-  file_type: text (mime type)
-  file_size: bigint
-  uploaded_by: uuid (FK -> auth.users)
-  created_at: timestamptz
-  updated_at: timestamptz
-```
+### 3. Link na Landing Page
 
-A constraint UNIQUE em `company_id` garante que cada empresa tenha no maximo UM documento.
+Adicionar link "Novidades" no menu de navegacao do header da Landing Page, apontando para `/releases`.
 
-### 1.3 RLS Policies
+### 4. Primeiro Release Pre-Populado
 
-- SELECT: qualquer usuario da empresa pode visualizar
-- INSERT/UPDATE/DELETE: somente gestores (manager/admin) do modulo Strategy HUB
+Inserir no banco o release v1.0.0 com o conteudo completo que foi gerado anteriormente, cobrindo:
+- Nova identidade visual Cofound
+- Taxa de Variacao do KR
+- Filtros avancados (YTD, Ano, Periodo)
+- Ferramenta Governanca RMRE
 
-### 1.4 Storage Policies
+### 5. Rota no App.tsx
 
-- SELECT (download): usuarios da empresa
-- INSERT/UPDATE/DELETE: gestores da empresa
-
----
-
-## Etapa 2 — Hook `useGovernanceRuleDocument`
-
-Novo hook que substitui o `useGovernanceRules` na secao de regras:
-
-- **query**: busca o registro em `governance_rule_documents` para a empresa atual
-- **upload**: faz upload do arquivo para `governance-documents/{company_id}/{filename}`, insere/atualiza o registro na tabela, remove arquivo antigo se houver
-- **replace**: mesma logica do upload, removendo o anterior
-- **remove**: deleta o arquivo do storage e o registro da tabela
-- **getPublicUrl**: gera URL assinada para visualizacao/download
-
----
-
-## Etapa 3 — Componente `GovernanceRulesSection` (reescrita)
-
-Substituir completamente o componente atual. Novo comportamento:
-
-### Estado: Sem documento
-- Exibe area de upload com drag-and-drop e botao "Selecionar arquivo"
-- Aceita: PDF, DOCX, XLSX, PPTX, etc.
-- Visivel apenas para gestores; members veem mensagem "Nenhum documento cadastrado"
-
-### Estado: Com documento
-- **Preview inline**: Para PDFs, exibe usando `<iframe>` ou `<object>` com a URL assinada. Para outros tipos, exibe um card com icone do tipo de arquivo, nome e tamanho
-- **Botao "Visualizar em tela cheia"**: abre um Dialog fullscreen com o documento em `<iframe>` (PDFs) ou link de download (outros formatos)
-- **Botao "Baixar"**: download direto do arquivo
-- **Botao "Trocar"** (somente gestores): abre seletor de arquivo para substituir
-- **Botao "Remover"** (somente gestores): confirma e remove o documento
-
-### Permissoes
-- Usar `PermissionGate` ou checar `canEdit` do `useCurrentModuleRole` para esconder botoes de trocar/remover de members
-
----
-
-## Etapa 4 — Integracao com IA Atlas
-
-### 4.1 Edge Function `ai-chat/index.ts`
-
-No bloco onde se constroi o `contextData` (linhas 385-438), adicionar queries para as tabelas de governanca:
-
-```text
-governance_meetings  -> titulo, tipo, data, status (ultimas 10)
-governance_atas      -> conteudo, decisoes, participantes (ultimas 5)
-governance_agenda_items -> titulo, status, responsavel (vinculados as reunioes acima)
-governance_rule_documents -> file_name (so o nome do documento, nao o conteudo)
-```
-
-Adicionar ao `contextParts` uma secao:
-
-```text
-📋 Governanca RMRE:
-• Proximas reunioes: [lista]
-• Ultimas atas: [resumo de decisoes]
-• Documento de regras: [nome do arquivo]
-```
-
-### 4.2 Edge Function `generate-insights/index.ts`
-
-Mesma logica: buscar dados de governanca e incluir no prompt de diagnostico para que os insights considerem a saude da governanca (reunioes atrasadas, atas pendentes, etc.).
-
----
-
-## Etapa 5 — Limpeza
-
-- Remover o hook `useGovernanceRules.tsx` (nao sera mais necessario)
-- Opcionalmente, as tabelas `governance_rules` e `governance_rule_items` podem ser mantidas temporariamente para nao perder dados existentes, mas nao serao mais consumidas pela UI
-
----
-
-## Arquivos Afetados
-
-| Arquivo | Acao |
-|---------|------|
-| Nova migration SQL | Criar bucket, tabela, RLS e storage policies |
-| `src/hooks/useGovernanceRuleDocument.tsx` | **Novo** — hook para upload/download/remocao |
-| `src/components/tools/governance/GovernanceRulesSection.tsx` | **Reescrever** — de lista de texto para visualizador de documento |
-| `supabase/functions/ai-chat/index.ts` | **Editar** — adicionar queries de governanca ao contexto |
-| `supabase/functions/generate-insights/index.ts` | **Editar** — adicionar dados de governanca ao diagnostico |
-| `src/hooks/useGovernanceRules.tsx` | **Remover** (apos migracao) |
+Adicionar `<Route path="/releases" element={<ReleasesPage />} />` nas rotas publicas.
 
 ---
 
 ## Detalhes Tecnicos
 
-### Visualizacao de PDF inline
+### Tabela SQL
+```sql
+CREATE TABLE public.release_notes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  version TEXT NOT NULL,
+  title TEXT NOT NULL,
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  summary TEXT,
+  content TEXT NOT NULL,
+  tags TEXT[] DEFAULT '{}',
+  published BOOLEAN DEFAULT false,
+  created_by UUID REFERENCES auth.users(id),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
 
-Para PDFs, usar `<iframe src={signedUrl} />` com fallback para download. O Supabase Storage gera URLs assinadas que funcionam em iframes.
+-- RLS: leitura publica para publicados
+ALTER TABLE release_notes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public read published releases"
+  ON release_notes FOR SELECT USING (published = true);
+CREATE POLICY "Admins manage releases"
+  ON release_notes FOR ALL
+  USING (is_system_admin(auth.uid()))
+  WITH CHECK (is_system_admin(auth.uid()));
+```
 
-### Tipos de arquivo suportados para preview
+### Arquivos a Criar/Modificar
+1. **`src/pages/ReleasesPage.tsx`** - Pagina principal com timeline de releases
+2. **`src/hooks/useReleaseNotes.ts`** - Hook para buscar releases do Supabase
+3. **`src/App.tsx`** - Adicionar rota `/releases`
+4. **`src/pages/landing/LandingPageBase.tsx`** - Adicionar link "Novidades" no nav
 
-- **PDF**: iframe inline + tela cheia
-- **Outros (DOCX, XLSX, PPTX)**: card com icone + download direto (navegadores nao renderizam esses formatos nativamente)
+### Componentes da Pagina
+- Header fixo com logo + navegacao (estilo Cofound)
+- Lista de releases em formato timeline
+- Cada card mostra: versao, data, titulo, tags, resumo
+- Ao expandir: conteudo completo renderizado via `react-markdown`
+- Footer simplificado com link de volta
 
-### URL Assinada
-
-Usar `supabase.storage.from('governance-documents').createSignedUrl(path, 3600)` para gerar URLs temporarias de 1h para visualizacao.
