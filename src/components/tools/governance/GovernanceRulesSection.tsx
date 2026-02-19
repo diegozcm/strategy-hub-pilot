@@ -6,13 +6,13 @@ import { useCurrentModuleRole } from '@/hooks/useCurrentModuleRole';
 import { Upload, Download, Replace, Trash2, BookOpen, Maximize2, FileText, FileSpreadsheet, FileIcon, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { SpreadsheetViewer } from './SpreadsheetViewer';
 
 const ACCEPTED_TYPES = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx';
 
 const getFileIcon = (fileType: string) => {
   if (fileType.includes('pdf')) return <FileText className="h-10 w-10 text-destructive" />;
-  if (fileType.includes('spreadsheet') || fileType.includes('excel') || fileType.includes('xlsx') || fileType.includes('xls'))
-    return <FileSpreadsheet className="h-10 w-10 text-primary" />;
+  if (isSpreadsheet(fileType)) return <FileSpreadsheet className="h-10 w-10 text-primary" />;
   return <FileIcon className="h-10 w-10 text-cofound-blue-light" />;
 };
 
@@ -23,6 +23,14 @@ const formatFileSize = (bytes: number) => {
 };
 
 const isPdf = (fileType: string) => fileType === 'application/pdf';
+
+const isSpreadsheet = (fileType: string) =>
+  fileType.includes('spreadsheet') || fileType.includes('excel') ||
+  fileType.includes('sheet') || fileType.includes('csv') ||
+  fileType === 'application/vnd.ms-excel' ||
+  fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+const canPreview = (fileType: string) => isPdf(fileType) || isSpreadsheet(fileType);
 
 export const GovernanceRulesSection: React.FC = () => {
   const { document: doc, signedUrl, isLoading, uploadDocument, removeDocument, downloadDocument } = useGovernanceRuleDocument();
@@ -125,7 +133,7 @@ export const GovernanceRulesSection: React.FC = () => {
             Documento de Regras de Governança
           </CardTitle>
           <div className="flex gap-2">
-            {isPdf(doc.file_type) && (
+            {canPreview(doc.file_type) && (
               <Button size="sm" variant="outline" onClick={() => setFullscreenOpen(true)}>
                 <Maximize2 className="h-4 w-4 mr-1" /> Tela cheia
               </Button>
@@ -178,6 +186,8 @@ export const GovernanceRulesSection: React.FC = () => {
               className="w-full h-[500px] rounded-lg border"
               title={doc.file_name}
             />
+          ) : isSpreadsheet(doc.file_type) && signedUrl ? (
+            <SpreadsheetViewer url={signedUrl} />
           ) : (
             <div className="flex items-center gap-4 p-6 rounded-lg border bg-muted/30">
               {getFileIcon(doc.file_type)}
@@ -211,7 +221,7 @@ export const GovernanceRulesSection: React.FC = () => {
         }}
       />
 
-      {/* Fullscreen PDF viewer */}
+      {/* Fullscreen document viewer */}
       <Dialog open={fullscreenOpen} onOpenChange={setFullscreenOpen}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] w-full h-full p-0">
           <DialogHeader className="p-4 pb-2 flex flex-row items-center justify-between">
@@ -225,13 +235,18 @@ export const GovernanceRulesSection: React.FC = () => {
               </Button>
             </div>
           </DialogHeader>
-          {signedUrl && (
+          {signedUrl && isPdf(doc.file_type) && (
             <iframe
               src={signedUrl}
               className="w-full flex-1 min-h-0"
               style={{ height: 'calc(95vh - 80px)' }}
               title={doc.file_name}
             />
+          )}
+          {signedUrl && isSpreadsheet(doc.file_type) && (
+            <div className="px-4 pb-4 flex-1 min-h-0 overflow-auto" style={{ height: 'calc(95vh - 80px)' }}>
+              <SpreadsheetViewer url={signedUrl} className="h-full" />
+            </div>
           )}
         </DialogContent>
       </Dialog>
