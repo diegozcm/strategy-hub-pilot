@@ -25,41 +25,41 @@ export const ResultadoChaveMiniCard = ({
     selectedMonth,
     selectedYear,
     selectedQuarter,
-    selectedQuarterYear
+    selectedQuarterYear,
+    selectedMonthYear,
+    selectedSemester,
+    selectedSemesterYear,
+    selectedBimonth,
+    selectedBimonthYear
   } = usePeriodFilter();
 
-  // Usar useKRMetrics para obter valores corretos baseado no período e mês/ano selecionados
+  // Usar useKRMetrics com todos os parâmetros de período
   const metrics = useKRMetrics(resultadoChave, { 
     selectedMonth, 
-    selectedYear,
+    selectedYear: selectedPeriod === 'monthly' ? selectedMonthYear : selectedYear,
     selectedQuarter,
-    selectedQuarterYear
+    selectedQuarterYear,
+    selectedSemester,
+    selectedSemesterYear,
+    selectedBimonth,
+    selectedBimonthYear
   });
   
   // Calcular progresso baseado no período selecionado
-  const currentValue = selectedPeriod === 'quarterly'
-    ? metrics.quarterly.actual
-    : selectedPeriod === 'monthly' 
-    ? metrics.monthly.actual
-    : selectedPeriod === 'yearly'
-    ? metrics.yearly.actual
-    : metrics.ytd.actual;
-    
-  const targetValue = selectedPeriod === 'quarterly'
-    ? metrics.quarterly.target
-    : selectedPeriod === 'monthly'
-    ? metrics.monthly.target
-    : selectedPeriod === 'yearly'
-    ? metrics.yearly.target
-    : metrics.ytd.target;
-  
-  const percentage = selectedPeriod === 'quarterly'
-    ? metrics.quarterly.percentage
-    : selectedPeriod === 'monthly'
-    ? metrics.monthly.percentage
-    : selectedPeriod === 'yearly'
-    ? metrics.yearly.percentage
-    : metrics.ytd.percentage;
+  const getMetricsForPeriod = (field: 'actual' | 'target' | 'percentage') => {
+    switch (selectedPeriod) {
+      case 'quarterly': return metrics.quarterly[field];
+      case 'monthly': return metrics.monthly[field];
+      case 'yearly': return metrics.yearly[field];
+      case 'semesterly': return metrics.semesterly[field];
+      case 'bimonthly': return metrics.bimonthly[field];
+      default: return metrics.ytd[field];
+    }
+  };
+
+  const currentValue = getMetricsForPeriod('actual');
+  const targetValue = getMetricsForPeriod('target');
+  const percentage = getMetricsForPeriod('percentage') as number;
   
   // Determine status color based on percentage (already calculated in DB)
   const getStatusColor = (pct: number) => {
