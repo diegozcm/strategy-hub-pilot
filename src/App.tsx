@@ -33,7 +33,6 @@ import { UserManagementPage } from "@/components/admin/UserManagementPage";
 import { ModulesManagementPage } from "@/components/admin/ModulesManagementPage";
 import { SystemSettingsPage } from "@/components/admin/SystemSettingsPage";
 import { CreateUserPage } from "@/components/admin/CreateUserPage";
-import { LandingPageEditorPage } from "./components/admin/LandingPageEditorPage";
 import { EmailTemplatesPage } from "./components/admin/EmailTemplatesPage";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
@@ -41,7 +40,6 @@ import { StartTogetherAdminLayout } from "./components/admin/StartTogetherAdminL
 import { CompanySelectionPage } from "@/pages/CompanySelectionPage";
 import LandingPage from "@/pages/LandingPage";
 import ReleasesPage from "@/pages/ReleasesPage";
-import LandingPagePreview from "@/pages/LandingPagePreview";
 import NotFound from "@/pages/NotFound";
 import { GoldenCirclePage } from "@/components/golden-circle/GoldenCirclePage";
 import { ToolsPage } from "@/components/tools/ToolsPage";
@@ -109,9 +107,9 @@ import {
   BackupSchedulesPage,
   DataCleanupPage,
   SystemAdminsSettingsPage,
-  EditLandingPage,
-  PreviewLandingPage,
-  PublishLandingPage,
+  AllReleasesPage,
+  NewReleasePage,
+  EditReleasePage,
   AllEmailTemplatesPage,
   WelcomeTemplatePage,
   CredentialsTemplatePage,
@@ -269,10 +267,10 @@ const App = () => (
                   <Route path="settings/cleanup" element={<DataCleanupPage />} />
                   <Route path="settings/admins" element={<SystemAdminsSettingsPage />} />
 
-                  {/* Landing Page */}
-                  <Route path="landing/edit" element={<EditLandingPage />} />
-                  <Route path="landing/preview" element={<PreviewLandingPage />} />
-                  <Route path="landing/publish" element={<PublishLandingPage />} />
+                  {/* Releases / Novidades */}
+                  <Route path="releases" element={<AllReleasesPage />} />
+                  <Route path="releases/new" element={<NewReleasePage />} />
+                  <Route path="releases/:id/edit" element={<EditReleasePage />} />
 
                   {/* Email Templates */}
                   <Route path="emails" element={<AllEmailTemplatesPage />} />
@@ -297,8 +295,6 @@ const App = () => (
                   <Route path="modules" element={<ModulesManagementPage />} />
                   <Route path="settings" element={<SystemSettingsPage />} />
                   <Route path="monitoring" element={<MonitoringPage />} />
-                  <Route path="landing-page" element={<LandingPageEditorPage />} />
-                  <Route path="landing-preview" element={<LandingPagePreview />} />
                   <Route path="email-templates" element={<EmailTemplatesPage />} />
                 </Route>
 

@@ -1,4 +1,4 @@
-import { LucideIcon, LayoutDashboard, Building2, Users, Package, Monitor, Settings, FileText, Mail, Plus, Filter, Clock, CheckCircle, AlertCircle, Archive, UserPlus, Shield, Database, Trash2, Eye, Activity, Server, Bell, Lock, Download, Upload, Palette, Globe } from "lucide-react";
+import { LucideIcon, LayoutDashboard, Building2, Users, Package, Monitor, Settings, FileText, Mail, Plus, Filter, Clock, CheckCircle, AlertCircle, Archive, UserPlus, Shield, Database, Trash2, Eye, Activity, Server, Bell, Lock, Download, Sparkles, Globe } from "lucide-react";
 
 export interface MenuItemT {
   icon?: LucideIcon;
@@ -26,7 +26,7 @@ export const navItems = [
   { id: "users", icon: Users, label: "Usuários" },
   { id: "modules", icon: Package, label: "Módulos" },
   { id: "monitoring", icon: Monitor, label: "Monitoramento" },
-  { id: "landing", icon: FileText, label: "Landing Page" },
+  { id: "releases", icon: Sparkles, label: "Novidades" },
   { id: "emails", icon: Mail, label: "Templates" },
 ] as const;
 
@@ -205,20 +205,14 @@ export function getSidebarContent(activeSection: NavSection): SidebarContent {
       ],
     },
 
-    landing: {
-      title: "Landing Page",
+    releases: {
+      title: "Novidades",
       sections: [
         {
-          title: "Editor",
+          title: "Gerenciamento",
           items: [
-            { icon: Palette, label: "Editar Conteúdo", href: "/app/admin/landing/edit" },
-            { icon: Eye, label: "Preview", href: "/app/admin/landing/preview" },
-          ],
-        },
-        {
-          title: "Publicação",
-          items: [
-            { icon: Upload, label: "Publicar Alterações", href: "/app/admin/landing/publish" },
+            { icon: FileText, label: "Todas as Novidades", href: "/app/admin/releases" },
+            { icon: Plus, label: "Nova Publicação", href: "/app/admin/releases/new" },
           ],
         },
       ],
