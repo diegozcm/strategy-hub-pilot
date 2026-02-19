@@ -40,6 +40,7 @@ import { AdminProtectedRoute } from "@/components/AdminProtectedRoute";
 import { StartTogetherAdminLayout } from "./components/admin/StartTogetherAdminLayout";
 import { CompanySelectionPage } from "@/pages/CompanySelectionPage";
 import LandingPage from "@/pages/LandingPage";
+import ReleasesPage from "@/pages/ReleasesPage";
 import LandingPagePreview from "@/pages/LandingPagePreview";
 import NotFound from "@/pages/NotFound";
 import { GoldenCirclePage } from "@/components/golden-circle/GoldenCirclePage";
@@ -147,6 +148,7 @@ const App = () => (
                   <ModulesProvider>
                 <Routes>
                 <Route path="/" element={<LandingPage />} />
+                <Route path="/releases" element={<ReleasesPage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/company-selection" element={<CompanySelectionPage />} />
                 <Route path="/company-inactive" element={<CompanyInactivePage />} />

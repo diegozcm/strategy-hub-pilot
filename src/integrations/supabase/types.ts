@@ -2552,6 +2552,48 @@ export type Database = {
           },
         ]
       }
+      release_notes: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          date: string
+          id: string
+          published: boolean | null
+          summary: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          version: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          date?: string
+          id?: string
+          published?: boolean | null
+          summary?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          version: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          date?: string
+          id?: string
+          published?: boolean | null
+          summary?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
       startup_hub_profiles: {
         Row: {
           areas_of_expertise: string[] | null
