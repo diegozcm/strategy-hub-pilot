@@ -1,91 +1,80 @@
 
 
-## Exportar Todos os Dados de uma Empresa
+## Melhorar Exportacao e Criar Importacao de Dados de Empresa
 
-### Objetivo
-Criar uma funcao segura de exportacao completa de todos os dados de uma empresa especifica, acessivel apenas por System Admins no painel administrativo.
+### Problema Atual
 
-### Onde ficara o botao
-O botao "Exportar Dados" sera adicionado na aba **Acoes** do `CompanyDetailsModal`, junto com os outros cards de acao (Editar, Gerenciar Usuarios, Desativar). Isso permite exportar os dados de qualquer empresa ao clicar em "Ver Perfil" e ir na aba Acoes.
+A exportacao atual tem duas limitacoes importantes:
 
-### Arquitetura de Seguranca
+**1. Tabelas faltando na exportacao (10 tabelas):**
+- `mentor_todos` - tarefas de mentoria (tem `startup_company_id`)
+- `ai_analytics` - analytics de IA (via user_id dos membros)
+- `ai_user_preferences` - preferencias de IA dos usuarios (via user_id)
+- `startup_hub_profiles` - perfis do hub de startups (via user_id)
+- `user_module_profiles` - perfis de modulos (via user_id)
+- `user_module_roles` - roles de modulos (via user_id)
+- `user_modules` - modulos dos usuarios (via user_id)
+- `user_roles` - roles dos usuarios (via user_id)
+- `profile_access_logs` - logs de acesso a perfis (via user_id)
+- `vision_alignment_removed_dupes` - duplicatas removidas (tem `company_id`)
 
-A exportacao sera feita via **Edge Function** (`export-company-data`) que:
+**2. Limite de 1000 registros por query do Supabase**
+Tabelas com muitos registros (ex: `ai_chat_messages`, `key_result_values`) podem perder dados silenciosamente.
 
-1. Valida o JWT do usuario autenticado
-2. Verifica se o usuario e **System Admin** usando a funcao `is_system_admin()` do banco
-3. Registra um log de auditoria da exportacao (nova tabela `company_export_logs`)
-4. Coleta todos os dados da empresa usando `SUPABASE_SERVICE_ROLE_KEY` (bypassa RLS para garantir exportacao completa)
-5. Retorna um arquivo JSON/XLSX para download
+**3. Nao existe funcao de importacao**
+O objetivo final e poder exportar dados de uma empresa e importa-los em outra.
 
-### Tabelas Exportadas (por empresa)
+---
 
-Todas as tabelas que possuem `company_id` direto ou indireto:
+### Solucao
 
-- `companies` (dados da empresa)
-- `user_company_relations` + `profiles` (usuarios vinculados)
-- `golden_circle`, `golden_circle_history`
-- `swot_analysis`, `swot_history`
-- `vision_alignment`, `vision_alignment_history`, `vision_alignment_objectives`
-- `strategic_plans`, `strategic_pillars`, `strategic_objectives`
-- `key_results`, `key_result_values`, `key_results_history`
-- `kr_fca`, `kr_initiatives`, `kr_monthly_actions`, `kr_status_reports`, `kr_actions_history`
-- `strategic_projects`, `project_members`, `project_tasks`, `project_kr_relations`, `project_objective_relations`
-- `beep_assessments`, `beep_answers`
-- `governance_meetings`, `governance_agenda_items`, `governance_atas`, `governance_rules`, `governance_rule_items`, `governance_rule_documents`
-- `ai_chat_sessions`, `ai_chat_messages`, `ai_company_settings`, `ai_insights`, `ai_recommendations`
-- `mentor_startup_relations`, `mentoring_sessions`, `action_items`, `mentor_todos`
-- `performance_reviews`
-- `company_module_settings`, `password_policies`
-- `user_login_logs`
+#### Fase 1 - Corrigir a Exportacao (agora)
 
-### Implementacao
+**Edge Function `export-company-data`:**
 
-#### 1. Migration SQL - Tabela de Auditoria
+1. Adicionar as 10 tabelas faltantes ao export
+2. Implementar paginacao automatica para superar o limite de 1000 registros (loop com `.range()` ate trazer todos os dados)
+3. Incluir metadados de versao no JSON exportado para compatibilidade futura com importacao
 
-```sql
-CREATE TABLE public.company_export_logs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  company_id uuid NOT NULL REFERENCES companies(id),
-  admin_user_id uuid NOT NULL,
-  export_format text NOT NULL DEFAULT 'xlsx',
-  tables_exported text[] NOT NULL,
-  total_records integer NOT NULL DEFAULT 0,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
+O JSON exportado tera este formato:
 
-ALTER TABLE public.company_export_logs ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Only system admins can access export logs"
-  ON public.company_export_logs FOR ALL
-  USING (public.is_system_admin(auth.uid()));
+```text
+{
+  "version": "1.0",
+  "company_name": "...",
+  "exported_at": "...",
+  "source_company_id": "...",
+  "total_records": 1234,
+  "tables_exported": [...],
+  "data": {
+    "companies": [...],
+    "strategic_plans": [...],
+    ...todas as tabelas...
+  }
+}
 ```
 
-#### 2. Edge Function: `export-company-data`
+#### Fase 2 - Funcao de Importacao (futuro)
 
-- Recebe `{ company_id, format: 'json' | 'xlsx' }`
-- Valida autenticacao e `is_system_admin`
-- Usa service role para consultar todas as tabelas filtrando por `company_id`
-- Para tabelas com relacao indireta (ex: `key_results` via `strategic_objectives` -> `strategic_plans`), faz JOINs encadeados
-- Registra o log de exportacao
-- Retorna JSON com todos os dados organizados por categoria
+A importacao sera uma nova Edge Function (`import-company-data`) que:
+- Recebe o JSON exportado + o `target_company_id`
+- Remapeia todos os UUIDs (gera novos IDs mantendo as relacoes entre tabelas)
+- Remapeia `company_id` para a empresa destino
+- Insere os dados respeitando a ordem de dependencia (empresas primeiro, depois planos, depois pilares, etc.)
 
-#### 3. Frontend - CompanyDetailsModal
+**Esta fase nao sera implementada agora** - o foco e garantir que a exportacao esteja 100% completa para viabilizar a importacao futura.
 
-- Novo card na aba "Acoes" com icone de Download
-- Modal de confirmacao antes de iniciar (AlertDialog)
-- Indicador de loading durante a exportacao
-- Download automatico do arquivo gerado
-- Formato de exportacao: XLSX (com uma aba por tabela) usando a lib `xlsx` ja instalada
+---
 
 ### Detalhes Tecnicos
 
-**Edge Function** (`supabase/functions/export-company-data/index.ts`):
-- `verify_jwt = false` no config.toml, validacao manual via `getClaims()`
-- Usa `SUPABASE_SERVICE_ROLE_KEY` para bypassa RLS e garantir exportacao completa
-- Dupla verificacao: `getClaims()` + RPC `is_system_admin(user_id)` no banco
+**Arquivo modificado:** `supabase/functions/export-company-data/index.ts`
 
-**Frontend** (arquivos modificados):
-- `src/components/admin-v2/pages/companies/modals/CompanyDetailsModal.tsx` - adicionar card de exportacao na aba Acoes e logica de download
-- `supabase/config.toml` - adicionar configuracao da nova edge function
+Mudancas:
+1. Nova funcao `fetchAllRows(tableName, query)` com paginacao automatica (busca em blocos de 1000 ate acabar)
+2. Adicionar busca das 10 tabelas faltantes:
+   - `mentor_todos` filtrado por `startup_company_id = company_id`
+   - `vision_alignment_removed_dupes` filtrado por `company_id`
+   - `ai_analytics`, `ai_user_preferences`, `startup_hub_profiles`, `user_module_profiles`, `user_module_roles`, `user_modules`, `user_roles`, `profile_access_logs` filtrados por `user_id IN (userIds dos membros da empresa)`
+3. Adicionar campos `version` e `source_company_id` na resposta para compatibilidade futura
 
