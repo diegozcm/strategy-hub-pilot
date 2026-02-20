@@ -43,7 +43,19 @@ export function ExportCompanyDataCard({ companyId, companyName }: ExportCompanyD
 
       for (const [tableName, rows] of Object.entries(exportData)) {
         if (Array.isArray(rows) && rows.length > 0) {
-          const ws = XLSX.utils.json_to_sheet(rows);
+          // Serialize JSON/array fields as strings so XLSX preserves them
+          const serializedRows = rows.map((row: any) => {
+            const newRow: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(row)) {
+              if (value !== null && typeof value === "object") {
+                newRow[key] = JSON.stringify(value);
+              } else {
+                newRow[key] = value;
+              }
+            }
+            return newRow;
+          });
+          const ws = XLSX.utils.json_to_sheet(serializedRows);
           // Sheet name max 31 chars
           const sheetName = tableName.substring(0, 31);
           XLSX.utils.book_append_sheet(wb, ws, sheetName);

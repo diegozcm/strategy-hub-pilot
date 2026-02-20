@@ -150,11 +150,35 @@ export function ImportCompanyDataModal({
 
       for (const sheetName of workbook.SheetNames) {
         const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet);
+        const rows = XLSX.utils.sheet_to_json(sheet) as Array<Record<string, unknown>>;
         if (rows.length > 0) {
-          tables[sheetName] = rows;
-          totalRecords += rows.length;
-          tablesSummary.push({ name: sheetName, count: rows.length });
+          // Deserialize JSON strings back to objects/arrays
+          const deserializedRows = rows.map((row) => {
+            const newRow: Record<string, unknown> = {};
+            for (const [key, value] of Object.entries(row)) {
+              if (typeof value === "string") {
+                const trimmed = value.trim();
+                if (
+                  (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+                  (trimmed.startsWith("[") && trimmed.endsWith("]"))
+                ) {
+                  try {
+                    newRow[key] = JSON.parse(trimmed);
+                  } catch {
+                    newRow[key] = value;
+                  }
+                } else {
+                  newRow[key] = value;
+                }
+              } else {
+                newRow[key] = value;
+              }
+            }
+            return newRow;
+          });
+          tables[sheetName] = deserializedRows;
+          totalRecords += deserializedRows.length;
+          tablesSummary.push({ name: sheetName, count: deserializedRows.length });
         }
       }
 
