@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
       fetch("kr_initiatives", "company_id", company_id),
       fetch("strategic_projects", "company_id", company_id),
       fetch("company_module_settings", "company_id", company_id),
-      fetch("performance_reviews", "company_id", company_id),
+      fetch("strategic_pillars", "company_id", company_id),
       fetch("vision_alignment_removed_dupes", "company_id", company_id),
     ]);
 
@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
     // ── SWOT history ──
     const swotIds = ids("swot_analysis");
     if (swotIds.length > 0) {
-      await fetch("swot_history", "swot_id", swotIds, "in");
+      await fetch("swot_history", "swot_analysis_id", swotIds, "in");
     }
 
     // ── Vision alignment related ──
@@ -163,11 +163,8 @@ Deno.serve(async (req) => {
       ]);
     }
 
-    // ── Strategic chain: plans → pillars → objectives → key_results ──
-    const planIds = ids("strategic_plans");
-    if (planIds.length > 0) {
-      await fetch("strategic_pillars", "plan_id", planIds, "in");
-    }
+    // ── Strategic chain: pillars → objectives → key_results ──
+    // strategic_pillars already fetched by company_id above
 
     const pillarIds = ids("strategic_pillars");
     if (pillarIds.length > 0) {
