@@ -7,14 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
 import { useStartupDetails } from "@/hooks/admin/useStartupHubStats";
+import { CompanyDetailsModal } from "./modals/CompanyDetailsModal";
 
 export default function ActiveStartupsPage() {
-  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedStartup, setSelectedStartup] = useState<any>(null);
+  const [modalOpen, setModalOpen] = useState(false);
   
-  const { data: allStartups, isLoading } = useStartupDetails();
+  const { data: allStartups, isLoading, refetch } = useStartupDetails();
 
   const activeStartups = useMemo(() => {
     if (!allStartups) return [];
@@ -29,11 +30,12 @@ export default function ActiveStartupsPage() {
     );
   }, [activeStartups, searchQuery]);
 
-  const handleNotImplemented = (action: string) => {
-    toast({
-      title: "Funcionalidade em Desenvolvimento",
-      description: `A ação "${action}" será implementada em breve.`,
+  const handleViewProfile = (startup: any) => {
+    setSelectedStartup({
+      ...startup,
+      userCount: startup.members || 0,
     });
+    setModalOpen(true);
   };
 
   return (
@@ -149,7 +151,7 @@ export default function ActiveStartupsPage() {
                   <Button 
                     variant="outline" 
                     className="w-full"
-                    onClick={() => handleNotImplemented("Ver Perfil")}
+                    onClick={() => handleViewProfile(startup)}
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     Ver Perfil
@@ -160,6 +162,13 @@ export default function ActiveStartupsPage() {
           </div>
         )}
       </div>
+
+      <CompanyDetailsModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        company={selectedStartup}
+        onSuccess={() => refetch()}
+      />
     </AdminPageContainer>
   );
 }
