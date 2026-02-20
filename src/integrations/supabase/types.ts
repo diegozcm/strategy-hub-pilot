@@ -3670,6 +3670,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_deduplicated_login_logs: {
+        Args: { p_limit?: number; p_start_date?: string }
+        Returns: {
+          company_id: string
+          id: string
+          ip_address: string
+          login_time: string
+          logout_time: string
+          user_agent: string
+          user_id: string
+        }[]
+      }
       get_monthly_objective_achievement: {
         Args: { objective_id: string; target_month: string }
         Returns: {

@@ -27,11 +27,20 @@ interface DeviceBreakdown {
 }
 
 function parseDevice(userAgent: string | null): string {
-  if (!userAgent) return "Desktop"; // Default to Desktop when user_agent not captured
+  if (!userAgent) return "Desktop";
   const ua = userAgent.toLowerCase();
   if (/mobile|android|iphone|ipod/.test(ua)) return "Mobile";
   if (/tablet|ipad/.test(ua)) return "Tablet";
   return "Desktop";
+}
+
+async function fetchDeduplicatedLogs(startDate: Date) {
+  const { data, error } = await supabase.rpc("get_deduplicated_login_logs", {
+    p_start_date: startDate.toISOString(),
+    p_limit: null,
+  });
+  if (error) throw error;
+  return data || [];
 }
 
 export const useAnalyticsOverview = (days: number = 7) => {
@@ -41,31 +50,13 @@ export const useAnalyticsOverview = (days: number = 7) => {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      // Fetch all login logs with explicit large limit to avoid 1000 row default
-      const allLogs: any[] = [];
-      let offset = 0;
-      const PAGE_SIZE = 1000;
-      while (true) {
-        const { data, error } = await supabase
-          .from("user_login_logs")
-          .select("user_id, login_time, logout_time")
-          .gte("login_time", startDate.toISOString())
-          .range(offset, offset + PAGE_SIZE - 1);
-
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        allLogs.push(...data);
-        if (data.length < PAGE_SIZE) break;
-        offset += PAGE_SIZE;
-      }
-
-      const logs = allLogs;
-      const uniqueUsers = new Set(logs.map((l) => l.user_id));
+      const logs = await fetchDeduplicatedLogs(startDate);
+      const uniqueUsers = new Set(logs.map((l: any) => l.user_id));
 
       // Calculate avg session duration
       let totalDuration = 0;
       let sessionsWithDuration = 0;
-      logs.forEach((log) => {
+      logs.forEach((log: any) => {
         if (log.logout_time && log.login_time) {
           const duration =
             (new Date(log.logout_time).getTime() -
@@ -88,7 +79,7 @@ export const useAnalyticsOverview = (days: number = 7) => {
         avgLoginsPerUser: uniqueUsers.size > 0
           ? Math.round((logs.length / uniqueUsers.size) * 10) / 10
           : 0,
-        bounceRate: 0, // We don't track page-level navigation
+        bounceRate: 0,
       };
     },
     staleTime: 60 * 1000,
@@ -102,28 +93,11 @@ export const useDailyVisitors = (days: number = 7) => {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      // Paginate to avoid 1000 row limit
-      const allData: any[] = [];
-      let offset = 0;
-      const PAGE_SIZE = 1000;
-      while (true) {
-        const { data, error } = await supabase
-          .from("user_login_logs")
-          .select("user_id, login_time")
-          .gte("login_time", startDate.toISOString())
-          .order("login_time", { ascending: true })
-          .range(offset, offset + PAGE_SIZE - 1);
-
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        allData.push(...data);
-        if (data.length < PAGE_SIZE) break;
-        offset += PAGE_SIZE;
-      }
+      const logs = await fetchDeduplicatedLogs(startDate);
 
       const dailyMap: Record<string, { users: Set<string>; sessions: number }> = {};
 
-      allData.forEach((log) => {
+      logs.forEach((log: any) => {
         const date = new Date(log.login_time).toLocaleDateString("pt-BR");
         if (!dailyMap[date]) {
           dailyMap[date] = { users: new Set(), sessions: 0 };
@@ -149,28 +123,12 @@ export const useDeviceBreakdown = (days: number = 7) => {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      // Paginate to avoid 1000 row limit
-      const allData: any[] = [];
-      let offset = 0;
-      const PAGE_SIZE = 1000;
-      while (true) {
-        const { data, error } = await supabase
-          .from("user_login_logs")
-          .select("user_agent")
-          .gte("login_time", startDate.toISOString())
-          .range(offset, offset + PAGE_SIZE - 1);
-
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        allData.push(...data);
-        if (data.length < PAGE_SIZE) break;
-        offset += PAGE_SIZE;
-      }
+      const logs = await fetchDeduplicatedLogs(startDate);
 
       const deviceCounts: Record<string, number> = {};
-      const total = allData.length;
+      const total = logs.length;
 
-      allData.forEach((log) => {
+      logs.forEach((log: any) => {
         const device = parseDevice(log.user_agent);
         deviceCounts[device] = (deviceCounts[device] || 0) + 1;
       });

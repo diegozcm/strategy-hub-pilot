@@ -114,28 +114,18 @@ export const useLoginStats = (days: number = 7) => {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      // Paginate to avoid 1000 row limit
-      const allData: any[] = [];
-      let offset = 0;
-      const PAGE_SIZE = 1000;
-      while (true) {
-        const { data, error } = await supabase
-          .from("user_login_logs")
-          .select("login_time")
-          .gte("login_time", startDate.toISOString())
-          .range(offset, offset + PAGE_SIZE - 1);
+      // Use deduplicated RPC function
+      const { data, error } = await supabase.rpc("get_deduplicated_login_logs", {
+        p_start_date: startDate.toISOString(),
+        p_limit: null,
+      });
 
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        allData.push(...data);
-        if (data.length < PAGE_SIZE) break;
-        offset += PAGE_SIZE;
-      }
+      if (error) throw error;
 
       // Group by day
       const dailyLogins: Record<string, number> = {};
       
-      allData.forEach(login => {
+      (data || []).forEach((login: any) => {
         const date = new Date(login.login_time).toLocaleDateString("pt-BR");
         dailyLogins[date] = (dailyLogins[date] || 0) + 1;
       });
