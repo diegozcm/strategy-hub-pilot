@@ -1,77 +1,107 @@
 
 
-## Editor Rico (WYSIWYG) para Release Notes
+## Corrigir Contabilizacao de Logins Inflada
 
-Substituir o editor Markdown atual por um editor visual rico estilo WordPress usando **Tiptap** -- um editor modular para React que permite formatar texto, inserir imagens arrastando, e ver o resultado final enquanto escreve, sem precisar conhecer Markdown.
+### Problema Raiz
 
----
+O evento `SIGNED_IN` do Supabase dispara **multiplas vezes** por sessao -- ao trocar de aba, ao atualizar token, ao reconectar. Cada disparo chama `logUserLogin`, inserindo um novo registro. Resultado: **2.508 registros de login** para apenas **27 usuarios** em 7 dias. Um unico usuario (voce) gerou centenas de registros em um dia.
 
-### O que muda para voce (usuario)
+Isso infla todos os numeros: Total de Sessoes, Logins/Usuario, e os graficos ficam completamente distorcidos.
 
-- Em vez de escrever `## Titulo` e `![img](url)`, voce vera uma **barra de ferramentas** com botoes para Negrito, Italico, Titulos (H1-H3), Listas, etc.
-- Para inserir uma imagem, basta **clicar no botao de imagem** e selecionar um arquivo, ou **arrastar e soltar** a imagem direto no editor -- ela aparece inline, como no Word/WordPress.
-- O conteudo e editado visualmente -- o que voce ve e o que o usuario final vera.
-- A aba "Preview" separada deixa de ser necessaria, pois o editor ja mostra o resultado formatado.
+### Causa Tecnica
 
----
-
-### Barra de Ferramentas do Editor
-
-```text
-[ H1 | H2 | H3 | B | I | --- | Lista | Lista Num. | Imagem | Desfazer | Refazer ]
+Em `useMultiTenant.tsx`, linha 727:
+```
+if (event === 'SIGNED_IN' && session) {
+  loadUserProfileOptimized(session.user.id, true); // SEMPRE loga
+}
 ```
 
-Botoes planejados:
-- **Titulos**: H1, H2, H3
-- **Formatacao**: Negrito, Italico
-- **Separador**: Linha horizontal
-- **Listas**: Com marcadores e numeradas
-- **Imagem**: Upload de arquivo local (salvo em `/public/releases/`)
-- **Desfazer/Refazer**
+O Supabase emite `SIGNED_IN` nao apenas no login real, mas tambem em refreshes de token e reconexoes. Isso causa multiplos inserts por visita.
+
+Alem disso, a query de analytics usa `supabase.from("user_login_logs").select(...)` sem `.limit()`, mas o Supabase tem limite padrao de **1000 linhas** -- entao os numeros sao cortados e inconsistentes.
 
 ---
 
-### Estrategia de Armazenamento
+### Solucao: Deduplicacao + Sessoes Reais
 
-- O editor Tiptap gera **HTML** internamente.
-- O campo `content` no banco continuara sendo `text`, mas passara a armazenar HTML em vez de Markdown.
-- A pagina publica (`/releases`) sera atualizada para renderizar HTML diretamente em vez de usar ReactMarkdown.
-- O conteudo existente (v1.0.0 em Markdown) sera convertido para HTML via uma migracao SQL simples usando funcoes de replace.
+**1. Prevenir logs duplicados no frontend (`useMultiTenant.tsx`)**
+
+Adicionar um guard que verifica se ja existe um login recente (ultimos 5 minutos) para o mesmo usuario antes de inserir um novo:
+
+```typescript
+const logUserLogin = async (userId: string, companyId: string | null) => {
+  try {
+    // Verificar se ja existe login nos ultimos 5 minutos
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: recent } = await supabase
+      .from('user_login_logs')
+      .select('id')
+      .eq('user_id', userId)
+      .gte('login_time', fiveMinAgo)
+      .limit(1);
+
+    if (recent && recent.length > 0) {
+      console.log('⏭️ Login already logged recently, skipping');
+      return;
+    }
+
+    await supabase.from('user_login_logs').insert({...});
+  } catch (error) { ... }
+};
+```
+
+**2. Limpar dados historicos inflados (SQL migration)**
+
+Criar uma limpeza que mantem apenas o **primeiro login de cada sessao real** (agrupando por usuario + janela de 5 minutos):
+
+```sql
+-- Deletar registros duplicados, mantendo o primeiro de cada janela de 5min
+DELETE FROM user_login_logs
+WHERE id NOT IN (
+  SELECT DISTINCT ON (user_id, date_trunc('hour', login_time) + 
+    INTERVAL '5 min' * FLOOR(EXTRACT(MINUTE FROM login_time) / 5))
+    id
+  FROM user_login_logs
+  ORDER BY user_id, date_trunc('hour', login_time) + 
+    INTERVAL '5 min' * FLOOR(EXTRACT(MINUTE FROM login_time) / 5), login_time ASC
+);
+```
+
+**3. Corrigir queries de analytics para usar contagem no banco (`useAnalyticsStats.ts`)**
+
+As queries atuais puxam TODOS os registros para o frontend e contam no JavaScript. Isso:
+- Bate no limite de 1000 linhas do Supabase
+- E lento com muitos dados
+
+Solucao: usar RPCs ou `.select('*', { count: 'exact', head: true })` quando possivel, e adicionar `.limit()` explicito quando precisar dos dados.
+
+**4. Adicionar variavel de controle por sessao de navegador**
+
+Usar `sessionStorage` para marcar que o login ja foi registrado nesta sessao do navegador, evitando qualquer duplicata:
+
+```typescript
+const SESSION_KEY = 'login_logged';
+if (sessionStorage.getItem(SESSION_KEY)) return;
+// ... insert login
+sessionStorage.setItem(SESSION_KEY, 'true');
+```
 
 ---
 
-### Detalhes Tecnicos
-
-**Dependencia nova**: `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-image`, `@tiptap/extension-placeholder`
-
-**Arquivos criados**:
-
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/components/admin-v2/components/releases/RichTextEditor.tsx` | Componente do editor Tiptap com toolbar e area de edicao |
-| `src/components/admin-v2/components/releases/EditorToolbar.tsx` | Barra de ferramentas com botoes de formatacao |
-
-**Arquivos modificados**:
+### Arquivos Modificados
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `ReleaseNoteForm.tsx` | Substituir Textarea + Tabs (Escrever/Preview) pelo componente `RichTextEditor`. Remover import do `MarkdownPreview` |
-| `MarkdownPreview.tsx` | Renomear para `ContentPreview.tsx` -- renderizar HTML com `dangerouslySetInnerHTML` (sanitizado com DOMPurify que ja esta instalado) em vez de ReactMarkdown |
-| `ReleasesPage.tsx` (pagina publica) | Trocar `ReactMarkdown` por renderizacao HTML sanitizada |
-| `EditReleasePage.tsx` | Sem mudancas estruturais, o `defaultValues.content` agora sera HTML |
+| `src/hooks/useMultiTenant.tsx` | Adicionar deduplicacao com `sessionStorage` + verificacao de login recente antes do insert |
+| `src/hooks/admin/useAnalyticsStats.ts` | Corrigir queries para nao bater no limite de 1000 linhas |
+| `src/hooks/admin/useDashboardStats.tsx` | Mesma correcao de limite nas queries de login stats |
+| Migracao SQL | Limpeza dos registros duplicados historicos |
 
-**Fluxo de upload de imagem**:
-1. Usuario clica no botao de imagem ou arrasta arquivo para o editor
-2. O arquivo e enviado para o Supabase Storage (bucket `release-images`)
-3. A URL publica retornada e inserida como tag `<img>` no editor
-4. Alternativa simplificada: converter imagem para base64 inline (sem necessidade de storage, mas aumenta o tamanho do campo)
+### Resultado Esperado
 
-**Migracao do conteudo existente**:
-- Uma migracao SQL convertera o Markdown da v1.0.0 para HTML equivalente
-- Ou, mais seguro: manter o conteudo antigo como esta e detectar no frontend se e Markdown (comeca com `##`) ou HTML (comeca com `<`) para renderizar adequadamente
-
-**Compatibilidade retroativa**:
-- A pagina publica verificara se o conteudo comeca com `<` (HTML) ou nao (Markdown legado)
-- Se for Markdown, usa ReactMarkdown; se for HTML, renderiza com DOMPurify
-- Isso permite que releases antigas continuem funcionando sem migracao
+- Cada visita real do usuario gera **exatamente 1 registro** de login
+- Numeros de "Total de Sessoes" e "Logins/Usuario" refletem a realidade
+- Graficos mostram dados consistentes
+- Dados historicos limpos
 
