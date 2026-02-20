@@ -9,6 +9,8 @@ import { CompanyHeader } from "./shared/CompanyHeader";
 import { EditCompanyModal } from "./EditCompanyModal";
 import { ManageCompanyUsersModal } from "./ManageCompanyUsersModal";
 import { ExportCompanyDataCard } from "./ExportCompanyDataCard";
+import { ImportCompanyDataCard } from "./ImportCompanyDataCard";
+import { ImportCompanyDataModal } from "./ImportCompanyDataModal";
 import { CompanyStatusModal } from "./CompanyStatusModal";
 import { 
   Building2, 
@@ -50,7 +52,7 @@ interface FullCompanyData extends CompanyWithDetails {
   values?: string[] | null;
 }
 
-type SubModalType = 'edit' | 'users' | 'status' | null;
+type SubModalType = 'edit' | 'users' | 'status' | 'import' | null;
 
 export function CompanyDetailsModal({ 
   open, 
@@ -358,6 +360,11 @@ export function CompanyDetailsModal({
                 companyId={displayCompany.id}
                 companyName={displayCompany.name}
               />
+
+              {/* Import Data */}
+              <ImportCompanyDataCard
+                onClick={() => setSubModal('import')}
+              />
             </TabsContent>
           </Tabs>
         </DialogContent>
@@ -388,6 +395,16 @@ export function CompanyDetailsModal({
           onOpenChange={() => setSubModal(null)}
           company={displayCompany}
           action={displayCompany.status === 'active' ? 'deactivate' : 'reactivate'}
+          onSuccess={handleSubModalSuccess}
+        />
+      )}
+
+      {subModal === 'import' && (
+        <ImportCompanyDataModal
+          open={true}
+          onOpenChange={() => setSubModal(null)}
+          companyId={displayCompany.id}
+          companyName={displayCompany.name}
           onSuccess={handleSubModalSuccess}
         />
       )}

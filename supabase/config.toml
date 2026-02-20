@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.export-company-data]
 verify_jwt = false
+
+[functions.import-company-data]
+verify_jwt = false
