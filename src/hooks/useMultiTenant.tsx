@@ -128,15 +128,38 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  // Log user login
+  // Log user login (with deduplication to prevent inflated counts)
   const logUserLogin = async (userId: string, companyId: string | null) => {
     try {
+      // Guard 1: sessionStorage - only one log per browser session
+      const SESSION_KEY = `login_logged_${userId}`;
+      if (sessionStorage.getItem(SESSION_KEY)) {
+        console.log('⏭️ Login already logged this session, skipping');
+        return;
+      }
+
+      // Guard 2: Check if there's a recent login in the last 5 minutes
+      const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+      const { data: recent } = await supabase
+        .from('user_login_logs')
+        .select('id')
+        .eq('user_id', userId)
+        .gte('login_time', fiveMinAgo)
+        .limit(1);
+
+      if (recent && recent.length > 0) {
+        console.log('⏭️ Login already logged recently, skipping');
+        sessionStorage.setItem(SESSION_KEY, 'true');
+        return;
+      }
+
       await supabase.from('user_login_logs').insert({
         user_id: userId,
         company_id: companyId,
         login_time: new Date().toISOString(),
         user_agent: navigator.userAgent,
       });
+      sessionStorage.setItem(SESSION_KEY, 'true');
       console.log('✅ Login logged successfully');
     } catch (error) {
       console.error('❌ Error logging login:', error);

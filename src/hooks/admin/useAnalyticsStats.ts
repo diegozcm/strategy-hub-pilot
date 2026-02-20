@@ -41,14 +41,25 @@ export const useAnalyticsOverview = (days: number = 7) => {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      const { data, error } = await supabase
-        .from("user_login_logs")
-        .select("user_id, login_time, logout_time")
-        .gte("login_time", startDate.toISOString());
+      // Fetch all login logs with explicit large limit to avoid 1000 row default
+      const allLogs: any[] = [];
+      let offset = 0;
+      const PAGE_SIZE = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("user_login_logs")
+          .select("user_id, login_time, logout_time")
+          .gte("login_time", startDate.toISOString())
+          .range(offset, offset + PAGE_SIZE - 1);
 
-      if (error) throw error;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allLogs.push(...data);
+        if (data.length < PAGE_SIZE) break;
+        offset += PAGE_SIZE;
+      }
 
-      const logs = data || [];
+      const logs = allLogs;
       const uniqueUsers = new Set(logs.map((l) => l.user_id));
 
       // Calculate avg session duration
@@ -91,17 +102,28 @@ export const useDailyVisitors = (days: number = 7) => {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      const { data, error } = await supabase
-        .from("user_login_logs")
-        .select("user_id, login_time")
-        .gte("login_time", startDate.toISOString())
-        .order("login_time", { ascending: true });
+      // Paginate to avoid 1000 row limit
+      const allData: any[] = [];
+      let offset = 0;
+      const PAGE_SIZE = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("user_login_logs")
+          .select("user_id, login_time")
+          .gte("login_time", startDate.toISOString())
+          .order("login_time", { ascending: true })
+          .range(offset, offset + PAGE_SIZE - 1);
 
-      if (error) throw error;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData.push(...data);
+        if (data.length < PAGE_SIZE) break;
+        offset += PAGE_SIZE;
+      }
 
       const dailyMap: Record<string, { users: Set<string>; sessions: number }> = {};
 
-      (data || []).forEach((log) => {
+      allData.forEach((log) => {
         const date = new Date(log.login_time).toLocaleDateString("pt-BR");
         if (!dailyMap[date]) {
           dailyMap[date] = { users: new Set(), sessions: 0 };
@@ -127,17 +149,28 @@ export const useDeviceBreakdown = (days: number = 7) => {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      const { data, error } = await supabase
-        .from("user_login_logs")
-        .select("user_agent")
-        .gte("login_time", startDate.toISOString());
+      // Paginate to avoid 1000 row limit
+      const allData: any[] = [];
+      let offset = 0;
+      const PAGE_SIZE = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("user_login_logs")
+          .select("user_agent")
+          .gte("login_time", startDate.toISOString())
+          .range(offset, offset + PAGE_SIZE - 1);
 
-      if (error) throw error;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData.push(...data);
+        if (data.length < PAGE_SIZE) break;
+        offset += PAGE_SIZE;
+      }
 
       const deviceCounts: Record<string, number> = {};
-      const total = data?.length || 0;
+      const total = allData.length;
 
-      (data || []).forEach((log) => {
+      allData.forEach((log) => {
         const device = parseDevice(log.user_agent);
         deviceCounts[device] = (deviceCounts[device] || 0) + 1;
       });
