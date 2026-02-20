@@ -943,6 +943,53 @@ export type Database = {
           },
         ]
       }
+      company_import_logs: {
+        Row: {
+          admin_user_id: string
+          company_id: string
+          created_at: string | null
+          errors: Json | null
+          id: string
+          import_mode: string
+          source_company_id: string | null
+          source_company_name: string | null
+          tables_imported: string[] | null
+          total_records: number | null
+        }
+        Insert: {
+          admin_user_id: string
+          company_id: string
+          created_at?: string | null
+          errors?: Json | null
+          id?: string
+          import_mode: string
+          source_company_id?: string | null
+          source_company_name?: string | null
+          tables_imported?: string[] | null
+          total_records?: number | null
+        }
+        Update: {
+          admin_user_id?: string
+          company_id?: string
+          created_at?: string | null
+          errors?: Json | null
+          id?: string
+          import_mode?: string
+          source_company_id?: string | null
+          source_company_name?: string | null
+          tables_imported?: string[] | null
+          total_records?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_import_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_module_settings: {
         Row: {
           company_id: string
