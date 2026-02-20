@@ -3,7 +3,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const PAGE_SIZE = 1000;
 
-/** Fetch all rows with automatic pagination to bypass the 1000-row limit */
 async function fetchAllRows(
   supabaseAdmin: ReturnType<typeof createClient>,
   tableName: string,
@@ -34,10 +33,8 @@ async function fetchAllRows(
     }
 
     if (!data || data.length === 0) break;
-
     allRows.push(...data);
-
-    if (data.length < PAGE_SIZE) break; // last page
+    if (data.length < PAGE_SIZE) break;
     from += PAGE_SIZE;
   }
 
@@ -50,7 +47,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // 1. Validate JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -78,7 +74,6 @@ Deno.serve(async (req) => {
 
     const userId = claimsData.claims.sub;
 
-    // 2. Verify system admin
     const { data: isAdmin, error: adminError } = await supabaseAuth.rpc("is_system_admin", {
       _user_id: userId,
     });
@@ -90,7 +85,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 3. Parse request
     const { company_id } = await req.json();
     if (!company_id) {
       return new Response(JSON.stringify({ error: "company_id is required" }), {
@@ -99,10 +93,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 4. Service role client
     const sa = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify company exists
     const { data: company, error: companyError } = await sa
       .from("companies")
       .select("*")
@@ -122,7 +114,6 @@ Deno.serve(async (req) => {
     let totalRecords = 0;
     const tablesExported: string[] = [];
 
-    // Helper: fetch with pagination and store
     const fetch = async (table: string, col: string, val: string | string[], type: "eq" | "in" = "eq") => {
       const rows = await fetchAllRows(sa, table, col, val, type);
       exportData[table] = rows;
@@ -130,14 +121,12 @@ Deno.serve(async (req) => {
       if (rows.length > 0) tablesExported.push(table);
     };
 
-    // Helper: extract ids from already-fetched data
     const ids = (table: string, col = "id"): string[] =>
       (exportData[table] || []).map((r: any) => r[col]).filter(Boolean);
 
     // ── Direct company_id tables ──
     await Promise.all([
       fetch("companies", "id", company_id),
-      fetch("user_company_relations", "company_id", company_id),
       fetch("golden_circle", "company_id", company_id),
       fetch("swot_analysis", "company_id", company_id),
       fetch("vision_alignment", "company_id", company_id),
@@ -146,37 +135,12 @@ Deno.serve(async (req) => {
       fetch("governance_meetings", "company_id", company_id),
       fetch("governance_rules", "company_id", company_id),
       fetch("governance_rule_documents", "company_id", company_id),
-      fetch("ai_chat_sessions", "company_id", company_id),
-      fetch("ai_company_settings", "company_id", company_id),
-      fetch("ai_insights", "company_id", company_id),
       fetch("kr_initiatives", "company_id", company_id),
       fetch("strategic_projects", "company_id", company_id),
       fetch("company_module_settings", "company_id", company_id),
       fetch("performance_reviews", "company_id", company_id),
-      fetch("password_policies", "company_id", company_id),
-      fetch("mentor_startup_relations", "startup_company_id", company_id),
-      // NEW tables with direct company_id
-      fetch("mentor_todos", "startup_company_id", company_id),
       fetch("vision_alignment_removed_dupes", "company_id", company_id),
     ]);
-
-    // ── User-based tables (via company members) ──
-    const userIds = ids("user_company_relations", "user_id");
-    if (userIds.length > 0) {
-      await Promise.all([
-        fetch("profiles", "user_id", userIds, "in"),
-        fetch("user_login_logs", "user_id", userIds, "in"),
-        // NEW user-based tables
-        fetch("ai_analytics", "user_id", userIds, "in"),
-        fetch("ai_user_preferences", "user_id", userIds, "in"),
-        fetch("startup_hub_profiles", "user_id", userIds, "in"),
-        fetch("user_module_profiles", "user_id", userIds, "in"),
-        fetch("user_module_roles", "user_id", userIds, "in"),
-        fetch("user_modules", "user_id", userIds, "in"),
-        fetch("user_roles", "user_id", userIds, "in"),
-        fetch("profile_access_logs", "user_id", userIds, "in"),
-      ]);
-    }
 
     // ── Golden circle history ──
     const gcIds = ids("golden_circle");
@@ -246,17 +210,6 @@ Deno.serve(async (req) => {
       await fetch("governance_rule_items", "governance_rule_id", ruleIds, "in");
     }
 
-    // ── AI sub-tables ──
-    const chatSessionIds = ids("ai_chat_sessions");
-    if (chatSessionIds.length > 0) {
-      await fetch("ai_chat_messages", "session_id", chatSessionIds, "in");
-    }
-
-    const insightIds = ids("ai_insights");
-    if (insightIds.length > 0) {
-      await fetch("ai_recommendations", "insight_id", insightIds, "in");
-    }
-
     // ── Strategic projects sub-tables ──
     const projectIds = ids("strategic_projects");
     if (projectIds.length > 0) {
@@ -268,17 +221,6 @@ Deno.serve(async (req) => {
       ]);
     }
 
-    // ── Mentoring sessions & action items ──
-    const mentorRelIds = ids("mentor_startup_relations");
-    if (mentorRelIds.length > 0) {
-      await fetch("mentoring_sessions", "relation_id", mentorRelIds, "in");
-    }
-
-    const sessionIds = ids("mentoring_sessions");
-    if (sessionIds.length > 0) {
-      await fetch("action_items", "session_id", sessionIds, "in");
-    }
-
     // ── Beep answers ──
     const assessmentIds = ids("beep_assessments");
     if (assessmentIds.length > 0) {
@@ -287,7 +229,6 @@ Deno.serve(async (req) => {
 
     console.log(`✅ Export complete: ${totalRecords} records across ${tablesExported.length} tables`);
 
-    // 6. Log the export
     await sa.from("company_export_logs").insert({
       company_id,
       admin_user_id: userId,
@@ -296,7 +237,6 @@ Deno.serve(async (req) => {
       total_records: totalRecords,
     });
 
-    // 7. Return with version metadata for future import compatibility
     return new Response(
       JSON.stringify({
         version: "1.0",
