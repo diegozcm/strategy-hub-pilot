@@ -216,7 +216,7 @@ export function ManageCompanyUsersModal({
           <CompanyHeader company={company} />
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 pr-1">
+        <div className="flex-1 min-h-0 flex flex-col gap-4">
           {/* Toggle Add Panel */}
           {!showAddPanel ? (
             <Button
@@ -331,7 +331,7 @@ export function ManageCompanyUsersModal({
               </div>
             )}
 
-            <ScrollArea className="flex-1 max-h-[300px]">
+            <div className="flex-1 min-h-0 overflow-y-auto max-h-[400px]">
               {loading ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map(i => (
@@ -385,7 +385,7 @@ export function ManageCompanyUsersModal({
                   ))}
                 </div>
               )}
-            </ScrollArea>
+            </div>
           </div>
         </div>
 
