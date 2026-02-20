@@ -95,7 +95,7 @@ const INSERT_ORDER = [
 // Foreign key mapping: for each table, which columns reference which source table's IDs
 const FK_MAP: Record<string, Record<string, string>> = {
   strategic_pillars: { plan_id: "strategic_plans" },
-  strategic_objectives: { pillar_id: "strategic_pillars" },
+  strategic_objectives: { pillar_id: "strategic_pillars", plan_id: "strategic_plans" },
   key_results: { objective_id: "strategic_objectives" },
   key_result_values: { key_result_id: "key_results" },
   key_results_history: { key_result_id: "key_results" },
