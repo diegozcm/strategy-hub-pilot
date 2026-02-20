@@ -3667,6 +3667,7 @@ export type Database = {
           email: string
           first_name: string
           last_name: string
+          status: string
           user_id: string
         }[]
       }
