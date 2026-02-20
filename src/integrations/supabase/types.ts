@@ -905,6 +905,44 @@ export type Database = {
         }
         Relationships: []
       }
+      company_export_logs: {
+        Row: {
+          admin_user_id: string
+          company_id: string
+          created_at: string
+          export_format: string
+          id: string
+          tables_exported: string[]
+          total_records: number
+        }
+        Insert: {
+          admin_user_id: string
+          company_id: string
+          created_at?: string
+          export_format?: string
+          id?: string
+          tables_exported: string[]
+          total_records?: number
+        }
+        Update: {
+          admin_user_id?: string
+          company_id?: string
+          created_at?: string
+          export_format?: string
+          id?: string
+          tables_exported?: string[]
+          total_records?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_export_logs_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_module_settings: {
         Row: {
           company_id: string

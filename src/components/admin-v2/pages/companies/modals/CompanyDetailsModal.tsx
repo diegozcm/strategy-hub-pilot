@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { CompanyHeader } from "./shared/CompanyHeader";
 import { EditCompanyModal } from "./EditCompanyModal";
 import { ManageCompanyUsersModal } from "./ManageCompanyUsersModal";
+import { ExportCompanyDataCard } from "./ExportCompanyDataCard";
 import { CompanyStatusModal } from "./CompanyStatusModal";
 import { 
   Building2, 
@@ -351,6 +352,12 @@ export function CompanyDetailsModal({
                   </CardDescription>
                 </CardHeader>
               </Card>
+
+              {/* Export All Data */}
+              <ExportCompanyDataCard
+                companyId={displayCompany.id}
+                companyName={displayCompany.name}
+              />
             </TabsContent>
           </Tabs>
         </DialogContent>

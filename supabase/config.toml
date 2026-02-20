@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.ai-agent-execute]
 verify_jwt = false
+
+[functions.export-company-data]
+verify_jwt = false
