@@ -1,4 +1,4 @@
-import { Upload } from "lucide-react";
+import { FileUp } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface ImportCompanyDataCardProps {
@@ -13,7 +13,7 @@ export function ImportCompanyDataCard({ onClick }: ImportCompanyDataCardProps) {
     >
       <CardHeader className="p-4">
         <CardTitle className="text-base flex items-center gap-2">
-          <Upload className="h-4 w-4 text-cofound-blue-light" />
+          <FileUp className="h-4 w-4 text-cofound-blue-light" />
           Importar Dados
         </CardTitle>
         <CardDescription>

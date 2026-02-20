@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Download, Loader2, ShieldCheck } from "lucide-react";
+import { FileDown, Loader2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -83,7 +83,7 @@ export function ExportCompanyDataCard({ companyId, companyName }: ExportCompanyD
             {isExporting ? (
               <Loader2 className="h-4 w-4 animate-spin text-cofound-blue-light" />
             ) : (
-              <Download className="h-4 w-4 text-cofound-blue-light" />
+              <FileDown className="h-4 w-4 text-cofound-blue-light" />
             )}
             {isExporting ? "Exportando..." : "Exportar Todos os Dados"}
           </CardTitle>
@@ -119,7 +119,7 @@ export function ExportCompanyDataCard({ companyId, companyName }: ExportCompanyD
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
+              <FileDown className="h-4 w-4 mr-2" />
               Confirmar Exportação
             </AlertDialogAction>
           </AlertDialogFooter>
