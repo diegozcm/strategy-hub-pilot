@@ -291,10 +291,10 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Nullify user reference columns
+          // Set user reference columns to importing admin's ID
           for (const col of USER_COLUMNS) {
             if (col in newRow && newRow[col]) {
-              newRow[col] = null;
+              newRow[col] = userId;
             }
           }
 
