@@ -1,80 +1,81 @@
 
 
-## Melhorar Exportacao e Criar Importacao de Dados de Empresa
+## Refinar Exportacao: Foco em Dados Estrategicos e Operacionais
 
-### Problema Atual
+### O que muda
 
-A exportacao atual tem duas limitacoes importantes:
+A exportacao atual puxa muitos dados desnecessarios (chats de IA, logs de login, dados de startup/mentoria, preferencias de usuario, etc.). O objetivo e focar apenas nos dados estrategicos e operacionais que fazem sentido importar para outra empresa.
 
-**1. Tabelas faltando na exportacao (10 tabelas):**
-- `mentor_todos` - tarefas de mentoria (tem `startup_company_id`)
-- `ai_analytics` - analytics de IA (via user_id dos membros)
-- `ai_user_preferences` - preferencias de IA dos usuarios (via user_id)
-- `startup_hub_profiles` - perfis do hub de startups (via user_id)
-- `user_module_profiles` - perfis de modulos (via user_id)
-- `user_module_roles` - roles de modulos (via user_id)
-- `user_modules` - modulos dos usuarios (via user_id)
-- `user_roles` - roles dos usuarios (via user_id)
-- `profile_access_logs` - logs de acesso a perfis (via user_id)
-- `vision_alignment_removed_dupes` - duplicatas removidas (tem `company_id`)
+### Tabelas que PERMANECEM na exportacao
 
-**2. Limite de 1000 registros por query do Supabase**
-Tabelas com muitos registros (ex: `ai_chat_messages`, `key_result_values`) podem perder dados silenciosamente.
+**Dados da empresa:**
+- `companies` - dados basicos da empresa
 
-**3. Nao existe funcao de importacao**
-O objetivo final e poder exportar dados de uma empresa e importa-los em outra.
+**Ferramentas estrategicas:**
+- `golden_circle` + `golden_circle_history`
+- `swot_analysis` + `swot_history`
+- `vision_alignment` + `vision_alignment_history` + `vision_alignment_objectives` + `vision_alignment_removed_dupes`
 
----
+**Cadeia estrategica completa (OKRs):**
+- `strategic_plans` - planos estrategicos
+- `strategic_pillars` - pilares
+- `strategic_objectives` - objetivos
+- `key_results` - resultados-chave
+- `key_result_values` - valores/metas mensais
+- `key_results_history` - historico de alteracoes dos KRs
 
-### Solucao
+**KR sub-dados:**
+- `kr_initiatives` - iniciativas
+- `kr_fca` - analises FCA (Fato, Causa, Acao)
+- `kr_monthly_actions` - acoes mensais
+- `kr_actions_history` - historico das acoes
+- `kr_status_reports` - relatorios de status
 
-#### Fase 1 - Corrigir a Exportacao (agora)
+**Projetos:**
+- `strategic_projects` - projetos estrategicos
+- `project_members` - membros dos projetos
+- `project_tasks` - tarefas dos projetos
+- `project_kr_relations` - relacao projeto-KR
+- `project_objective_relations` - relacao projeto-objetivo
 
-**Edge Function `export-company-data`:**
+**Governanca:**
+- `governance_meetings` + `governance_agenda_items` + `governance_atas`
+- `governance_rules` + `governance_rule_items` + `governance_rule_documents`
 
-1. Adicionar as 10 tabelas faltantes ao export
-2. Implementar paginacao automatica para superar o limite de 1000 registros (loop com `.range()` ate trazer todos os dados)
-3. Incluir metadados de versao no JSON exportado para compatibilidade futura com importacao
+**Avaliacoes:**
+- `beep_assessments` + `beep_answers`
+- `performance_reviews`
 
-O JSON exportado tera este formato:
+**Configuracoes da empresa:**
+- `company_module_settings`
 
-```text
-{
-  "version": "1.0",
-  "company_name": "...",
-  "exported_at": "...",
-  "source_company_id": "...",
-  "total_records": 1234,
-  "tables_exported": [...],
-  "data": {
-    "companies": [...],
-    "strategic_plans": [...],
-    ...todas as tabelas...
-  }
-}
-```
+### Tabelas REMOVIDAS da exportacao
 
-#### Fase 2 - Funcao de Importacao (futuro)
-
-A importacao sera uma nova Edge Function (`import-company-data`) que:
-- Recebe o JSON exportado + o `target_company_id`
-- Remapeia todos os UUIDs (gera novos IDs mantendo as relacoes entre tabelas)
-- Remapeia `company_id` para a empresa destino
-- Insere os dados respeitando a ordem de dependencia (empresas primeiro, depois planos, depois pilares, etc.)
-
-**Esta fase nao sera implementada agora** - o foco e garantir que a exportacao esteja 100% completa para viabilizar a importacao futura.
-
----
+- `user_company_relations` - relacoes usuario-empresa (nao faz sentido importar usuarios)
+- `profiles` - perfis de usuario
+- `user_login_logs` - logs de login
+- `ai_chat_sessions` + `ai_chat_messages` - conversas de IA
+- `ai_company_settings` - config de IA
+- `ai_insights` + `ai_recommendations` - insights de IA
+- `ai_analytics` + `ai_user_preferences` - analytics e preferencias de IA
+- `mentor_startup_relations` + `mentoring_sessions` + `action_items` + `mentor_todos` - dados de mentoria/startup
+- `startup_hub_profiles` - perfis de startup hub
+- `user_module_profiles`, `user_module_roles`, `user_modules`, `user_roles` - dados de modulos/roles de usuarios
+- `profile_access_logs` - logs de acesso
+- `password_policies` - politicas de senha
 
 ### Detalhes Tecnicos
 
 **Arquivo modificado:** `supabase/functions/export-company-data/index.ts`
 
 Mudancas:
-1. Nova funcao `fetchAllRows(tableName, query)` com paginacao automatica (busca em blocos de 1000 ate acabar)
-2. Adicionar busca das 10 tabelas faltantes:
-   - `mentor_todos` filtrado por `startup_company_id = company_id`
-   - `vision_alignment_removed_dupes` filtrado por `company_id`
-   - `ai_analytics`, `ai_user_preferences`, `startup_hub_profiles`, `user_module_profiles`, `user_module_roles`, `user_modules`, `user_roles`, `profile_access_logs` filtrados por `user_id IN (userIds dos membros da empresa)`
-3. Adicionar campos `version` e `source_company_id` na resposta para compatibilidade futura
+1. Remover toda a secao de "User-based tables" (linhas 163-179) - nao busca mais dados de usuarios
+2. Remover busca de `user_company_relations` (nao precisa mais de userIds)
+3. Remover busca de tabelas de IA: `ai_chat_sessions`, `ai_chat_messages`, `ai_company_settings`, `ai_insights`, `ai_recommendations`
+4. Remover busca de tabelas de mentoria: `mentor_startup_relations`, `mentoring_sessions`, `action_items`, `mentor_todos`
+5. Remover `password_policies`
+6. Manter toda a cadeia estrategica (plans -> pillars -> objectives -> KRs -> values/history/FCA/initiatives/actions/status_reports)
+7. Manter projetos com tasks, members e relacoes
+8. Manter governanca completa
+9. Manter BEEP, performance reviews e company_module_settings
 
