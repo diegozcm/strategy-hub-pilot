@@ -201,154 +201,121 @@ export function ManageCompanyUsersModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Gerenciar Usuários
-          </DialogTitle>
-          <DialogDescription>
-            Adicione ou remova usuários de {company.name}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="py-2">
-          <CompanyHeader company={company} />
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col overflow-hidden p-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b">
+          <div>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Users className="h-5 w-5" />
+              Gerenciar Usuários
+            </DialogTitle>
+            <DialogDescription className="mt-1">
+              Adicione ou remova usuários de {company.name}
+            </DialogDescription>
+          </div>
         </div>
 
-        <div className="flex-1 min-h-0 flex flex-col gap-4">
-          {/* Toggle Add Panel */}
-          {!showAddPanel ? (
-            <Button
-              variant="outline"
-              onClick={() => setShowAddPanel(true)}
-              className="w-full border-dashed border-2 hover:border-primary hover:bg-primary/5"
-            >
-              <UserPlus className="h-4 w-4 mr-2" />
-              Adicionar Usuário à Empresa
-            </Button>
-          ) : (
-            /* Add User Panel */
-            <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <UserPlus className="h-4 w-4 text-primary" />
-                  Adicionar Usuário
-                </h4>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => { setShowAddPanel(false); setAddSearchTerm(""); }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+        {/* Content: two-column layout */}
+        <div className="flex-1 min-h-0 flex">
+          {/* Left sidebar - Company info + Add user */}
+          <div className="w-72 shrink-0 border-r flex flex-col bg-muted/20">
+            <div className="p-4 border-b">
+              <CompanyHeader company={company} />
+            </div>
 
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="p-4 flex-1 min-h-0 flex flex-col">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                Adicionar Usuário
+              </h4>
+
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   value={addSearchTerm}
                   onChange={(e) => setAddSearchTerm(e.target.value)}
                   placeholder="Buscar por nome ou email..."
-                  className="pl-9"
-                  autoFocus
+                  className="pl-9 h-8 text-xs"
                 />
               </div>
 
-              <ScrollArea className="max-h-[200px]">
+              <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5">
                 {filteredAvailableUsers.length === 0 ? (
-                  <div className="text-center py-6 text-sm text-muted-foreground">
-                    {addSearchTerm ? "Nenhum usuário encontrado" : "Todos os usuários já estão vinculados"}
+                  <div className="text-center py-6 text-xs text-muted-foreground">
+                    {addSearchTerm ? "Nenhum encontrado" : "Todos já vinculados"}
                   </div>
                 ) : (
-                  <div className="space-y-1">
-                    {filteredAvailableUsers.slice(0, 20).map((user) => (
-                      <div
-                        key={user.user_id}
-                        className="flex items-center justify-between p-2.5 rounded-md hover:bg-background transition-colors group"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <Avatar className="h-8 w-8 shrink-0">
-                            <AvatarImage src={user.avatar_url || undefined} />
-                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                              {getInitials(user.first_name, user.last_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {user.first_name} {user.last_name}
-                            </p>
-                            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                          </div>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleAddUser(user.user_id)}
-                          disabled={adding === user.user_id}
-                          className="shrink-0 h-8 px-3 text-primary hover:text-primary hover:bg-primary/10"
-                        >
-                          {adding === user.user_id ? (
-                            <span className="text-xs">Adicionando...</span>
-                          ) : (
-                            <>
-                              <Check className="h-4 w-4 mr-1" />
-                              <span className="text-xs">Adicionar</span>
-                            </>
-                          )}
-                        </Button>
+                  filteredAvailableUsers.slice(0, 30).map((user) => (
+                    <div
+                      key={user.user_id}
+                      className="flex items-center gap-2 p-2 rounded-md hover:bg-background transition-colors group cursor-pointer"
+                      onClick={() => handleAddUser(user.user_id)}
+                    >
+                      <Avatar className="h-7 w-7 shrink-0">
+                        <AvatarImage src={user.avatar_url || undefined} />
+                        <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                          {getInitials(user.first_name, user.last_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium truncate leading-tight">
+                          {user.first_name} {user.last_name}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
                       </div>
-                    ))}
-                    {filteredAvailableUsers.length > 20 && (
-                      <p className="text-xs text-muted-foreground text-center py-2">
-                        Mostrando 20 de {filteredAvailableUsers.length}. Use a busca para filtrar.
-                      </p>
-                    )}
-                  </div>
+                      {adding === user.user_id ? (
+                        <span className="text-[10px] text-muted-foreground shrink-0">...</span>
+                      ) : (
+                        <UserPlus className="h-3.5 w-3.5 text-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                      )}
+                    </div>
+                  ))
                 )}
-              </ScrollArea>
-            </div>
-          )}
-
-          {/* Current Users */}
-          <div className="flex-1 min-h-0 flex flex-col">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-semibold">
-                Usuários da Empresa ({companyUsers.length})
-              </h4>
-            </div>
-
-            {companyUsers.length > 5 && (
-              <div className="relative mb-3">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Filtrar usuários..."
-                  className="pl-9 h-9"
-                />
+                {filteredAvailableUsers.length > 30 && (
+                  <p className="text-[10px] text-muted-foreground text-center py-2">
+                    +{filteredAvailableUsers.length - 30} usuários. Use a busca.
+                  </p>
+                )}
               </div>
-            )}
+            </div>
+          </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto max-h-[400px]">
+          {/* Right side - Company users list */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            <div className="flex items-center justify-between px-5 py-3 border-b bg-background">
+              <h4 className="text-sm font-semibold">
+                Membros ({companyUsers.length})
+              </h4>
+              {companyUsers.length > 5 && (
+                <div className="relative w-48">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Filtrar..."
+                    className="pl-8 h-8 text-xs"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex-1 min-h-0 overflow-y-auto px-5 py-2">
               {loading ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map(i => (
-                    <Skeleton key={i} className="h-14 w-full" />
+                <div className="space-y-2 py-2">
+                  {[1, 2, 3, 4].map(i => (
+                    <Skeleton key={i} className="h-12 w-full" />
                   ))}
                 </div>
               ) : filteredCompanyUsers.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-12 text-muted-foreground">
                   <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">{searchTerm ? "Nenhum resultado" : "Nenhum usuário vinculado"}</p>
                 </div>
               ) : (
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {filteredCompanyUsers.map((user) => (
                     <div
                       key={user.user_id}
-                      className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors group"
+                      className="flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/50 transition-colors group"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <Avatar className="h-9 w-9 shrink-0">
@@ -367,7 +334,7 @@ export function ManageCompanyUsersModal({
                       <div className="flex items-center gap-2 shrink-0">
                         <Badge 
                           variant={user.status === 'active' ? 'default' : 'secondary'}
-                          className="text-xs"
+                          className="text-[10px] px-2 py-0.5"
                         >
                           {user.status === 'active' ? 'Ativo' : 'Inativo'}
                         </Badge>
@@ -376,9 +343,9 @@ export function ManageCompanyUsersModal({
                           size="icon"
                           onClick={() => handleRemoveUser(user.user_id)}
                           disabled={removing === user.user_id}
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <UserMinus className="h-4 w-4" />
+                          <UserMinus className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
@@ -389,8 +356,9 @@ export function ManageCompanyUsersModal({
           </div>
         </div>
 
-        <div className="flex justify-end pt-2 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        {/* Footer */}
+        <div className="flex justify-end px-6 py-3 border-t">
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Fechar
           </Button>
         </div>
