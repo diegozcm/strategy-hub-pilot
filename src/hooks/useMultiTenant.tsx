@@ -153,11 +153,24 @@ export const MultiTenantAuthProvider = ({ children }: AuthProviderProps) => {
         return;
       }
 
+      // Fetch client IP address
+      let ipAddress: string | null = null;
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        if (ipResponse.ok) {
+          const ipData = await ipResponse.json();
+          ipAddress = ipData.ip;
+        }
+      } catch {
+        console.warn('⚠️ Could not fetch IP address');
+      }
+
       await supabase.from('user_login_logs').insert({
         user_id: userId,
         company_id: companyId,
         login_time: new Date().toISOString(),
         user_agent: navigator.userAgent,
+        ip_address: ipAddress,
       });
       sessionStorage.setItem(SESSION_KEY, 'true');
       console.log('✅ Login logged successfully');
