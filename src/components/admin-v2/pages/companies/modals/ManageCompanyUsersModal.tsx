@@ -201,7 +201,7 @@ export function ManageCompanyUsersModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
@@ -216,7 +216,7 @@ export function ManageCompanyUsersModal({
           <CompanyHeader company={company} />
         </div>
 
-        <div className="flex-1 min-h-0 flex flex-col gap-4">
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 pr-1">
           {/* Toggle Add Panel */}
           {!showAddPanel ? (
             <Button
