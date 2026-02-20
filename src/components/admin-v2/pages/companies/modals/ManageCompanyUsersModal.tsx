@@ -4,11 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { CompanyHeader } from "./shared/CompanyHeader";
-import { UserPlus, Search, UserMinus, Users } from "lucide-react";
+import { UserPlus, Search, UserMinus, Users, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -35,6 +34,7 @@ interface AvailableUser {
   first_name: string | null;
   last_name: string | null;
   email: string | null;
+  avatar_url?: string | null;
 }
 
 interface ManageCompanyUsersModalProps {
@@ -55,13 +55,17 @@ export function ManageCompanyUsersModal({
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
   const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUser, setSelectedUser] = useState<string>("");
-  const [adding, setAdding] = useState(false);
+  const [showAddPanel, setShowAddPanel] = useState(false);
+  const [addSearchTerm, setAddSearchTerm] = useState("");
+  const [adding, setAdding] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && company) {
       loadUsers();
+      setShowAddPanel(false);
+      setAddSearchTerm("");
+      setSearchTerm("");
     }
   }, [open, company]);
 
@@ -70,19 +74,17 @@ export function ManageCompanyUsersModal({
     setLoading(true);
 
     try {
-      // Fetch company users via RPC
       const { data: users, error: usersError } = await supabase
         .rpc('get_company_users', { _company_id: company.id });
 
       if (usersError) throw usersError;
       setCompanyUsers(users || []);
 
-      // Fetch available users (not in this company)
       const companyUserIds = (users || []).map((u: any) => u.user_id);
       
       const { data: allUsers, error: allUsersError } = await supabase
         .from('profiles')
-        .select('user_id, first_name, last_name, email')
+        .select('user_id, first_name, last_name, email, avatar_url')
         .eq('status', 'active');
 
       if (allUsersError) throw allUsersError;
@@ -103,28 +105,36 @@ export function ManageCompanyUsersModal({
     }
   };
 
-  const filteredAvailableUsers = useMemo(() => {
-    if (!searchTerm) return availableUsers;
+  const filteredCompanyUsers = useMemo(() => {
+    if (!searchTerm) return companyUsers;
     const term = searchTerm.toLowerCase();
+    return companyUsers.filter(u =>
+      `${u.first_name} ${u.last_name}`.toLowerCase().includes(term) ||
+      u.email?.toLowerCase().includes(term)
+    );
+  }, [companyUsers, searchTerm]);
+
+  const filteredAvailableUsers = useMemo(() => {
+    if (!addSearchTerm) return availableUsers;
+    const term = addSearchTerm.toLowerCase();
     return availableUsers.filter(u => 
       `${u.first_name} ${u.last_name}`.toLowerCase().includes(term) ||
       u.email?.toLowerCase().includes(term)
     );
-  }, [availableUsers, searchTerm]);
+  }, [availableUsers, addSearchTerm]);
 
-  const handleAddUser = async () => {
-    if (!company || !selectedUser) return;
-    setAdding(true);
+  const handleAddUser = async (userId: string) => {
+    if (!company) return;
+    setAdding(userId);
 
     try {
-      // Get current admin user id
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
       const { error } = await supabase.rpc('assign_user_to_company_v2', {
         _admin_id: user.id,
         _company_id: company.id,
-        _user_id: selectedUser
+        _user_id: userId
       });
 
       if (error) throw error;
@@ -134,7 +144,6 @@ export function ManageCompanyUsersModal({
         description: "O usuário foi vinculado à empresa.",
       });
 
-      setSelectedUser("");
       loadUsers();
       onSuccess();
     } catch (error) {
@@ -145,7 +154,7 @@ export function ManageCompanyUsersModal({
         variant: "destructive",
       });
     } finally {
-      setAdding(false);
+      setAdding(null);
     }
   };
 
@@ -154,7 +163,6 @@ export function ManageCompanyUsersModal({
     setRemoving(userId);
 
     try {
-      // Get current admin user id
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
@@ -193,135 +201,195 @@ export function ManageCompanyUsersModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             Gerenciar Usuários
           </DialogTitle>
           <DialogDescription>
-            Adicione ou remova usuários desta empresa
+            Adicione ou remova usuários de {company.name}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
+        <div className="py-2">
           <CompanyHeader company={company} />
         </div>
 
-        {/* Add User Section */}
-        <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
-          <h4 className="text-sm font-medium flex items-center gap-2">
-            <UserPlus className="h-4 w-4" />
-            Adicionar Usuário
-          </h4>
-          
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar usuário..."
-              className="pl-9"
-            />
-          </div>
+        <div className="flex-1 min-h-0 flex flex-col gap-4">
+          {/* Toggle Add Panel */}
+          {!showAddPanel ? (
+            <Button
+              variant="outline"
+              onClick={() => setShowAddPanel(true)}
+              className="w-full border-dashed border-2 hover:border-primary hover:bg-primary/5"
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Adicionar Usuário à Empresa
+            </Button>
+          ) : (
+            /* Add User Panel */
+            <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-primary" />
+                  Adicionar Usuário
+                </h4>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => { setShowAddPanel(false); setAddSearchTerm(""); }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
 
-          <div className="flex gap-2">
-            <Select value={selectedUser} onValueChange={setSelectedUser}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Selecionar usuário" />
-              </SelectTrigger>
-              <SelectContent>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={addSearchTerm}
+                  onChange={(e) => setAddSearchTerm(e.target.value)}
+                  placeholder="Buscar por nome ou email..."
+                  className="pl-9"
+                  autoFocus
+                />
+              </div>
+
+              <ScrollArea className="max-h-[200px]">
                 {filteredAvailableUsers.length === 0 ? (
-                  <div className="p-2 text-sm text-muted-foreground text-center">
-                    Nenhum usuário disponível
+                  <div className="text-center py-6 text-sm text-muted-foreground">
+                    {addSearchTerm ? "Nenhum usuário encontrado" : "Todos os usuários já estão vinculados"}
                   </div>
                 ) : (
-                  filteredAvailableUsers.map((user) => (
-                    <SelectItem key={user.user_id} value={user.user_id}>
-                      {user.first_name} {user.last_name} ({user.email})
-                    </SelectItem>
-                  ))
+                  <div className="space-y-1">
+                    {filteredAvailableUsers.slice(0, 20).map((user) => (
+                      <div
+                        key={user.user_id}
+                        className="flex items-center justify-between p-2.5 rounded-md hover:bg-background transition-colors group"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <Avatar className="h-8 w-8 shrink-0">
+                            <AvatarImage src={user.avatar_url || undefined} />
+                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                              {getInitials(user.first_name, user.last_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {user.first_name} {user.last_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleAddUser(user.user_id)}
+                          disabled={adding === user.user_id}
+                          className="shrink-0 h-8 px-3 text-primary hover:text-primary hover:bg-primary/10"
+                        >
+                          {adding === user.user_id ? (
+                            <span className="text-xs">Adicionando...</span>
+                          ) : (
+                            <>
+                              <Check className="h-4 w-4 mr-1" />
+                              <span className="text-xs">Adicionar</span>
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    ))}
+                    {filteredAvailableUsers.length > 20 && (
+                      <p className="text-xs text-muted-foreground text-center py-2">
+                        Mostrando 20 de {filteredAvailableUsers.length}. Use a busca para filtrar.
+                      </p>
+                    )}
+                  </div>
                 )}
-              </SelectContent>
-            </Select>
-            <Button 
-              onClick={handleAddUser} 
-              disabled={!selectedUser || adding}
-            >
-              {adding ? "Adicionando..." : "Adicionar"}
-            </Button>
-          </div>
-        </div>
-
-        {/* Current Users */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium">
-            Usuários da Empresa ({companyUsers.length})
-          </h4>
-
-          {loading ? (
-            <div className="space-y-2">
-              {[1, 2, 3].map(i => (
-                <Skeleton key={i} className="h-14 w-full" />
-              ))}
+              </ScrollArea>
             </div>
-          ) : companyUsers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
-              <p>Nenhum usuário vinculado</p>
+          )}
+
+          {/* Current Users */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold">
+                Usuários da Empresa ({companyUsers.length})
+              </h4>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {companyUsers.map((user) => (
-                  <TableRow key={user.user_id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
+
+            {companyUsers.length > 5 && (
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Filtrar usuários..."
+                  className="pl-9 h-9"
+                />
+              </div>
+            )}
+
+            <ScrollArea className="flex-1 max-h-[300px]">
+              {loading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map(i => (
+                    <Skeleton key={i} className="h-14 w-full" />
+                  ))}
+                </div>
+              ) : filteredCompanyUsers.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Users className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">{searchTerm ? "Nenhum resultado" : "Nenhum usuário vinculado"}</p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {filteredCompanyUsers.map((user) => (
+                    <div
+                      key={user.user_id}
+                      className="flex items-center justify-between p-3 rounded-lg hover:bg-muted/50 transition-colors group"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <Avatar className="h-9 w-9 shrink-0">
                           <AvatarImage src={user.avatar_url || undefined} />
                           <AvatarFallback className="text-xs">
                             {getInitials(user.first_name, user.last_name)}
                           </AvatarFallback>
                         </Avatar>
-                        <div>
-                          <p className="font-medium text-sm">
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm truncate">
                             {user.first_name} {user.last_name}
                           </p>
-                          <p className="text-xs text-muted-foreground">{user.email}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
-                        {user.status === 'active' ? 'Ativo' : 'Inativo'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveUser(user.user_id)}
-                        disabled={removing === user.user_id}
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <UserMinus className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge 
+                          variant={user.status === 'active' ? 'default' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {user.status === 'active' ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveUser(user.user_id)}
+                          disabled={removing === user.user_id}
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <UserMinus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </div>
         </div>
 
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end pt-2 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Fechar
           </Button>

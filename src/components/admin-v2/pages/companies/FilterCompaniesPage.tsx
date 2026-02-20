@@ -49,15 +49,15 @@ export default function FilterCompaniesPage() {
 
       if (error) throw error;
 
-      // Fetch user counts
-      const { data: profiles } = await supabase
-        .from("profiles")
+      // Fetch user counts via user_company_relations (source of truth)
+      const { data: relations } = await supabase
+        .from("user_company_relations")
         .select("company_id");
 
       const userCounts: Record<string, number> = {};
-      profiles?.forEach(p => {
-        if (p.company_id) {
-          userCounts[p.company_id] = (userCounts[p.company_id] || 0) + 1;
+      relations?.forEach(r => {
+        if (r.company_id) {
+          userCounts[r.company_id] = (userCounts[r.company_id] || 0) + 1;
         }
       });
 
