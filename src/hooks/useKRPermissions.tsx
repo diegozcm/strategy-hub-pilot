@@ -1,21 +1,40 @@
-import { useCurrentModuleRole } from '@/hooks/useCurrentModuleRole';
 import { useAuth } from '@/hooks/useMultiTenant';
+import { useUserModuleRoles, UserRole } from '@/hooks/useUserModuleRoles';
+import { useModules } from '@/hooks/useModules';
 import { useCompanyModuleSettings } from '@/hooks/useCompanyModuleSettings';
+import { useMemo } from 'react';
 
 /**
  * Hook de permissões específico para operações com Key Results
- * Baseado em roles do módulo Strategic Planning
+ * Sempre verifica a role no módulo 'strategic-planning', independente do módulo ativo
  */
 export const useKRPermissions = () => {
   const { user } = useAuth();
-  const { isModuleAdmin, isModuleManager, isModuleMember, loading } = useCurrentModuleRole();
+  const { availableModules } = useModules();
+  const { moduleRoles, getRolesForModuleId, loading } = useUserModuleRoles();
   const { membersCanViewAll, loading: settingsLoading } = useCompanyModuleSettings('strategic-planning');
 
+  // Encontrar o módulo strategic-planning pelo slug
+  const strategicModule = useMemo(() => 
+    availableModules.find(m => m.slug === 'strategic-planning'),
+    [availableModules]
+  );
+
+  const roles = useMemo(() => 
+    getRolesForModuleId(strategicModule?.id),
+    [strategicModule?.id, moduleRoles, getRolesForModuleId]
+  );
+
+  const isModuleAdmin = roles.includes('admin');
+  const isModuleManager = roles.includes('manager');
+  const isModuleMember = roles.includes('member');
   const isManagerOrAdmin = isModuleAdmin || isModuleManager;
   const isMemberOnly = isModuleMember && !isModuleManager && !isModuleAdmin;
   
   console.log('[useKRPermissions] Debug:', {
     userId: user?.id,
+    strategicModuleId: strategicModule?.id,
+    roles,
     isModuleAdmin,
     isModuleManager,
     isModuleMember,
