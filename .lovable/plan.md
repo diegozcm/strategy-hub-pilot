@@ -1,94 +1,94 @@
 
 
-## Diagnostico: Dados Perdidos na Importacao
+## Rastreabilidade Completa na Importacao
 
-### Resumo do Problema
+### Objetivo
 
-A exportacao funciona corretamente (os dados existem no banco de origem). O problema esta na **conversao XLSX**, que perde colunas JSON e valores numericos calculados. A importacao por sua vez recebe dados incompletos e os insere como vazios.
+Adicionar logs detalhados durante cada etapa da importacao e exibir um relatorio consolidado ao final, categorizando os resultados em: sucesso total, importacao parcial e falha completa, com detalhes dos erros.
 
-### Analise Detalhada por Item Reportado
+### Alteracoes
 
-| Item faltando | Existe na origem? | Existe no XLSX? | Importado? | Causa raiz |
-|---|---|---|---|---|
-| Metas mensais (monthly_targets) | Sim (JSON com 12 meses) | Nao - coluna vazia no XLSX | Sim, mas como `{}` | XLSX nao serializa JSON corretamente |
-| Valores realizados (monthly_actual) | Sim (JSON) | Nao - vazia | Sim, mas como `{}` | Mesmo problema |
-| yearly_target / yearly_actual | Sim (30000000 / 2434806) | Nao - vazia | Sim, mas como `0` | Mesmo problema |
-| Iniciativas (kr_initiatives) | **0 registros** na origem | N/A | N/A | Nao e bug - Perville nao tem |
-| KR Status Reports | **0 registros** na origem | N/A | N/A | Nao e bug |
-| KR Monthly Actions | **0 registros** na origem | N/A | N/A | Nao e bug |
-| FCA | 5 registros | Sim | **5 importados** | Funciona OK |
-| Projetos | 5 registros | Sim | **5 importados** | Funciona OK |
-| Tasks | 19 registros | Sim | **19 importados** | Funciona OK |
+**1. Edge Function (`supabase/functions/import-company-data/index.ts`)**
 
-### Causa Raiz Tecnica
+Melhorar o response da Edge Function para retornar dados mais granulares:
+- Para cada tabela: total de linhas no arquivo, quantas foram inseridas, quantas falharam, e lista de erros com detalhes (batch index, mensagem de erro)
+- Adicionar campo `skipped_rows` para rastrear linhas puladas por FK nao encontrada
+- Incluir timestamps de inicio/fim por tabela
+- Na fase de delete (modo replace), registrar quais tabelas foram limpas com sucesso e quais falharam
 
-O fluxo atual e:
-
+Estrutura do response aprimorada:
 ```text
-DB (JSON) --> Export Edge Function --> JSON Response --> Frontend XLSX.writeFile() --> .xlsx file
-.xlsx file --> Frontend XLSX.read() --> sheet_to_json() --> Import Edge Function --> DB
+results[table] = {
+  total_in_file: number,
+  inserted: number,
+  skipped: number,
+  failed: number,
+  errors: [{ batch: number, message: string, row_ids: string[] }],
+  skipped_details: [{ row_id: string, reason: string }]
+}
 ```
 
-O problema esta em **duas etapas**:
+**2. Frontend - Relatorio (`ImportCompanyDataModal.tsx`)**
 
-1. **Exportacao (Frontend - ExportCompanyDataCard.tsx)**: `XLSX.utils.json_to_sheet()` converte campos JSONB (como `monthly_targets: {"2026-01": 1960000, ...}`) em `[object Object]` na celula XLSX, pois XLSX nao suporta objetos aninhados nativamente.
+Reescrever a tela de resultado (`renderResultStep`) para exibir tres secoes:
 
-2. **Importacao (Frontend - ImportCompanyDataModal.tsx)**: `XLSX.utils.sheet_to_json()` le essas celulas como strings vazias ou `[object Object]`, que sao inseridas no banco como objetos JSON vazios `{}` ou valores `0`.
+- **Importados com sucesso** (verde): tabelas onde todas as linhas foram inseridas sem erro
+- **Importados parcialmente** (amarelo): tabelas onde parte das linhas foi inserida e parte falhou, mostrando quantas de quantas e os erros
+- **Nao importados** (vermelho): tabelas presentes no arquivo que tiveram 0 insercoes, com o motivo da falha
 
-### Dados Confirmados no Banco
+Para cada tabela com erro, exibir:
+- Nome da tabela (label amigavel)
+- Contagem: X de Y registros
+- Lista de erros expandivel com a causa e o batch onde ocorreu
 
-Comparacao direta do KR "Margem (R$)":
-- **Origem**: `monthly_targets = {"2026-01": 1960000, "2026-02": 2400000, ...}`, `yearly_target = 30000000`
-- **Destino**: `monthly_targets = {}`, `yearly_target = 0`
-- **target_value** e **current_value** foram preservados (campos numericos simples)
+**3. Frontend - Logs em tempo real durante o progresso**
 
-### Plano de Correcao
+Adicionar um log visual na tela de progresso que mostra as etapas conforme chegam. Como a Edge Function e uma unica chamada HTTP, os logs serao simulados no frontend:
+- Antes de chamar: "Enviando dados para o servidor..."
+- Apos resposta: "Processando resultado..."
+- Mostrar na tela de resultado os logs do servidor (que vem no response)
 
-**Arquivo 1: `src/components/admin-v2/pages/companies/modals/ExportCompanyDataCard.tsx`**
+### Detalhes Tecnicos
 
-Antes de gerar o XLSX, serializar todas as colunas que contem objetos JSON como strings JSON (usando `JSON.stringify`). Isso garante que o XLSX armazene o conteudo como texto legivel e recuperavel.
-
-Colunas afetadas que precisam de serializacao:
-- `monthly_targets` (key_results)
-- `monthly_actual` (key_results)
-- `strengths`, `weaknesses`, `opportunities`, `threats` (swot_analysis - podem ser arrays)
-- `values` (companies - array)
-- `settings` (company_module_settings)
-- `previous_data`, `new_data` (kr_actions_history)
-- `evidence_links` (kr_monthly_actions)
-- Qualquer outro campo que contenha objetos/arrays
-
-Logica: para cada tabela, iterar sobre cada linha e cada campo; se o valor for um objeto ou array, converter para `JSON.stringify(valor)`.
-
-**Arquivo 2: `src/components/admin-v2/pages/companies/modals/ImportCompanyDataModal.tsx`**
-
-Na leitura do XLSX, aplicar o processo inverso: detectar campos que contem strings JSON validas e converte-los de volta para objetos com `JSON.parse()`.
-
-Logica: para cada tabela importada, iterar sobre cada linha e cada campo; se o valor for uma string que comeca com `{` ou `[`, tentar `JSON.parse()`. Se bem sucedido, substituir o campo pelo objeto parseado.
-
-### Colunas JSONB conhecidas que precisam de tratamento especial
+**Edge Function - Mudancas no response:**
 
 ```text
-key_results: monthly_targets, monthly_actual
-swot_analysis: strengths, weaknesses, opportunities, threats
-companies: values
-company_module_settings: settings
-kr_actions_history: previous_data, new_data
-kr_monthly_actions: evidence_links
+// Adicionar ao response:
+{
+  success: boolean,
+  total_records: number,
+  tables_imported: string[],
+  results: {
+    [table]: {
+      total_in_file: number,   // NOVO
+      inserted: number,
+      skipped: number,         // NOVO - linhas puladas por FK
+      failed: number,          // NOVO
+      errors: [{ batch: number, message: string }],
+      skipped_details: [{ old_id: string, reason: string }]  // NOVO
+    }
+  },
+  errors: [...],
+  delete_log: [{ table: string, success: boolean, error?: string }],  // NOVO
+  duration_ms: number  // NOVO
+}
 ```
 
-### Abordagem Alternativa Considerada
+**Frontend - Categorias do relatorio:**
 
-Uma alternativa seria mudar o formato de exportacao/importacao de XLSX para JSON puro (.json), o que preservaria perfeitamente todos os tipos de dados. Porem, como o formato XLSX ja e o padrao estabelecido e o usuario espera arquivos Excel, a solucao de serializar/deserializar JSON e a mais adequada para manter compatibilidade.
+- Sucesso total: `inserted === total_in_file && total_in_file > 0`
+- Parcial: `inserted > 0 && inserted < total_in_file`
+- Falha total: `inserted === 0 && total_in_file > 0`
+- Tabelas ausentes no arquivo nao serao listadas
 
-### Resumo das Alteracoes
+**Frontend - UI do relatorio:**
+
+Usar acordeoes (Accordion) para cada categoria, com icones e cores distintas. Dentro de cada tabela com erro, listar os detalhes de forma expandivel para nao poluir a tela.
+
+### Arquivos Modificados
 
 | Arquivo | Alteracao |
 |---|---|
-| `ExportCompanyDataCard.tsx` | Serializar campos JSON como strings antes de gerar o XLSX |
-| `ImportCompanyDataModal.tsx` | Deserializar strings JSON de volta para objetos ao ler o XLSX |
-
-### Observacao
-
-Os itens "iniciativas", "status reports" e "acoes mensais" reportados como faltantes **nao sao bugs** - a empresa Perville genuinamente nao possui registros nessas tabelas (0 registros na origem).
+| `supabase/functions/import-company-data/index.ts` | Enriquecer response com total_in_file, skipped, failed, skipped_details, delete_log, duration |
+| `src/components/admin-v2/pages/companies/modals/ImportCompanyDataModal.tsx` | Reescrever renderResultStep com 3 categorias, erros expandiveis, e detalhes por tabela |
 
