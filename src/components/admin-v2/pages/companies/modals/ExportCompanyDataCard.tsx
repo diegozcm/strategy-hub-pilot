@@ -13,7 +13,6 @@ import {
 import { Upload, Loader2, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
 
 interface ExportCompanyDataCardProps {
   companyId: string;
@@ -36,44 +35,30 @@ export function ExportCompanyDataCard({ companyId, companyName }: ExportCompanyD
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      // Convert JSON to XLSX with one sheet per table
-      const wb = XLSX.utils.book_new();
-      const exportData = data.data as Record<string, unknown[]>;
-      let sheetCount = 0;
-
-      for (const [tableName, rows] of Object.entries(exportData)) {
-        if (Array.isArray(rows) && rows.length > 0) {
-          // Serialize JSON/array fields as strings so XLSX preserves them
-          const serializedRows = rows.map((row: any) => {
-            const newRow: Record<string, unknown> = {};
-            for (const [key, value] of Object.entries(row)) {
-              if (value !== null && typeof value === "object") {
-                newRow[key] = JSON.stringify(value);
-              } else {
-                newRow[key] = value;
-              }
-            }
-            return newRow;
-          });
-          const ws = XLSX.utils.json_to_sheet(serializedRows);
-          // Sheet name max 31 chars
-          const sheetName = tableName.substring(0, 31);
-          XLSX.utils.book_append_sheet(wb, ws, sheetName);
-          sheetCount++;
-        }
-      }
-
-      if (sheetCount === 0) {
+      if (!data?.data || Object.keys(data.data).length === 0) {
         toast.info("Nenhum dado encontrado para exportar.");
         return;
       }
 
-      // Generate and download
+      // Download as JSON — preserves JSONB fields natively
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
       const safeName = companyName.replace(/[^a-zA-Z0-9]/g, "_").substring(0, 30);
-      const fileName = `export_${safeName}_${new Date().toISOString().split("T")[0]}.xlsx`;
-      XLSX.writeFile(wb, fileName);
+      const fileName = `export_${safeName}_${new Date().toISOString().split("T")[0]}.json`;
 
-      toast.success(`Exportação concluída! ${data.total_records} registros em ${sheetCount} tabelas.`);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      const tableCount = Object.values(data.data as Record<string, unknown[]>).filter(
+        (rows) => Array.isArray(rows) && rows.length > 0
+      ).length;
+
+      toast.success(`Exportação concluída! ${data.total_records} registros em ${tableCount} tabelas.`);
     } catch (err: any) {
       console.error("Export error:", err);
       toast.error(err.message || "Erro ao exportar dados da empresa.");
