@@ -1,94 +1,95 @@
 
+## Diagnostico e Correcao da Perda de Dados na Importacao
 
-## Rastreabilidade Completa na Importacao
+### Problema Identificado
 
-### Objetivo
+A raiz do problema esta na **conversao XLSX** que corrompe campos JSONB. Especificamente:
 
-Adicionar logs detalhados durante cada etapa da importacao e exibir um relatorio consolidado ao final, categorizando os resultados em: sucesso total, importacao parcial e falha completa, com detalhes dos erros.
+- `monthly_targets` e `monthly_actual` dos Key Results contem objetos JSON como `{"2026-01": 1960000, "2026-02": 2400000, ...}`
+- Na exportacao, esses objetos sao serializados como strings via `JSON.stringify()` e gravados em celulas XLSX
+- Na importacao, ao ler o XLSX de volta com `sheet_to_json`, a biblioteca XLSX pode interpretar ou corromper essas strings JSON, resultando em objetos vazios `{}`
+- Resultado: os 72 Key Results foram inseridos com sucesso (72/72), mas sem os dados de metas mensais
+
+Tabelas como `kr_monthly_actions`, `kr_status_reports`, `kr_actions_history` e `key_result_values` estao com 0 registros porque a empresa Perville **nao possui dados** nessas tabelas (confirmado via consulta direta ao banco de dados da origem).
+
+### Solucao Proposta
+
+Adicionar suporte a **exportacao e importacao em formato JSON** (alem do XLSX existente). JSON preserva todos os tipos de dados sem perda, eliminando o problema de roundtrip do XLSX.
 
 ### Alteracoes
 
-**1. Edge Function (`supabase/functions/import-company-data/index.ts`)**
+**1. Exportacao (`ExportCompanyDataCard.tsx`)**
 
-Melhorar o response da Edge Function para retornar dados mais granulares:
-- Para cada tabela: total de linhas no arquivo, quantas foram inseridas, quantas falharam, e lista de erros com detalhes (batch index, mensagem de erro)
-- Adicionar campo `skipped_rows` para rastrear linhas puladas por FK nao encontrada
-- Incluir timestamps de inicio/fim por tabela
-- Na fase de delete (modo replace), registrar quais tabelas foram limpas com sucesso e quais falharam
+- Alterar para exportar como arquivo `.json` em vez de `.xlsx`
+- O JSON preserva campos JSONB nativamente, sem necessidade de serializacao/deserializacao manual
+- O arquivo JSON contera todos os dados da empresa exatamente como retornados pela Edge Function
+- Manter o nome do arquivo com padrao: `export_<empresa>_<data>.json`
 
-Estrutura do response aprimorada:
-```text
-results[table] = {
-  total_in_file: number,
-  inserted: number,
-  skipped: number,
-  failed: number,
-  errors: [{ batch: number, message: string, row_ids: string[] }],
-  skipped_details: [{ row_id: string, reason: string }]
-}
-```
+**2. Importacao (`ImportCompanyDataModal.tsx`)**
 
-**2. Frontend - Relatorio (`ImportCompanyDataModal.tsx`)**
+- Aceitar arquivos `.json` alem de `.xlsx`
+- Para `.json`: ler o arquivo diretamente como JSON e enviar os dados para a Edge Function
+- Para `.xlsx`: manter o comportamento atual (compatibilidade retroativa)
+- Na tela de upload, informar que `.json` e o formato recomendado
 
-Reescrever a tela de resultado (`renderResultStep`) para exibir tres secoes:
+**3. Correcao do XLSX (retrocompatibilidade)**
 
-- **Importados com sucesso** (verde): tabelas onde todas as linhas foram inseridas sem erro
-- **Importados parcialmente** (amarelo): tabelas onde parte das linhas foi inserida e parte falhou, mostrando quantas de quantas e os erros
-- **Nao importados** (vermelho): tabelas presentes no arquivo que tiveram 0 insercoes, com o motivo da falha
-
-Para cada tabela com erro, exibir:
-- Nome da tabela (label amigavel)
-- Contagem: X de Y registros
-- Lista de erros expandivel com a causa e o batch onde ocorreu
-
-**3. Frontend - Logs em tempo real durante o progresso**
-
-Adicionar um log visual na tela de progresso que mostra as etapas conforme chegam. Como a Edge Function e uma unica chamada HTTP, os logs serao simulados no frontend:
-- Antes de chamar: "Enviando dados para o servidor..."
-- Apos resposta: "Processando resultado..."
-- Mostrar na tela de resultado os logs do servidor (que vem no response)
+- No `ImportCompanyDataModal`, ao ler o XLSX, usar a opcao `raw: true` no `sheet_to_json` para evitar coercao de tipos pela biblioteca
+- Adicionar tratamento especial para campos que contenham objetos JSON serializados
 
 ### Detalhes Tecnicos
 
-**Edge Function - Mudancas no response:**
+**ExportCompanyDataCard - Mudanca para JSON:**
 
 ```text
-// Adicionar ao response:
-{
-  success: boolean,
-  total_records: number,
-  tables_imported: string[],
-  results: {
-    [table]: {
-      total_in_file: number,   // NOVO
-      inserted: number,
-      skipped: number,         // NOVO - linhas puladas por FK
-      failed: number,          // NOVO
-      errors: [{ batch: number, message: string }],
-      skipped_details: [{ old_id: string, reason: string }]  // NOVO
-    }
-  },
-  errors: [...],
-  delete_log: [{ table: string, success: boolean, error?: string }],  // NOVO
-  duration_ms: number  // NOVO
-}
+// Antes: conversao para XLSX com json_to_sheet
+// Depois: download direto do JSON retornado pela Edge Function
+
+const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+const url = URL.createObjectURL(blob);
+// download como .json
 ```
 
-**Frontend - Categorias do relatorio:**
+Isso elimina completamente o problema de serializacao JSONB porque o JSON preserva os tipos nativamente.
 
-- Sucesso total: `inserted === total_in_file && total_in_file > 0`
-- Parcial: `inserted > 0 && inserted < total_in_file`
-- Falha total: `inserted === 0 && total_in_file > 0`
-- Tabelas ausentes no arquivo nao serao listadas
+**ImportCompanyDataModal - Suporte dual:**
 
-**Frontend - UI do relatorio:**
+```text
+// Aceitar .json e .xlsx
+accept=".json,.xlsx"
 
-Usar acordeoes (Accordion) para cada categoria, com icones e cores distintas. Dentro de cada tabela com erro, listar os detalhes de forma expandivel para nao poluir a tela.
+// Se .json:
+//   - JSON.parse do conteudo do arquivo
+//   - Usar data.data (ou data diretamente) como tables
+//   - Enviar para edge function
+
+// Se .xlsx:
+//   - Manter fluxo atual com XLSX.read
+//   - Usar { raw: true } em sheet_to_json para preservar strings
+```
+
+**Correcao do sheet_to_json:**
+
+```text
+// Antes:
+const rows = XLSX.utils.sheet_to_json(sheet);
+
+// Depois:
+const rows = XLSX.utils.sheet_to_json(sheet, { raw: true, defval: null });
+```
+
+A opcao `raw: true` retorna valores brutos sem coercao de tipo, preservando strings JSON como strings.
 
 ### Arquivos Modificados
 
 | Arquivo | Alteracao |
 |---|---|
-| `supabase/functions/import-company-data/index.ts` | Enriquecer response com total_in_file, skipped, failed, skipped_details, delete_log, duration |
-| `src/components/admin-v2/pages/companies/modals/ImportCompanyDataModal.tsx` | Reescrever renderResultStep com 3 categorias, erros expandiveis, e detalhes por tabela |
+| `src/components/admin-v2/pages/companies/modals/ExportCompanyDataCard.tsx` | Exportar como JSON em vez de XLSX |
+| `src/components/admin-v2/pages/companies/modals/ImportCompanyDataModal.tsx` | Aceitar JSON e XLSX, usar raw:true no XLSX |
 
+### Impacto
+
+- Novas exportacoes geram arquivos JSON (100% fidelidade dos dados)
+- Importacoes de arquivos JSON funcionam sem perda de dados
+- Importacoes de arquivos XLSX antigos continuam funcionando (com a correcao do raw:true)
+- Nenhuma alteracao na Edge Function necessaria
