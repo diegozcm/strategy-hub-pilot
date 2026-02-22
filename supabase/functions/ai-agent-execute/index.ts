@@ -1028,6 +1028,237 @@ serve(async (req) => {
           }
           results.push({ type: actionType, success: true, id: fca.id, title: fca.title });
 
+        // ===================== CREATE MEETING =====================
+        } else if (actionType === 'create_meeting') {
+          const d = action.data;
+          if (!d.title || !d.meeting_type || !d.scheduled_date) {
+            results.push({ type: actionType, success: false, error: 'Campos obrigatórios: title, meeting_type, scheduled_date.' });
+            continue;
+          }
+
+          const meetingInsert: any = {
+            company_id,
+            created_by: user.id,
+            title: d.title,
+            meeting_type: d.meeting_type,
+            scheduled_date: d.scheduled_date,
+            status: 'scheduled',
+          };
+          if (d.scheduled_time) meetingInsert.scheduled_time = d.scheduled_time;
+          if (d.duration_minutes) meetingInsert.duration_minutes = parseInt(String(d.duration_minutes));
+          if (d.location) meetingInsert.location = d.location;
+          if (d.notes) meetingInsert.notes = d.notes;
+
+          const { data: meeting, error: meetingErr } = await supabase
+            .from('governance_meetings')
+            .insert(meetingInsert)
+            .select('id, title')
+            .single();
+
+          if (meetingErr) throw meetingErr;
+
+          // Create agenda items if provided
+          if (d.agenda_items && Array.isArray(d.agenda_items)) {
+            for (let ai = 0; ai < d.agenda_items.length; ai++) {
+              const item = d.agenda_items[ai];
+              await supabase.from('governance_agenda_items').insert({
+                meeting_id: meeting.id,
+                title: item.title,
+                description: item.description || null,
+                order_index: ai,
+                created_by: user.id,
+              });
+            }
+          }
+
+          results.push({ type: actionType, success: true, id: meeting.id, title: meeting.title });
+
+        // ===================== UPDATE MEETING =====================
+        } else if (actionType === 'update_meeting') {
+          const d = action.data;
+          let resolvedId = d.meeting_id || d.id;
+
+          if (!resolvedId && d.meeting_title) {
+            const { data: found } = await supabase
+              .from('governance_meetings')
+              .select('id')
+              .eq('company_id', company_id)
+              .ilike('title', `%${d.meeting_title}%`)
+              .limit(1)
+              .maybeSingle();
+            if (found) resolvedId = found.id;
+          }
+
+          if (!resolvedId) {
+            results.push({ type: actionType, success: false, error: `Reunião "${d.meeting_title}" não encontrada.` });
+            continue;
+          }
+
+          const updateData: any = {};
+          if (d.title) updateData.title = d.title;
+          if (d.scheduled_date) updateData.scheduled_date = d.scheduled_date;
+          if (d.scheduled_time) updateData.scheduled_time = d.scheduled_time;
+          if (d.status) updateData.status = d.status;
+          if (d.notes !== undefined) updateData.notes = d.notes;
+          if (d.location !== undefined) updateData.location = d.location;
+          if (d.duration_minutes) updateData.duration_minutes = parseInt(String(d.duration_minutes));
+          if (d.meeting_type) updateData.meeting_type = d.meeting_type;
+
+          const { data: updated, error: updateErr } = await supabase
+            .from('governance_meetings')
+            .update(updateData)
+            .eq('id', resolvedId)
+            .select('id, title')
+            .single();
+
+          if (updateErr) throw updateErr;
+          results.push({ type: actionType, success: true, id: updated.id, title: updated.title });
+
+        // ===================== DELETE MEETING =====================
+        } else if (actionType === 'delete_meeting') {
+          const d = action.data;
+          let resolvedId = d.meeting_id || d.id;
+
+          if (!resolvedId && d.meeting_title) {
+            const { data: found } = await supabase
+              .from('governance_meetings')
+              .select('id')
+              .eq('company_id', company_id)
+              .ilike('title', `%${d.meeting_title}%`)
+              .limit(1)
+              .maybeSingle();
+            if (found) resolvedId = found.id;
+          }
+
+          if (!resolvedId) {
+            results.push({ type: actionType, success: false, error: `Reunião "${d.meeting_title}" não encontrada.` });
+            continue;
+          }
+
+          // Cascade: agenda items and atas
+          await supabase.from('governance_agenda_items').delete().eq('meeting_id', resolvedId);
+          await supabase.from('governance_atas').delete().eq('meeting_id', resolvedId);
+
+          const { error: delErr } = await supabase.from('governance_meetings').delete().eq('id', resolvedId);
+          if (delErr) throw delErr;
+          results.push({ type: actionType, success: true, id: resolvedId, title: d.meeting_title || resolvedId });
+
+        // ===================== CREATE AGENDA ITEM =====================
+        } else if (actionType === 'create_agenda_item') {
+          const d = action.data;
+          let meetingId = d.meeting_id;
+
+          if (!meetingId && d.meeting_title) {
+            const { data: found } = await supabase
+              .from('governance_meetings')
+              .select('id')
+              .eq('company_id', company_id)
+              .ilike('title', `%${d.meeting_title}%`)
+              .limit(1)
+              .maybeSingle();
+            if (found) meetingId = found.id;
+          }
+
+          if (!meetingId) {
+            results.push({ type: actionType, success: false, error: `Reunião "${d.meeting_title}" não encontrada.` });
+            continue;
+          }
+
+          if (!d.title) {
+            results.push({ type: actionType, success: false, error: 'Título do item de pauta é obrigatório.' });
+            continue;
+          }
+
+          // Auto-calculate order_index
+          const { data: existingItems } = await supabase
+            .from('governance_agenda_items')
+            .select('order_index')
+            .eq('meeting_id', meetingId)
+            .order('order_index', { ascending: false })
+            .limit(1);
+
+          const nextOrder = (existingItems?.[0]?.order_index ?? -1) + 1;
+
+          const { data: agendaItem, error: agendaErr } = await supabase
+            .from('governance_agenda_items')
+            .insert({
+              meeting_id: meetingId,
+              title: d.title,
+              description: d.description || null,
+              order_index: nextOrder,
+              created_by: user.id,
+            })
+            .select('id, title')
+            .single();
+
+          if (agendaErr) throw agendaErr;
+          results.push({ type: actionType, success: true, id: agendaItem.id, title: agendaItem.title });
+
+        // ===================== UPDATE GOLDEN CIRCLE =====================
+        } else if (actionType === 'update_golden_circle') {
+          const d = action.data;
+          const upsertData: any = {
+            company_id,
+            created_by: user.id,
+            updated_by: user.id,
+          };
+          if (d.why_question !== undefined) upsertData.why_question = d.why_question;
+          if (d.how_question !== undefined) upsertData.how_question = d.how_question;
+          if (d.what_question !== undefined) upsertData.what_question = d.what_question;
+
+          const { data: gc, error: gcErr } = await supabase
+            .from('golden_circle')
+            .upsert(upsertData, { onConflict: 'company_id' })
+            .select('id')
+            .single();
+
+          if (gcErr) throw gcErr;
+          results.push({ type: actionType, success: true, id: gc.id, title: 'Golden Circle atualizado' });
+
+        // ===================== UPDATE SWOT =====================
+        } else if (actionType === 'update_swot') {
+          const d = action.data;
+          const upsertData: any = {
+            company_id,
+            created_by: user.id,
+            updated_by: user.id,
+          };
+          if (d.strengths !== undefined) upsertData.strengths = d.strengths;
+          if (d.weaknesses !== undefined) upsertData.weaknesses = d.weaknesses;
+          if (d.opportunities !== undefined) upsertData.opportunities = d.opportunities;
+          if (d.threats !== undefined) upsertData.threats = d.threats;
+
+          const { data: swot, error: swotErr } = await supabase
+            .from('swot_analysis')
+            .upsert(upsertData, { onConflict: 'company_id' })
+            .select('id')
+            .single();
+
+          if (swotErr) throw swotErr;
+          results.push({ type: actionType, success: true, id: swot.id, title: 'Análise SWOT atualizada' });
+
+        // ===================== UPDATE VISION ALIGNMENT =====================
+        } else if (actionType === 'update_vision_alignment') {
+          const d = action.data;
+          const upsertData: any = {
+            company_id,
+            created_by: user.id,
+            updated_by: user.id,
+          };
+          if (d.shared_objectives !== undefined) upsertData.shared_objectives = d.shared_objectives;
+          if (d.shared_commitments !== undefined) upsertData.shared_commitments = d.shared_commitments;
+          if (d.shared_resources !== undefined) upsertData.shared_resources = d.shared_resources;
+          if (d.shared_risks !== undefined) upsertData.shared_risks = d.shared_risks;
+
+          const { data: va, error: vaErr } = await supabase
+            .from('vision_alignment')
+            .upsert(upsertData, { onConflict: 'company_id' })
+            .select('id')
+            .single();
+
+          if (vaErr) throw vaErr;
+          results.push({ type: actionType, success: true, id: va.id, title: 'Alinhamento de Visão atualizado' });
+
         } else {
           results.push({ type: actionType, success: false, error: `Tipo de ação desconhecido: ${actionType}` });
         }
