@@ -151,7 +151,7 @@ O JSON DEVE ser um objeto com a chave "actions" contendo um array. Cada item do 
 5. **create_project** — Cria um projeto estratégico
    - Campos: name (obrigatório), description, priority, start_date, end_date, budget, objective_refs (array de índices), kr_refs (array de índices)
 6. **update_key_result** — Atualiza um KR existente
-   - Campos: kr_id ou kr_title, current_value, target_value, monthly_actual, monthly_targets, etc.
+   - Campos: kr_id ou kr_title, current_value, target_value, monthly_actual, monthly_targets, yearly_target, frequency, unit, description, weight, due_date, variation_threshold (número em % ou null para desativar a taxa de variação)
 7. **update_initiative** — Atualiza uma iniciativa existente
    - Campos: initiative_id ou initiative_title, status, progress_percentage, etc.
 8. **update_objective** — Atualiza um objetivo existente
@@ -447,7 +447,10 @@ serve(async (req) => {
         contextParts.push(`\n📊 Objetivos Estratégicos:\n${objectives.map(obj => {
           const pillarName = pillarMap[obj.pillar_id] || '';
           const objKRs = (keyResults || []).filter((kr: any) => kr.objective_id === obj.id);
-          const krLines = objKRs.map((kr: any) => `    - KR: ${kr.title} (id: ${kr.id}, atual: ${kr.current_value || 0}${kr.unit}, meta: ${kr.target_value}${kr.unit})`).join('\n');
+          const krLines = objKRs.map((kr: any) => {
+            const varInfo = kr.variation_threshold != null ? `, taxa_variacao: ${kr.variation_threshold}%` : '';
+            return `    - KR: ${kr.title} (id: ${kr.id}, atual: ${kr.current_value || 0}${kr.unit}, meta: ${kr.target_value}${kr.unit}${varInfo})`;
+          }).join('\n');
           const objInitiatives = initiatives.filter(i => objKRs.some((kr: any) => kr.id === i.key_result_id));
           const initLines = objInitiatives.map(i => `    - Iniciativa: ${i.title} (id: ${i.id}, status: ${i.status}, progresso: ${i.progress_percentage || 0}%)`).join('\n');
           return `• ${obj.title} (id: ${obj.id}, pilar: ${pillarName}, progresso: ${obj.progress || 0}%, status: ${obj.status})${krLines ? '\n' + krLines : ''}${initLines ? '\n' + initLines : ''}`;
