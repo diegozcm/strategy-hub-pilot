@@ -223,18 +223,18 @@ export function ImportCompanyDataModal({
     setShowConfirmDialog(false);
     setStep("progress");
     setIsImporting(true);
-    setProgressPercent(10);
+    setProgressPercent(0);
     setProgressLogs([]);
     setProgressMessage("Preparando importação...");
     addLog("Iniciando processo de importação...");
 
     try {
-      setProgressPercent(20);
+      setProgressPercent(10);
       addLog(`Modo: ${importMode === "replace" ? "Substituir" : "Adicionar"}`);
       addLog(`Empresa destino: ${companyName}`);
       addLog(`Registros a processar: ${parsedData?.totalRecords || 0}`);
 
-      setProgressPercent(30);
+      setProgressPercent(25);
       setProgressMessage("Enviando dados para o servidor...");
       addLog("Enviando dados para o servidor...");
 
@@ -249,7 +249,7 @@ export function ImportCompanyDataModal({
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      setProgressPercent(90);
+      setProgressPercent(50);
       setProgressMessage("Processando resultado...");
       addLog("Resposta recebida do servidor.");
 
@@ -415,27 +415,77 @@ export function ImportCompanyDataModal({
     </div>
   );
 
-  const renderProgressStep = () => (
-    <div className="space-y-6 py-4">
-      <div className="text-center space-y-2">
-        <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
-        <p className="font-medium">{progressMessage}</p>
-        <Progress value={progressPercent} className="w-full" />
-        <p className="text-sm text-muted-foreground">{progressPercent}%</p>
-      </div>
+  const renderProgressStep = () => {
+    const steps = [
+      { label: "Preparando", threshold: 10 },
+      { label: "Enviando", threshold: 25 },
+      { label: "Processando", threshold: 50 },
+      { label: "Finalizando", threshold: 90 },
+      { label: "Concluído", threshold: 100 },
+    ];
+    const currentStepIndex = steps.findIndex(s => progressPercent <= s.threshold);
 
-      {progressLogs.length > 0 && (
-        <div className="bg-muted/30 rounded-lg p-3 max-h-40 overflow-y-auto">
-          <p className="text-xs font-medium text-muted-foreground mb-2">Log de execução:</p>
-          <div className="space-y-0.5">
-            {progressLogs.map((log, i) => (
-              <p key={i} className="text-xs font-mono text-muted-foreground">{log}</p>
-            ))}
+    return (
+      <div className="py-6 space-y-6">
+        {/* Progress header */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex items-center justify-center h-14 w-14 shrink-0">
+            <svg className="h-14 w-14 -rotate-90" viewBox="0 0 56 56">
+              <circle cx="28" cy="28" r="24" fill="none" strokeWidth="4" className="stroke-muted" />
+              <circle
+                cx="28" cy="28" r="24" fill="none" strokeWidth="4"
+                className="stroke-primary transition-all duration-500"
+                strokeDasharray={`${2 * Math.PI * 24}`}
+                strokeDashoffset={`${2 * Math.PI * 24 * (1 - progressPercent / 100)}`}
+                strokeLinecap="round"
+              />
+            </svg>
+            <span className="absolute text-xs font-bold text-primary">{progressPercent}%</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-base truncate">{progressMessage}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {parsedData?.totalRecords || 0} registros • {parsedData?.tablesSummary.length || 0} tabelas
+            </p>
           </div>
         </div>
-      )}
-    </div>
-  );
+
+        {/* Linear progress bar */}
+        <Progress value={progressPercent} className="w-full h-2" />
+
+        {/* Step indicators */}
+        <div className="flex items-center justify-between px-1">
+          {steps.map((s, i) => (
+            <div key={s.label} className="flex flex-col items-center gap-1">
+              <div className={`h-2 w-2 rounded-full transition-colors ${
+                i < currentStepIndex ? "bg-primary" :
+                i === currentStepIndex ? "bg-primary animate-pulse" :
+                "bg-muted"
+              }`} />
+              <span className={`text-[10px] ${
+                i <= currentStepIndex ? "text-foreground font-medium" : "text-muted-foreground"
+              }`}>{s.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Live log */}
+        {progressLogs.length > 0 && (
+          <div className="rounded-lg border bg-muted/20 overflow-hidden">
+            <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/40">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground">Log de execução</span>
+            </div>
+            <div className="p-3 max-h-36 overflow-y-auto space-y-0.5">
+              {progressLogs.map((log, i) => (
+                <p key={i} className="text-xs font-mono text-muted-foreground leading-relaxed">{log}</p>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderResultStep = () => {
     if (!importResult) return null;
