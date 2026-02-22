@@ -585,6 +585,360 @@ serve(async (req) => {
           if (updateErr) throw updateErr;
           results.push({ type: actionType, success: true, id: updated.id, title: updated.title });
 
+        // ===================== UPDATE OBJECTIVE =====================
+        } else if (actionType === 'update_objective') {
+          const d = action.data;
+          const objId = d.objective_id || d.id;
+
+          if (!objId && !d.objective_title) {
+            results.push({ type: actionType, success: false, error: 'ID ou título do objetivo não informado.' });
+            continue;
+          }
+
+          let resolvedId = objId;
+          if (!resolvedId && d.objective_title) {
+            const { data: found } = await supabase
+              .from('strategic_objectives')
+              .select('id')
+              .eq('plan_id', plan.id)
+              .ilike('title', `%${d.objective_title}%`)
+              .limit(1)
+              .maybeSingle();
+            if (found) resolvedId = found.id;
+          }
+
+          if (!resolvedId) {
+            results.push({ type: actionType, success: false, error: `Objetivo "${d.objective_title}" não encontrado.` });
+            continue;
+          }
+
+          const updateData: any = {};
+          if (d.title) updateData.title = d.title;
+          if (d.description) updateData.description = d.description;
+          if (d.target_date) updateData.target_date = d.target_date;
+          if (d.weight !== undefined && d.weight !== null) updateData.weight = d.weight;
+          if (d.status) updateData.status = d.status;
+
+          const { data: updated, error: updateErr } = await supabase
+            .from('strategic_objectives')
+            .update(updateData)
+            .eq('id', resolvedId)
+            .select('id, title')
+            .single();
+
+          if (updateErr) throw updateErr;
+          results.push({ type: actionType, success: true, id: updated.id, title: updated.title });
+
+        // ===================== UPDATE PILLAR =====================
+        } else if (actionType === 'update_pillar') {
+          const d = action.data;
+          const pillarId = d.pillar_id || d.id;
+
+          if (!pillarId && !d.pillar_name) {
+            results.push({ type: actionType, success: false, error: 'ID ou nome do pilar não informado.' });
+            continue;
+          }
+
+          let resolvedId = pillarId;
+          if (!resolvedId && d.pillar_name) {
+            const found = await findPillar(supabase, company_id, d.pillar_name);
+            if (found) resolvedId = found.id;
+          }
+
+          if (!resolvedId) {
+            results.push({ type: actionType, success: false, error: `Pilar "${d.pillar_name}" não encontrado.` });
+            continue;
+          }
+
+          const updateData: any = {};
+          if (d.name) updateData.name = d.name;
+          if (d.description !== undefined) updateData.description = d.description;
+          if (d.color) updateData.color = d.color;
+
+          const { data: updated, error: updateErr } = await supabase
+            .from('strategic_pillars')
+            .update(updateData)
+            .eq('id', resolvedId)
+            .select('id, name')
+            .single();
+
+          if (updateErr) throw updateErr;
+          results.push({ type: actionType, success: true, id: updated.id, title: updated.name });
+
+        // ===================== UPDATE PROJECT =====================
+        } else if (actionType === 'update_project') {
+          const d = action.data;
+          const projId = d.project_id || d.id;
+
+          if (!projId && !d.project_name) {
+            results.push({ type: actionType, success: false, error: 'ID ou nome do projeto não informado.' });
+            continue;
+          }
+
+          let resolvedId = projId;
+          if (!resolvedId && d.project_name) {
+            const { data: found } = await supabase
+              .from('strategic_projects')
+              .select('id')
+              .eq('company_id', company_id)
+              .ilike('name', `%${d.project_name}%`)
+              .limit(1)
+              .maybeSingle();
+            if (found) resolvedId = found.id;
+          }
+
+          if (!resolvedId) {
+            results.push({ type: actionType, success: false, error: `Projeto "${d.project_name}" não encontrado.` });
+            continue;
+          }
+
+          const updateData: any = {};
+          if (d.name) updateData.name = d.name;
+          if (d.description !== undefined) updateData.description = d.description;
+          if (d.priority) updateData.priority = d.priority;
+          if (d.start_date) updateData.start_date = d.start_date;
+          if (d.end_date) updateData.end_date = d.end_date;
+          if (d.budget !== undefined) updateData.budget = d.budget;
+          if (d.status) updateData.status = d.status;
+          if (d.progress !== undefined) updateData.progress = d.progress;
+
+          const { data: updated, error: updateErr } = await supabase
+            .from('strategic_projects')
+            .update(updateData)
+            .eq('id', resolvedId)
+            .select('id, name')
+            .single();
+
+          if (updateErr) throw updateErr;
+          results.push({ type: actionType, success: true, id: updated.id, title: updated.name });
+
+        // ===================== DELETE PILLAR =====================
+        } else if (actionType === 'delete_pillar') {
+          const d = action.data;
+          let resolvedId = d.pillar_id || d.id;
+
+          if (!resolvedId && d.pillar_name) {
+            const found = await findPillar(supabase, company_id, d.pillar_name);
+            if (found) resolvedId = found.id;
+          }
+
+          if (!resolvedId) {
+            results.push({ type: actionType, success: false, error: `Pilar "${d.pillar_name}" não encontrado.` });
+            continue;
+          }
+
+          // Cascade: get objectives -> KRs -> delete children
+          const { data: objs } = await supabase.from('strategic_objectives').select('id').eq('pillar_id', resolvedId);
+          const objIds = (objs || []).map((o: any) => o.id);
+
+          if (objIds.length > 0) {
+            const { data: krs } = await supabase.from('key_results').select('id').in('objective_id', objIds);
+            const krIds = (krs || []).map((k: any) => k.id);
+
+            if (krIds.length > 0) {
+              await supabase.from('kr_actions_history').delete().in('action_id', 
+                (await supabase.from('kr_monthly_actions').select('id').in('key_result_id', krIds)).data?.map((a: any) => a.id) || []);
+              await supabase.from('kr_monthly_actions').delete().in('key_result_id', krIds);
+              await supabase.from('kr_fca').delete().in('key_result_id', krIds);
+              await supabase.from('kr_status_reports').delete().in('key_result_id', krIds);
+              await supabase.from('key_result_values').delete().in('key_result_id', krIds);
+              await supabase.from('key_results_history').delete().in('key_result_id', krIds);
+              await supabase.from('kr_initiatives').delete().in('key_result_id', krIds);
+              await supabase.from('project_kr_relations').delete().in('kr_id', krIds);
+            }
+
+            await supabase.from('key_results').delete().in('objective_id', objIds);
+            await supabase.from('project_objective_relations').delete().in('objective_id', objIds);
+            await supabase.from('strategic_objectives').delete().eq('pillar_id', resolvedId);
+          }
+
+          const { error: delErr } = await supabase.from('strategic_pillars').delete().eq('id', resolvedId);
+          if (delErr) throw delErr;
+          results.push({ type: actionType, success: true, id: resolvedId, title: d.pillar_name || resolvedId });
+
+        // ===================== DELETE OBJECTIVE =====================
+        } else if (actionType === 'delete_objective') {
+          const d = action.data;
+          let resolvedId = d.objective_id || d.id;
+
+          if (!resolvedId && d.objective_title) {
+            const { data: found } = await supabase
+              .from('strategic_objectives')
+              .select('id')
+              .eq('plan_id', plan.id)
+              .ilike('title', `%${d.objective_title}%`)
+              .limit(1)
+              .maybeSingle();
+            if (found) resolvedId = found.id;
+          }
+
+          if (!resolvedId) {
+            results.push({ type: actionType, success: false, error: `Objetivo "${d.objective_title}" não encontrado.` });
+            continue;
+          }
+
+          // Cascade: KRs -> children
+          const { data: krs } = await supabase.from('key_results').select('id').eq('objective_id', resolvedId);
+          const krIds = (krs || []).map((k: any) => k.id);
+
+          if (krIds.length > 0) {
+            await supabase.from('kr_actions_history').delete().in('action_id',
+              (await supabase.from('kr_monthly_actions').select('id').in('key_result_id', krIds)).data?.map((a: any) => a.id) || []);
+            await supabase.from('kr_monthly_actions').delete().in('key_result_id', krIds);
+            await supabase.from('kr_fca').delete().in('key_result_id', krIds);
+            await supabase.from('kr_status_reports').delete().in('key_result_id', krIds);
+            await supabase.from('key_result_values').delete().in('key_result_id', krIds);
+            await supabase.from('key_results_history').delete().in('key_result_id', krIds);
+            await supabase.from('kr_initiatives').delete().in('key_result_id', krIds);
+            await supabase.from('project_kr_relations').delete().in('kr_id', krIds);
+          }
+
+          await supabase.from('key_results').delete().eq('objective_id', resolvedId);
+          await supabase.from('project_objective_relations').delete().eq('objective_id', resolvedId);
+
+          const { error: delErr } = await supabase.from('strategic_objectives').delete().eq('id', resolvedId);
+          if (delErr) throw delErr;
+          results.push({ type: actionType, success: true, id: resolvedId, title: d.objective_title || resolvedId });
+
+        // ===================== DELETE KEY RESULT =====================
+        } else if (actionType === 'delete_key_result' || actionType === 'delete_kr') {
+          const d = action.data;
+          let resolvedId = d.kr_id || d.key_result_id || d.id;
+
+          if (!resolvedId && d.kr_title) {
+            const { data: found } = await supabase
+              .from('key_results')
+              .select('id')
+              .ilike('title', `%${d.kr_title}%`)
+              .limit(1)
+              .maybeSingle();
+            if (found) resolvedId = found.id;
+          }
+
+          if (!resolvedId) {
+            results.push({ type: actionType, success: false, error: `KR "${d.kr_title}" não encontrado.` });
+            continue;
+          }
+
+          // Cascade children
+          await supabase.from('kr_actions_history').delete().in('action_id',
+            (await supabase.from('kr_monthly_actions').select('id').eq('key_result_id', resolvedId)).data?.map((a: any) => a.id) || []);
+          await supabase.from('kr_monthly_actions').delete().eq('key_result_id', resolvedId);
+          await supabase.from('kr_fca').delete().eq('key_result_id', resolvedId);
+          await supabase.from('kr_status_reports').delete().eq('key_result_id', resolvedId);
+          await supabase.from('key_result_values').delete().eq('key_result_id', resolvedId);
+          await supabase.from('key_results_history').delete().eq('key_result_id', resolvedId);
+          await supabase.from('kr_initiatives').delete().eq('key_result_id', resolvedId);
+          await supabase.from('project_kr_relations').delete().eq('kr_id', resolvedId);
+
+          const { error: delErr } = await supabase.from('key_results').delete().eq('id', resolvedId);
+          if (delErr) throw delErr;
+          results.push({ type: actionType, success: true, id: resolvedId, title: d.kr_title || resolvedId });
+
+        // ===================== DELETE INITIATIVE =====================
+        } else if (actionType === 'delete_initiative') {
+          const d = action.data;
+          let resolvedId = d.initiative_id || d.id;
+
+          if (!resolvedId && d.initiative_title) {
+            const { data: found } = await supabase
+              .from('kr_initiatives')
+              .select('id')
+              .eq('company_id', company_id)
+              .ilike('title', `%${d.initiative_title}%`)
+              .limit(1)
+              .maybeSingle();
+            if (found) resolvedId = found.id;
+          }
+
+          if (!resolvedId) {
+            results.push({ type: actionType, success: false, error: `Iniciativa "${d.initiative_title}" não encontrada.` });
+            continue;
+          }
+
+          const { error: delErr } = await supabase.from('kr_initiatives').delete().eq('id', resolvedId);
+          if (delErr) throw delErr;
+          results.push({ type: actionType, success: true, id: resolvedId, title: d.initiative_title || resolvedId });
+
+        // ===================== DELETE PROJECT =====================
+        } else if (actionType === 'delete_project') {
+          const d = action.data;
+          let resolvedId = d.project_id || d.id;
+
+          if (!resolvedId && d.project_name) {
+            const { data: found } = await supabase
+              .from('strategic_projects')
+              .select('id')
+              .eq('company_id', company_id)
+              .ilike('name', `%${d.project_name}%`)
+              .limit(1)
+              .maybeSingle();
+            if (found) resolvedId = found.id;
+          }
+
+          if (!resolvedId) {
+            results.push({ type: actionType, success: false, error: `Projeto "${d.project_name}" não encontrado.` });
+            continue;
+          }
+
+          // Cascade children
+          await supabase.from('project_members').delete().eq('project_id', resolvedId);
+          await supabase.from('project_tasks').delete().eq('project_id', resolvedId);
+          await supabase.from('project_kr_relations').delete().eq('project_id', resolvedId);
+          await supabase.from('project_objective_relations').delete().eq('project_id', resolvedId);
+
+          const { error: delErr } = await supabase.from('strategic_projects').delete().eq('id', resolvedId);
+          if (delErr) throw delErr;
+          results.push({ type: actionType, success: true, id: resolvedId, title: d.project_name || resolvedId });
+
+        // ===================== BULK IMPORT =====================
+        } else if (actionType === 'bulk_import') {
+          const importPayload = action.data;
+
+          if (!importPayload || typeof importPayload !== 'object') {
+            results.push({ type: actionType, success: false, error: 'Dados de importação inválidos.' });
+            continue;
+          }
+
+          try {
+            // Call import-company-data edge function internally via fetch
+            const importResponse = await fetch(`${supabaseUrl}/functions/v1/import-company-data`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${authHeader.replace('Bearer ', '')}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                company_id,
+                mode: 'merge',
+                data: importPayload,
+              }),
+            });
+
+            const importResult = await importResponse.json();
+
+            if (importResponse.ok && importResult.success !== false) {
+              results.push({
+                type: actionType,
+                success: true,
+                title: 'Importação em massa concluída',
+                details: {
+                  total_records: importResult.total_records,
+                  tables_imported: importResult.tables_imported,
+                },
+              });
+            } else {
+              results.push({
+                type: actionType,
+                success: false,
+                error: importResult.error || 'Erro na importação em massa',
+                details: importResult.errors,
+              });
+            }
+          } catch (importErr: any) {
+            results.push({ type: actionType, success: false, error: `Erro na importação: ${importErr.message}` });
+          }
+
         } else {
           results.push({ type: actionType, success: false, error: `Tipo de ação desconhecido: ${actionType}` });
         }
