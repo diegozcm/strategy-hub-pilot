@@ -166,55 +166,80 @@ export function ImportCompanyDataModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.endsWith(".xlsx")) {
-      toast.error("Apenas arquivos .xlsx são aceitos.");
+    const isJson = file.name.endsWith(".json");
+    const isXlsx = file.name.endsWith(".xlsx");
+
+    if (!isJson && !isXlsx) {
+      toast.error("Apenas arquivos .json ou .xlsx são aceitos.");
       return;
     }
 
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: "array" });
-
       const tables: Record<string, unknown[]> = {};
       let totalRecords = 0;
       const tablesSummary: Array<{ name: string; count: number }> = [];
+      let sourceCompanyName = "Desconhecida";
+      let sourceCompanyId = "unknown";
 
-      for (const sheetName of workbook.SheetNames) {
-        const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet) as Array<Record<string, unknown>>;
-        if (rows.length > 0) {
-          const deserializedRows = rows.map((row) => {
-            const newRow: Record<string, unknown> = {};
-            for (const [key, value] of Object.entries(row)) {
-              if (typeof value === "string") {
-                const trimmed = value.trim();
-                if (
-                  (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
-                  (trimmed.startsWith("[") && trimmed.endsWith("]"))
-                ) {
-                  try {
-                    newRow[key] = JSON.parse(trimmed);
-                  } catch {
+      if (isJson) {
+        const text = await file.text();
+        const jsonData = JSON.parse(text);
+
+        // Support both { data: { ... } } (export format) and flat { table: [...] }
+        const rawTables = jsonData.data || jsonData;
+
+        for (const [tableName, rows] of Object.entries(rawTables)) {
+          if (Array.isArray(rows) && rows.length > 0) {
+            tables[tableName] = rows;
+            totalRecords += rows.length;
+            tablesSummary.push({ name: tableName, count: rows.length });
+          }
+        }
+
+        sourceCompanyName = jsonData.company_name || (tables.companies as any)?.[0]?.name || "Desconhecida";
+        sourceCompanyId = jsonData.source_company_id || (tables.companies as any)?.[0]?.id || "unknown";
+      } else {
+        // XLSX path with raw: true to preserve stringified JSON
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+
+        for (const sheetName of workbook.SheetNames) {
+          const sheet = workbook.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(sheet, { raw: true, defval: null }) as Array<Record<string, unknown>>;
+          if (rows.length > 0) {
+            const deserializedRows = rows.map((row) => {
+              const newRow: Record<string, unknown> = {};
+              for (const [key, value] of Object.entries(row)) {
+                if (typeof value === "string") {
+                  const trimmed = value.trim();
+                  if (
+                    (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+                    (trimmed.startsWith("[") && trimmed.endsWith("]"))
+                  ) {
+                    try {
+                      newRow[key] = JSON.parse(trimmed);
+                    } catch {
+                      newRow[key] = value;
+                    }
+                  } else {
                     newRow[key] = value;
                   }
                 } else {
                   newRow[key] = value;
                 }
-              } else {
-                newRow[key] = value;
               }
-            }
-            return newRow;
-          });
-          tables[sheetName] = deserializedRows;
-          totalRecords += deserializedRows.length;
-          tablesSummary.push({ name: sheetName, count: deserializedRows.length });
+              return newRow;
+            });
+            tables[sheetName] = deserializedRows;
+            totalRecords += deserializedRows.length;
+            tablesSummary.push({ name: sheetName, count: deserializedRows.length });
+          }
         }
-      }
 
-      const companyRows = tables.companies as Array<Record<string, unknown>> | undefined;
-      const sourceCompanyName = (companyRows?.[0]?.name as string) || "Desconhecida";
-      const sourceCompanyId = (companyRows?.[0]?.id as string) || "unknown";
+        const companyRows = tables.companies as Array<Record<string, unknown>> | undefined;
+        sourceCompanyName = (companyRows?.[0]?.name as string) || "Desconhecida";
+        sourceCompanyId = (companyRows?.[0]?.id as string) || "unknown";
+      }
 
       setParsedData({
         tables,
@@ -225,8 +250,8 @@ export function ImportCompanyDataModal({
       });
       setStep("summary");
     } catch (err) {
-      console.error("Error parsing XLSX:", err);
-      toast.error("Erro ao ler o arquivo XLSX.");
+      console.error("Error parsing file:", err);
+      toast.error("Erro ao ler o arquivo. Verifique se o formato está correto.");
     }
   };
 
@@ -325,14 +350,17 @@ export function ImportCompanyDataModal({
         onClick={() => fileInputRef.current?.click()}
       >
         <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-lg font-medium">Selecione um arquivo XLSX</p>
+        <p className="text-lg font-medium">Selecione um arquivo JSON ou XLSX</p>
         <p className="text-sm text-muted-foreground mt-1">
           Arquivo gerado pela exportação de dados de empresa
+        </p>
+        <p className="text-xs text-muted-foreground mt-2">
+          💡 Formato <strong>JSON</strong> é recomendado para preservar todos os dados sem perda
         </p>
         <input
           ref={fileInputRef}
           type="file"
-          accept=".xlsx"
+          accept=".json,.xlsx"
           onChange={handleFileSelect}
           className="hidden"
         />
