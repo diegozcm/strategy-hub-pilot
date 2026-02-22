@@ -17,7 +17,7 @@ export function ImportCompanyDataCard({ onClick }: ImportCompanyDataCardProps) {
           Importar Dados
         </CardTitle>
         <CardDescription>
-          Importar dados de outra empresa a partir de arquivo XLSX exportado
+          Importar dados de outra empresa a partir de arquivo JSON exportado
         </CardDescription>
       </CardHeader>
     </Card>

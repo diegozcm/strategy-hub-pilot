@@ -24,7 +24,7 @@ import {
 import {
   Upload,
   Download,
-  FileSpreadsheet,
+  FileJson,
   ArrowLeft,
   ArrowRight,
   AlertTriangle,
@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+
 
 interface ImportCompanyDataModalProps {
   open: boolean;
@@ -172,11 +172,8 @@ export function ImportCompanyDataModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const isJson = file.name.endsWith(".json");
-    const isXlsx = file.name.endsWith(".xlsx");
-
-    if (!isJson && !isXlsx) {
-      toast.error("Apenas arquivos .json ou .xlsx são aceitos.");
+    if (!file.name.endsWith(".json")) {
+      toast.error("Apenas arquivos .json são aceitos.");
       return;
     }
 
@@ -187,65 +184,22 @@ export function ImportCompanyDataModal({
       let sourceCompanyName = "Desconhecida";
       let sourceCompanyId = "unknown";
 
-      if (isJson) {
-        const text = await file.text();
-        const jsonData = JSON.parse(text);
+      const text = await file.text();
+      const jsonData = JSON.parse(text);
 
-        // Support both { data: { ... } } (export format) and flat { table: [...] }
-        const rawTables = jsonData.data || jsonData;
+      // Support both { data: { ... } } (export format) and flat { table: [...] }
+      const rawTables = jsonData.data || jsonData;
 
-        for (const [tableName, rows] of Object.entries(rawTables)) {
-          if (Array.isArray(rows) && rows.length > 0) {
-            tables[tableName] = rows;
-            totalRecords += rows.length;
-            tablesSummary.push({ name: tableName, count: rows.length });
-          }
+      for (const [tableName, rows] of Object.entries(rawTables)) {
+        if (Array.isArray(rows) && rows.length > 0) {
+          tables[tableName] = rows;
+          totalRecords += rows.length;
+          tablesSummary.push({ name: tableName, count: rows.length });
         }
-
-        sourceCompanyName = jsonData.company_name || (tables.companies as any)?.[0]?.name || "Desconhecida";
-        sourceCompanyId = jsonData.source_company_id || (tables.companies as any)?.[0]?.id || "unknown";
-      } else {
-        // XLSX path with raw: true to preserve stringified JSON
-        const arrayBuffer = await file.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: "array" });
-
-        for (const sheetName of workbook.SheetNames) {
-          const sheet = workbook.Sheets[sheetName];
-          const rows = XLSX.utils.sheet_to_json(sheet, { raw: true, defval: null }) as Array<Record<string, unknown>>;
-          if (rows.length > 0) {
-            const deserializedRows = rows.map((row) => {
-              const newRow: Record<string, unknown> = {};
-              for (const [key, value] of Object.entries(row)) {
-                if (typeof value === "string") {
-                  const trimmed = value.trim();
-                  if (
-                    (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
-                    (trimmed.startsWith("[") && trimmed.endsWith("]"))
-                  ) {
-                    try {
-                      newRow[key] = JSON.parse(trimmed);
-                    } catch {
-                      newRow[key] = value;
-                    }
-                  } else {
-                    newRow[key] = value;
-                  }
-                } else {
-                  newRow[key] = value;
-                }
-              }
-              return newRow;
-            });
-            tables[sheetName] = deserializedRows;
-            totalRecords += deserializedRows.length;
-            tablesSummary.push({ name: sheetName, count: deserializedRows.length });
-          }
-        }
-
-        const companyRows = tables.companies as Array<Record<string, unknown>> | undefined;
-        sourceCompanyName = (companyRows?.[0]?.name as string) || "Desconhecida";
-        sourceCompanyId = (companyRows?.[0]?.id as string) || "unknown";
       }
+
+      sourceCompanyName = jsonData.company_name || (tables.companies as any)?.[0]?.name || "Desconhecida";
+      sourceCompanyId = jsonData.source_company_id || (tables.companies as any)?.[0]?.id || "unknown";
 
       setParsedData({
         tables,
@@ -356,17 +310,14 @@ export function ImportCompanyDataModal({
         onClick={() => fileInputRef.current?.click()}
       >
         <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-lg font-medium">Selecione um arquivo JSON ou XLSX</p>
+        <p className="text-lg font-medium">Selecione um arquivo JSON</p>
         <p className="text-sm text-muted-foreground mt-1">
-          Arquivo gerado pela exportação de dados de empresa
-        </p>
-        <p className="text-xs text-muted-foreground mt-2">
-          💡 Formato <strong>JSON</strong> é recomendado para preservar todos os dados sem perda
+          Arquivo .json gerado pela exportação de dados de empresa
         </p>
         <input
           ref={fileInputRef}
           type="file"
-          accept=".json,.xlsx"
+          accept=".json"
           onChange={handleFileSelect}
           className="hidden"
         />
@@ -380,7 +331,7 @@ export function ImportCompanyDataModal({
       <div className="space-y-4 py-4">
         <div className="p-4 rounded-lg bg-muted/50 space-y-2">
           <div className="flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4 text-cofound-blue-light" />
+            <FileJson className="h-4 w-4 text-cofound-blue-light" />
             <span className="font-medium">Empresa de origem:</span>
             <span>{parsedData.sourceCompanyName}</span>
           </div>
