@@ -87,7 +87,7 @@ export function ExportCompanyDataCard({ companyId, companyName }: ExportCompanyD
           <CardDescription>
             {isExporting
               ? "Aguarde enquanto todos os dados são coletados..."
-              : "Exportar todos os dados da empresa em formato XLSX"}
+              : "Exportar todos os dados da empresa em formato JSON"}
           </CardDescription>
         </CardHeader>
       </Card>
