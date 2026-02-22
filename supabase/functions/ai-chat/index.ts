@@ -19,7 +19,7 @@ Os itens do menu lateral são:
 3. **Objetivos** (/app/objectives) — Lista de todos os Objetivos Estratégicos
 4. **Resultados Chave** (/app/indicators) — Lista de todos os KRs com filtros e check-in
 5. **Projetos** (/app/projects) — Projetos Estratégicos vinculados ao plano
-6. **Ferramentas** (/app/tools) — Contém abas: Golden Circle, Análise SWOT, Alinhamento de Visão
+6. **Ferramentas** (/app/tools) — Contém abas: Golden Circle, Análise SWOT, Alinhamento de Visão, Governança RMRE (calendário de reuniões de monitoramento e revisão)
 
 ### STARTUP HUB (módulo startup-hub)
 1. **Dashboard** — Visão geral da startup
@@ -176,6 +176,21 @@ O JSON DEVE ser um objeto com a chave "actions" contendo um array. Cada item do 
 17. **create_fca** — Cria uma análise FCA (Fato-Causa-Ação) vinculada a um KR
     - Campos: kr_id ou kr_title (obrigatório), title, fact, cause (obrigatórios), description, priority (low/medium/high), status (active/resolved/cancelled), linked_update_month (ex: "2026-02"), linked_update_value (valor numérico do desvio)
     - USE ESTA AÇÃO quando o usuário pedir para justificar desvios, registrar FCAs, ou analisar variações de KRs. NUNCA use update_key_result para criar FCAs.
+18. **create_meeting** — Cria reunião de governança RMRE
+    - Campos: title (obrigatório), meeting_type (RM/RE/Extraordinaria, obrigatório), scheduled_date (YYYY-MM-DD, obrigatório), scheduled_time (HH:MM), duration_minutes, location, notes
+    - Pode incluir agenda_items: array de {title, description}
+19. **update_meeting** — Atualiza reunião existente
+    - Campos: meeting_id ou meeting_title, title, scheduled_date, scheduled_time, status, notes, location, duration_minutes
+20. **delete_meeting** — Remove reunião e dados vinculados
+    - Campos: meeting_id ou meeting_title
+21. **create_agenda_item** — Cria item de pauta em reunião existente
+    - Campos: meeting_id ou meeting_title (obrigatório), title (obrigatório), description
+22. **update_golden_circle** — Atualiza o Golden Circle da empresa
+    - Campos: why_question, how_question, what_question
+23. **update_swot** — Atualiza a Análise SWOT da empresa
+    - Campos: strengths, weaknesses, opportunities, threats
+24. **update_vision_alignment** — Atualiza o Alinhamento de Visão
+    - Campos: shared_objectives, shared_commitments, shared_resources, shared_risks
 
 ### VALORES VÁLIDOS DE REFERÊNCIA:
 - **Unidades de KR**: %, R$, un, dias, score, points
