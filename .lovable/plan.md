@@ -1,75 +1,106 @@
 
 
-## Redesign do Modal de Detalhes da Empresa
+## Preparar o Atlas para Implementacoes via Metodo JSON
 
-### Objetivo
-Transformar o modal de detalhes da empresa de um layout vertical estreito com tabs empilhadas em um layout horizontal profissional e amplo, e fazer com que clicar na linha da tabela abra diretamente os detalhes (sem precisar do menu de 3 pontos).
+### Problema Atual
+O Atlas consegue criar alguns itens (pilares, objetivos, KRs, iniciativas, projetos) e atualizar apenas KRs e iniciativas. Faltam acoes de edicao para objetivos, pilares e projetos, alem de operacoes de exclusao. Quando o Atlas tenta criar estruturas complexas, muitas vezes falha por falta de contexto (IDs reais) ou por limitacoes nos tipos de acao disponiveis.
+
+### Solucao
+Expandir o `ai-agent-execute` com novas acoes CRUD completas e adicionar um modo `bulk_import` que reutiliza a logica comprovada do `import-company-data` para operacoes complexas. Tambem melhorar o contexto enviado ao Atlas para que ele tenha acesso aos IDs reais dos recursos existentes.
 
 ### Alteracoes
 
-**1. Clique direto na linha da tabela (5 arquivos)**
+**1. Novas acoes no `ai-agent-execute/index.ts`**
 
-Remover o `DropdownMenu` com botao de 3 pontos e tornar toda a linha (`TableRow`) clicavel. Ao clicar, abre o modal de detalhes diretamente.
+Adicionar os tipos de acao que faltam:
+- `update_objective` - Atualizar titulo, descricao, target_date, weight, status de um objetivo existente (por ID ou titulo)
+- `update_pillar` - Atualizar nome, cor, descricao de um pilar existente
+- `update_project` - Atualizar nome, descricao, prioridade, datas, budget, status de um projeto
+- `delete_objective` - Remover um objetivo (e seus KRs/iniciativas em cascata)
+- `delete_key_result` - Remover um KR
+- `delete_initiative` - Remover uma iniciativa
+- `delete_pillar` - Remover um pilar (e seus objetivos em cascata)
+- `delete_project` - Remover um projeto
+- `bulk_import` - Aceitar um mini-JSON no formato de exportacao e processar via logica de importacao (merge mode)
 
-Arquivos afetados:
-- `FilterCompaniesPage.tsx`
-- `AllCompaniesPage.tsx`
-- `ActiveCompaniesPage.tsx`
-- `InactiveCompaniesPage.tsx`
-- `ActiveStartupsPage.tsx` (ja abre pelo card, manter)
+Cada acao de update/delete aceita busca por ID ou por titulo (ilike).
 
-Em cada arquivo:
-- Remover a coluna vazia do `TableHead` (a dos 3 pontos)
-- Adicionar `className="cursor-pointer hover:bg-muted/50"` e `onClick={() => handleOpenDetails(company)}` no `TableRow`
-- Remover todo o bloco `DropdownMenu`/`DropdownMenuTrigger`/`DropdownMenuContent`
-- Limpar imports nao utilizados (`MoreHorizontal`, `DropdownMenu`, etc.)
+**2. Acao `bulk_import` no `ai-agent-execute`**
 
-**2. Redesign do CompanyDetailsModal (layout horizontal profissional)**
+Para operacoes complexas (ex: "importe toda a estrutura da empresa X"), o Atlas podera gerar um bloco com `type: "bulk_import"` contendo o JSON no formato identico ao da exportacao. O sistema chamara internamente a logica de importacao (merge mode) para processar o payload. Isso garante que campos JSONB como `monthly_targets` sejam preservados com 100% de fidelidade.
 
-Transformar o modal atual (max-w-2xl, tabs verticais empilhadas) em um layout amplo e organizado:
+**3. Melhorar contexto do Atlas no `ai-chat/index.ts`**
 
-- Aumentar o modal para `sm:max-w-4xl` (largura ampla)
-- Substituir o layout de tabs empilhadas por um layout com **sidebar de navegacao a esquerda** e **conteudo a direita**
-- A sidebar tera botoes de navegacao verticais (Informacoes, Usuarios, Configuracoes, Acoes) com icones
-- O conteudo muda conforme o item selecionado na sidebar
+Atualmente o Atlas ve apenas titulos e valores dos objetivos/KRs. Para poder editar/atualizar, ele precisa dos IDs. Alterar a query de contexto para incluir:
+- IDs dos pilares, objetivos, KRs, projetos e iniciativas
+- Status e progresso de cada item
+- IDs dos KRs dentro de cada objetivo (para vinculos corretos)
 
-Estrutura do novo layout:
+Isso permite que o Atlas gere acoes como `update_objective` com o ID correto.
+
+**4. Atualizar o system prompt do Atlas**
+
+Adicionar documentacao dos novos tipos de acao no prompt do sistema para que o Atlas saiba que pode:
+- Editar qualquer item existente (objetivo, pilar, KR, projeto, iniciativa)
+- Excluir itens
+- Fazer importacoes em massa via `bulk_import`
+
+### Detalhes Tecnicos
+
+**Novos tipos de acao no ai-agent-execute:**
 
 ```text
-+------------------------------------------------------+
-| [Logo] Nome da Empresa    [Ativa] [Regular] [AI]  [X]|
-+------------------------------------------------------+
-|            |                                          |
-| Informacoes|  Conteudo da secao selecionada           |
-| Usuarios   |  (grid de dados, listas, cards)          |
-| Config     |                                          |
-| Acoes      |                                          |
-|            |                                          |
-+------------------------------------------------------+
+update_objective:
+  - Campos: objective_id ou objective_title, title, description, target_date, weight, status
+  
+update_pillar:
+  - Campos: pillar_id ou pillar_name, name, description, color
+
+update_project:
+  - Campos: project_id ou project_name, name, description, priority, start_date, end_date, budget, status
+
+delete_objective:
+  - Campos: objective_id ou objective_title
+
+delete_key_result:
+  - Campos: kr_id ou kr_title
+
+delete_initiative:
+  - Campos: initiative_id ou initiative_title
+
+delete_pillar:
+  - Campos: pillar_id ou pillar_name
+
+delete_project:
+  - Campos: project_id ou project_name
+
+bulk_import:
+  - Campos: data (JSON no formato de exportacao, sera processado em merge mode)
 ```
 
-Detalhes do layout:
-- Header horizontal com logo grande, nome, badges de status/tipo/AI e botao de fechar
-- Corpo dividido em 2 colunas: sidebar estreita (180px) + area de conteudo
-- Sidebar com botoes tipo menu vertical, highlight no item ativo
-- Area de conteudo com scroll independente
-- Manter todo o conteudo existente das tabs (informacoes, usuarios, config, acoes) reorganizado nesse novo formato
-- O conteudo de cada secao permanece identico, apenas muda a navegacao
+**Contexto melhorado no ai-chat (exemplo):**
 
-**3. Melhoria visual nas secoes**
+```text
+Pilares Estrategicos:
+- Financeiro (id: abc-123) — 3 objetivos
+- Clientes (id: def-456) — 2 objetivos
 
-- **Informacoes**: grid 2x2 com cards pequenos para cada metrica (tipo, data, usuarios, AI), seguido de missao/visao/valores
-- **Usuarios**: lista com scroll, contagem no titulo da secao
-- **Configuracoes**: cards de toggle mantidos
-- **Acoes**: cards de acao mantidos (editar, gerenciar usuarios, status, exportar, importar)
+Objetivos:
+- Aumentar receita (id: obj-789, pilar: Financeiro, progresso: 45%, status: in_progress)
+  - KR: Receita mensal (id: kr-111, atual: 300000, meta: 500000)
+  - KR: Margem de lucro (id: kr-222, atual: 18%, meta: 25%)
+```
 
 ### Arquivos Modificados
 
 | Arquivo | Alteracao |
 |---|---|
-| `src/components/admin-v2/pages/companies/modals/CompanyDetailsModal.tsx` | Redesign completo do layout para formato horizontal com sidebar |
-| `src/components/admin-v2/pages/companies/FilterCompaniesPage.tsx` | Linha clicavel, remover dropdown de 3 pontos |
-| `src/components/admin-v2/pages/companies/AllCompaniesPage.tsx` | Linha clicavel, remover dropdown de 3 pontos |
-| `src/components/admin-v2/pages/companies/ActiveCompaniesPage.tsx` | Linha clicavel, remover dropdown de 3 pontos |
-| `src/components/admin-v2/pages/companies/InactiveCompaniesPage.tsx` | Linha clicavel, remover dropdown de 3 pontos |
+| `supabase/functions/ai-agent-execute/index.ts` | Adicionar update_objective, update_pillar, update_project, delete_*, bulk_import |
+| `supabase/functions/ai-chat/index.ts` | Incluir IDs no contexto da empresa e documentar novos tipos de acao no prompt |
 
+### Sequencia de Implementacao
+
+1. Expandir `ai-agent-execute` com as novas acoes CRUD e bulk_import
+2. Atualizar contexto no `ai-chat` para incluir IDs dos recursos
+3. Atualizar system prompt com documentacao das novas acoes
+4. Deploy das edge functions e teste
