@@ -283,6 +283,13 @@ Deno.serve(async (req) => {
 
       console.log(`📋 Processing ${table}: ${rows.length} rows`);
 
+      // Debug logging for critical JSONB fields
+      if (table === 'key_results' && rows.length > 0) {
+        const sample = rows[0];
+        console.log(`🔍 [DEBUG] key_results sample - monthly_targets type: ${typeof sample.monthly_targets}, value: ${JSON.stringify(sample.monthly_targets)?.substring(0, 200)}`);
+        console.log(`🔍 [DEBUG] key_results sample - monthly_actual type: ${typeof sample.monthly_actual}, value: ${JSON.stringify(sample.monthly_actual)?.substring(0, 200)}`);
+      }
+
       // Process in batches of 50
       const BATCH_SIZE = 50;
       for (let i = 0; i < rows.length; i += BATCH_SIZE) {
@@ -360,6 +367,37 @@ Deno.serve(async (req) => {
               tableResult.errors.push({ batch: batchIndex, message: error.message });
             } else {
               tableResult.inserted += processedBatch.length;
+              
+              // Post-insert verification for key_results JSONB fields
+              if (table === 'key_results') {
+                const insertedIds = processedBatch.map(r => r.id as string);
+                const { data: verifyData } = await sa
+                  .from('key_results')
+                  .select('id, title, monthly_targets, monthly_actual')
+                  .in('id', insertedIds)
+                  .limit(3);
+                
+                if (verifyData) {
+                  for (const vr of verifyData) {
+                    const sourceRow = processedBatch.find(r => r.id === vr.id);
+                    if (sourceRow && sourceRow.monthly_targets && !vr.monthly_targets) {
+                      console.warn(`⚠️ [JSONB CORRUPTION] KR "${vr.title}" - monthly_targets was lost during insert. Attempting UPDATE fix...`);
+                      const { error: fixError } = await sa
+                        .from('key_results')
+                        .update({ 
+                          monthly_targets: sourceRow.monthly_targets,
+                          monthly_actual: sourceRow.monthly_actual 
+                        })
+                        .eq('id', vr.id);
+                      if (fixError) {
+                        console.error(`❌ JSONB fix failed for KR "${vr.title}": ${fixError.message}`);
+                      } else {
+                        console.log(`✅ JSONB fix applied for KR "${vr.title}"`);
+                      }
+                    }
+                  }
+                }
+              }
             }
           } catch (e) {
             console.error(`❌ Insert ${table} exception batch ${batchIndex}:`, e.message);

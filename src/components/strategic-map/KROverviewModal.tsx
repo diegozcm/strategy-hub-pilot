@@ -213,8 +213,8 @@ export const KROverviewModal = ({
   if (!currentKeyResult) return null;
 
   // Calculate values using the same logic as EditKeyResultModal
-  const monthlyTargets = currentKeyResult.monthly_targets as Record<string, number> || {};
-  const monthlyActual = currentKeyResult.monthly_actual as Record<string, number> || {};
+  const monthlyTargets = ((currentKeyResult.monthly_targets ?? {}) as Record<string, number>);
+  const monthlyActual = ((currentKeyResult.monthly_actual ?? {}) as Record<string, number>);
   const aggregationType = currentKeyResult.aggregation_type || 'sum';
   
   // Calculate YTD considering only months with both target and actual data

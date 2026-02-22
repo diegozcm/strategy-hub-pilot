@@ -133,7 +133,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
   const checkVariation = useCallback((periodKey: string, newValue: number) => {
     if (variationThreshold === null || variationThreshold === undefined) return null;
     
-    const rawTargets = (keyResult?.monthly_targets as Record<string, number>) || {};
+    const rawTargets = ((keyResult?.monthly_targets ?? {}) as Record<string, number>);
 
     let targetValue: number | undefined;
 
@@ -344,7 +344,7 @@ export const KRUpdateValuesModal = ({ keyResult, open, onClose, onSave }: KRUpda
 
   if (!keyResult) return null;
 
-  const monthlyTargets = keyResult.monthly_targets as Record<string, number> || {};
+  const monthlyTargets = ((keyResult.monthly_targets ?? {}) as Record<string, number>);
   const periodTargets = isFrequencyPeriodBased(frequency) 
     ? monthlyTargetsToPeriod(monthlyTargets, frequency, selectedYear) 
     : {};

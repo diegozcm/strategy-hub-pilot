@@ -184,8 +184,8 @@ export const KRTableView: React.FC<KRTableViewProps> = ({
     const aggregationType = kr.aggregation_type || 'sum';
     const isMinimize = kr.target_direction === 'minimize';
     
-    const monthlyTargets = kr.monthly_targets as Record<string, number> | null;
-    const monthlyActual = kr.monthly_actual as Record<string, number> | null;
+    const monthlyTargets = ((kr.monthly_targets ?? {}) as Record<string, number>);
+    const monthlyActual = ((kr.monthly_actual ?? {}) as Record<string, number>);
 
     let months: number[] = [];
     

@@ -343,8 +343,8 @@ export const useStrategicMap = () => {
     
     const totalProgress = objectiveKRs.reduce((sum, kr) => {
       let percentage = 0;
-      const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-      const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+      const monthlyTargets = ((kr.monthly_targets ?? {}) as Record<string, number>);
+      const monthlyActual = ((kr.monthly_actual ?? {}) as Record<string, number>);
       
       switch (period) {
         case 'quarterly':
