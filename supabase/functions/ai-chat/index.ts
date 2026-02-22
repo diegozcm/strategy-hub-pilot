@@ -267,6 +267,12 @@ PROIBIDO: mencionar cargos, permissões, módulos, dados da empresa, objetivos o
 ### Análises de dados e métricas
 → SOMENTE quando pedido, use os dados contextuais da empresa.
 
+### Consultas sobre dados salvos (SWOT, Golden Circle, Visão, etc.)
+→ Quando o usuário perguntar "o que tem salvo?", "me mostra o SWOT", "qual o Golden Circle?", "o que tem no alinhamento de visão?",
+   responda SOMENTE com os dados do contexto abaixo. NÃO gere [ATLAS_PLAN].
+   NÃO misture com ações de FCA ou outros planos não solicitados.
+   Responda APENAS o que foi perguntado. Se não houver dados salvos, diga que ainda não há registro.
+
 ## Regras gerais
 - Seja natural e conversacional
 - Use emojis com moderação (máx 1-2 por mensagem)
@@ -423,7 +429,7 @@ serve(async (req) => {
       const { data: plans } = await supabase.from('strategic_plans').select('id').eq('company_id', company_id);
       const planIds = plans?.map(p => p.id) || [];
 
-      const [objectivesResult, projectsResult, startupResult, mentoringResult, pillarsResult, govMeetingsResult, govAtasResult, govRuleDocResult, initiativesResult] = await Promise.all([
+      const [objectivesResult, projectsResult, startupResult, mentoringResult, pillarsResult, govMeetingsResult, govAtasResult, govRuleDocResult, initiativesResult, goldenCircleResult, swotResult, visionResult] = await Promise.all([
         planIds.length > 0
           ? supabase.from('strategic_objectives').select('id, title, progress, status, target_date, pillar_id').in('plan_id', planIds).limit(50)
           : Promise.resolve({ data: [] }),
@@ -437,6 +443,9 @@ serve(async (req) => {
         supabase.from('governance_atas').select('content, decisions, participants, meeting_id, created_at').order('created_at', { ascending: false }).limit(5),
         supabase.from('governance_rule_documents').select('file_name').eq('company_id', company_id).maybeSingle(),
         supabase.from('kr_initiatives').select('id, title, status, priority, progress_percentage, key_result_id').eq('company_id', company_id).limit(50),
+        supabase.from('golden_circle').select('why_question, how_question, what_question, updated_at').eq('company_id', company_id).maybeSingle(),
+        supabase.from('swot_analysis').select('strengths, weaknesses, opportunities, threats, updated_at').eq('company_id', company_id).maybeSingle(),
+        supabase.from('vision_alignment').select('shared_objectives, shared_commitments, shared_resources, shared_risks, updated_at').eq('company_id', company_id).maybeSingle(),
       ]);
 
       objectives = objectivesResult.data || [];
@@ -502,6 +511,23 @@ serve(async (req) => {
           govParts.push(`Documento de regras: ${govRuleDoc.file_name}`);
         }
         contextParts.push(govParts.join('\n'));
+      }
+
+      // Strategic tools context
+      const goldenCircle = goldenCircleResult.data;
+      const swotData = swotResult.data;
+      const visionData = visionResult.data;
+
+      if (goldenCircle) {
+        contextParts.push(`\n🟡 Ferramentas Estratégicas - Golden Circle:\n• Why (Por quê): ${goldenCircle.why_question || 'Não preenchido'}\n• How (Como): ${goldenCircle.how_question || 'Não preenchido'}\n• What (O quê): ${goldenCircle.what_question || 'Não preenchido'}\n• Atualizado em: ${goldenCircle.updated_at}`);
+      }
+
+      if (swotData) {
+        contextParts.push(`\n📊 Análise SWOT:\n• Forças: ${swotData.strengths || 'Não preenchido'}\n• Fraquezas: ${swotData.weaknesses || 'Não preenchido'}\n• Oportunidades: ${swotData.opportunities || 'Não preenchido'}\n• Ameaças: ${swotData.threats || 'Não preenchido'}\n• Atualizado em: ${swotData.updated_at}`);
+      }
+
+      if (visionData) {
+        contextParts.push(`\n👁️ Alinhamento de Visão:\n• Objetivos Compartilhados: ${visionData.shared_objectives || 'Não preenchido'}\n• Compromissos: ${visionData.shared_commitments || 'Não preenchido'}\n• Recursos: ${visionData.shared_resources || 'Não preenchido'}\n• Riscos: ${visionData.shared_risks || 'Não preenchido'}\n• Atualizado em: ${visionData.updated_at}`);
       }
 
       contextData = contextParts.join('\n');
