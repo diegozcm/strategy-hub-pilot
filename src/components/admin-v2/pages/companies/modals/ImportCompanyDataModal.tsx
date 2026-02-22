@@ -16,6 +16,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   Upload,
   Download,
   FileSpreadsheet,
@@ -27,6 +33,8 @@ import {
   Loader2,
   Plus,
   Replace,
+  Clock,
+  SkipForward,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -51,12 +59,29 @@ interface ParsedData {
   tablesSummary: Array<{ name: string; count: number }>;
 }
 
+interface TableResult {
+  total_in_file: number;
+  inserted: number;
+  skipped: number;
+  failed: number;
+  errors: Array<{ batch: number; message: string }>;
+  skipped_details: Array<{ old_id: string; reason: string }>;
+}
+
+interface DeleteLogEntry {
+  table: string;
+  success: boolean;
+  error?: string;
+}
+
 interface ImportResult {
   success: boolean;
   total_records: number;
   tables_imported: string[];
-  results: Record<string, { inserted: number; errors: string[] }>;
+  results: Record<string, TableResult>;
   errors: Array<{ table: string; error: string }>;
+  delete_log?: DeleteLogEntry[];
+  duration_ms?: number;
 }
 
 const TABLE_LABELS: Record<string, string> = {
@@ -111,6 +136,7 @@ export function ImportCompanyDataModal({
   const [progressPercent, setProgressPercent] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [progressLogs, setProgressLogs] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetState = useCallback(() => {
@@ -122,7 +148,12 @@ export function ImportCompanyDataModal({
     setProgressPercent(0);
     setProgressMessage("");
     setImportResult(null);
+    setProgressLogs([]);
   }, []);
+
+  const addLog = (msg: string) => {
+    setProgressLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+  };
 
   const handleClose = () => {
     if (!isImporting) {
@@ -152,7 +183,6 @@ export function ImportCompanyDataModal({
         const sheet = workbook.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(sheet) as Array<Record<string, unknown>>;
         if (rows.length > 0) {
-          // Deserialize JSON strings back to objects/arrays
           const deserializedRows = rows.map((row) => {
             const newRow: Record<string, unknown> = {};
             for (const [key, value] of Object.entries(row)) {
@@ -182,7 +212,6 @@ export function ImportCompanyDataModal({
         }
       }
 
-      // Extract source company info
       const companyRows = tables.companies as Array<Record<string, unknown>> | undefined;
       const sourceCompanyName = (companyRows?.[0]?.name as string) || "Desconhecida";
       const sourceCompanyId = (companyRows?.[0]?.id as string) || "unknown";
@@ -210,11 +239,19 @@ export function ImportCompanyDataModal({
     setStep("progress");
     setIsImporting(true);
     setProgressPercent(10);
-    setProgressMessage("Enviando dados para o servidor...");
+    setProgressLogs([]);
+    setProgressMessage("Preparando importação...");
+    addLog("Iniciando processo de importação...");
 
     try {
+      setProgressPercent(20);
+      addLog(`Modo: ${importMode === "replace" ? "Substituir" : "Adicionar"}`);
+      addLog(`Empresa destino: ${companyName}`);
+      addLog(`Registros a processar: ${parsedData?.totalRecords || 0}`);
+
       setProgressPercent(30);
-      setProgressMessage("Processando importação...");
+      setProgressMessage("Enviando dados para o servidor...");
+      addLog("Enviando dados para o servidor...");
 
       const { data, error } = await supabase.functions.invoke("import-company-data", {
         body: {
@@ -227,17 +264,48 @@ export function ImportCompanyDataModal({
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
+      setProgressPercent(90);
+      setProgressMessage("Processando resultado...");
+      addLog("Resposta recebida do servidor.");
+
+      const result = data as ImportResult;
+
+      // Log server results
+      if (result.delete_log && result.delete_log.length > 0) {
+        addLog(`Limpeza: ${result.delete_log.filter(d => d.success).length} tabelas limpas com sucesso`);
+        const deleteFails = result.delete_log.filter(d => !d.success);
+        if (deleteFails.length > 0) {
+          addLog(`⚠️ ${deleteFails.length} tabelas falharam na limpeza`);
+        }
+      }
+
+      for (const [table, info] of Object.entries(result.results)) {
+        const label = TABLE_LABELS[table] || table;
+        if (info.inserted === info.total_in_file) {
+          addLog(`✅ ${label}: ${info.inserted}/${info.total_in_file} registros`);
+        } else if (info.inserted > 0) {
+          addLog(`⚠️ ${label}: ${info.inserted}/${info.total_in_file} registros (${info.skipped} pulados, ${info.failed} falhas)`);
+        } else {
+          addLog(`❌ ${label}: 0/${info.total_in_file} registros importados`);
+        }
+      }
+
+      if (result.duration_ms) {
+        addLog(`Duração total: ${(result.duration_ms / 1000).toFixed(1)}s`);
+      }
+
       setProgressPercent(100);
       setProgressMessage("Importação concluída!");
-      setImportResult(data as ImportResult);
+      addLog("Importação concluída!");
+      setImportResult(result);
 
-      // Short delay before showing results
       await new Promise((r) => setTimeout(r, 500));
       setStep("result");
       setIsImporting(false);
       onSuccess();
     } catch (err: any) {
       console.error("Import error:", err);
+      addLog(`❌ Erro: ${err.message || "Erro desconhecido"}`);
       setIsImporting(false);
       setImportResult({
         success: false,
@@ -363,63 +431,235 @@ export function ImportCompanyDataModal({
   );
 
   const renderProgressStep = () => (
-    <div className="space-y-6 py-8 text-center">
-      <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
-      <div className="space-y-2">
+    <div className="space-y-6 py-4">
+      <div className="text-center space-y-2">
+        <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
         <p className="font-medium">{progressMessage}</p>
         <Progress value={progressPercent} className="w-full" />
         <p className="text-sm text-muted-foreground">{progressPercent}%</p>
       </div>
+
+      {progressLogs.length > 0 && (
+        <div className="bg-muted/30 rounded-lg p-3 max-h-40 overflow-y-auto">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Log de execução:</p>
+          <div className="space-y-0.5">
+            {progressLogs.map((log, i) => (
+              <p key={i} className="text-xs font-mono text-muted-foreground">{log}</p>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 
   const renderResultStep = () => {
     if (!importResult) return null;
-    const hasErrors = importResult.errors.length > 0;
+
+    const tableEntries = Object.entries(importResult.results);
+    const successTables = tableEntries.filter(([, r]) => r.inserted === r.total_in_file && r.total_in_file > 0);
+    const partialTables = tableEntries.filter(([, r]) => r.inserted > 0 && r.inserted < r.total_in_file);
+    const failedTables = tableEntries.filter(([, r]) => r.inserted === 0 && r.total_in_file > 0);
+
+    const globalErrors = importResult.errors.filter(e => e.table === "general");
+    const hasGlobalError = globalErrors.length > 0;
 
     return (
       <div className="space-y-4 py-4">
-        <div className={`p-4 rounded-lg flex items-center gap-3 ${hasErrors ? "bg-destructive/10" : "bg-cofound-green/10"}`}>
-          {hasErrors ? (
-            <XCircle className="h-6 w-6 text-destructive" />
+        {/* Header summary */}
+        <div className={`p-4 rounded-lg flex items-center gap-3 ${
+          hasGlobalError ? "bg-destructive/10" :
+          failedTables.length > 0 || partialTables.length > 0 ? "bg-amber-500/10" :
+          "bg-cofound-green/10"
+        }`}>
+          {hasGlobalError ? (
+            <XCircle className="h-6 w-6 text-destructive shrink-0" />
+          ) : failedTables.length > 0 || partialTables.length > 0 ? (
+            <AlertTriangle className="h-6 w-6 text-amber-500 shrink-0" />
           ) : (
-            <CheckCircle2 className="h-6 w-6 text-cofound-green" />
+            <CheckCircle2 className="h-6 w-6 text-cofound-green shrink-0" />
           )}
           <div>
             <p className="font-medium">
-              {hasErrors ? "Importação concluída com erros" : "Importação concluída com sucesso!"}
+              {hasGlobalError ? "Falha na importação" :
+               failedTables.length > 0 || partialTables.length > 0 ? "Importação concluída com ressalvas" :
+               "Importação concluída com sucesso!"}
             </p>
             <p className="text-sm text-muted-foreground">
               {importResult.total_records} registros importados em {importResult.tables_imported.length} tabelas
+              {importResult.duration_ms ? ` • ${(importResult.duration_ms / 1000).toFixed(1)}s` : ""}
             </p>
           </div>
         </div>
 
-        {importResult.tables_imported.length > 0 && (
-          <div className="max-h-40 overflow-y-auto space-y-1">
-            {Object.entries(importResult.results).map(([table, info]) => (
-              info.inserted > 0 && (
-                <div key={table} className="flex items-center justify-between py-1.5 px-3 rounded bg-muted/30">
-                  <span className="text-sm">{TABLE_LABELS[table] || table}</span>
-                  <Badge variant="outline" className="text-xs">{info.inserted}</Badge>
-                </div>
-              )
+        {hasGlobalError && (
+          <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+            {globalErrors.map((e, i) => (
+              <p key={i} className="text-sm text-destructive">{e.error}</p>
             ))}
           </div>
         )}
 
-        {hasErrors && (
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-destructive">Erros:</p>
-            <div className="max-h-32 overflow-y-auto space-y-1">
-              {importResult.errors.map((err, i) => (
-                <div key={i} className="text-xs p-2 rounded bg-destructive/5 text-destructive">
-                  <strong>{err.table}:</strong> {err.error}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Categorized results */}
+        <div className="max-h-[45vh] overflow-y-auto space-y-2">
+          <Accordion type="multiple" defaultValue={["partial", "failed"]}>
+            {/* Success tables */}
+            {successTables.length > 0 && (
+              <AccordionItem value="success" className="border rounded-lg border-cofound-green/30">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-cofound-green" />
+                    <span className="text-sm font-medium">Importados com sucesso</span>
+                    <Badge variant="outline" className="text-xs text-cofound-green border-cofound-green/40">
+                      {successTables.length}
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-3">
+                  <div className="space-y-1">
+                    {successTables.map(([table, info]) => (
+                      <div key={table} className="flex items-center justify-between py-1.5 px-3 rounded bg-cofound-green/5">
+                        <span className="text-sm">{TABLE_LABELS[table] || table}</span>
+                        <Badge variant="outline" className="text-xs">{info.inserted} registros</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+
+            {/* Partial tables */}
+            {partialTables.length > 0 && (
+              <AccordionItem value="partial" className="border rounded-lg border-amber-500/30">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    <span className="text-sm font-medium">Importados parcialmente</span>
+                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-500/40">
+                      {partialTables.length}
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-3">
+                  <div className="space-y-3">
+                    {partialTables.map(([table, info]) => (
+                      <div key={table} className="space-y-1.5">
+                        <div className="flex items-center justify-between px-3 py-1.5 rounded bg-amber-500/5">
+                          <span className="text-sm font-medium">{TABLE_LABELS[table] || table}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {info.inserted}/{info.total_in_file} registros
+                            {info.skipped > 0 && <span className="ml-1">• {info.skipped} pulados</span>}
+                            {info.failed > 0 && <span className="ml-1 text-destructive">• {info.failed} falhas</span>}
+                          </span>
+                        </div>
+                        {(info.errors.length > 0 || info.skipped_details.length > 0) && (
+                          <div className="pl-3 space-y-1">
+                            {info.errors.map((err, i) => (
+                              <div key={`err-${i}`} className="text-xs p-2 rounded bg-destructive/5 text-destructive">
+                                <strong>Batch {err.batch}:</strong> {err.message}
+                              </div>
+                            ))}
+                            {info.skipped_details.length > 0 && (
+                              <Accordion type="single" collapsible>
+                                <AccordionItem value="skipped" className="border-none">
+                                  <AccordionTrigger className="py-1 hover:no-underline">
+                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <SkipForward className="h-3 w-3" />
+                                      {info.skipped_details.length} registros pulados
+                                    </span>
+                                  </AccordionTrigger>
+                                  <AccordionContent>
+                                    <div className="space-y-0.5 max-h-24 overflow-y-auto">
+                                      {info.skipped_details.map((s, i) => (
+                                        <p key={i} className="text-xs text-muted-foreground font-mono">
+                                          {s.old_id?.substring(0, 8)}… → {s.reason}
+                                        </p>
+                                      ))}
+                                    </div>
+                                  </AccordionContent>
+                                </AccordionItem>
+                              </Accordion>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+
+            {/* Failed tables */}
+            {failedTables.length > 0 && (
+              <AccordionItem value="failed" className="border rounded-lg border-destructive/30">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <XCircle className="h-4 w-4 text-destructive" />
+                    <span className="text-sm font-medium">Não importados</span>
+                    <Badge variant="outline" className="text-xs text-destructive border-destructive/40">
+                      {failedTables.length}
+                    </Badge>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-3">
+                  <div className="space-y-3">
+                    {failedTables.map(([table, info]) => (
+                      <div key={table} className="space-y-1.5">
+                        <div className="flex items-center justify-between px-3 py-1.5 rounded bg-destructive/5">
+                          <span className="text-sm font-medium">{TABLE_LABELS[table] || table}</span>
+                          <span className="text-xs text-muted-foreground">
+                            0/{info.total_in_file} registros
+                          </span>
+                        </div>
+                        <div className="pl-3 space-y-1">
+                          {info.errors.map((err, i) => (
+                            <div key={`err-${i}`} className="text-xs p-2 rounded bg-destructive/5 text-destructive">
+                              <strong>Batch {err.batch}:</strong> {err.message}
+                            </div>
+                          ))}
+                          {info.skipped_details.length > 0 && info.errors.length === 0 && (
+                            <div className="text-xs p-2 rounded bg-amber-500/5 text-amber-700">
+                              <strong>Todos pulados:</strong> {info.skipped_details[0]?.reason}
+                              {info.skipped_details.length > 1 && ` (+${info.skipped_details.length - 1} outros)`}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            )}
+          </Accordion>
+
+          {/* Delete log for replace mode */}
+          {importResult.delete_log && importResult.delete_log.length > 0 && (
+            <Accordion type="single" collapsible>
+              <AccordionItem value="delete-log" className="border rounded-lg border-muted">
+                <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Log de limpeza (modo substituir)</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-4 pb-3">
+                  <div className="space-y-0.5 max-h-32 overflow-y-auto">
+                    {importResult.delete_log.map((entry, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs">
+                        {entry.success ? (
+                          <CheckCircle2 className="h-3 w-3 text-cofound-green shrink-0" />
+                        ) : (
+                          <XCircle className="h-3 w-3 text-destructive shrink-0" />
+                        )}
+                        <span className="text-muted-foreground">{TABLE_LABELS[entry.table] || entry.table}</span>
+                        {entry.error && <span className="text-destructive">— {entry.error}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
+        </div>
 
         <div className="pt-4">
           <Button variant="cofound" onClick={handleClose} className="w-full">
