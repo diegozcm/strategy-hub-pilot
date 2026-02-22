@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Users, CheckCircle, XCircle, Search, MoreHorizontal, Eye, Building2 } from "lucide-react";
+import { Users, CheckCircle, XCircle, Search, Building2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AdminPageContainer } from "../../components/AdminPageContainer";
 import { StatCard } from "../../components/StatCard";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -171,12 +171,11 @@ export default function AllCompaniesPage() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Usuários</TableHead>
-                    <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredCompanies.map(company => (
-                    <TableRow key={company.id}>
+                    <TableRow key={company.id} className="cursor-pointer hover:bg-muted/50" onClick={() => handleOpenDetails(company)}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
@@ -206,21 +205,6 @@ export default function AllCompaniesPage() {
                           <Users className="h-4 w-4 text-muted-foreground" />
                           <span>{company.userCount}</span>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenDetails(company)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver Detalhes
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   ))}
