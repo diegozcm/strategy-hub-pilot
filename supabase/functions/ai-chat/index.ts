@@ -154,6 +154,25 @@ O JSON DEVE ser um objeto com a chave "actions" contendo um array. Cada item do 
    - Campos: kr_id ou kr_title, current_value, target_value, monthly_actual, monthly_targets, etc.
 7. **update_initiative** — Atualiza uma iniciativa existente
    - Campos: initiative_id ou initiative_title, status, progress_percentage, etc.
+8. **update_objective** — Atualiza um objetivo existente
+   - Campos: objective_id ou objective_title (obrigatório), title, description, target_date, weight, status
+9. **update_pillar** — Atualiza um pilar existente
+   - Campos: pillar_id ou pillar_name (obrigatório), name, description, color
+10. **update_project** — Atualiza um projeto existente
+    - Campos: project_id ou project_name (obrigatório), name, description, priority, start_date, end_date, budget, status, progress
+11. **delete_pillar** — Remove um pilar e todos seus objetivos/KRs em cascata
+    - Campos: pillar_id ou pillar_name (obrigatório)
+12. **delete_objective** — Remove um objetivo e seus KRs em cascata
+    - Campos: objective_id ou objective_title (obrigatório)
+13. **delete_key_result** — Remove um KR e seus dados relacionados
+    - Campos: kr_id ou kr_title (obrigatório)
+14. **delete_initiative** — Remove uma iniciativa
+    - Campos: initiative_id ou initiative_title (obrigatório)
+15. **delete_project** — Remove um projeto
+    - Campos: project_id ou project_name (obrigatório)
+16. **bulk_import** — Importação em massa via JSON (formato de exportação)
+    - Campos: data (objeto JSON no formato de exportação da plataforma, processado em merge mode)
+    - Use para criar estruturas complexas com múltiplos pilares, objetivos, KRs etc. de uma vez
 
 ### VALORES VÁLIDOS DE REFERÊNCIA:
 - **Unidades de KR**: %, R$, un, dias, score, points
@@ -386,49 +405,57 @@ serve(async (req) => {
       const { data: plans } = await supabase.from('strategic_plans').select('id').eq('company_id', company_id);
       const planIds = plans?.map(p => p.id) || [];
 
-      const [objectivesResult, projectsResult, startupResult, mentoringResult, pillarsResult, govMeetingsResult, govAtasResult, govRuleDocResult] = await Promise.all([
+      const [objectivesResult, projectsResult, startupResult, mentoringResult, pillarsResult, govMeetingsResult, govAtasResult, govRuleDocResult, initiativesResult] = await Promise.all([
         planIds.length > 0
-          ? supabase.from('strategic_objectives').select('id, title, progress, status, target_date').in('plan_id', planIds).limit(20)
+          ? supabase.from('strategic_objectives').select('id, title, progress, status, target_date, pillar_id').in('plan_id', planIds).limit(50)
           : Promise.resolve({ data: [] }),
         planIds.length > 0
-          ? supabase.from('strategic_projects').select('name, progress, status, start_date, end_date, priority').in('plan_id', planIds).limit(20)
+          ? supabase.from('strategic_projects').select('id, name, progress, status, start_date, end_date, priority').in('plan_id', planIds).limit(20)
           : Promise.resolve({ data: [] }),
         supabase.from('startup_hub_profiles').select('*').eq('company_id', company_id).single(),
         supabase.from('mentoring_sessions').select('session_date, session_type, status, notes').eq('startup_company_id', company_id).order('session_date', { ascending: false }).limit(10),
-        supabase.from('strategic_pillars').select('name').eq('company_id', company_id),
+        supabase.from('strategic_pillars').select('id, name').eq('company_id', company_id),
         supabase.from('governance_meetings').select('title, meeting_type, scheduled_date, status').eq('company_id', company_id).order('scheduled_date', { ascending: false }).limit(10),
         supabase.from('governance_atas').select('content, decisions, participants, meeting_id, created_at').order('created_at', { ascending: false }).limit(5),
         supabase.from('governance_rule_documents').select('file_name').eq('company_id', company_id).maybeSingle(),
+        supabase.from('kr_initiatives').select('id, title, status, priority, progress_percentage, key_result_id').eq('company_id', company_id).limit(50),
       ]);
 
       objectives = objectivesResult.data || [];
       const objectiveIds = objectives.map(o => o.id);
 
       const krResult = objectiveIds.length > 0
-        ? await supabase.from('key_results').select('title, current_value, target_value, unit, due_date, priority').in('objective_id', objectiveIds).limit(30)
+        ? await supabase.from('key_results').select('id, title, current_value, target_value, unit, due_date, priority, objective_id').in('objective_id', objectiveIds).limit(100)
         : { data: [] };
       keyResults = krResult.data || [];
 
       projects = projectsResult.data || [];
       startupProfile = startupResult.data;
       mentoringSessions = mentoringResult.data || [];
+      const initiatives = initiativesResult.data || [];
 
-      // Build context data string
+      // Build context data string with IDs for Atlas to reference
       const pillars = pillarsResult.data || [];
-      const contextParts: string[] = [`CONTEXTO DE REFERÊNCIA da ${companyName} — Use SOMENTE quando a mensagem do usuário pedir análises, métricas ou dados específicos:`];
+      const contextParts: string[] = [`CONTEXTO DE REFERÊNCIA da ${companyName} — Use SOMENTE quando a mensagem do usuário pedir análises, métricas ou dados específicos. Use os IDs para ações de update/delete:`];
 
       if (pillars.length > 0) {
-        contextParts.push(`\n🏛️ Pilares Estratégicos disponíveis (USE EXATAMENTE estes nomes no pillar_name):\n${pillars.map(p => `• ${p.name}`).join('\n')}`);
+        contextParts.push(`\n🏛️ Pilares Estratégicos (USE EXATAMENTE estes nomes no pillar_name):\n${pillars.map(p => `• ${p.name} (id: ${p.id})`).join('\n')}`);
       }
 
       if (objectives.length > 0) {
-        contextParts.push(`\n📊 Objetivos Estratégicos:\n${objectives.map(obj => `• ${obj.title}: ${obj.progress || 0}% concluído (Status: ${obj.status})`).join('\n')}`);
+        const pillarMap = Object.fromEntries(pillars.map(p => [p.id, p.name]));
+        contextParts.push(`\n📊 Objetivos Estratégicos:\n${objectives.map(obj => {
+          const pillarName = pillarMap[obj.pillar_id] || '';
+          const objKRs = (keyResults || []).filter((kr: any) => kr.objective_id === obj.id);
+          const krLines = objKRs.map((kr: any) => `    - KR: ${kr.title} (id: ${kr.id}, atual: ${kr.current_value || 0}${kr.unit}, meta: ${kr.target_value}${kr.unit})`).join('\n');
+          const objInitiatives = initiatives.filter(i => objKRs.some((kr: any) => kr.id === i.key_result_id));
+          const initLines = objInitiatives.map(i => `    - Iniciativa: ${i.title} (id: ${i.id}, status: ${i.status}, progresso: ${i.progress_percentage || 0}%)`).join('\n');
+          return `• ${obj.title} (id: ${obj.id}, pilar: ${pillarName}, progresso: ${obj.progress || 0}%, status: ${obj.status})${krLines ? '\n' + krLines : ''}${initLines ? '\n' + initLines : ''}`;
+        }).join('\n')}`);
       }
-      if (keyResults && keyResults.length > 0) {
-        contextParts.push(`\n📊 Resultados Chave:\n${keyResults.map(kr => `• ${kr.title}: ${kr.current_value || 0}${kr.unit} de ${kr.target_value}${kr.unit}`).join('\n')}`);
-      }
+
       if (projects.length > 0) {
-        contextParts.push(`\n🚀 Projetos Estratégicos:\n${projects.map(proj => `• ${proj.name}: ${proj.progress || 0}% concluído (Status: ${proj.status})`).join('\n')}`);
+        contextParts.push(`\n🚀 Projetos Estratégicos:\n${projects.map(proj => `• ${proj.name} (id: ${proj.id}, progresso: ${proj.progress || 0}%, status: ${proj.status})`).join('\n')}`);
       }
       if (startupProfile) {
         contextParts.push(`\n🎯 Startup Hub:\n• Startup: ${startupProfile.startup_name || 'Não informado'}\n• Setor: ${startupProfile.sector || 'Não informado'}\n• Estágio: ${startupProfile.stage || 'Não informado'}`);
