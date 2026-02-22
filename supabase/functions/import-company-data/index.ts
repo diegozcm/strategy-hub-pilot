@@ -129,10 +129,27 @@ function generateUUID(): string {
   return crypto.randomUUID();
 }
 
+interface TableResult {
+  total_in_file: number;
+  inserted: number;
+  skipped: number;
+  failed: number;
+  errors: Array<{ batch: number; message: string }>;
+  skipped_details: Array<{ old_id: string; reason: string }>;
+}
+
+interface DeleteLogEntry {
+  table: string;
+  success: boolean;
+  error?: string;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const startTime = Date.now();
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -213,10 +230,11 @@ Deno.serve(async (req) => {
     const sourceCompanyName = sourceCompanyData?.name || "Unknown";
     const sourceCompanyId = sourceCompanyData?.id || "unknown";
 
-    const results: Record<string, { inserted: number; errors: string[] }> = {};
+    const results: Record<string, TableResult> = {};
     const idMaps: Record<string, Map<string, string>> = {};
     let totalRecords = 0;
     const allErrors: Array<{ table: string; error: string }> = [];
+    const deleteLog: DeleteLogEntry[] = [];
 
     // ═══ REPLACE MODE: Delete existing data ═══
     if (mode === "replace") {
@@ -224,20 +242,21 @@ Deno.serve(async (req) => {
 
       for (const table of DELETE_ORDER) {
         try {
-          // For tables with direct company_id
           if (DIRECT_COMPANY_TABLES.includes(table) || table === "strategic_plans") {
             const { error } = await sa.from(table).delete().eq("company_id", company_id);
             if (error) {
               console.error(`Delete ${table}: ${error.message}`);
               allErrors.push({ table, error: `Delete failed: ${error.message}` });
+              deleteLog.push({ table, success: false, error: error.message });
             } else {
               console.log(`🗑️ Deleted from ${table}`);
+              deleteLog.push({ table, success: true });
             }
           }
-          // Child tables are deleted via cascade or were already handled
         } catch (e) {
           console.error(`Delete ${table} exception:`, e.message);
           allErrors.push({ table, error: `Delete exception: ${e.message}` });
+          deleteLog.push({ table, success: false, error: e.message });
         }
       }
     }
@@ -247,20 +266,33 @@ Deno.serve(async (req) => {
       const rows = importData[table];
       if (!rows || !Array.isArray(rows) || rows.length === 0) continue;
 
-      // Skip 'companies' table - we don't insert/replace the company itself
+      // Skip 'companies' table
       if (table === "companies") continue;
 
       const tableIdMap = new Map<string, string>();
       idMaps[table] = tableIdMap;
-      const tableErrors: string[] = [];
-      let insertedCount = 0;
+
+      const tableResult: TableResult = {
+        total_in_file: rows.length,
+        inserted: 0,
+        skipped: 0,
+        failed: 0,
+        errors: [],
+        skipped_details: [],
+      };
+
+      console.log(`📋 Processing ${table}: ${rows.length} rows`);
 
       // Process in batches of 50
       const BATCH_SIZE = 50;
       for (let i = 0; i < rows.length; i += BATCH_SIZE) {
         const batch = rows.slice(i, i + BATCH_SIZE);
-        const processedBatch = batch.map((row: Record<string, unknown>) => {
-          const newRow = { ...row };
+        const batchIndex = Math.floor(i / BATCH_SIZE);
+        const processedBatch: Record<string, unknown>[] = [];
+        const skippedInBatch: Array<{ old_id: string; reason: string }> = [];
+
+        for (const row of batch) {
+          const newRow = { ...row } as Record<string, unknown>;
 
           // Generate new ID and track mapping
           const oldId = newRow.id as string;
@@ -275,6 +307,7 @@ Deno.serve(async (req) => {
 
           // Remap foreign keys using idMaps
           const fkConfig = FK_MAP[table];
+          let skipRow = false;
           if (fkConfig) {
             for (const [fkCol, sourceTable] of Object.entries(fkConfig)) {
               const oldFkValue = newRow[fkCol] as string;
@@ -283,13 +316,23 @@ Deno.serve(async (req) => {
                 if (newFkValue) {
                   newRow[fkCol] = newFkValue;
                 } else {
-                  // FK reference not found - skip this row
-                  console.warn(`⚠️ ${table}: FK ${fkCol}=${oldFkValue} not found in ${sourceTable} map`);
-                  newRow[fkCol] = null;
+                  const reason = `FK ${fkCol}=${oldFkValue} não encontrada em ${sourceTable}`;
+                  console.warn(`⚠️ ${table}: ${reason}`);
+                  skippedInBatch.push({ old_id: oldId, reason });
+                  skipRow = true;
+                  break;
                 }
+              } else if (oldFkValue && !idMaps[sourceTable]) {
+                const reason = `Tabela referenciada ${sourceTable} não foi importada`;
+                console.warn(`⚠️ ${table}: ${reason} (FK ${fkCol}=${oldFkValue})`);
+                skippedInBatch.push({ old_id: oldId, reason });
+                skipRow = true;
+                break;
               }
             }
           }
+
+          if (skipRow) continue;
 
           // Set user reference columns to importing admin's ID
           for (const col of USER_COLUMNS) {
@@ -298,31 +341,44 @@ Deno.serve(async (req) => {
             }
           }
 
-          return newRow;
-        });
+          processedBatch.push(newRow);
+        }
 
-        try {
-          const { error } = await sa.from(table).insert(processedBatch);
-          if (error) {
-            console.error(`Insert ${table} batch ${i}: ${error.message}`);
-            tableErrors.push(`Batch ${i}: ${error.message}`);
-          } else {
-            insertedCount += processedBatch.length;
+        // Track skipped rows
+        if (skippedInBatch.length > 0) {
+          tableResult.skipped += skippedInBatch.length;
+          tableResult.skipped_details.push(...skippedInBatch);
+        }
+
+        // Insert the batch
+        if (processedBatch.length > 0) {
+          try {
+            const { error } = await sa.from(table).insert(processedBatch);
+            if (error) {
+              console.error(`❌ Insert ${table} batch ${batchIndex}: ${error.message}`);
+              tableResult.failed += processedBatch.length;
+              tableResult.errors.push({ batch: batchIndex, message: error.message });
+            } else {
+              tableResult.inserted += processedBatch.length;
+            }
+          } catch (e) {
+            console.error(`❌ Insert ${table} exception batch ${batchIndex}:`, e.message);
+            tableResult.failed += processedBatch.length;
+            tableResult.errors.push({ batch: batchIndex, message: e.message });
           }
-        } catch (e) {
-          console.error(`Insert ${table} exception:`, e.message);
-          tableErrors.push(`Exception: ${e.message}`);
         }
       }
 
-      results[table] = { inserted: insertedCount, errors: tableErrors };
-      totalRecords += insertedCount;
+      results[table] = tableResult;
+      totalRecords += tableResult.inserted;
 
-      if (tableErrors.length > 0) {
-        allErrors.push(...tableErrors.map(e => ({ table, error: e })));
+      if (tableResult.errors.length > 0) {
+        allErrors.push(...tableResult.errors.map(e => ({ table, error: `Batch ${e.batch}: ${e.message}` })));
       }
 
-      console.log(`✅ ${table}: ${insertedCount}/${rows.length} inserted`);
+      const status = tableResult.inserted === tableResult.total_in_file
+        ? "✅" : tableResult.inserted > 0 ? "⚠️" : "❌";
+      console.log(`${status} ${table}: ${tableResult.inserted}/${tableResult.total_in_file} inserted, ${tableResult.skipped} skipped, ${tableResult.failed} failed`);
     }
 
     // ═══ Update company data if present in source ═══
@@ -361,7 +417,8 @@ Deno.serve(async (req) => {
       errors: allErrors.length > 0 ? allErrors : [],
     });
 
-    console.log(`📥 Import complete: ${totalRecords} records across ${tablesImported.length} tables, ${allErrors.length} errors`);
+    const durationMs = Date.now() - startTime;
+    console.log(`📥 Import complete in ${durationMs}ms: ${totalRecords} records across ${tablesImported.length} tables, ${allErrors.length} errors`);
 
     return new Response(
       JSON.stringify({
@@ -370,6 +427,8 @@ Deno.serve(async (req) => {
         tables_imported: tablesImported,
         results,
         errors: allErrors,
+        delete_log: deleteLog,
+        duration_ms: durationMs,
       }),
       {
         status: 200,
@@ -377,9 +436,10 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error) {
+    const durationMs = Date.now() - startTime;
     console.error("Import error:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error", details: error.message }),
+      JSON.stringify({ error: "Internal server error", details: error.message, duration_ms: durationMs }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
