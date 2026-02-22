@@ -1,95 +1,130 @@
 
-## Diagnostico e Correcao da Perda de Dados na Importacao
+## Correcao do Erro de Importacao e Validacao via Atlas AI
 
-### Problema Identificado
+### Problema 1: Crash "Cannot read properties of null (reading '2026-01')"
 
-A raiz do problema esta na **conversao XLSX** que corrompe campos JSONB. Especificamente:
+O erro acontece porque os Key Results importados tem `monthly_targets` e `monthly_actual` como `NULL` no banco de dados. Varios componentes acessam esses campos assumindo que sao objetos (ex: `KROverviewModal.tsx` linha 216: `currentKeyResult.monthly_targets as Record<string, number> || {}`). Quando o valor e `null`, o cast `as Record` nao muda o valor em runtime, mas o operador `||` deveria proteger. No entanto, ha outros locais onde o acesso e feito sem protecao.
 
-- `monthly_targets` e `monthly_actual` dos Key Results contem objetos JSON como `{"2026-01": 1960000, "2026-02": 2400000, ...}`
-- Na exportacao, esses objetos sao serializados como strings via `JSON.stringify()` e gravados em celulas XLSX
-- Na importacao, ao ler o XLSX de volta com `sheet_to_json`, a biblioteca XLSX pode interpretar ou corromper essas strings JSON, resultando em objetos vazios `{}`
-- Resultado: os 72 Key Results foram inseridos com sucesso (72/72), mas sem os dados de metas mensais
+**Causa raiz dos dados NULL**: A importacao foi feita com um arquivo XLSX antigo (anterior a correcao para JSON). O XLSX corrompe campos JSONB. A solucao definitiva e re-exportar em JSON e re-importar, mas precisamos tambem:
 
-Tabelas como `kr_monthly_actions`, `kr_status_reports`, `kr_actions_history` e `key_result_values` estao com 0 registros porque a empresa Perville **nao possui dados** nessas tabelas (confirmado via consulta direta ao banco de dados da origem).
-
-### Solucao Proposta
-
-Adicionar suporte a **exportacao e importacao em formato JSON** (alem do XLSX existente). JSON preserva todos os tipos de dados sem perda, eliminando o problema de roundtrip do XLSX.
+1. Proteger a UI contra `monthly_targets = null` (null safety)
+2. Adicionar logging de debug na edge function para diagnosticar futuros problemas
+3. Implementar validacao via Atlas AI
 
 ### Alteracoes
 
-**1. Exportacao (`ExportCompanyDataCard.tsx`)**
+**1. Edge Function de importacao - Debug logging (`import-company-data/index.ts`)**
 
-- Alterar para exportar como arquivo `.json` em vez de `.xlsx`
-- O JSON preserva campos JSONB nativamente, sem necessidade de serializacao/deserializacao manual
-- O arquivo JSON contera todos os dados da empresa exatamente como retornados pela Edge Function
-- Manter o nome do arquivo com padrao: `export_<empresa>_<data>.json`
+Adicionar logs de debug para tabelas criticas (key_results) mostrando uma amostra dos dados recebidos antes de inserir, especificamente campos JSONB:
+- Log do primeiro registro de cada tabela mostrando se `monthly_targets` esta presente e seu tipo
+- Apos insercao, verificar no banco se os dados foram persistidos corretamente para key_results
 
-**2. Importacao (`ImportCompanyDataModal.tsx`)**
+**2. Null safety nos componentes que acessam monthly_targets/monthly_actual**
 
-- Aceitar arquivos `.json` alem de `.xlsx`
-- Para `.json`: ler o arquivo diretamente como JSON e enviar os dados para a Edge Function
-- Para `.xlsx`: manter o comportamento atual (compatibilidade retroativa)
-- Na tela de upload, informar que `.json` e o formato recomendado
+Adicionar protecao contra null em todos os pontos criticos:
+- `KROverviewModal.tsx`: usar `?? {}` em vez de `|| {}` apos cast
+- `DashboardHome.tsx`: mesma correcao
+- `useRumoCalculations.tsx`: mesma correcao
+- `useStrategicMap.tsx`: mesma correcao
+- Todos os outros componentes que fazem cast de `monthly_targets`
 
-**3. Correcao do XLSX (retrocompatibilidade)**
+A correcao e simples: trocar `as Record<string, number> || {}` por `as Record<string, number> ?? {}` ou, melhor, usar `(kr.monthly_targets ?? {}) as Record<string, number>`.
 
-- No `ImportCompanyDataModal`, ao ler o XLSX, usar a opcao `raw: true` no `sheet_to_json` para evitar coercao de tipos pela biblioteca
-- Adicionar tratamento especial para campos que contenham objetos JSON serializados
+**3. Edge Function de validacao de importacao (`validate-import`)**
+
+Criar uma nova Edge Function `validate-import` que:
+- Recebe o JSON exportado original e o company_id de destino
+- Consulta os dados importados no banco
+- Compara campo a campo, tabela a tabela
+- Para key_results: verifica especificamente se `monthly_targets` e `monthly_actual` foram preservados
+- Retorna um relatorio detalhado com discrepancias
+
+**4. Integracao com Atlas AI para analise pos-importacao**
+
+Apos a importacao finalizar com sucesso no `ImportCompanyDataModal`, adicionar um botao "Validar com Atlas" que:
+- Chama a edge function `validate-import` com o JSON original e o company_id
+- Envia o resultado da validacao para o Atlas AI (via `ai-chat`) com um prompt especifico de analise
+- O Atlas analisa as discrepancias e sugere correcoes
+- Se encontrar campos JSONB corrompidos, o Atlas pode propor um plano de correcao via `[ATLAS_PLAN]` com acoes `update_key_result` para restaurar os dados
+
+**5. Auto-correcao no import edge function**
+
+Adicionar validacao de campos JSONB apos a insercao de key_results:
+- Apos inserir cada batch de key_results, consultar os registros inseridos
+- Se `monthly_targets` for null mas o dado original tinha valor, tentar um UPDATE separado
+- Registrar no log se houve necessidade de correcao
 
 ### Detalhes Tecnicos
 
-**ExportCompanyDataCard - Mudanca para JSON:**
+**Nova Edge Function: `validate-import`**
 
 ```text
-// Antes: conversao para XLSX com json_to_sheet
-// Depois: download direto do JSON retornado pela Edge Function
+Entrada: {
+  company_id: string,
+  source_data: { key_results: [...], ... }  // JSON original
+}
 
-const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-const url = URL.createObjectURL(blob);
-// download como .json
+Saida: {
+  valid: boolean,
+  tables_checked: number,
+  discrepancies: [
+    {
+      table: string,
+      field: string,
+      source_id: string,
+      imported_id: string,
+      source_value: any,
+      imported_value: any,
+      status: "match" | "mismatch" | "missing"
+    }
+  ],
+  summary: {
+    total_fields_checked: number,
+    matches: number,
+    mismatches: number,
+    missing: number
+  }
+}
 ```
 
-Isso elimina completamente o problema de serializacao JSONB porque o JSON preserva os tipos nativamente.
+**Botao "Validar com Atlas" no resultado da importacao:**
 
-**ImportCompanyDataModal - Suporte dual:**
+Apos o relatorio de importacao, exibir um botao que:
+1. Chama `validate-import` com os dados originais
+2. Se houver discrepancias, mostra um resumo e oferece enviar para o Atlas
+3. O Atlas recebe as discrepancias e sugere correcoes automaticas via `[ATLAS_PLAN]`
+
+**Null safety - padrao a usar em todos os componentes:**
 
 ```text
-// Aceitar .json e .xlsx
-accept=".json,.xlsx"
+// Antes (crash quando null):
+const monthlyTargets = currentKeyResult.monthly_targets as Record<string, number> || {};
 
-// Se .json:
-//   - JSON.parse do conteudo do arquivo
-//   - Usar data.data (ou data diretamente) como tables
-//   - Enviar para edge function
-
-// Se .xlsx:
-//   - Manter fluxo atual com XLSX.read
-//   - Usar { raw: true } em sheet_to_json para preservar strings
+// Depois (seguro contra null):
+const monthlyTargets = (currentKeyResult.monthly_targets ?? {}) as Record<string, number>;
 ```
-
-**Correcao do sheet_to_json:**
-
-```text
-// Antes:
-const rows = XLSX.utils.sheet_to_json(sheet);
-
-// Depois:
-const rows = XLSX.utils.sheet_to_json(sheet, { raw: true, defval: null });
-```
-
-A opcao `raw: true` retorna valores brutos sem coercao de tipo, preservando strings JSON como strings.
 
 ### Arquivos Modificados
 
 | Arquivo | Alteracao |
 |---|---|
-| `src/components/admin-v2/pages/companies/modals/ExportCompanyDataCard.tsx` | Exportar como JSON em vez de XLSX |
-| `src/components/admin-v2/pages/companies/modals/ImportCompanyDataModal.tsx` | Aceitar JSON e XLSX, usar raw:true no XLSX |
+| `supabase/functions/import-company-data/index.ts` | Adicionar debug logging para campos JSONB e auto-correcao pos-insert |
+| `supabase/functions/validate-import/index.ts` | **NOVO** - Edge function de validacao comparativa |
+| `src/components/admin-v2/pages/companies/modals/ImportCompanyDataModal.tsx` | Adicionar botao "Validar com Atlas" no resultado |
+| `src/components/strategic-map/KROverviewModal.tsx` | Null safety para monthly_targets/monthly_actual |
+| `src/components/dashboard/DashboardHome.tsx` | Null safety para monthly_targets/monthly_actual |
+| `src/hooks/useRumoCalculations.tsx` | Null safety para monthly_targets/monthly_actual |
+| `src/hooks/useStrategicMap.tsx` | Null safety para monthly_targets/monthly_actual |
+| `src/hooks/useKRMetrics.tsx` | Null safety para monthly_targets/monthly_actual |
+| `src/components/strategic-map/KRUpdateValuesModal.tsx` | Null safety para monthly_targets/monthly_actual |
+| `src/components/strategic-map/KREditModal.tsx` | Null safety para monthly_targets/monthly_actual |
+| `src/lib/krHelpers.ts` | Null safety para monthly_targets/monthly_actual |
+| `supabase/config.toml` | Registrar nova funcao validate-import |
 
-### Impacto
+### Sequencia de Implementacao
 
-- Novas exportacoes geram arquivos JSON (100% fidelidade dos dados)
-- Importacoes de arquivos JSON funcionam sem perda de dados
-- Importacoes de arquivos XLSX antigos continuam funcionando (com a correcao do raw:true)
-- Nenhuma alteracao na Edge Function necessaria
+1. Corrigir null safety em todos os componentes (resolve o crash imediato)
+2. Adicionar debug logging na edge function de import
+3. Criar edge function `validate-import`
+4. Integrar botao de validacao no modal de importacao
+5. Deploy e teste
