@@ -35,6 +35,8 @@ import {
   Replace,
   Clock,
   SkipForward,
+  Bot,
+  Search,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -137,6 +139,8 @@ export function ImportCompanyDataModal({
   const [progressMessage, setProgressMessage] = useState("");
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [progressLogs, setProgressLogs] = useState<string[]>([]);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationResult, setValidationResult] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetState = useCallback(() => {
@@ -149,6 +153,8 @@ export function ImportCompanyDataModal({
     setProgressMessage("");
     setImportResult(null);
     setProgressLogs([]);
+    setIsValidating(false);
+    setValidationResult(null);
   }, []);
 
   const addLog = (msg: string) => {
@@ -688,6 +694,96 @@ export function ImportCompanyDataModal({
             </Accordion>
           )}
         </div>
+
+        {/* Atlas Validation */}
+        {parsedData && !validationResult && (
+          <div className="pt-2">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                setIsValidating(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke("validate-import", {
+                    body: {
+                      company_id: companyId,
+                      source_data: parsedData.tables,
+                    },
+                  });
+                  if (error) throw error;
+                  setValidationResult(data);
+                  if (data?.valid) {
+                    toast.success("Validação concluída: todos os dados estão corretos!");
+                  } else {
+                    toast.warning(`Validação encontrou ${data?.summary?.mismatches || 0} discrepâncias e ${data?.summary?.missing || 0} registros ausentes.`);
+                  }
+                } catch (err: any) {
+                  console.error("Validation error:", err);
+                  toast.error("Erro ao validar importação: " + (err.message || "Erro desconhecido"));
+                } finally {
+                  setIsValidating(false);
+                }
+              }}
+              disabled={isValidating}
+              className="w-full"
+            >
+              {isValidating ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Search className="h-4 w-4 mr-2" />
+              )}
+              {isValidating ? "Validando dados..." : "Validar Importação com Atlas"}
+            </Button>
+          </div>
+        )}
+
+        {/* Validation Results */}
+        {validationResult && (
+          <div className={`p-3 rounded-lg border ${validationResult.valid ? "border-cofound-green/30 bg-cofound-green/5" : "border-amber-500/30 bg-amber-500/5"}`}>
+            <div className="flex items-center gap-2 mb-2">
+              {validationResult.valid ? (
+                <CheckCircle2 className="h-4 w-4 text-cofound-green" />
+              ) : (
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+              )}
+              <span className="text-sm font-medium">
+                {validationResult.valid ? "Dados validados com sucesso" : "Discrepâncias encontradas"}
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground space-y-0.5">
+              <p>Campos verificados: {validationResult.summary?.total_fields_checked || 0}</p>
+              <p>Correspondências: {validationResult.summary?.matches || 0}</p>
+              {validationResult.summary?.mismatches > 0 && (
+                <p className="text-amber-600">Divergências: {validationResult.summary.mismatches}</p>
+              )}
+              {validationResult.summary?.missing > 0 && (
+                <p className="text-destructive">Ausentes: {validationResult.summary.missing}</p>
+              )}
+            </div>
+            {validationResult.discrepancies?.length > 0 && (
+              <Accordion type="single" collapsible className="mt-2">
+                <AccordionItem value="discrepancies" className="border-none">
+                  <AccordionTrigger className="py-1 hover:no-underline">
+                    <span className="text-xs text-muted-foreground">
+                      Ver {validationResult.discrepancies.length} discrepâncias
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {validationResult.discrepancies.slice(0, 20).map((d: any, i: number) => (
+                        <div key={i} className="text-xs p-1.5 rounded bg-muted/50 font-mono">
+                          <span className="text-muted-foreground">{TABLE_LABELS[d.table] || d.table}</span>
+                          <span className="mx-1">→</span>
+                          <span className="font-medium">{d.field}</span>
+                          <span className="mx-1 text-amber-600">({d.status})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
+          </div>
+        )}
 
         <div className="pt-4">
           <Button variant="cofound" onClick={handleClose} className="w-full">

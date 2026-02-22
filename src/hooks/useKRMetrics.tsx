@@ -106,8 +106,8 @@ export const useKRMetrics = (
 
     // Helper function to calculate metrics for a set of months
     const calculateMetricsForMonths = (monthKeys: string[]): { target: number | null; actual: number | null; percentage: number } => {
-      const monthlyTargets = (keyResult.monthly_targets as Record<string, number | null>) || {};
-      const monthlyActual = (keyResult.monthly_actual as Record<string, number | null>) || {};
+      const monthlyTargets = ((keyResult.monthly_targets ?? {}) as Record<string, number | null>);
+      const monthlyActual = ((keyResult.monthly_actual ?? {}) as Record<string, number | null>);
       const aggregationType = keyResult.aggregation_type || 'sum';
       
       // Verificar se há ALGUM valor de actual nos meses (não undefined, não null)
@@ -345,8 +345,8 @@ export const useKRMetrics = (
     // If specific month is provided, calculate metrics for that month
     if (options?.selectedMonth && options?.selectedYear) {
       const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
-      const monthlyTargets = (keyResult.monthly_targets as Record<string, number | null>) || {};
-      const monthlyActual = (keyResult.monthly_actual as Record<string, number | null>) || {};
+      const monthlyTargets = ((keyResult.monthly_targets ?? {}) as Record<string, number | null>);
+      const monthlyActual = ((keyResult.monthly_actual ?? {}) as Record<string, number | null>);
       
       // Preservar null se a chave não existe ou é null/undefined
       const rawTarget = monthlyTargets[monthKey];

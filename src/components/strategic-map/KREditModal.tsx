@@ -339,7 +339,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
       
       // Initialize period targets if frequency is not monthly
       if (isFrequencyPeriodBased(krFrequency)) {
-        const existingTargets = (keyResult.monthly_targets as Record<string, number>) || {};
+        const existingTargets = ((keyResult.monthly_targets ?? {}) as Record<string, number>);
         setPeriodTargets(monthlyTargetsToPeriod(existingTargets, krFrequency, selectedYear));
       }
       
@@ -353,7 +353,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
       // Filtrar monthly_targets para o ano selecionado
       const filteredTargets: Record<string, number> = {};
       if (keyResult.monthly_targets) {
-        Object.entries(keyResult.monthly_targets as Record<string, number>).forEach(([key, value]) => {
+        Object.entries((keyResult.monthly_targets ?? {}) as Record<string, number>).forEach(([key, value]) => {
           if (key.startsWith(`${selectedYear}-`)) {
             filteredTargets[key] = value;
           }
@@ -367,7 +367,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
   // Update period targets when frequency or year changes
   useEffect(() => {
     if (open && keyResult && isFrequencyPeriodBased(basicInfo.frequency)) {
-      const existingTargets = (keyResult.monthly_targets as Record<string, number>) || {};
+      const existingTargets = ((keyResult.monthly_targets ?? {}) as Record<string, number>);
       setPeriodTargets(monthlyTargetsToPeriod(existingTargets, basicInfo.frequency, selectedYear));
     }
   }, [open, selectedYear, basicInfo.frequency, keyResult]);
@@ -397,7 +397,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
     
     try {
       // Merge dos dados existentes com os novos dados do ano selecionado
-      const existingMonthlyTargets = (keyResult.monthly_targets as Record<string, number>) || {};
+      const existingMonthlyTargets = ((keyResult.monthly_targets ?? {}) as Record<string, number>);
       
       let finalMonthlyTargets: Record<string, number>;
       let yearlyTarget: number;

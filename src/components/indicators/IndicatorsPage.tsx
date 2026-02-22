@@ -211,8 +211,8 @@ export const IndicatorsPage: React.FC = () => {
     const resolved = new Set<string>();
     keyResults.forEach(kr => {
       if (kr.variation_threshold == null) return;
-      const targets = (kr.monthly_targets as Record<string, number>) || {};
-      const actuals = (kr.monthly_actual as Record<string, number>) || {};
+      const targets = ((kr.monthly_targets ?? {}) as Record<string, number>);
+      const actuals = ((kr.monthly_actual ?? {}) as Record<string, number>);
       const coveredMonths = fcasByKR[kr.id] || [];
       const frequency = (kr.frequency || 'monthly') as KRFrequency;
       const isPeriodBased = isFrequencyPeriodBased(frequency);

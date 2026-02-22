@@ -136,8 +136,8 @@ export const getKRPercentageForPeriod = (
   }
 ): number => {
   let percentage = 0;
-  const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-  const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+  const monthlyTargets = ((kr.monthly_targets ?? {}) as Record<string, number>);
+  const monthlyActual = ((kr.monthly_actual ?? {}) as Record<string, number>);
   
   switch (period) {
     case 'quarterly':

@@ -47,8 +47,8 @@ export const useRumoCalculations = (
       if (periodType === 'monthly') {
         // Se mês customizado foi fornecido, recalcular
         if (options?.selectedMonth && options?.selectedYear) {
-          const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-          const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+          const monthlyTargets = ((kr.monthly_targets ?? {}) as Record<string, number>);
+          const monthlyActual = ((kr.monthly_actual ?? {}) as Record<string, number>);
           
           const monthTarget = monthlyTargets[monthKey] || 0;
           const monthActual = monthlyActual[monthKey] || 0;
@@ -73,8 +73,8 @@ export const useRumoCalculations = (
           monthKeys.push(`${year}-${m.toString().padStart(2, '0')}`);
         }
         
-        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+        const monthlyTargets = ((kr.monthly_targets ?? {}) as Record<string, number>);
+        const monthlyActual = ((kr.monthly_actual ?? {}) as Record<string, number>);
         
         let totalTarget = 0;
         let totalActual = 0;
@@ -114,8 +114,8 @@ export const useRumoCalculations = (
         const year = options?.selectedQuarterYear ?? now.getFullYear();
         
         // Calcular dinamicamente usando dados mensais
-        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+        const monthlyTargets = ((kr.monthly_targets ?? {}) as Record<string, number>);
+        const monthlyActual = ((kr.monthly_actual ?? {}) as Record<string, number>);
         
         const quarterMonths = {
           1: [1, 2, 3],
@@ -163,8 +163,8 @@ export const useRumoCalculations = (
         const semester = options?.selectedSemester || 1;
         const year = options?.selectedSemesterYear ?? now.getFullYear();
         
-        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+        const monthlyTargets = ((kr.monthly_targets ?? {}) as Record<string, number>);
+        const monthlyActual = ((kr.monthly_actual ?? {}) as Record<string, number>);
         
         const semesterMonths = semester === 1 ? [1, 2, 3, 4, 5, 6] : [7, 8, 9, 10, 11, 12];
         const monthKeys = semesterMonths.map(m => `${year}-${m.toString().padStart(2, '0')}`);
@@ -200,8 +200,8 @@ export const useRumoCalculations = (
         const bimonth = options?.selectedBimonth || 1;
         const year = options?.selectedBimonthYear ?? now.getFullYear();
         
-        const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-        const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+        const monthlyTargets = ((kr.monthly_targets ?? {}) as Record<string, number>);
+        const monthlyActual = ((kr.monthly_actual ?? {}) as Record<string, number>);
         
         const bimonthMonths: Record<number, number[]> = {
           1: [1, 2], 2: [3, 4], 3: [5, 6],

@@ -56,8 +56,8 @@ const calculateObjectiveProgress = (
     
     // Helper to compute percentage from aggregated targets/actuals
     const computeFromMonthKeys = (monthKeys: string[]) => {
-      const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-      const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+      const monthlyTargets = ((kr.monthly_targets ?? {}) as Record<string, number>);
+      const monthlyActual = ((kr.monthly_actual ?? {}) as Record<string, number>);
       
       let totalTarget = 0;
       let totalActual = 0;
@@ -127,8 +127,8 @@ const calculateObjectiveProgress = (
       case 'monthly': {
         if (options?.selectedMonth && options?.selectedYear) {
           const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
-          const monthlyTargets = (kr.monthly_targets as Record<string, number>) || {};
-          const monthlyActual = (kr.monthly_actual as Record<string, number>) || {};
+          const monthlyTargets = ((kr.monthly_targets ?? {}) as Record<string, number>);
+          const monthlyActual = ((kr.monthly_actual ?? {}) as Record<string, number>);
           const monthTarget = monthlyTargets[monthKey] || 0;
           const monthActual = monthlyActual[monthKey] || 0;
           if (kr.target_direction === 'minimize') {
