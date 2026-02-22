@@ -500,10 +500,23 @@ serve(async (req) => {
           if (!resolvedKrId && d.kr_title) {
             const { data: foundKR } = await supabase
               .from('key_results')
-              .select('id')
+              .select('id, objective_id')
               .ilike('title', `%${d.kr_title}%`)
               .limit(1)
               .maybeSingle();
+            // Validate KR belongs to this company's plan
+            if (foundKR) {
+              const { data: objCheck } = await supabase
+                .from('strategic_objectives')
+                .select('id')
+                .eq('id', foundKR.objective_id)
+                .eq('plan_id', plan.id)
+                .maybeSingle();
+              if (!objCheck) {
+                results.push({ type: actionType, success: false, error: `KR "${d.kr_title}" não pertence a esta empresa.` });
+                continue;
+              }
+            }
             if (foundKR) resolvedKrId = foundKR.id;
           }
 
@@ -532,9 +545,13 @@ serve(async (req) => {
             .update(updateData)
             .eq('id', resolvedKrId)
             .select('id, title')
-            .single();
+            .maybeSingle();
 
           if (updateErr) throw updateErr;
+          if (!updated) {
+            results.push({ type: actionType, success: false, error: `KR "${d.kr_title || resolvedKrId}" não encontrado ou sem permissão.` });
+            continue;
+          }
           results.push({ type: actionType, success: true, id: updated.id, title: updated.title });
 
         // ===================== UPDATE INITIATIVE =====================
@@ -941,6 +958,75 @@ serve(async (req) => {
           } catch (importErr: any) {
             results.push({ type: actionType, success: false, error: `Erro na importação: ${importErr.message}` });
           }
+
+        // ===================== CREATE FCA =====================
+        } else if (actionType === 'create_fca') {
+          const d = action.data;
+          const krId = d.kr_id || d.key_result_id;
+          const krTitle = d.kr_title;
+
+          if (!krId && !krTitle) {
+            results.push({ type: actionType, success: false, error: 'ID ou título do KR não informado para criar FCA.' });
+            continue;
+          }
+
+          let resolvedKrId = krId;
+          if (!resolvedKrId && krTitle) {
+            const { data: foundKR } = await supabase
+              .from('key_results')
+              .select('id, objective_id')
+              .ilike('title', `%${krTitle}%`)
+              .limit(1)
+              .maybeSingle();
+            if (foundKR) {
+              // Validate KR belongs to this company
+              const { data: objCheck } = await supabase
+                .from('strategic_objectives')
+                .select('id')
+                .eq('id', foundKR.objective_id)
+                .eq('plan_id', plan.id)
+                .maybeSingle();
+              if (objCheck) {
+                resolvedKrId = foundKR.id;
+              }
+            }
+          }
+
+          if (!resolvedKrId) {
+            results.push({ type: actionType, success: false, error: `KR "${krTitle}" não encontrado.` });
+            continue;
+          }
+
+          if (!d.title || !d.fact || !d.cause) {
+            results.push({ type: actionType, success: false, error: 'Campos obrigatórios: title, fact, cause.' });
+            continue;
+          }
+
+          const fcaInsert: any = {
+            key_result_id: resolvedKrId,
+            title: d.title,
+            fact: d.fact,
+            cause: d.cause,
+            created_by: user.id,
+            priority: d.priority || 'medium',
+            status: d.status || 'active',
+          };
+          if (d.description) fcaInsert.description = d.description;
+          if (d.linked_update_month) fcaInsert.linked_update_month = d.linked_update_month;
+          if (d.linked_update_value !== undefined) fcaInsert.linked_update_value = d.linked_update_value;
+
+          const { data: fca, error: fcaErr } = await supabase
+            .from('kr_fca')
+            .insert(fcaInsert)
+            .select('id, title')
+            .maybeSingle();
+
+          if (fcaErr) throw fcaErr;
+          if (!fca) {
+            results.push({ type: actionType, success: false, error: 'Erro ao criar FCA (sem retorno).' });
+            continue;
+          }
+          results.push({ type: actionType, success: true, id: fca.id, title: fca.title });
 
         } else {
           results.push({ type: actionType, success: false, error: `Tipo de ação desconhecido: ${actionType}` });
