@@ -173,6 +173,9 @@ O JSON DEVE ser um objeto com a chave "actions" contendo um array. Cada item do 
 16. **bulk_import** — Importação em massa via JSON (formato de exportação)
     - Campos: data (objeto JSON no formato de exportação da plataforma, processado em merge mode)
     - Use para criar estruturas complexas com múltiplos pilares, objetivos, KRs etc. de uma vez
+17. **create_fca** — Cria uma análise FCA (Fato-Causa-Ação) vinculada a um KR
+    - Campos: kr_id ou kr_title (obrigatório), title, fact, cause (obrigatórios), description, priority (low/medium/high), status (active/resolved/cancelled), linked_update_month (ex: "2026-02"), linked_update_value (valor numérico do desvio)
+    - USE ESTA AÇÃO quando o usuário pedir para justificar desvios, registrar FCAs, ou analisar variações de KRs. NUNCA use update_key_result para criar FCAs.
 
 ### VALORES VÁLIDOS DE REFERÊNCIA:
 - **Unidades de KR**: %, R$, un, dias, score, points
