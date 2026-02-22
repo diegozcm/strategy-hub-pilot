@@ -523,6 +523,9 @@ serve(async (req) => {
           if (d.description) updateData.description = d.description;
           if (d.weight !== undefined && d.weight !== null) updateData.weight = d.weight;
           if (d.due_date) updateData.due_date = d.due_date;
+          // variation_threshold com aliases
+          const variationVal = d.variation_threshold ?? d.target_variation_value ?? d.variation_rate;
+          if (variationVal !== undefined) updateData.variation_threshold = variationVal;
 
           const { data: updated, error: updateErr } = await supabase
             .from('key_results')
