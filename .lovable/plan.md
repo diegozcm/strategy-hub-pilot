@@ -1,89 +1,87 @@
 
 
-## Correcao: Atlas nao busca dados de SWOT/Golden Circle e mistura respostas
+## Redesign do Input do Atlas Chat — Estilo Lovable
 
-### Problema
-Quando o usuario pergunta "o que tem salvo no SWOT e Golden Circle?", o Atlas:
-1. Inventa os dados porque nao tem acesso real a essas tabelas no contexto
-2. Mistura a resposta com planos de FCA que ninguem pediu
+### O que muda
 
-### Causa raiz
+O input atual e uma linha unica com botoes ao lado. O novo layout sera inspirado no Lovable:
 
-**1. Dados ausentes no contexto**: O bloco de fetch de contexto (linhas 422-508 do `ai-chat/index.ts`) busca `strategic_objectives`, `key_results`, `governance_meetings`, etc., mas NUNCA consulta as tabelas `golden_circle`, `swot_analysis` ou `vision_alignment`. O Atlas responde "de memoria" (alucinacao).
-
-**2. Prompt excessivamente agressivo para acoes**: O sistema nao instrui o Atlas a diferenciar perguntas de consulta ("o que tem salvo?") de pedidos de execucao ("crie uma FCA"). Resultado: o Atlas gera `[ATLAS_PLAN]` mesmo quando so precisa ler e exibir dados.
-
-### Correcoes
-
-**Arquivo: `supabase/functions/ai-chat/index.ts`**
-
-**Correcao 1 — Buscar dados das ferramentas estrategicas**
-
-No bloco de `Promise.all` (linha 426), adicionar 3 novas queries:
-
-```
-goldenCircleResult:
-  supabase.from('golden_circle')
-    .select('why_question, how_question, what_question, updated_at')
-    .eq('company_id', company_id)
-    .maybeSingle()
-
-swotResult:
-  supabase.from('swot_analysis')
-    .select('strengths, weaknesses, opportunities, threats, updated_at')
-    .eq('company_id', company_id)
-    .maybeSingle()
-
-visionResult:
-  supabase.from('vision_alignment')
-    .select('shared_objectives, shared_commitments, shared_resources, shared_risks, updated_at')
-    .eq('company_id', company_id)
-    .maybeSingle()
+**Estrutura do novo input:**
+```text
++------------------------------------------+
+|  Textarea auto-expansivel (1-5 linhas)   |
++------------------------------------------+
+| [+]  [Plano]              [Mic] [Enviar] |
++------------------------------------------+
 ```
 
-**Correcao 2 — Incluir dados no contexto enviado ao Atlas**
+### Detalhes
 
-Apos o bloco de governanca (linha 504), adicionar secoes para cada ferramenta:
+**1. Textarea auto-expansivel**
+- Comeca com 1 linha (~40px)
+- Expande automaticamente conforme o usuario digita, ate no maximo 5 linhas (~120px)
+- Apos 5 linhas, o texto rola internamente (overflow-y: auto)
+- Enter envia, Shift+Enter quebra linha
+- Mantém suporte a paste de imagens
 
-```
-Se golden_circle existir:
-  "Ferramentas Estrategicas - Golden Circle:
-   Why: [why_question]
-   How: [how_question]
-   What: [what_question]
-   Atualizado em: [updated_at]"
+**2. Barra de acoes abaixo**
+- Esquerda: botao "+" (para futuro envio de midia/arquivos — por enquanto abre toast "Em breve")
+- Esquerda: botao "Plano" (toggle, igual ao atual)
+- Direita: botao Microfone + botao Enviar
 
-Se swot_analysis existir:
-  "Analise SWOT:
-   Forcas: [strengths]
-   Fraquezas: [weaknesses]
-   Oportunidades: [opportunities]
-   Ameacas: [threats]
-   Atualizado em: [updated_at]"
+**3. Novo comportamento do Microfone (gravar + transcrever)**
+- Ao clicar no mic, inicia gravacao real de audio via `MediaRecorder` (nao mais SpeechRecognition live)
+- Durante gravacao: exibe barras animadas de waveform dentro do textarea (estilo Lovable) + timer
+- Botao de mic vira botao de parar (quadrado)
+- Ao parar: exibe "Transcrevendo..." com spinner no textarea
+- O audio gravado e enviado a uma nova Edge Function `transcribe-audio` que usa OpenAI Whisper
+- O texto transcrito e inserido no textarea para o usuario revisar/editar antes de enviar
 
-Se vision_alignment existir:
-  "Alinhamento de Visao:
-   Objetivos: [shared_objectives]
-   Compromissos: [shared_commitments]
-   Recursos: [shared_resources]
-   Riscos: [shared_risks]
-   Atualizado em: [updated_at]"
-```
+**4. Nova Edge Function: `transcribe-audio`**
+- Recebe audio (base64 ou FormData)
+- Envia para OpenAI Whisper API (`/v1/audio/transcriptions`) com model `whisper-1` e language `pt`
+- Retorna o texto transcrito
 
-**Correcao 3 — Instrucao para diferenciar leitura vs execucao**
+### Alteracoes tecnicas
 
-Adicionar regra no system prompt (apos a secao "Analises de dados e metricas", linha 268):
+**Arquivo 1: `src/components/ai/FloatingAIChat.tsx`**
 
-```
-### Consultas sobre dados salvos (SWOT, Golden Circle, Visao, etc.)
--> Quando o usuario perguntar "o que tem salvo?", "me mostra o SWOT", "qual o Golden Circle?",
-   responda SOMENTE com os dados do contexto. NAO gere [ATLAS_PLAN].
-   NAO misture com acoes de FCA ou outros planos nao solicitados.
-   Responda APENAS o que foi perguntado.
-```
+Na area de input (linhas 876-967):
+- Substituir `<input>` por `<textarea>` com:
+  - `rows={1}` inicial
+  - `onInput` handler que calcula `scrollHeight` e ajusta `style.height` dinamicamente
+  - `max-height` de ~120px (5 linhas), com `overflow-y: auto` apos isso
+  - `resize: none` para desabilitar resize manual
+- Mover botoes (Plan, Mic, Send) para uma div abaixo do textarea
+- Adicionar botao "+" a esquerda dos botoes de acao
+- Substituir logica de `toggleRecording`:
+  - Usar `MediaRecorder` API em vez de `SpeechRecognition`
+  - Armazenar chunks de audio em ref
+  - Ao parar, converter para blob, enviar para edge function
+- Adicionar estado `isTranscribing` para mostrar "Transcrevendo..." com spinner
+- Adicionar animacao de barras de waveform durante gravacao (CSS puro com barras que oscilam)
 
-**Deploy**: Redeployar `ai-chat`.
+**Arquivo 2: `supabase/functions/transcribe-audio/index.ts`** (novo)
+- Cors headers padrao
+- Recebe body JSON com `{ audio: string }` (base64)
+- Converte base64 para blob
+- Envia para `https://api.openai.com/v1/audio/transcriptions` como FormData
+- Retorna `{ text: string }`
 
-### Resultado Esperado
+### Visual durante gravacao
 
-Quando o usuario perguntar "o que tem salvo no SWOT e Golden Circle?", o Atlas respondera APENAS com os dados reais do banco, sem inventar valores e sem propor planos de execucao nao solicitados.
+Quando o mic esta ativo:
+- O textarea mostra barras verticais animadas (8-12 barras com alturas aleatorias oscilando via CSS animation)
+- Texto "Gravando..." abaixo das barras
+- Fundo escuro com leve brilho ColorOrb
+
+Quando para a gravacao:
+- Barras somem
+- Aparece "Transcrevendo..." com um spinner circular
+- Apos transcricao, o texto aparece no textarea normalmente
+
+### Sequencia de implementacao
+
+1. Criar edge function `transcribe-audio`
+2. Deploy da edge function
+3. Redesenhar o input area no `FloatingAIChat.tsx` (textarea + layout de botoes + logica de gravacao/transcricao)
