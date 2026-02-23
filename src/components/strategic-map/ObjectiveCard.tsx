@@ -329,6 +329,20 @@ export const ObjectiveCard = ({
 
   const handleDeleteObjective = async () => {
     try {
+      // Cascade: delete all KRs of this objective first
+      const objectiveKRs = keyResults.filter(kr => kr.objective_id === objective.id);
+      if (objectiveKRs.length > 0) {
+        const krIds = objectiveKRs.map(kr => kr.id);
+        // Delete KR related data
+        await supabase.from('kr_fca').delete().in('key_result_id', krIds);
+        await supabase.from('kr_initiatives').delete().in('key_result_id', krIds);
+        await supabase.from('key_result_values').delete().in('key_result_id', krIds);
+        await supabase.from('kr_monthly_actions').delete().in('key_result_id', krIds);
+        // Delete KRs
+        const { error: krError } = await supabase.from('key_results').delete().in('id', krIds);
+        if (krError) throw krError;
+      }
+
       const { error } = await supabase
         .from('strategic_objectives')
         .delete()

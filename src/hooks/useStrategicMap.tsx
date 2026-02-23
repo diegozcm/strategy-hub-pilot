@@ -730,35 +730,49 @@ export const useStrategicMap = () => {
     }
   };
 
-  // Delete pillar
+  // Delete pillar (cascade: KR data → KRs → objectives → pillar)
   const deletePillar = async (id: string) => {
-    // Check if pillar has objectives
-    const pillarObjectives = objectives.filter(obj => obj.pillar_id === id);
-    if (pillarObjectives.length > 0) {
-      toast({
-        title: "Erro",
-        description: "Não é possível excluir pilar com objetivos vinculados",
-        variant: "destructive",
-      });
-      return false;
-    }
-
     try {
+      const pillarObjectives = objectives.filter(obj => obj.pillar_id === id);
+      
+      if (pillarObjectives.length > 0) {
+        const objectiveIds = pillarObjectives.map(obj => obj.id);
+        
+        // Fetch all KRs for these objectives
+        const { data: krs } = await supabase
+          .from('key_results')
+          .select('id')
+          .in('objective_id', objectiveIds);
+        
+        if (krs && krs.length > 0) {
+          const krIds = krs.map(kr => kr.id);
+          // Delete KR related data
+          await supabase.from('kr_fca').delete().in('key_result_id', krIds);
+          await supabase.from('kr_initiatives').delete().in('key_result_id', krIds);
+          await supabase.from('key_result_values').delete().in('key_result_id', krIds);
+          await supabase.from('kr_monthly_actions').delete().in('key_result_id', krIds);
+          // Delete KRs
+          const { error: krError } = await supabase.from('key_results').delete().in('id', krIds);
+          if (krError) throw krError;
+        }
+        
+        // Delete objectives
+        const { error: objError } = await supabase.from('strategic_objectives').delete().in('id', objectiveIds);
+        if (objError) throw objError;
+      }
+
+      // Delete pillar
       const { error } = await supabase
         .from('strategic_pillars')
         .delete()
         .eq('id', id);
 
-      if (error) {
-        toast({
-          title: "Erro",
-          description: "Erro ao excluir pilar estratégico",
-          variant: "destructive",
-        });
-        return false;
-      }
+      if (error) throw error;
 
       setPillars(prev => prev.filter(pillar => pillar.id !== id));
+      setObjectives(prev => prev.filter(obj => obj.pillar_id !== id));
+      setKeyResults(prev => prev.filter(kr => !objectives.some(obj => obj.pillar_id === id && obj.id === kr.objective_id)));
+      
       toast({
         title: "Sucesso",
         description: "Pilar estratégico excluído com sucesso",
@@ -766,6 +780,11 @@ export const useStrategicMap = () => {
       return true;
     } catch (error) {
       console.error('Error deleting pillar:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir pilar estratégico",
+        variant: "destructive",
+      });
       return false;
     }
   };

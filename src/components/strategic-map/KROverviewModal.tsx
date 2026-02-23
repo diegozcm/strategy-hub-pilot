@@ -15,8 +15,9 @@ import { getKRQuarters } from '@/lib/krValidityFilter';
 import { SmartPeriodSelector } from '@/components/ui/SmartPeriodSelector';
 import { type KRFrequency } from '@/lib/krFrequencyHelpers';
 
-import { Edit, Calendar, User, Target, Trash2, FileEdit, ListChecks, FileBarChart, Rocket, Settings2 } from 'lucide-react';
+import { Edit, Calendar, User, Target, Trash2, FileEdit, ListChecks, FileBarChart, Rocket, Settings2, AlertTriangle } from 'lucide-react';
 import { KRPropertiesPopover } from './KRPropertiesPopover';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useKRInitiatives } from '@/hooks/useKRInitiatives';
 import { usePeriodFilter } from '@/hooks/usePeriodFilter';
@@ -70,6 +71,7 @@ export const KROverviewModal = ({
   const [showInitiativesModal, setShowInitiativesModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUpdateValuesModal, setShowUpdateValuesModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [currentKeyResult, setCurrentKeyResult] = useState<KeyResult | null>(keyResult);
   
   const { toast } = useToast();
@@ -338,6 +340,7 @@ export const KROverviewModal = ({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[1400px] w-[calc(100vw-2rem)] p-0">
         <DialogHeader className="sr-only">
@@ -479,7 +482,7 @@ export const KROverviewModal = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={onDelete}
+                  onClick={() => setShowDeleteConfirm(true)}
                   className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50 hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
@@ -789,5 +792,36 @@ export const KROverviewModal = ({
         />
       )}
     </Dialog>
+
+    {/* Delete confirmation dialog */}
+    <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-6 w-6 text-destructive" />
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+          </div>
+          <AlertDialogDescription>
+            <p>
+              Tem certeza que deseja excluir o resultado-chave "<strong>{currentKeyResult?.title}</strong>"?
+            </p>
+            <p className="text-sm mt-2">Esta ação não pode ser desfeita.</p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              setShowDeleteConfirm(false);
+              onDelete();
+            }}
+            className="bg-destructive hover:bg-destructive/90"
+          >
+            Excluir KR
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
