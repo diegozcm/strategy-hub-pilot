@@ -1304,7 +1304,6 @@ serve(async (req) => {
             status: d.status || 'todo',
             priority: d.priority || 'medium',
             position: nextPosition,
-            created_by: user.id,
           };
           if (d.description) taskData.description = d.description;
           if (d.due_date) taskData.due_date = d.due_date;
