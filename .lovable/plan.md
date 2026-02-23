@@ -1,37 +1,39 @@
 
-
-## Correcao: Coluna `created_by` inexistente em `project_tasks`
+## Correcao: Validacao de status em create_task e update_task
 
 ### Problema
 
-O handler `create_task` no `ai-agent-execute` tenta inserir `created_by: user.id` na tabela `project_tasks`, mas essa coluna nao existe na tabela. As colunas disponiveis sao: `id, project_id, title, description, assignee_id, due_date, status, priority, estimated_hours, actual_hours, created_at, updated_at, position`.
+O Atlas gerou uma task com `status: "on_hold"`, que viola o check constraint da tabela `project_tasks`. Os unicos status permitidos sao: `todo`, `in_progress`, `review`, `done`. Apesar do prompt ja listar os valores corretos, a IA pode gerar valores invalidos como `on_hold`, `completed`, `pending`, etc.
 
 ### Solucao
 
-Remover o campo `created_by` do objeto de insercao de tasks no arquivo `supabase/functions/ai-agent-execute/index.ts` (linha ~1307). Opcionalmente, usar `assignee_id: user.id` para registrar quem criou a task, ja que essa coluna existe.
+Adicionar validacao no executor para garantir que o status sempre seja um valor valido, independentemente do que a IA gere.
 
-### Alteracao
+### Alteracoes
 
-**Arquivo: `supabase/functions/ai-agent-execute/index.ts`**
+**Arquivo 1: `supabase/functions/ai-agent-execute/index.ts`**
 
-Na secao do handler `create_task` (~linha 1305-1308), trocar:
+No handler `create_task` (~linha 1304), adicionar sanitizacao:
 
+```typescript
+const VALID_TASK_STATUSES = ['todo', 'in_progress', 'review', 'done'];
+const VALID_TASK_PRIORITIES = ['low', 'medium', 'high', 'critical'];
+
+// Sanitizar status
+const rawStatus = d.status || 'todo';
+const status = VALID_TASK_STATUSES.includes(rawStatus) ? rawStatus : 'todo';
+
+// Sanitizar priority
+const rawPriority = d.priority || 'medium';
+const priority = VALID_TASK_PRIORITIES.includes(rawPriority) ? rawPriority : 'medium';
 ```
-priority: d.priority || 'medium',
-position: nextPosition,
-created_by: user.id,
-```
 
-Por:
+Aplicar a mesma sanitizacao no handler `update_task` para os campos `status` e `priority` quando presentes.
 
-```
-priority: d.priority || 'medium',
-position: nextPosition,
-```
+**Arquivo 2: `supabase/functions/ai-chat/index.ts`**
 
-Isso remove a referencia a coluna inexistente. O `assignee_id` pode ser definido separadamente se o Atlas enviar essa informacao na acao.
+Reforcar no prompt do Atlas (na descricao da acao `create_task`) que os status validos sao ESTRITAMENTE `todo`, `in_progress`, `review` ou `done` — sem excecoes. Adicionar nota: "NUNCA use on_hold, pending, completed ou qualquer outro valor."
 
 ### Deploy
 
-Redeployar a edge function `ai-agent-execute` apos a correcao.
-
+Redeployar `ai-agent-execute` e `ai-chat`.
