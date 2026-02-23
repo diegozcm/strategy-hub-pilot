@@ -192,9 +192,9 @@ O JSON DEVE ser um objeto com a chave "actions" contendo um array. Cada item do 
 24. **update_vision_alignment** — Atualiza o Alinhamento de Visão
     - Campos: shared_objectives, shared_commitments, shared_resources, shared_risks
 25. **create_task** — Cria uma task em um projeto estratégico
-    - Campos: title (obrigatório), project_ref (índice no array) ou project_id ou project_name (obrigatório), description, status (todo/in_progress/review/done, default todo), priority (low/medium/high, default medium), due_date (YYYY-MM-DD), estimated_hours
+    - Campos: title (obrigatório), project_ref (índice no array) ou project_id ou project_name (obrigatório), description, status (ESTRITAMENTE: todo, in_progress, review ou done — NUNCA use on_hold, pending, completed ou qualquer outro valor), priority (low/medium/high/critical, default medium), due_date (YYYY-MM-DD), estimated_hours
 26. **update_task** — Atualiza uma task existente
-    - Campos: task_id ou task_title + project_name (obrigatório para identificar), title, description, status, priority, due_date, estimated_hours, actual_hours
+    - Campos: task_id ou task_title + project_name (obrigatório para identificar), title, description, status (ESTRITAMENTE: todo, in_progress, review ou done — NUNCA use on_hold, pending, completed ou qualquer outro valor), priority (low/medium/high/critical), due_date, estimated_hours, actual_hours
 27. **delete_task** — Remove uma task
     - Campos: task_id ou task_title + project_name (obrigatório para identificar)
 

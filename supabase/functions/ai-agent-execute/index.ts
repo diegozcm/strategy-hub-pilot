@@ -1298,11 +1298,18 @@ serve(async (req) => {
             .limit(1);
           const nextPosition = ((maxPosData?.[0]?.position ?? -1) + 1);
 
+          const VALID_TASK_STATUSES = ['todo', 'in_progress', 'review', 'done'];
+          const VALID_TASK_PRIORITIES = ['low', 'medium', 'high', 'critical'];
+          const rawStatus = d.status || 'todo';
+          const sanitizedStatus = VALID_TASK_STATUSES.includes(rawStatus) ? rawStatus : 'todo';
+          const rawPriority = d.priority || 'medium';
+          const sanitizedPriority = VALID_TASK_PRIORITIES.includes(rawPriority) ? rawPriority : 'medium';
+
           const taskData: any = {
             project_id: projectId,
             title: d.title,
-            status: d.status || 'todo',
-            priority: d.priority || 'medium',
+            status: sanitizedStatus,
+            priority: sanitizedPriority,
             position: nextPosition,
           };
           if (d.description) taskData.description = d.description;
@@ -1338,11 +1345,13 @@ serve(async (req) => {
             continue;
           }
 
+          const VALID_STATUSES_UPD = ['todo', 'in_progress', 'review', 'done'];
+          const VALID_PRIORITIES_UPD = ['low', 'medium', 'high', 'critical'];
           const updateData: any = {};
           if (d.title) updateData.title = d.title;
           if (d.description !== undefined) updateData.description = d.description;
-          if (d.status) updateData.status = d.status;
-          if (d.priority) updateData.priority = d.priority;
+          if (d.status) updateData.status = VALID_STATUSES_UPD.includes(d.status) ? d.status : 'todo';
+          if (d.priority) updateData.priority = VALID_PRIORITIES_UPD.includes(d.priority) ? d.priority : 'medium';
           if (d.due_date) updateData.due_date = d.due_date;
           if (d.estimated_hours !== undefined) updateData.estimated_hours = d.estimated_hours;
           if (d.actual_hours !== undefined) updateData.actual_hours = d.actual_hours;
