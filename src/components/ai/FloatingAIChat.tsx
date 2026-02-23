@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, History, Plus, Trash2, ArrowLeft, Check, XCircle, Mic, Square, RefreshCw, ThumbsUp, ThumbsDown, Navigation } from 'lucide-react';
+import { X, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, History, Plus, Trash2, ArrowLeft, Check, XCircle, Mic, Square, RefreshCw, ThumbsUp, ThumbsDown, Navigation, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -175,8 +174,13 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
   const [loadingSessions, setLoadingSessions] = useState(false);
   const [pastedImages, setPastedImages] = useState<string[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const [isPlanMode, setIsPlanMode] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -200,45 +204,90 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
     };
   }, [isOpen, onClose]);
 
-  const toggleRecording = useCallback(() => {
+  const toggleRecording = useCallback(async () => {
     if (isRecording) {
-      recognitionRef.current?.stop();
+      // Stop recording
+      mediaRecorderRef.current?.stop();
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
       setIsRecording(false);
+      setRecordingTime(0);
       return;
     }
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast({ title: 'Navegador não suporta reconhecimento de voz', description: 'Use Chrome ou Edge para esta funcionalidade.', variant: 'destructive' });
-      return;
-    }
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'pt-BR';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    let finalTranscript = '';
-    recognition.onresult = (event: any) => {
-      let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += transcript + ' ';
-        } else {
-          interim = transcript;
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
         }
-      }
-      setChatInput((finalTranscript + interim).trim());
-    };
-    recognition.onerror = (event: any) => {
-      console.error('Speech recognition error:', event.error);
-      setIsRecording(false);
-      if (event.error !== 'aborted') {
-        toast({ title: 'Erro no reconhecimento de voz', variant: 'destructive' });
-      }
-    };
-    recognition.onend = () => setIsRecording(false);
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsRecording(true);
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        
+        // Convert to base64 and send to edge function
+        setIsTranscribing(true);
+        try {
+          const reader = new FileReader();
+          const base64 = await new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(audioBlob);
+          });
+
+          const { data: { session: authSession } } = await supabase.auth.getSession();
+          const accessToken = authSession?.access_token;
+          if (!accessToken) throw new Error('No auth session');
+
+          const response = await fetch('https://pdpzxjlnaqwlyqoyoyhr.supabase.co/functions/v1/transcribe-audio', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkcHp4amxuYXF3bHlxb3lveWhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIyNTE1ODYsImV4cCI6MjA2NzgyNzU4Nn0.RUAqyDG5-eM35mH3QNFO3iuR_Wqe5q1tiJSHroH_upk',
+            },
+            body: JSON.stringify({ audio: base64 }),
+          });
+
+          const result = await response.json();
+          if (result.text) {
+            setChatInput(prev => prev ? `${prev} ${result.text}` : result.text);
+            // Auto-resize textarea after inserting text
+            setTimeout(() => {
+              if (textareaRef.current) {
+                textareaRef.current.style.height = 'auto';
+                textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+              }
+            }, 50);
+          } else {
+            toast({ title: 'Não foi possível transcrever o áudio', variant: 'destructive' });
+          }
+        } catch (error: any) {
+          console.error('Transcription error:', error);
+          toast({ title: 'Erro ao transcrever áudio', description: error.message, variant: 'destructive' });
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    } catch (error: any) {
+      console.error('Microphone error:', error);
+      toast({ title: 'Erro ao acessar microfone', description: 'Verifique as permissões do navegador.', variant: 'destructive' });
+    }
   }, [isRecording, toast]);
 
   const quickActions = [
@@ -577,6 +626,10 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
           0%, 60%, 100% { transform: translateY(0); }
           30% { transform: translateY(-4px); }
         }
+        @keyframes waveform-bar {
+          0%, 100% { height: 4px; }
+          50% { height: 20px; }
+        }
       `}</style>
       <motion.div
         ref={chatRef}
@@ -872,98 +925,137 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                   </div>
                 )}
 
-                {/* Input area */}
-                <div className="flex items-center gap-2 mt-3">
-                  <div 
-                    className="flex-1 relative"
-                  >
-                    <input
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
-                      onPaste={(e) => {
-                        const items = e.clipboardData?.items;
-                        if (!items) return;
-                        for (const item of Array.from(items)) {
-                          if (item.type.startsWith('image/')) {
+                {/* Input area - Lovable style */}
+                <div className="mt-3 rounded-xl border overflow-hidden" style={{ borderColor: 'rgba(255, 255, 255, 0.1)', background: 'rgba(255, 255, 255, 0.03)' }}>
+                  {/* Textarea / Recording / Transcribing area */}
+                  <div className="relative">
+                    {isRecording ? (
+                      <div className="flex flex-col items-center justify-center py-4 px-3" style={{ minHeight: '44px' }}>
+                        <div className="flex items-center gap-1 mb-1.5">
+                          {Array.from({ length: 10 }).map((_, i) => (
+                            <div
+                              key={i}
+                              className="w-1 rounded-full"
+                              style={{
+                                background: 'linear-gradient(to top, rgba(56, 182, 255, 0.6), rgba(100, 220, 180, 0.8))',
+                                animation: `waveform-bar 0.8s ease-in-out ${i * 0.08}s infinite`,
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs" style={{ color: '#888' }}>
+                          Gravando... {Math.floor(recordingTime / 60).toString().padStart(2, '0')}:{(recordingTime % 60).toString().padStart(2, '0')}
+                        </span>
+                      </div>
+                    ) : isTranscribing ? (
+                      <div className="flex items-center justify-center gap-2 py-4 px-3" style={{ minHeight: '44px' }}>
+                        <Loader2 className="h-4 w-4 animate-spin" style={{ color: 'rgba(56, 182, 255, 0.8)' }} />
+                        <span className="text-sm" style={{ color: '#888' }}>Transcrevendo...</span>
+                      </div>
+                    ) : (
+                      <textarea
+                        ref={textareaRef}
+                        value={chatInput}
+                        onChange={(e) => {
+                          setChatInput(e.target.value);
+                          // Auto-resize
+                          e.target.style.height = 'auto';
+                          e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
-                            if (pastedImages.length >= 5) {
-                              toast({ title: 'Limite de 5 imagens atingido', variant: 'destructive' });
+                            handleSendMessage();
+                          }
+                        }}
+                        onPaste={(e) => {
+                          const items = e.clipboardData?.items;
+                          if (!items) return;
+                          for (const item of Array.from(items)) {
+                            if (item.type.startsWith('image/')) {
+                              e.preventDefault();
+                              if (pastedImages.length >= 5) {
+                                toast({ title: 'Limite de 5 imagens atingido', variant: 'destructive' });
+                                return;
+                              }
+                              const file = item.getAsFile();
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = () => setPastedImages(prev => [...prev, reader.result as string]);
+                              reader.readAsDataURL(file);
                               return;
                             }
-                            const file = item.getAsFile();
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = () => setPastedImages(prev => [...prev, reader.result as string]);
-                            reader.readAsDataURL(file);
-                            return;
                           }
-                        }
-                      }}
-                      placeholder="Digite sua mensagem..."
-                      disabled={isLoading || isStreaming || isExecuting}
-                      className="w-full h-10 rounded-lg px-3 py-2 text-sm outline-none liquid-input"
-                      style={{ color: '#e0e0e0' }}
-                    />
-                  </div>
-                  {/* Plan toggle */}
-                  <button
-                    onClick={() => setIsPlanMode(prev => !prev)}
-                    disabled={isLoading || isStreaming || isExecuting}
-                    className="text-xs font-semibold px-3 py-2 rounded-lg shrink-0 transition-all border"
-                    style={{
-                      background: isPlanMode ? 'rgba(56, 182, 255, 0.2)' : 'transparent',
-                      borderColor: isPlanMode ? 'rgba(56, 182, 255, 0.4)' : 'rgba(255, 255, 255, 0.1)',
-                      color: isPlanMode ? '#38B6FF' : '#888',
-                    }}
-                  >
-                    Plan
-                  </button>
-                  {/* Mic button with ColorOrb when recording */}
-                  <button
-                    onClick={toggleRecording}
-                    disabled={isLoading || isStreaming || isExecuting}
-                    className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0 transition-all relative overflow-hidden border"
-                    style={{
-                      background: isRecording ? 'transparent' : 'transparent',
-                      borderColor: isRecording ? 'transparent' : 'rgba(255, 255, 255, 0.1)',
-                    }}
-                    title={isRecording ? "Parar gravação" : "Gravar áudio"}
-                  >
-                    {isRecording && (
-                      <div 
-                        className="color-orb-atlas absolute inset-0 rounded-lg"
-                        style={{
-                          '--base': 'oklch(8% 0.01 240)',
-                          '--accent1': 'oklch(50% 0.12 150)',
-                          '--accent2': 'oklch(55% 0.12 230)',
-                          '--accent3': 'oklch(52% 0.10 200)',
-                          '--blur': '0.5px',
-                          '--contrast': '1.4',
-                          '--dot': '0.04rem',
-                          '--shadow': '0.5rem',
-                          '--mask': '10%',
-                          '--spin-duration': '4s',
-                          borderRadius: '0.5rem',
-                        } as React.CSSProperties}
+                        }}
+                        placeholder="Digite sua mensagem..."
+                        disabled={isLoading || isStreaming || isExecuting}
+                        rows={1}
+                        className="w-full px-3 py-2.5 text-sm outline-none bg-transparent resize-none"
+                        style={{ 
+                          color: '#e0e0e0', 
+                          maxHeight: '120px',
+                          overflowY: 'auto',
+                          minHeight: '40px',
+                        }}
                       />
                     )}
-                    {isRecording 
-                      ? <Square className="h-3.5 w-3.5 fill-current text-white relative z-10" /> 
-                      : <Mic className="h-4 w-4" style={{ color: '#888' }} />
-                    }
-                  </button>
-                  {/* Send button */}
-                  <button
-                    onClick={() => handleSendMessage()}
-                    disabled={isLoading || isStreaming || isExecuting || !chatInput.trim()}
-                    className="h-9 w-9 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-30"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(56, 182, 255, 0.8), rgba(100, 220, 180, 0.8))',
-                    }}
-                  >
-                    <Navigation className="h-4 w-4 text-white" />
-                  </button>
+                  </div>
+
+                  {/* Action bar below textarea */}
+                  <div className="flex items-center justify-between px-2 py-1.5" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <div className="flex items-center gap-1">
+                      {/* Plus button */}
+                      <button
+                        className="h-8 w-8 rounded-lg flex items-center justify-center transition-colors hover:bg-white/10"
+                        onClick={() => toast({ title: 'Em breve', description: 'Envio de mídia e arquivos em breve!' })}
+                        title="Anexar mídia"
+                      >
+                        <Plus className="h-4 w-4" style={{ color: '#888' }} />
+                      </button>
+                      {/* Plan toggle */}
+                      <button
+                        onClick={() => setIsPlanMode(prev => !prev)}
+                        disabled={isLoading || isStreaming || isExecuting}
+                        className="text-xs font-semibold px-2.5 py-1.5 rounded-lg shrink-0 transition-all border"
+                        style={{
+                          background: isPlanMode ? 'rgba(56, 182, 255, 0.2)' : 'transparent',
+                          borderColor: isPlanMode ? 'rgba(56, 182, 255, 0.4)' : 'rgba(255, 255, 255, 0.1)',
+                          color: isPlanMode ? '#38B6FF' : '#888',
+                        }}
+                      >
+                        Plan
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {/* Mic button */}
+                      <button
+                        onClick={toggleRecording}
+                        disabled={isLoading || isStreaming || isExecuting || isTranscribing}
+                        className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-all relative overflow-hidden border"
+                        style={{
+                          borderColor: isRecording ? 'rgba(239, 68, 68, 0.4)' : 'rgba(255, 255, 255, 0.1)',
+                          background: isRecording ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
+                        }}
+                        title={isRecording ? "Parar gravação" : "Gravar áudio"}
+                      >
+                        {isRecording 
+                          ? <Square className="h-3 w-3 fill-current" style={{ color: '#f87171' }} /> 
+                          : <Mic className="h-4 w-4" style={{ color: '#888' }} />
+                        }
+                      </button>
+                      {/* Send button */}
+                      <button
+                        onClick={() => handleSendMessage()}
+                        disabled={isLoading || isStreaming || isExecuting || !chatInput.trim() || isRecording || isTranscribing}
+                        className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-30"
+                        style={{
+                          background: 'linear-gradient(135deg, rgba(56, 182, 255, 0.8), rgba(100, 220, 180, 0.8))',
+                        }}
+                      >
+                        <Navigation className="h-3.5 w-3.5 text-white" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
