@@ -139,6 +139,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
 
   const handleClose = () => {
     setIsEditing(false);
+    setShowDeleteConfirm(false);
     setCurrentView('details'); // Reset para view inicial
     onClose();
   };
@@ -150,11 +151,20 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
     }
   };
 
-  const handleDeleteConfirm = async () => {
-    if (onDelete) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteConfirm = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!onDelete || isDeleting) return;
+    setIsDeleting(true);
+    try {
       await onDelete();
       setShowDeleteConfirm(false);
       onClose();
+    } catch (error) {
+      console.error('Error deleting objective:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -415,12 +425,13 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleDeleteConfirm}
+              disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Excluir Objetivo
+              {isDeleting ? 'Excluindo...' : 'Excluir Objetivo'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
