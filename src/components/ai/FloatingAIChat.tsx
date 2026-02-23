@@ -124,7 +124,10 @@ function extractPlan(content: string): { cleanContent: string; plan: any | null 
           .replace('create_kr', 'create_key_result')
           .replace('create_strategic_objective', 'create_objective')
           .replace('create_strategic_pillar', 'create_pillar')
-          .replace('create_strategic_project', 'create_project');
+          .replace('create_strategic_project', 'create_project')
+          .replace('create_project_task', 'create_task')
+          .replace('update_project_task', 'update_task')
+          .replace('delete_project_task', 'delete_task');
         let data = a.data;
         if (!data) {
           const { type: _t, action: _a, ...rest } = a;
@@ -448,7 +451,11 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
           if (type === 'create_key_result') return '📈 KR';
           if (type === 'create_initiative') return '🚀 Iniciativa';
           if (type === 'create_project') return '📂 Projeto';
+          if (type === 'create_task') return '✅ Task';
+          if (type === 'delete_task') return '🗑️ Task';
+          if (type === 'update_task') return '✏️ Task';
           if (type.includes('update')) return '✏️ Atualização';
+          if (type.includes('delete')) return '🗑️ Removido';
           return '📌 Item';
         };
         const confirmMsg: ChatMessage = {

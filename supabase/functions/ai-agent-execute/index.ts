@@ -1259,6 +1259,129 @@ serve(async (req) => {
           if (vaErr) throw vaErr;
           results.push({ type: actionType, success: true, id: va.id, title: 'Alinhamento de Visão atualizado' });
 
+        // ===================== CREATE TASK =====================
+        } else if (actionType === 'create_task') {
+          const d = action.data;
+
+          if (!d.title) {
+            results.push({ type: actionType, success: false, error: 'Título da task não informado.' });
+            continue;
+          }
+
+          // Resolve project_id
+          let projectId = d.project_id;
+          if (!projectId && d.project_ref !== undefined && d.project_ref !== null && results[d.project_ref]?.id) {
+            projectId = results[d.project_ref].id;
+          }
+          if (!projectId && d.project_name) {
+            const { data: found } = await supabase
+              .from('strategic_projects')
+              .select('id')
+              .eq('company_id', company_id)
+              .ilike('name', `%${d.project_name}%`)
+              .limit(1)
+              .maybeSingle();
+            if (found) projectId = found.id;
+          }
+
+          if (!projectId) {
+            results.push({ type: actionType, success: false, error: `Projeto não encontrado para a task "${d.title}".` });
+            continue;
+          }
+
+          // Calculate next position
+          const { data: maxPosData } = await supabase
+            .from('project_tasks')
+            .select('position')
+            .eq('project_id', projectId)
+            .order('position', { ascending: false })
+            .limit(1);
+          const nextPosition = ((maxPosData?.[0]?.position ?? -1) + 1);
+
+          const taskData: any = {
+            project_id: projectId,
+            title: d.title,
+            status: d.status || 'todo',
+            priority: d.priority || 'medium',
+            position: nextPosition,
+            created_by: user.id,
+          };
+          if (d.description) taskData.description = d.description;
+          if (d.due_date) taskData.due_date = d.due_date;
+          if (d.estimated_hours) taskData.estimated_hours = d.estimated_hours;
+
+          const { data: task, error: taskErr } = await supabase
+            .from('project_tasks')
+            .insert(taskData)
+            .select('id, title')
+            .single();
+
+          if (taskErr) throw taskErr;
+          results.push({ type: actionType, success: true, id: task.id, title: task.title });
+
+        // ===================== UPDATE TASK =====================
+        } else if (actionType === 'update_task') {
+          const d = action.data;
+          let resolvedId = d.task_id || d.id;
+
+          if (!resolvedId && d.task_title) {
+            let query = supabase.from('project_tasks').select('id, project_id').ilike('title', `%${d.task_title}%`);
+            if (d.project_name) {
+              const { data: proj } = await supabase.from('strategic_projects').select('id').eq('company_id', company_id).ilike('name', `%${d.project_name}%`).limit(1).maybeSingle();
+              if (proj) query = query.eq('project_id', proj.id);
+            }
+            const { data: found } = await query.limit(1).maybeSingle();
+            if (found) resolvedId = found.id;
+          }
+
+          if (!resolvedId) {
+            results.push({ type: actionType, success: false, error: `Task "${d.task_title || ''}" não encontrada.` });
+            continue;
+          }
+
+          const updateData: any = {};
+          if (d.title) updateData.title = d.title;
+          if (d.description !== undefined) updateData.description = d.description;
+          if (d.status) updateData.status = d.status;
+          if (d.priority) updateData.priority = d.priority;
+          if (d.due_date) updateData.due_date = d.due_date;
+          if (d.estimated_hours !== undefined) updateData.estimated_hours = d.estimated_hours;
+          if (d.actual_hours !== undefined) updateData.actual_hours = d.actual_hours;
+
+          const { data: updated, error: updateErr } = await supabase
+            .from('project_tasks')
+            .update(updateData)
+            .eq('id', resolvedId)
+            .select('id, title')
+            .single();
+
+          if (updateErr) throw updateErr;
+          results.push({ type: actionType, success: true, id: updated.id, title: updated.title });
+
+        // ===================== DELETE TASK =====================
+        } else if (actionType === 'delete_task') {
+          const d = action.data;
+          let resolvedId = d.task_id || d.id;
+
+          if (!resolvedId && d.task_title) {
+            let query = supabase.from('project_tasks').select('id').ilike('title', `%${d.task_title}%`);
+            if (d.project_name) {
+              const { data: proj } = await supabase.from('strategic_projects').select('id').eq('company_id', company_id).ilike('name', `%${d.project_name}%`).limit(1).maybeSingle();
+              if (proj) query = query.eq('project_id', proj.id);
+            }
+            const { data: found } = await query.limit(1).maybeSingle();
+            if (found) resolvedId = found.id;
+          }
+
+          if (!resolvedId) {
+            results.push({ type: actionType, success: false, error: `Task "${d.task_title || ''}" não encontrada.` });
+            continue;
+          }
+
+          const { error: delErr } = await supabase.from('project_tasks').delete().eq('id', resolvedId);
+          if (delErr) throw delErr;
+          results.push({ type: actionType, success: true, id: resolvedId, title: d.task_title || resolvedId });
+
         } else {
           results.push({ type: actionType, success: false, error: `Tipo de ação desconhecido: ${actionType}` });
         }

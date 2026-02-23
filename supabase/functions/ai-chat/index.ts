@@ -191,6 +191,12 @@ O JSON DEVE ser um objeto com a chave "actions" contendo um array. Cada item do 
     - Campos: strengths, weaknesses, opportunities, threats
 24. **update_vision_alignment** — Atualiza o Alinhamento de Visão
     - Campos: shared_objectives, shared_commitments, shared_resources, shared_risks
+25. **create_task** — Cria uma task em um projeto estratégico
+    - Campos: title (obrigatório), project_ref (índice no array) ou project_id ou project_name (obrigatório), description, status (todo/in_progress/review/done, default todo), priority (low/medium/high, default medium), due_date (YYYY-MM-DD), estimated_hours
+26. **update_task** — Atualiza uma task existente
+    - Campos: task_id ou task_title + project_name (obrigatório para identificar), title, description, status, priority, due_date, estimated_hours, actual_hours
+27. **delete_task** — Remove uma task
+    - Campos: task_id ou task_title + project_name (obrigatório para identificar)
 
 ### VALORES VÁLIDOS DE REFERÊNCIA:
 - **Unidades de KR**: %, R$, un, dias, score, points
@@ -484,8 +490,25 @@ serve(async (req) => {
         }).join('\n')}`);
       }
 
+      // Fetch project tasks
+      const projectIds = projects.map((p: any) => p.id);
+      let projectTasks: any[] = [];
+      if (projectIds.length > 0) {
+        const { data: tasksData } = await supabase
+          .from('project_tasks')
+          .select('id, project_id, title, status, priority, due_date, assignee_id, position')
+          .in('project_id', projectIds)
+          .order('position', { ascending: true })
+          .limit(200);
+        projectTasks = tasksData || [];
+      }
+
       if (projects.length > 0) {
-        contextParts.push(`\n🚀 Projetos Estratégicos:\n${projects.map(proj => `• ${proj.name} (id: ${proj.id}, progresso: ${proj.progress || 0}%, status: ${proj.status})`).join('\n')}`);
+        contextParts.push(`\n🚀 Projetos Estratégicos:\n${projects.map((proj: any) => {
+          const tasks = projectTasks.filter(t => t.project_id === proj.id);
+          const taskLines = tasks.map(t => `    - Task: ${t.title} (id: ${t.id}, status: ${t.status}, prioridade: ${t.priority || 'medium'}${t.due_date ? `, prazo: ${t.due_date}` : ''})`).join('\n');
+          return `• ${proj.name} (id: ${proj.id}, progresso: ${proj.progress || 0}%, status: ${proj.status}, prioridade: ${proj.priority || 'N/A'}${proj.start_date ? `, início: ${proj.start_date}` : ''}${proj.end_date ? `, fim: ${proj.end_date}` : ''})${taskLines ? '\n    Tasks:\n' + taskLines : ''}`;
+        }).join('\n')}`);
       }
       if (startupProfile) {
         contextParts.push(`\n🎯 Startup Hub:\n• Startup: ${startupProfile.startup_name || 'Não informado'}\n• Setor: ${startupProfile.sector || 'Não informado'}\n• Estágio: ${startupProfile.stage || 'Não informado'}`);
