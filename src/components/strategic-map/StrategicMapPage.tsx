@@ -681,6 +681,7 @@ export const StrategicMapPage = () => {
             return success;
           }}
           objectivesCount={objectives.filter(obj => obj.pillar_id === deletingPillar.id).length}
+          krsCount={keyResults.filter(kr => objectives.some(obj => obj.pillar_id === deletingPillar.id && obj.id === kr.objective_id)).length}
         />
       )}
 

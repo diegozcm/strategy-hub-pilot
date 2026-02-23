@@ -153,16 +153,16 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
 
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDeleteConfirm = async (e: React.MouseEvent) => {
+   const handleDeleteConfirm = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!onDelete || isDeleting) return;
     setIsDeleting(true);
     try {
       await onDelete();
       setShowDeleteConfirm(false);
-      onClose();
     } catch (error) {
       console.error('Error deleting objective:', error);
+      // Don't close modal on error - let user see the error toast
     } finally {
       setIsDeleting(false);
     }
