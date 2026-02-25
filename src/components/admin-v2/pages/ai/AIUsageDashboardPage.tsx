@@ -22,8 +22,8 @@ const COLORS = ["hsl(203, 100%, 61%)", "hsl(66, 59%, 63%)", "hsl(0, 84%, 60%)", 
 const AIUsageDashboardPage = () => {
   const [days, setDays] = useState("30");
   const dateFrom = subDays(new Date(), parseInt(days)).toISOString();
-  const { data: analytics = [], isLoading } = useAIAnalyticsRaw(dateFrom);
-  const { data: pricing = [] } = useModelPricing();
+  const { data: analytics = [], isLoading, isError } = useAIAnalyticsRaw(dateFrom);
+  const { data: pricing = [], isError: pricingError } = useModelPricing();
   const { data: companiesMap = {} } = useCompaniesMap();
 
   const stats = useMemo(() => {
@@ -100,6 +100,15 @@ const AIUsageDashboardPage = () => {
     return (
       <div className="p-6 flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (isError || pricingError) {
+    return (
+      <div className="p-6 flex flex-col items-center justify-center min-h-[400px] text-muted-foreground">
+        <p className="text-lg font-medium">Erro ao carregar dados de IA</p>
+        <p className="text-sm mt-1">Verifique se você tem permissão de administrador do sistema.</p>
       </div>
     );
   }

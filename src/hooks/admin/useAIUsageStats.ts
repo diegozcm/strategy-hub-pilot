@@ -50,9 +50,13 @@ export function useModelPricing() {
       const { data, error } = await supabase
         .from("ai_model_pricing")
         .select("*");
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Error fetching ai_model_pricing:", error);
+        return [] as ModelPricing[];
+      }
       return (data || []) as ModelPricing[];
     },
+    retry: 1,
   });
 }
 
@@ -69,9 +73,13 @@ export function useAIAnalyticsRaw(dateFrom?: string, dateTo?: string) {
       if (dateTo) query = query.lte("created_at", dateTo);
 
       const { data, error } = await query.limit(1000);
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Error fetching ai_analytics:", error);
+        return [];
+      }
       return data || [];
     },
+    retry: 1,
   });
 }
 
