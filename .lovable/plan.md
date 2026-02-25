@@ -1,84 +1,97 @@
 
-## Tres Correcoes: Confirmacao de KR, Delete de Objetivo, e Exclusao Cascata de Pilar
 
-### Problema 1: Botao "Apagar" KR sem confirmacao
-No `KROverviewModal.tsx`, o botao "Apagar" (linha 482) chama `onDelete` diretamente sem nenhuma etapa de confirmacao. Um clique acidental apaga o KR permanentemente.
+## Diagnostico: bulk_import do Atlas falha silenciosamente
 
-**Solucao:** Adicionar um `AlertDialog` de confirmacao dentro do `KROverviewModal`. O botao "Apagar" passa a abrir o dialog em vez de chamar `onDelete` diretamente.
+### Problema raiz
 
-**Arquivo:** `src/components/strategic-map/KROverviewModal.tsx`
-- Adicionar estado `showDeleteConfirm`
-- Trocar `onClick={onDelete}` por `onClick={() => setShowDeleteConfirm(true)}`
-- Adicionar AlertDialog com titulo "Confirmar Exclusao", nome do KR, e botoes Cancelar/Excluir
+O Atlas gerou um plano `bulk_import` com estrutura **aninhada** (pillars > objectives > key_results, projects com linked_krs). Porem, o handler `bulk_import` no `ai-agent-execute` delega para a edge function `import-company-data`, que tem **dois problemas fatais**:
 
----
+1. **Exige System Admin** (`is_system_admin`) — o usuario logado normal recebe 403 Forbidden
+2. **Espera formato de tabelas planas** (`{ strategic_pillars: [...], strategic_objectives: [...], key_results: [...] }`) — mas recebe formato aninhado (`{ pillars: [{ objectives: [{ key_results: [...] }] }] }`) e nao processa nada
 
-### Problema 2: Nao consegue apagar objetivo de novo
-O `ObjectiveDetailModal` tem um `handleDeleteConfirm` que chama `onDelete()`. Se `onDelete` lanca uma excecao (ex: FK constraint porque os KRs ainda existem no banco), o `catch` captura o erro silenciosamente e o modal fecha (`onClose()` na linha 163). Mas o problema principal e que a funcao `handleDeleteObjective` no `ObjectiveCard.tsx` (e no `RumoObjectiveBlock.tsx`) tenta deletar o objetivo sem deletar os KRs filhos primeiro — e o banco tem FK constraint.
+Resultado: a importacao falha (403 ou 0 registros inseridos) e o Atlas responde como se tivesse funcionado.
 
-**Solucao:** Nos handlers `handleDeleteObjective` (em `ObjectiveCard.tsx` e `RumoObjectiveBlock.tsx`), antes de deletar o objetivo, deletar todos os KRs associados. Tambem melhorar o tratamento de erro no `ObjectiveDetailModal` para mostrar toast de erro ao usuario.
+### Solucao
 
-**Arquivos:**
-- `src/components/strategic-map/ObjectiveCard.tsx` — no `handleDeleteObjective`, adicionar delete cascata de KRs antes do objetivo
-- `src/components/dashboard/RumoObjectiveBlock.tsx` — mesma correcao
-- `src/components/objectives/ObjectivesPage.tsx` — verificar e corrigir o mesmo padrao (se aplicavel)
+Reescrever o handler `bulk_import` no `ai-agent-execute` para processar a estrutura aninhada diretamente, sem chamar `import-company-data`. O handler vai "achatar" a hierarquia e criar cada item usando a mesma logica dos handlers individuais (`create_pillar`, `create_objective`, `create_key_result`, `create_project`).
 
----
+Tambem atualizar o prompt do Atlas em `ai-chat` para documentar melhor o formato esperado do `bulk_import`, para que o LLM gere dados consistentes.
 
-### Problema 3: Excluir pilar inteiro com objetivos e KRs (com confirmacao por nome)
-Atualmente o `DeletePillarModal` **bloqueia** a exclusao se o pilar tem objetivos. O usuario quer poder excluir um pilar inteiro (com todos os objetivos e KRs), mas com uma etapa extra de confirmacao: digitar o nome do pilar.
+### Alteracoes
 
-**Solucao:**
-1. **Alterar `DeletePillarModal.tsx`**: Remover o bloqueio quando ha objetivos. Em vez disso, quando o pilar tem objetivos/KRs, exibir um aviso claro e exigir que o usuario digite o nome do pilar para confirmar. O botao de exclusao so fica habilitado quando o nome digitado coincide.
+**Arquivo 1: `supabase/functions/ai-agent-execute/index.ts`**
 
-2. **Alterar `useStrategicMap.tsx` (`deletePillar`)**: Remover a verificacao que bloqueia exclusao de pilar com objetivos. Implementar exclusao cascata:
-   - Buscar todos os KRs dos objetivos do pilar
-   - Deletar KRs (e dados relacionados como `kr_fca_entries`, `kr_status_reports`, `kr_initiatives`)
-   - Deletar objetivos
-   - Deletar pilar
+Substituir o handler `bulk_import` (linhas ~914-960) por logica que:
 
-**Arquivos:**
-- `src/components/strategic-map/DeletePillarModal.tsx` — redesenhar modal com input de confirmacao por nome
-- `src/hooks/useStrategicMap.tsx` — alterar `deletePillar` para exclusao cascata
+1. Detecta se o payload tem formato aninhado (`pillars` array) ou plano (`strategic_pillars` array)
+2. Para formato aninhado:
+   - Itera cada pilar, cria via `strategic_pillars` insert
+   - Para cada objetivo dentro do pilar, cria via `strategic_objectives` insert (usando o pillar.id recem-criado)
+   - Para cada KR dentro do objetivo, cria via `key_results` insert (usando o objective.id recem-criado)
+   - Para cada projeto, cria via `strategic_projects` insert
+   - Para cada `linked_krs` do projeto, busca KRs pelo titulo e cria `project_kr_relations`
+3. Sanitiza status de projetos para valores validos (`planning`, `active`, `on_hold`, `completed`, `cancelled`)
+4. Normaliza unidades de KR (`R$`, `%`, `un`, `score`, `dias`)
+5. Retorna contagem detalhada de itens criados
 
----
-
-### Detalhes Tecnicos
-
-**KROverviewModal — confirmacao de delete:**
-```
-// Novo estado
-const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-// Botao muda de onClick={onDelete} para:
-onClick={() => setShowDeleteConfirm(true)}
-
-// AlertDialog adicionado ao final do componente
-```
-
-**DeletePillarModal — input de confirmacao:**
-```
-// Novo estado
-const [confirmName, setConfirmName] = useState('');
-const isNameMatch = confirmName.trim().toLowerCase() === pillar.name.trim().toLowerCase();
-
-// Input de texto para digitar o nome
-// Botao de exclusao habilitado apenas quando isNameMatch === true
-// Aviso listando quantidade de objetivos e KRs que serao excluidos
-```
-
-**deletePillar cascata (useStrategicMap.tsx):**
-```
-// 1. Buscar objetivos do pilar
-// 2. Buscar KR IDs dos objetivos
-// 3. Deletar kr_fca_entries, kr_status_reports, kr_initiatives dos KRs
-// 4. Deletar key_results
-// 5. Deletar strategic_objectives
-// 6. Deletar strategic_pillars
+Pseudocodigo:
+```text
+bulk_import handler:
+  payload = action.data
+  
+  // Detectar formato
+  if payload.data existe:
+    payload = payload.data   // Atlas envelopa em {data: {...}}
+  
+  if payload.pillars (formato aninhado):
+    createdKRs = {}  // mapa titulo -> id
+    
+    for pilar in payload.pillars:
+      insert strategic_pillars -> pillarId
+      
+      for obj in pilar.objectives:
+        insert strategic_objectives (pillar_id=pillarId) -> objId
+        
+        for kr in obj.key_results:
+          normalizar unit, frequency
+          insert key_results (objective_id=objId) -> krId
+          createdKRs[kr.title] = krId
+    
+    for proj in payload.projects:
+      sanitizar status
+      insert strategic_projects -> projId
+      
+      for linked_kr_title in proj.linked_krs:
+        krId = buscar em createdKRs por matching parcial
+        if krId: insert project_kr_relations
+    
+    results.push(resumo)
+  
+  else:
+    // fallback: formato plano (manter compatibilidade)
+    chamar import-company-data (logica atual)
 ```
 
-**handleDeleteObjective cascata:**
+**Arquivo 2: `supabase/functions/ai-chat/index.ts`**
+
+Atualizar a descricao da acao `bulk_import` no prompt (linha ~173-175) para especificar que o formato aceito e o hierarquico:
+
 ```
-// 1. Deletar KRs do objetivo primeiro
-// 2. Depois deletar o objetivo
+16. **bulk_import** — Importacao em massa hierarquica
+    - Formato: { pillars: [{ name, color, description, objectives: [{ title, target_date, description, key_results: [{ title, target_value, unit, frequency, ... }] }] }], projects: [{ name, description, status, progress, linked_krs: ["titulo do KR"] }] }
+    - Status validos para projetos: planning, active, in_progress, on_hold, completed, cancelled
+    - NUNCA use "data" como wrapper — envie pillars e projects diretamente no objeto data da acao
 ```
+
+### Deploy
+
+Redeployar `ai-agent-execute` e `ai-chat`.
+
+### Resultado esperado
+
+Ao reenviar o prompt do Grupo Copapel, o Atlas ira:
+- Criar 4 pilares (Financeiro, Clientes e Mercado, Processos Internos, Aprendizado e Crescimento)
+- Criar 9 objetivos estrategicos
+- Criar ~17 KRs com metas, unidades e frequencias
+- Criar 8 projetos estrategicos vinculados aos KRs corretos
+
