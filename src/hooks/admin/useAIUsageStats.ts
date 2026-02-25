@@ -23,6 +23,11 @@ export interface UsageSummaryRow {
   total_tokens: number;
 }
 
+export interface CompanyInfo {
+  name: string;
+  ai_enabled: boolean;
+}
+
 export function calculateCost(
   model: string | null,
   promptTokens: number,
@@ -92,23 +97,53 @@ export function useAIChatSessions() {
         .select("*, ai_chat_messages(id)")
         .order("updated_at", { ascending: false })
         .limit(100);
-      if (error) throw error;
+      if (error) {
+        console.error("❌ Error fetching ai_chat_sessions:", error);
+        return [];
+      }
       return data || [];
     },
+    retry: 1,
   });
 }
 
 export function useCompaniesMap() {
   return useQuery({
-    queryKey: ["companies-map"],
+    queryKey: ["companies-map-with-ai"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("companies")
-        .select("id, name");
-      if (error) throw error;
-      const map: Record<string, string> = {};
-      (data || []).forEach((c) => (map[c.id] = c.name));
+        .select("id, name, ai_enabled");
+      if (error) {
+        console.error("❌ Error fetching companies:", error);
+        return {} as Record<string, CompanyInfo>;
+      }
+      const map: Record<string, CompanyInfo> = {};
+      (data || []).forEach((c) => (map[c.id] = { name: c.name, ai_enabled: c.ai_enabled }));
       return map;
     },
+    retry: 1,
+  });
+}
+
+export function useProfilesMap() {
+  return useQuery({
+    queryKey: ["profiles-map-admin"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name");
+      if (error) {
+        console.error("❌ Error fetching profiles:", error);
+        return {} as Record<string, string>;
+      }
+      const map: Record<string, string> = {};
+      (data || []).forEach((p) => {
+        const name = [p.first_name, p.last_name].filter(Boolean).join(" ");
+        if (name) map[p.user_id] = name;
+      });
+      return map;
+    },
+    retry: 1,
   });
 }
