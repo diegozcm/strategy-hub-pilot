@@ -1,97 +1,61 @@
 
 
-## Diagnostico: bulk_import do Atlas falha silenciosamente
+## Melhorias no Chat do Atlas
 
-### Problema raiz
+### Problema 1: Textarea nao reseta tamanho apos envio
+Na linha 500, `setChatInput('')` limpa o texto mas nao reseta a altura do textarea. O elemento DOM mantem a altura expandida.
 
-O Atlas gerou um plano `bulk_import` com estrutura **aninhada** (pillars > objectives > key_results, projects com linked_krs). Porem, o handler `bulk_import` no `ai-agent-execute` delega para a edge function `import-company-data`, que tem **dois problemas fatais**:
-
-1. **Exige System Admin** (`is_system_admin`) — o usuario logado normal recebe 403 Forbidden
-2. **Espera formato de tabelas planas** (`{ strategic_pillars: [...], strategic_objectives: [...], key_results: [...] }`) — mas recebe formato aninhado (`{ pillars: [{ objectives: [{ key_results: [...] }] }] }`) e nao processa nada
-
-Resultado: a importacao falha (403 ou 0 registros inseridos) e o Atlas responde como se tivesse funcionado.
-
-### Solucao
-
-Reescrever o handler `bulk_import` no `ai-agent-execute` para processar a estrutura aninhada diretamente, sem chamar `import-company-data`. O handler vai "achatar" a hierarquia e criar cada item usando a mesma logica dos handlers individuais (`create_pillar`, `create_objective`, `create_key_result`, `create_project`).
-
-Tambem atualizar o prompt do Atlas em `ai-chat` para documentar melhor o formato esperado do `bulk_import`, para que o LLM gere dados consistentes.
-
-### Alteracoes
-
-**Arquivo 1: `supabase/functions/ai-agent-execute/index.ts`**
-
-Substituir o handler `bulk_import` (linhas ~914-960) por logica que:
-
-1. Detecta se o payload tem formato aninhado (`pillars` array) ou plano (`strategic_pillars` array)
-2. Para formato aninhado:
-   - Itera cada pilar, cria via `strategic_pillars` insert
-   - Para cada objetivo dentro do pilar, cria via `strategic_objectives` insert (usando o pillar.id recem-criado)
-   - Para cada KR dentro do objetivo, cria via `key_results` insert (usando o objective.id recem-criado)
-   - Para cada projeto, cria via `strategic_projects` insert
-   - Para cada `linked_krs` do projeto, busca KRs pelo titulo e cria `project_kr_relations`
-3. Sanitiza status de projetos para valores validos (`planning`, `active`, `on_hold`, `completed`, `cancelled`)
-4. Normaliza unidades de KR (`R$`, `%`, `un`, `score`, `dias`)
-5. Retorna contagem detalhada de itens criados
-
-Pseudocodigo:
-```text
-bulk_import handler:
-  payload = action.data
-  
-  // Detectar formato
-  if payload.data existe:
-    payload = payload.data   // Atlas envelopa em {data: {...}}
-  
-  if payload.pillars (formato aninhado):
-    createdKRs = {}  // mapa titulo -> id
-    
-    for pilar in payload.pillars:
-      insert strategic_pillars -> pillarId
-      
-      for obj in pilar.objectives:
-        insert strategic_objectives (pillar_id=pillarId) -> objId
-        
-        for kr in obj.key_results:
-          normalizar unit, frequency
-          insert key_results (objective_id=objId) -> krId
-          createdKRs[kr.title] = krId
-    
-    for proj in payload.projects:
-      sanitizar status
-      insert strategic_projects -> projId
-      
-      for linked_kr_title in proj.linked_krs:
-        krId = buscar em createdKRs por matching parcial
-        if krId: insert project_kr_relations
-    
-    results.push(resumo)
-  
-  else:
-    // fallback: formato plano (manter compatibilidade)
-    chamar import-company-data (logica atual)
+**Correcao:** Apos `setChatInput('')` na linha 500, adicionar reset da altura do textarea:
+```typescript
+setChatInput('');
+if (textareaRef.current) {
+  textareaRef.current.style.height = 'auto';
+}
 ```
 
-**Arquivo 2: `supabase/functions/ai-chat/index.ts`**
+Tambem melhorar a scrollbar do textarea quando expandido — adicionar estilos CSS para scrollbar fina e semi-transparente no textarea.
 
-Atualizar a descricao da acao `bulk_import` no prompt (linha ~173-175) para especificar que o formato aceito e o hierarquico:
+---
 
-```
-16. **bulk_import** — Importacao em massa hierarquica
-    - Formato: { pillars: [{ name, color, description, objectives: [{ title, target_date, description, key_results: [{ title, target_value, unit, frequency, ... }] }] }], projects: [{ name, description, status, progress, linked_krs: ["titulo do KR"] }] }
-    - Status validos para projetos: planning, active, in_progress, on_hold, completed, cancelled
-    - NUNCA use "data" como wrapper — envie pillars e projects diretamente no objeto data da acao
-```
+### Problema 2: Scroll nao preserva posicao ao reabrir / falta botao "scroll to bottom"
 
-### Deploy
+**Causa:** O `useEffect` na linha 310-312 chama `scrollToBottom()` sempre que `messages` muda, inclusive ao reabrir. Quando o chat reabre, ele forca scroll para o final em vez de manter a posicao onde o usuario estava.
 
-Redeployar `ai-agent-execute` e `ai-chat`.
+**Correcao:**
+1. Guardar a posicao de scroll antes de fechar (via `useRef`) e restaurar ao reabrir, em vez de sempre scrollar ao fundo. O `scrollToBottom` automatico so deve acontecer quando **novas mensagens sao adicionadas** (comparar `messages.length` anterior), nao quando o chat simplesmente reabre.
 
-### Resultado esperado
+2. Adicionar um estado `showScrollToBottom` que aparece quando o usuario nao esta no fundo da conversa. Monitorar o evento `onScroll` do viewport do `ScrollArea` — se `scrollTop + clientHeight < scrollHeight - 100`, mostrar o botao. Ao clicar, scroll suave ate o fim e esconder o botao.
 
-Ao reenviar o prompt do Grupo Copapel, o Atlas ira:
-- Criar 4 pilares (Financeiro, Clientes e Mercado, Processos Internos, Aprendizado e Crescimento)
-- Criar 9 objetivos estrategicos
-- Criar ~17 KRs com metas, unidades e frequencias
-- Criar 8 projetos estrategicos vinculados aos KRs corretos
+**Implementacao:**
+- `scrollPositionRef = useRef<number>(0)` — salva posicao
+- `prevMessageCountRef = useRef<number>(0)` — detecta novas msgs
+- `showScrollToBottom` estado — controla visibilidade do botao
+- No `useEffect` de `isOpen`: ao abrir, restaurar scroll salvo; ao fechar, salvar posicao atual
+- No `useEffect` de `messages`: so chamar `scrollToBottom` se `messages.length > prevMessageCountRef`
+- Botao flutuante com `ChevronDown` na parte inferior do ScrollArea
+
+---
+
+### Problema 3: Botao de copiar conteudo das mensagens
+
+**Implementacao:** Adicionar um botao de copiar (icone `Copy`) que aparece em cada mensagem (user e assistant), ao lado dos botoes de feedback existentes para mensagens do assistant, e como unico botao de acao para mensagens do user.
+
+- Para mensagens do assistant: adicionar `Copy` ao lado de `RefreshCw`, `ThumbsUp`, `ThumbsDown` (linha 864-908)
+- Para mensagens do user: adicionar uma barra com o botao `Copy` no hover
+- Ao clicar, copiar `msg.content` para clipboard e mostrar feedback visual (icone muda para `Check` por 2 segundos)
+
+**Detalhes:**
+- Estado `copiedIndex` para rastrear qual mensagem foi copiada
+- `navigator.clipboard.writeText(msg.content)`
+- Icone `Copy` do lucide-react (ja disponivel no projeto)
+
+---
+
+### Arquivo modificado
+`src/components/ai/FloatingAIChat.tsx`
+
+### Resumo das alteracoes:
+1. Reset de textarea height apos envio + scrollbar styling
+2. Preservar posicao de scroll ao reabrir + botao "ir ao final" flutuante
+3. Botao copiar em todas as mensagens (user e assistant)
 
