@@ -913,50 +913,242 @@ serve(async (req) => {
 
         // ===================== BULK IMPORT =====================
         } else if (actionType === 'bulk_import') {
-          const importPayload = action.data;
+          let importPayload = action.data;
 
           if (!importPayload || typeof importPayload !== 'object') {
             results.push({ type: actionType, success: false, error: 'Dados de importação inválidos.' });
             continue;
           }
 
-          try {
-            // Call import-company-data edge function internally via fetch
-            const importResponse = await fetch(`${supabaseUrl}/functions/v1/import-company-data`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${authHeader.replace('Bearer ', '')}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                company_id,
-                mode: 'merge',
-                data: importPayload,
-              }),
-            });
+          // Unwrap nested "data" envelope if Atlas wrapped it
+          if (importPayload.data && typeof importPayload.data === 'object' && (importPayload.data.pillars || importPayload.data.strategic_pillars)) {
+            importPayload = importPayload.data;
+          }
 
-            const importResult = await importResponse.json();
+          // Detect nested hierarchical format (pillars array with embedded objectives/key_results)
+          if (importPayload.pillars && Array.isArray(importPayload.pillars)) {
+            try {
+              const createdKRs: Record<string, string> = {}; // title -> id
+              let pillarCount = 0, objCount = 0, krCount = 0, projCount = 0, linkCount = 0;
+              const errors: string[] = [];
 
-            if (importResponse.ok && importResult.success !== false) {
+              // Get next order_index for pillars
+              const { data: existingPillars } = await supabase
+                .from('strategic_pillars')
+                .select('order_index')
+                .eq('company_id', company_id)
+                .order('order_index', { ascending: false })
+                .limit(1);
+              let nextOrder = (existingPillars?.[0]?.order_index ?? -1) + 1;
+
+              for (const pillarData of importPayload.pillars) {
+                const pillarName = pillarData.name || pillarData.title;
+                if (!pillarName) { errors.push('Pilar sem nome, ignorado.'); continue; }
+
+                const { data: pillar, error: pErr } = await supabase
+                  .from('strategic_pillars')
+                  .insert({
+                    company_id,
+                    name: pillarName,
+                    description: pillarData.description || null,
+                    color: pillarData.color || '#3B82F6',
+                    order_index: nextOrder++,
+                  })
+                  .select('id')
+                  .single();
+
+                if (pErr) { errors.push(`Pilar "${pillarName}": ${pErr.message}`); continue; }
+                pillarCount++;
+
+                const objectives = pillarData.objectives || [];
+                for (const objData of objectives) {
+                  const objTitle = objData.title || objData.name;
+                  if (!objTitle) { errors.push('Objetivo sem título, ignorado.'); continue; }
+
+                  const { data: obj, error: oErr } = await supabase
+                    .from('strategic_objectives')
+                    .insert({
+                      plan_id: plan.id,
+                      pillar_id: pillar.id,
+                      title: objTitle,
+                      description: objData.description || null,
+                      owner_id: user.id,
+                      target_date: objData.target_date || null,
+                      status: 'not_started',
+                      weight: objData.weight || 1,
+                    })
+                    .select('id')
+                    .single();
+
+                  if (oErr) { errors.push(`Objetivo "${objTitle}": ${oErr.message}`); continue; }
+                  objCount++;
+
+                  const keyResults = objData.key_results || [];
+                  for (const krData of keyResults) {
+                    const krTitle = krData.title || krData.name;
+                    if (!krTitle) { errors.push('KR sem título, ignorado.'); continue; }
+
+                    // Normalize unit
+                    let unit = krData.unit || '%';
+                    if (unit === 'percentage' || unit === 'percent' || unit === 'porcentagem') unit = '%';
+                    if (unit === 'unit' || unit === 'units' || unit === 'unidade' || unit === 'unidades' || unit === 'número' || unit === 'numero') unit = 'un';
+                    if (unit === 'reais' || unit === 'real' || unit === 'BRL') unit = 'R$';
+
+                    const krInsert: any = {
+                      objective_id: obj.id,
+                      title: krTitle,
+                      description: krData.description || null,
+                      target_value: krData.target_value || 100,
+                      current_value: krData.current_value || 0,
+                      unit,
+                      owner_id: user.id,
+                      weight: krData.weight || 1,
+                    };
+
+                    if (krData.frequency) krInsert.frequency = krData.frequency;
+                    if (krData.monthly_targets) krInsert.monthly_targets = krData.monthly_targets;
+                    if (krData.yearly_target != null) krInsert.yearly_target = krData.yearly_target;
+                    if (krData.start_month) krInsert.start_month = krData.start_month;
+                    if (krData.end_month) krInsert.end_month = krData.end_month;
+                    if (krData.aggregation_type) krInsert.aggregation_type = krData.aggregation_type;
+                    if (krData.comparison_type) krInsert.comparison_type = krData.comparison_type;
+                    if (krData.target_direction) krInsert.target_direction = krData.target_direction;
+                    if (krData.due_date) krInsert.due_date = krData.due_date;
+                    if (krData.responsible) krInsert.responsible = krData.responsible;
+
+                    const { data: kr, error: kErr } = await supabase
+                      .from('key_results')
+                      .insert(krInsert)
+                      .select('id')
+                      .single();
+
+                    if (kErr) { errors.push(`KR "${krTitle}": ${kErr.message}`); continue; }
+                    krCount++;
+                    createdKRs[krTitle] = kr.id;
+                  }
+                }
+              }
+
+              // Process projects
+              const projects = importPayload.projects || [];
+              const VALID_PROJECT_STATUSES = ['planning', 'active', 'on_hold', 'completed', 'cancelled'];
+              for (const projData of projects) {
+                const projName = projData.name || projData.title;
+                if (!projName) { errors.push('Projeto sem nome, ignorado.'); continue; }
+
+                let status = (projData.status || 'planning').toLowerCase();
+                if (status === 'in_progress') status = 'active';
+                if (!VALID_PROJECT_STATUSES.includes(status)) status = 'planning';
+
+                const { data: proj, error: prErr } = await supabase
+                  .from('strategic_projects')
+                  .insert({
+                    plan_id: plan.id,
+                    company_id,
+                    owner_id: user.id,
+                    name: projName,
+                    description: projData.description || null,
+                    status,
+                    progress: projData.progress || 0,
+                    priority: projData.priority || 'medium',
+                    start_date: projData.start_date || null,
+                    end_date: projData.end_date || null,
+                    budget: projData.budget ? parseFloat(String(projData.budget)) : null,
+                  })
+                  .select('id')
+                  .single();
+
+                if (prErr) { errors.push(`Projeto "${projName}": ${prErr.message}`); continue; }
+                projCount++;
+
+                // Link KRs by title matching
+                const linkedKrs = projData.linked_krs || [];
+                for (const krRef of linkedKrs) {
+                  // Find KR by partial title match
+                  let krId: string | null = null;
+                  const refLower = (krRef || '').toLowerCase();
+                  for (const [title, id] of Object.entries(createdKRs)) {
+                    if (title.toLowerCase().includes(refLower) || refLower.includes(title.toLowerCase())) {
+                      krId = id as string;
+                      break;
+                    }
+                  }
+                  // Also try exact prefix match (e.g. "KR01" matches "KR01 - ...")
+                  if (!krId) {
+                    for (const [title, id] of Object.entries(createdKRs)) {
+                      if (title.toLowerCase().startsWith(refLower.split(' - ')[0].split(' — ')[0].trim())) {
+                        krId = id as string;
+                        break;
+                      }
+                    }
+                  }
+
+                  if (krId) {
+                    const { error: linkErr } = await supabase
+                      .from('project_kr_relations')
+                      .insert({ project_id: proj.id, kr_id: krId });
+                    if (!linkErr) linkCount++;
+                  } else {
+                    errors.push(`Projeto "${projName}": KR "${krRef}" não encontrado para vincular.`);
+                  }
+                }
+              }
+
               results.push({
                 type: actionType,
                 success: true,
                 title: 'Importação em massa concluída',
                 details: {
-                  total_records: importResult.total_records,
-                  tables_imported: importResult.tables_imported,
+                  pillars: pillarCount,
+                  objectives: objCount,
+                  key_results: krCount,
+                  projects: projCount,
+                  kr_links: linkCount,
+                  errors: errors.length > 0 ? errors : undefined,
                 },
               });
-            } else {
-              results.push({
-                type: actionType,
-                success: false,
-                error: importResult.error || 'Erro na importação em massa',
-                details: importResult.errors,
-              });
+            } catch (bulkErr: any) {
+              results.push({ type: actionType, success: false, error: `Erro na importação hierárquica: ${bulkErr.message}` });
             }
-          } catch (importErr: any) {
-            results.push({ type: actionType, success: false, error: `Erro na importação: ${importErr.message}` });
+          } else {
+            // Fallback: flat format — call import-company-data
+            try {
+              const importResponse = await fetch(`${supabaseUrl}/functions/v1/import-company-data`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': authHeader,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  company_id,
+                  mode: 'merge',
+                  data: importPayload,
+                }),
+              });
+
+              const importResult = await importResponse.json();
+
+              if (importResponse.ok && importResult.success !== false) {
+                results.push({
+                  type: actionType,
+                  success: true,
+                  title: 'Importação em massa concluída',
+                  details: {
+                    total_records: importResult.total_records,
+                    tables_imported: importResult.tables_imported,
+                  },
+                });
+              } else {
+                results.push({
+                  type: actionType,
+                  success: false,
+                  error: importResult.error || 'Erro na importação em massa',
+                  details: importResult.errors,
+                });
+              }
+            } catch (importErr: any) {
+              results.push({ type: actionType, success: false, error: `Erro na importação: ${importErr.message}` });
+            }
           }
 
         // ===================== CREATE FCA =====================
