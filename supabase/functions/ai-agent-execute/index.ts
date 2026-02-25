@@ -929,7 +929,9 @@ serve(async (req) => {
           if (importPayload.pillars && Array.isArray(importPayload.pillars)) {
             try {
               const createdKRs: Record<string, string> = {}; // title -> id
-              let pillarCount = 0, objCount = 0, krCount = 0, projCount = 0, linkCount = 0;
+              const createdObjectives: Record<string, string> = {}; // title -> id
+              const krToObjective: Record<string, string> = {}; // kr_id -> objective_id
+              let pillarCount = 0, objCount = 0, krCount = 0, projCount = 0, linkCount = 0, objLinkCount = 0;
               const errors: string[] = [];
 
               // Get next order_index for pillars
@@ -982,6 +984,7 @@ serve(async (req) => {
 
                   if (oErr) { errors.push(`Objetivo "${objTitle}": ${oErr.message}`); continue; }
                   objCount++;
+                  createdObjectives[objTitle] = obj.id;
 
                   const keyResults = objData.key_results || [];
                   for (const krData of keyResults) {
@@ -1025,6 +1028,7 @@ serve(async (req) => {
                     if (kErr) { errors.push(`KR "${krTitle}": ${kErr.message}`); continue; }
                     krCount++;
                     createdKRs[krTitle] = kr.id;
+                    krToObjective[kr.id] = obj.id;
                   }
                 }
               }
@@ -1092,6 +1096,44 @@ serve(async (req) => {
                     errors.push(`Projeto "${projName}": KR "${krRef}" não encontrado para vincular.`);
                   }
                 }
+
+                // Link objectives explicitly listed
+                const linkedObjs = projData.linked_objectives || [];
+                for (const objRef of linkedObjs) {
+                  let objId: string | null = null;
+                  const refLower = (objRef || '').toLowerCase();
+                  for (const [title, id] of Object.entries(createdObjectives)) {
+                    if (title.toLowerCase().includes(refLower) || refLower.includes(title.toLowerCase())) {
+                      objId = id as string;
+                      break;
+                    }
+                  }
+                  if (objId) {
+                    const { error: olErr } = await supabase
+                      .from('project_objective_relations')
+                      .insert({ project_id: proj.id, objective_id: objId });
+                    if (!olErr) objLinkCount++;
+                  }
+                }
+
+                // Infer objectives from linked KRs
+                const inferredObjIds = new Set<string>();
+                const linkedKrsForInfer = projData.linked_krs || [];
+                for (const krRef2 of linkedKrsForInfer) {
+                  const ref2Lower = (krRef2 || '').toLowerCase();
+                  for (const [title, id] of Object.entries(createdKRs)) {
+                    if (title.toLowerCase().includes(ref2Lower) || ref2Lower.includes(title.toLowerCase())) {
+                      if (krToObjective[id as string]) inferredObjIds.add(krToObjective[id as string]);
+                      break;
+                    }
+                  }
+                }
+                for (const infObjId of inferredObjIds) {
+                  const { error: ioErr } = await supabase
+                    .from('project_objective_relations')
+                    .upsert({ project_id: proj.id, objective_id: infObjId }, { onConflict: 'project_id,objective_id', ignoreDuplicates: true });
+                  if (!ioErr) objLinkCount++;
+                }
               }
 
               results.push({
@@ -1104,6 +1146,7 @@ serve(async (req) => {
                   key_results: krCount,
                   projects: projCount,
                   kr_links: linkCount,
+                  objective_links: objLinkCount,
                   errors: errors.length > 0 ? errors : undefined,
                 },
               });
