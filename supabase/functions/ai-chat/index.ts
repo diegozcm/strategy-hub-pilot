@@ -170,9 +170,11 @@ O JSON DEVE ser um objeto com a chave "actions" contendo um array. Cada item do 
     - Campos: initiative_id ou initiative_title (obrigatório)
 15. **delete_project** — Remove um projeto
     - Campos: project_id ou project_name (obrigatório)
-16. **bulk_import** — Importação em massa via JSON (formato de exportação)
-    - Campos: data (objeto JSON no formato de exportação da plataforma, processado em merge mode)
-    - Use para criar estruturas complexas com múltiplos pilares, objetivos, KRs etc. de uma vez
+16. **bulk_import** — Importação em massa hierárquica
+    - Formato: { pillars: [{ name, color, description, objectives: [{ title, target_date, description, weight, key_results: [{ title, target_value, current_value, unit, frequency, monthly_targets, yearly_target, start_month, end_month, description, target_direction, aggregation_type }] }] }], projects: [{ name, description, status, progress, priority, linked_krs: ["título exato do KR"] }] }
+    - Status válidos para projetos: planning, active, on_hold, completed, cancelled (use "active" em vez de "in_progress")
+    - NUNCA envolva o conteúdo em um campo "data" extra — envie pillars e projects DIRETAMENTE no objeto data da ação
+    - Use para criar estruturas completas do BSC (pilares + objetivos + KRs + projetos vinculados) de uma vez
 17. **create_fca** — Cria uma análise FCA (Fato-Causa-Ação) vinculada a um KR
     - Campos: kr_id ou kr_title (obrigatório), title, fact, cause (obrigatórios), description, priority (low/medium/high), status (active/resolved/cancelled), linked_update_month (ex: "2026-02"), linked_update_value (valor numérico do desvio)
     - USE ESTA AÇÃO quando o usuário pedir para justificar desvios, registrar FCAs, ou analisar variações de KRs. NUNCA use update_key_result para criar FCAs.
