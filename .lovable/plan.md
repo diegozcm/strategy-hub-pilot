@@ -1,78 +1,176 @@
 
 
-## Diagnostico: Projetos nao vinculados a Objetivos no bulk_import
+## Plano Revisado: Painel de Consumo da IA Atlas — Versao Melhorada
 
-### Problema
+### O que mudou em relacao ao plano anterior
 
-O handler `bulk_import` no `ai-agent-execute` cria projetos e vincula KRs via `project_kr_relations`, mas **nunca cria vinculos com objetivos** via `project_objective_relations`. 
+Apos investigar mais a fundo a estrutura de dados e o admin existente, identifiquei **5 melhorias importantes** ao plano original:
 
-O fluxo atual:
-1. Cria pilares, objetivos, KRs — guarda mapa `createdKRs` (titulo -> id)
-2. Cria projetos — busca KRs pelo titulo e insere em `project_kr_relations`
-3. **Nao existe nenhum mapa de objetivos criados** e nenhuma logica para `project_objective_relations`
+---
 
-Enquanto isso, o handler individual `create_project` (linha ~462-472) ja faz vinculacao com objetivos corretamente.
+### Melhoria 1: Tabela dedicada para custos por modelo (em vez de hardcoded)
 
-A causa e dupla:
-- O **codigo** do bulk_import nao tem logica para vincular objetivos
-- O **prompt** do Atlas nao menciona `linked_objectives` no schema de projetos do bulk_import, entao o LLM nunca gera esse campo
+O plano anterior usava constantes hardcoded para precos. O problema e que modelos mudam de preco com frequencia (o Google Gemini ja mudou 3 vezes em 2025). 
 
-### Solucao
+**Nova abordagem:** Criar uma tabela `ai_model_pricing` no banco com colunas:
+- `model_name` (varchar, PK)
+- `input_cost_per_million` (numeric)
+- `output_cost_per_million` (numeric)
+- `currency` (varchar, default 'USD')
+- `updated_at` (timestamptz)
 
-**Arquivo 1: `supabase/functions/ai-agent-execute/index.ts`**
+Isso permite que o admin atualize precos pela interface sem precisar de deploy. A pagina de Configuracoes de Custo vira um CRUD real sobre essa tabela, nao apenas uma tela visual.
 
-No handler `bulk_import`, na secao de processamento de projetos (apos linhas 1064-1094):
+---
 
-1. Adicionar um mapa `createdObjectives: Record<string, string>` (titulo -> id) durante a criacao dos objetivos, similar ao `createdKRs`
-2. Adicionar suporte para `linked_objectives` nos projetos — mesma logica de matching por titulo que ja existe para KRs
-3. Alem disso, **inferir objetivos automaticamente a partir dos KRs vinculados**: quando um KR e vinculado a um projeto, o objetivo-pai desse KR tambem deve ser vinculado via `project_objective_relations` (para garantir que mesmo que o Atlas nao envie `linked_objectives`, o vinculo aconteca)
-4. Adicionar contagem de `objective_links` no resultado
+### Melhoria 2: Rastrear execucoes do ai-agent-execute (modo Plan)
 
-Pseudocodigo da logica adicional:
+Hoje **so o chat** (`ai-chat`) registra analytics. O `ai-agent-execute` nao registra nada — ou seja, toda execucao de acao do Atlas (criar pilar, objetivo, KR, projeto, bulk_import) e invisivel no consumo.
+
+Pior: o `ai-agent-execute` nao chama modelos de IA diretamente (ele recebe acoes ja decididas pelo `ai-chat`), entao nao tem `usage.prompt_tokens`. Porem, ele processa dados e faz mutacoes — o que deveria ser rastreado como `agent_execution` para medir:
+- Quantas acoes foram executadas por empresa
+- Quais tipos de acao (create_pillar, bulk_import, etc.)
+- Sucesso vs falha
+- Tempo de execucao
+
+**Nova abordagem:** Registrar `event_type: 'agent_execution'` no `ai_analytics` apos cada acao no `ai-agent-execute`, com `event_data` contendo:
+```
+{ action_type, company_id, success, execution_time_ms, items_created (para bulk) }
+```
+
+Isso nao tem tokens de modelo, mas complementa o rastreamento mostrando o **impacto real** do Atlas.
+
+---
+
+### Melhoria 3: View SQL para agregar dados (em vez de queries complexas no frontend)
+
+O plano anterior fazia agregacoes complexas (GROUP BY empresa, por dia, por modelo) direto no frontend usando queries Supabase. Isso e fragil e lento quando a tabela crescer.
+
+**Nova abordagem:** Criar uma database view `ai_usage_summary` que pre-agrega os dados mais usados:
+
+```sql
+CREATE VIEW ai_usage_summary AS
+SELECT 
+  date_trunc('day', created_at) as day,
+  event_data->>'company_id' as company_id,
+  event_data->>'model_used' as model,
+  event_type,
+  COUNT(*) as call_count,
+  SUM((event_data->>'prompt_tokens')::int) as total_prompt_tokens,
+  SUM((event_data->>'completion_tokens')::int) as total_completion_tokens,
+  SUM((event_data->>'total_tokens')::int) as total_tokens
+FROM ai_analytics
+GROUP BY 1, 2, 3, 4;
+```
+
+O hook no frontend simplesmente faz `SELECT * FROM ai_usage_summary` com filtros de data e empresa. Mais limpo e performante.
+
+---
+
+### Melhoria 4: Converter custo para BRL (Real)
+
+O sistema e brasileiro. Mostrar custos so em USD nao e intuitivo. Adicionar uma coluna `usd_to_brl_rate` na tabela `ai_model_pricing` (ou uma config separada) e calcular o custo em ambas as moedas. O dashboard mostra em R$ por padrao, com USD entre parenteses.
+
+---
+
+### Melhoria 5: Alertas de consumo excessivo
+
+Adicionar um sistema simples de thresholds: quando uma empresa ultrapassa X tokens/dia ou Y reais/mes, destacar na tabela com cor vermelha e opcionalmente registrar um alerta. Isso e util para identificar uso abusivo ou inesperado.
+
+Implementacao: Comparar totais da view `ai_usage_summary` contra limites configurados na pagina de custo. Sem necessidade de cron — e calculado em tempo de renderizacao.
+
+---
+
+### Estrutura final de arquivos
+
 ```text
-// Mapa de objetivos criados
-createdObjectives: Record<string, string> = {}  // titulo -> id
+Novos arquivos:
+├── src/components/admin-v2/pages/ai/
+│   ├── AIUsageDashboardPage.tsx      (dashboard principal com KPIs + graficos)
+│   ├── AIByCompanyPage.tsx           (consumo agrupado por empresa)
+│   ├── AIByUserPage.tsx              (consumo agrupado por usuario)
+│   ├── AISessionsPage.tsx            (historico de sessoes com mensagens)
+│   └── AICostSettingsPage.tsx        (CRUD de precos por modelo + taxa USD/BRL)
+├── src/hooks/admin/useAIUsageStats.ts (hook central: queries na view + calculo de custo)
 
-// Durante criacao de objetivos (linha ~983):
-createdObjectives[objTitle] = obj.id;
+Arquivos modificados:
+├── src/components/admin-v2/config/sidebarContent.ts  (nova secao "IA Atlas")
+├── src/components/admin-v2/pages/index.ts            (exports)
+├── src/App.tsx                                        (rotas)
+├── supabase/functions/ai-agent-execute/index.ts      (log de agent_execution)
 
-// Mapa reverso: KR id -> objective id
-krToObjective: Record<string, string> = {}
-
-// Durante criacao de KRs (linha ~1027):
-krToObjective[kr.id] = obj.id;
-
-// Apos vincular KRs ao projeto (linha ~1094):
-// 1. Vincular objetivos explicitamente listados
-for linkedObj in projData.linked_objectives:
-  buscar objId por titulo em createdObjectives
-  insert project_objective_relations
-
-// 2. Inferir objetivos dos KRs vinculados
-const inferredObjIds = new Set<string>();
-for cada KR vinculado ao projeto:
-  if krToObjective[krId]:
-    inferredObjIds.add(krToObjective[krId])
-for cada objId inferido:
-  upsert project_objective_relations (ignorar duplicata)
+Migracao SQL:
+├── Tabela ai_model_pricing
+├── View ai_usage_summary
+├── Seed com precos atuais dos 3 modelos
 ```
 
-**Arquivo 2: `supabase/functions/ai-chat/index.ts`**
+### Pagina principal: AIUsageDashboardPage
 
-Atualizar o prompt do bulk_import (linha ~174) para incluir `linked_objectives` no schema de projetos:
-
+```text
+┌─────────────────────────────────────────────────────────────┐
+│  IA Atlas — Consumo e Custos                                │
+├────────┬────────┬────────┬────────┬────────┐                │
+│ Total  │ Tokens │ Custo  │ Sessoes│ Acoes  │                │
+│ Chama- │ Consu- │ Esti-  │ Ativas │ Execu- │                │
+│ das    │ midos  │ mado   │        │ tadas  │                │
+│  127   │ 1.2M   │ R$4.50 │   34   │   89   │                │
+├────────┴────────┴────────┴────────┴────────┘                │
+│                                                              │
+│  [Grafico: Tokens por Dia - ultimos 30 dias]                │
+│  ████ Prompt  ████ Completion                                │
+│                                                              │
+│  [Grafico: Distribuicao por Modelo]   [Top 5 Empresas]      │
+│  ┌──────────┐                          1. Copapel: 45%      │
+│  │  Pie     │                          2. Empresa B: 30%    │
+│  │  Chart   │                          3. Empresa C: 15%    │
+│  └──────────┘                          4. ...               │
+│                                                              │
+│  Ultimas chamadas (tabela)                                   │
+│  | Hora | Usuario | Empresa | Modelo | Tokens | Custo (R$) |│
+│  | ...  | ...     | ...     | ...    | ...    | ...        |│
+└─────────────────────────────────────────────────────────────┘
 ```
-projects: [{ name, description, status, progress, priority, 
-  linked_krs: ["título do KR"], 
-  linked_objectives: ["título do objetivo"] 
-}]
+
+O card "Acoes Executadas" e novo — vem dos registros `agent_execution` que serao adicionados ao `ai-agent-execute`.
+
+### Sidebar: nova secao
+
+Adicionar `{ id: "ai", icon: Sparkles, label: "IA Atlas" }` na `navItems` e `getSidebarContent`:
+
+```text
+IA Atlas
+├── Visao Geral        → /app/admin/ai
+├── Por Empresa        → /app/admin/ai/by-company
+├── Por Usuario        → /app/admin/ai/by-user
+├── Sessoes            → /app/admin/ai/sessions
+└── Custos e Limites   → /app/admin/ai/costs
 ```
 
-### Deploy
+### Rastreamento no ai-agent-execute
 
-Redeployar `ai-agent-execute` e `ai-chat`.
+Apos cada acao processada (linha onde `results.push(...)` acontece), inserir:
 
-### Resultado esperado
+```typescript
+await supabase.from('ai_analytics').insert({
+  user_id,
+  event_type: 'agent_execution',
+  event_data: {
+    company_id,
+    action_type: action.action,      // "create_pillar", "bulk_import", etc.
+    success: true,
+    items_created: results.length,    // para bulk_import: contagem total
+    execution_time_ms: Date.now() - startTime,
+  }
+});
+```
 
-Na proxima importacao em massa, os projetos serao vinculados tanto aos KRs quanto aos objetivos — explicitamente (se o Atlas enviar `linked_objectives`) e implicitamente (inferido dos KRs vinculados).
+### Ordem de implementacao sugerida
+
+1. Migracao SQL (tabela `ai_model_pricing` + view `ai_usage_summary` + seed)
+2. Tracking no `ai-agent-execute`
+3. Hook `useAIUsageStats`
+4. Sidebar + rotas
+5. Dashboard principal (`AIUsageDashboardPage`)
+6. Subpaginas (empresa, usuario, sessoes, custos)
 
