@@ -311,6 +311,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_model_pricing: {
+        Row: {
+          currency: string
+          input_cost_per_million: number
+          model_name: string
+          output_cost_per_million: number
+          updated_at: string
+          usd_to_brl_rate: number
+        }
+        Insert: {
+          currency?: string
+          input_cost_per_million?: number
+          model_name: string
+          output_cost_per_million?: number
+          updated_at?: string
+          usd_to_brl_rate?: number
+        }
+        Update: {
+          currency?: string
+          input_cost_per_million?: number
+          model_name?: string
+          output_cost_per_million?: number
+          updated_at?: string
+          usd_to_brl_rate?: number
+        }
+        Relationships: []
+      }
       ai_recommendations: {
         Row: {
           action_type: string
@@ -3479,7 +3506,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      ai_usage_summary: {
+        Row: {
+          call_count: number | null
+          company_id: string | null
+          day: string | null
+          event_type: string | null
+          model: string | null
+          total_completion_tokens: number | null
+          total_prompt_tokens: number | null
+          total_tokens: number | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       activate_user: {
