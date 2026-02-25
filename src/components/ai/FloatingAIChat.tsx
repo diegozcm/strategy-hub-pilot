@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { X, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, History, Plus, Trash2, ArrowLeft, Check, XCircle, Mic, Square, RefreshCw, ThumbsUp, ThumbsDown, Navigation, Loader2 } from 'lucide-react';
+import { X, Send, Sparkles, TrendingUp, AlertCircle, Lightbulb, History, Plus, Trash2, ArrowLeft, Check, XCircle, Mic, Square, RefreshCw, ThumbsUp, ThumbsDown, Navigation, Loader2, ChevronDown, Copy } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -180,6 +180,8 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [isPlanMode, setIsPlanMode] = useState(false);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -187,6 +189,9 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const chatRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef<number>(0);
+  const prevMessageCountRef = useRef<number>(messages.length);
+  const scrollViewportRef = useRef<HTMLElement | null>(null);
   const { toast } = useToast();
 
   // Close on outside click
@@ -302,14 +307,59 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      const viewport = document.querySelector('[data-radix-scroll-area-viewport]');
+      const viewport = scrollViewportRef.current || document.querySelector('[data-radix-scroll-area-viewport]');
       if (viewport) viewport.scrollTop = viewport.scrollHeight;
     }, 100);
   }, []);
 
+  // Save scroll position when closing, restore when opening
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading, isStreaming, isExecuting, scrollToBottom]);
+    if (isOpen) {
+      // Restore scroll position on reopen
+      setTimeout(() => {
+        const viewport = scrollViewportRef.current || document.querySelector('.atlas-chat-scrollarea [data-radix-scroll-area-viewport]');
+        if (viewport) {
+          scrollViewportRef.current = viewport as HTMLElement;
+          viewport.scrollTop = scrollPositionRef.current;
+        }
+      }, 150);
+    } else {
+      // Save scroll position on close
+      const viewport = scrollViewportRef.current;
+      if (viewport) {
+        scrollPositionRef.current = viewport.scrollTop;
+      }
+    }
+  }, [isOpen]);
+
+  // Only auto-scroll when NEW messages are added, not on reopen
+  useEffect(() => {
+    if (messages.length > prevMessageCountRef.current) {
+      scrollToBottom();
+    }
+    prevMessageCountRef.current = messages.length;
+  }, [messages.length, scrollToBottom]);
+
+  // Auto-scroll for loading/streaming/executing indicators
+  useEffect(() => {
+    if (isLoading || isStreaming || isExecuting) {
+      scrollToBottom();
+    }
+  }, [isLoading, isStreaming, isExecuting, scrollToBottom]);
+
+  const handleScroll = useCallback(() => {
+    const viewport = scrollViewportRef.current;
+    if (!viewport) return;
+    const { scrollTop, clientHeight, scrollHeight } = viewport;
+    setShowScrollToBottom(scrollTop + clientHeight < scrollHeight - 100);
+  }, []);
+
+  const handleCopyMessage = useCallback((content: string, index: number) => {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    });
+  }, []);
 
   // Improved drag: user-select none during drag, free positioning
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -498,6 +548,9 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
     const updatedMessages = [...messages, userMessage];
     onMessagesChange(updatedMessages);
     setChatInput('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
     setIsLoading(true);
     try {
       let currentSessionId = sessionId;
@@ -636,6 +689,19 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
         @keyframes waveform-bar {
           0%, 100% { height: 4px; }
           50% { height: 20px; }
+        }
+        .atlas-chat-border-wrapper textarea::-webkit-scrollbar {
+          width: 4px;
+        }
+        .atlas-chat-border-wrapper textarea::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .atlas-chat-border-wrapper textarea::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 4px;
+        }
+        .atlas-chat-border-wrapper textarea::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.25);
         }
       `}</style>
       <motion.div
@@ -782,10 +848,18 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                   </div>
                 )}
 
-                <ScrollArea className="flex-1 pr-2 atlas-chat-scrollarea">
+                <div className="relative flex-1 overflow-hidden">
+                <ScrollArea className="h-full pr-2 atlas-chat-scrollarea" onScrollCapture={(e: any) => {
+                  const viewport = e.target;
+                  if (viewport && viewport.hasAttribute('data-radix-scroll-area-viewport')) {
+                    scrollViewportRef.current = viewport;
+                    const { scrollTop, clientHeight, scrollHeight } = viewport;
+                    setShowScrollToBottom(scrollTop + clientHeight < scrollHeight - 100);
+                  }
+                }}>
                   <div className="space-y-4">
                     {messages.map((msg, index) => (
-                      <div key={index} className={cn("flex", msg.role === 'user' ? "justify-end" : "justify-start")}>
+                      <div key={index} className={cn("flex group/msg", msg.role === 'user' ? "justify-end" : "justify-start")}>
                         <div 
                           className={cn(
                             "rounded-xl px-4 py-2.5 max-w-[85%]",
@@ -860,9 +934,33 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                               ⚠️ Erro ao executar
                             </div>
                           )}
-                          {/* Feedback buttons */}
+                          {/* Action buttons: copy for user, copy+feedback for assistant */}
+                          {msg.role === 'user' && (
+                            <div className="flex items-center gap-1 mt-1.5 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                              <button
+                                className="h-6 w-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors"
+                                title="Copiar mensagem"
+                                onClick={() => handleCopyMessage(msg.content, index)}
+                              >
+                                {copiedIndex === index 
+                                  ? <Check className="h-3.5 w-3.5" style={{ color: '#4ade80' }} />
+                                  : <Copy className="h-3.5 w-3.5" style={{ color: '#888' }} />
+                                }
+                              </button>
+                            </div>
+                          )}
                           {msg.role === 'assistant' && msg.planStatus !== 'executing' && (
                             <div className="flex items-center gap-1 mt-2 pt-2" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                              <button
+                                className="h-6 w-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors"
+                                title="Copiar mensagem"
+                                onClick={() => handleCopyMessage(msg.content, index)}
+                              >
+                                {copiedIndex === index 
+                                  ? <Check className="h-3.5 w-3.5" style={{ color: '#4ade80' }} />
+                                  : <Copy className="h-3.5 w-3.5" style={{ color: '#888' }} />
+                                }
+                              </button>
                               <button
                                 className="h-6 w-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors"
                                 title="Gerar outra resposta"
@@ -914,6 +1012,24 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                     <div ref={messagesEndRef} />
                   </div>
                 </ScrollArea>
+
+                {/* Scroll to bottom button */}
+                <AnimatePresence>
+                  {showScrollToBottom && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="absolute bottom-2 left-1/2 -translate-x-1/2 h-8 w-8 rounded-full flex items-center justify-center shadow-lg transition-colors z-10"
+                      style={{ background: 'rgba(30, 30, 50, 0.9)', border: '1px solid rgba(255,255,255,0.15)' }}
+                      onClick={() => { scrollToBottom(); setShowScrollToBottom(false); }}
+                      title="Ir para o final"
+                    >
+                      <ChevronDown className="h-4 w-4" style={{ color: '#e0e0e0' }} />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+                </div>
 
                 {pastedImages.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-2">
