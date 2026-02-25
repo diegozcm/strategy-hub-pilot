@@ -1,4 +1,4 @@
-import { LucideIcon, LayoutDashboard, Building2, Users, Package, Monitor, Settings, FileText, Mail, Plus, Filter, Clock, CheckCircle, AlertCircle, Archive, UserPlus, Shield, Database, Trash2, Eye, Activity, Server, Bell, Lock, Download, Sparkles, Globe } from "lucide-react";
+import { LucideIcon, LayoutDashboard, Building2, Users, Package, Monitor, Settings, FileText, Mail, Plus, Filter, Clock, CheckCircle, AlertCircle, Archive, UserPlus, Shield, Database, Trash2, Eye, Activity, Server, Bell, Lock, Download, Sparkles, Globe, Bot, Coins, MessageSquare } from "lucide-react";
 
 export interface MenuItemT {
   icon?: LucideIcon;
@@ -25,6 +25,7 @@ export const navItems = [
   { id: "companies", icon: Building2, label: "Empresas" },
   { id: "users", icon: Users, label: "Usuários" },
   { id: "modules", icon: Package, label: "Módulos" },
+  { id: "ai", icon: Bot, label: "IA Atlas" },
   { id: "monitoring", icon: Monitor, label: "Monitoramento" },
   { id: "releases", icon: Sparkles, label: "Novidades" },
   { id: "emails", icon: Mail, label: "Templates" },
@@ -140,6 +141,27 @@ export function getSidebarContent(activeSection: NavSection): SidebarContent {
               { label: "Gerente", href: "/app/admin/modules/roles/manager" },
               { label: "Membro", href: "/app/admin/modules/roles/member" },
             ]},
+          ],
+        },
+      ],
+    },
+
+    ai: {
+      title: "IA Atlas",
+      sections: [
+        {
+          title: "Consumo",
+          items: [
+            { icon: Activity, label: "Visão Geral", href: "/app/admin/ai", isActive: true },
+            { icon: Building2, label: "Por Empresa", href: "/app/admin/ai/by-company" },
+            { icon: Users, label: "Por Usuário", href: "/app/admin/ai/by-user" },
+            { icon: MessageSquare, label: "Sessões", href: "/app/admin/ai/sessions" },
+          ],
+        },
+        {
+          title: "Configuração",
+          items: [
+            { icon: Coins, label: "Custos e Limites", href: "/app/admin/ai/costs" },
           ],
         },
       ],

@@ -117,6 +117,11 @@ import {
   NotificationTemplatePage,
   NewTemplatePage,
   PreviewEmailPage,
+  AIUsageDashboardPage,
+  AIByCompanyPage,
+  AIByUserPage,
+  AISessionsPage,
+  AICostSettingsPage,
 } from "@/components/admin-v2/pages";
 
 const queryClient = new QueryClient({
@@ -280,6 +285,13 @@ const App = () => (
                   <Route path="emails/notifications" element={<NotificationTemplatePage />} />
                   <Route path="emails/new" element={<NewTemplatePage />} />
                   <Route path="emails/preview" element={<PreviewEmailPage />} />
+
+                  {/* AI Atlas */}
+                  <Route path="ai" element={<AIUsageDashboardPage />} />
+                  <Route path="ai/by-company" element={<AIByCompanyPage />} />
+                  <Route path="ai/by-user" element={<AIByUserPage />} />
+                  <Route path="ai/sessions" element={<AISessionsPage />} />
+                  <Route path="ai/costs" element={<AICostSettingsPage />} />
                 </Route>
 
                 {/* Legacy Admin (V1) - backup */}
