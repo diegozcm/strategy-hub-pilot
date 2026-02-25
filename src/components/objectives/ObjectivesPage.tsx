@@ -229,6 +229,18 @@ export const ObjectivesPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      // Cascade: delete all KRs and their related data first
+      const objectiveKRs = keyResults.filter(kr => kr.objective_id === selectedObjective.id);
+      if (objectiveKRs.length > 0) {
+        const krIds = objectiveKRs.map(kr => kr.id);
+        await supabase.from('kr_fca').delete().in('key_result_id', krIds);
+        await supabase.from('kr_initiatives').delete().in('key_result_id', krIds);
+        await supabase.from('key_result_values').delete().in('key_result_id', krIds);
+        await supabase.from('kr_monthly_actions').delete().in('key_result_id', krIds);
+        const { error: krError } = await supabase.from('key_results').delete().in('id', krIds);
+        if (krError) throw krError;
+      }
+
       const { error } = await supabase
         .from('strategic_objectives')
         .delete()
@@ -884,10 +896,16 @@ export const ObjectivesPage: React.FC = () => {
             onDelete={async () => {
               if (!selectedKeyResultForOverview) return;
               try {
+                const krId = selectedKeyResultForOverview.id;
+                // Cascade: delete KR related data first
+                await supabase.from('kr_fca').delete().eq('key_result_id', krId);
+                await supabase.from('kr_initiatives').delete().eq('key_result_id', krId);
+                await supabase.from('key_result_values').delete().eq('key_result_id', krId);
+                await supabase.from('kr_monthly_actions').delete().eq('key_result_id', krId);
                 const { error } = await supabase
                   .from('key_results')
                   .delete()
-                  .eq('id', selectedKeyResultForOverview.id);
+                  .eq('id', krId);
                 if (error) throw error;
                 toast({ title: "Sucesso", description: "Resultado-chave excluído com sucesso!" });
                 setIsKROverviewModalOpen(false);

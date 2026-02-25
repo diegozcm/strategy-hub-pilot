@@ -429,10 +429,16 @@ export const ObjectiveCard = ({
           onDelete={async () => {
             if (!selectedKeyResultForOverview) return;
             try {
+              const krId = selectedKeyResultForOverview.id;
+              // Cascade: delete KR related data first
+              await supabase.from('kr_fca').delete().eq('key_result_id', krId);
+              await supabase.from('kr_initiatives').delete().eq('key_result_id', krId);
+              await supabase.from('key_result_values').delete().eq('key_result_id', krId);
+              await supabase.from('kr_monthly_actions').delete().eq('key_result_id', krId);
               const { error } = await supabase
                 .from('key_results')
                 .delete()
-                .eq('id', selectedKeyResultForOverview.id);
+                .eq('id', krId);
               if (error) throw error;
               toast({ title: "Sucesso", description: "Resultado-chave excluído com sucesso!" });
               setIsKROverviewModalOpen(false);
@@ -606,10 +612,16 @@ export const ObjectiveCard = ({
         onDelete={async () => {
           if (!selectedKeyResultForOverview) return;
           try {
+            const krId = selectedKeyResultForOverview.id;
+            // Cascade: delete KR related data first
+            await supabase.from('kr_fca').delete().eq('key_result_id', krId);
+            await supabase.from('kr_initiatives').delete().eq('key_result_id', krId);
+            await supabase.from('key_result_values').delete().eq('key_result_id', krId);
+            await supabase.from('kr_monthly_actions').delete().eq('key_result_id', krId);
             const { error } = await supabase
               .from('key_results')
               .delete()
-              .eq('id', selectedKeyResultForOverview.id);
+              .eq('id', krId);
             if (error) throw error;
             toast({ title: "Sucesso", description: "Resultado-chave excluído com sucesso!" });
             setIsKROverviewModalOpen(false);
