@@ -1636,6 +1636,24 @@ serve(async (req) => {
 
     const allSucceeded = results.every(r => r.success);
 
+    // Log analytics for each action executed
+    try {
+      const analyticsEntries = results.map((r, idx) => ({
+        user_id: user.id,
+        event_type: 'agent_execution',
+        event_data: {
+          company_id,
+          action_type: r.type || actions[idx]?.type || 'unknown',
+          success: r.success,
+          items_created: r.type === 'bulk_import' ? (r.summary?.total_items || 0) : (r.success ? 1 : 0),
+          error: r.error || null,
+        },
+      }));
+      await supabase.from('ai_analytics').insert(analyticsEntries);
+    } catch (analyticsErr) {
+      console.error('⚠️ Failed to log agent analytics:', analyticsErr);
+    }
+
     console.log(`✅ Atlas Agent Execute - user: ${user.id}, company: ${company_id}, actions: ${actions.length}, success: ${allSucceeded}, results: ${JSON.stringify(results)}`);
 
     return new Response(

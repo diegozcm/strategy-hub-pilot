@@ -83,3 +83,10 @@ export { default as PasswordRecoveryTemplatePage } from "./emails/PasswordRecove
 export { default as NotificationTemplatePage } from "./emails/NotificationTemplatePage";
 export { default as NewTemplatePage } from "./emails/NewTemplatePage";
 export { default as PreviewEmailPage } from "./emails/PreviewEmailPage";
+
+// AI Atlas pages
+export { default as AIUsageDashboardPage } from "./ai/AIUsageDashboardPage";
+export { default as AIByCompanyPage } from "./ai/AIByCompanyPage";
+export { default as AIByUserPage } from "./ai/AIByUserPage";
+export { default as AISessionsPage } from "./ai/AISessionsPage";
+export { default as AICostSettingsPage } from "./ai/AICostSettingsPage";
