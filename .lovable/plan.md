@@ -1,87 +1,53 @@
 
 
-## Plano: Atlas Hub Full-Page Chat na Sidebar
+## Plano: COFOUND Identity + Fixes no Atlas Hub
 
-### Contexto Atual
-- O botão "Atlas Hub" fica no **header** (`DashboardHeader.tsx`) e linka para `/app/ai-copilot` (página de insights/diagnóstico)
-- O chat do Atlas é um **popup flutuante** (`FloatingAIChat.tsx`, 1210 linhas) com todas as ferramentas (texto, Plan, mídia, microfone, streaming, histórico de sessões, execução de planos)
-- A sidebar (`Sidebar.tsx`) tem duas seções: STRATEGY HUB e STARTUP HUB
-- A página de insights (`AICopilotPage.tsx`) mostra diagnóstico estratégico, não o chat
+### Problemas identificados
 
-### O que muda
+1. **Input bar cortado** - O container usa `-m-4 lg:-m-6` mas o `h-full` não compensa, cortando o fundo da página
+2. **Visual genérico** - Usa cores padrão do design system sem identidade COFOUND
+3. **Ícone Brain** - Precisa trocar pelo ColorOrb animado na sidebar e nas mensagens do assistant
+4. **Popup aparece no Atlas Hub** - O FloatingAIButton/Chat não esconde quando estamos em `/app/atlas-hub`
 
-**1. Mover Atlas Hub para a Sidebar (acima do Strategy HUB)**
-- Adicionar um botão "Atlas Hub" com ícone Brain no topo da sidebar, antes da seção STRATEGY HUB
-- Visível apenas quando `hasAIAccess === true`
-- Ao clicar, navega para `/app/atlas-hub` (nova rota full-page)
+### Mudanças por arquivo
 
-**2. Remover botão do Header**
-- Remover o bloco `NavLink to="/app/ai-copilot"` do `DashboardHeader.tsx`
+**1. `src/components/ai/AtlasHubPage.tsx`**
+- Corrigir layout: trocar `-m-4 lg:-m-6` por dimensões absolutas que ocupem 100% do espaço disponível
+- Adicionar mini ColorOrb ao lado do título "Atlas Hub" no header
 
-**3. Criar página full-page do Atlas Chat (`/app/atlas-hub`)**
-Layout estilo Claude/ChatGPT com 3 painéis:
+**2. `src/components/layout/Sidebar.tsx`**
+- Trocar ícone `Brain` por um mini ColorOrb (`color-orb-atlas`) no botão Atlas Hub
+- Aplicar cor `cofound-green` (#CDD966) quando ativo, `cofound-blue-light` (#38B6FF) quando inativo
 
-```text
-┌──────────┬─────────────────────────────────┐
-│ Sidebar  │  Atlas Hub Chat (full-page)     │
-│ (app)    │                                 │
-│          │ ┌─────────┬───────────────────┐  │
-│ [Atlas]  │ │ Panel   │                   │  │
-│ ──────── │ │ Lateral │   Área de Chat    │  │
-│ STRATEGY │ │         │                   │  │
-│  Dashboard│ │ - Nova  │  Mensagens com    │  │
-│  Mapa... │ │   conversa│  markdown, plans │  │
-│          │ │ - Histórico│  streaming      │  │
-│ STARTUP  │ │ - Insights│                  │  │
-│  ...     │ │         │ ┌───────────────┐ │  │
-│          │ │         │ │ Input bar     │ │  │
-│          │ │         │ │ +Plan Mic Send│ │  │
-│          │ │         │ └───────────────┘ │  │
-│          │ └─────────┴───────────────────┘  │
-└──────────┴─────────────────────────────────┘
-```
+**3. `src/components/ai/atlas/AtlasWelcome.tsx`**
+- Trocar ícone Sparkles por ColorOrb animado como avatar central
+- Aplicar cores COFOUND: botões quick-action com borda `cofound-blue-light`, hover com `cofound-green`
 
-**Panel lateral esquerdo** (colapsável):
-- Botão "Nova conversa"
-- Lista de sessões anteriores (reutiliza `ai_chat_sessions` existente)
-- Seção "Insights" que mostra os insights do diagnóstico (reutiliza lógica do `AICopilotPage`)
+**4. `src/components/ai/atlas/AtlasMessageBubble.tsx`**
+- Adicionar mini ColorOrb ao lado das mensagens do assistant (avatar)
+- User messages: usar `cofound-blue-dark` como background
+- Assistant messages: manter `bg-muted` mas com accent colors COFOUND nos botões de ação
 
-**Área de chat principal:**
-- Tela de boas-vindas (quando sem conversa ativa) inspirada no modelo enviado: logo Atlas animado, mensagem de boas-vindas, sugestões rápidas (Análise de Performance, Pontos de Atenção, Sugestões)
-- Área de mensagens com scroll, markdown rendering, blocos [ATLAS_PLAN] com aprovar/reprovar
-- Barra de input na parte inferior com: botão anexo (+), toggle Plan, microfone, botão enviar
-- Mesma lógica de streaming SSE, transcrição de áudio, upload de imagens
+**5. `src/components/ai/atlas/AtlasInputBar.tsx`**
+- Botão send: usar `cofound-blue-light` como background
+- Botão Plan ativo: usar `cofound-green` como accent
+- Garantir padding-bottom suficiente para não ficar cortado
 
-**4. Reutilização de lógica existente**
-- Toda a lógica de `FloatingAIChat.tsx` (streaming, plan extraction, session management, plan execution, audio recording) será extraída para um hook `useAtlasChat` compartilhado
-- O `FloatingAIChat.tsx` popup continua existindo mas usa o mesmo hook
-- A nova página full-page usa o mesmo hook com layout diferente
+**6. `src/components/ai/atlas/AtlasSidebar.tsx`**
+- Botão "Nova conversa": estilo com `cofound-blue-light`
+- Sessão ativa: highlight com `cofound-green`
+- Ícone Insights: cor `cofound-green`
 
-**5. Manter o popup flutuante**
-- O botão flutuante + popup continuam funcionando normalmente para acesso rápido
-- O chat full-page é a experiência completa; o popup é o atalho
+**7. `src/components/ai/atlas/AtlasChatArea.tsx`**
+- Typing indicator dots: usar `cofound-blue-light` ao invés de `bg-primary`
 
-### Arquivos a criar/modificar
+**8. `src/components/layout/AppLayout.tsx`**
+- Verificar rota atual via `useLocation()` - se for `/app/atlas-hub`, esconder tanto o `FloatingAIButton` quanto o `FloatingAIChat`
 
-| Arquivo | Ação |
-|---------|------|
-| `src/hooks/useAtlasChat.ts` | **Criar** - Extrair lógica de chat do FloatingAIChat |
-| `src/components/ai/AtlasHubPage.tsx` | **Criar** - Página full-page principal |
-| `src/components/ai/atlas/AtlasSidebar.tsx` | **Criar** - Panel lateral com sessões + insights |
-| `src/components/ai/atlas/AtlasChatArea.tsx` | **Criar** - Área de chat com mensagens |
-| `src/components/ai/atlas/AtlasWelcome.tsx` | **Criar** - Tela de boas-vindas |
-| `src/components/ai/atlas/AtlasInputBar.tsx` | **Criar** - Barra de input com ferramentas |
-| `src/components/ai/atlas/AtlasMessageBubble.tsx` | **Criar** - Componente de mensagem |
-| `src/components/layout/Sidebar.tsx` | **Modificar** - Adicionar botão Atlas Hub no topo |
-| `src/components/layout/DashboardHeader.tsx` | **Modificar** - Remover botão Atlas Hub |
-| `src/components/ai/FloatingAIChat.tsx` | **Modificar** - Refatorar para usar useAtlasChat |
-| Rotas (App.tsx ou similar) | **Modificar** - Adicionar rota `/app/atlas-hub` |
-
-### Detalhes Técnicos
-
-- **Não instalar** `next`, `use-stick-to-bottom`, `ai` (dependências Next.js do componente de referência) - usar ScrollArea do Radix existente
-- **Não copiar** os componentes UI fornecidos diretamente - são referência visual apenas (muitos são Next.js incompatíveis)
-- **Usar** `motion/react` (já instalado) para animações de transição
-- **Usar** `react-markdown` (já instalado) para renderização de mensagens
-- **Usar** `react-resizable-panels` (já instalado) para o layout sidebar/chat colapsável
+### ColorOrb reutilizável
+Criar um componente inline simples `AtlasOrb` que renderiza a div `color-orb-atlas` com as CSS variables corretas, aceita props de tamanho. Usado em:
+- Sidebar (20x20px)
+- Welcome page (80x80px) 
+- Message bubbles (28x28px)
+- Chat header (24x24px)
 
