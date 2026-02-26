@@ -1,0 +1,1 @@
+DELETE FROM public.ai_analytics WHERE event_data->>'company_id' IS NULL;
