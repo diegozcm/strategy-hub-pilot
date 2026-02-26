@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import { ChatMessage } from '@/hooks/useAtlasChat';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { AtlasOrb } from './AtlasOrb';
+import { useAuth } from '@/hooks/useMultiTenant';
 
 interface AtlasMessageBubbleProps {
   msg: ChatMessage;
@@ -21,6 +22,7 @@ export const AtlasMessageBubble: React.FC<AtlasMessageBubbleProps> = ({
   msg, index, copiedIndex, onExecutePlan, onRejectPlan, onCopy, onRetry, onFeedback
 }) => {
   const isUser = msg.role === 'user';
+  const { profile } = useAuth();
 
   return (
     <div className={cn("flex flex-col group/msg", isUser ? "items-end" : "items-start")}>
@@ -28,8 +30,12 @@ export const AtlasMessageBubble: React.FC<AtlasMessageBubbleProps> = ({
       <div className={cn("flex gap-2.5 max-w-[85%]", isUser ? "flex-row-reverse" : "flex-row")}>
         {/* Avatar */}
         {isUser ? (
-          <div className="mt-1 shrink-0 h-7 w-7 rounded-full bg-[hsl(var(--cofound-blue-light))] flex items-center justify-center">
-            <User className="h-3.5 w-3.5 text-white" />
+          <div className="mt-1 shrink-0 h-7 w-7 rounded-full bg-[hsl(var(--cofound-blue-light))] flex items-center justify-center overflow-hidden">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Avatar" className="h-full w-full object-cover" />
+            ) : (
+              <User className="h-3.5 w-3.5 text-white" />
+            )}
           </div>
         ) : (
           <div className="mt-1 shrink-0">
