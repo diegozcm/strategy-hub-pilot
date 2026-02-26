@@ -261,7 +261,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
               'Content-Type': 'application/json',
               'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkcHp4amxuYXF3bHlxb3lveWhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIyNTE1ODYsImV4cCI6MjA2NzgyNzU4Nn0.RUAqyDG5-eM35mH3QNFO3iuR_Wqe5q1tiJSHroH_upk',
             },
-            body: JSON.stringify({ audio: base64 }),
+            body: JSON.stringify({ audio: base64, company_id: company?.id || null }),
           });
 
           const result = await response.json();
