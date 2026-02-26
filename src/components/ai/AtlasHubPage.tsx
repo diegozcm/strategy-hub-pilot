@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import { PanelGroup, Panel, PanelResizeHandle } from 'react-resizable-panels';
-import { PanelLeftClose, PanelLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAtlasChat } from '@/hooks/useAtlasChat';
 import { AtlasSidebar } from './atlas/AtlasSidebar';
 import { AtlasChatArea } from './atlas/AtlasChatArea';
-import { AtlasOrb } from './atlas/AtlasOrb';
 
 export const AtlasHubPage: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -38,19 +35,6 @@ export const AtlasHubPage: React.FC = () => {
         {/* Chat Panel */}
         <Panel defaultSize={sidebarCollapsed ? 100 : 78}>
           <div className="flex flex-col h-full">
-            {/* Mini header with sidebar toggle */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card shrink-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              >
-                {sidebarCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-              </Button>
-              <AtlasOrb size={24} />
-              <span className="text-sm font-medium text-foreground">Atlas Hub</span>
-            </div>
 
             {/* Chat area */}
             <AtlasChatArea
