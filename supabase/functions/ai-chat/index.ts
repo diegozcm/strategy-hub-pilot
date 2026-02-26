@@ -83,6 +83,43 @@ Os itens do menu lateral são:
 3. Para criar uma nova sessão, clique em **"Nova Sessão"**
 `;
 
+// Detect if a message needs the Pro model (complex strategic intent)
+function needsProModel(msg: string): boolean {
+  const normalized = msg.toLowerCase().trim();
+  
+  // Strategic entities
+  const entities = '(objetivo|objetivos|kr|key.?result|resultado.?chave|pilar|pilares|iniciativa|iniciativas|projeto|projetos|swot|golden.?circle|fca|reuni[aã]o|reunioes|task|tarefa|tarefas|planejamento|bsc|balanced.?scorecard|mapa.?estrat[eé]gico|vis[aã]o|miss[aã]o|an[aá]lise)';
+  
+  // Creation/modification patterns
+  const createPatterns = new RegExp(`(cri[ae]r?|adicionar?|cadastrar?|implementar?|montar?|estruturar?|gerar?|elaborar?|desenvolver?|propor?|sugerir?|definir?|planejar?|organizar?|configurar?).*${entities}`, 'i');
+  
+  // Deep analysis patterns
+  const analysisPatterns = new RegExp(`(analis[ae]r?|diagnosticar?|avaliar?|comparar?|detalhar?|investigar?).*${entities}`, 'i');
+  
+  // Destructive operations
+  const deletePatterns = new RegExp(`(deletar?|remover?|excluir?|apagar?).*${entities}`, 'i');
+  
+  // Structure update (not simple check-in)
+  const updatePatterns = new RegExp(`(atualizar?|editar?|modificar?|alterar?|mudar?).*${entities}`, 'i');
+  
+  // Direct strategic keywords (no verb needed)
+  const directPatterns = /plano estrat[eé]gico|import(ar|e|ação).*(bulk|massa|plan|estrat)|bulk.?import|crie.*completo|monte.*estrutura|fa[cç]a.*planejamento/i;
+  
+  // Complex multi-entity requests
+  const complexPatterns = /com\s+\d+\s+(kr|objetivo|iniciativa|pilar)|incluindo.*kr|vinculad[oa]|hierarquia|cascata/i;
+
+  // Check-in exclusion (simple value updates stay on Flash)
+  const isSimpleCheckin = /^(atualiz|check.?in|registr).*(valor|progresso|avan[cç]o)\s*(do|da|de)?\s*(kr|resultado)/i.test(normalized);
+  if (isSimpleCheckin) return false;
+
+  return createPatterns.test(normalized) || 
+         analysisPatterns.test(normalized) || 
+         deletePatterns.test(normalized) || 
+         updatePatterns.test(normalized) ||
+         directPatterns.test(normalized) ||
+         complexPatterns.test(normalized);
+}
+
 // Detect if the message is a simple greeting/question that doesn't need company data
 function isSimpleMessage(msg: string): boolean {
   const normalized = msg.toLowerCase().trim().replace(/[?!.,;:]+$/g, '');
@@ -415,11 +452,20 @@ serve(async (req) => {
 
     const allowedModels = ['openai/gpt-5-mini', 'openai/gpt-5', 'openai/gpt-5-nano', 'openai/gpt-5.2', 'google/gemini-2.5-pro', 'google/gemini-2.5-flash', 'google/gemini-2.5-flash-lite', 'google/gemini-2.5-flash-image', 'google/gemini-3-pro-preview', 'google/gemini-3-flash-preview', 'google/gemini-3-pro-image-preview'];
     const rawModel = aiSettings?.model || 'google/gemini-3-flash-preview';
-    const model = plan_mode
+    
+    // Auto-routing: detect complex intent even when plan_mode is off
+    const autoDetectedPlan = !plan_mode && needsProModel(message);
+    const effectivePlanMode = plan_mode || autoDetectedPlan;
+    
+    const model = effectivePlanMode
       ? 'google/gemini-2.5-pro'
       : (allowedModels.includes(rawModel) ? rawModel : 'google/gemini-3-flash-preview');
     const temperature = aiSettings?.temperature || 0.7;
-    const maxTokens = plan_mode ? 16000 : (aiSettings?.max_tokens || 2000);
+    const maxTokens = effectivePlanMode ? 16000 : (aiSettings?.max_tokens || 2000);
+    
+    if (autoDetectedPlan) {
+      console.log(`🧠 Auto-routing: detected complex intent, upgrading to Pro model`);
+    }
 
     const finalSystemPrompt = buildSystemPrompt(userName, userPosition, userDepartment, companyName, aiSettings?.system_prompt || null, userPermissions);
 
@@ -602,16 +648,19 @@ serve(async (req) => {
     }
 
     // Build user message — support multimodal (text + image)
+    // When auto-routing detected complex intent, prefix message so model knows to generate [ATLAS_PLAN]
+    const effectiveMessage = autoDetectedPlan ? `[MODO PLAN ATIVO] ${message}` : message;
+    
     if (image) {
       aiMessages.push({
         role: 'user',
         content: [
-          { type: 'text', text: message },
+          { type: 'text', text: effectiveMessage },
           { type: 'image_url', image_url: { url: image } },
         ],
       });
     } else {
-      aiMessages.push({ role: 'user', content: message });
+      aiMessages.push({ role: 'user', content: effectiveMessage });
     }
 
     // Add context data AFTER user message ONLY if needed
@@ -661,6 +710,10 @@ serve(async (req) => {
       // Process stream in background - re-emit chunks while extracting usage
       (async () => {
         try {
+          // Inject auto_plan metadata as first SSE event if auto-detected
+          if (autoDetectedPlan) {
+            await writer.write(encoder.encode(`data: ${JSON.stringify({ auto_plan: true })}\n\n`));
+          }
           let buffer = '';
           while (true) {
             const { done, value } = await reader.read();
@@ -794,6 +847,7 @@ serve(async (req) => {
         success: true,
         response: assistantMessage,
         model_used: model,
+        auto_plan: autoDetectedPlan || undefined,
         company_id,
         context_summary: {
           objectives: objectives.length,
