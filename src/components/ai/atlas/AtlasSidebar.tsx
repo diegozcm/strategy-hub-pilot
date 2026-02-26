@@ -38,7 +38,7 @@ export const AtlasSidebar: React.FC<AtlasSidebarProps> = ({
         <Button
           variant="outline"
           size="sm"
-          className="w-full justify-start gap-2 border-[hsl(var(--cofound-blue-light))]/30 text-[hsl(var(--cofound-blue-light))] hover:bg-[hsl(var(--cofound-blue-light))]/10"
+          className="w-full justify-start gap-2 bg-[hsl(var(--cofound-blue-light))]/10 border-[hsl(var(--cofound-blue-light))]/30 text-[hsl(var(--cofound-blue-light))] hover:bg-[hsl(var(--cofound-blue-light))]/20"
           onClick={onNewConversation}
         >
           <Plus className="h-4 w-4" />
@@ -47,7 +47,7 @@ export const AtlasSidebar: React.FC<AtlasSidebarProps> = ({
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start gap-2 text-[hsl(var(--cofound-green))]"
+          className="w-full justify-start gap-2 bg-[hsl(var(--cofound-green))]/10 text-[hsl(var(--cofound-green))] hover:bg-[hsl(var(--cofound-green))]/20"
           onClick={onShowInsights}
         >
           <Lightbulb className="h-4 w-4" />
