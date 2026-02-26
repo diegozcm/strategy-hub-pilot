@@ -23,7 +23,11 @@ const COLORS = ["hsl(203, 100%, 61%)", "hsl(66, 59%, 63%)", "hsl(0, 84%, 60%)", 
 
 const AIUsageDashboardPage = () => {
   const [days, setDays] = useState("30");
-  const dateFrom = subDays(new Date(), parseInt(days)).toISOString();
+  const dateFrom = useMemo(() => {
+    const d = subDays(new Date(), parseInt(days));
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString();
+  }, [days]);
   const { data: analytics = [], isLoading: l1, isError: e1 } = useAIAnalyticsRaw(dateFrom);
   const { data: pricing = [], isLoading: l2, isError: e2 } = useModelPricing();
   const { data: companiesMap = {}, isLoading: l3 } = useCompaniesMap();
