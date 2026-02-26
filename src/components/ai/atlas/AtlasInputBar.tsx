@@ -25,7 +25,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
   isDisabled, pastedImages, onRemoveImage, textareaRef,
 }) => {
   return (
-    <div className="border-t border-border bg-card px-4 py-3">
+    <div className="border-t border-border bg-card px-4 py-3 shrink-0">
       {/* Pasted images */}
       {pastedImages.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2">
@@ -52,7 +52,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
                 {Array.from({ length: 10 }).map((_, i) => (
                   <div
                     key={i}
-                    className="w-1 rounded-full bg-primary"
+                    className="w-1 rounded-full bg-[hsl(var(--cofound-blue-light))]"
                     style={{ animation: `waveform-bar 0.8s ease-in-out ${i * 0.08}s infinite` }}
                   />
                 ))}
@@ -63,7 +63,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
             </div>
           ) : isTranscribing ? (
             <div className="flex items-center justify-center gap-2 py-4 px-3" style={{ minHeight: '44px' }}>
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <Loader2 className="h-4 w-4 animate-spin text-[hsl(var(--cofound-blue-light))]" />
               <span className="text-sm text-muted-foreground">Transcrevendo...</span>
             </div>
           ) : (
@@ -105,7 +105,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
               disabled={isDisabled}
               className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg shrink-0 transition-all border ${
                 isPlanMode
-                  ? 'bg-primary/10 border-primary/30 text-primary'
+                  ? 'bg-[hsl(var(--cofound-green))]/15 border-[hsl(var(--cofound-green))]/40 text-[hsl(var(--cofound-green))]'
                   : 'border-border text-muted-foreground hover:bg-accent'
               }`}
             >
@@ -131,7 +131,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
             <button
               onClick={onSend}
               disabled={isDisabled || !chatInput.trim() || isRecording || isTranscribing}
-              className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-30 bg-primary text-primary-foreground"
+              className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-30 bg-[hsl(var(--cofound-blue-light))] text-white"
             >
               <Navigation className="h-3.5 w-3.5" />
             </button>

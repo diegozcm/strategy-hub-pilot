@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { ChatMessage } from '@/hooks/useAtlasChat';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { AtlasOrb } from './AtlasOrb';
 
 interface AtlasMessageBubbleProps {
   msg: ChatMessage;
@@ -20,11 +21,18 @@ export const AtlasMessageBubble: React.FC<AtlasMessageBubbleProps> = ({
   msg, index, copiedIndex, onExecutePlan, onRejectPlan, onCopy, onRetry, onFeedback
 }) => {
   return (
-    <div className={cn("flex group/msg", msg.role === 'user' ? "justify-end" : "justify-start")}>
+    <div className={cn("flex group/msg gap-2.5", msg.role === 'user' ? "justify-end" : "justify-start")}>
+      {/* Atlas orb avatar for assistant */}
+      {msg.role === 'assistant' && (
+        <div className="mt-1 shrink-0">
+          <AtlasOrb size={28} />
+        </div>
+      )}
+
       <div className={cn(
         "rounded-xl px-4 py-3 max-w-[80%]",
         msg.role === 'user'
-          ? 'bg-primary text-primary-foreground'
+          ? 'bg-[hsl(var(--cofound-blue-dark))] text-[hsl(var(--cofound-white))]'
           : 'bg-muted text-foreground'
       )}>
         {/* Images */}
@@ -41,7 +49,7 @@ export const AtlasMessageBubble: React.FC<AtlasMessageBubbleProps> = ({
         ) : (
           <>
             {msg.autoPlan && (
-              <div className="flex items-center gap-1 mb-2 text-[10px] font-medium rounded-md px-2 py-0.5 w-fit bg-primary/10 text-primary">
+              <div className="flex items-center gap-1 mb-2 text-[10px] font-medium rounded-md px-2 py-0.5 w-fit bg-[hsl(var(--cofound-green))]/15 text-[hsl(var(--cofound-green))]">
                 <Sparkles className="h-3 w-3" />
                 Plan automático
               </div>
@@ -69,7 +77,7 @@ export const AtlasMessageBubble: React.FC<AtlasMessageBubbleProps> = ({
         {msg.plan && msg.planStatus === 'pending' && (
           <div className="flex gap-2 mt-3 pt-2 border-t border-border">
             <button
-              className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-sm font-medium bg-green-500/10 text-green-600 hover:bg-green-500/20 transition-colors"
+              className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-sm font-medium bg-[hsl(var(--cofound-green))]/15 text-[hsl(var(--cofound-green))] hover:bg-[hsl(var(--cofound-green))]/25 transition-colors"
               onClick={() => onExecutePlan(msg.plan, index)}
             >
               <Check className="h-3.5 w-3.5" /> Aprovar
@@ -88,7 +96,7 @@ export const AtlasMessageBubble: React.FC<AtlasMessageBubbleProps> = ({
           </div>
         )}
         {msg.plan && msg.planStatus === 'done' && (
-          <div className="mt-3 pt-2 border-t border-border text-xs font-medium text-green-600">✅ Plano executado</div>
+          <div className="mt-3 pt-2 border-t border-border text-xs font-medium text-[hsl(var(--cofound-green))]">✅ Plano executado</div>
         )}
         {msg.plan && msg.planStatus === 'rejected' && (
           <div className="mt-3 pt-2 border-t border-border text-xs text-muted-foreground">❌ Plano recusado</div>
@@ -101,12 +109,12 @@ export const AtlasMessageBubble: React.FC<AtlasMessageBubbleProps> = ({
         {msg.role === 'assistant' && msg.planStatus !== 'executing' && (
           <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border opacity-0 group-hover/msg:opacity-100 transition-opacity">
             <button className="h-6 w-6 flex items-center justify-center rounded hover:bg-accent transition-colors" title="Copiar" onClick={() => onCopy(msg.content, index)}>
-              {copiedIndex === index ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+              {copiedIndex === index ? <Check className="h-3.5 w-3.5 text-[hsl(var(--cofound-green))]" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
             </button>
             <button className="h-6 w-6 flex items-center justify-center rounded hover:bg-accent transition-colors" title="Regenerar" onClick={() => onRetry(index)}>
               <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
-            <button className="h-6 w-6 flex items-center justify-center rounded hover:bg-green-500/10 transition-colors" title="Boa resposta" onClick={() => onFeedback('positive', msg.content)}>
+            <button className="h-6 w-6 flex items-center justify-center rounded hover:bg-[hsl(var(--cofound-green))]/10 transition-colors" title="Boa resposta" onClick={() => onFeedback('positive', msg.content)}>
               <ThumbsUp className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
             <button className="h-6 w-6 flex items-center justify-center rounded hover:bg-destructive/10 transition-colors" title="Resposta ruim" onClick={() => onFeedback('negative', msg.content)}>
@@ -116,8 +124,8 @@ export const AtlasMessageBubble: React.FC<AtlasMessageBubbleProps> = ({
         )}
         {msg.role === 'user' && (
           <div className="flex items-center gap-1 mt-1 opacity-0 group-hover/msg:opacity-100 transition-opacity">
-            <button className="h-6 w-6 flex items-center justify-center rounded hover:bg-primary-foreground/10 transition-colors" title="Copiar" onClick={() => onCopy(msg.content, index)}>
-              {copiedIndex === index ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5 text-primary-foreground/60" />}
+            <button className="h-6 w-6 flex items-center justify-center rounded hover:bg-white/10 transition-colors" title="Copiar" onClick={() => onCopy(msg.content, index)}>
+              {copiedIndex === index ? <Check className="h-3.5 w-3.5 text-[hsl(var(--cofound-green))]" /> : <Copy className="h-3.5 w-3.5 text-[hsl(var(--cofound-white))]/60" />}
             </button>
           </div>
         )}

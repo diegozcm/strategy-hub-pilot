@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { DashboardHeader } from './DashboardHeader';
 import { Sidebar } from './Sidebar';
 import { ImpersonationBanner } from '@/components/ui/ImpersonationBanner';
@@ -18,6 +18,8 @@ export const AppLayout: React.FC = () => {
   const { hasAIAccess } = useCompanyAIAccess();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const floatingAI = useFloatingAI();
+  const location = useLocation();
+  const isOnAtlasHub = location.pathname === '/app/atlas-hub';
 
   // Track user presence in real-time for admin dashboard
   useRealtimePresence();
@@ -45,8 +47,8 @@ export const AppLayout: React.FC = () => {
         </div>
       </div>
 
-      {/* Floating AI Copilot - Desktop Only + AI Access Enabled */}
-      {!isMobile && hasAIAccess && (
+      {/* Floating AI Copilot - Desktop Only + AI Access Enabled + Not on Atlas Hub */}
+      {!isMobile && hasAIAccess && !isOnAtlasHub && (
         <LayoutGroup>
           {!floatingAI.isOpen && (
             <FloatingAIButton

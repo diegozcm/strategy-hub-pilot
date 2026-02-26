@@ -1,6 +1,7 @@
 import React from 'react';
-import { TrendingUp, AlertCircle, Lightbulb, Sparkles } from 'lucide-react';
+import { TrendingUp, AlertCircle, Lightbulb } from 'lucide-react';
 import { motion } from 'motion/react';
+import { AtlasOrb } from './AtlasOrb';
 
 interface AtlasWelcomeProps {
   onQuickAction: (prompt: string) => void;
@@ -16,16 +17,14 @@ const iconMap = {
 export const AtlasWelcome: React.FC<AtlasWelcomeProps> = ({ onQuickAction, quickActions }) => {
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-      {/* Animated Logo */}
+      {/* Animated ColorOrb */}
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         className="mb-8"
       >
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 border border-border flex items-center justify-center">
-          <Sparkles className="h-10 w-10 text-primary" />
-        </div>
+        <AtlasOrb size={80} />
       </motion.div>
 
       {/* Welcome Text */}
@@ -56,9 +55,9 @@ export const AtlasWelcome: React.FC<AtlasWelcomeProps> = ({ onQuickAction, quick
             <button
               key={index}
               onClick={() => onQuickAction(action.prompt)}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-colors text-center group"
+              className="flex flex-col items-center gap-2 p-4 rounded-xl border border-[hsl(var(--cofound-blue-light))]/30 bg-card hover:bg-[hsl(var(--cofound-green))]/10 hover:border-[hsl(var(--cofound-green))]/50 transition-colors text-center group"
             >
-              <Icon className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <Icon className="h-5 w-5 text-[hsl(var(--cofound-blue-light))] group-hover:text-[hsl(var(--cofound-green))] transition-colors" />
               <span className="text-sm font-medium text-foreground">{action.label}</span>
             </button>
           );
