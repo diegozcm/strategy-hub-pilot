@@ -11,7 +11,7 @@ export const AtlasHubPage: React.FC = () => {
   const chat = useAtlasChat();
 
   return (
-    <div className="h-full w-full flex flex-col bg-[hsl(var(--cofound-blue-dark))]/20">
+    <div className="h-full w-full flex flex-col" style={{ backgroundColor: '#071422' }}>
       <PanelGroup direction="horizontal" className="flex-1">
         {/* Sidebar Panel */}
         {!sidebarCollapsed && (

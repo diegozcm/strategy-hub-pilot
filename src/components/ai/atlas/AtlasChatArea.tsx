@@ -41,13 +41,13 @@ const TypingIndicator = ({ text = 'digitando' }: { text?: string }) => (
     <div className="mt-1 shrink-0">
       <AtlasOrb size={28} />
     </div>
-    <div className="rounded-lg px-4 py-3 flex items-center gap-1.5 bg-[hsl(var(--cofound-blue-dark))]">
+    <div className="rounded-2xl px-4 py-3 flex items-center gap-1.5" style={{ backgroundColor: 'rgba(13, 35, 56, 0.7)' }}>
       <div className="flex items-center gap-1">
-        <span className="w-2 h-2 rounded-full bg-[hsl(var(--cofound-blue-light))] animate-bounce" style={{ animationDelay: '0ms' }} />
-        <span className="w-2 h-2 rounded-full bg-[hsl(var(--cofound-blue-light))] animate-bounce" style={{ animationDelay: '200ms' }} />
-        <span className="w-2 h-2 rounded-full bg-[hsl(var(--cofound-blue-light))] animate-bounce" style={{ animationDelay: '400ms' }} />
+        <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--cofound-blue-light))] animate-bounce" style={{ animationDelay: '0ms' }} />
+        <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--cofound-blue-light))] animate-bounce" style={{ animationDelay: '200ms' }} />
+        <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--cofound-blue-light))] animate-bounce" style={{ animationDelay: '400ms' }} />
       </div>
-      <span className="text-xs ml-1.5 text-[hsl(var(--cofound-white))]/70">{text}</span>
+      <span className="text-xs ml-1.5 text-white/50">{text}</span>
     </div>
   </div>
 );
@@ -86,7 +86,7 @@ export const AtlasChatArea: React.FC<AtlasChatAreaProps> = ({
       {messages.length === 0 && !isLoading ? (
         <AtlasWelcome onQuickAction={onQuickAction} quickActions={quickActions} />
       ) : (
-        <div className="flex-1 min-h-0 relative bg-[hsl(var(--cofound-blue-dark))]/60">
+        <div className="flex-1 min-h-0 relative atlas-chat-bg">
           <ScrollArea className="h-full" onScrollCapture={(e: any) => {
             const viewport = e.target;
             if (viewport?.hasAttribute?.('data-radix-scroll-area-viewport')) {
@@ -94,7 +94,7 @@ export const AtlasChatArea: React.FC<AtlasChatAreaProps> = ({
               setShowScrollBtn(scrollTop + clientHeight < scrollHeight - 100);
             }
           }}>
-            <div className="space-y-4 p-4 max-w-3xl mx-auto">
+            <div className="space-y-5 p-4 pb-6 max-w-3xl mx-auto">
               {messages.map((msg, index) => (
                 <AtlasMessageBubble
                   key={index}
@@ -119,10 +119,11 @@ export const AtlasChatArea: React.FC<AtlasChatAreaProps> = ({
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className="absolute bottom-2 left-1/2 -translate-x-1/2 h-8 w-8 rounded-full flex items-center justify-center shadow-lg z-10 bg-card border border-border"
+                className="absolute bottom-2 left-1/2 -translate-x-1/2 h-8 w-8 rounded-full flex items-center justify-center shadow-lg z-10"
+                style={{ backgroundColor: 'rgba(13, 35, 56, 0.9)', border: '1px solid rgba(56, 182, 255, 0.2)' }}
                 onClick={() => { scrollToBottom(); setShowScrollBtn(false); }}
               >
-                <ChevronDown className="h-4 w-4 text-foreground" />
+                <ChevronDown className="h-4 w-4 text-white/70" />
               </motion.button>
             )}
           </AnimatePresence>

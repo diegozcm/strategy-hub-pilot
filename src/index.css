@@ -242,6 +242,10 @@ All colors MUST be HSL.
   }
 }
 
+.atlas-chat-bg {
+  background: linear-gradient(180deg, #0D2338 0%, #0A1C2E 50%, #071422 100%);
+}
+
 /* Atlas Chat - Animated gradient border */
 @property --atlas-border-angle {
   syntax: "<angle>";
