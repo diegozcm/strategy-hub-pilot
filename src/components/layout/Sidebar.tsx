@@ -122,7 +122,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
               <div className="absolute inset-0 rounded-xl atlas-sidebar-btn-border" />
               {/* Inner content */}
               <div className="relative flex items-center gap-3 rounded-[10px] bg-[hsl(var(--cofound-blue-dark))] px-3.5 py-2.5 transition-all duration-300 group-hover:bg-[hsl(var(--cofound-blue-dark))]/90">
-                <AtlasOrb size={22} />
+                <div
+                  className="color-orb-atlas shrink-0"
+                  style={{
+                    '--base': 'oklch(10% 0.02 240)',
+                    '--accent1': 'oklch(68% 0.22 150)',
+                    '--accent2': 'oklch(75% 0.22 230)',
+                    '--accent3': 'oklch(72% 0.20 200)',
+                    '--blur': '0.5px',
+                    '--contrast': '2',
+                    '--dot': '0.06rem',
+                    '--shadow': '1rem',
+                    '--mask': '10%',
+                    '--spin-duration': '3s',
+                    width: 26,
+                    height: 26,
+                  } as React.CSSProperties}
+                />
                 <span className="text-[13px] font-bold tracking-widest text-white/90 group-hover:text-white transition-colors uppercase">Atlas Hub</span>
               </div>
             </NavLink>
