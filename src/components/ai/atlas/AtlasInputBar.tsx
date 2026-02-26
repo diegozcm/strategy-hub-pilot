@@ -131,7 +131,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
             <button
               onClick={onSend}
               disabled={isDisabled || !chatInput.trim() || isRecording || isTranscribing}
-              className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-30 bg-[hsl(var(--cofound-blue-light))] text-white"
+              className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 transition-all disabled:opacity-30 bg-[hsl(var(--cofound-green))] text-[hsl(var(--cofound-blue-dark))]"
             >
               <Navigation className="h-3.5 w-3.5" />
             </button>
