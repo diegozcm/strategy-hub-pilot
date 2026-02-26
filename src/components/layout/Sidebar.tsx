@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useMultiTenant';
 import { useModules } from '@/hooks/useModules';
 import { useStartupProfile } from '@/hooks/useStartupProfile';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCompanyAIAccess } from '@/hooks/useCompanyAIAccess';
 
 const menuStructure = [
   {
@@ -49,6 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
   const { hasModuleAccess } = useModules();
   const { isStartup, isMentor, hasProfile } = useStartupProfile();
   const location = useLocation();
+  const { hasAIAccess } = useCompanyAIAccess();
 
   // Helper function to check if a route is active
   const isRouteActive = (href: string) => {
@@ -103,6 +105,24 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+        {/* Atlas Hub Button */}
+        {hasAIAccess && (
+          <div className="mb-2">
+            <NavLink
+              to="/app/atlas-hub"
+              className={cn(
+                "flex items-center py-2.5 px-3 rounded-lg transition-colors w-full",
+                isRouteActive('/app/atlas-hub')
+                  ? "bg-sidebar-accent/20 text-sidebar-accent-foreground font-medium border-l-2 border-sidebar-accent"
+                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent/10 hover:text-sidebar-foreground"
+              )}
+            >
+              <Brain className={cn("h-5 w-5 mr-3", isRouteActive('/app/atlas-hub') ? "text-[hsl(66,45%,42%)]" : "text-[hsl(var(--cofound-blue-light))]")} />
+              <span className="text-sm font-semibold">Atlas Hub</span>
+            </NavLink>
+          </div>
+        )}
+
         {menuStructure.map((group) => {
           const hasAccessToGroup = group.items.some(item => {
             if (item.href.includes('/startup-hub')) {

@@ -350,3 +350,8 @@ All colors MUST be HSL.
 .animate-pulse-wave {
   animation: pulse-wave 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+@keyframes waveform-bar {
+  0%, 100% { height: 4px; }
+  50% { height: 20px; }
+}
