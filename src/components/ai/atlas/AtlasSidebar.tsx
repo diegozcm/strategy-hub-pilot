@@ -32,9 +32,9 @@ export const AtlasSidebar: React.FC<AtlasSidebarProps> = ({
   if (collapsed) return null;
 
   return (
-    <div className="flex flex-col h-full bg-card border-r border-border">
+    <div className="flex flex-col h-full bg-[hsl(var(--cofound-blue-dark))]/30 border-r border-[hsl(var(--cofound-blue-light))]/10">
       {/* Header */}
-      <div className="p-3 border-b border-border space-y-2">
+      <div className="p-3 border-b border-[hsl(var(--cofound-blue-light))]/10 space-y-2">
         <Button
           variant="outline"
           size="sm"

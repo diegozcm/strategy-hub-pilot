@@ -25,13 +25,13 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
   isDisabled, pastedImages, onRemoveImage, textareaRef,
 }) => {
   return (
-    <div className="border-t border-border bg-card px-4 py-3 shrink-0">
+    <div className="border-t border-[hsl(var(--cofound-blue-light))]/10 bg-[hsl(var(--cofound-blue-dark))]/40 px-4 py-3 shrink-0">
       {/* Pasted images */}
       {pastedImages.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2">
           {pastedImages.map((img, idx) => (
             <div key={idx} className="relative inline-block">
-              <img src={img} alt="Preview" className="max-h-16 rounded-lg border border-border" />
+              <img src={img} alt="Preview" className="max-h-16 rounded-lg border border-white/10" />
               <button
                 className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive flex items-center justify-center"
                 onClick={() => onRemoveImage(idx)}
@@ -43,7 +43,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
         </div>
       )}
 
-      <div className="rounded-xl border border-border bg-background overflow-hidden">
+      <div className="rounded-xl border border-[hsl(var(--cofound-blue-light))]/20 bg-card/80 backdrop-blur-sm overflow-hidden">
         {/* Textarea / Recording area */}
         <div className="relative">
           {isRecording ? (
@@ -92,7 +92,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
         </div>
 
         {/* Action bar */}
-        <div className="flex items-center justify-between px-2 py-1.5 border-t border-border">
+        <div className="flex items-center justify-between px-2 py-1.5 border-t border-[hsl(var(--cofound-blue-light))]/10">
           <div className="flex items-center gap-1">
             <button
               className="h-8 w-8 rounded-lg flex items-center justify-center transition-colors hover:bg-accent"
@@ -106,7 +106,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
               className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg shrink-0 transition-all border ${
                 isPlanMode
                   ? 'bg-[hsl(var(--cofound-green))]/15 border-[hsl(var(--cofound-green))]/40 text-[hsl(var(--cofound-green))]'
-                  : 'border-border text-muted-foreground hover:bg-accent'
+                  : 'border-[hsl(var(--cofound-blue-light))]/20 text-muted-foreground hover:bg-accent'
               }`}
             >
               Plan
@@ -119,7 +119,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
               className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-all border ${
                 isRecording
                   ? 'border-destructive/40 bg-destructive/10'
-                  : 'border-border hover:bg-accent'
+                  : 'border-[hsl(var(--cofound-blue-light))]/20 hover:bg-accent'
               }`}
               title={isRecording ? "Parar gravação" : "Gravar áudio"}
             >

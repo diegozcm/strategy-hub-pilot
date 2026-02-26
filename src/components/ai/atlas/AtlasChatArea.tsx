@@ -41,13 +41,13 @@ const TypingIndicator = ({ text = 'digitando' }: { text?: string }) => (
     <div className="mt-1 shrink-0">
       <AtlasOrb size={28} />
     </div>
-    <div className="rounded-lg px-4 py-3 flex items-center gap-1.5 bg-muted">
+    <div className="rounded-lg px-4 py-3 flex items-center gap-1.5 bg-[hsl(var(--cofound-blue-dark))]">
       <div className="flex items-center gap-1">
         <span className="w-2 h-2 rounded-full bg-[hsl(var(--cofound-blue-light))] animate-bounce" style={{ animationDelay: '0ms' }} />
         <span className="w-2 h-2 rounded-full bg-[hsl(var(--cofound-blue-light))] animate-bounce" style={{ animationDelay: '200ms' }} />
         <span className="w-2 h-2 rounded-full bg-[hsl(var(--cofound-blue-light))] animate-bounce" style={{ animationDelay: '400ms' }} />
       </div>
-      <span className="text-xs ml-1.5 text-muted-foreground">{text}</span>
+      <span className="text-xs ml-1.5 text-[hsl(var(--cofound-white))]/70">{text}</span>
     </div>
   </div>
 );
@@ -86,7 +86,7 @@ export const AtlasChatArea: React.FC<AtlasChatAreaProps> = ({
       {messages.length === 0 && !isLoading ? (
         <AtlasWelcome onQuickAction={onQuickAction} quickActions={quickActions} />
       ) : (
-        <div className="flex-1 min-h-0 relative">
+        <div className="flex-1 min-h-0 relative bg-[hsl(var(--cofound-blue-dark))]/60">
           <ScrollArea className="h-full" onScrollCapture={(e: any) => {
             const viewport = e.target;
             if (viewport?.hasAttribute?.('data-radix-scroll-area-viewport')) {
