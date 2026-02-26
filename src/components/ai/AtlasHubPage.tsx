@@ -14,7 +14,7 @@ export const AtlasHubPage: React.FC = () => {
   const chat = useAtlasChat();
 
   return (
-    <div className="absolute inset-0 flex flex-col">
+    <div className="h-full w-full flex flex-col">
       <PanelGroup direction="horizontal" className="flex-1">
         {/* Sidebar Panel */}
         {!sidebarCollapsed && (
