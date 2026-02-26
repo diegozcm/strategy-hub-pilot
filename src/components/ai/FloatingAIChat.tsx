@@ -857,7 +857,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                     setShowScrollToBottom(scrollTop + clientHeight < scrollHeight - 100);
                   }
                 }}>
-                  <div className="space-y-4">
+                  <div className="space-y-4 py-2">
                     {messages.map((msg, index) => (
                       <div key={index} className={cn("flex group/msg", msg.role === 'user' ? "justify-end" : "justify-start")}>
                         <div 
