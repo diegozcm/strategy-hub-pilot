@@ -250,6 +250,63 @@ All colors MUST be HSL.
   background: linear-gradient(180deg, #0D2338 0%, #0A1C2E 50%, #071422 100%);
 }
 
+/* Atlas Hub Sidebar Button - Animated Gradient */
+@property --atlas-btn-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.atlas-hub-btn-bg {
+  background: linear-gradient(
+    calc(135deg + var(--atlas-btn-angle)),
+    #0D2338 0%,
+    #1a3a5c 25%,
+    #0D2338 40%,
+    #153350 60%,
+    #0D2338 100%
+  );
+  animation: atlas-btn-gradient 6s linear infinite;
+}
+
+.atlas-hub-btn-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    calc(90deg + var(--atlas-btn-angle) * 2),
+    transparent 0%,
+    rgba(56, 182, 255, 0.15) 30%,
+    rgba(205, 217, 102, 0.1) 50%,
+    rgba(56, 182, 255, 0.15) 70%,
+    transparent 100%
+  );
+  animation: atlas-btn-gradient 4s linear infinite;
+}
+
+.atlas-hub-btn-shine {
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(56, 182, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.08) 55%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  animation: atlas-btn-shine-move 2s ease-in-out infinite;
+}
+
+@keyframes atlas-btn-gradient {
+  to { --atlas-btn-angle: 360deg; }
+}
+
+@keyframes atlas-btn-shine-move {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 /* Atlas Chat - Animated gradient border */
 @property --atlas-border-angle {
   syntax: "<angle>";
