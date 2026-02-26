@@ -25,7 +25,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
   isDisabled, pastedImages, onRemoveImage, textareaRef,
 }) => {
   return (
-    <div className="border-t border-border bg-card px-4 py-3 shrink-0">
+    <div className="border-t border-[hsl(var(--cofound-blue-light))]/15 bg-[hsl(var(--cofound-blue-dark))]/5 px-4 py-3 shrink-0">
       {/* Pasted images */}
       {pastedImages.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-2">
@@ -43,7 +43,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
         </div>
       )}
 
-      <div className="rounded-xl border border-[hsl(var(--cofound-blue-light))]/25 bg-background overflow-hidden shadow-sm">
+      <div className="rounded-xl border border-[hsl(var(--cofound-blue-light))]/25 bg-[hsl(var(--cofound-blue-dark))]/8 overflow-hidden shadow-sm">
         {/* Textarea / Recording area */}
         <div className="relative">
           {isRecording ? (
@@ -92,7 +92,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
         </div>
 
         {/* Action bar */}
-        <div className="flex items-center justify-between px-2 py-1.5 border-t border-border">
+        <div className="flex items-center justify-between px-2 py-1.5 border-t border-[hsl(var(--cofound-blue-light))]/10">
           <div className="flex items-center gap-1">
             <button
               className="h-8 w-8 rounded-lg flex items-center justify-center transition-colors hover:bg-accent"
