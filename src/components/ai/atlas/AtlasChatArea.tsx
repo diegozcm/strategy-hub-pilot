@@ -6,6 +6,7 @@ import { AtlasMessageBubble } from './AtlasMessageBubble';
 import { AtlasWelcome } from './AtlasWelcome';
 import { AtlasInputBar } from './AtlasInputBar';
 import { ChatMessage } from '@/hooks/useAtlasChat';
+import { AtlasOrb } from './AtlasOrb';
 
 interface AtlasChatAreaProps {
   messages: ChatMessage[];
@@ -36,12 +37,15 @@ interface AtlasChatAreaProps {
 }
 
 const TypingIndicator = ({ text = 'digitando' }: { text?: string }) => (
-  <div className="flex justify-start">
+  <div className="flex justify-start gap-2.5">
+    <div className="mt-1 shrink-0">
+      <AtlasOrb size={28} />
+    </div>
     <div className="rounded-lg px-4 py-3 flex items-center gap-1.5 bg-muted">
       <div className="flex items-center gap-1">
-        <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
-        <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '200ms' }} />
-        <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '400ms' }} />
+        <span className="w-2 h-2 rounded-full bg-[hsl(var(--cofound-blue-light))] animate-bounce" style={{ animationDelay: '0ms' }} />
+        <span className="w-2 h-2 rounded-full bg-[hsl(var(--cofound-blue-light))] animate-bounce" style={{ animationDelay: '200ms' }} />
+        <span className="w-2 h-2 rounded-full bg-[hsl(var(--cofound-blue-light))] animate-bounce" style={{ animationDelay: '400ms' }} />
       </div>
       <span className="text-xs ml-1.5 text-muted-foreground">{text}</span>
     </div>
@@ -78,7 +82,7 @@ export const AtlasChatArea: React.FC<AtlasChatAreaProps> = ({
   const showIndicator = isLoading || isStreaming || isExecuting;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
       {messages.length === 0 && !isLoading ? (
         <AtlasWelcome onQuickAction={onQuickAction} quickActions={quickActions} />
       ) : (

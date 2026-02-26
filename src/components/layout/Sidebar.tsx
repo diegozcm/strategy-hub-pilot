@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { BarChart3, Target, Briefcase, Users, Settings, ChevronLeft, ChevronRight, Zap, TrendingUp, Activity, Brain, Map, Building, User, Circle, Rocket, Search, Calendar } from 'lucide-react';
+import { BarChart3, Target, Briefcase, Users, Settings, ChevronLeft, ChevronRight, Zap, TrendingUp, Activity, Map, Building, User, Circle, Rocket, Search, Calendar } from 'lucide-react';
+import { AtlasOrb } from '@/components/ai/atlas/AtlasOrb';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useMultiTenant';
@@ -113,11 +114,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
               className={cn(
                 "flex items-center py-2.5 px-3 rounded-lg transition-colors w-full",
                 isRouteActive('/app/atlas-hub')
-                  ? "bg-sidebar-accent/20 text-sidebar-accent-foreground font-medium border-l-2 border-sidebar-accent"
+                  ? "bg-[hsl(var(--cofound-green))]/15 text-sidebar-accent-foreground font-medium border-l-2 border-[hsl(var(--cofound-green))]"
                   : "text-sidebar-foreground/80 hover:bg-sidebar-accent/10 hover:text-sidebar-foreground"
               )}
             >
-              <Brain className={cn("h-5 w-5 mr-3", isRouteActive('/app/atlas-hub') ? "text-[hsl(66,45%,42%)]" : "text-[hsl(var(--cofound-blue-light))]")} />
+              <AtlasOrb size={20} className="mr-3" />
               <span className="text-sm font-semibold">Atlas Hub</span>
             </NavLink>
           </div>

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAtlasChat } from '@/hooks/useAtlasChat';
 import { AtlasSidebar } from './atlas/AtlasSidebar';
 import { AtlasChatArea } from './atlas/AtlasChatArea';
+import { AtlasOrb } from './atlas/AtlasOrb';
 
 export const AtlasHubPage: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -13,7 +14,7 @@ export const AtlasHubPage: React.FC = () => {
   const chat = useAtlasChat();
 
   return (
-    <div className="h-full -m-4 lg:-m-6 flex flex-col">
+    <div className="absolute inset-0 flex flex-col">
       <PanelGroup direction="horizontal" className="flex-1">
         {/* Sidebar Panel */}
         {!sidebarCollapsed && (
@@ -30,7 +31,7 @@ export const AtlasHubPage: React.FC = () => {
                 onShowInsights={() => navigate('/app/ai-copilot')}
               />
             </Panel>
-            <PanelResizeHandle className="w-px bg-border hover:bg-primary/30 transition-colors" />
+            <PanelResizeHandle className="w-px bg-border hover:bg-[hsl(var(--cofound-blue-light))]/30 transition-colors" />
           </>
         )}
 
@@ -38,7 +39,7 @@ export const AtlasHubPage: React.FC = () => {
         <Panel defaultSize={sidebarCollapsed ? 100 : 78}>
           <div className="flex flex-col h-full">
             {/* Mini header with sidebar toggle */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card">
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
@@ -47,6 +48,7 @@ export const AtlasHubPage: React.FC = () => {
               >
                 {sidebarCollapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
               </Button>
+              <AtlasOrb size={24} />
               <span className="text-sm font-medium text-foreground">Atlas Hub</span>
             </div>
 
