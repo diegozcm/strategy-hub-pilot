@@ -16,7 +16,7 @@ const iconMap = {
 
 export const AtlasWelcome: React.FC<AtlasWelcomeProps> = ({ onQuickAction, quickActions }) => {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-[hsl(var(--cofound-blue-dark))]/60">
+    <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 atlas-chat-bg">
       {/* Animated ColorOrb */}
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
@@ -34,10 +34,10 @@ export const AtlasWelcome: React.FC<AtlasWelcomeProps> = ({ onQuickAction, quick
         transition={{ delay: 0.15 }}
         className="text-center mb-10"
       >
-        <h2 className="text-2xl font-bold text-foreground mb-2">
+        <h2 className="text-2xl font-bold text-white mb-2">
           Atlas Hub
         </h2>
-        <p className="text-muted-foreground text-sm max-w-md">
+        <p className="text-white/50 text-sm max-w-md">
           Seu assistente estratégico. Pergunte qualquer coisa ou escolha uma das ações rápidas abaixo.
         </p>
       </motion.div>
@@ -55,10 +55,19 @@ export const AtlasWelcome: React.FC<AtlasWelcomeProps> = ({ onQuickAction, quick
             <button
               key={index}
               onClick={() => onQuickAction(action.prompt)}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl border border-[hsl(var(--cofound-blue-light))]/20 bg-card/80 backdrop-blur-sm hover:bg-[hsl(var(--cofound-green))]/10 hover:border-[hsl(var(--cofound-green))]/50 transition-colors text-center group"
+              className="flex flex-col items-center gap-2 p-4 rounded-xl transition-colors text-center group"
+              style={{ backgroundColor: 'rgba(13, 35, 56, 0.7)', border: '1px solid rgba(56, 182, 255, 0.12)' }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(205, 217, 102, 0.4)';
+                e.currentTarget.style.backgroundColor = 'rgba(205, 217, 102, 0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(56, 182, 255, 0.12)';
+                e.currentTarget.style.backgroundColor = 'rgba(13, 35, 56, 0.7)';
+              }}
             >
-              <Icon className="h-5 w-5 text-[hsl(var(--cofound-blue-light))] group-hover:text-[hsl(var(--cofound-green))] transition-colors" />
-              <span className="text-sm font-medium text-foreground">{action.label}</span>
+              <Icon className="h-5 w-5 transition-colors" style={{ color: '#38B6FF' }} />
+              <span className="text-sm font-medium text-white/80">{action.label}</span>
             </button>
           );
         })}

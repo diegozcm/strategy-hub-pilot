@@ -32,13 +32,13 @@ export const AtlasSidebar: React.FC<AtlasSidebarProps> = ({
   if (collapsed) return null;
 
   return (
-    <div className="flex flex-col h-full bg-[hsl(var(--cofound-blue-dark))]/30 border-r border-[hsl(var(--cofound-blue-light))]/10">
+    <div className="flex flex-col h-full" style={{ backgroundColor: '#0A1C2E', borderRight: '1px solid rgba(56, 182, 255, 0.08)' }}>
       {/* Header */}
-      <div className="p-3 border-b border-[hsl(var(--cofound-blue-light))]/10 space-y-2">
+      <div className="p-3 space-y-2" style={{ borderBottom: '1px solid rgba(56, 182, 255, 0.08)' }}>
         <Button
           variant="outline"
           size="sm"
-          className="w-full justify-start gap-2 border-[hsl(var(--cofound-blue-light))]/30 text-[hsl(var(--cofound-blue-light))] hover:bg-[hsl(var(--cofound-blue-light))]/10"
+          className="w-full justify-start gap-2 border-[hsl(var(--cofound-blue-light))]/30 text-[hsl(var(--cofound-blue-light))] hover:bg-[hsl(var(--cofound-blue-light))]/10 bg-transparent"
           onClick={onNewConversation}
         >
           <Plus className="h-4 w-4" />
@@ -47,7 +47,8 @@ export const AtlasSidebar: React.FC<AtlasSidebarProps> = ({
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start gap-2 text-[hsl(var(--cofound-green))]"
+          className="w-full justify-start gap-2 hover:bg-white/5"
+          style={{ color: '#CDD966' }}
           onClick={onShowInsights}
         >
           <Lightbulb className="h-4 w-4" />
@@ -61,7 +62,7 @@ export const AtlasSidebar: React.FC<AtlasSidebarProps> = ({
           {loadingSessions ? (
             <div className="flex justify-center py-8"><LoadingSpinner size="sm" /></div>
           ) : sessions.length === 0 ? (
-            <p className="text-sm text-center py-8 text-muted-foreground">Nenhuma conversa anterior</p>
+            <p className="text-sm text-center py-8 text-white/30">Nenhuma conversa anterior</p>
           ) : (
             sessions.map((session) => (
               <div
@@ -69,25 +70,29 @@ export const AtlasSidebar: React.FC<AtlasSidebarProps> = ({
                 className={cn(
                   "p-2.5 rounded-lg cursor-pointer transition-colors group flex items-start justify-between gap-1",
                   session.id === currentSessionId
-                    ? "bg-[hsl(var(--cofound-green))]/15 text-foreground border-l-2 border-[hsl(var(--cofound-green))]"
-                    : "hover:bg-accent/50 text-foreground"
+                    ? "border-l-2"
+                    : "hover:bg-white/5"
                 )}
+                style={session.id === currentSessionId
+                  ? { backgroundColor: 'rgba(205, 217, 102, 0.1)', borderColor: '#CDD966' }
+                  : {}
+                }
                 onClick={() => onLoadSession(session)}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <MessageSquare className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    <p className="text-sm font-medium truncate">{session.session_title || 'Sem título'}</p>
+                    <MessageSquare className="h-3.5 w-3.5 shrink-0 text-white/30" />
+                    <p className="text-sm font-medium truncate text-white/80">{session.session_title || 'Sem título'}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 pl-5">
+                  <p className="text-xs text-white/30 mt-0.5 pl-5">
                     {format(new Date(session.created_at), "dd MMM, HH:mm", { locale: ptBR })}
                   </p>
                 </div>
                 <button
-                  className="h-6 w-6 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-opacity shrink-0 hover:bg-destructive/10"
+                  className="h-6 w-6 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-opacity shrink-0 hover:bg-red-500/10"
                   onClick={(e) => { e.stopPropagation(); onDeleteSession(session.id); }}
                 >
-                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  <Trash2 className="h-3.5 w-3.5 text-red-400" />
                 </button>
               </div>
             ))
