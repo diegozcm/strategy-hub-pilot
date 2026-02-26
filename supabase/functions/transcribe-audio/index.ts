@@ -1,4 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -6,7 +7,26 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { audio } = await req.json();
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Extract user from JWT
+    const authHeader = req.headers.get('Authorization');
+    let userId: string | null = null;
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+      const anonClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+        { global: { headers: { Authorization: `Bearer ${token}` } } }
+      );
+      const { data: { user } } = await anonClient.auth.getUser(token);
+      userId = user?.id || null;
+    }
+
+    const { audio, company_id } = await req.json();
 
     if (!audio) {
       return new Response(
@@ -23,7 +43,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Use Lovable AI Gateway to transcribe via Gemini
     const base64Data = audio.includes(',') ? audio.split(',')[1] : audio;
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -81,6 +100,28 @@ Deno.serve(async (req) => {
 
     const result = await response.json();
     const text = result.choices?.[0]?.message?.content?.trim() || '';
+
+    // Log AI analytics
+    if (userId) {
+      try {
+        await supabaseClient.from('ai_analytics').insert({
+          user_id: userId,
+          event_type: 'chat_completion',
+          event_data: {
+            source: 'transcribe-audio',
+            company_id: company_id || null,
+            model_used: 'google/gemini-2.5-flash',
+            user_name: null,
+            prompt_tokens: result.usage?.prompt_tokens || 0,
+            completion_tokens: result.usage?.completion_tokens || 0,
+            total_tokens: result.usage?.total_tokens || 0,
+          }
+        });
+        console.log(`📊 Analytics logged (transcribe-audio) - tokens: ${result.usage?.total_tokens || 'unknown'}`);
+      } catch (logErr) {
+        console.error('❌ Failed to log analytics for transcribe-audio:', logErr);
+      }
+    }
 
     return new Response(
       JSON.stringify({ text }),

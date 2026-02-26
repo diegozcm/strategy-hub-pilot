@@ -650,7 +650,75 @@ serve(async (req) => {
         });
       }
 
-      return new Response(aiResponse.body, {
+      // Intercept stream to extract usage data for analytics logging
+      let usageData: any = null;
+      const reader = aiResponse.body!.getReader();
+      const { readable, writable } = new TransformStream();
+      const writer = writable.getWriter();
+      const encoder = new TextEncoder();
+      const decoder = new TextDecoder();
+
+      // Process stream in background - re-emit chunks while extracting usage
+      (async () => {
+        try {
+          let buffer = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            // Forward chunk to client immediately
+            await writer.write(value);
+            // Parse for usage data
+            buffer += decoder.decode(value, { stream: true });
+            let newlineIdx: number;
+            while ((newlineIdx = buffer.indexOf('\n')) !== -1) {
+              const line = buffer.slice(0, newlineIdx).trim();
+              buffer = buffer.slice(newlineIdx + 1);
+              if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
+              try {
+                const parsed = JSON.parse(line.slice(6));
+                if (parsed.usage) {
+                  usageData = parsed.usage;
+                }
+              } catch { /* partial JSON, ignore */ }
+            }
+          }
+        } catch (err) {
+          console.error('Stream processing error:', err);
+        } finally {
+          await writer.close();
+          // Log analytics after stream completes
+          try {
+            await supabase.from('ai_analytics').insert({
+              user_id: validUserId,
+              event_type: 'chat_completion',
+              event_data: {
+                company_id,
+                session_id,
+                model_used: model,
+                user_name: userName,
+                source: 'ai-chat',
+                stream: true,
+                prompt_tokens: usageData?.prompt_tokens || 0,
+                completion_tokens: usageData?.completion_tokens || 0,
+                total_tokens: usageData?.total_tokens || 0,
+                history_messages_count: previousMessages.length,
+                context_summary: {
+                  objectives_count: objectives.length,
+                  key_results_count: keyResults?.length || 0,
+                  projects_count: projects.length,
+                  has_startup_profile: !!startupProfile,
+                  mentoring_sessions_count: mentoringSessions.length
+                }
+              }
+            });
+            console.log(`📊 Analytics logged (stream) - user: ${userName}, tokens: ${usageData?.total_tokens || 'unknown'}`);
+          } catch (logErr) {
+            console.error('❌ Failed to log analytics:', logErr);
+          }
+        }
+      })();
+
+      return new Response(readable, {
         headers: {
           ...corsHeaders,
           'Content-Type': 'text/event-stream',
@@ -705,6 +773,8 @@ serve(async (req) => {
         session_id,
         model_used: model,
         user_name: userName,
+        source: 'ai-chat',
+        stream: false,
         prompt_tokens: aiData.usage?.prompt_tokens,
         completion_tokens: aiData.usage?.completion_tokens,
         total_tokens: aiData.usage?.total_tokens,

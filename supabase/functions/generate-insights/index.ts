@@ -437,6 +437,27 @@ Formato JSON OBRIGATÓRIO:
 
         if (openAIResponse.ok) {
           const aiResult = await openAIResponse.json();
+          
+          // Log AI analytics
+          try {
+            await supabaseClient.from('ai_analytics').insert({
+              user_id: user_id,
+              event_type: 'chat_completion',
+              event_data: {
+                source: 'generate-insights',
+                company_id,
+                model_used: 'google/gemini-3-flash-preview',
+                user_name: null,
+                prompt_tokens: aiResult.usage?.prompt_tokens || 0,
+                completion_tokens: aiResult.usage?.completion_tokens || 0,
+                total_tokens: aiResult.usage?.total_tokens || 0,
+              }
+            });
+            console.log(`📊 Analytics logged (generate-insights) - tokens: ${aiResult.usage?.total_tokens || 'unknown'}`);
+          } catch (logErr) {
+            console.error('❌ Failed to log analytics for generate-insights:', logErr);
+          }
+
           let aiContent = aiResult.choices[0]?.message?.content || '';
           
           // Clean markdown if present
