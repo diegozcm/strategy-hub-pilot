@@ -848,8 +848,8 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                   </div>
                 )}
 
-                <div className="relative flex-1 overflow-hidden">
-                <ScrollArea className="h-full pr-2 atlas-chat-scrollarea" onScrollCapture={(e: any) => {
+                <div className="relative flex-1 min-h-0 overflow-hidden">
+                <ScrollArea className="h-full atlas-chat-scrollarea" onScrollCapture={(e: any) => {
                   const viewport = e.target;
                   if (viewport && viewport.hasAttribute('data-radix-scroll-area-viewport')) {
                     scrollViewportRef.current = viewport;
@@ -857,7 +857,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                     setShowScrollToBottom(scrollTop + clientHeight < scrollHeight - 100);
                   }
                 }}>
-                  <div className="space-y-4 py-2">
+                  <div className="space-y-4 py-3 pr-2">
                     {messages.map((msg, index) => (
                       <div key={index} className={cn("flex group/msg", msg.role === 'user' ? "justify-end" : "justify-start")}>
                         <div 
