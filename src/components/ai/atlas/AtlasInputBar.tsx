@@ -105,8 +105,8 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
               disabled={isDisabled}
               className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg shrink-0 transition-all border ${
                 isPlanMode
-                  ? 'bg-[hsl(var(--cofound-green))]/15 border-[hsl(var(--cofound-green))]/40 text-[hsl(var(--cofound-green))]'
-                  : 'border-[hsl(var(--cofound-blue-light))]/20 text-[hsl(var(--cofound-blue-light))]/60 hover:bg-[hsl(var(--cofound-blue-light))]/10'
+                  ? 'bg-[hsl(var(--cofound-green))] border-[hsl(var(--cofound-green))] text-white'
+                  : 'border-[hsl(var(--cofound-blue-light))] text-[hsl(var(--cofound-blue-light))] hover:bg-[hsl(var(--cofound-blue-light))] hover:text-white'
               }`}
             >
               Plan
@@ -118,8 +118,8 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
               disabled={isDisabled || isTranscribing}
               className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-all border ${
                 isRecording
-                  ? 'border-destructive/40 bg-destructive/10'
-                  : 'border-[hsl(var(--cofound-blue-light))]/20 hover:bg-[hsl(var(--cofound-blue-light))]/10'
+                  ? 'border-destructive bg-destructive/10'
+                  : 'border-[hsl(var(--cofound-blue-light))] hover:bg-[hsl(var(--cofound-blue-light))] hover:text-white'
               }`}
               title={isRecording ? "Parar gravação" : "Gravar áudio"}
             >
