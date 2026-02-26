@@ -40,8 +40,8 @@ export const AppLayout: React.FC = () => {
           onClose={closeSidebar} 
         />
         <div className="flex-1 flex flex-col min-w-0">
-          <DashboardHeader onToggleSidebar={toggleSidebar} />
-          <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-background">
+          {!isOnAtlasHub && <DashboardHeader onToggleSidebar={toggleSidebar} />}
+          <main className={`flex-1 overflow-y-auto bg-background ${isOnAtlasHub ? 'p-0 overflow-hidden' : 'p-4 lg:p-6'}`}>
             <Outlet />
           </main>
         </div>
