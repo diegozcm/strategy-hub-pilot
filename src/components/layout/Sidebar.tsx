@@ -108,22 +108,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
         {/* Atlas Hub Button */}
         {hasAIAccess && (
-          <div className="mb-2">
+          <div className="mb-2 px-0.5">
             <NavLink
               to="/app/atlas-hub"
               className={cn(
-                "atlas-hub-btn relative flex items-center py-2.5 px-3 rounded-xl transition-all w-full overflow-hidden group",
+                "atlas-sidebar-btn group relative block rounded-xl p-[1.5px] transition-all duration-300",
                 isRouteActive('/app/atlas-hub')
-                  ? "shadow-[0_0_16px_rgba(56,182,255,0.3)]"
-                  : "hover:shadow-[0_0_12px_rgba(56,182,255,0.2)]"
+                  ? "shadow-[0_0_20px_rgba(56,182,255,0.25),0_0_40px_rgba(56,182,255,0.08)]"
+                  : "hover:shadow-[0_0_16px_rgba(56,182,255,0.2)]"
               )}
             >
-              {/* Animated gradient background */}
-              <div className="absolute inset-0 atlas-hub-btn-bg rounded-xl" />
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 atlas-hub-btn-shine rounded-xl" />
-              <div className="relative flex items-center">
-                <AtlasOrb size={22} className="mr-3" />
-                <span className="text-sm font-bold tracking-wide text-white">ATLAS HUB</span>
+              {/* Rotating gradient border */}
+              <div className="absolute inset-0 rounded-xl atlas-sidebar-btn-border" />
+              {/* Inner content */}
+              <div className="relative flex items-center gap-3 rounded-[10px] bg-[hsl(var(--cofound-blue-dark))] px-3.5 py-2.5 transition-all duration-300 group-hover:bg-[hsl(var(--cofound-blue-dark))]/90">
+                <AtlasOrb size={22} />
+                <span className="text-[13px] font-bold tracking-widest text-white/90 group-hover:text-white transition-colors uppercase">Atlas Hub</span>
               </div>
             </NavLink>
           </div>
