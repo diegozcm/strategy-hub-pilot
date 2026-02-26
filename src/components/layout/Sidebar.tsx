@@ -112,14 +112,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
             <NavLink
               to="/app/atlas-hub"
               className={cn(
-                "flex items-center py-2.5 px-3 rounded-lg transition-colors w-full",
+                "atlas-hub-btn relative flex items-center py-2.5 px-3 rounded-xl transition-all w-full overflow-hidden group",
                 isRouteActive('/app/atlas-hub')
-                  ? "bg-[hsl(var(--cofound-green))]/15 text-sidebar-accent-foreground font-medium border-l-2 border-[hsl(var(--cofound-green))]"
-                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent/10 hover:text-sidebar-foreground"
+                  ? "shadow-[0_0_16px_rgba(56,182,255,0.3)]"
+                  : "hover:shadow-[0_0_12px_rgba(56,182,255,0.2)]"
               )}
             >
-              <AtlasOrb size={20} className="mr-3" />
-              <span className="text-sm font-semibold">Atlas Hub</span>
+              {/* Animated gradient background */}
+              <div className="absolute inset-0 atlas-hub-btn-bg rounded-xl" />
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 atlas-hub-btn-shine rounded-xl" />
+              <div className="relative flex items-center">
+                <AtlasOrb size={22} className="mr-3" />
+                <span className="text-sm font-bold tracking-wide text-white">ATLAS HUB</span>
+              </div>
             </NavLink>
           </div>
         )}
