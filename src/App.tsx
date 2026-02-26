@@ -25,6 +25,7 @@ import { ProjectsPage } from "@/components/projects/ProjectsPage";
 import { IndicatorsPage } from "@/components/indicators/IndicatorsPage";
 import { ReportsPage } from "@/components/reports/ReportsPage";
 import { AICopilotPage } from "@/components/ai/AICopilotPage";
+import { AtlasHubPage } from "@/components/ai/AtlasHubPage";
 import { SettingsPage } from "@/components/settings/SettingsPage";
 import { ProfilePage } from "@/components/profile/ProfilePage";
 import { StrategicMapPageWrapper } from "@/components/strategic-map/StrategicMapPageWrapper";
@@ -188,6 +189,7 @@ const App = () => (
                   <Route path="indicators" element={<IndicatorsPage />} />
                   <Route path="reports" element={<ReportsPage />} />
                   <Route path="ai-copilot" element={<AICopilotPage />} />
+                  <Route path="atlas-hub" element={<AtlasHubPage />} />
                   
                   <Route path="profile" element={<ProfilePage />} />
                   <Route path="settings" element={<SettingsPage />} />
