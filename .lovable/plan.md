@@ -1,35 +1,20 @@
 
 
-## Plano: Sincronizacao em tempo real para o painel de IA
+## Diagnóstico
 
-### Problema
+O problema é que o texto das mensagens fica cortado no topo do chat. A imagem mostra claramente que a primeira mensagem visível está sendo "engolida" pelo header.
 
-O hook `useAdminRealtimeSync` (montado no layout `AdminV2Page`) nao inclui subscricoes para as tabelas de IA. Quando um usuario faz uma chamada de chat, os dados de `ai_analytics`, `ai_chat_sessions` e `ai_chat_messages` sao inseridos no banco, mas o dashboard admin nao atualiza ate o refresh manual.
+A causa raiz está na estrutura de layout: o container pai (`div.flex-1.flex.flex-col.overflow-hidden.p-4`) na linha 778 aplica `p-4` (padding em todos os lados), **mas** o `overflow-hidden` no wrapper do ScrollArea (linha 851) corta o conteúdo rente à borda. O `py-3` interno não resolve porque o Radix ScrollArea Viewport aplica `overflow: scroll` internamente — o padding do conteúdo funciona, mas o header do chat e o container externo podem estar sobrepondo visualmente.
 
-### Solucao
+O verdadeiro problema: o container do conteúdo (linha 778) usa `p-4` que dá padding, mas quando há as "ações rápidas" (linhas 832-849), elas ocupam espaço e o `flex-1` do ScrollArea se ajusta. Quando as mensagens existem e as ações rápidas somem, o ScrollArea ocupa todo o espaço — mas o `overflow-hidden` na div wrapper (linha 851) corta o conteúdo na borda superior sem margem.
 
-Adicionar 4 novas subscricoes no `useAdminRealtimeSync.ts` para as tabelas de IA:
+## Plano de Correção
 
-| Tabela | Query keys invalidadas |
-|---|---|
-| `ai_analytics` | `ai-analytics-raw`, `ai-model-pricing` |
-| `ai_chat_sessions` | `ai-chat-sessions-admin` |
-| `ai_chat_messages` | `ai-chat-sessions-admin` |
-| `ai_model_pricing` | `ai-model-pricing`, `ai-pricing-history` |
+1. **Aumentar o padding vertical interno** do container de mensagens de `py-3` para `py-4` na linha 860.
 
-### Arquivo afetado
+2. **Adicionar `pt-1` ao wrapper do ScrollArea** (linha 851) para criar um respiro entre o topo do scroll e qualquer elemento acima (header ou ações rápidas que desapareceram).
 
-`src/hooks/admin/useAdminRealtimeSync.ts` — adicionar 4 blocos `.on()` antes do `.subscribe()`.
+3. **Alternativa mais robusta**: O `overflow-hidden` no wrapper div (linha 851) pode estar causando o clipping visual. Trocar para `overflow-clip` (que previne scroll mas não cria um novo contexto de formatação que esconde conteúdo nas bordas) ou simplesmente remover o `overflow-hidden` desse div e confiar apenas no ScrollArea para gerenciar o overflow.
 
-### Detalhes tecnicos
-
-Cada bloco `.on("postgres_changes", ...)` escuta INSERT/UPDATE/DELETE na tabela correspondente e chama `queryClient.invalidateQueries()` para as query keys usadas nos hooks de `useAIUsageStats.ts`:
-
-- `ai-analytics-raw` (usado em `useAIAnalyticsRaw`)
-- `ai-chat-sessions-admin` (usado em `useAIChatSessions`)
-- `ai-model-pricing` (usado em `useModelPricing`)
-- `ai-pricing-history` (usado em `usePricingHistory`)
-- `ai-usage-limits` (usado em `useUsageLimits`)
-- `companies-map-with-ai` (usado em `useCompaniesMap`)
-- `profiles-map-admin` (usado em `useProfilesMap`)
+**Abordagem recomendada**: Remover `overflow-hidden` da div wrapper (linha 851) já que o ScrollArea já gerencia seu próprio overflow internamente, e garantir padding `py-4` no container de mensagens.
 
