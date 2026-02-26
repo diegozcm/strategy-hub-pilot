@@ -85,7 +85,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
               placeholder="Digite sua mensagem..."
               disabled={isDisabled}
               rows={1}
-              className="w-full px-3 py-2.5 text-sm outline-none bg-transparent resize-none text-foreground placeholder:text-muted-foreground"
+              className="w-full px-3 py-2.5 text-sm outline-none bg-transparent resize-none text-[hsl(var(--cofound-blue-dark))] placeholder:text-[hsl(var(--cofound-blue-dark))]/40"
               style={{ maxHeight: '120px', overflowY: 'auto', minHeight: '40px' }}
             />
           )}
@@ -95,10 +95,10 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
         <div className="flex items-center justify-between px-2 py-1.5 border-t border-[hsl(var(--cofound-blue-light))]/10">
           <div className="flex items-center gap-1">
             <button
-              className="h-8 w-8 rounded-lg flex items-center justify-center transition-colors hover:bg-accent"
+              className="h-8 w-8 rounded-lg flex items-center justify-center transition-colors hover:bg-[hsl(var(--cofound-blue-light))]/10"
               title="Anexar mídia"
             >
-              <Plus className="h-4 w-4 text-muted-foreground" />
+              <Plus className="h-4 w-4 text-[hsl(var(--cofound-blue-light))]" />
             </button>
             <button
               onClick={onTogglePlan}
@@ -106,7 +106,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
               className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg shrink-0 transition-all border ${
                 isPlanMode
                   ? 'bg-[hsl(var(--cofound-green))]/15 border-[hsl(var(--cofound-green))]/40 text-[hsl(var(--cofound-green))]'
-                  : 'border-border text-muted-foreground hover:bg-accent'
+                  : 'border-[hsl(var(--cofound-blue-light))]/20 text-[hsl(var(--cofound-blue-light))]/60 hover:bg-[hsl(var(--cofound-blue-light))]/10'
               }`}
             >
               Plan
@@ -119,13 +119,13 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
               className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-all border ${
                 isRecording
                   ? 'border-destructive/40 bg-destructive/10'
-                  : 'border-border hover:bg-accent'
+                  : 'border-[hsl(var(--cofound-blue-light))]/20 hover:bg-[hsl(var(--cofound-blue-light))]/10'
               }`}
               title={isRecording ? "Parar gravação" : "Gravar áudio"}
             >
               {isRecording
                 ? <Square className="h-3 w-3 fill-current text-destructive" />
-                : <Mic className="h-4 w-4 text-muted-foreground" />
+                : <Mic className="h-4 w-4 text-[hsl(var(--cofound-blue-light))]" />
               }
             </button>
             <button
