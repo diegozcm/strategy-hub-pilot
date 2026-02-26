@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Coins, Activity, MessageSquare, Zap, AlertCircle } from "lucide-react";
+import { Sparkles, Coins, Activity, MessageSquare, Zap, AlertCircle, Users } from "lucide-react";
 import {
   useAIAnalyticsRaw,
   useModelPricing,
   useCompaniesMap,
   useProfilesMap,
+  useAIChatSessions,
   calculateCost,
   formatTokens,
 } from "@/hooks/admin/useAIUsageStats";
@@ -23,34 +24,40 @@ const COLORS = ["hsl(203, 100%, 61%)", "hsl(66, 59%, 63%)", "hsl(0, 84%, 60%)", 
 const AIUsageDashboardPage = () => {
   const [days, setDays] = useState("30");
   const dateFrom = subDays(new Date(), parseInt(days)).toISOString();
-  const { data: analytics = [], isLoading: loadingAnalytics, isError: errorAnalytics } = useAIAnalyticsRaw(dateFrom);
-  const { data: pricing = [], isLoading: loadingPricing, isError: errorPricing } = useModelPricing();
-  const { data: companiesMap = {}, isLoading: loadingCompanies } = useCompaniesMap();
+  const { data: analytics = [], isLoading: l1, isError: e1 } = useAIAnalyticsRaw(dateFrom);
+  const { data: pricing = [], isLoading: l2, isError: e2 } = useModelPricing();
+  const { data: companiesMap = {}, isLoading: l3 } = useCompaniesMap();
   const { data: profilesMap = {} } = useProfilesMap();
+  const { data: sessions = [], isLoading: l4 } = useAIChatSessions();
 
-  const isLoading = loadingAnalytics || loadingPricing || loadingCompanies;
-  const isError = errorAnalytics || errorPricing;
+  const isLoading = l1 || l2 || l3 || l4;
+  const isError = e1 || e2;
+
+  // Filter sessions within date range
+  const filteredSessions = useMemo(() => {
+    return sessions.filter((s: any) => s.created_at >= dateFrom);
+  }, [sessions, dateFrom]);
 
   const stats = useMemo(() => {
     const chatEvents = analytics.filter((e: any) => e.event_type === "chat_completion");
-    const agentEvents = analytics.filter((e: any) => e.event_type === "agent_execution");
-    const feedbackPos = analytics.filter((e: any) => e.event_type === "feedback_positive").length;
-    const feedbackNeg = analytics.filter((e: any) => e.event_type === "feedback_negative").length;
 
-    let totalPrompt = 0, totalCompletion = 0, totalTokens = 0;
-    let totalCostBrl = 0;
+    let totalPrompt = 0, totalCompletion = 0, totalTokens = 0, totalCostBrl = 0;
+    const uniqueUsers = new Set<string>();
 
     chatEvents.forEach((e: any) => {
       const ed = e.event_data as any;
       const pt = ed?.prompt_tokens || 0;
       const ct = ed?.completion_tokens || 0;
-      const tt = ed?.total_tokens || 0;
       totalPrompt += pt;
       totalCompletion += ct;
-      totalTokens += tt;
+      totalTokens += ed?.total_tokens || 0;
       const cost = calculateCost(ed?.model_used, pt, ct, pricing);
       totalCostBrl += cost.brl;
+      uniqueUsers.add(e.user_id);
     });
+
+    // Also count users from sessions
+    filteredSessions.forEach((s: any) => uniqueUsers.add(s.user_id));
 
     // Timeline data
     const byDay: Record<string, { prompt: number; completion: number; calls: number }> = {};
@@ -78,7 +85,7 @@ const AIUsageDashboardPage = () => {
     chatEvents.forEach((e: any) => {
       const cid = (e.event_data as any)?.company_id || "unknown";
       const info = companiesMap[cid];
-      if (info && !info.ai_enabled) return; // skip companies with AI disabled
+      if (info && !info.ai_enabled) return;
       const name = info?.name || cid.slice(0, 8);
       byCompany[name] = (byCompany[name] || 0) + ((e.event_data as any)?.total_tokens || 0);
     });
@@ -89,19 +96,18 @@ const AIUsageDashboardPage = () => {
 
     return {
       totalCalls: chatEvents.length,
+      totalSessions: filteredSessions.length,
       totalTokens,
       totalPrompt,
       totalCompletion,
       totalCostBrl,
-      agentActions: agentEvents.length,
-      feedbackPos,
-      feedbackNeg,
+      uniqueUsers: uniqueUsers.size,
       timelineData,
       modelData,
       companyData,
       recentCalls: chatEvents.slice(0, 15),
     };
-  }, [analytics, pricing, companiesMap]);
+  }, [analytics, pricing, companiesMap, filteredSessions]);
 
   if (isLoading) {
     return (
@@ -141,6 +147,7 @@ const AIUsageDashboardPage = () => {
             <SelectItem value="7">Últimos 7 dias</SelectItem>
             <SelectItem value="30">Últimos 30 dias</SelectItem>
             <SelectItem value="90">Últimos 90 dias</SelectItem>
+            <SelectItem value="365">Último ano</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -153,6 +160,14 @@ const AIUsageDashboardPage = () => {
               <Activity className="h-4 w-4" /> Chamadas
             </div>
             <p className="text-2xl font-bold text-foreground">{stats.totalCalls}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
+              <MessageSquare className="h-4 w-4" /> Sessões
+            </div>
+            <p className="text-2xl font-bold text-foreground">{stats.totalSessions}</p>
           </CardContent>
         </Card>
         <Card>
@@ -176,24 +191,14 @@ const AIUsageDashboardPage = () => {
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <MessageSquare className="h-4 w-4" /> Feedbacks
+              <Users className="h-4 w-4" /> Usuários Ativos
             </div>
-            <p className="text-2xl font-bold text-foreground">
-              👍 {stats.feedbackPos} / 👎 {stats.feedbackNeg}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-muted-foreground text-xs mb-1">
-              <Zap className="h-4 w-4" /> Ações Executadas
-            </div>
-            <p className="text-2xl font-bold text-foreground">{stats.agentActions}</p>
+            <p className="text-2xl font-bold text-foreground">{stats.uniqueUsers}</p>
           </CardContent>
         </Card>
       </div>
 
-      {analytics.length === 0 ? (
+      {analytics.length === 0 && filteredSessions.length === 0 ? (
         <Card>
           <CardContent className="p-8 flex flex-col items-center text-muted-foreground">
             <Sparkles className="h-10 w-10 mb-3" />

@@ -338,6 +338,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_pricing_history: {
+        Row: {
+          created_at: string | null
+          effective_from: string
+          effective_until: string | null
+          id: string
+          input_cost_per_million: number
+          model_name: string
+          output_cost_per_million: number
+          source: string | null
+          usd_to_brl_rate: number
+        }
+        Insert: {
+          created_at?: string | null
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          input_cost_per_million: number
+          model_name: string
+          output_cost_per_million: number
+          source?: string | null
+          usd_to_brl_rate: number
+        }
+        Update: {
+          created_at?: string | null
+          effective_from?: string
+          effective_until?: string | null
+          id?: string
+          input_cost_per_million?: number
+          model_name?: string
+          output_cost_per_million?: number
+          source?: string | null
+          usd_to_brl_rate?: number
+        }
+        Relationships: []
+      }
       ai_recommendations: {
         Row: {
           action_type: string
@@ -396,6 +432,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ai_usage_limits: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          max_cost_brl_per_month: number | null
+          max_tokens_per_month: number | null
+          target_id: string
+          target_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_cost_brl_per_month?: number | null
+          max_tokens_per_month?: number | null
+          target_id: string
+          target_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_cost_brl_per_month?: number | null
+          max_tokens_per_month?: number | null
+          target_id?: string
+          target_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       ai_user_preferences: {
         Row: {

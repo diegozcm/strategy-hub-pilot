@@ -10,19 +10,6 @@ export interface ModelPricing {
   updated_at: string;
 }
 
-export interface UsageSummaryRow {
-  day: string;
-  company_id: string | null;
-  model: string | null;
-  user_name: string | null;
-  user_id: string;
-  event_type: string;
-  call_count: number;
-  total_prompt_tokens: number;
-  total_completion_tokens: number;
-  total_tokens: number;
-}
-
 export interface CompanyInfo {
   name: string;
   ai_enabled: boolean;
@@ -96,7 +83,7 @@ export function useAIChatSessions() {
         .from("ai_chat_sessions")
         .select("*, ai_chat_messages(id)")
         .order("updated_at", { ascending: false })
-        .limit(100);
+        .limit(500);
       if (error) {
         console.error("❌ Error fetching ai_chat_sessions:", error);
         return [];
@@ -143,6 +130,43 @@ export function useProfilesMap() {
         if (name) map[p.user_id] = name;
       });
       return map;
+    },
+    retry: 1,
+  });
+}
+
+export function usePricingHistory() {
+  return useQuery({
+    queryKey: ["ai-pricing-history"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_pricing_history" as any)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) {
+        console.error("❌ Error fetching pricing history:", error);
+        return [];
+      }
+      return data || [];
+    },
+    retry: 1,
+  });
+}
+
+export function useUsageLimits() {
+  return useQuery({
+    queryKey: ["ai-usage-limits"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_usage_limits" as any)
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.error("❌ Error fetching usage limits:", error);
+        return [];
+      }
+      return data || [];
     },
     retry: 1,
   });

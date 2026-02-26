@@ -2,25 +2,44 @@ import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Users } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAIAnalyticsRaw, useModelPricing, useCompaniesMap, useProfilesMap, calculateCost, formatTokens } from "@/hooks/admin/useAIUsageStats";
+import {
+  useAIAnalyticsRaw, useModelPricing, useCompaniesMap,
+  useProfilesMap, useAIChatSessions, calculateCost, formatTokens,
+} from "@/hooks/admin/useAIUsageStats";
 
 const AIByUserPage = () => {
-  const { data: analytics = [], isLoading } = useAIAnalyticsRaw();
-  const { data: pricing = [] } = useModelPricing();
+  const { data: analytics = [], isLoading: l1 } = useAIAnalyticsRaw();
+  const { data: pricing = [], isLoading: l2 } = useModelPricing();
   const { data: companiesMap = {} } = useCompaniesMap();
   const { data: profilesMap = {} } = useProfilesMap();
+  const { data: sessions = [] } = useAIChatSessions();
+
+  const isLoading = l1 || l2;
 
   const userStats = useMemo(() => {
-    const chatEvents = analytics.filter((e: any) => e.event_type === "chat_completion");
-    const map: Record<string, { name: string; company: string; calls: number; tokens: number; costBrl: number }> = {};
+    const map: Record<string, {
+      name: string; companies: Set<string>;
+      calls: number; sessions: number; messages: number;
+      tokens: number; costBrl: number;
+    }> = {};
 
-    chatEvents.forEach((e: any) => {
-      const ed = e.event_data as any;
-      const uid = e.user_id;
-      const companyInfo = companiesMap[ed?.company_id];
+    const ensureUser = (uid: string) => {
       if (!map[uid]) {
-        const name = ed?.user_name || profilesMap[uid] || uid.slice(0, 8);
-        map[uid] = { name, company: companyInfo?.name || "—", calls: 0, tokens: 0, costBrl: 0 };
+        const name = profilesMap[uid] || uid.slice(0, 8);
+        map[uid] = { name, companies: new Set(), calls: 0, sessions: 0, messages: 0, tokens: 0, costBrl: 0 };
+      }
+    };
+
+    // From analytics
+    const chatEvents = analytics.filter((e: any) => e.event_type === "chat_completion");
+    chatEvents.forEach((e: any) => {
+      const uid = e.user_id;
+      const ed = e.event_data as any;
+      ensureUser(uid);
+      if (ed?.user_name && map[uid].name === uid.slice(0, 8)) map[uid].name = ed.user_name;
+      if (ed?.company_id) {
+        const cInfo = companiesMap[ed.company_id];
+        map[uid].companies.add(cInfo?.name || ed.company_id.slice(0, 8));
       }
       map[uid].calls += 1;
       map[uid].tokens += ed?.total_tokens || 0;
@@ -28,10 +47,31 @@ const AIByUserPage = () => {
       map[uid].costBrl += cost.brl;
     });
 
+    // From sessions (complementary)
+    sessions.forEach((s: any) => {
+      const uid = s.user_id;
+      ensureUser(uid);
+      map[uid].sessions += 1;
+      map[uid].messages += s.ai_chat_messages?.length || 0;
+      if (s.company_id) {
+        const cInfo = companiesMap[s.company_id];
+        map[uid].companies.add(cInfo?.name || s.company_id.slice(0, 8));
+      }
+    });
+
     return Object.entries(map)
-      .map(([id, s]) => ({ id, ...s }))
-      .sort((a, b) => b.tokens - a.tokens);
-  }, [analytics, pricing, companiesMap, profilesMap]);
+      .map(([id, s]) => ({
+        id,
+        name: s.name,
+        companiesList: Array.from(s.companies).join(", ") || "—",
+        calls: s.calls,
+        sessions: s.sessions,
+        messages: s.messages,
+        tokens: s.tokens,
+        costBrl: s.costBrl,
+      }))
+      .sort((a, b) => b.tokens - a.tokens || b.sessions - a.sessions);
+  }, [analytics, pricing, companiesMap, profilesMap, sessions]);
 
   if (isLoading) {
     return <div className="p-6 flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
@@ -49,8 +89,9 @@ const AIByUserPage = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Usuário</TableHead>
-                <TableHead>Empresa</TableHead>
-                <TableHead className="text-right">Chamadas</TableHead>
+                <TableHead>Empresas</TableHead>
+                <TableHead className="text-right">Sessões</TableHead>
+                <TableHead className="text-right">Mensagens</TableHead>
                 <TableHead className="text-right">Tokens</TableHead>
                 <TableHead className="text-right">Custo (R$)</TableHead>
               </TableRow>
@@ -59,14 +100,15 @@ const AIByUserPage = () => {
               {userStats.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell className="font-medium">{u.name}</TableCell>
-                  <TableCell>{u.company}</TableCell>
-                  <TableCell className="text-right">{u.calls}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{u.companiesList}</TableCell>
+                  <TableCell className="text-right">{u.sessions}</TableCell>
+                  <TableCell className="text-right">{u.messages}</TableCell>
                   <TableCell className="text-right">{formatTokens(u.tokens)}</TableCell>
                   <TableCell className="text-right">R$ {u.costBrl.toFixed(2)}</TableCell>
                 </TableRow>
               ))}
               {userStats.length === 0 && (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Nenhum dado encontrado</TableCell></TableRow>
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Nenhum dado encontrado</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
