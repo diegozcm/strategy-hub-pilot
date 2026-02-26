@@ -16,7 +16,7 @@ const iconMap = {
 
 export const AtlasWelcome: React.FC<AtlasWelcomeProps> = ({ onQuickAction, quickActions }) => {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+    <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 bg-[hsl(var(--cofound-blue-dark))]/60">
       {/* Animated ColorOrb */}
       <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
@@ -55,7 +55,7 @@ export const AtlasWelcome: React.FC<AtlasWelcomeProps> = ({ onQuickAction, quick
             <button
               key={index}
               onClick={() => onQuickAction(action.prompt)}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl border border-[hsl(var(--cofound-blue-light))]/30 bg-card hover:bg-[hsl(var(--cofound-green))]/10 hover:border-[hsl(var(--cofound-green))]/50 transition-colors text-center group"
+              className="flex flex-col items-center gap-2 p-4 rounded-xl border border-[hsl(var(--cofound-blue-light))]/20 bg-card/80 backdrop-blur-sm hover:bg-[hsl(var(--cofound-green))]/10 hover:border-[hsl(var(--cofound-green))]/50 transition-colors text-center group"
             >
               <Icon className="h-5 w-5 text-[hsl(var(--cofound-blue-light))] group-hover:text-[hsl(var(--cofound-green))] transition-colors" />
               <span className="text-sm font-medium text-foreground">{action.label}</span>
