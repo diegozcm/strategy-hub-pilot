@@ -20,6 +20,7 @@ interface ChatMessage {
   plan?: any;
   planStatus?: 'pending' | 'approved' | 'rejected' | 'executing' | 'done' | 'error';
   planResult?: any;
+  autoPlan?: boolean;
 }
 
 interface ChatSession {
@@ -611,6 +612,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
         const decoder = new TextDecoder();
         let fullContent = '';
         let buffer = '';
+        let detectedAutoPlan = false;
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -623,6 +625,11 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
             if (data === '[DONE]') continue;
             try {
               const parsed = JSON.parse(data);
+              // Detect auto_plan metadata event
+              if (parsed.auto_plan === true) {
+                detectedAutoPlan = true;
+                continue;
+              }
               const delta = parsed.choices?.[0]?.delta?.content;
               if (delta) fullContent += delta;
             } catch { /* skip */ }
@@ -635,6 +642,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
             content: cleanContent,
             timestamp: new Date(),
             ...(plan ? { plan, planStatus: 'pending' as const } : {}),
+            ...(detectedAutoPlan ? { autoPlan: true } : {}),
           };
           onMessagesChange([...updatedMessages, assistantMsg]);
           await supabase.from('ai_chat_messages').insert([{
@@ -660,6 +668,7 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
           content: cleanContent,
           timestamp: new Date(),
           ...(plan ? { plan, planStatus: 'pending' as const } : {}),
+          ...(data.auto_plan ? { autoPlan: true } : {}),
         };
         onMessagesChange([...updatedMessages, assistantMessage]);
       }
@@ -877,23 +886,31 @@ export const FloatingAIChat: React.FC<FloatingAIChatProps> = ({
                           {msg.role === 'user' ? (
                             <p className="text-sm whitespace-pre-wrap" style={{ color: '#e0e0e0' }}>{msg.content}</p>
                           ) : (
-                            <div className="text-sm atlas-chat-prose">
-                              <ReactMarkdown
-                                components={{
-                                  h1: ({ children }) => <h1 className="text-base font-bold mt-3 mb-2" style={{ color: '#e0e0e0' }}>{children}</h1>,
-                                  h2: ({ children }) => <h2 className="text-base font-bold mt-3 mb-2" style={{ color: '#e0e0e0' }}>{children}</h2>,
-                                  h3: ({ children }) => <h3 className="text-sm font-bold mt-2 mb-1" style={{ color: '#e0e0e0' }}>{children}</h3>,
-                                  p: ({ children }) => <p className="mb-2 last:mb-0" style={{ color: '#d0d0d0' }}>{children}</p>,
-                                  ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-1" style={{ color: '#d0d0d0' }}>{children}</ul>,
-                                  ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1" style={{ color: '#d0d0d0' }}>{children}</ol>,
-                                  li: ({ children }) => <li className="text-sm">{children}</li>,
-                                  strong: ({ children }) => <strong className="font-bold" style={{ color: '#e0e0e0' }}>{children}</strong>,
-                                  em: ({ children }) => <em className="italic">{children}</em>,
-                                  code: ({ children }) => <code className="px-1 py-0.5 rounded text-xs" style={{ background: 'rgba(255,255,255,0.08)', color: '#ccc' }}>{children}</code>,
-                                  pre: ({ children }) => <pre className="p-2 rounded my-2 overflow-x-auto text-xs" style={{ background: 'rgba(255,255,255,0.05)' }}>{children}</pre>,
-                                }}
-                              >{msg.content}</ReactMarkdown>
-                            </div>
+                            <>
+                              {msg.autoPlan && (
+                                <div className="flex items-center gap-1 mb-2 text-[10px] font-medium rounded-md px-2 py-0.5 w-fit" style={{ background: 'rgba(139, 92, 246, 0.15)', color: '#a78bfa' }}>
+                                  <Sparkles className="h-3 w-3" />
+                                  Plan automático
+                                </div>
+                              )}
+                              <div className="text-sm atlas-chat-prose">
+                                <ReactMarkdown
+                                  components={{
+                                    h1: ({ children }) => <h1 className="text-base font-bold mt-3 mb-2" style={{ color: '#e0e0e0' }}>{children}</h1>,
+                                    h2: ({ children }) => <h2 className="text-base font-bold mt-3 mb-2" style={{ color: '#e0e0e0' }}>{children}</h2>,
+                                    h3: ({ children }) => <h3 className="text-sm font-bold mt-2 mb-1" style={{ color: '#e0e0e0' }}>{children}</h3>,
+                                    p: ({ children }) => <p className="mb-2 last:mb-0" style={{ color: '#d0d0d0' }}>{children}</p>,
+                                    ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-1" style={{ color: '#d0d0d0' }}>{children}</ul>,
+                                    ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1" style={{ color: '#d0d0d0' }}>{children}</ol>,
+                                    li: ({ children }) => <li className="text-sm">{children}</li>,
+                                    strong: ({ children }) => <strong className="font-bold" style={{ color: '#e0e0e0' }}>{children}</strong>,
+                                    em: ({ children }) => <em className="italic">{children}</em>,
+                                    code: ({ children }) => <code className="px-1 py-0.5 rounded text-xs" style={{ background: 'rgba(255,255,255,0.08)', color: '#ccc' }}>{children}</code>,
+                                    pre: ({ children }) => <pre className="p-2 rounded my-2 overflow-x-auto text-xs" style={{ background: 'rgba(255,255,255,0.05)' }}>{children}</pre>,
+                                  }}
+                                >{msg.content}</ReactMarkdown>
+                              </div>
+                            </>
                           )}
                           {/* Plan approval buttons */}
                           {msg.plan && msg.planStatus === 'pending' && (
