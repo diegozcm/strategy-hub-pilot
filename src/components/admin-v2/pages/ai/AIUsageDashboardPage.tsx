@@ -84,6 +84,14 @@ const AIUsageDashboardPage = () => {
     });
     const modelData = Object.entries(byModel).map(([name, value]) => ({ name, value }));
 
+    // By source
+    const bySource: Record<string, number> = {};
+    chatEvents.forEach((e: any) => {
+      const source = (e.event_data as any)?.source || "legacy";
+      bySource[source] = (bySource[source] || 0) + 1;
+    });
+    const sourceData = Object.entries(bySource).map(([name, value]) => ({ name, value }));
+
     // By company (only ai_enabled)
     const byCompany: Record<string, number> = {};
     chatEvents.forEach((e: any) => {
@@ -108,6 +116,7 @@ const AIUsageDashboardPage = () => {
       uniqueUsers: uniqueUsers.size,
       timelineData,
       modelData,
+      sourceData,
       companyData,
       recentCalls: chatEvents.slice(0, 15),
     };
@@ -213,7 +222,7 @@ const AIUsageDashboardPage = () => {
       ) : (
         <>
           {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">Tokens por Dia</CardTitle>
@@ -241,6 +250,25 @@ const AIUsageDashboardPage = () => {
                   <PieChart>
                     <Pie data={stats.modelData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
                       {stats.modelData.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Legend />
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Por Fonte (Source)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie data={stats.sourceData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                      {stats.sourceData.map((_, i) => (
                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
                       ))}
                     </Pie>
@@ -282,6 +310,7 @@ const AIUsageDashboardPage = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Data/Hora</TableHead>
+                    <TableHead>Fonte</TableHead>
                     <TableHead>Usuário</TableHead>
                     <TableHead>Empresa</TableHead>
                     <TableHead>Modelo</TableHead>
@@ -300,6 +329,7 @@ const AIUsageDashboardPage = () => {
                         <TableCell className="text-xs">
                           {format(new Date(e.created_at), "dd/MM HH:mm", { locale: ptBR })}
                         </TableCell>
+                        <TableCell className="text-xs">{ed?.source || "legacy"}</TableCell>
                         <TableCell className="text-xs">{userName}</TableCell>
                         <TableCell className="text-xs">{companyInfo?.name || "—"}</TableCell>
                         <TableCell className="text-xs">{ed?.model_used?.split("/").pop() || "—"}</TableCell>
