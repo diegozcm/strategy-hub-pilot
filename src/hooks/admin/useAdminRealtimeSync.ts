@@ -144,6 +144,40 @@ export const useAdminRealtimeSync = () => {
           queryClient.invalidateQueries({ queryKey: ["landing-page-draft"] });
         }
       )
+      // AI analytics
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "ai_analytics" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["ai-analytics-raw"] });
+          queryClient.invalidateQueries({ queryKey: ["ai-model-pricing"] });
+        }
+      )
+      // AI chat sessions
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "ai_chat_sessions" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["ai-chat-sessions-admin"] });
+        }
+      )
+      // AI chat messages
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "ai_chat_messages" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["ai-chat-sessions-admin"] });
+        }
+      )
+      // AI model pricing
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "ai_model_pricing" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["ai-model-pricing"] });
+          queryClient.invalidateQueries({ queryKey: ["ai-pricing-history"] });
+        }
+      )
       .subscribe();
 
     return () => {
