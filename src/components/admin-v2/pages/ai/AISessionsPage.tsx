@@ -2,17 +2,22 @@ import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useAIChatSessions, useAIAnalyticsRaw, useModelPricing, useCompaniesMap, calculateCost, formatTokens } from "@/hooks/admin/useAIUsageStats";
+import {
+  useAIChatSessions, useAIAnalyticsRaw, useModelPricing,
+  useCompaniesMap, useProfilesMap, calculateCost, formatTokens,
+} from "@/hooks/admin/useAIUsageStats";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const AISessionsPage = () => {
-  const { data: sessions = [], isLoading } = useAIChatSessions();
-  const { data: analytics = [] } = useAIAnalyticsRaw();
+  const { data: sessions = [], isLoading: l1 } = useAIChatSessions();
+  const { data: analytics = [], isLoading: l2 } = useAIAnalyticsRaw();
   const { data: pricing = [] } = useModelPricing();
   const { data: companiesMap = {} } = useCompaniesMap();
+  const { data: profilesMap = {} } = useProfilesMap();
 
-  // Map session_id -> aggregated tokens & cost
+  const isLoading = l1 || l2;
+
   const sessionMetrics = useMemo(() => {
     const map: Record<string, { tokens: number; costBrl: number }> = {};
     const chatEvents = analytics.filter((e: any) => e.event_type === "chat_completion");
@@ -44,6 +49,7 @@ const AISessionsPage = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Título</TableHead>
+                <TableHead>Usuário</TableHead>
                 <TableHead>Empresa</TableHead>
                 <TableHead className="text-right">Mensagens</TableHead>
                 <TableHead className="text-right">Tokens</TableHead>
@@ -56,10 +62,12 @@ const AISessionsPage = () => {
               {sessions.map((s: any) => {
                 const metrics = sessionMetrics[s.id] || { tokens: 0, costBrl: 0 };
                 const companyInfo = companiesMap[s.company_id];
+                const userName = profilesMap[s.user_id] || s.user_id?.slice(0, 8);
                 return (
                   <TableRow key={s.id}>
-                    <TableCell className="font-medium">{s.session_title || "Sem título"}</TableCell>
-                    <TableCell>{companyInfo?.name || "—"}</TableCell>
+                    <TableCell className="font-medium max-w-[200px] truncate">{s.session_title || "Sem título"}</TableCell>
+                    <TableCell className="text-xs">{userName}</TableCell>
+                    <TableCell className="text-xs">{companyInfo?.name || "—"}</TableCell>
                     <TableCell className="text-right">{s.ai_chat_messages?.length || 0}</TableCell>
                     <TableCell className="text-right">{formatTokens(metrics.tokens)}</TableCell>
                     <TableCell className="text-right">R$ {metrics.costBrl.toFixed(2)}</TableCell>
@@ -73,7 +81,7 @@ const AISessionsPage = () => {
                 );
               })}
               {sessions.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Nenhuma sessão encontrada</TableCell></TableRow>
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground">Nenhuma sessão encontrada</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

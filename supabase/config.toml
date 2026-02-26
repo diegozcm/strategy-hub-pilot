@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.transcribe-audio]
 verify_jwt = true
+
+[functions.update-ai-pricing]
+verify_jwt = false
