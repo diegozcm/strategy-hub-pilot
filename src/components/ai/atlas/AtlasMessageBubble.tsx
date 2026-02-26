@@ -39,7 +39,23 @@ export const AtlasMessageBubble: React.FC<AtlasMessageBubbleProps> = ({
           </div>
         ) : (
           <div className="mt-1 shrink-0">
-            <AtlasOrb size={28} />
+            <div
+              className="color-orb-atlas"
+              style={{
+                '--base': 'oklch(10% 0.02 240)',
+                '--accent1': 'oklch(68% 0.22 150)',
+                '--accent2': 'oklch(75% 0.22 230)',
+                '--accent3': 'oklch(72% 0.20 200)',
+                '--blur': '0.4px',
+                '--contrast': '2.2',
+                '--dot': '0.05rem',
+                '--shadow': '0.8rem',
+                '--mask': '10%',
+                '--spin-duration': '3s',
+                width: 28,
+                height: 28,
+              } as React.CSSProperties}
+            />
           </div>
         )}
 
