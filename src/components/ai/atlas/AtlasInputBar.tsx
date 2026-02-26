@@ -116,16 +116,16 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
             <button
               onClick={onToggleRecording}
               disabled={isDisabled || isTranscribing}
-              className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-all border ${
+              className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-all ${
                 isRecording
-                  ? 'border-destructive bg-destructive/10'
-                  : 'border-[hsl(var(--cofound-blue-light))] hover:bg-[hsl(var(--cofound-blue-light))] hover:text-white'
+                  ? 'bg-destructive/10 border border-destructive'
+                  : 'bg-[hsl(var(--cofound-blue-light))] text-white hover:brightness-110'
               }`}
               title={isRecording ? "Parar gravação" : "Gravar áudio"}
             >
               {isRecording
                 ? <Square className="h-3 w-3 fill-current text-destructive" />
-                : <Mic className="h-4 w-4 text-[hsl(var(--cofound-blue-light))]" />
+                : <Mic className="h-4 w-4 text-white" />
               }
             </button>
             <button
