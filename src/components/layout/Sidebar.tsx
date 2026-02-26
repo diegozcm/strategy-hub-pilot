@@ -121,7 +121,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
               {/* Rotating gradient border */}
               <div className="absolute inset-0 rounded-xl atlas-sidebar-btn-border" />
               {/* Inner content */}
-              <div className="relative flex items-center gap-3 rounded-[10px] bg-[hsl(var(--cofound-blue-dark))] px-3.5 py-2.5 transition-all duration-300 group-hover:bg-[hsl(var(--cofound-blue-dark))]/90">
+              <div className="relative flex items-center gap-3 rounded-[10px] atlas-hub-btn-inner px-3.5 py-2.5 transition-all duration-300 overflow-hidden">
                 <div
                   className="color-orb-atlas shrink-0"
                   style={{
