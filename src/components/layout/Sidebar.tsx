@@ -108,20 +108,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
         {/* Atlas Hub Button */}
         {hasAIAccess && (
-          <div className="mb-2 px-0.5">
+          <div className="mb-3 px-0.5">
             <NavLink
               to="/app/atlas-hub"
               className={cn(
                 "atlas-sidebar-btn group relative block rounded-xl p-[1.5px] transition-all duration-300",
                 isRouteActive('/app/atlas-hub')
-                  ? "shadow-[0_0_20px_rgba(56,182,255,0.25),0_0_40px_rgba(56,182,255,0.08)]"
-                  : "hover:shadow-[0_0_16px_rgba(56,182,255,0.2)]"
+                  ? "shadow-[0_0_24px_rgba(56,182,255,0.3),0_0_48px_rgba(205,217,102,0.08)]"
+                  : "hover:shadow-[0_0_20px_rgba(56,182,255,0.2),0_0_32px_rgba(205,217,102,0.06)]"
               )}
             >
               {/* Rotating gradient border */}
               <div className="absolute inset-0 rounded-xl atlas-sidebar-btn-border" />
               {/* Inner content */}
-              <div className="relative flex items-center gap-3 rounded-[10px] atlas-hub-btn-inner px-3.5 py-2.5 transition-all duration-300 overflow-hidden">
+              <div className="relative flex items-center gap-3 rounded-[10px] atlas-hub-btn-inner px-3.5 py-3 transition-all duration-300 overflow-hidden">
                 <div
                   className="color-orb-atlas shrink-0"
                   style={{
@@ -135,11 +135,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                     '--shadow': '1rem',
                     '--mask': '10%',
                     '--spin-duration': '3s',
-                    width: 26,
-                    height: 26,
+                    width: 28,
+                    height: 28,
                   } as React.CSSProperties}
                 />
-                <span className="text-[13px] font-bold tracking-widest text-white/90 group-hover:text-white transition-colors uppercase">Atlas Hub</span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[13px] font-bold tracking-[0.2em] text-white/95 group-hover:text-white transition-colors uppercase font-display leading-tight">Atlas Hub</span>
+                  <span className="text-[9px] font-medium tracking-[0.15em] text-[hsl(var(--cofound-green))]/70 group-hover:text-[hsl(var(--cofound-green))]/90 transition-colors uppercase leading-tight mt-0.5">Powered by COFOUND</span>
+                </div>
               </div>
             </NavLink>
           </div>
