@@ -1,88 +1,49 @@
 
 
-# Diagnóstico: KRs desaparecem ao mudar filtro de período
+# Fix: KRs desaparecem em qualquer filtro que não seja YTD
 
-## Causa Raiz
+## Causa raiz
 
-O problema está em **`src/lib/krValidityFilter.ts`** — todas as funções `isKRIn*` (Month, Bimonth, Quarter, Semester) **não são frequency-aware**.
+Todas as funções `isKRIn*` em `krValidityFilter.ts` retornam `false` quando a vigência expandida (`getEffectiveValidityRange`) não cobre o período do filtro — **sem verificar se existem dados reais naquele período**.
 
-### KR em questão
-- **"Ficha de indicador EBITDA..."** — frequency: `semesterly`, validity: `2026-01` a `2026-03`
-- Dados em `monthly_actual`: `{"2026-01": 1, "2026-07": 1}` (S1 e S2)
+Exemplos concretos:
 
-### O que acontece com cada filtro
+| KR | Vigência | Dados reais | Filtro Ano 2026 | Resultado |
+|----|----------|-------------|-----------------|-----------|
+| KR12 | 2025-01 a 2025-12 | 2026-01, 2026-07 | effEnd=2025-12 < 2026-01 | **SOME** |
+| EBITDA | 2026-01 a 2026-03 (→06) | 2026-01, 2026-07 | effEnd=2026-06 < 2026-07 | **SOME em S2/Q3+** |
 
-```text
-Filtro          │ Função chamada     │ Verificação                        │ Resultado
-────────────────┼────────────────────┼────────────────────────────────────┼──────────
-Mês Março       │ isKRInMonth        │ "2026-01"≤"2026-03" ✓             │ APARECE ✓
-                │                    │ "2026-03"≥"2026-03" ✓             │
-────────────────┼────────────────────┼────────────────────────────────────┼──────────
-Mês Abril       │ isKRInMonth        │ "2026-01"≤"2026-04" ✓             │ SOME ✗
-                │                    │ "2026-03"≥"2026-04" ✗ ← FALHA    │
-────────────────┼────────────────────┼────────────────────────────────────┼──────────
-Bimestre B3     │ isKRInBimonth      │ "2026-03"≥"2026-05" ✗ ← FALHA    │ SOME ✗
-────────────────┼────────────────────┼────────────────────────────────────┼──────────
-Trimestre Q2    │ isKRInQuarter      │ "2026-03"≥"2026-04" ✗ ← FALHA    │ SOME ✗
-────────────────┼────────────────────┼────────────────────────────────────┼──────────
-Semestre S2     │ isKRInSemester     │ "2026-03"≥"2026-07" ✗ ← FALHA    │ SOME ✗
+YTD funciona porque `filterKRsByValidity` retorna `true` incondicionalmente.
+
+## Solução
+
+Adicionar fallback `hasDataInRange` em **todas** as funções `isKRIn*` quando o caminho com vigência falha. Se a vigência diz "não", mas existem dados reais no período, o KR deve aparecer.
+
+### Arquivo: `src/lib/krValidityFilter.ts`
+
+Alterar 5 funções — mesma mudança em cada uma:
+
+```typescript
+// ANTES (exemplo isKRInYear):
+const { start: effStart, end: effEnd } = getEffectiveValidityRange(...);
+return effStart <= yearEnd && effEnd >= yearStart;
+
+// DEPOIS:
+const { start: effStart, end: effEnd } = getEffectiveValidityRange(...);
+const inValidity = effStart <= yearEnd && effEnd >= yearStart;
+if (inValidity) return true;
+// Fallback: KR has actual data in this period
+return hasDataInRange(kr, startMonth, endMonth, year);
 ```
 
-### Dois problemas independentes
-
-**Problema 1 — Caminho COM vigência (`start_month`/`end_month` definidos)**:
-A comparação `kr.end_month >= filterStart` usa os meses brutos sem considerar a frequência do KR. Este KR semestral com `end_month: '2026-03'` deveria ser considerado válido para qualquer mês dentro de S1 (Jan-Jun), pois o dado de S1 está em `2026-01` e cobre até Junho. Da mesma forma, tem dado em `2026-07` (S2) que cobre Jul-Dez, mas o `end_month: '2026-03'` impede de aparecer.
-
-**Problema 2 — Caminho SEM vigência (fallback para dados)**:
-Quando o KR não tem vigência, as funções verificam `monthlyTargets[monthKey] || monthlyActual[monthKey]` para cada mês individual do filtro. Mas um KR semestral armazena dados apenas na chave do início do período (`2026-01` para S1, `2026-07` para S2). Então `isKRInMonth(kr, 4, 2026)` verifica `monthlyActual["2026-04"]` que é `undefined` → retorna `false`. O mesmo bug que já corrigimos em `isKRNullForPeriod` e `getKRPercentageForPeriod`, mas não foi corrigido nas funções de filtro de vigência.
-
----
-
-## Plano de Correção
-
-### Arquivo único: `src/lib/krValidityFilter.ts`
-
-### 1. Importar ou recriar o helper de remapeamento de frequência
-
-Importar `getKRPeriodStartMonth`-like logic (ou duplicar internamente) para mapear meses do filtro para o mês-início do período do KR.
-
-### 2. Corrigir `isKRInMonth` — caminho sem vigência
-
-Quando o KR não tem vigência, em vez de verificar apenas `monthlyActual["2026-04"]`, remapear o mês do filtro para o mês-início do período do KR. Ex: KR semestral, filtro mês 4 → verificar `monthlyActual["2026-01"]` (S1).
-
-### 3. Corrigir `isKRInMonth` — caminho com vigência
-
-Para KRs com vigência e frequência mais grossa que mensal: expandir o `end_month` para o fim do período da frequência que contém `end_month`. Ex: KR semestral com `end_month: '2026-03'` → março está em S1 que vai até junho → usar `effective_end: '2026-06'` para a comparação.
-
-### 4. Aplicar a mesma lógica em `isKRInBimonth`, `isKRInQuarter`, `isKRInSemester`, `isKRInYear`
-
-Todas as funções `isKRIn*` recebem o mesmo tratamento:
-- **Sem vigência**: remapear meses do filtro para chaves efetivas do KR antes de verificar dados
-- **Com vigência**: expandir `end_month` (e potencialmente `start_month`) para os limites do período da frequência do KR antes de verificar interseção
-
-### 5. Helper: `getEffectiveValidityRange`
-
-Nova função interna que recebe `start_month`, `end_month` e `frequency` de um KR, e retorna o range efetivo expandido para os limites dos períodos da frequência:
-```text
-Input:  start='2026-01', end='2026-03', freq='semesterly'
-Output: start='2026-01', end='2026-06'  (S1 vai até Jun)
-
-Input:  start='2026-01', end='2026-05', freq='quarterly'
-Output: start='2026-01', end='2026-06'  (Q2 vai até Jun)
-```
-
----
-
-## Resumo
-
-| O que muda | Detalhe |
-|-----------|---------|
-| `krValidityFilter.ts` — novo helper | `getEffectiveValidityRange`: expande vigência para limites de período |
-| `isKRInMonth` | Ambos caminhos: frequency-aware |
-| `isKRInBimonth` | Ambos caminhos: frequency-aware |
-| `isKRInQuarter` | Ambos caminhos: frequency-aware |
-| `isKRInSemester` | Ambos caminhos: frequency-aware |
-| `isKRInYear` | Caminho sem vigência: frequency-aware |
+Funções afetadas:
+1. **`isKRInQuarter`** (linha 170-173) — adicionar fallback com `hasDataInRange(kr, quarterStartMonth, quarterEndMonth, year)`
+2. **`isKRInYear`** (linha 184-187) — adicionar fallback com `hasDataInRange(kr, 1, 12, year)`
+3. **`isKRInMonth`** (linha 204-205) — adicionar fallback com `hasDataInRange(kr, month, month, year)`
+4. **`isKRInSemester`** (linha 288-291) — adicionar fallback com `hasDataInRange(kr, semesterStartMonth, semesterEndMonth, year)`
+5. **`isKRInBimonth`** (linha 309-312) — adicionar fallback com `hasDataInRange(kr, bimonthStartMonth, bimonthEndMonth, year)`
+6. **`getPopulatedQuarters`** (linha 123-124) — adicionar fallback
+7. **`getKRQuarters`** (linha 148-151) — adicionar fallback
 
 Nenhum outro arquivo precisa ser alterado.
 
