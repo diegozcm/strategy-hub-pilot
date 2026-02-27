@@ -121,16 +121,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
               {/* Rotating gradient border */}
               <div className="absolute inset-0 rounded-xl atlas-sidebar-btn-border" />
               {/* Inner content */}
-              <div className="relative flex items-center gap-3 rounded-[10px] atlas-hub-btn-inner px-3.5 py-3 transition-all duration-300 overflow-hidden">
+              <div className="relative flex items-center gap-3 rounded-[10px] bg-[hsl(var(--cofound-blue-light))] px-3.5 py-3 transition-all duration-300 overflow-hidden group-hover:brightness-110">
                 <div
                   className="color-orb-atlas shrink-0"
                   style={{
-                    '--base': 'oklch(10% 0.02 240)',
-                    '--accent1': 'oklch(68% 0.22 150)',
-                    '--accent2': 'oklch(75% 0.22 230)',
-                    '--accent3': 'oklch(72% 0.20 200)',
+                    '--base': 'oklch(15% 0.03 220)',
+                    '--accent1': 'oklch(85% 0.18 130)',
+                    '--accent2': 'oklch(70% 0.20 210)',
+                    '--accent3': 'oklch(90% 0.15 100)',
                     '--blur': '0.5px',
-                    '--contrast': '2',
+                    '--contrast': '2.5',
                     '--dot': '0.06rem',
                     '--shadow': '1rem',
                     '--mask': '10%',
@@ -140,8 +140,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                   } as React.CSSProperties}
                 />
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[13px] font-bold tracking-[0.2em] text-white/95 group-hover:text-white transition-colors uppercase font-display leading-tight">Atlas Hub</span>
-                  <span className="text-[9px] font-medium tracking-[0.15em] text-[hsl(var(--cofound-green))]/70 group-hover:text-[hsl(var(--cofound-green))]/90 transition-colors uppercase leading-tight mt-0.5">Powered by COFOUND</span>
+                  <span className="text-[13px] font-bold tracking-[0.2em] text-[hsl(var(--cofound-blue-dark))] group-hover:text-[hsl(var(--cofound-blue-dark))] transition-colors uppercase font-display leading-tight">Atlas Hub</span>
+                  <span className="text-[9px] font-medium tracking-[0.15em] text-[hsl(var(--cofound-blue-dark))]/60 transition-colors uppercase leading-tight mt-0.5">Powered by COFOUND</span>
                 </div>
               </div>
             </NavLink>
