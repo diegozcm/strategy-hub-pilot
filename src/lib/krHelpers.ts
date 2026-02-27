@@ -101,6 +101,44 @@ export const sortObjectivesByWeight = <T extends { weight?: number | null }>(obj
 };
 
 /**
+ * Granularity map: how many months each frequency covers
+ */
+const FREQUENCY_GRANULARITY: Record<string, number> = {
+  monthly: 1,
+  bimonthly: 2,
+  quarterly: 3,
+  semesterly: 6,
+  yearly: 12,
+};
+
+/**
+ * Given a KR frequency and a month number (1-12), returns the first month
+ * of the KR's period that contains that month.
+ * E.g. frequency='semesterly', month=4 → 1 (S1 starts at Jan)
+ */
+const getKRPeriodStartMonth = (frequency: string, month: number): number => {
+  switch (frequency) {
+    case 'bimonthly': {
+      // B1=[1,2], B2=[3,4], B3=[5,6], B4=[7,8], B5=[9,10], B6=[11,12]
+      const bimonth = Math.ceil(month / 2);
+      return (bimonth - 1) * 2 + 1;
+    }
+    case 'quarterly': {
+      const quarter = Math.ceil(month / 3);
+      return (quarter - 1) * 3 + 1;
+    }
+    case 'semesterly': {
+      return month <= 6 ? 1 : 7;
+    }
+    case 'yearly': {
+      return 1;
+    }
+    default:
+      return month;
+  }
+};
+
+/**
  * Helper to get month keys for a given period
  */
 const getMonthKeysForPeriod = (
@@ -118,7 +156,7 @@ const getMonthKeysForPeriod = (
 ): string[] => {
   const now = new Date();
   const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1; // 1-based
+  const currentMonth = now.getMonth() + 1;
 
   switch (period) {
     case 'monthly': {
@@ -170,6 +208,50 @@ const getMonthKeysForPeriod = (
 };
 
 /**
+ * Gets effective month keys considering KR frequency vs filter period.
+ * When the KR's frequency is coarser than the filter period,
+ * maps the filter months to the KR's encompassing period start month
+ * (where the data is actually stored in monthly_actual).
+ */
+const getEffectiveMonthKeys = (
+  krFrequency: string | undefined,
+  period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly',
+  options?: {
+    selectedMonth?: number;
+    selectedYear?: number;
+    selectedQuarter?: 1 | 2 | 3 | 4;
+    selectedQuarterYear?: number;
+    selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
+    selectedBimonthYear?: number;
+    selectedSemester?: 1 | 2;
+    selectedSemesterYear?: number;
+  }
+): string[] => {
+  const filterKeys = getMonthKeysForPeriod(period, options);
+  const freq = krFrequency || 'monthly';
+  
+  const filterGranularity = FREQUENCY_GRANULARITY[period] || 1;
+  const krGranularity = FREQUENCY_GRANULARITY[freq] || 1;
+  
+  // If KR frequency is not coarser than filter, use normal keys
+  if (krGranularity <= filterGranularity) {
+    return filterKeys;
+  }
+  
+  // KR is coarser — remap each filter month to the KR period's start month
+  const remappedSet = new Set<string>();
+  for (const key of filterKeys) {
+    const [yearStr, monthStr] = key.split('-');
+    const year = yearStr;
+    const month = parseInt(monthStr, 10);
+    const startMonth = getKRPeriodStartMonth(freq, month);
+    remappedSet.add(`${year}-${startMonth.toString().padStart(2, '0')}`);
+  }
+  
+  return Array.from(remappedSet);
+};
+
+/**
  * Checks if a KR has NULL data (no values filled) for a given period.
  * NULL = no data at all → should be EXCLUDED from weighted averages.
  * ZERO = explicitly filled 0 → should PARTICIPATE in calculations.
@@ -185,6 +267,7 @@ export const isKRNullForPeriod = (
     q3_percentage?: number | null;
     q4_percentage?: number | null;
     monthly_targets?: Record<string, number> | null;
+    frequency?: string | null;
   },
   period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly' = 'ytd',
   options?: {
@@ -199,11 +282,10 @@ export const isKRNullForPeriod = (
   }
 ): boolean => {
   const monthlyActual = (kr.monthly_actual ?? {}) as Record<string, number | null | undefined>;
-  const monthlyTargets = (kr.monthly_targets ?? {}) as Record<string, number | null | undefined>;
   
-  const monthKeys = getMonthKeysForPeriod(period, options);
+  // Use frequency-aware month keys to check where data actually lives
+  const monthKeys = getEffectiveMonthKeys(kr.frequency || undefined, period, options);
   
-  // Always check monthly_actual directly — never trust pre-calculated DB fields
   const allMonthsNull = monthKeys.every(key => {
     const actualValue = monthlyActual[key];
     return actualValue === undefined || actualValue === null;
@@ -229,6 +311,7 @@ export const getKRPercentageForPeriod = (
     target_direction?: string | null;
     aggregation_type?: string | null;
     weight?: number | null;
+    frequency?: string | null;
   },
   period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly' = 'ytd',
   options?: {
@@ -287,8 +370,8 @@ export const getKRPercentageForPeriod = (
     return totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
   };
 
-  // Always compute from monthly_actual — never trust pre-calculated DB fields
-  const monthKeys = getMonthKeysForPeriod(period, options);
+  // Use frequency-aware month keys to find where data actually lives
+  const monthKeys = getEffectiveMonthKeys(kr.frequency || undefined, period, options);
 
   if (period === 'monthly') {
     // For single month, compute directly for minimize support
@@ -327,6 +410,7 @@ export const calculateObjectiveProgressWeighted = <T extends {
   monthly_actual?: Record<string, number> | null;
   target_direction?: string | null;
   aggregation_type?: string | null;
+  frequency?: string | null;
 }>(
   keyResults: T[],
   period: 'ytd' | 'monthly' | 'yearly' | 'quarterly' | 'semesterly' | 'bimonthly' = 'ytd',
