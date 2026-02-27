@@ -803,6 +803,39 @@ serve(async (req) => {
           } catch (logErr) {
             console.error('❌ Failed to log analytics:', logErr);
           }
+
+          // Auto-rename session after first interactions
+          if (session_id && previousMessages.length <= 3) {
+            try {
+              const renameResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  model: 'openai/gpt-5-nano',
+                  messages: [
+                    { role: 'system', content: 'Resuma esta conversa em um título curto (5-8 palavras, português). Responda APENAS o título, sem aspas, sem pontuação final.' },
+                    ...previousMessages.slice(0, 4).map((m: any) => ({ role: m.role, content: m.content.substring(0, 200) })),
+                    { role: 'user', content: message.substring(0, 200) },
+                  ],
+                  temperature: 0.3,
+                  max_tokens: 30,
+                }),
+              });
+              if (renameResponse.ok) {
+                const renameData = await renameResponse.json();
+                const newTitle = renameData.choices?.[0]?.message?.content?.trim();
+                if (newTitle && newTitle.length > 3 && newTitle.length < 80) {
+                  await supabase.from('ai_chat_sessions').update({ session_title: newTitle }).eq('id', session_id);
+                  console.log(`✏️ Session renamed: "${newTitle}"`);
+                }
+              }
+            } catch (renameErr) {
+              console.error('❌ Failed to rename session:', renameErr);
+            }
+          }
         }
       })();
 
@@ -876,6 +909,39 @@ serve(async (req) => {
         }
       }
     });
+
+    // Auto-rename session (non-streaming)
+    if (session_id && previousMessages.length <= 3) {
+      try {
+        const renameResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'openai/gpt-5-nano',
+            messages: [
+              { role: 'system', content: 'Resuma esta conversa em um título curto (5-8 palavras, português). Responda APENAS o título, sem aspas, sem pontuação final.' },
+              ...previousMessages.slice(0, 4).map((m: any) => ({ role: m.role, content: m.content.substring(0, 200) })),
+              { role: 'user', content: message.substring(0, 200) },
+            ],
+            temperature: 0.3,
+            max_tokens: 30,
+          }),
+        });
+        if (renameResponse.ok) {
+          const renameData = await renameResponse.json();
+          const newTitle = renameData.choices?.[0]?.message?.content?.trim();
+          if (newTitle && newTitle.length > 3 && newTitle.length < 80) {
+            await supabase.from('ai_chat_sessions').update({ session_title: newTitle }).eq('id', session_id);
+            console.log(`✏️ Session renamed: "${newTitle}"`);
+          }
+        }
+      } catch (renameErr) {
+        console.error('❌ Failed to rename session:', renameErr);
+      }
+    }
 
     return new Response(
       JSON.stringify({
