@@ -121,7 +121,9 @@ export const getPopulatedQuarters = (
       }
       
       const { start: effStart, end: effEnd } = getEffectiveValidityRange(kr.start_month, kr.end_month, kr.frequency);
-      return effStart <= quarterEnd && effEnd >= quarterStart;
+      const inValidity = effStart <= quarterEnd && effEnd >= quarterStart;
+      if (inValidity) return true;
+      return hasDataInRange(kr, quarterStartMonth, quarterEndMonth, quarter.year);
     });
   });
 };
@@ -146,9 +148,13 @@ export const getKRQuarters = (
   const { start: effStart, end: effEnd } = getEffectiveValidityRange(keyResult.start_month, keyResult.end_month, keyResult.frequency);
   
   return allQuarterOptions.filter(quarter => {
-    const quarterStart = `${quarter.year}-${String(((quarter.quarter - 1) * 3) + 1).padStart(2, '0')}`;
-    const quarterEnd = `${quarter.year}-${String(quarter.quarter * 3).padStart(2, '0')}`;
-    return effStart <= quarterEnd && effEnd >= quarterStart;
+    const quarterStartMonth = ((quarter.quarter - 1) * 3) + 1;
+    const quarterEndMonth = quarter.quarter * 3;
+    const quarterStart = `${quarter.year}-${String(quarterStartMonth).padStart(2, '0')}`;
+    const quarterEnd = `${quarter.year}-${String(quarterEndMonth).padStart(2, '0')}`;
+    const inValidity = effStart <= quarterEnd && effEnd >= quarterStart;
+    if (inValidity) return true;
+    return hasDataInRange(keyResult, quarterStartMonth, quarterEndMonth, quarter.year);
   });
 };
 
@@ -170,7 +176,9 @@ export const isKRInQuarter = (
   const { start: effStart, end: effEnd } = getEffectiveValidityRange(kr.start_month, kr.end_month, kr.frequency);
   const quarterStart = `${year}-${quarterStartMonth.toString().padStart(2, '0')}`;
   const quarterEnd = `${year}-${quarterEndMonth.toString().padStart(2, '0')}`;
-  return effStart <= quarterEnd && effEnd >= quarterStart;
+  const inValidity = effStart <= quarterEnd && effEnd >= quarterStart;
+  if (inValidity) return true;
+  return hasDataInRange(kr, quarterStartMonth, quarterEndMonth, year);
 };
 
 /**
@@ -184,7 +192,9 @@ export const isKRInYear = (kr: KeyResult, year: number): boolean => {
   const { start: effStart, end: effEnd } = getEffectiveValidityRange(kr.start_month, kr.end_month, kr.frequency);
   const yearStart = `${year}-01`;
   const yearEnd = `${year}-12`;
-  return effStart <= yearEnd && effEnd >= yearStart;
+  const inValidity = effStart <= yearEnd && effEnd >= yearStart;
+  if (inValidity) return true;
+  return hasDataInRange(kr, 1, 12, year);
 };
 
 /**
@@ -202,7 +212,9 @@ export const isKRInMonth = (
   }
   
   const { start: effStart, end: effEnd } = getEffectiveValidityRange(kr.start_month, kr.end_month, kr.frequency);
-  return effStart <= monthKey && effEnd >= monthKey;
+  const inValidity = effStart <= monthKey && effEnd >= monthKey;
+  if (inValidity) return true;
+  return hasDataInRange(kr, month, month, year);
 };
 
 /**
@@ -288,7 +300,9 @@ export const isKRInSemester = (
   const { start: effStart, end: effEnd } = getEffectiveValidityRange(kr.start_month, kr.end_month, kr.frequency);
   const semesterStart = `${year}-${semesterStartMonth.toString().padStart(2, '0')}`;
   const semesterEnd = `${year}-${semesterEndMonth.toString().padStart(2, '0')}`;
-  return effStart <= semesterEnd && effEnd >= semesterStart;
+  const inValidity = effStart <= semesterEnd && effEnd >= semesterStart;
+  if (inValidity) return true;
+  return hasDataInRange(kr, semesterStartMonth, semesterEndMonth, year);
 };
 
 /**
@@ -309,5 +323,7 @@ export const isKRInBimonth = (
   const { start: effStart, end: effEnd } = getEffectiveValidityRange(kr.start_month, kr.end_month, kr.frequency);
   const bimonthStart = `${year}-${bimonthStartMonth.toString().padStart(2, '0')}`;
   const bimonthEnd = `${year}-${bimonthEndMonth.toString().padStart(2, '0')}`;
-  return effStart <= bimonthEnd && effEnd >= bimonthStart;
+  const inValidity = effStart <= bimonthEnd && effEnd >= bimonthStart;
+  if (inValidity) return true;
+  return hasDataInRange(kr, bimonthStartMonth, bimonthEndMonth, year);
 };
