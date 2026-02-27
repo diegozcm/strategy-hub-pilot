@@ -108,13 +108,13 @@ export const AtlasMessageBubble: React.FC<AtlasMessageBubbleProps> = ({
           {msg.plan && msg.planStatus === 'pending' && (
             <div className="flex gap-2 mt-3 pt-2 border-t border-border">
               <button
-                className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-sm font-medium bg-[hsl(var(--cofound-green))]/15 text-[hsl(var(--cofound-green))] hover:bg-[hsl(var(--cofound-green))]/25 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-sm font-medium bg-[hsl(var(--cofound-green))] text-[hsl(var(--cofound-blue-dark))] hover:bg-[hsl(var(--cofound-green))]/85 transition-colors"
                 onClick={() => onExecutePlan(msg.plan, index)}
               >
                 <Check className="h-3.5 w-3.5" /> Aprovar
               </button>
               <button
-                className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-sm font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-sm font-medium bg-destructive text-destructive-foreground hover:bg-destructive/85 transition-colors"
                 onClick={() => onRejectPlan(index)}
               >
                 <XCircle className="h-3.5 w-3.5" /> Reprovar
