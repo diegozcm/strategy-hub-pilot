@@ -260,15 +260,17 @@ All colors MUST be HSL.
 .atlas-sidebar-btn-border {
   background: conic-gradient(
     from var(--atlas-btn-angle),
-    #38B6FF,
-    #0D2338 25%,
-    #CDD966 50%,
-    #0D2338 75%,
-    #38B6FF
+    #38B6FF 0%,
+    #0D2338 20%,
+    #CDD966 40%,
+    #38B6FF 50%,
+    #0D2338 70%,
+    #CDD966 85%,
+    #38B6FF 100%
   );
-  animation: atlas-btn-rotate 3s linear infinite;
-  opacity: 0.7;
-  transition: opacity 0.3s ease;
+  animation: atlas-btn-rotate 4s linear infinite;
+  opacity: 0.6;
+  transition: opacity 0.4s ease;
 }
 
 .atlas-sidebar-btn:hover .atlas-sidebar-btn-border {
@@ -277,9 +279,20 @@ All colors MUST be HSL.
 
 /* Atlas Hub Button - Inner animated background */
 .atlas-hub-btn-inner {
-  background: linear-gradient(135deg, #0D2338 0%, #122d4a 40%, #0D2338 60%, #0f2a44 100%);
-  background-size: 300% 300%;
-  animation: atlas-inner-shift 6s ease-in-out infinite;
+  background: linear-gradient(145deg, #0a1a2e 0%, #0D2338 30%, #112b45 60%, #0D2338 100%);
+  background-size: 400% 400%;
+  animation: atlas-inner-shift 8s ease-in-out infinite;
+}
+
+.atlas-hub-btn-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at 20% 50%, rgba(56, 182, 255, 0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 50%, rgba(205, 217, 102, 0.05) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .atlas-hub-btn-inner::after {
@@ -289,20 +302,21 @@ All colors MUST be HSL.
   border-radius: inherit;
   background: linear-gradient(
     105deg,
-    transparent 30%,
-    rgba(56, 182, 255, 0.06) 45%,
-    rgba(205, 217, 102, 0.05) 50%,
-    rgba(56, 182, 255, 0.06) 55%,
-    transparent 70%
+    transparent 20%,
+    rgba(56, 182, 255, 0.07) 40%,
+    rgba(205, 217, 102, 0.06) 50%,
+    rgba(56, 182, 255, 0.07) 60%,
+    transparent 80%
   );
-  background-size: 250% 100%;
-  animation: atlas-inner-shine 4s ease-in-out infinite;
+  background-size: 300% 100%;
+  animation: atlas-inner-shine 5s ease-in-out infinite;
   pointer-events: none;
+  z-index: 1;
 }
 
 .atlas-sidebar-btn:hover .atlas-hub-btn-inner {
-  background: linear-gradient(135deg, #0f2a44 0%, #163958 40%, #0f2a44 60%, #1a3f5f 100%);
-  background-size: 300% 300%;
+  background: linear-gradient(145deg, #0f2a44 0%, #163958 30%, #1a3f5f 60%, #0f2a44 100%);
+  background-size: 400% 400%;
 }
 
 @keyframes atlas-inner-shift {
