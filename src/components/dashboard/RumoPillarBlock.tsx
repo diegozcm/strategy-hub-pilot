@@ -30,9 +30,9 @@ export const RumoPillarBlock = ({ pillar, progress }: RumoPillarBlockProps) => {
                 {pillar.name}
               </h3>
               <p className="text-3xl font-extrabold">
-                {isNull ? 'Vazio' : `${progress.toFixed(1).replace('.', ',')}%`}
-              </p>
-            </div>
+                 {isNull ? 'N/A' : `${progress.toFixed(1).replace('.', ',')}%`}
+               </p>
+             </div>
             <div className="text-xs opacity-80 mt-2">
               {pillar.objectives?.length || 0} objetivo(s)
             </div>
@@ -44,7 +44,7 @@ export const RumoPillarBlock = ({ pillar, progress }: RumoPillarBlockProps) => {
             <p className="text-xs text-muted-foreground mb-2">{pillar.description}</p>
           )}
           <p className="text-xs">
-            Progresso: <span className="font-bold">{isNull ? 'Vazio' : `${progress.toFixed(1).replace('.', ',')}%`}</span>
+            Progresso: <span className="font-bold">{isNull ? 'N/A' : `${progress.toFixed(1).replace('.', ',')}%`}</span>
           </p>
           <p className="text-xs">
             Total de objetivos: {pillar.objectives?.length || 0}

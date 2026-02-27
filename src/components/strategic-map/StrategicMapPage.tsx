@@ -460,7 +460,7 @@ export const StrategicMapPage = () => {
                           <div className="space-y-2 mt-3">
                             <div className="flex items-center justify-between text-sm">
                               <span>Progresso</span>
-                              <span className="font-medium">{progress === null ? 'Vazio' : `${progress.toFixed(1).replace('.', ',')}%`}</span>
+                              <span className="font-medium">{progress === null ? 'N/A' : `${progress.toFixed(1).replace('.', ',')}%`}</span>
                             </div>
                             <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
                               <div 

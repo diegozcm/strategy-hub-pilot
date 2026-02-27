@@ -793,7 +793,7 @@ export const ObjectivesPage: React.FC = () => {
                                   ? { selectedYear }
                                   : undefined
                               );
-                              return p === null ? 'Vazio' : `${p.toFixed(1).replace('.', ',')}%`;
+                              return p === null ? 'N/A' : `${p.toFixed(1).replace('.', ',')}%`;
                             })()}</span>
                           </div>
                           <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">

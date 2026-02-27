@@ -299,7 +299,7 @@ export const ObjectiveCard = ({
             </div>
           </div>
           <div className="text-right ml-2">
-            <div className="text-xs font-medium">{progressPercentage === null ? 'Vazio' : `${progressPercentage.toFixed(1).replace('.', ',')}%`}</div>
+            <div className="text-xs font-medium">{progressPercentage === null ? 'N/A' : `${progressPercentage.toFixed(1).replace('.', ',')}%`}</div>
           </div>
         </div>
       </div>
@@ -415,7 +415,7 @@ export const ObjectiveCard = ({
           <div className="mt-3">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-medium text-muted-foreground">Progresso</span>
-              <span className="text-xs font-bold text-foreground">{progressPercentage === null ? 'Vazio' : `${progressPercentage}%`}</span>
+              <span className="text-xs font-bold text-foreground">{<span className="text-xs font-bold text-foreground">{progressPercentage === null ? 'N/A' : `${progressPercentage}%`}</span>}</span>
             </div>
             <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
               <div 
