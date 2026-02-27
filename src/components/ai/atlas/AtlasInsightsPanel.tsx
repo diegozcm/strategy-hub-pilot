@@ -161,7 +161,7 @@ export const AtlasInsightsPanel: React.FC<AtlasInsightsPanelProps> = ({ onSwitch
                 <p className="text-xs mt-1">Clique em "Gerar Insights" para analisar sua empresa</p>
               </motion.div>
             ) : (
-              <div className="space-y-3 pb-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-4">
                 {filteredInsights.map((insight, idx) => (
                   <InsightCard
                     key={insight.id}
@@ -282,23 +282,23 @@ function InsightCard({ insight, index, onConfirm, onDismiss, onResolve, onAskAtl
       </div>
 
       {insight.status === 'active' && (
-        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
-          <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" onClick={onAskAtlas}>
+        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50 flex-wrap">
+          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 font-medium" onClick={onAskAtlas}>
             <AtlasOrb size={14} />
             Perguntar ao Atlas
           </Button>
           {!insight.confirmed_at && (
-            <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 text-[hsl(var(--cofound-green))]" onClick={onConfirm}>
-              <Check className="h-3 w-3" />
+            <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 font-medium border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-400 dark:hover:bg-emerald-950" onClick={onConfirm}>
+              <Check className="h-3.5 w-3.5" />
               Confirmar
             </Button>
           )}
-          <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 text-muted-foreground" onClick={onResolve}>
-            <Check className="h-3 w-3" />
+          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 font-medium" onClick={onResolve}>
+            <Check className="h-3.5 w-3.5" />
             Resolver
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 text-destructive" onClick={onDismiss}>
-            <X className="h-3 w-3" />
+          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 font-medium border-destructive/30 text-destructive hover:bg-destructive/10" onClick={onDismiss}>
+            <X className="h-3.5 w-3.5" />
             Descartar
           </Button>
         </div>
