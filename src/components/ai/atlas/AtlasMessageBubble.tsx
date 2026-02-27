@@ -80,7 +80,7 @@ export const AtlasMessageBubble: React.FC<AtlasMessageBubbleProps> = ({
           ) : (
             <>
               {msg.autoPlan && (
-                <div className="flex items-center gap-1 mb-2 text-[10px] font-medium rounded-md px-2 py-0.5 w-fit bg-[hsl(var(--cofound-green))]/15 text-[hsl(var(--cofound-green))]">
+                <div className="flex items-center gap-1 mb-2 text-[10px] font-medium rounded-md px-2 py-0.5 w-fit bg-[hsl(var(--cofound-green))] text-[hsl(var(--cofound-blue-dark))]">
                   <Sparkles className="h-3 w-3" />
                   Plan automático
                 </div>
