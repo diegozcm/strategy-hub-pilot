@@ -104,6 +104,17 @@ export const useKRMetrics = (
       return defaultMetrics;
     }
 
+    // Helper: check if monthly_actual has ANY real data at all
+    const monthlyActualRaw = ((keyResult.monthly_actual ?? {}) as Record<string, number | null>);
+    const hasAnyMonthlyActualData = Object.values(monthlyActualRaw).some(v => v !== null && v !== undefined);
+
+    // Helper: safely return actual from pre-calculated DB fields (which store 0 instead of null)
+    const safeActual = (dbValue: number | null | undefined): number | null => {
+      if (dbValue === null || dbValue === undefined) return null;
+      if (dbValue === 0 && !hasAnyMonthlyActualData) return null;
+      return dbValue;
+    };
+
     // Helper: granularity map for frequency-aware remapping
     const FREQ_GRANULARITY: Record<string, number> = {
       monthly: 1, bimonthly: 2, quarterly: 3, semesterly: 6, yearly: 12,
@@ -230,7 +241,7 @@ export const useKRMetrics = (
         ...defaultMetrics,
         ytd: {
           target: keyResult.ytd_target ?? null,
-          actual: keyResult.ytd_actual ?? null,
+          actual: safeActual(keyResult.ytd_actual),
           percentage: keyResult.ytd_percentage ?? 0,
         },
         semesterly: semesterMetrics,
@@ -251,7 +262,7 @@ export const useKRMetrics = (
         ...defaultMetrics,
         ytd: {
           target: keyResult.ytd_target ?? null,
-          actual: keyResult.ytd_actual ?? null,
+          actual: safeActual(keyResult.ytd_actual),
           percentage: keyResult.ytd_percentage ?? 0,
         },
         bimonthly: bimonthMetrics,
@@ -279,17 +290,17 @@ export const useKRMetrics = (
       ...defaultMetrics,
       ytd: {
         target: keyResult.ytd_target ?? null,
-        actual: keyResult.ytd_actual ?? null,
+        actual: safeActual(keyResult.ytd_actual),
         percentage: keyResult.ytd_percentage ?? 0,
       },
       monthly: {
         target: keyResult.current_month_target ?? null,
-        actual: keyResult.current_month_actual ?? null,
+        actual: safeActual(keyResult.current_month_actual),
         percentage: keyResult.monthly_percentage ?? 0,
       },
       yearly: {
         target: keyResult.yearly_target ?? null,
-        actual: keyResult.yearly_actual ?? null,
+        actual: safeActual(keyResult.yearly_actual),
         percentage: keyResult.yearly_percentage ?? 0,
       },
       quarterly: quarterMetrics,
@@ -305,19 +316,19 @@ export const useKRMetrics = (
     switch (quarter) {
       case 1:
         qTarget = keyResult.q1_target ?? null;
-        qActual = keyResult.q1_actual ?? null;
+        qActual = safeActual(keyResult.q1_actual);
         break;
       case 2:
         qTarget = keyResult.q2_target ?? null;
-        qActual = keyResult.q2_actual ?? null;
+        qActual = safeActual(keyResult.q2_actual);
         break;
       case 3:
         qTarget = keyResult.q3_target ?? null;
-        qActual = keyResult.q3_actual ?? null;
+        qActual = safeActual(keyResult.q3_actual);
         break;
       case 4:
         qTarget = keyResult.q4_target ?? null;
-        qActual = keyResult.q4_actual ?? null;
+        qActual = safeActual(keyResult.q4_actual);
         break;
     }
 
@@ -335,17 +346,17 @@ export const useKRMetrics = (
       ...defaultMetrics,
       ytd: {
         target: keyResult.ytd_target ?? null,
-        actual: keyResult.ytd_actual ?? null,
+        actual: safeActual(keyResult.ytd_actual),
         percentage: keyResult.ytd_percentage ?? 0,
       },
       monthly: {
         target: keyResult.current_month_target ?? null,
-        actual: keyResult.current_month_actual ?? null,
+        actual: safeActual(keyResult.current_month_actual),
         percentage: keyResult.monthly_percentage ?? 0,
       },
       yearly: {
         target: keyResult.yearly_target ?? null,
-        actual: keyResult.yearly_actual ?? null,
+        actual: safeActual(keyResult.yearly_actual),
         percentage: keyResult.yearly_percentage ?? 0,
       },
       quarterly: {
@@ -370,12 +381,12 @@ export const useKRMetrics = (
         ...defaultMetrics,
         ytd: {
           target: keyResult.ytd_target ?? null,
-          actual: keyResult.ytd_actual ?? null,
+          actual: safeActual(keyResult.ytd_actual),
           percentage: keyResult.ytd_percentage ?? 0,
         },
         monthly: {
           target: keyResult.current_month_target ?? null,
-          actual: keyResult.current_month_actual ?? null,
+          actual: safeActual(keyResult.current_month_actual),
           percentage: keyResult.monthly_percentage ?? 0,
         },
         yearly: yearlyMetrics,
@@ -415,17 +426,17 @@ export const useKRMetrics = (
         ...defaultMetrics,
         ytd: {
           target: keyResult.ytd_target ?? null,
-          actual: keyResult.ytd_actual ?? null,
+          actual: safeActual(keyResult.ytd_actual),
           percentage: keyResult.ytd_percentage ?? 0,
         },
         monthly: {
-          target: monthTarget,
-          actual: monthActual,
-          percentage: monthPercentage,
+          target: keyResult.current_month_target ?? null,
+          actual: safeActual(keyResult.current_month_actual),
+          percentage: keyResult.monthly_percentage ?? 0,
         },
         yearly: {
           target: keyResult.yearly_target ?? null,
-          actual: keyResult.yearly_actual ?? null,
+          actual: safeActual(keyResult.yearly_actual),
           percentage: keyResult.yearly_percentage ?? 0,
         },
       };
@@ -441,22 +452,22 @@ export const useKRMetrics = (
     switch (currentQuarter) {
       case 1:
         defaultQTarget = keyResult.q1_target ?? null;
-        defaultQActual = keyResult.q1_actual ?? null;
+        defaultQActual = safeActual(keyResult.q1_actual);
         defaultQPercentage = keyResult.q1_percentage ?? 0;
         break;
       case 2:
         defaultQTarget = keyResult.q2_target ?? null;
-        defaultQActual = keyResult.q2_actual ?? null;
+        defaultQActual = safeActual(keyResult.q2_actual);
         defaultQPercentage = keyResult.q2_percentage ?? 0;
         break;
       case 3:
         defaultQTarget = keyResult.q3_target ?? null;
-        defaultQActual = keyResult.q3_actual ?? null;
+        defaultQActual = safeActual(keyResult.q3_actual);
         defaultQPercentage = keyResult.q3_percentage ?? 0;
         break;
       case 4:
         defaultQTarget = keyResult.q4_target ?? null;
-        defaultQActual = keyResult.q4_actual ?? null;
+        defaultQActual = safeActual(keyResult.q4_actual);
         defaultQPercentage = keyResult.q4_percentage ?? 0;
         break;
     }
@@ -465,17 +476,17 @@ export const useKRMetrics = (
       ...defaultMetrics,
       ytd: {
         target: keyResult.ytd_target ?? null,
-        actual: keyResult.ytd_actual ?? null,
+        actual: safeActual(keyResult.ytd_actual),
         percentage: keyResult.ytd_percentage ?? 0,
       },
       monthly: {
         target: keyResult.current_month_target ?? null,
-        actual: keyResult.current_month_actual ?? null,
+        actual: safeActual(keyResult.current_month_actual),
         percentage: keyResult.monthly_percentage ?? 0,
       },
       yearly: {
         target: keyResult.yearly_target ?? null,
-        actual: keyResult.yearly_actual ?? null,
+        actual: safeActual(keyResult.yearly_actual),
         percentage: keyResult.yearly_percentage ?? 0,
       },
       quarterly: {
