@@ -1,57 +1,94 @@
 
 
-## Diagnóstico
+# Plano: Integração de Insights ao Atlas Hub
 
-O botão do Atlas Hub na sidebar tem dois problemas principais:
+## Visão Geral
 
-1. **Orb sem cor / escuro demais**: O orb no sidebar usa `--base: oklch(15% 0.03 220)` (quase preto) com `--contrast: 2.5` que "queima" as cores. O orb original (referência na imagem) é vibrante com azul ciano, verde vivo e reflexos — precisa de cores mais saturadas e luminosas, base menos opaca, e contrast/blur balanceados.
+Transformar o Atlas Hub em um hub unificado onde o chat e os insights coexistem. Ao clicar em "Insights" na sidebar, o painel principal muda de modo chat para modo insights -- tudo dentro da mesma página `/app/atlas-hub`, mantendo a sidebar intacta.
 
-2. **Background flat e sem personalidade**: Atualmente é um `bg-[hsl(var(--cofound-blue-light))]` sólido — parece um botão genérico. Precisa de profundidade, gradiente sutil e acabamento premium.
+## Arquitetura de Modos
 
-## Plano de implementação
+```text
+┌─────────────────────────────────────────────────────┐
+│                   Atlas Hub Page                     │
+├──────────┬──────────────────────────────────────────┤
+│          │                                          │
+│ Sidebar  │   mode === 'chat'  →  AtlasChatArea      │
+│          │   mode === 'insights' → InsightsPanel     │
+│ ──────── │                                          │
+│ [+ Nova] │   InsightsPanel:                         │
+│ [Insights│   ┌─ Header com stats + "Gerar"          │
+│ [Sessão1]│   ├─ Filtros (tipo/severidade)           │
+│ [Sessão2]│   ├─ Lista de cards de insights          │
+│          │   ├─ Aba "Histórico" (confirmados)       │
+│          │   └─ InputBar adaptado p/ insights       │
+│          │      "Pergunte sobre seus insights..."    │
+└──────────┴──────────────────────────────────────────┘
+```
 
-### 1. Corrigir o Orb no Sidebar (Sidebar.tsx, linhas 127-140)
+## Etapas de Implementação
 
-Ajustar as variáveis CSS do orb inline para replicar a aparência colorida da referência:
+### 1. Adicionar estado de modo ao AtlasHubPage
+- Criar estado `viewMode: 'chat' | 'insights'` no `AtlasHubPage.tsx`.
+- O botão "Insights" na sidebar alterna para `viewMode = 'insights'` em vez de navegar para `/app/ai-copilot`.
+- "Nova conversa" e seleção de sessão voltam para `viewMode = 'chat'`.
 
-- `--base`: `oklch(5% 0.01 240)` — base mais escura e neutra para as cores "saltarem"
-- `--accent1`: `oklch(72% 0.28 155)` — verde vibrante e saturado
-- `--accent2`: `oklch(70% 0.25 230)` — azul ciano forte
-- `--accent3`: `oklch(65% 0.22 195)` — teal/ciano intermediário
-- `--blur`: `0.3px` — menos blur para mais definição nas cores
-- `--contrast`: `1.8` — reduzir para não "queimar" os gradientes
-- `--dot`: `0.05rem` — dot pattern mais fino e elegante
-- `--shadow`: `1rem` — manter
-- `--mask`: `8%` — leve ajuste para revelar mais cor
-- `--spin-duration`: `4s` — rotação média, viva mas não frenética
-- Aumentar o tamanho do orb de **28px para 36px** para ter mais presença visual
+### 2. Criar componente `AtlasInsightsPanel`
+Novo componente `src/components/ai/atlas/AtlasInsightsPanel.tsx` que exibe os insights dentro do Atlas Hub. Conteúdo:
 
-### 2. Redesenhar o fundo do botão (Sidebar.tsx, linha 124)
+- **Header compacto**: KPIs em linha (Insights Ativos, Alertas Críticos, Confiança Média) + botões "Gerar Insights" e "Limpar".
+- **Filtros**: Pills/chips horizontais para tipo (Risco, Oportunidade, Info) e severidade (Crítico, Alto, Médio, Baixo).
+- **Grid/Lista de cards**: Reutilizar o design de cards do `AICopilotPage` (avatar Atlas, tipo, severidade, descrição, recomendações, ações Confirmar/Descartar).
+- **Tabs**: "Ativos" e "Histórico" para insights confirmados/descartados.
+- Utilizar o hook `useAIInsights` existente para dados e ações.
 
-Substituir o background azul claro sólido por um fundo navy escuro premium com gradiente sutil, retornando ao conceito dark que combina com o orb:
+### 3. Integrar InputBar contextual no modo Insights
+- No modo insights, exibir o `AtlasInputBar` na parte inferior com placeholder adaptado: "Pergunte sobre seus insights ou peça uma análise...".
+- Quando o usuário envia uma mensagem no modo insights, mudar automaticamente para modo chat com a mensagem pré-preenchida, permitindo que o Atlas responda sobre os insights.
+- Alternativamente, manter o chat ativo abaixo/ao lado dos insights para interação direta.
 
-- Background: gradiente `from-[#0B1D30] via-[#0E263D] to-[#0B1D30]` (navy COFOUND)
-- Texto: branco com opacidade alta, subtítulo em verde COFOUND
-- Padding levemente maior para dar mais "respiro"
-- Classe `atlas-hub-btn-inner` reaproveitada para shimmer animado
-- Adicionar `backdrop-blur` e borda sutil `border border-white/5`
-- Hover: brilho sutil com `group-hover:shadow-[0_0_20px_rgba(56,182,255,0.15)]`
+### 4. Capacitar o Atlas a interagir com Insights via chat
+- Adicionar ao system prompt do Atlas (na edge function `atlas-chat`) o contexto dos insights atuais da empresa (resumo de insights ativos, críticos, pendentes).
+- O Atlas poderá:
+  - **Gerar insights**: Invocar `generate-insights` quando solicitado pelo usuário no chat.
+  - **Listar insights**: Responder com os insights já gerados consultando o contexto.
+  - **Confirmar/Descartar**: Executar via `[ATLAS_PLAN]` com novas ações `confirm_insight` e `dismiss_insight`.
+  - **Criar insights manuais**: Nova ação `create_insight` no plano.
 
-### 3. Atualizar CSS do atlas-hub-btn-inner (index.css, linhas 281-320)
+### 5. Atualizar a Sidebar
+- Modificar `AtlasSidebar.tsx`: o botão "Insights" recebe `onShowInsights` que alterna o modo em vez de navegar.
+- Adicionar indicador visual (badge com contagem de insights ativos) no botão "Insights".
+- Highlight visual quando `viewMode === 'insights'` (fundo ativo no botão).
 
-Refinar o background animado do inner para ser mais sofisticado:
-- Gradiente base com navy profundo
-- `::before` com manchas de cor azul/verde mais visíveis (opacidade ~12%)
-- `::after` shimmer com sweep mais lento e elegante
+### 6. Novas ações no `[ATLAS_PLAN]`
+Adicionar ao executor de planos (`useAtlasChat.ts`) suporte para:
+- `generate_insights` — chama a edge function.
+- `confirm_insight` — marca insight como acknowledged.
+- `dismiss_insight` — marca insight como dismissed.
+- `create_insight` — insere um insight manual na tabela `ai_insights`.
 
-### 4. Atualizar o AtlasOrb.tsx padrão (AtlasOrb.tsx)
+### 7. Contexto de Insights no System Prompt
+Na edge function `atlas-chat`, incluir na seção de contexto:
+- Contagem de insights ativos por tipo e severidade.
+- Lista resumida dos 5 insights mais recentes/críticos.
+- Instruir o Atlas a oferecer análise quando relevante.
 
-Sincronizar as cores do componente reutilizável `AtlasOrb` com os mesmos valores vibrantes, para que todos os orbs do sistema (chat, welcome, message bubbles) tenham a mesma aparência colorida da referência.
+## Design Visual (Profissional)
 
-### Detalhes técnicos
+- **InsightsPanel** usa o mesmo `atlas-chat-bg` do chat para consistência.
+- Cards com bordas coloridas por severidade (vermelho/laranja/amarelo/verde).
+- Animações suaves com `motion` (fade-in dos cards).
+- Stats em cards compactos com ícones da marca COFOUND (azul/verde).
+- Transição suave entre modos chat ↔ insights (fade/slide).
 
-Arquivos modificados:
-- `src/components/layout/Sidebar.tsx` — orb vars, tamanho, layout do botão, cores de texto
-- `src/index.css` — refinamento do atlas-hub-btn-inner e pseudo-elements
-- `src/components/ai/atlas/AtlasOrb.tsx` — atualizar orbStyle padrão com cores vibrantes
+## Arquivos Impactados
+
+| Arquivo | Mudança |
+|---------|---------|
+| `AtlasHubPage.tsx` | Estado `viewMode`, renderização condicional |
+| `AtlasSidebar.tsx` | Botão Insights alterna modo, badge de contagem |
+| `AtlasInsightsPanel.tsx` | **Novo** — painel de insights completo |
+| `useAtlasChat.ts` | Novas ações de plano (insights) |
+| `useAIInsights.tsx` | Possíveis ajustes para expor mais dados |
+| Edge function `atlas-chat` | Contexto de insights no system prompt |
 
