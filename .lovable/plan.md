@@ -1,49 +1,40 @@
 
 
-# Fix: KRs desaparecem em qualquer filtro que não seja YTD
+# Ajuste Visual: Mostrar "Vazio" para KRs sem dados
 
-## Causa raiz
+## Problema
 
-Todas as funções `isKRIn*` em `krValidityFilter.ts` retornam `false` quando a vigência expandida (`getEffectiveValidityRange`) não cobre o período do filtro — **sem verificar se existem dados reais naquele período**.
+1. **No modal do Objetivo** (`ResultadoChaveMiniCard`): KRs sem dados reais mostram "0,0%" em vermelho. Deveria mostrar "Vazio" em cinza.
+2. **No modal do KR** (`KeyResultMetrics`): O valor "Realizado" mostra "0.0%" formatado mesmo quando não há dados. Deveria mostrar "Vazio".
 
-Exemplos concretos:
+## Causa
 
-| KR | Vigência | Dados reais | Filtro Ano 2026 | Resultado |
-|----|----------|-------------|-----------------|-----------|
-| KR12 | 2025-01 a 2025-12 | 2026-01, 2026-07 | effEnd=2025-12 < 2026-01 | **SOME** |
-| EBITDA | 2026-01 a 2026-03 (→06) | 2026-01, 2026-07 | effEnd=2026-06 < 2026-07 | **SOME em S2/Q3+** |
+- `useKRMetrics` retorna `actual: null` quando não há dados, mas `percentage` é sempre `number` (0, nunca null).
+- `ResultadoChaveMiniCard` verifica `rawPercentage === null` para determinar `isNullData` — como `percentage` nunca é null, `isNullData` é sempre `false`.
+- `KeyResultMetrics` já trata `hasData` corretamente para o "% Atingimento", mas o campo "Realizado" ainda mostra o valor formatado mesmo quando `actual` é null.
 
-YTD funciona porque `filterKRsByValidity` retorna `true` incondicionalmente.
+## Correção
 
-## Solução
+### Arquivo 1: `src/components/strategic-map/ResultadoChaveMiniCard.tsx`
 
-Adicionar fallback `hasDataInRange` em **todas** as funções `isKRIn*` quando o caminho com vigência falha. Se a vigência diz "não", mas existem dados reais no período, o KR deve aparecer.
-
-### Arquivo: `src/lib/krValidityFilter.ts`
-
-Alterar 5 funções — mesma mudança em cada uma:
+Trocar a verificação de `isNullData` de `rawPercentage === null` para `getMetricsForPeriod('actual') === null`:
 
 ```typescript
-// ANTES (exemplo isKRInYear):
-const { start: effStart, end: effEnd } = getEffectiveValidityRange(...);
-return effStart <= yearEnd && effEnd >= yearStart;
-
-// DEPOIS:
-const { start: effStart, end: effEnd } = getEffectiveValidityRange(...);
-const inValidity = effStart <= yearEnd && effEnd >= yearStart;
-if (inValidity) return true;
-// Fallback: KR has actual data in this period
-return hasDataInRange(kr, startMonth, endMonth, year);
+const rawActual = getMetricsForPeriod('actual');
+const isNullData = rawActual === null || rawActual === undefined;
 ```
 
-Funções afetadas:
-1. **`isKRInQuarter`** (linha 170-173) — adicionar fallback com `hasDataInRange(kr, quarterStartMonth, quarterEndMonth, year)`
-2. **`isKRInYear`** (linha 184-187) — adicionar fallback com `hasDataInRange(kr, 1, 12, year)`
-3. **`isKRInMonth`** (linha 204-205) — adicionar fallback com `hasDataInRange(kr, month, month, year)`
-4. **`isKRInSemester`** (linha 288-291) — adicionar fallback com `hasDataInRange(kr, semesterStartMonth, semesterEndMonth, year)`
-5. **`isKRInBimonth`** (linha 309-312) — adicionar fallback com `hasDataInRange(kr, bimonthStartMonth, bimonthEndMonth, year)`
-6. **`getPopulatedQuarters`** (linha 123-124) — adicionar fallback
-7. **`getKRQuarters`** (linha 148-151) — adicionar fallback
+### Arquivo 2: `src/components/strategic-map/KeyResultMetrics.tsx`
 
-Nenhum outro arquivo precisa ser alterado.
+No bloco do "Realizado" (linha 285-287), quando `actual` é null, mostrar "Vazio" em vez do valor formatado:
+
+```typescript
+<div className="text-xl font-bold">
+  {currentMetrics.actual === null || currentMetrics.actual === undefined
+    ? <span className="text-muted-foreground">Vazio</span>
+    : formatMetricValue(currentMetrics.actual, keyResult.unit)}
+</div>
+```
+
+Dois arquivos, duas linhas cada.
 
