@@ -115,53 +115,57 @@ const getMonthKeysForPeriod = (
     selectedSemester?: 1 | 2;
     selectedSemesterYear?: number;
   }
-): string[] | null => {
+): string[] => {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1-based
+
   switch (period) {
     case 'monthly': {
-      if (options?.selectedMonth && options?.selectedYear) {
-        return [`${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`];
-      }
-      return null; // uses pre-calculated
+      const month = options?.selectedMonth || currentMonth;
+      const year = options?.selectedYear || currentYear;
+      return [`${year}-${month.toString().padStart(2, '0')}`];
     }
     case 'quarterly': {
-      if (options?.selectedQuarter && options?.selectedQuarterYear) {
-        const quarterMonths: Record<number, number[]> = {
-          1: [1, 2, 3], 2: [4, 5, 6], 3: [7, 8, 9], 4: [10, 11, 12]
-        };
-        return quarterMonths[options.selectedQuarter].map(
-          m => `${options.selectedQuarterYear}-${m.toString().padStart(2, '0')}`
-        );
-      }
-      return null;
+      const quarter = options?.selectedQuarter || (Math.ceil(currentMonth / 3) as 1 | 2 | 3 | 4);
+      const year = options?.selectedQuarterYear || currentYear;
+      const quarterMonths: Record<number, number[]> = {
+        1: [1, 2, 3], 2: [4, 5, 6], 3: [7, 8, 9], 4: [10, 11, 12]
+      };
+      return quarterMonths[quarter].map(
+        m => `${year}-${m.toString().padStart(2, '0')}`
+      );
     }
     case 'semesterly': {
-      if (options?.selectedSemester && options?.selectedSemesterYear) {
-        const months = options.selectedSemester === 1 ? [1,2,3,4,5,6] : [7,8,9,10,11,12];
-        return months.map(m => `${options.selectedSemesterYear}-${m.toString().padStart(2, '0')}`);
-      }
-      return null;
+      const semester = options?.selectedSemester || (currentMonth <= 6 ? 1 : 2);
+      const year = options?.selectedSemesterYear || currentYear;
+      const months = semester === 1 ? [1,2,3,4,5,6] : [7,8,9,10,11,12];
+      return months.map(m => `${year}-${m.toString().padStart(2, '0')}`);
     }
     case 'bimonthly': {
-      if (options?.selectedBimonth && options?.selectedBimonthYear) {
-        const bimonthMonths: Record<number, number[]> = {
-          1: [1,2], 2: [3,4], 3: [5,6], 4: [7,8], 5: [9,10], 6: [11,12]
-        };
-        return bimonthMonths[options.selectedBimonth].map(
-          m => `${options.selectedBimonthYear}-${m.toString().padStart(2, '0')}`
-        );
-      }
-      return null;
+      const bimonth = options?.selectedBimonth || (Math.ceil(currentMonth / 2) as 1 | 2 | 3 | 4 | 5 | 6);
+      const year = options?.selectedBimonthYear || currentYear;
+      const bimonthMonths: Record<number, number[]> = {
+        1: [1,2], 2: [3,4], 3: [5,6], 4: [7,8], 5: [9,10], 6: [11,12]
+      };
+      return bimonthMonths[bimonth].map(
+        m => `${year}-${m.toString().padStart(2, '0')}`
+      );
     }
     case 'yearly': {
-      if (options?.selectedYear) {
-        return Array.from({ length: 12 }, (_, i) =>
-          `${options.selectedYear}-${(i + 1).toString().padStart(2, '0')}`
-        );
-      }
-      return null;
+      const year = options?.selectedYear || currentYear;
+      return Array.from({ length: 12 }, (_, i) =>
+        `${year}-${(i + 1).toString().padStart(2, '0')}`
+      );
     }
-    default:
-      return null;
+    case 'ytd':
+    default: {
+      const year = options?.selectedYear || currentYear;
+      const month = options?.selectedMonth || currentMonth;
+      return Array.from({ length: month }, (_, i) =>
+        `${year}-${(i + 1).toString().padStart(2, '0')}`
+      );
+    }
   }
 };
 
@@ -199,40 +203,12 @@ export const isKRNullForPeriod = (
   
   const monthKeys = getMonthKeysForPeriod(period, options);
   
-  if (monthKeys) {
-    // Check if ALL months in the period have null/undefined actual AND null/undefined target
-    const allMonthsNull = monthKeys.every(key => {
-      const actualValue = monthlyActual[key];
-      const targetValue = monthlyTargets[key];
-      // A month is "null" if actual is undefined/null AND target is undefined/null
-      // If target exists but actual doesn't, the KR has structure but no data filled
-      // We consider it null only if the actual value is not filled
-      return actualValue === undefined || actualValue === null;
-    });
-    return allMonthsNull;
-  }
-  
-  // For pre-calculated fields (no custom period selection)
-  switch (period) {
-    case 'ytd':
-      return kr.ytd_percentage === null || kr.ytd_percentage === undefined;
-    case 'monthly':
-      return kr.monthly_percentage === null || kr.monthly_percentage === undefined;
-    case 'yearly':
-      return kr.yearly_percentage === null || kr.yearly_percentage === undefined;
-    case 'quarterly': {
-      const quarter = options?.selectedQuarter || 1;
-      switch (quarter) {
-        case 1: return kr.q1_percentage === null || kr.q1_percentage === undefined;
-        case 2: return kr.q2_percentage === null || kr.q2_percentage === undefined;
-        case 3: return kr.q3_percentage === null || kr.q3_percentage === undefined;
-        case 4: return kr.q4_percentage === null || kr.q4_percentage === undefined;
-      }
-      return true;
-    }
-    default:
-      return true;
-  }
+  // Always check monthly_actual directly — never trust pre-calculated DB fields
+  const allMonthsNull = monthKeys.every(key => {
+    const actualValue = monthlyActual[key];
+    return actualValue === undefined || actualValue === null;
+  });
+  return allMonthsNull;
 };
 
 /**
@@ -311,90 +287,24 @@ export const getKRPercentageForPeriod = (
     return totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
   };
 
-  switch (period) {
-    case 'quarterly': {
-      const quarter = options?.selectedQuarter || 1;
-      const quarterYear = options?.selectedQuarterYear || new Date().getFullYear();
-      
-      if (options?.selectedQuarter && options?.selectedQuarterYear) {
-        const quarterMonths: Record<number, number[]> = {
-          1: [1, 2, 3], 2: [4, 5, 6], 3: [7, 8, 9], 4: [10, 11, 12]
-        };
-        const monthKeys = quarterMonths[quarter].map(m => `${quarterYear}-${m.toString().padStart(2, '0')}`);
-        percentage = computeFromMonthKeys(monthKeys);
-      } else {
-        switch (quarter) {
-          case 1: percentage = kr.q1_percentage ?? 0; break;
-          case 2: percentage = kr.q2_percentage ?? 0; break;
-          case 3: percentage = kr.q3_percentage ?? 0; break;
-          case 4: percentage = kr.q4_percentage ?? 0; break;
-        }
-      }
-      break;
-    }
-      
-    case 'monthly': {
-      if (options?.selectedMonth && options?.selectedYear) {
-        const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
-        const monthTarget = monthlyTargets[monthKey] || 0;
-        const monthActual = monthlyActual[monthKey] || 0;
-        
-        if (kr.target_direction === 'minimize') {
-          percentage = (monthActual > 0 && monthTarget > 0) ? (monthTarget / monthActual) * 100 : 0;
-        } else {
-          percentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
-        }
-      } else {
-        percentage = kr.monthly_percentage ?? 0;
-      }
-      break;
-    }
-      
-    case 'yearly': {
-      if (options?.selectedYear) {
-        const monthKeys = Array.from({ length: 12 }, (_, i) =>
-          `${options.selectedYear}-${(i + 1).toString().padStart(2, '0')}`
-        );
-        percentage = computeFromMonthKeys(monthKeys);
-      } else {
-        percentage = kr.yearly_percentage ?? 0;
-      }
-      break;
-    }
+  // Always compute from monthly_actual — never trust pre-calculated DB fields
+  const monthKeys = getMonthKeysForPeriod(period, options);
+
+  if (period === 'monthly') {
+    // For single month, compute directly for minimize support
+    const monthKey = monthKeys[0];
+    const monthTarget = monthlyTargets[monthKey] || 0;
+    const monthActual = monthlyActual[monthKey] || 0;
     
-    case 'semesterly': {
-      if (options?.selectedSemester && options?.selectedSemesterYear) {
-        const semesterMonths: Record<number, number[]> = {
-          1: [1, 2, 3, 4, 5, 6],
-          2: [7, 8, 9, 10, 11, 12]
-        };
-        const monthKeys = semesterMonths[options.selectedSemester].map(
-          m => `${options.selectedSemesterYear}-${m.toString().padStart(2, '0')}`
-        );
-        percentage = computeFromMonthKeys(monthKeys);
-      }
-      break;
+    if (kr.target_direction === 'minimize') {
+      percentage = (monthActual > 0 && monthTarget > 0) ? (monthTarget / monthActual) * 100 : 0;
+    } else {
+      percentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
     }
-    
-    case 'bimonthly': {
-      if (options?.selectedBimonth && options?.selectedBimonthYear) {
-        const bimonthMonths: Record<number, number[]> = {
-          1: [1, 2], 2: [3, 4], 3: [5, 6],
-          4: [7, 8], 5: [9, 10], 6: [11, 12]
-        };
-        const monthKeys = bimonthMonths[options.selectedBimonth].map(
-          m => `${options.selectedBimonthYear}-${m.toString().padStart(2, '0')}`
-        );
-        percentage = computeFromMonthKeys(monthKeys);
-      }
-      break;
-    }
-      
-    case 'ytd':
-    default:
-      percentage = kr.ytd_percentage ?? 0;
-      break;
+  } else {
+    percentage = computeFromMonthKeys(monthKeys);
   }
+  
   
   return percentage;
 };
