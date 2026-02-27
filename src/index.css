@@ -279,9 +279,10 @@ All colors MUST be HSL.
 
 /* Atlas Hub Button - Inner animated background */
 .atlas-hub-btn-inner {
-  background: linear-gradient(145deg, #0a1a2e 0%, #0D2338 30%, #112b45 60%, #0D2338 100%);
+  background: linear-gradient(145deg, #070f1a 0%, #0B1D30 25%, #0E263D 50%, #0B1D30 75%, #070f1a 100%);
   background-size: 400% 400%;
   animation: atlas-inner-shift 8s ease-in-out infinite;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .atlas-hub-btn-inner::before {
@@ -289,8 +290,9 @@ All colors MUST be HSL.
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(ellipse at 20% 50%, rgba(56, 182, 255, 0.08) 0%, transparent 60%),
-              radial-gradient(ellipse at 80% 50%, rgba(205, 217, 102, 0.05) 0%, transparent 60%);
+  background: radial-gradient(ellipse at 15% 50%, rgba(56, 182, 255, 0.12) 0%, transparent 55%),
+              radial-gradient(ellipse at 85% 50%, rgba(205, 217, 102, 0.08) 0%, transparent 55%),
+              radial-gradient(ellipse at 50% 0%, rgba(56, 182, 255, 0.06) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
 }
@@ -302,21 +304,22 @@ All colors MUST be HSL.
   border-radius: inherit;
   background: linear-gradient(
     105deg,
-    transparent 20%,
-    rgba(56, 182, 255, 0.07) 40%,
-    rgba(205, 217, 102, 0.06) 50%,
-    rgba(56, 182, 255, 0.07) 60%,
-    transparent 80%
+    transparent 15%,
+    rgba(56, 182, 255, 0.1) 35%,
+    rgba(205, 217, 102, 0.08) 50%,
+    rgba(56, 182, 255, 0.1) 65%,
+    transparent 85%
   );
   background-size: 300% 100%;
-  animation: atlas-inner-shine 5s ease-in-out infinite;
+  animation: atlas-inner-shine 6s ease-in-out infinite;
   pointer-events: none;
   z-index: 1;
 }
 
 .atlas-sidebar-btn:hover .atlas-hub-btn-inner {
-  background: linear-gradient(145deg, #0f2a44 0%, #163958 30%, #1a3f5f 60%, #0f2a44 100%);
+  background: linear-gradient(145deg, #0c2238 0%, #133352 25%, #1a3f5f 50%, #133352 75%, #0c2238 100%);
   background-size: 400% 400%;
+  border-color: rgba(56, 182, 255, 0.12);
 }
 
 @keyframes atlas-inner-shift {
