@@ -283,7 +283,9 @@ export const KeyResultMetrics = ({
             <span className="text-xs text-muted-foreground font-medium">{actualLabel}</span>
           </div>
           <div className="text-xl font-bold">
-            {formatMetricValue(currentMetrics.actual, keyResult.unit)}
+            {currentMetrics.actual === null || currentMetrics.actual === undefined
+              ? <span className="text-muted-foreground">Vazio</span>
+              : formatMetricValue(currentMetrics.actual, keyResult.unit)}
           </div>
         </div>
 
