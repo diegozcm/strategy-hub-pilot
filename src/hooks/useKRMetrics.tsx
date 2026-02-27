@@ -104,30 +104,70 @@ export const useKRMetrics = (
       return defaultMetrics;
     }
 
+    // Helper: granularity map for frequency-aware remapping
+    const FREQ_GRANULARITY: Record<string, number> = {
+      monthly: 1, bimonthly: 2, quarterly: 3, semesterly: 6, yearly: 12,
+    };
+
+    const getKRPeriodStartMonth = (frequency: string, month: number): number => {
+      switch (frequency) {
+        case 'bimonthly': return (Math.ceil(month / 2) - 1) * 2 + 1;
+        case 'quarterly': return (Math.ceil(month / 3) - 1) * 3 + 1;
+        case 'semesterly': return month <= 6 ? 1 : 7;
+        case 'yearly': return 1;
+        default: return month;
+      }
+    };
+
+    /**
+     * Remaps month keys when the KR's frequency is coarser than the filter period.
+     * E.g., filter=bimonthly B2 (Mar-Apr), KR=semesterly → returns ["YYYY-01"]
+     */
+    const getEffectiveMonthKeysForKR = (monthKeys: string[], filterPeriodGranularity: number): string[] => {
+      const krFreq = keyResult.frequency || 'monthly';
+      const krGranularity = FREQ_GRANULARITY[krFreq] || 1;
+      
+      if (krGranularity <= filterPeriodGranularity) {
+        return monthKeys;
+      }
+      
+      const remappedSet = new Set<string>();
+      for (const key of monthKeys) {
+        const [yearStr, monthStr] = key.split('-');
+        const month = parseInt(monthStr, 10);
+        const startMonth = getKRPeriodStartMonth(krFreq, month);
+        remappedSet.add(`${yearStr}-${startMonth.toString().padStart(2, '0')}`);
+      }
+      return Array.from(remappedSet);
+    };
+
     // Helper function to calculate metrics for a set of months
-    const calculateMetricsForMonths = (monthKeys: string[]): { target: number | null; actual: number | null; percentage: number } => {
+    const calculateMetricsForMonths = (monthKeys: string[], filterPeriodGranularity: number = 1): { target: number | null; actual: number | null; percentage: number } => {
+      // Apply frequency-aware remapping
+      const effectiveKeys = getEffectiveMonthKeysForKR(monthKeys, filterPeriodGranularity);
+      
       const monthlyTargets = ((keyResult.monthly_targets ?? {}) as Record<string, number | null>);
       const monthlyActual = ((keyResult.monthly_actual ?? {}) as Record<string, number | null>);
       const aggregationType = keyResult.aggregation_type || 'sum';
       
       // Verificar se há ALGUM valor de actual nos meses (não undefined, não null)
-      const hasAnyActualData = monthKeys.some(key => {
+      const hasAnyActualData = effectiveKeys.some(key => {
         const value = monthlyActual[key];
         return value !== null && value !== undefined;
       });
       
       // Verificar se há ALGUM valor de target nos meses
-      const hasAnyTargetData = monthKeys.some(key => {
+      const hasAnyTargetData = effectiveKeys.some(key => {
         const value = monthlyTargets[key];
         return value !== null && value !== undefined;
       });
       
       // Mapear valores, usando null para chaves inexistentes
-      const targetValues = monthKeys.map(key => {
+      const targetValues = effectiveKeys.map(key => {
         const val = monthlyTargets[key];
         return val !== null && val !== undefined ? val : 0;
       });
-      const actualValues = monthKeys.map(key => {
+      const actualValues = effectiveKeys.map(key => {
         const val = monthlyActual[key];
         return val !== null && val !== undefined ? val : 0;
       });
@@ -184,7 +224,7 @@ export const useKRMetrics = (
       };
       const months = semesterMonths[options.selectedSemester];
       const monthKeys = months.map(m => `${options.selectedSemesterYear}-${m.toString().padStart(2, '0')}`);
-      const semesterMetrics = calculateMetricsForMonths(monthKeys);
+      const semesterMetrics = calculateMetricsForMonths(monthKeys, 6);
 
       return {
         ...defaultMetrics,
@@ -205,7 +245,7 @@ export const useKRMetrics = (
       };
       const months = bimonthMonths[options.selectedBimonth];
       const monthKeys = months.map(m => `${options.selectedBimonthYear}-${m.toString().padStart(2, '0')}`);
-      const bimonthMetrics = calculateMetricsForMonths(monthKeys);
+      const bimonthMetrics = calculateMetricsForMonths(monthKeys, 2);
 
       return {
         ...defaultMetrics,
@@ -233,7 +273,7 @@ export const useKRMetrics = (
     const monthKeys = months.map(m => `${year}-${m.toString().padStart(2, '0')}`);
     
     // Usar a função helper que preserva null corretamente
-    const quarterMetrics = calculateMetricsForMonths(monthKeys);
+    const quarterMetrics = calculateMetricsForMonths(monthKeys, 3);
 
     return {
       ...defaultMetrics,
@@ -324,7 +364,7 @@ export const useKRMetrics = (
       }
       
       // Usar a função helper que preserva null corretamente
-      const yearlyMetrics = calculateMetricsForMonths(monthKeys);
+      const yearlyMetrics = calculateMetricsForMonths(monthKeys, 12);
       
       return {
         ...defaultMetrics,
@@ -344,13 +384,16 @@ export const useKRMetrics = (
 
     // If specific month is provided, calculate metrics for that month
     if (options?.selectedMonth && options?.selectedYear) {
+      // Use frequency-aware remapping for monthly filter
       const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
+      const effectiveKey = getEffectiveMonthKeysForKR([monthKey], 1)[0];
+      
       const monthlyTargets = ((keyResult.monthly_targets ?? {}) as Record<string, number | null>);
       const monthlyActual = ((keyResult.monthly_actual ?? {}) as Record<string, number | null>);
       
       // Preservar null se a chave não existe ou é null/undefined
-      const rawTarget = monthlyTargets[monthKey];
-      const rawActual = monthlyActual[monthKey];
+      const rawTarget = monthlyTargets[effectiveKey];
+      const rawActual = monthlyActual[effectiveKey];
       
       const hasTargetData = rawTarget !== null && rawTarget !== undefined;
       const hasActualData = rawActual !== null && rawActual !== undefined;
