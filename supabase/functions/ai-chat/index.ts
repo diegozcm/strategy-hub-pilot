@@ -88,7 +88,7 @@ function needsProModel(msg: string): boolean {
   const normalized = msg.toLowerCase().trim();
   
   // Strategic entities
-  const entities = '(objetivo|objetivos|kr|key.?result|resultado.?chave|pilar|pilares|iniciativa|iniciativas|projeto|projetos|swot|golden.?circle|fca|reuni[aã]o|reunioes|task|tarefa|tarefas|planejamento|bsc|balanced.?scorecard|mapa.?estrat[eé]gico|vis[aã]o|miss[aã]o|an[aá]lise)';
+  const entities = '(objetivo|objetivos|kr|key.?result|resultado.?chave|pilar|pilares|iniciativa|iniciativas|projeto|projetos|swot|golden.?circle|fca|reuni[aã]o|reunioes|task|tarefa|tarefas|planejamento|bsc|balanced.?scorecard|mapa.?estrat[eé]gico|vis[aã]o|miss[aã]o|an[aá]lise|insight|insights)';
   
   // Creation/modification patterns
   const createPatterns = new RegExp(`(cri[ae]r?|adicionar?|cadastrar?|implementar?|montar?|estruturar?|gerar?|elaborar?|desenvolver?|propor?|sugerir?|definir?|planejar?|organizar?|configurar?).*${entities}`, 'i');
@@ -235,7 +235,15 @@ O JSON DEVE ser um objeto com a chave "actions" contendo um array. Cada item do 
 26. **update_task** — Atualiza uma task existente
     - Campos: task_id ou task_title + project_name (obrigatório para identificar), title, description, status (ESTRITAMENTE: todo, in_progress, review ou done — NUNCA use on_hold, pending, completed ou qualquer outro valor), priority (low/medium/high/critical), due_date, estimated_hours, actual_hours
 27. **delete_task** — Remove uma task
-    - Campos: task_id ou task_title + project_name (obrigatório para identificar)
+     - Campos: task_id ou task_title + project_name (obrigatório para identificar)
+28. **generate_insights** — Gera novos insights de IA para a empresa
+     - Campos: nenhum campo obrigatório (usa o company_id do contexto)
+29. **confirm_insight** — Marca um insight como confirmado/relevante pelo usuário
+     - Campos: insight_id (obrigatório)
+30. **dismiss_insight** — Descarta um insight
+     - Campos: insight_id (obrigatório)
+31. **create_insight** — Cria um insight manual
+     - Campos: title (obrigatório), description, insight_type (risk/opportunity/info), severity (low/medium/high/critical), category, actionable (boolean)
 
 ### VALORES VÁLIDOS DE REFERÊNCIA:
 - **Unidades de KR**: %, R$, un, dias, score, points
@@ -483,7 +491,7 @@ serve(async (req) => {
       const { data: plans } = await supabase.from('strategic_plans').select('id').eq('company_id', company_id);
       const planIds = plans?.map(p => p.id) || [];
 
-      const [objectivesResult, projectsResult, startupResult, mentoringResult, pillarsResult, govMeetingsResult, govAtasResult, govRuleDocResult, initiativesResult, goldenCircleResult, swotResult, visionResult] = await Promise.all([
+      const [objectivesResult, projectsResult, startupResult, mentoringResult, pillarsResult, govMeetingsResult, govAtasResult, govRuleDocResult, initiativesResult, goldenCircleResult, swotResult, visionResult, insightsResult] = await Promise.all([
         planIds.length > 0
           ? supabase.from('strategic_objectives').select('id, title, progress, status, target_date, pillar_id').in('plan_id', planIds).limit(50)
           : Promise.resolve({ data: [] }),
@@ -500,6 +508,7 @@ serve(async (req) => {
         supabase.from('golden_circle').select('why_question, how_question, what_question, updated_at').eq('company_id', company_id).maybeSingle(),
         supabase.from('swot_analysis').select('strengths, weaknesses, opportunities, threats, updated_at').eq('company_id', company_id).maybeSingle(),
         supabase.from('vision_alignment').select('shared_objectives, shared_commitments, shared_resources, shared_risks, updated_at').eq('company_id', company_id).maybeSingle(),
+        supabase.from('ai_insights').select('id, title, insight_type, severity, status, category, description, confidence_score, confirmed_at').eq('company_id', company_id).order('created_at', { ascending: false }).limit(20),
       ]);
 
       objectives = objectivesResult.data || [];
@@ -599,6 +608,32 @@ serve(async (req) => {
 
       if (visionData) {
         contextParts.push(`\n👁️ Alinhamento de Visão:\n• Objetivos Compartilhados: ${visionData.shared_objectives || 'Não preenchido'}\n• Compromissos: ${visionData.shared_commitments || 'Não preenchido'}\n• Recursos: ${visionData.shared_resources || 'Não preenchido'}\n• Riscos: ${visionData.shared_risks || 'Não preenchido'}\n• Atualizado em: ${visionData.updated_at}`);
+      }
+
+      // AI Insights context
+      const insightsData = insightsResult.data || [];
+      if (insightsData.length > 0) {
+        const activeInsights = insightsData.filter((i: any) => i.status === 'active');
+        const criticalCount = activeInsights.filter((i: any) => i.severity === 'critical' || i.severity === 'high').length;
+        const riskCount = activeInsights.filter((i: any) => i.insight_type === 'risk').length;
+        const oppCount = activeInsights.filter((i: any) => i.insight_type === 'opportunity').length;
+
+        const insightsParts: string[] = [`\n💡 Insights da Empresa (${activeInsights.length} ativos, ${criticalCount} críticos/altos, ${riskCount} riscos, ${oppCount} oportunidades):`];
+        
+        // Show top 5 most critical/recent active insights
+        const topInsights = activeInsights.slice(0, 5);
+        for (const ins of topInsights) {
+          const confirmed = ins.confirmed_at ? ' ✓' : '';
+          insightsParts.push(`• [${ins.insight_type}/${ins.severity}] ${ins.title} (id: ${ins.id})${confirmed} — ${ins.description || ''}`);
+        }
+        
+        if (activeInsights.length > 5) {
+          insightsParts.push(`... e mais ${activeInsights.length - 5} insights ativos.`);
+        }
+
+        insightsParts.push(`\nVocê pode gerar novos insights, confirmar, descartar ou criar insights manualmente via [ATLAS_PLAN] com as ações: generate_insights, confirm_insight, dismiss_insight, create_insight.`);
+        
+        contextParts.push(insightsParts.join('\n'));
       }
 
       contextData = contextParts.join('\n');
