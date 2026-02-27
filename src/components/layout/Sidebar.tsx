@@ -141,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
                 />
                 <div className="flex flex-col min-w-0">
                   <span className="text-[13px] font-bold tracking-[0.2em] text-white/95 group-hover:text-white transition-colors uppercase font-display leading-tight">Atlas Hub</span>
-                  <span className="text-[9px] font-medium tracking-[0.15em] text-[hsl(var(--cofound-green))]/70 group-hover:text-[hsl(var(--cofound-green))]/90 transition-colors uppercase leading-tight mt-0.5">Powered by COFOUND</span>
+                  <span className="text-[9px] font-medium tracking-[0.15em] text-[hsl(var(--cofound-green))] group-hover:text-[hsl(var(--cofound-green))] transition-colors uppercase leading-tight mt-0.5">Powered by COFOUND</span>
                 </div>
               </div>
             </NavLink>
