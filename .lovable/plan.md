@@ -1,94 +1,42 @@
 
 
-# Plano: Integração de Insights ao Atlas Hub
+# Plano: Sidebar com Sync em Tempo Real + Renomeação Automática de Sessões
 
-## Visão Geral
+## 1. Sincronização em Tempo Real da Sidebar
 
-Transformar o Atlas Hub em um hub unificado onde o chat e os insights coexistem. Ao clicar em "Insights" na sidebar, o painel principal muda de modo chat para modo insights -- tudo dentro da mesma página `/app/atlas-hub`, mantendo a sidebar intacta.
+**Arquivo**: `src/hooks/useAtlasChat.ts`
 
-## Arquitetura de Modos
+Adicionar um `useEffect` dentro do hook que cria um canal Supabase Realtime escutando `ai_chat_sessions` filtrado por `user_id`. Quando houver INSERT, UPDATE ou DELETE na tabela, o callback atualiza o estado `sessions` diretamente:
 
-```text
-┌─────────────────────────────────────────────────────┐
-│                   Atlas Hub Page                     │
-├──────────┬──────────────────────────────────────────┤
-│          │                                          │
-│ Sidebar  │   mode === 'chat'  →  AtlasChatArea      │
-│          │   mode === 'insights' → InsightsPanel     │
-│ ──────── │                                          │
-│ [+ Nova] │   InsightsPanel:                         │
-│ [Insights│   ┌─ Header com stats + "Gerar"          │
-│ [Sessão1]│   ├─ Filtros (tipo/severidade)           │
-│ [Sessão2]│   ├─ Lista de cards de insights          │
-│          │   ├─ Aba "Histórico" (confirmados)       │
-│          │   └─ InputBar adaptado p/ insights       │
-│          │      "Pergunte sobre seus insights..."    │
-└──────────┴──────────────────────────────────────────┘
+- **INSERT**: Adiciona a nova sessão no topo da lista.
+- **UPDATE**: Atualiza o título/timestamp da sessão existente na lista.
+- **DELETE**: Remove a sessão da lista.
+
+Isso elimina a necessidade de re-fetch manual — qualquer nova conversa aparece instantaneamente na sidebar.
+
+## 2. Renomeação Automática pelo Atlas (IA)
+
+**Arquivo**: `supabase/functions/ai-chat/index.ts`
+
+Após gerar a resposta da IA (na primeira ou segunda mensagem da sessão), a edge function fará uma chamada secundária leve à LLM pedindo um título curto (~5-8 palavras) que resuma o tema da conversa. O título gerado será salvo via `UPDATE ai_chat_sessions SET session_title = '...' WHERE id = session_id`.
+
+Lógica de ativação:
+- Só renomeia quando a contagem de mensagens no session for ≤ 3 (primeiras interações).
+- O título atual ainda é o trecho inicial da mensagem do usuário (substring de 60 chars) — a IA vai substituir por algo mais semântico.
+
+**Prompt de renomeação** (chamada rápida, ~50 tokens):
+```
+"Resuma esta conversa em um título curto (5-8 palavras, português). Responda APENAS o título, sem aspas."
 ```
 
-## Etapas de Implementação
+## 3. Atualização do título refletida via Realtime
 
-### 1. Adicionar estado de modo ao AtlasHubPage
-- Criar estado `viewMode: 'chat' | 'insights'` no `AtlasHubPage.tsx`.
-- O botão "Insights" na sidebar alterna para `viewMode = 'insights'` em vez de navegar para `/app/ai-copilot`.
-- "Nova conversa" e seleção de sessão voltam para `viewMode = 'chat'`.
-
-### 2. Criar componente `AtlasInsightsPanel`
-Novo componente `src/components/ai/atlas/AtlasInsightsPanel.tsx` que exibe os insights dentro do Atlas Hub. Conteúdo:
-
-- **Header compacto**: KPIs em linha (Insights Ativos, Alertas Críticos, Confiança Média) + botões "Gerar Insights" e "Limpar".
-- **Filtros**: Pills/chips horizontais para tipo (Risco, Oportunidade, Info) e severidade (Crítico, Alto, Médio, Baixo).
-- **Grid/Lista de cards**: Reutilizar o design de cards do `AICopilotPage` (avatar Atlas, tipo, severidade, descrição, recomendações, ações Confirmar/Descartar).
-- **Tabs**: "Ativos" e "Histórico" para insights confirmados/descartados.
-- Utilizar o hook `useAIInsights` existente para dados e ações.
-
-### 3. Integrar InputBar contextual no modo Insights
-- No modo insights, exibir o `AtlasInputBar` na parte inferior com placeholder adaptado: "Pergunte sobre seus insights ou peça uma análise...".
-- Quando o usuário envia uma mensagem no modo insights, mudar automaticamente para modo chat com a mensagem pré-preenchida, permitindo que o Atlas responda sobre os insights.
-- Alternativamente, manter o chat ativo abaixo/ao lado dos insights para interação direta.
-
-### 4. Capacitar o Atlas a interagir com Insights via chat
-- Adicionar ao system prompt do Atlas (na edge function `atlas-chat`) o contexto dos insights atuais da empresa (resumo de insights ativos, críticos, pendentes).
-- O Atlas poderá:
-  - **Gerar insights**: Invocar `generate-insights` quando solicitado pelo usuário no chat.
-  - **Listar insights**: Responder com os insights já gerados consultando o contexto.
-  - **Confirmar/Descartar**: Executar via `[ATLAS_PLAN]` com novas ações `confirm_insight` e `dismiss_insight`.
-  - **Criar insights manuais**: Nova ação `create_insight` no plano.
-
-### 5. Atualizar a Sidebar
-- Modificar `AtlasSidebar.tsx`: o botão "Insights" recebe `onShowInsights` que alterna o modo em vez de navegar.
-- Adicionar indicador visual (badge com contagem de insights ativos) no botão "Insights".
-- Highlight visual quando `viewMode === 'insights'` (fundo ativo no botão).
-
-### 6. Novas ações no `[ATLAS_PLAN]`
-Adicionar ao executor de planos (`useAtlasChat.ts`) suporte para:
-- `generate_insights` — chama a edge function.
-- `confirm_insight` — marca insight como acknowledged.
-- `dismiss_insight` — marca insight como dismissed.
-- `create_insight` — insere um insight manual na tabela `ai_insights`.
-
-### 7. Contexto de Insights no System Prompt
-Na edge function `atlas-chat`, incluir na seção de contexto:
-- Contagem de insights ativos por tipo e severidade.
-- Lista resumida dos 5 insights mais recentes/críticos.
-- Instruir o Atlas a oferecer análise quando relevante.
-
-## Design Visual (Profissional)
-
-- **InsightsPanel** usa o mesmo `atlas-chat-bg` do chat para consistência.
-- Cards com bordas coloridas por severidade (vermelho/laranja/amarelo/verde).
-- Animações suaves com `motion` (fade-in dos cards).
-- Stats em cards compactos com ícones da marca COFOUND (azul/verde).
-- Transição suave entre modos chat ↔ insights (fade/slide).
+Como o passo 1 já escuta UPDATEs na tabela `ai_chat_sessions`, quando a edge function atualizar o título, a sidebar receberá o evento e mostrará o novo nome automaticamente — sem refresh.
 
 ## Arquivos Impactados
 
 | Arquivo | Mudança |
 |---------|---------|
-| `AtlasHubPage.tsx` | Estado `viewMode`, renderização condicional |
-| `AtlasSidebar.tsx` | Botão Insights alterna modo, badge de contagem |
-| `AtlasInsightsPanel.tsx` | **Novo** — painel de insights completo |
-| `useAtlasChat.ts` | Novas ações de plano (insights) |
-| `useAIInsights.tsx` | Possíveis ajustes para expor mais dados |
-| Edge function `atlas-chat` | Contexto de insights no system prompt |
+| `src/hooks/useAtlasChat.ts` | Canal Realtime para `ai_chat_sessions` |
+| `supabase/functions/ai-chat/index.ts` | Lógica de auto-rename após primeiras mensagens |
 
