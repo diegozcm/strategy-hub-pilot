@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { Company, StrategicPillar, StrategicObjective, KeyResult, StrategicProject } from '@/types/strategic-map';
 import { toast } from '@/hooks/use-toast';
+import { getKRPercentageForPeriod } from '@/lib/krHelpers';
 
 export const useStrategicMap = () => {
   const { user, company: authCompany } = useAuth();
@@ -335,221 +336,29 @@ export const useStrategicMap = () => {
       selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
       selectedBimonthYear?: number;
     },
-    filteredKRs?: KeyResult[]  // Aceitar KRs já filtrados (opcional)
-  ): number => {
+    filteredKRs?: KeyResult[]
+  ): number | null => {
     const krsToUse = filteredKRs || keyResults;
     const objectiveKRs = krsToUse.filter(kr => kr.objective_id === objectiveId);
-    if (objectiveKRs.length === 0) return 0;
-    
-    const totalProgress = objectiveKRs.reduce((sum, kr) => {
-      let percentage = 0;
-      const monthlyTargets = ((kr.monthly_targets ?? {}) as Record<string, number>);
-      const monthlyActual = ((kr.monthly_actual ?? {}) as Record<string, number>);
-      
-      switch (period) {
-        case 'quarterly':
-          const quarter = options?.selectedQuarter || 1;
-          const quarterYear = options?.selectedQuarterYear || new Date().getFullYear();
-          
-          if (options?.selectedQuarter && options?.selectedQuarterYear) {
-            const quarterMonths: Record<number, number[]> = {
-              1: [1, 2, 3], 2: [4, 5, 6], 3: [7, 8, 9], 4: [10, 11, 12]
-            };
-            const months = quarterMonths[quarter];
-            const monthKeys = months.map(m => `${quarterYear}-${m.toString().padStart(2, '0')}`);
-            
-            let totalTarget = 0;
-            let totalActual = 0;
-            
-            if (kr.aggregation_type === 'average') {
-              const monthsWithActual = monthKeys.filter(key => (monthlyActual[key] || 0) !== 0);
-              const targets = monthsWithActual.map(key => monthlyTargets[key] || 0);
-              const actuals = monthsWithActual.map(key => monthlyActual[key] || 0);
-              totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
-              totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
-            } else if (kr.aggregation_type === 'max') {
-              totalTarget = Math.max(...monthKeys.map(key => monthlyTargets[key] || 0), 0);
-              totalActual = Math.max(...monthKeys.map(key => monthlyActual[key] || 0), 0);
-            } else if (kr.aggregation_type === 'min') {
-              const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
-              const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
-              totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
-              totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
-            } else {
-              totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
-              totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
-            }
-            
-            if (kr.target_direction === 'minimize') {
-              percentage = (totalActual > 0 && totalTarget > 0) ? (totalTarget / totalActual) * 100 : 0;
-            } else {
-              percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
-            }
-          } else {
-            switch (quarter) {
-              case 1: percentage = kr.q1_percentage || 0; break;
-              case 2: percentage = kr.q2_percentage || 0; break;
-              case 3: percentage = kr.q3_percentage || 0; break;
-              case 4: percentage = kr.q4_percentage || 0; break;
-            }
-          }
-          break;
-          
-        case 'monthly':
-          // Se mês customizado foi fornecido, recalcular
-          if (options?.selectedMonth && options?.selectedYear) {
-            const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
-            const monthTarget = monthlyTargets[monthKey] || 0;
-            const monthActual = monthlyActual[monthKey] || 0;
-            
-            // Para minimize: sem dados (actual=0) = 0%, não 100%
-            if (kr.target_direction === 'minimize') {
-              percentage = (monthActual > 0 && monthTarget > 0) ? (monthTarget / monthActual) * 100 : 0;
-            } else {
-              percentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
-            }
-          } else {
-            // Usar valor pré-calculado do mês atual
-            percentage = kr.monthly_percentage || 0;
-          }
-          break;
-          
-        case 'yearly':
-          // Se ano customizado foi fornecido, recalcular
-          if (options?.selectedYear) {
-            const monthKeys = [];
-            for (let m = 1; m <= 12; m++) {
-              monthKeys.push(`${options.selectedYear}-${m.toString().padStart(2, '0')}`);
-            }
-            
-            // Aplicar agregação baseada no tipo
-            let totalTarget = 0;
-            let totalActual = 0;
-            
-            if (kr.aggregation_type === 'average') {
-              const monthsWithActual = monthKeys.filter(key => (monthlyActual[key] || 0) !== 0);
-              const targets = monthsWithActual.map(key => monthlyTargets[key] || 0);
-              const actuals = monthsWithActual.map(key => monthlyActual[key] || 0);
-              totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
-              totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
-            } else if (kr.aggregation_type === 'max') {
-              totalTarget = Math.max(...monthKeys.map(key => monthlyTargets[key] || 0));
-              totalActual = Math.max(...monthKeys.map(key => monthlyActual[key] || 0));
-            } else if (kr.aggregation_type === 'min') {
-              const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
-              const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
-              totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
-              totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
-            } else {
-              // sum (default)
-              totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
-              totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
-            }
-            
-            // Para minimize: sem dados (actual=0) = 0%, não 100%
-            if (kr.target_direction === 'minimize') {
-              percentage = (totalActual > 0 && totalTarget > 0) ? (totalTarget / totalActual) * 100 : 0;
-            } else {
-              percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
-            }
-          } else {
-            percentage = kr.yearly_percentage || 0;
-          }
-          break;
-          
-        case 'semesterly':
-          if (options?.selectedSemester && options?.selectedSemesterYear) {
-            const semesterMonths: Record<number, number[]> = {
-              1: [1, 2, 3, 4, 5, 6],
-              2: [7, 8, 9, 10, 11, 12]
-            };
-            const semester = options.selectedSemester;
-            const year = options.selectedSemesterYear;
-            const months = semesterMonths[semester];
-            const monthKeys = months.map(m => `${year}-${m.toString().padStart(2, '0')}`);
-            
-            let totalTarget = 0;
-            let totalActual = 0;
-            
-            if (kr.aggregation_type === 'average') {
-              const monthsWithActual = monthKeys.filter(key => (monthlyActual[key] || 0) !== 0);
-              const targets = monthsWithActual.map(key => monthlyTargets[key] || 0);
-              const actuals = monthsWithActual.map(key => monthlyActual[key] || 0);
-              totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
-              totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
-            } else if (kr.aggregation_type === 'max') {
-              totalTarget = Math.max(...monthKeys.map(key => monthlyTargets[key] || 0), 0);
-              totalActual = Math.max(...monthKeys.map(key => monthlyActual[key] || 0), 0);
-            } else if (kr.aggregation_type === 'min') {
-              const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
-              const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
-              totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
-              totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
-            } else {
-              totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
-              totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
-            }
-            
-            if (kr.target_direction === 'minimize') {
-              percentage = (totalActual > 0 && totalTarget > 0) ? (totalTarget / totalActual) * 100 : 0;
-            } else {
-              percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
-            }
-          }
-          break;
-          
-        case 'bimonthly':
-          if (options?.selectedBimonth && options?.selectedBimonthYear) {
-            const bimonthMonths: Record<number, number[]> = {
-              1: [1, 2], 2: [3, 4], 3: [5, 6],
-              4: [7, 8], 5: [9, 10], 6: [11, 12]
-            };
-            const bimonth = options.selectedBimonth;
-            const year = options.selectedBimonthYear;
-            const months = bimonthMonths[bimonth];
-            const monthKeys = months.map(m => `${year}-${m.toString().padStart(2, '0')}`);
-            
-            let totalTarget = 0;
-            let totalActual = 0;
-            
-            if (kr.aggregation_type === 'average') {
-              const monthsWithActual = monthKeys.filter(key => (monthlyActual[key] || 0) !== 0);
-              const targets = monthsWithActual.map(key => monthlyTargets[key] || 0);
-              const actuals = monthsWithActual.map(key => monthlyActual[key] || 0);
-              totalTarget = targets.length > 0 ? targets.reduce((sum, v) => sum + v, 0) / targets.length : 0;
-              totalActual = actuals.length > 0 ? actuals.reduce((sum, v) => sum + v, 0) / actuals.length : 0;
-            } else if (kr.aggregation_type === 'max') {
-              totalTarget = Math.max(...monthKeys.map(key => monthlyTargets[key] || 0), 0);
-              totalActual = Math.max(...monthKeys.map(key => monthlyActual[key] || 0), 0);
-            } else if (kr.aggregation_type === 'min') {
-              const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
-              const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
-              totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
-              totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
-            } else {
-              totalTarget = monthKeys.reduce((sum, key) => sum + (monthlyTargets[key] || 0), 0);
-              totalActual = monthKeys.reduce((sum, key) => sum + (monthlyActual[key] || 0), 0);
-            }
-            
-            if (kr.target_direction === 'minimize') {
-              percentage = (totalActual > 0 && totalTarget > 0) ? (totalTarget / totalActual) * 100 : 0;
-            } else {
-              percentage = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
-            }
-          }
-          break;
-          
-        case 'ytd':
-        default:
-          percentage = kr.ytd_percentage || 0;
-          break;
-      }
-      
-    return sum + percentage;
-  }, 0);
-  
-  return totalProgress / objectiveKRs.length;
-};
+    if (objectiveKRs.length === 0) return null;
+
+    // Use centralized null-aware function
+
+    const krPercentages = objectiveKRs.map(kr => ({
+      percentage: getKRPercentageForPeriod(kr, period, options) as number | null,
+      weight: kr.weight || 1,
+    }));
+
+    const validKRs = krPercentages.filter(item => item.percentage !== null);
+    if (validKRs.length === 0) return null;
+
+    const totalWeight = validKRs.reduce((sum, item) => sum + item.weight, 0);
+    const totalProgress = validKRs.reduce((sum, item) => {
+      return sum + ((item.percentage as number) * item.weight);
+    }, 0);
+
+    return totalWeight > 0 ? totalProgress / totalWeight : 0;
+  };
 
   const calculatePillarProgress = (
     pillarId: string,
@@ -564,16 +373,17 @@ export const useStrategicMap = () => {
       selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
       selectedBimonthYear?: number;
     },
-    filteredKRs?: KeyResult[]  // Aceitar KRs já filtrados (opcional)
-  ): number => {
+    filteredKRs?: KeyResult[]
+  ): number | null => {
     const pillarObjectives = objectives.filter(obj => obj.pillar_id === pillarId);
-    if (pillarObjectives.length === 0) return 0;
+    if (pillarObjectives.length === 0) return null;
     
-    const totalProgress = pillarObjectives.reduce((sum, obj) => {
-      return sum + calculateObjectiveProgress(obj.id, period, options, filteredKRs);
-    }, 0);
+    const objProgresses = pillarObjectives.map(obj => calculateObjectiveProgress(obj.id, period, options, filteredKRs));
+    const validProgresses = objProgresses.filter((p): p is number => p !== null);
     
-    return totalProgress / pillarObjectives.length;
+    if (validProgresses.length === 0) return null;
+    
+    return validProgresses.reduce((sum, p) => sum + p, 0) / validProgresses.length;
   };
 
   // Initialize data

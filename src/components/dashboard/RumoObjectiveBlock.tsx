@@ -13,9 +13,9 @@ import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 
 interface RumoObjectiveBlockProps {
   objective: StrategicObjective;
-  progress: number;
+  progress: number | null;
   keyResults: KeyResult[];
-  krProgress: Map<string, number>;
+  krProgress: Map<string, number | null>;
 }
 
 export const RumoObjectiveBlock = ({ 
@@ -40,6 +40,7 @@ export const RumoObjectiveBlock = ({
 
   const performance = getPerformanceColor(progress);
   const styles = getPerformanceStyles(performance);
+  const isNull = progress === null;
   const { company } = useAuth();
   const { toast } = useToast();
 
@@ -227,7 +228,7 @@ export const RumoObjectiveBlock = ({
             </div>
             <div className="text-right flex-shrink-0">
               <p className="text-2xl font-bold">
-                {progress.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
+                {isNull ? 'Vazio' : progress.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%'}
               </p>
               <p className="text-xs opacity-80">
                 {objectiveKRs.length} KR(s)
@@ -247,20 +248,22 @@ export const RumoObjectiveBlock = ({
                 <p className="text-xs font-semibold mb-2">Resultados-Chave:</p>
                 <div className="space-y-1">
                   {objectiveKRs.map(kr => {
-                    const krProg = krProgress.get(kr.id) || 0;
-                    const krPerf = getPerformanceColor(krProg);
+                    const krProg = krProgress.get(kr.id);
+                    const krIsNull = krProg === null || krProg === undefined;
+                    const krPerf = krIsNull ? 'empty' : getPerformanceColor(krProg);
                     
                     return (
                       <div key={kr.id} className="text-xs space-y-1">
                         <div className="flex justify-between items-center gap-2">
                           <span className="flex-1 line-clamp-1">{kr.title}</span>
                           <span className={`font-bold ${
+                            krIsNull ? 'text-gray-400' :
                             krPerf === 'excellent' ? 'text-blue-500' :
                             krPerf === 'success' ? 'text-green-500' :
                             krPerf === 'warning' ? 'text-yellow-500' :
                             'text-red-500'
                           }`}>
-                            {krProg.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
+                            {krIsNull ? 'Vazio' : `${krProg.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`}
                           </span>
                         </div>
                         <MonthlyPerformanceIndicators

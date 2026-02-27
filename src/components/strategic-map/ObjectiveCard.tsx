@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { StrategicObjective, KeyResult } from '@/types/strategic-map';
+import { getKRPercentageForPeriod } from '@/lib/krHelpers';
 import { ResultadoChaveMiniCard } from './ResultadoChaveMiniCard';
 import { KROverviewModal } from './KROverviewModal';
 import { AddResultadoChaveModal } from './AddResultadoChaveModal';
@@ -45,122 +46,22 @@ const calculateObjectiveProgress = (
     selectedSemester?: 1 | 2;
     selectedSemesterYear?: number;
   }
-) => {
-  if (keyResults.length === 0) return 0;
+): number | null => {
+  if (keyResults.length === 0) return null;
   
-  // Calcular soma dos pesos para média ponderada
-  const totalWeight = keyResults.reduce((sum, kr) => sum + (kr.weight || 1), 0);
+  // Use centralized null-aware function
   
-  const totalProgress = keyResults.reduce((sum, kr) => {
-    let percentage = 0;
-    
-    // Helper to compute percentage from aggregated targets/actuals
-    const computeFromMonthKeys = (monthKeys: string[]) => {
-      const monthlyTargets = ((kr.monthly_targets ?? {}) as Record<string, number>);
-      const monthlyActual = ((kr.monthly_actual ?? {}) as Record<string, number>);
-      
-      let totalTarget = 0;
-      let totalActual = 0;
-      
-      if (kr.aggregation_type === 'average') {
-        const monthsWithActual = monthKeys.filter(key => (monthlyActual[key] || 0) !== 0);
-        const targets = monthsWithActual.map(key => monthlyTargets[key] || 0);
-        const actuals = monthsWithActual.map(key => monthlyActual[key] || 0);
-        totalTarget = targets.length > 0 ? targets.reduce((s, v) => s + v, 0) / targets.length : 0;
-        totalActual = actuals.length > 0 ? actuals.reduce((s, v) => s + v, 0) / actuals.length : 0;
-      } else if (kr.aggregation_type === 'max') {
-        const targets = monthKeys.map(key => monthlyTargets[key] || 0);
-        const actuals = monthKeys.map(key => monthlyActual[key] || 0);
-        totalTarget = targets.length > 0 ? Math.max(...targets) : 0;
-        totalActual = actuals.length > 0 ? Math.max(...actuals) : 0;
-      } else if (kr.aggregation_type === 'min') {
-        const targets = monthKeys.map(key => monthlyTargets[key] || 0).filter(v => v > 0);
-        const actuals = monthKeys.map(key => monthlyActual[key] || 0).filter(v => v > 0);
-        totalTarget = targets.length > 0 ? Math.min(...targets) : 0;
-        totalActual = actuals.length > 0 ? Math.min(...actuals) : 0;
-      } else {
-        totalTarget = monthKeys.reduce((s, key) => s + (monthlyTargets[key] || 0), 0);
-        totalActual = monthKeys.reduce((s, key) => s + (monthlyActual[key] || 0), 0);
-      }
-      
-      if (kr.target_direction === 'minimize') {
-        return (totalActual > 0 && totalTarget > 0) ? (totalTarget / totalActual) * 100 : 0;
-      }
-      return totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
-    };
-    
-    switch (period) {
-      case 'quarterly': {
-        const quarter = options?.selectedQuarter || 1;
-        const quarterYear = options?.selectedQuarterYear || new Date().getFullYear();
-        
-        if (options?.selectedQuarter && options?.selectedQuarterYear) {
-          const quarterMonths: Record<number, number[]> = { 1: [1,2,3], 2: [4,5,6], 3: [7,8,9], 4: [10,11,12] };
-          const monthKeys = quarterMonths[quarter].map(m => `${quarterYear}-${m.toString().padStart(2, '0')}`);
-          percentage = computeFromMonthKeys(monthKeys);
-        } else {
-          switch (quarter) {
-            case 1: percentage = kr.q1_percentage || 0; break;
-            case 2: percentage = kr.q2_percentage || 0; break;
-            case 3: percentage = kr.q3_percentage || 0; break;
-            case 4: percentage = kr.q4_percentage || 0; break;
-          }
-        }
-        break;
-      }
-      case 'semesterly': {
-        const semester = options?.selectedSemester || 1;
-        const semYear = options?.selectedSemesterYear || new Date().getFullYear();
-        const semesterMonths = semester === 1 ? [1,2,3,4,5,6] : [7,8,9,10,11,12];
-        const monthKeys = semesterMonths.map(m => `${semYear}-${m.toString().padStart(2, '0')}`);
-        percentage = computeFromMonthKeys(monthKeys);
-        break;
-      }
-      case 'bimonthly': {
-        const bimonth = options?.selectedBimonth || 1;
-        const biYear = options?.selectedBimonthYear || new Date().getFullYear();
-        const startMonth = (bimonth - 1) * 2 + 1;
-        const monthKeys = [startMonth, startMonth + 1].map(m => `${biYear}-${m.toString().padStart(2, '0')}`);
-        percentage = computeFromMonthKeys(monthKeys);
-        break;
-      }
-      case 'monthly': {
-        if (options?.selectedMonth && options?.selectedYear) {
-          const monthKey = `${options.selectedYear}-${options.selectedMonth.toString().padStart(2, '0')}`;
-          const monthlyTargets = ((kr.monthly_targets ?? {}) as Record<string, number>);
-          const monthlyActual = ((kr.monthly_actual ?? {}) as Record<string, number>);
-          const monthTarget = monthlyTargets[monthKey] || 0;
-          const monthActual = monthlyActual[monthKey] || 0;
-          if (kr.target_direction === 'minimize') {
-            percentage = (monthActual > 0 && monthTarget > 0) ? (monthTarget / monthActual) * 100 : 0;
-          } else {
-            percentage = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0;
-          }
-        } else {
-          percentage = kr.monthly_percentage || 0;
-        }
-        break;
-      }
-      case 'yearly': {
-        if (options?.selectedYear) {
-          const monthKeys = [];
-          for (let m = 1; m <= 12; m++) {
-            monthKeys.push(`${options.selectedYear}-${m.toString().padStart(2, '0')}`);
-          }
-          percentage = computeFromMonthKeys(monthKeys);
-        } else {
-          percentage = kr.yearly_percentage || 0;
-        }
-        break;
-      }
-      case 'ytd':
-      default:
-        percentage = kr.ytd_percentage || 0;
-        break;
-    }
-    
-    const weight = kr.weight || 1;
-    return sum + (percentage * weight);
+  const krPercentages = keyResults.map(kr => ({
+    percentage: getKRPercentageForPeriod(kr, period, options) as number | null,
+    weight: kr.weight || 1,
+  }));
+  
+  const validKRs = krPercentages.filter(item => item.percentage !== null);
+  if (validKRs.length === 0) return null;
+  
+  const totalWeight = validKRs.reduce((sum, item) => sum + item.weight, 0);
+  const totalProgress = validKRs.reduce((sum, item) => {
+    return sum + ((item.percentage as number) * item.weight);
   }, 0);
   
   return totalWeight > 0 ? totalProgress / totalWeight : 0;
@@ -398,7 +299,7 @@ export const ObjectiveCard = ({
             </div>
           </div>
           <div className="text-right ml-2">
-            <div className="text-xs font-medium">{progressPercentage.toFixed(1).replace('.', ',')}%</div>
+            <div className="text-xs font-medium">{progressPercentage === null ? 'Vazio' : `${progressPercentage.toFixed(1).replace('.', ',')}%`}</div>
           </div>
         </div>
       </div>
@@ -514,12 +415,12 @@ export const ObjectiveCard = ({
           <div className="mt-3">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-medium text-muted-foreground">Progresso</span>
-              <span className="text-xs font-bold text-foreground">{progressPercentage}%</span>
+              <span className="text-xs font-bold text-foreground">{progressPercentage === null ? 'Vazio' : `${progressPercentage}%`}</span>
             </div>
             <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
               <div 
-                className={`h-full transition-all duration-300 rounded-full ${getProgressColor(progressPercentage)}`}
-                style={{ width: `${progressPercentage}%` }}
+                className={`h-full transition-all duration-300 rounded-full ${progressPercentage === null ? 'bg-gray-400' : getProgressColor(progressPercentage)}`}
+                style={{ width: `${progressPercentage === null ? 0 : progressPercentage}%` }}
               />
             </div>
           </div>
