@@ -1625,6 +1625,56 @@ serve(async (req) => {
           if (delErr) throw delErr;
           results.push({ type: actionType, success: true, id: resolvedId, title: d.task_title || resolvedId });
 
+        // ===================== GENERATE INSIGHTS =====================
+        } else if (actionType === 'generate_insights') {
+          const { data: genData, error: genErr } = await supabase.functions.invoke('generate-insights', {
+            body: { user_id: user.id, company_id }
+          });
+          if (genErr) throw genErr;
+          results.push({ type: actionType, success: true, title: `${genData?.insights_generated || 0} insights gerados` });
+
+        // ===================== CONFIRM INSIGHT =====================
+        } else if (actionType === 'confirm_insight') {
+          const insightId = action.data?.insight_id;
+          if (!insightId) throw new Error('insight_id obrigatório');
+          const { error: confErr } = await supabase.from('ai_insights').update({
+            confirmed_at: new Date().toISOString(),
+            confirmed_by: user.id,
+            updated_at: new Date().toISOString(),
+          }).eq('id', insightId);
+          if (confErr) throw confErr;
+          results.push({ type: actionType, success: true, id: insightId, title: 'Insight confirmado' });
+
+        // ===================== DISMISS INSIGHT =====================
+        } else if (actionType === 'dismiss_insight') {
+          const insightId = action.data?.insight_id;
+          if (!insightId) throw new Error('insight_id obrigatório');
+          const { error: disErr } = await supabase.from('ai_insights').update({
+            status: 'dismissed',
+            updated_at: new Date().toISOString(),
+          }).eq('id', insightId);
+          if (disErr) throw disErr;
+          results.push({ type: actionType, success: true, id: insightId, title: 'Insight descartado' });
+
+        // ===================== CREATE INSIGHT =====================
+        } else if (actionType === 'create_insight') {
+          const d = action.data;
+          if (!d?.title) throw new Error('title obrigatório para create_insight');
+          const { data: newInsight, error: insErr } = await supabase.from('ai_insights').insert({
+            user_id: user.id,
+            company_id,
+            title: d.title,
+            description: d.description || null,
+            insight_type: d.insight_type || 'info',
+            severity: d.severity || 'medium',
+            category: d.category || 'geral',
+            actionable: d.actionable ?? true,
+            confidence_score: d.confidence_score || 0.8,
+            status: 'active',
+          }).select('id').single();
+          if (insErr) throw insErr;
+          results.push({ type: actionType, success: true, id: newInsight.id, title: d.title });
+
         } else {
           results.push({ type: actionType, success: false, error: `Tipo de ação desconhecido: ${actionType}` });
         }

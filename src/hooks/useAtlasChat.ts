@@ -330,6 +330,10 @@ export const useAtlasChat = () => {
           if (type === 'create_task') return '✅ Task';
           if (type === 'delete_task') return '🗑️ Task';
           if (type === 'update_task') return '✏️ Task';
+          if (type === 'generate_insights') return '💡 Insights';
+          if (type === 'confirm_insight') return '✅ Insight';
+          if (type === 'dismiss_insight') return '🗑️ Insight';
+          if (type === 'create_insight') return '💡 Insight';
           if (type.includes('update')) return '✏️ Atualização';
           if (type.includes('delete')) return '🗑️ Removido';
           return '📌 Item';

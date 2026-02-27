@@ -17,13 +17,14 @@ interface AtlasSidebarProps {
   onDeleteSession: (id: string) => void;
   onFetchSessions: () => void;
   onShowInsights: () => void;
+  isInsightsActive?: boolean;
   collapsed?: boolean;
 }
 
 export const AtlasSidebar: React.FC<AtlasSidebarProps> = ({
   sessions, loadingSessions, currentSessionId,
   onNewConversation, onLoadSession, onDeleteSession, onFetchSessions,
-  onShowInsights, collapsed = false,
+  onShowInsights, isInsightsActive = false, collapsed = false,
 }) => {
   useEffect(() => {
     onFetchSessions();
@@ -45,7 +46,12 @@ export const AtlasSidebar: React.FC<AtlasSidebarProps> = ({
         </Button>
         <Button
           size="sm"
-          className="w-full justify-start gap-2 bg-[hsl(var(--cofound-green))] text-white border-none hover:brightness-110 hover:shadow-[0_0_12px_hsl(var(--cofound-green)/0.4)] transition-all"
+          className={cn(
+            "w-full justify-start gap-2 border-none transition-all",
+            isInsightsActive
+              ? "bg-[hsl(var(--cofound-green))] text-white shadow-[0_0_12px_hsl(var(--cofound-green)/0.4)]"
+              : "bg-[hsl(var(--cofound-green))]/80 text-white hover:bg-[hsl(var(--cofound-green))] hover:shadow-[0_0_12px_hsl(var(--cofound-green)/0.4)]"
+          )}
           onClick={onShowInsights}
         >
           <Lightbulb className="h-4 w-4" />
