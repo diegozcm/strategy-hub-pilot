@@ -196,7 +196,7 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                       })()}
                       className="font-semibold text-xl"
                     >
-                      {progressPercentage === null ? 'Vazio' : `${progressPercentage.toFixed(1).replace('.', ',')}%`}
+                      {progressPercentage === null ? 'N/A' : `${progressPercentage.toFixed(1).replace('.', ',')}%`}
                     </Badge>
                   </div>
                   <DialogDescription>

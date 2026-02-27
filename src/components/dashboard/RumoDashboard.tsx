@@ -165,7 +165,7 @@ export const RumoDashboard = () => {
             <div className="text-center">
               <p className="text-xs font-medium opacity-80 mb-1">Score Geral</p>
               <p className="text-3xl font-extrabold">
-                {finalScore === null ? 'Vazio' : `${finalScore.toFixed(1)}%`}
+                {finalScore === null ? 'N/A' : `${finalScore.toFixed(1)}%`}
               </p>
             </div>
           </Card>
