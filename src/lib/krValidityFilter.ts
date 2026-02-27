@@ -7,6 +7,99 @@ interface QuarterOption {
   year: number;
 }
 
+type KRFrequency = 'monthly' | 'bimonthly' | 'quarterly' | 'semesterly' | 'yearly';
+
+/**
+ * Retorna o número de meses por período para cada frequência
+ */
+const getFrequencyMonths = (frequency?: string): number => {
+  switch (frequency) {
+    case 'yearly': return 12;
+    case 'semesterly': return 6;
+    case 'quarterly': return 3;
+    case 'bimonthly': return 2;
+    case 'monthly':
+    default: return 1;
+  }
+};
+
+/**
+ * Retorna o mês de início do período do KR que contém o mês dado.
+ * Ex: frequency='semesterly', month=4 → 1 (S1 começa em Jan)
+ *     frequency='quarterly', month=5 → 4 (Q2 começa em Abr)
+ */
+const getPeriodStartMonth = (frequency: string | undefined, month: number): number => {
+  const size = getFrequencyMonths(frequency);
+  if (size <= 1) return month;
+  return Math.floor((month - 1) / size) * size + 1;
+};
+
+/**
+ * Retorna o mês final do período do KR que contém o mês dado.
+ * Ex: frequency='semesterly', month=3 → 6 (S1 vai até Jun)
+ *     frequency='quarterly', month=5 → 6 (Q2 vai até Jun)
+ */
+const getPeriodEndMonth = (frequency: string | undefined, month: number): number => {
+  const size = getFrequencyMonths(frequency);
+  if (size <= 1) return month;
+  return Math.ceil(month / size) * size;
+};
+
+/**
+ * Expande start_month e end_month para os limites dos períodos da frequência do KR.
+ * Ex: start='2026-01', end='2026-03', freq='semesterly'
+ *   → start='2026-01', end='2026-06' (S1 vai até Jun)
+ */
+const getEffectiveValidityRange = (
+  startMonth: string,
+  endMonth: string,
+  frequency?: string
+): { start: string; end: string } => {
+  const size = getFrequencyMonths(frequency);
+  if (size <= 1) return { start: startMonth, end: endMonth };
+
+  // Expand start_month to beginning of its period
+  const [startYear, startM] = startMonth.split('-').map(Number);
+  const effectiveStartM = getPeriodStartMonth(frequency, startM);
+  const effectiveStart = `${startYear}-${effectiveStartM.toString().padStart(2, '0')}`;
+
+  // Expand end_month to end of its period
+  const [endYear, endM] = endMonth.split('-').map(Number);
+  const effectiveEndM = getPeriodEndMonth(frequency, endM);
+  const effectiveEnd = `${endYear}-${effectiveEndM.toString().padStart(2, '0')}`;
+
+  return { start: effectiveStart, end: effectiveEnd };
+};
+
+/**
+ * Verifica se um KR tem dados em algum dos meses do range, considerando frequência.
+ * Para KRs com frequência grossa, remapeia os meses para as chaves efetivas.
+ */
+const hasDataInRange = (
+  kr: KeyResult,
+  startMonth: number,
+  endMonth: number,
+  year: number
+): boolean => {
+  const monthlyTargets = (kr.monthly_targets || {}) as Record<string, number>;
+  const monthlyActual = (kr.monthly_actual || {}) as Record<string, number>;
+  const freq = kr.frequency;
+
+  // Collect effective month keys (remapped to KR period starts)
+  const effectiveKeys = new Set<string>();
+  for (let m = startMonth; m <= endMonth; m++) {
+    const periodStart = getPeriodStartMonth(freq, m);
+    effectiveKeys.add(`${year}-${periodStart.toString().padStart(2, '0')}`);
+  }
+
+  for (const key of effectiveKeys) {
+    if (monthlyTargets[key] || monthlyActual[key]) {
+      return true;
+    }
+  }
+  return false;
+};
+
 /**
  * Retorna quarters que têm pelo menos um KR com vigência nesse período
  */
@@ -17,27 +110,18 @@ export const getPopulatedQuarters = (
   if (keyResults.length === 0 || allQuarterOptions.length === 0) return [];
   
   return allQuarterOptions.filter(quarter => {
-    const quarterStart = `${quarter.year}-${String(((quarter.quarter - 1) * 3) + 1).padStart(2, '0')}`;
-    const quarterEnd = `${quarter.year}-${String(quarter.quarter * 3).padStart(2, '0')}`;
+    const quarterStartMonth = ((quarter.quarter - 1) * 3) + 1;
+    const quarterEndMonth = quarter.quarter * 3;
+    const quarterStart = `${quarter.year}-${quarterStartMonth.toString().padStart(2, '0')}`;
+    const quarterEnd = `${quarter.year}-${quarterEndMonth.toString().padStart(2, '0')}`;
     
     return keyResults.some(kr => {
-      // Se KR não tem vigência, verificar se tem dados nos meses do quarter
       if (!kr.start_month || !kr.end_month) {
-        const monthlyTargets = (kr.monthly_targets || {}) as Record<string, number>;
-        const monthlyActual = (kr.monthly_actual || {}) as Record<string, number>;
-        
-        // Verificar se há dados em qualquer mês do quarter
-        for (let m = ((quarter.quarter - 1) * 3) + 1; m <= quarter.quarter * 3; m++) {
-          const monthKey = `${quarter.year}-${String(m).padStart(2, '0')}`;
-          if (monthlyTargets[monthKey] || monthlyActual[monthKey]) {
-            return true;
-          }
-        }
-        return false;
+        return hasDataInRange(kr, quarterStartMonth, quarterEndMonth, quarter.year);
       }
       
-      // KR tem vigência: interseção entre KR e quarter
-      return kr.start_month <= quarterEnd && kr.end_month >= quarterStart;
+      const { start: effStart, end: effEnd } = getEffectiveValidityRange(kr.start_month, kr.end_month, kr.frequency);
+      return effStart <= quarterEnd && effEnd >= quarterStart;
     });
   });
 };
@@ -52,27 +136,19 @@ export const getKRQuarters = (
   if (allQuarterOptions.length === 0) return [];
   
   if (!keyResult.start_month || !keyResult.end_month) {
-    // KR sem vigência: retornar quarters com dados
-    const monthlyTargets = (keyResult.monthly_targets || {}) as Record<string, number>;
-    const monthlyActual = (keyResult.monthly_actual || {}) as Record<string, number>;
-    
     return allQuarterOptions.filter(quarter => {
-      for (let m = ((quarter.quarter - 1) * 3) + 1; m <= quarter.quarter * 3; m++) {
-        const monthKey = `${quarter.year}-${String(m).padStart(2, '0')}`;
-        if (monthlyTargets[monthKey] || monthlyActual[monthKey]) {
-          return true;
-        }
-      }
-      return false;
+      const quarterStartMonth = ((quarter.quarter - 1) * 3) + 1;
+      const quarterEndMonth = quarter.quarter * 3;
+      return hasDataInRange(keyResult, quarterStartMonth, quarterEndMonth, quarter.year);
     });
   }
   
-  // KR com vigência: retornar quarters dentro do período
+  const { start: effStart, end: effEnd } = getEffectiveValidityRange(keyResult.start_month, keyResult.end_month, keyResult.frequency);
+  
   return allQuarterOptions.filter(quarter => {
     const quarterStart = `${quarter.year}-${String(((quarter.quarter - 1) * 3) + 1).padStart(2, '0')}`;
     const quarterEnd = `${quarter.year}-${String(quarter.quarter * 3).padStart(2, '0')}`;
-    
-    return keyResult.start_month! <= quarterEnd && keyResult.end_month! >= quarterStart;
+    return effStart <= quarterEnd && effEnd >= quarterStart;
   });
 };
 
@@ -87,48 +163,28 @@ export const isKRInQuarter = (
   const quarterStartMonth = ((quarter - 1) * 3) + 1;
   const quarterEndMonth = quarter * 3;
   
-  // KRs sem vigência definida: verificar se têm dados no quarter
   if (!kr.start_month || !kr.end_month) {
-    const monthlyTargets = (kr.monthly_targets || {}) as Record<string, number>;
-    const monthlyActual = (kr.monthly_actual || {}) as Record<string, number>;
-    
-    for (let m = quarterStartMonth; m <= quarterEndMonth; m++) {
-      const monthKey = `${year}-${String(m).padStart(2, '0')}`;
-      if (monthlyTargets[monthKey] || monthlyActual[monthKey]) {
-        return true;
-      }
-    }
-    return false;
+    return hasDataInRange(kr, quarterStartMonth, quarterEndMonth, year);
   }
   
-  // KR com vigência: verificar interseção com o quarter
+  const { start: effStart, end: effEnd } = getEffectiveValidityRange(kr.start_month, kr.end_month, kr.frequency);
   const quarterStart = `${year}-${quarterStartMonth.toString().padStart(2, '0')}`;
   const quarterEnd = `${year}-${quarterEndMonth.toString().padStart(2, '0')}`;
-  return kr.start_month <= quarterEnd && kr.end_month >= quarterStart;
+  return effStart <= quarterEnd && effEnd >= quarterStart;
 };
 
 /**
  * Verifica se um KR está dentro de um ano específico
  */
 export const isKRInYear = (kr: KeyResult, year: number): boolean => {
-  // KRs sem vigência definida: verificar se têm dados no ano
   if (!kr.start_month || !kr.end_month) {
-    const monthlyTargets = (kr.monthly_targets || {}) as Record<string, number>;
-    const monthlyActual = (kr.monthly_actual || {}) as Record<string, number>;
-    
-    for (let m = 1; m <= 12; m++) {
-      const monthKey = `${year}-${String(m).padStart(2, '0')}`;
-      if (monthlyTargets[monthKey] || monthlyActual[monthKey]) {
-        return true;
-      }
-    }
-    return false;
+    return hasDataInRange(kr, 1, 12, year);
   }
   
-  // KR com vigência: verificar interseção com o ano
+  const { start: effStart, end: effEnd } = getEffectiveValidityRange(kr.start_month, kr.end_month, kr.frequency);
   const yearStart = `${year}-01`;
   const yearEnd = `${year}-12`;
-  return kr.start_month <= yearEnd && kr.end_month >= yearStart;
+  return effStart <= yearEnd && effEnd >= yearStart;
 };
 
 /**
@@ -141,24 +197,16 @@ export const isKRInMonth = (
 ): boolean => {
   const monthKey = `${year}-${month.toString().padStart(2, '0')}`;
   
-  // KRs sem vigência definida: verificar se têm dados no mês
   if (!kr.start_month || !kr.end_month) {
-    const monthlyTargets = (kr.monthly_targets || {}) as Record<string, number>;
-    const monthlyActual = (kr.monthly_actual || {}) as Record<string, number>;
-    
-    return !!(monthlyTargets[monthKey] || monthlyActual[monthKey]);
+    return hasDataInRange(kr, month, month, year);
   }
   
-  // KR com vigência: verificar se mês está dentro da vigência
-  return kr.start_month <= monthKey && kr.end_month >= monthKey;
+  const { start: effStart, end: effEnd } = getEffectiveValidityRange(kr.start_month, kr.end_month, kr.frequency);
+  return effStart <= monthKey && effEnd >= monthKey;
 };
 
 /**
  * Filtra KRs com base no período selecionado e vigência
- */
-/**
- * Filtra KRs com base no período selecionado e vigência
- * @param planFirstYear - Primeiro ano do plano ativo (usado para YTD de planos futuros)
  */
 export const filterKRsByValidity = (
   keyResults: KeyResult[],
@@ -173,10 +221,9 @@ export const filterKRsByValidity = (
     selectedSemesterYear?: number;
     selectedBimonth?: 1 | 2 | 3 | 4 | 5 | 6;
     selectedBimonthYear?: number;
-    planFirstYear?: number; // Primeiro ano do plano (para YTD inteligente)
+    planFirstYear?: number;
   }
 ): KeyResult[] => {
-  // Se vigência não está ativa, retornar todos os KRs
   if (!validityEnabled) return keyResults;
   
   const currentYear = new Date().getFullYear();
@@ -215,9 +262,6 @@ export const filterKRsByValidity = (
         );
       
       case 'ytd':
-        // YTD agora mostra todos os KRs do plano, sem filtro de ano
-        // Métricas serão 0% naturalmente para KRs de anos futuros
-        // Isso permite visualizar toda a estrutura estratégica
         return true;
       
       default:
@@ -237,24 +281,14 @@ export const isKRInSemester = (
   const semesterStartMonth = semester === 1 ? 1 : 7;
   const semesterEndMonth = semester === 1 ? 6 : 12;
   
-  // KRs sem vigência definida: verificar se têm dados no semestre
   if (!kr.start_month || !kr.end_month) {
-    const monthlyTargets = (kr.monthly_targets || {}) as Record<string, number>;
-    const monthlyActual = (kr.monthly_actual || {}) as Record<string, number>;
-    
-    for (let m = semesterStartMonth; m <= semesterEndMonth; m++) {
-      const monthKey = `${year}-${String(m).padStart(2, '0')}`;
-      if (monthlyTargets[monthKey] || monthlyActual[monthKey]) {
-        return true;
-      }
-    }
-    return false;
+    return hasDataInRange(kr, semesterStartMonth, semesterEndMonth, year);
   }
   
-  // KR com vigência: verificar interseção com o semestre
+  const { start: effStart, end: effEnd } = getEffectiveValidityRange(kr.start_month, kr.end_month, kr.frequency);
   const semesterStart = `${year}-${semesterStartMonth.toString().padStart(2, '0')}`;
   const semesterEnd = `${year}-${semesterEndMonth.toString().padStart(2, '0')}`;
-  return kr.start_month <= semesterEnd && kr.end_month >= semesterStart;
+  return effStart <= semesterEnd && effEnd >= semesterStart;
 };
 
 /**
@@ -268,22 +302,12 @@ export const isKRInBimonth = (
   const bimonthStartMonth = (bimonth - 1) * 2 + 1;
   const bimonthEndMonth = bimonth * 2;
   
-  // KRs sem vigência definida: verificar se têm dados no bimestre
   if (!kr.start_month || !kr.end_month) {
-    const monthlyTargets = (kr.monthly_targets || {}) as Record<string, number>;
-    const monthlyActual = (kr.monthly_actual || {}) as Record<string, number>;
-    
-    for (let m = bimonthStartMonth; m <= bimonthEndMonth; m++) {
-      const monthKey = `${year}-${String(m).padStart(2, '0')}`;
-      if (monthlyTargets[monthKey] || monthlyActual[monthKey]) {
-        return true;
-      }
-    }
-    return false;
+    return hasDataInRange(kr, bimonthStartMonth, bimonthEndMonth, year);
   }
   
-  // KR com vigência: verificar interseção com o bimestre
+  const { start: effStart, end: effEnd } = getEffectiveValidityRange(kr.start_month, kr.end_month, kr.frequency);
   const bimonthStart = `${year}-${bimonthStartMonth.toString().padStart(2, '0')}`;
   const bimonthEnd = `${year}-${bimonthEndMonth.toString().padStart(2, '0')}`;
-  return kr.start_month <= bimonthEnd && kr.end_month >= bimonthStart;
+  return effStart <= bimonthEnd && effEnd >= bimonthStart;
 };
