@@ -279,10 +279,10 @@ All colors MUST be HSL.
 
 /* Atlas Hub Button - Inner animated background */
 .atlas-hub-btn-inner {
-  background: linear-gradient(145deg, #070f1a 0%, #0B1D30 25%, #0E263D 50%, #0B1D30 75%, #070f1a 100%);
-  background-size: 400% 400%;
-  animation: atlas-inner-shift 8s ease-in-out infinite;
+  background: #0D2338;
   border: 1px solid rgba(255, 255, 255, 0.06);
+  position: relative;
+  overflow: hidden;
 }
 
 .atlas-hub-btn-inner::before {
@@ -290,13 +290,13 @@ All colors MUST be HSL.
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: radial-gradient(ellipse at 15% 50%, rgba(56, 182, 255, 0.12) 0%, transparent 55%),
-              radial-gradient(ellipse at 85% 50%, rgba(205, 217, 102, 0.08) 0%, transparent 55%),
-              radial-gradient(ellipse at 50% 0%, rgba(56, 182, 255, 0.06) 0%, transparent 50%);
+  background: radial-gradient(ellipse at 15% 50%, rgba(56, 182, 255, 0.10) 0%, transparent 55%),
+              radial-gradient(ellipse at 85% 50%, rgba(205, 217, 102, 0.06) 0%, transparent 55%);
   pointer-events: none;
   z-index: 0;
 }
 
+/* Hover: single quick flash sweep */
 .atlas-hub-btn-inner::after {
   content: '';
   position: absolute;
@@ -304,47 +304,30 @@ All colors MUST be HSL.
   border-radius: inherit;
   background: linear-gradient(
     105deg,
-    transparent 15%,
-    rgba(56, 182, 255, 0.1) 35%,
-    rgba(205, 217, 102, 0.08) 50%,
-    rgba(56, 182, 255, 0.1) 65%,
-    transparent 85%
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 45%,
+    rgba(255, 255, 255, 0.08) 55%,
+    transparent 100%
   );
-  background-size: 300% 100%;
-  animation: atlas-inner-shine 6s ease-in-out infinite;
+  transform: translateX(-120%);
   pointer-events: none;
   z-index: 1;
+  transition: none;
 }
 
 .atlas-sidebar-btn:hover .atlas-hub-btn-inner {
-  background: linear-gradient(145deg, #0c2238 0%, #133352 25%, #1a3f5f 50%, #133352 75%, #0c2238 100%);
-  background-size: 400% 400%;
+  background: #112b45;
   border-color: rgba(56, 182, 255, 0.12);
-  box-shadow: 0 0 20px rgba(56, 182, 255, 0.15), 0 0 40px rgba(56, 182, 255, 0.05), inset 0 0 30px rgba(56, 182, 255, 0.06);
+  box-shadow: 0 0 20px rgba(56, 182, 255, 0.12), inset 0 0 20px rgba(56, 182, 255, 0.04);
 }
 
 .atlas-sidebar-btn:hover .atlas-hub-btn-inner::after {
-  animation: atlas-inner-shine 1.5s ease-in-out infinite;
-  background: linear-gradient(
-    105deg,
-    transparent 10%,
-    rgba(255, 255, 255, 0.12) 30%,
-    rgba(56, 182, 255, 0.18) 45%,
-    rgba(205, 217, 102, 0.12) 55%,
-    rgba(255, 255, 255, 0.12) 70%,
-    transparent 90%
-  );
-  background-size: 300% 100%;
+  animation: atlas-flash-sweep 0.6s ease-out forwards;
 }
 
-@keyframes atlas-inner-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-@keyframes atlas-inner-shine {
-  0% { background-position: 250% 0; }
-  100% { background-position: -250% 0; }
+@keyframes atlas-flash-sweep {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
 }
   
 @keyframes atlas-btn-rotate {
