@@ -320,6 +320,21 @@ All colors MUST be HSL.
   background: linear-gradient(145deg, #0c2238 0%, #133352 25%, #1a3f5f 50%, #133352 75%, #0c2238 100%);
   background-size: 400% 400%;
   border-color: rgba(56, 182, 255, 0.12);
+  box-shadow: 0 0 20px rgba(56, 182, 255, 0.15), 0 0 40px rgba(56, 182, 255, 0.05), inset 0 0 30px rgba(56, 182, 255, 0.06);
+}
+
+.atlas-sidebar-btn:hover .atlas-hub-btn-inner::after {
+  animation: atlas-inner-shine 1.5s ease-in-out infinite;
+  background: linear-gradient(
+    105deg,
+    transparent 10%,
+    rgba(255, 255, 255, 0.12) 30%,
+    rgba(56, 182, 255, 0.18) 45%,
+    rgba(205, 217, 102, 0.12) 55%,
+    rgba(255, 255, 255, 0.12) 70%,
+    transparent 90%
+  );
+  background-size: 300% 100%;
 }
 
 @keyframes atlas-inner-shift {
