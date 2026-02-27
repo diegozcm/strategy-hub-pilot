@@ -43,7 +43,7 @@ export const AtlasInputBar: React.FC<AtlasInputBarProps> = ({
         </div>
       )}
 
-      <div className="rounded-xl border border-[hsl(var(--cofound-blue-light))]/25 bg-[hsl(var(--cofound-blue-dark))]/8 overflow-hidden shadow-sm">
+      <div className="rounded-xl border border-[hsl(var(--cofound-blue-light))]/25 bg-white overflow-hidden shadow-sm">
         {/* Textarea / Recording area */}
         <div className="relative">
           {isRecording ? (
