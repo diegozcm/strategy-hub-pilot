@@ -69,7 +69,7 @@ interface ObjectiveDetailModalProps {
   onDelete?: () => Promise<void>;
   onOpenKeyResultDetails: (kr: KeyResult) => void;
   pillars: StrategicPillar[];
-  progressPercentage: number;
+  progressPercentage: number | null;
   canEditObjective?: boolean;
   canDeleteObjective?: boolean;
   onCreateKeyResult?: (krData: Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>) => Promise<any>;
@@ -190,10 +190,13 @@ export const ObjectiveDetailModal: React.FC<ObjectiveDetailModalProps> = ({
                       {objective.title}
                     </DialogTitle>
                     <Badge 
-                      variant={getProgressLevel(progressPercentage)}
+                      variant={(() => {
+                        const level = getProgressLevel(progressPercentage);
+                        return level === 'empty' ? 'secondary' : level;
+                      })()}
                       className="font-semibold text-xl"
                     >
-                      {progressPercentage.toFixed(1).replace('.', ',')}%
+                      {progressPercentage === null ? 'Vazio' : `${progressPercentage.toFixed(1).replace('.', ',')}%`}
                     </Badge>
                   </div>
                   <DialogDescription>

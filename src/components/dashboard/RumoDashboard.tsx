@@ -109,6 +109,7 @@ export const RumoDashboard = () => {
 
   // Get performance color for final score
   const getFinalScoreColor = () => {
+    if (finalScore === null) return 'text-gray-500 border-gray-400 bg-gray-400/10';
     if (finalScore > 105) return 'text-blue-500 border-blue-500 bg-blue-500/10';
     if (finalScore >= 100) return 'text-green-500 border-green-500 bg-green-500/10';
     if (finalScore >= 71) return 'text-yellow-500 border-yellow-500 bg-yellow-500/10';
@@ -164,7 +165,7 @@ export const RumoDashboard = () => {
             <div className="text-center">
               <p className="text-xs font-medium opacity-80 mb-1">Score Geral</p>
               <p className="text-3xl font-extrabold">
-                {finalScore.toFixed(1)}%
+                {finalScore === null ? 'Vazio' : `${finalScore.toFixed(1)}%`}
               </p>
             </div>
           </Card>
@@ -175,7 +176,7 @@ export const RumoDashboard = () => {
       {/* Pillars and Objectives Grid */}
       <div className="space-y-6">
         {pillarsWithObjectives.map((pillar) => {
-          const progress = pillarProgress.get(pillar.id) || 0;
+          const progress = pillarProgress.get(pillar.id) ?? null;
           const pillarObjectives = pillar.objectives || [];
 
           return (
@@ -191,7 +192,7 @@ export const RumoDashboard = () => {
                   {pillarObjectives.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {pillarObjectives.map((objective) => {
-                        const objProgress = objectiveProgress.get(objective.id) || 0;
+                        const objProgress = objectiveProgress.get(objective.id) ?? null;
                         
                         return (
                   <RumoObjectiveBlock

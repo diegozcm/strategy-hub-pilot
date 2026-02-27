@@ -460,17 +460,18 @@ export const StrategicMapPage = () => {
                           <div className="space-y-2 mt-3">
                             <div className="flex items-center justify-between text-sm">
                               <span>Progresso</span>
-                              <span className="font-medium">{progress.toFixed(1).replace('.', ',')}%</span>
+                              <span className="font-medium">{progress === null ? 'Vazio' : `${progress.toFixed(1).replace('.', ',')}%`}</span>
                             </div>
                             <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
                               <div 
                                 className={`h-full transition-all duration-300 rounded-full ${
+                                  progress === null ? 'bg-gray-400' :
                                   progress > 105 ? 'bg-blue-500' :
                                   progress >= 100 ? 'bg-green-500' :
                                   progress >= 71 ? 'bg-yellow-500' :
                                   'bg-red-500'
                                 }`}
-                                style={{ width: `${Math.min(progress, 100)}%` }}
+                                style={{ width: `${progress === null ? 0 : Math.min(progress, 100)}%` }}
                               />
                             </div>
                           </div>

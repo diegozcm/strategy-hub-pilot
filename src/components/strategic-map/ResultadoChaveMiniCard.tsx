@@ -61,9 +61,11 @@ export const ResultadoChaveMiniCard = ({
 
   const currentValue = getMetricsForPeriod('actual') ?? 0;
   const targetValue = getMetricsForPeriod('target') ?? 0;
-  const percentage = (getMetricsForPeriod('percentage') ?? 0) as number;
+  const rawPercentage = getMetricsForPeriod('percentage');
+  const isNullData = rawPercentage === null || rawPercentage === undefined;
+  const percentage = (rawPercentage ?? 0) as number;
   
-  // Determine status color based on percentage (already calculated in DB)
+  // Determine status color based on percentage
   const getStatusColor = (pct: number) => {
     if (pct > 105) return 'text-blue-600';
     if (pct >= 100) return 'text-green-600';
@@ -71,7 +73,7 @@ export const ResultadoChaveMiniCard = ({
     return 'text-red-600';
   };
   
-  const statusColor = getStatusColor(percentage);
+  const statusColor = isNullData ? 'text-gray-400' : getStatusColor(percentage);
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -121,7 +123,7 @@ export const ResultadoChaveMiniCard = ({
             </div>
             <div className="flex flex-col items-end flex-shrink-0">
               <span className={`text-sm font-medium ${statusColor}`}>
-                {percentage.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
+                {isNullData ? 'Vazio' : `${percentage.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`}
               </span>
             </div>
           </div>

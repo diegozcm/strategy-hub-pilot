@@ -298,7 +298,9 @@ export const ObjectivesPage: React.FC = () => {
           ? { selectedBimonth, selectedBimonthYear }
           : undefined
       );
-      if (statusFilter === 'excellent') {
+      if (progress === null) {
+        matchesStatus = false;
+      } else if (statusFilter === 'excellent') {
         matchesStatus = progress > 105;
       } else if (statusFilter === 'success') {
         matchesStatus = progress >= 100 && progress <= 105;
@@ -775,21 +777,24 @@ export const ObjectivesPage: React.FC = () => {
                         <div className="mt-3">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium text-muted-foreground">Progresso</span>
-                            <span className="text-sm font-bold text-foreground">{calculateObjectiveProgressWeighted(
-                              objectiveKeyResults, 
-                              selectedPeriod,
-                              selectedPeriod === 'monthly' 
-                                ? { selectedMonth, selectedYear } 
-                                : selectedPeriod === 'quarterly'
-                                ? { selectedQuarter, selectedQuarterYear }
-                                : selectedPeriod === 'semesterly'
-                                ? { selectedSemester, selectedSemesterYear }
-                                : selectedPeriod === 'bimonthly'
-                                ? { selectedBimonth, selectedBimonthYear }
-                                : selectedPeriod === 'yearly'
-                                ? { selectedYear }
-                                : undefined
-                            ).toFixed(1).replace('.', ',')}%</span>
+                            <span className="text-sm font-bold text-foreground">{(() => {
+                              const p = calculateObjectiveProgressWeighted(
+                                objectiveKeyResults, 
+                                selectedPeriod,
+                                selectedPeriod === 'monthly' 
+                                  ? { selectedMonth, selectedYear } 
+                                  : selectedPeriod === 'quarterly'
+                                  ? { selectedQuarter, selectedQuarterYear }
+                                  : selectedPeriod === 'semesterly'
+                                  ? { selectedSemester, selectedSemesterYear }
+                                  : selectedPeriod === 'bimonthly'
+                                  ? { selectedBimonth, selectedBimonthYear }
+                                  : selectedPeriod === 'yearly'
+                                  ? { selectedYear }
+                                  : undefined
+                              );
+                              return p === null ? 'Vazio' : `${p.toFixed(1).replace('.', ',')}%`;
+                            })()}</span>
                           </div>
                           <div className="relative h-2 w-full overflow-hidden rounded-full bg-gray-200">
                             {(() => {
@@ -811,12 +816,13 @@ export const ObjectivesPage: React.FC = () => {
                               return (
                                 <div 
                                   className={`h-full transition-all duration-300 rounded-full ${
+                                    progress === null ? 'bg-gray-400' :
                                     progress > 105 ? 'bg-blue-500' :
                                     progress >= 100 ? 'bg-green-500' :
                                     progress >= 71 ? 'bg-yellow-500' :
                                     'bg-red-500'
                                   }`}
-                                  style={{ width: `${Math.min(progress, 100)}%` }}
+                                  style={{ width: `${progress === null ? 0 : Math.min(progress, 100)}%` }}
                                 />
                               );
                             })()}
@@ -857,7 +863,7 @@ export const ObjectivesPage: React.FC = () => {
               : selectedPeriod === 'bimonthly'
               ? { selectedBimonth, selectedBimonthYear }
               : undefined
-          ) : 0}
+          ) : null}
           canEditObjective={canEditObjective}
           canDeleteObjective={canDeleteObjective}
           onCreateKeyResult={handleCreateKeyResult}
