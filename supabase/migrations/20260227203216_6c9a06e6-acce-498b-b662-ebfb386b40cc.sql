@@ -1,0 +1,1 @@
+UPDATE public.release_notes SET published = true WHERE version = '2.4.0';
