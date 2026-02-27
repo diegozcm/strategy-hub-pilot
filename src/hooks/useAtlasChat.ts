@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useMultiTenant';
 import { useToast } from '@/hooks/use-toast';
@@ -245,6 +245,45 @@ export const useAtlasChat = () => {
       setLoadingSessions(false);
     }
   }, [user, company?.id]);
+
+  // Realtime sync for sidebar sessions
+  useEffect(() => {
+    if (!user?.id || !company?.id) return;
+
+    const channel = supabase
+      .channel('atlas-sessions-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'ai_chat_sessions', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const newSession = payload.new as ChatSession;
+          if ((newSession as any).company_id === company?.id) {
+            setSessions(prev => [newSession, ...prev]);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'ai_chat_sessions', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const updated = payload.new as ChatSession;
+          setSessions(prev => prev.map(s => s.id === updated.id ? { ...s, session_title: updated.session_title, updated_at: updated.updated_at } : s));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'ai_chat_sessions', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const deletedId = (payload.old as any).id;
+          setSessions(prev => prev.filter(s => s.id !== deletedId));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, company?.id]);
 
   const loadSession = useCallback(async (session: ChatSession) => {
     try {
