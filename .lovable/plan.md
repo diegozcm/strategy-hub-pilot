@@ -1,40 +1,69 @@
 
 
-# Ajuste Visual: Mostrar "Vazio" para KRs sem dados
+## Diagnóstico: Erro "400" no ai-agent-execute
 
-## Problema
+### Causa raiz identificada
 
-1. **No modal do Objetivo** (`ResultadoChaveMiniCard`): KRs sem dados reais mostram "0,0%" em vermelho. Deveria mostrar "Vazio" em cinza.
-2. **No modal do KR** (`KeyResultMetrics`): O valor "Realizado" mostra "0.0%" formatado mesmo quando não há dados. Deveria mostrar "Vazio".
+A empresa **"Copapel [Free]"** (`f9cfc301-20d0-4b60-aa49-ccbee067458f`) **não possui nenhum plano estratégico** na tabela `strategic_plans`. Quando o Atlas tenta executar o `[ATLAS_PLAN]`, a edge function `ai-agent-execute` verifica se existe um plano ativo e retorna 400 com a mensagem:
 
-## Causa
+> "Nenhum plano estratégico ativo encontrado para esta empresa. Crie um plano primeiro."
 
-- `useKRMetrics` retorna `actual: null` quando não há dados, mas `percentage` é sempre `number` (0, nunca null).
-- `ResultadoChaveMiniCard` verifica `rawPercentage === null` para determinar `isNullData` — como `percentage` nunca é null, `isNullData` é sempre `false`.
-- `KeyResultMetrics` já trata `hasData` corretamente para o "% Atingimento", mas o campo "Realizado" ainda mostra o valor formatado mesmo quando `actual` é null.
+Esse é o mesmo cenário que ocorre para qualquer empresa nova ou que ainda não teve um plano criado manualmente pelo Mapa Estratégico.
 
-## Correção
+### Por que isso acontece repetidamente
 
-### Arquivo 1: `src/components/strategic-map/ResultadoChaveMiniCard.tsx`
+O hook `useStrategicMap` tem uma função `createDefaultStrategicPlan`, mas ela **só é chamada manualmente** — não é invocada automaticamente quando a empresa não tem plano. Além disso, a edge function `ai-agent-execute` simplesmente rejeita tudo com 400, sem tentar criar o plano.
 
-Trocar a verificação de `isNullData` de `rawPercentage === null` para `getMetricsForPeriod('actual') === null`:
+### Plano de correção
 
-```typescript
-const rawActual = getMetricsForPeriod('actual');
-const isNullData = rawActual === null || rawActual === undefined;
+**Arquivo: `supabase/functions/ai-agent-execute/index.ts`**
+
+Na seção que verifica o plano ativo (linhas ~189-204), em vez de retornar erro 400 quando não existe plano, **criar automaticamente um plano estratégico ativo** para a empresa:
+
+```text
+Fluxo atual:
+  plan = busca plano ativo → se null → return 400
+
+Fluxo proposto:
+  plan = busca plano ativo → se null → CRIA plano padrão → usa o novo plano
 ```
 
-### Arquivo 2: `src/components/strategic-map/KeyResultMetrics.tsx`
+O plano criado automaticamente seguirá o mesmo padrão do `createDefaultStrategicPlan`:
+- Nome: "Plano Estratégico {anoAtual}-{anoSeguinte}"
+- Período: 1 Jan do ano atual até 31 Dez do ano seguinte
+- Status: `active`
 
-No bloco do "Realizado" (linha 285-287), quando `actual` é null, mostrar "Vazio" em vez do valor formatado:
+**Arquivo: `src/hooks/useAtlasChat.ts`** (melhoria complementar)
 
-```typescript
-<div className="text-xl font-bold">
-  {currentMetrics.actual === null || currentMetrics.actual === undefined
-    ? <span className="text-muted-foreground">Vazio</span>
-    : formatMetricValue(currentMetrics.actual, keyResult.unit)}
-</div>
+Quando o `handleExecutePlan` receber um erro 400, exibir a mensagem real do servidor no toast em vez de uma mensagem genérica, para que o usuário entenda o que aconteceu.
+
+### Detalhes técnicos
+
+```text
+ai-agent-execute/index.ts (linhas ~189-204):
+
+ANTES:
+  if (!plan) → return 400 "Nenhum plano estratégico ativo..."
+
+DEPOIS:
+  if (!plan) {
+    // Auto-create active plan for company
+    const year = new Date().getFullYear();
+    const { data: newPlan, error: planErr } = await supabase
+      .from('strategic_plans')
+      .insert({
+        company_id,
+        name: `Plano Estratégico ${year}-${year+1}`,
+        period_start: `${year}-01-01`,
+        period_end: `${year+1}-12-31`,
+        status: 'active'
+      })
+      .select('id')
+      .single();
+    if (planErr) → return 400 "Erro ao criar plano automático"
+    plan = newPlan;
+  }
 ```
 
-Dois arquivos, duas linhas cada.
+Isso garante que o Atlas nunca mais falhe por falta de plano — ele será criado sob demanda.
 
