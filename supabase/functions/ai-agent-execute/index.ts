@@ -197,10 +197,30 @@ serve(async (req) => {
       .maybeSingle();
 
     if (!plan) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Nenhum plano estratégico ativo encontrado para esta empresa. Crie um plano primeiro.' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      // Auto-create active strategic plan for company
+      const year = new Date().getFullYear();
+      const { data: newPlan, error: planErr } = await supabase
+        .from('strategic_plans')
+        .insert({
+          company_id,
+          name: `Plano Estratégico ${year}-${year + 1}`,
+          period_start: `${year}-01-01`,
+          period_end: `${year + 1}-12-31`,
+          status: 'active'
+        })
+        .select('id')
+        .single();
+
+      if (planErr || !newPlan) {
+        console.error('Error auto-creating strategic plan:', planErr);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Erro ao criar plano estratégico automático para esta empresa.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`Auto-created strategic plan for company ${company_id}: ${newPlan.id}`);
+      plan = newPlan;
     }
 
     const results: any[] = [];
