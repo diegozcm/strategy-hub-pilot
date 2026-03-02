@@ -1,69 +1,46 @@
 
 
-## Diagnóstico: Erro "400" no ai-agent-execute
+## Diagnóstico: "KR não pertence a esta empresa"
 
-### Causa raiz identificada
+### Causa raiz
 
-A empresa **"Copapel [Free]"** (`f9cfc301-20d0-4b60-aa49-ccbee067458f`) **não possui nenhum plano estratégico** na tabela `strategic_plans`. Quando o Atlas tenta executar o `[ATLAS_PLAN]`, a edge function `ai-agent-execute` verifica se existe um plano ativo e retorna 400 com a mensagem:
+A busca de KR por título (linha 521-526) é **global** — não filtra por empresa/plano:
 
-> "Nenhum plano estratégico ativo encontrado para esta empresa. Crie um plano primeiro."
-
-Esse é o mesmo cenário que ocorre para qualquer empresa nova ou que ainda não teve um plano criado manualmente pelo Mapa Estratégico.
-
-### Por que isso acontece repetidamente
-
-O hook `useStrategicMap` tem uma função `createDefaultStrategicPlan`, mas ela **só é chamada manualmente** — não é invocada automaticamente quando a empresa não tem plano. Além disso, a edge function `ai-agent-execute` simplesmente rejeita tudo com 400, sem tentar criar o plano.
-
-### Plano de correção
-
-**Arquivo: `supabase/functions/ai-agent-execute/index.ts`**
-
-Na seção que verifica o plano ativo (linhas ~189-204), em vez de retornar erro 400 quando não existe plano, **criar automaticamente um plano estratégico ativo** para a empresa:
-
-```text
-Fluxo atual:
-  plan = busca plano ativo → se null → return 400
-
-Fluxo proposto:
-  plan = busca plano ativo → se null → CRIA plano padrão → usa o novo plano
+```typescript
+// Busca QUALQUER KR do banco inteiro que bate com o título
+const { data: foundKR } = await supabase
+  .from('key_results')
+  .select('id, objective_id')
+  .ilike('title', `%${d.kr_title}%`)
+  .limit(1)
+  .maybeSingle();
 ```
 
-O plano criado automaticamente seguirá o mesmo padrão do `createDefaultStrategicPlan`:
-- Nome: "Plano Estratégico {anoAtual}-{anoSeguinte}"
-- Período: 1 Jan do ano atual até 31 Dez do ano seguinte
-- Status: `active`
+Depois, valida se o `objective_id` do KR encontrado pertence ao `plan.id` atual. Como a Copapel [Free] teve o plano auto-criado (vazio, sem objetivos), a busca encontra KRs de **outras empresas** (ex: Copapel principal) e a validação rejeita todas com "não pertence a esta empresa".
 
-**Arquivo: `src/hooks/useAtlasChat.ts`** (melhoria complementar)
+Esse mesmo padrão de busca global aparece em múltiplos pontos do arquivo (linhas ~521, ~850 e possivelmente outros).
 
-Quando o `handleExecutePlan` receber um erro 400, exibir a mensagem real do servidor no toast em vez de uma mensagem genérica, para que o usuário entenda o que aconteceu.
+### Correção
 
-### Detalhes técnicos
+Escopar a busca de KR por título para retornar apenas KRs cujos objetivos pertençam ao plano ativo da empresa atual. Substituir a busca simples por um join filtrado:
 
 ```text
-ai-agent-execute/index.ts (linhas ~189-204):
+ANTES (global):
+  key_results.ilike('title', '%...%').limit(1)
 
-ANTES:
-  if (!plan) → return 400 "Nenhum plano estratégico ativo..."
-
-DEPOIS:
-  if (!plan) {
-    // Auto-create active plan for company
-    const year = new Date().getFullYear();
-    const { data: newPlan, error: planErr } = await supabase
-      .from('strategic_plans')
-      .insert({
-        company_id,
-        name: `Plano Estratégico ${year}-${year+1}`,
-        period_start: `${year}-01-01`,
-        period_end: `${year+1}-12-31`,
-        status: 'active'
-      })
-      .select('id')
-      .single();
-    if (planErr) → return 400 "Erro ao criar plano automático"
-    plan = newPlan;
-  }
+DEPOIS (escopado):
+  key_results
+    .select('id, objective_id, strategic_objectives!inner(plan_id)')
+    .ilike('title', '%...%')
+    .eq('strategic_objectives.plan_id', plan.id)
+    .limit(1)
 ```
 
-Isso garante que o Atlas nunca mais falhe por falta de plano — ele será criado sob demanda.
+Isso usa o inner join do PostgREST para garantir que só KRs do plano ativo sejam encontrados. Aplicar em todos os pontos onde KRs são buscados por título (~3-4 ocorrências no arquivo).
+
+Adicionalmente, quando nenhum KR é encontrado após o escopo, a mensagem de erro deve ser mais clara: `"KR não encontrado no plano desta empresa"` em vez de `"não pertence a esta empresa"`.
+
+### Arquivos alterados
+
+- `supabase/functions/ai-agent-execute/index.ts` — escopar todas as buscas de KR por título ao `plan.id`
 
