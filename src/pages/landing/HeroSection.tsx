@@ -109,7 +109,7 @@ export const HeroSection: React.FC<Props> = ({ getContent }) => (
           per="word"
           delay={0.2}
           as="h1"
-          className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-display font-bold text-white leading-[1.1] tracking-tight"
+          className="text-3xl sm:text-4xl lg:text-5xl xl:text-[3.25rem] font-display font-bold text-white leading-[1.15] tracking-tight"
         >
           {getContent('hero', 'title', 'Cocriamos soluções adequadas às')}
         </TextEffect>
@@ -120,7 +120,7 @@ export const HeroSection: React.FC<Props> = ({ getContent }) => (
           per="word"
           delay={0.4}
           as="span"
-          className="mt-2 block text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-display font-bold leading-[1.1] tracking-tight bg-gradient-to-r from-cofound-green via-cofound-blue-light to-cofound-green bg-clip-text text-transparent"
+          className="mt-2 block text-3xl sm:text-4xl lg:text-5xl xl:text-[3.25rem] font-display font-bold leading-[1.15] tracking-tight text-cofound-green"
         >
           {getContent('hero', 'title_gradient', 'complexidades das organizações')}
         </TextEffect>
@@ -131,7 +131,7 @@ export const HeroSection: React.FC<Props> = ({ getContent }) => (
           per="word"
           delay={0.6}
           as="p"
-          className="mt-8 max-w-2xl text-base lg:text-lg text-white/50 leading-relaxed font-sans"
+          className="mt-8 max-w-2xl text-sm lg:text-base text-white/50 leading-relaxed font-sans"
         >
           {getContent('hero', 'subtitle', 'O Strategy HUB conecta consultoria estratégica à tecnologia, transformando sua visão em resultados mensuráveis com inteligência artificial.')}
         </TextEffect>
@@ -139,13 +139,13 @@ export const HeroSection: React.FC<Props> = ({ getContent }) => (
         {/* CTA buttons */}
         <div className="mt-10 flex flex-col sm:flex-row items-center gap-4">
           <Link to="/auth">
-            <Button size="lg" className="text-base px-8 py-6 bg-cofound-green text-cofound-blue-dark font-bold hover:bg-cofound-green/90 shadow-lg shadow-cofound-green/20 transition-all hover:scale-[1.03] rounded-full">
+            <Button size="lg" className="text-sm px-8 py-6 bg-cofound-green text-cofound-blue-dark font-bold hover:bg-cofound-green/90 shadow-lg shadow-cofound-green/20 transition-all hover:scale-[1.03] rounded-full">
               <ArrowRight className="mr-2 h-5 w-5" />
               {getContent('hero', 'primary_button', 'Acessar Plataforma')}
             </Button>
           </Link>
           <a href={getContent('hero', 'secondary_button_link', WHATSAPP_URL)} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="lg" className="text-base px-8 py-6 border-white/15 text-white hover:bg-white/[0.06] font-semibold rounded-full">
+            <Button variant="outline" size="lg" className="text-sm px-8 py-6 border-white/20 text-white/70 hover:text-white hover:bg-white/[0.06] font-semibold rounded-full">
               <Phone className="mr-2 h-5 w-5" />
               {getContent('hero', 'secondary_button', 'Fale com um consultor')}
             </Button>
