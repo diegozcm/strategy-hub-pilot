@@ -6,7 +6,7 @@ const LandingPage = () => {
   const { getContent } = useLandingPageContent();
 
   return (
-    <LandingPageBase getContent={getContent} theme="cofound" />
+    <LandingPageBase getContent={getContent} />
   );
 };
 
