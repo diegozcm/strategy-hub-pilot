@@ -30,9 +30,10 @@ export const HeaderSection: React.FC = () => {
       >
         <div
           className={cn(
-            'mx-auto mt-2 max-w-6xl px-6 transition-all duration-300 lg:px-12',
-            isScrolled &&
-              'bg-cofound-blue-dark/80 max-w-4xl rounded-2xl border border-white/10 backdrop-blur-md lg:px-5'
+            'mx-auto mt-2 px-6 transition-all duration-300 lg:px-12',
+            isScrolled
+              ? 'bg-cofound-blue-dark/80 max-w-4xl rounded-2xl border border-white/10 backdrop-blur-md lg:px-5'
+              : 'max-w-full'
           )}
         >
           <div className="relative flex flex-wrap items-center justify-between gap-6 py-3 md:gap-0 md:py-4">
