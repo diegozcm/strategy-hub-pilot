@@ -158,7 +158,12 @@ function extractPlan(content: string): { cleanContent: string; plan: any | null 
       .trim();
     return { cleanContent, plan };
   } catch {
-    return { cleanContent: content, plan: null };
+    // Remove the raw [ATLAS_PLAN] block even on parse failure
+    const cleanContent = content
+      .replace(/\[ATLAS_PLAN\][\s\S]*?(\[\/ATLAS_PLAN\]|$)/, '')
+      .trim()
+      + '\n\n⚠️ O plano gerado foi muito extenso e não pôde ser processado. Tente dividir em partes menores (ex: "Crie OKRs apenas para o pilar Pessoas & Cultura").';
+    return { cleanContent, plan: null };
   }
 }
 
