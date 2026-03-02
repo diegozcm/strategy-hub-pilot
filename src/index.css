@@ -461,3 +461,8 @@ All colors MUST be HSL.
 .animate-marquee:hover {
   animation-play-state: paused;
 }
+
+@keyframes grid-scroll {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(calc(var(--cell-size) * -1)); }
+}
