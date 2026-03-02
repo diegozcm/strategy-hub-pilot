@@ -518,25 +518,14 @@ serve(async (req) => {
 
           let resolvedKrId = krId;
           if (!resolvedKrId && d.kr_title) {
+            // Scoped search: only KRs belonging to this company's active plan
             const { data: foundKR } = await supabase
               .from('key_results')
-              .select('id, objective_id')
+              .select('id, objective_id, strategic_objectives!inner(plan_id)')
               .ilike('title', `%${d.kr_title}%`)
+              .eq('strategic_objectives.plan_id', plan.id)
               .limit(1)
               .maybeSingle();
-            // Validate KR belongs to this company's plan
-            if (foundKR) {
-              const { data: objCheck } = await supabase
-                .from('strategic_objectives')
-                .select('id')
-                .eq('id', foundKR.objective_id)
-                .eq('plan_id', plan.id)
-                .maybeSingle();
-              if (!objCheck) {
-                results.push({ type: actionType, success: false, error: `KR "${d.kr_title}" não pertence a esta empresa.` });
-                continue;
-              }
-            }
             if (foundKR) resolvedKrId = foundKR.id;
           }
 
@@ -846,10 +835,12 @@ serve(async (req) => {
           let resolvedId = d.kr_id || d.key_result_id || d.id;
 
           if (!resolvedId && d.kr_title) {
+            // Scoped search: only KRs belonging to this company's active plan
             const { data: found } = await supabase
               .from('key_results')
-              .select('id')
+              .select('id, strategic_objectives!inner(plan_id)')
               .ilike('title', `%${d.kr_title}%`)
+              .eq('strategic_objectives.plan_id', plan.id)
               .limit(1)
               .maybeSingle();
             if (found) resolvedId = found.id;
