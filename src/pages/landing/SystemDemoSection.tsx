@@ -29,6 +29,14 @@ export const SystemDemoSection: React.FC = () => {
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
 
+  // Preload all images on mount for instant switching
+  useEffect(() => {
+    screens.forEach(s => {
+      const img = new Image();
+      img.src = s.src;
+    });
+  }, []);
+
   const next = useCallback(() => setCurrent(c => (c + 1) % screens.length), []);
   const prev = useCallback(() => setCurrent(c => (c - 1 + screens.length) % screens.length), []);
 
@@ -101,7 +109,7 @@ export const SystemDemoSection: React.FC = () => {
                   exit={{ opacity: 0, x: -60 }}
                   transition={{ duration: 0.35 }}
                 >
-                  <ScreenshotImage src={screens[current].src} alt={screens[current].alt} />
+                  <ScreenshotImage src={screens[current].src} alt={screens[current].alt} eager />
                 </motion.div>
               </AnimatePresence>
             </div>
