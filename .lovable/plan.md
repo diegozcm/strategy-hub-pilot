@@ -1,46 +1,64 @@
 
 
-## Diagnóstico: "KR não pertence a esta empresa"
+## Plano de Rebrand: Landing Page Strategy HUB by COFOUND
 
-### Causa raiz
+### Situacao atual vs. Objetivo
 
-A busca de KR por título (linha 521-526) é **global** — não filtra por empresa/plano:
+A landing page atual usa cores genéricas (cyan/lime), tem um visual "template SaaS" sem personalidade, texto placeholder e nenhuma conexao visual com o site institucional cofound.com.br. O objetivo é transformá-la em uma página premium com a identidade visual escura/navy da COFOUND, focada no Strategy HUB como produto principal.
 
-```typescript
-// Busca QUALQUER KR do banco inteiro que bate com o título
-const { data: foundKR } = await supabase
-  .from('key_results')
-  .select('id, objective_id')
-  .ilike('title', `%${d.kr_title}%`)
-  .limit(1)
-  .maybeSingle();
-```
+### Diretrizes visuais (espelhando cofound.com.br)
 
-Depois, valida se o `objective_id` do KR encontrado pertence ao `plan.id` atual. Como a Copapel [Free] teve o plano auto-criado (vazio, sem objetivos), a busca encontra KRs de **outras empresas** (ex: Copapel principal) e a validação rejeita todas com "não pertence a esta empresa".
+- Fundo predominante: Navy escuro (#0D2338 / #0E263D)
+- Textos claros sobre fundo escuro
+- Acentos: Azul Claro (#38B6FF) para highlights e CTAs, Verde (#CDD966) para badges/destaques
+- Fontes: Saira para títulos, Lexend para corpo (já configuradas)
+- Cards com bordas sutis brancas/10% sobre fundo navy mais claro
+- Sem os tons cyan/lime genéricos atuais
 
-Esse mesmo padrão de busca global aparece em múltiplos pontos do arquivo (linhas ~521, ~850 e possivelmente outros).
-
-### Correção
-
-Escopar a busca de KR por título para retornar apenas KRs cujos objetivos pertençam ao plano ativo da empresa atual. Substituir a busca simples por um join filtrado:
+### Estrutura de secoes (7 secoes)
 
 ```text
-ANTES (global):
-  key_results.ilike('title', '%...%').limit(1)
-
-DEPOIS (escopado):
-  key_results
-    .select('id, objective_id, strategic_objectives!inner(plan_id)')
-    .ilike('title', '%...%')
-    .eq('strategic_objectives.plan_id', plan.id)
-    .limit(1)
+1. HEADER         - Fixo, fundo navy escuro, logo COFOUND + nav + CTA Login
+2. HERO           - Full-width navy escuro, headline impactante sobre 
+                    o Strategy HUB, subtítulo, 2 botões (CTA + WhatsApp)
+3. SERVICOS       - Grid de cards (Jornada Estratégica, Aceleração 
+   COFOUND          de Vendas, Diagnóstico 360, Conselho Consultivo,
+                    Startups) sobre fundo navy com cards semi-transparentes
+4. PLATAFORMA     - Showcase das features do Strategy HUB 
+   (Strategy HUB)   (Dashboard RUMO, Mapa Estratégico, OKRs, Atlas IA,
+                    Ferramentas, Projetos) com screenshots/mockups
+5. LOGOS          - Carousel horizontal de logos de clientes 
+   CLIENTES        ("Quem já viveu a experiência Cofound") com 
+                    animação marquee, fundo navy
+6. CTA FINAL      - Gradiente navy→azul, headline + 2 botões
+7. FOOTER         - Navy escuro, links, contato, redes sociais, copyright
 ```
 
-Isso usa o inner join do PostgREST para garantir que só KRs do plano ativo sejam encontrados. Aplicar em todos os pontos onde KRs são buscados por título (~3-4 ocorrências no arquivo).
+### Mudancas tecnicas
 
-Adicionalmente, quando nenhum KR é encontrado após o escopo, a mensagem de erro deve ser mais clara: `"KR não encontrado no plano desta empresa"` em vez de `"não pertence a esta empresa"`.
+**Arquivo principal: `src/pages/landing/LandingPageBase.tsx`** (reescrita completa)
 
-### Arquivos alterados
+- Remover sistema de dual-theme (cofound/strategy) -- manter apenas o tema COFOUND dark
+- Simplificar os ~180 tokens de tema para classes diretas
+- Reestruturar as 7 secoes conforme acima
+- Remover secoes que nao fazem mais sentido (BEEP, testimonials genéricos, Demo carousel)
+- Adicionar secao de servicos COFOUND com conteúdo real do site institucional
+- Adicionar carousel de logos de clientes com animacao marquee CSS
+- Manter integração CMS (`getContent`) para textos editáveis
 
-- `supabase/functions/ai-agent-execute/index.ts` — escopar todas as buscas de KR por título ao `plan.id`
+**Arquivo: `src/index.css`**
+
+- Adicionar keyframes de animacao `marquee` para carousel de logos
+- Ajustar variaveis legacy do cofound se necessário
+
+**Notas de CMS:**
+- Os textos continuam editáveis via `getContent()` com fallbacks reais
+- Logos de clientes poderão ser gerenciados pelo CMS existente ou hardcoded inicialmente
+
+### Conteudo real (extraído do cofound.com.br)
+
+- **Headline**: "Cocriamos soluções adequadas às complexidades das organizações"
+- **Servicos**: Jornada Estratégica, Aceleração de Vendas, Palestras & Workshops, Diagnóstico 360, Conselho Consultivo, Aceleração de Startups
+- **Contato**: Ágora Tech Park, Joinville/SC
+- **Redes**: LinkedIn, Instagram, Spotify, YouTube
 
