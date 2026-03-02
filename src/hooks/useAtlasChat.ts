@@ -351,6 +351,9 @@ export const useAtlasChat = () => {
         body: JSON.stringify({ company_id: company.id, actions }),
       });
       const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || `Erro do servidor (${response.status})`);
+      }
       const updatedAfter = [...messages];
       updatedAfter[msgIndex] = {
         ...updatedAfter[msgIndex],
