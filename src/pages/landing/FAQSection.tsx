@@ -1,10 +1,14 @@
 import React from 'react';
+import { Button } from '@/components/ui/button';
+import { MessageSquare } from 'lucide-react';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+
+const WHATSAPP_URL = 'https://wa.me/554796342353?text=Tenho%20uma%20dúvida%20sobre%20o%20Strategy%20HUB';
 
 const faqs = [
   { q: 'O que é o Strategy HUB?', a: 'O Strategy HUB é a plataforma de gestão estratégica da COFOUND que integra planejamento, OKRs, indicadores, projetos e inteligência artificial em um único ambiente digital, conectando consultoria à execução.' },
@@ -16,33 +20,48 @@ const faqs = [
 ];
 
 export const FAQSection: React.FC = () => (
-  <section className="py-20 px-4 bg-cofound-white">
-    <div className="container mx-auto max-w-3xl">
-      <div className="text-center mb-14">
-        <h2 className="text-3xl md:text-4xl font-display font-bold text-cofound-blue-dark mb-4">
-          Perguntas frequentes
-        </h2>
-        <p className="text-lg text-cofound-blue-dark/50 font-sans">
-          Tire suas dúvidas sobre o Strategy HUB e a COFOUND.
-        </p>
-      </div>
+  <section className="py-24 px-4 bg-cofound-white">
+    <div className="container mx-auto max-w-6xl">
+      <div className="grid lg:grid-cols-[1fr_1.6fr] gap-16">
+        {/* Left — title + CTA */}
+        <div className="lg:sticky lg:top-32 lg:self-start">
+          <p className="text-sm font-sans font-semibold text-cofound-green tracking-widest uppercase mb-3">
+            Suporte
+          </p>
+          <h2 className="text-3xl md:text-5xl font-display font-bold text-cofound-blue-dark mb-5">
+            Perguntas frequentes
+          </h2>
+          <p className="text-base text-cofound-blue-dark/50 font-sans mb-8 leading-relaxed">
+            Não encontrou o que procura? Fale com nossa equipe e tire todas as suas dúvidas.
+          </p>
+          <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
+            <Button variant="outline" className="rounded-full border-cofound-blue-dark/15 text-cofound-blue-dark font-semibold hover:bg-cofound-blue-dark/[0.04] px-6">
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Fale conosco
+            </Button>
+          </a>
+        </div>
 
-      <Accordion type="single" collapsible className="space-y-3">
-        {faqs.map((faq, i) => (
-          <AccordionItem
-            key={i}
-            value={`faq-${i}`}
-            className="bg-white rounded-xl border border-cofound-blue-dark/8 shadow-soft px-6 data-[state=open]:shadow-elev data-[state=open]:border-cofound-green/30 transition-all"
-          >
-            <AccordionTrigger className="text-left font-display font-semibold text-cofound-blue-dark py-5 hover:no-underline">
-              {faq.q}
-            </AccordionTrigger>
-            <AccordionContent className="text-cofound-blue-dark/60 font-sans pb-5 leading-relaxed">
-              {faq.a}
-            </AccordionContent>
-          </AccordionItem>
-        ))}
-      </Accordion>
+        {/* Right — accordion */}
+        <div>
+          <Accordion type="single" collapsible className="space-y-3">
+            {faqs.map((faq, i) => (
+              <AccordionItem
+                key={i}
+                value={`faq-${i}`}
+                className="bg-white rounded-2xl border border-cofound-blue-dark/[0.06] shadow-soft px-6 data-[state=open]:shadow-elev data-[state=open]:border-cofound-green/30 transition-all"
+              >
+                <AccordionTrigger className="text-left font-display font-semibold text-cofound-blue-dark py-5 hover:no-underline text-base">
+                  {faq.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-cofound-blue-dark/55 font-sans pb-5 leading-relaxed text-sm">
+                  {faq.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </div>
     </div>
   </section>
 );
