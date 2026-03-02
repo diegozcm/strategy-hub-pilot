@@ -15,14 +15,12 @@ const RetroGrid = ({
   angle = 65,
   cellSize = 60,
   opacity = 0.5,
-  lightLineColor = 'gray',
   darkLineColor = 'gray',
 }) => {
   const gridStyles = {
     '--grid-angle': `${angle}deg`,
     '--cell-size': `${cellSize}px`,
     '--opacity': opacity,
-    '--light-line': lightLineColor,
     '--dark-line': darkLineColor,
   } as React.CSSProperties;
 
@@ -47,19 +45,27 @@ const RetroGrid = ({
           }}
         />
       </div>
-      <div className="absolute inset-0 bg-gradient-to-t from-cofound-blue-dark to-transparent to-90%" />
+      <div className="absolute inset-0 bg-gradient-to-t from-cofound-blue-dark via-cofound-blue-dark/60 to-transparent to-90%" />
     </div>
   );
 };
 
-/* Floating decorative elements */
+/* Floating decorative elements – more numerous and more visible */
 const floatingElements = [
-  { size: 80, top: '12%', left: '8%', delay: 0, duration: 6, shape: 'circle' },
-  { size: 50, top: '25%', right: '10%', delay: 1, duration: 8, shape: 'hexagon' },
-  { size: 35, top: '60%', left: '5%', delay: 2, duration: 7, shape: 'square' },
-  { size: 60, top: '70%', right: '6%', delay: 0.5, duration: 9, shape: 'circle' },
-  { size: 25, top: '40%', left: '15%', delay: 3, duration: 5, shape: 'diamond' },
-  { size: 40, top: '15%', right: '18%', delay: 1.5, duration: 7, shape: 'square' },
+  { size: 90, top: '8%', left: '6%', delay: 0, duration: 6, shape: 'circle' },
+  { size: 60, top: '18%', right: '8%', delay: 1, duration: 8, shape: 'hexagon' },
+  { size: 40, top: '55%', left: '4%', delay: 2, duration: 7, shape: 'square' },
+  { size: 70, top: '65%', right: '5%', delay: 0.5, duration: 9, shape: 'circle' },
+  { size: 30, top: '35%', left: '12%', delay: 3, duration: 5, shape: 'diamond' },
+  { size: 50, top: '10%', right: '16%', delay: 1.5, duration: 7, shape: 'square' },
+  { size: 45, top: '45%', right: '12%', delay: 2.5, duration: 6.5, shape: 'circle' },
+  { size: 55, top: '75%', left: '10%', delay: 0.8, duration: 8, shape: 'hexagon' },
+  { size: 35, top: '28%', left: '20%', delay: 1.2, duration: 5.5, shape: 'diamond' },
+  { size: 65, top: '80%', right: '15%', delay: 3.5, duration: 7, shape: 'square' },
+  { size: 25, top: '5%', left: '25%', delay: 0.3, duration: 6, shape: 'circle' },
+  { size: 38, top: '50%', right: '22%', delay: 2.2, duration: 8.5, shape: 'diamond' },
+  { size: 48, top: '22%', left: '3%', delay: 1.8, duration: 7.5, shape: 'hexagon' },
+  { size: 32, top: '90%', right: '3%', delay: 4, duration: 6, shape: 'circle' },
 ];
 
 const FloatingShape: React.FC<{ el: typeof floatingElements[0] }> = ({ el }) => {
@@ -82,11 +88,11 @@ const FloatingShape: React.FC<{ el: typeof floatingElements[0] }> = ({ el }) => 
   return (
     <motion.div
       style={{ ...style, borderRadius, rotate: rotation }}
-      className="border border-cofound-green/10 bg-cofound-green/[0.03]"
+      className="border border-cofound-green/15 bg-cofound-green/[0.05]"
       animate={{
-        y: [0, -20, 0],
-        opacity: [0.3, 0.6, 0.3],
-        scale: [1, 1.08, 1],
+        y: [0, -25, 0],
+        opacity: [0.4, 0.7, 0.4],
+        scale: [1, 1.1, 1],
       }}
       transition={{
         duration: el.duration,
@@ -106,9 +112,9 @@ export const HeroSection: React.FC<Props> = ({ getContent }) => (
   <section className="relative overflow-hidden bg-cofound-blue-dark pt-36 pb-0 lg:pt-44">
     <RetroGrid
       angle={65}
-      opacity={0.3}
+      opacity={0.5}
       cellSize={50}
-      darkLineColor="hsl(var(--cofound-blue-light) / 0.15)"
+      darkLineColor="rgba(56,182,255,0.2)"
     />
 
     {/* Floating elements */}
@@ -148,24 +154,24 @@ export const HeroSection: React.FC<Props> = ({ getContent }) => (
           <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
         </a>
 
-        {/* Title line 1 */}
+        {/* Title – inverted triangle shape: long first line, shorter second, shortest third */}
         <TextEffect
           preset="blur"
           per="word"
           delay={0.2}
           as="h1"
-          className="text-3xl sm:text-4xl lg:text-5xl xl:text-[3.25rem] font-display font-bold text-white leading-[1.15] tracking-tight"
+          className="max-w-3xl text-2xl sm:text-3xl lg:text-4xl xl:text-[2.75rem] font-display font-bold text-white leading-[1.2] tracking-tight"
         >
-          {getContent('hero', 'title', 'Planejamento Estratégico')}
+          {getContent('hero', 'title', 'A primeira plataforma que unifica estratégia e aceleração de negócios!')}
         </TextEffect>
 
-        {/* Title line 2 – green */}
+        {/* Title line 2 – green, shorter */}
         <TextEffect
           preset="blur"
           per="word"
           delay={0.4}
           as="span"
-          className="mt-2 block text-3xl sm:text-4xl lg:text-5xl xl:text-[3.25rem] font-display font-bold leading-[1.15] tracking-tight text-cofound-green"
+          className="mt-1 block max-w-lg text-2xl sm:text-3xl lg:text-4xl xl:text-[2.75rem] font-display font-bold leading-[1.2] tracking-tight text-cofound-green"
         >
           {getContent('hero', 'title_gradient', 'Inteligente para seu Negócio')}
         </TextEffect>
@@ -176,9 +182,9 @@ export const HeroSection: React.FC<Props> = ({ getContent }) => (
           per="word"
           delay={0.6}
           as="p"
-          className="mt-8 max-w-xl text-sm lg:text-base text-white/50 leading-relaxed font-sans"
+          className="mt-6 max-w-md text-sm lg:text-base text-white/50 leading-relaxed font-sans"
         >
-          {getContent('hero', 'subtitle', 'Conectamos consultoria e tecnologia para transformar sua visão em resultados mensuráveis.')}
+          {getContent('hero', 'subtitle', 'Transforme sua visão em resultados concretos com uma plataforma que acelera o crescimento do seu negócio.')}
         </TextEffect>
 
         {/* CTA buttons */}
@@ -186,11 +192,11 @@ export const HeroSection: React.FC<Props> = ({ getContent }) => (
           <Link to="/auth">
             <Button size="lg" className="text-sm px-8 py-6 bg-cofound-green text-cofound-blue-dark font-bold hover:bg-cofound-green/90 shadow-lg shadow-cofound-green/20 transition-all hover:scale-[1.03] rounded-full">
               <ArrowRight className="mr-2 h-5 w-5" />
-              {getContent('hero', 'primary_button', 'Acessar Plataforma')}
+              {getContent('hero', 'primary_button', 'Começar Gratuitamente')}
             </Button>
           </Link>
           <a href={getContent('hero', 'secondary_button_link', WHATSAPP_URL)} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="lg" className="text-sm px-8 py-6 border-white/20 text-white/70 hover:text-white hover:bg-white/[0.06] font-semibold rounded-full">
+            <Button variant="outline" size="lg" className="text-sm px-8 py-6 border-cofound-green/30 text-cofound-green hover:text-cofound-green hover:bg-cofound-green/10 font-semibold rounded-full">
               <Phone className="mr-2 h-5 w-5" />
               {getContent('hero', 'secondary_button', 'Fale com um consultor')}
             </Button>
