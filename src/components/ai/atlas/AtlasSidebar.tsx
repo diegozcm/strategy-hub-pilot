@@ -78,17 +78,17 @@ export const AtlasSidebar: React.FC<AtlasSidebarProps> = ({
                 )}
                 onClick={() => onLoadSession(session)}
               >
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 overflow-hidden">
                   <div className="flex items-center gap-1.5">
                     <MessageSquare className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    <p className="text-sm font-medium truncate">{session.session_title || 'Sem título'}</p>
+                    <p className="text-sm font-medium truncate max-w-[140px]">{session.session_title || 'Sem título'}</p>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5 pl-5">
                     {format(new Date(session.created_at), "dd MMM, HH:mm", { locale: ptBR })}
                   </p>
                 </div>
                 <button
-                  className="h-6 w-6 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-opacity shrink-0 hover:bg-destructive/10"
+                  className="h-7 w-7 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-opacity shrink-0 hover:bg-destructive/10"
                   onClick={(e) => { e.stopPropagation(); onDeleteSession(session.id); }}
                 >
                   <Trash2 className="h-3.5 w-3.5 text-destructive" />
