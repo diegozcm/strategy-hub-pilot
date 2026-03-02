@@ -4,9 +4,10 @@ interface Props {
   src: string;
   alt: string;
   className?: string;
+  eager?: boolean;
 }
 
-export const ScreenshotImage: React.FC<Props> = ({ src, alt, className = '' }) => (
+export const ScreenshotImage: React.FC<Props> = ({ src, alt, className = '', eager = false }) => (
   <div className={`relative rounded-2xl border border-white/10 bg-cofound-blue-dark overflow-hidden group shadow-2xl ${className}`}>
     {/* Window chrome */}
     <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10 bg-white/[0.03]">
@@ -21,7 +22,8 @@ export const ScreenshotImage: React.FC<Props> = ({ src, alt, className = '' }) =
       src={src}
       alt={alt}
       className="w-full h-auto block"
-      loading="lazy"
+      loading={eager ? 'eager' : 'lazy'}
+      decoding={eager ? 'sync' : 'async'}
     />
   </div>
 );
