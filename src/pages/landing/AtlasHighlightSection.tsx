@@ -2,7 +2,8 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Brain, Sparkles, TrendingUp, ShieldCheck } from 'lucide-react';
 import { useScrollReveal } from './useScrollReveal';
-import { ScreenshotPlaceholder } from './ScreenshotPlaceholder';
+import { ScreenshotImage } from './ScreenshotImage';
+import atlasImg from '@/assets/screenshots/atlas-insights.png';
 
 const capabilities = [
   { icon: Sparkles, text: 'Análises preditivas e recomendações personalizadas' },
@@ -25,9 +26,9 @@ export const AtlasHighlightSection: React.FC = () => {
             animate={isVisible ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.6 }}
           >
-            <ScreenshotPlaceholder
-              name="atlas-ia-chat.png"
-              description="Interface do Atlas IA com conversa inteligente, sugestões de ações e insights estratégicos em tempo real"
+            <ScreenshotImage
+              src={atlasImg}
+              alt="Interface do Atlas IA com análise de performance e insights estratégicos em tempo real"
             />
           </motion.div>
 
