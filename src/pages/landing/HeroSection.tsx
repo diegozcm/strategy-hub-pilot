@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, Phone, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ScreenshotPlaceholder } from './ScreenshotPlaceholder';
+import { ScreenshotImage } from './ScreenshotImage';
+import dashboardImg from '@/assets/screenshots/dashboard-rumo.png';
 
 const WHATSAPP_URL = 'https://wa.me/554796342353?text=Tenho%20interesse%20em%20saber%20mais%20sobre%20o%20Strategy%20HUB%20by%20COFOUND';
 
@@ -61,14 +62,14 @@ export const HeroSection: React.FC<Props> = ({ getContent }) => (
           </motion.div>
         </div>
 
-        {/* Right – screenshot placeholder */}
+        {/* Right – screenshot */}
         <motion.div
           initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.3 }}
           className="hidden lg:block"
         >
-          <ScreenshotPlaceholder
-            name="hero-dashboard.png"
-            description="Dashboard RUMO com gráfico de progresso, pilares estratégicos e KPIs em tempo real"
+          <ScreenshotImage
+            src={dashboardImg}
+            alt="Dashboard RUMO com gráfico de progresso, pilares estratégicos e KPIs em tempo real"
           />
         </motion.div>
       </div>

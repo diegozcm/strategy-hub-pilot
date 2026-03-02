@@ -2,7 +2,8 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { BarChart3, Map, Target, Brain, Lightbulb, Briefcase } from 'lucide-react';
 import { useScrollReveal } from './useScrollReveal';
-import { ScreenshotPlaceholder } from './ScreenshotPlaceholder';
+import { ScreenshotImage } from './ScreenshotImage';
+import resultadosImg from '@/assets/screenshots/resultados-chave.png';
 
 const features = [
   { icon: BarChart3, title: 'Dashboard RUMO', desc: 'Visão executiva integrada com objetivos e indicadores em tempo real.' },
@@ -54,9 +55,9 @@ export const PlatformFeaturesSection: React.FC = () => {
             animate={isVisible ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <ScreenshotPlaceholder
-              name="okrs-panel.png"
-              description="Painel de OKRs com barras de progresso, metas mensais e indicadores de status por cores"
+            <ScreenshotImage
+              src={resultadosImg}
+              alt="Painel de Resultados-Chave com barras de progresso, metas mensais e indicadores de status"
             />
           </motion.div>
         </div>

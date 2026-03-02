@@ -1,15 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { ScreenshotPlaceholder } from './ScreenshotPlaceholder';
+import { ScreenshotImage } from './ScreenshotImage';
+import dashboardImg from '@/assets/screenshots/dashboard-rumo.png';
+import objetivosImg from '@/assets/screenshots/objetivos-estrategicos.png';
+import resultadosImg from '@/assets/screenshots/resultados-chave.png';
+import atlasImg from '@/assets/screenshots/atlas-insights.png';
+import ferramentasImg from '@/assets/screenshots/ferramentas-governanca.png';
+import projetosImg from '@/assets/screenshots/projetos-kanban.png';
+import krDetalheImg from '@/assets/screenshots/kr-detalhe.png';
 
 const screens = [
-  { name: 'hero-dashboard.png', title: 'Dashboard RUMO', description: 'Visão executiva integrada com objetivos, pilares estratégicos e KPIs em tempo real' },
-  { name: 'mapa-estrategico.png', title: 'Mapa Estratégico', description: 'Visualização dos pilares, objetivos corporativos e resultados-chave conectados' },
-  { name: 'okrs-panel.png', title: 'OKRs & Indicadores', description: 'Painel de OKRs com barras de progresso, metas mensais e status por cores' },
-  { name: 'atlas-ia-chat.png', title: 'Atlas IA', description: 'Interface de IA conversacional com insights e recomendações estratégicas' },
-  { name: 'ferramentas-swot.png', title: 'Ferramentas Estratégicas', description: 'SWOT, Golden Circle e outras ferramentas preenchidas com análise real' },
-  { name: 'projetos-kanban.png', title: 'Gestão de Projetos', description: 'Visão Kanban com cards de projetos, responsáveis e prazos' },
+  { src: dashboardImg, title: 'Dashboard RUMO', alt: 'Visão executiva integrada com objetivos, pilares estratégicos e KPIs em tempo real' },
+  { src: objetivosImg, title: 'Objetivos Estratégicos', alt: 'Gestão de objetivos por pilar com progresso e resultados-chave vinculados' },
+  { src: resultadosImg, title: 'Resultados-Chave', alt: 'Painel de KRs com status, eficiência YTD e tabela RMRE' },
+  { src: krDetalheImg, title: 'Detalhe do Indicador', alt: 'Evolução mensal previsto vs realizado com gráfico interativo' },
+  { src: atlasImg, title: 'Atlas IA', alt: 'Assistente de IA com análise de performance e insights estratégicos' },
+  { src: ferramentasImg, title: 'Ferramentas & Governança', alt: 'Golden Circle, SWOT, Governança RMRE com calendário de reuniões' },
+  { src: projetosImg, title: 'Gestão de Projetos', alt: 'Visão Kanban com cards de tarefas, responsáveis e status' },
 ];
 
 export const SystemDemoSection: React.FC = () => {
@@ -38,7 +46,7 @@ export const SystemDemoSection: React.FC = () => {
         </div>
 
         <div
-          className="relative max-w-4xl mx-auto"
+          className="relative max-w-5xl mx-auto"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
@@ -52,10 +60,9 @@ export const SystemDemoSection: React.FC = () => {
                 exit={{ opacity: 0, x: -60 }}
                 transition={{ duration: 0.4 }}
               >
-                <ScreenshotPlaceholder
-                  name={screens[current].name}
-                  description={screens[current].description}
-                  className="min-h-[340px]"
+                <ScreenshotImage
+                  src={screens[current].src}
+                  alt={screens[current].alt}
                 />
               </motion.div>
             </AnimatePresence>
