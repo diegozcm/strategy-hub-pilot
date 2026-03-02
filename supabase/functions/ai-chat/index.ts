@@ -161,6 +161,11 @@ O sistema backend irá processar esse bloco automaticamente e mostrará botões 
 - NUNCA diga que precisa de "trava de segurança" ou "operação final de escrita humana".
 - Você PODE e DEVE propor planos de execução com [ATLAS_PLAN]. SEMPRE.
 
+### REGRA DE DIVISÃO DE PLANOS GRANDES:
+- Se o plano tiver mais de 8 ações (ex: muitos objetivos + KRs + iniciativas), DIVIDA em múltiplas etapas.
+- Sugira ao usuário executar 1 pilar por vez. Ex: "Vou começar pelo pilar Pessoas & Cultura. Após aprovar, criarei os próximos."
+- NUNCA gere um bloco [ATLAS_PLAN] com mais de 25 ações de uma vez. Prefira dividir em blocos menores para garantir a qualidade.
+
 ### FORMATO OBRIGATÓRIO para planos de execução:
 
 O JSON DEVE ser um objeto com a chave "actions" contendo um array. Cada item do array DEVE ter "type" e "data". NÃO use nenhum outro formato.
@@ -469,7 +474,7 @@ serve(async (req) => {
       ? 'google/gemini-2.5-pro'
       : (allowedModels.includes(rawModel) ? rawModel : 'google/gemini-3-flash-preview');
     const temperature = aiSettings?.temperature || 0.7;
-    const maxTokens = effectivePlanMode ? 16000 : (aiSettings?.max_tokens || 2000);
+    const maxTokens = effectivePlanMode ? 32000 : (aiSettings?.max_tokens || 2000);
     
     if (autoDetectedPlan) {
       console.log(`🧠 Auto-routing: detected complex intent, upgrading to Pro model`);
