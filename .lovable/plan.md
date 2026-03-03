@@ -1,99 +1,50 @@
 
 
-## Plan: Landing Page Design System Standardization
+## Plan: Standardize All Dark Backgrounds with Grid + Floating Elements
 
-### Problems Identified
+### Current State
 
-After auditing all 10+ sections, here are the inconsistencies:
+The landing page has **5 distinct dark background styles** — each one different:
 
-**1. Container width chaos**
-- HeroSection: `container mx-auto px-4` (1400px max via Tailwind config)
-- ValueProposition: `container mx-auto` + inner `max-w-6xl` (1152px)
-- SystemDemo: `container mx-auto` (1400px)
-- PlatformFeatures: `container mx-auto` + inner `max-w-6xl`
-- AtlasHighlight: `container mx-auto` + inner `max-w-6xl`
-- FAQ: `container mx-auto max-w-6xl`
-- Authority: wrapper `max-w-6xl`, outer `container mx-auto max-w-6xl`
-- Footer: `container mx-auto px-4`
-- **Result**: Content widths jump between 1152px and 1400px randomly
+| Section | Current Background | Grid? | Floating Shapes? |
+|---|---|---|---|
+| **Hero** | `bg-cofound-blue-dark` | ✅ RetroGrid | ✅ 14 shapes |
+| **DarkSectionsBackground** (SystemDemo + HowItWorks) | `bg-cofound-blue-dark` | ✅ RetroGrid (separate copy) | ✅ 8 shapes (separate copy) |
+| **AtlasHighlight** | `gradient from-cofound-blue-dark via-[#112B45]` | ❌ | ❌ |
+| **FAQ CTA Card** | `gradient from-cofound-blue-dark via-[#112B45]` | ❌ | ❌ |
+| **Footer** | `bg-[#071520]` (different navy!) | ❌ | ❌ |
 
-**2. Vertical padding chaos**
-- Hero: `pt-36 pb-0`
-- ClientLogos: `py-14`
-- ValueProposition: `py-28`
-- SystemDemo: `py-24`
-- HowItWorks: `py-28`
-- PlatformFeatures: `py-20`
-- AtlasHighlight: `py-20`
-- Authority: `py-24`
-- FAQ: `pt-8 pb-24`
-- Footer: `py-16 lg:py-20`
-- **Result**: Sections have inconsistent breathing room
+There are **3 separate implementations** of RetroGrid and FloatingShapes (Hero, DarkSectionsBackground, and index.css animation). This is duplicated and inconsistent.
 
-**3. Heading sizes inconsistent**
-- ValueProposition: `text-3xl md:text-5xl lg:text-[3.25rem]`
-- SystemDemo: `text-3xl md:text-5xl`
-- HowItWorks: `text-3xl md:text-5xl`
-- PlatformFeatures: `text-3xl md:text-4xl`
-- AtlasHighlight: `text-3xl md:text-4xl`
-- Authority: `text-3xl md:text-5xl`
-- FAQ: `text-3xl md:text-5xl`
+### Solution
 
-**4. Transparent/invisible icons** — Floating shapes use `bg-cofound-green/[0.03]` and `border-cofound-green/10` making them nearly invisible
+**1. Create a single reusable `DarkBackground` component** (`src/pages/landing/DarkBackground.tsx`)
+- Extracts the shared RetroGrid + FloatingShapes into one component
+- Accepts props: `className`, `children`, `as` (section/footer/div)
+- Always renders: `bg-cofound-blue-dark` + RetroGrid + animated floating shapes
+- Reduces the floating shapes to a balanced set (~8-10) that works everywhere
 
-**5. Subtitle text sizes mixed** — `text-base`, `text-lg`, `text-base md:text-lg` inconsistently
+**2. Apply `DarkBackground` to all dark sections:**
 
-**6. Button border-radius** — Header uses `rounded-xl`, Hero uses `rounded-full`, CTA card uses `rounded-full`
+- **HeroSection** — Replace inline RetroGrid/FloatingShapes with `<DarkBackground>`
+- **DarkSectionsBackground** — Delete this file entirely, replace usage in LandingPageBase with `<DarkBackground>`
+- **AtlasHighlightSection** — Replace the gradient bg with `<DarkBackground>`
+- **FAQ CTA Card** — Wrap the CTA card interior with the grid+shapes pattern (or keep as card with subtle version)
+- **FooterSection** — Replace `bg-[#071520]` with `<DarkBackground as="footer">`
 
-**7. Section badge/label styles different per section** — Each section has its own badge variant
+**3. Update LandingPageBase** — Remove `DarkSectionsBackground` import, use new `DarkBackground` wrapper
 
-**8. Mobile responsive issues** — HowItWorks timeline 4-column layout breaks on mobile, SystemDemo grid doesn't stack properly, FAQ grid doesn't collapse well
+### Files Changed
 
----
+| File | Action |
+|---|---|
+| `src/pages/landing/DarkBackground.tsx` | **CREATE** — Reusable component with RetroGrid + FloatingShapes |
+| `src/pages/landing/HeroSection.tsx` | **EDIT** — Remove inline RetroGrid/FloatingShapes (~50 lines), use `DarkBackground` |
+| `src/pages/landing/DarkSectionsBackground.tsx` | **DELETE** — Replaced by DarkBackground |
+| `src/pages/landing/AtlasHighlightSection.tsx` | **EDIT** — Replace gradient bg with `DarkBackground` |
+| `src/pages/landing/FooterSection.tsx` | **EDIT** — Replace `bg-[#071520]` with `DarkBackground` |
+| `src/pages/landing/FAQSection.tsx` | **EDIT** — Add grid+shapes to the CTA card |
+| `src/pages/landing/LandingPageBase.tsx` | **EDIT** — Swap DarkSectionsBackground → DarkBackground |
 
-### Standardization Rules (Design Tokens)
-
-```text
-LAYOUT
-├── All sections: max-w-6xl mx-auto px-6 (consistent 1152px content width)
-├── Vertical rhythm: py-24 for all major sections (consistent)
-├── Small divider sections (logos): py-12
-
-TYPOGRAPHY (Section Headers)
-├── Label/badge: text-xs font-sans font-semibold tracking-widest uppercase text-cofound-green
-├── H2: text-3xl md:text-4xl font-display font-bold
-├── Subtitle: text-base text-{color}/50 font-sans max-w-xl mx-auto
-
-BUTTONS
-├── All CTAs: rounded-full (unify)
-├── Primary: bg-cofound-green text-cofound-blue-dark font-bold
-├── Secondary: border-white/20 bg-white/5 text-white
-
-FLOATING SHAPES
-├── Increase opacity: border-cofound-green/20 bg-cofound-green/[0.08]
-├── Make them actually visible without being distracting
-
-RESPONSIVE
-├── HowItWorks: 2x2 grid on mobile instead of 4-col timeline
-├── SystemDemo: stack vertically, full-width carousel
-├── FAQ: single column on mobile
-```
-
-### Changes Per File
-
-1. **HeroSection.tsx** — Standardize inner container to `max-w-6xl`, unify button radius to `rounded-full` (already done), fix floating shape opacity
-2. **ClientLogosSection.tsx** — Use `max-w-6xl mx-auto px-6`, reduce padding to `py-12`
-3. **ValuePropositionSection.tsx** — Use `max-w-6xl mx-auto px-6`, `py-24`, heading to `text-3xl md:text-4xl`
-4. **SystemDemoSection.tsx** — Use `max-w-6xl mx-auto px-6`, `py-24`, heading to `text-3xl md:text-4xl`, fix mobile grid
-5. **HowItWorksSection.tsx** — Use `max-w-5xl` inside `max-w-6xl`, `py-24`, heading to `text-3xl md:text-4xl`, make timeline responsive (stack on mobile)
-6. **PlatformFeaturesSection.tsx** — Use `max-w-6xl mx-auto px-6`, `py-24` (already `py-20`)
-7. **AtlasHighlightSection.tsx** — Use `max-w-6xl mx-auto px-6`, `py-24`
-8. **AuthoritySection.tsx** — Heading to `text-3xl md:text-4xl`, keep `max-w-6xl`
-9. **FAQSection.tsx** — Use `py-24`, heading to `text-3xl md:text-4xl`
-10. **FooterSection.tsx** — Use `max-w-6xl mx-auto px-6`
-11. **DarkSectionsBackground.tsx** — Increase floating shape visibility
-12. **HeaderSection.tsx** — Unify button radius to `rounded-full`
-13. **LandingPageBase.tsx** — Remove redundant wrapper `container mx-auto max-w-6xl` from AuthoritySection
-
-All changes are class-level adjustments — no structural rewrites needed.
+This eliminates ~100 lines of duplicated code and ensures every dark section has the same visual treatment as the hero.
 
