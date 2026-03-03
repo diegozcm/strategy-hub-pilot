@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, ArrowRight, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { DarkBackground } from './DarkBackground';
 import {
   Accordion,
   AccordionContent,
@@ -70,12 +71,8 @@ export const FAQSection: React.FC<Props> = ({ getContent }) => (
       </div>
 
       {/* CTA Card */}
-      <div className="mt-20 relative overflow-hidden rounded-3xl bg-gradient-to-br from-cofound-blue-dark via-[#112B45] to-cofound-blue-dark p-10 md:p-14">
-        {/* Glow effects */}
-        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[300px] bg-cofound-green/[0.06] rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-cofound-blue-light/[0.04] rounded-full blur-[100px] pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+      <DarkBackground className="mt-20 rounded-3xl p-10 md:p-14" as="div">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
           <div className="max-w-xl">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-4 w-4 text-cofound-green" />
@@ -103,7 +100,7 @@ export const FAQSection: React.FC<Props> = ({ getContent }) => (
             </Link>
           </div>
         </div>
-      </div>
+      </DarkBackground>
     </div>
   </section>
 );

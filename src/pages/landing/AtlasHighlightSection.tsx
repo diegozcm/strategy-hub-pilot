@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Brain, Sparkles, TrendingUp, ShieldCheck } from 'lucide-react';
 import { useScrollReveal } from './useScrollReveal';
 import { ScreenshotImage } from './ScreenshotImage';
+import { DarkBackground } from './DarkBackground';
 import atlasImg from '@/assets/screenshots/atlas-insights.png';
 
 const capabilities = [
@@ -15,8 +16,8 @@ export const AtlasHighlightSection: React.FC = () => {
   const { ref, isVisible } = useScrollReveal();
 
   return (
-    <section className="py-24 px-6 bg-gradient-to-br from-cofound-blue-dark via-[#112B45] to-cofound-blue-dark relative overflow-hidden" ref={ref}>
-      <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-cofound-blue-light/5 rounded-full blur-[120px] pointer-events-none" />
+    <DarkBackground className="py-24 px-6">
+      <div ref={ref}>
 
       <div className="max-w-6xl mx-auto relative z-10">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -60,6 +61,7 @@ export const AtlasHighlightSection: React.FC = () => {
           </motion.div>
         </div>
       </div>
-    </section>
+      </div>
+    </DarkBackground>
   );
 };
