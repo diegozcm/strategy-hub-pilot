@@ -2,46 +2,38 @@
 
 ## Investigation Results
 
-I compared the two KRs in the database:
+Queried the database for all distinct `unit` values in `key_results`:
 
-**Broken KR** ("Reduzir o tempo médio de onboarding..."):
-- `unit: "h"` / `title: "Reduzir o tempo médio..."` / `objective_id: "2f73edc5..."` / all data present
+| Unit in DB | Count | Exists in Forms? |
+|---|---|---|
+| `%` | 97 | Yes |
+| `un` | 63 | **NO** |
+| `R$` | 42 | Yes |
+| `number` | 9 | Yes |
+| `pontos` | 6 | Only in KREditModal |
+| `dias` | 5 | Yes |
+| `score` | 5 | Yes |
+| `horas` | 2 | **NO** (we have `h`, not `horas`) |
+| `h` | 0 | Yes (just added) |
 
-**Working KR** ("Unificar 100% das jornadas..."):
-- `unit: "%"` / `title: "Unificar 100%..."` / `objective_id: "6caccbd1..."` / all data present
+### Two broken units found:
 
-Both KRs have complete data in the database. The problem is NOT missing data.
+1. **`un` (Unidades)** — 63 KRs use this unit but it's not in ANY form dropdown. These KRs will show empty unit fields when editing.
 
-## Root Causes Found
+2. **`horas`** — 2 KRs use `horas` (full word) but the dropdown only has `h`. These will also show empty.
 
-### 1. Unit "h" (horas) is not a valid Select option
-The `KREditModal` unit dropdown only has: `%`, `R$`, `number`, `dias`, `score`, `pontos`. The KR has `unit: "h"`. Radix Select renders **empty** when the value doesn't match any option. This is why the unit appears empty.
+3. **`pontos`** — exists only in `KREditModal`, missing from the 3 creation forms (`InlineKeyResultForm`, `AddResultadoChaveModal`, `StandaloneKeyResultForm`).
 
-The working KR uses `unit: "%"` which IS in the options, so it displays correctly.
+### Solution
 
-### 2. Form initialization relies on useEffect timing (race condition)
-The `basicInfo` state starts empty (`title: ''`, `unit: ''`, etc.) and is only populated by a `useEffect` that runs AFTER the first render. Combined with the `pendingEditOpen` pattern (which involves multiple state updates and re-renders), there's a timing window where React renders the form with empty state and the `useEffect` closure may not fire correctly due to stale dependencies or batched updates.
+**Add missing units to ALL 4 form files:**
+- Add `<SelectItem value="un">Unidades (un)</SelectItem>` to all 4 forms
+- Add `<SelectItem value="horas">Horas (horas)</SelectItem>` to all 4 forms (keeping `h` as well for backward compat)
+- Add `<SelectItem value="pontos">Pontos</SelectItem>` to the 3 creation forms that are missing it
 
-## Solution
-
-### Fix 1: Add missing unit option (`KREditModal.tsx`)
-Add `"h"` (Horas) to the Select options for unit, matching what already exists in the database.
-
-### Fix 2: Initialize form state directly from props (`KREditModal.tsx`)
-Replace the empty `useState` + `useEffect` pattern with a **lazy initializer** that reads from `keyResult` on mount:
-
-```tsx
-const [basicInfo, setBasicInfo] = useState(() => ({
-  title: keyResult?.title || '',
-  unit: keyResult?.unit || '',
-  objective_id: keyResult?.objective_id || 'none',
-  target_direction: (keyResult?.target_direction as TargetDirection) || 'maximize',
-  // ... etc
-}));
-```
-
-Since the `KREditModal` already receives a `key` prop that forces a full remount when data changes, initializing from props directly is safe and eliminates all timing issues. The `useEffect` becomes a fallback that only runs if the prop updates after mount (which the `key` pattern prevents).
-
-### Files to modify
-- `src/components/strategic-map/KREditModal.tsx` -- add `"h"` option + initialize from props
+**Files to modify:**
+- `src/components/strategic-map/KREditModal.tsx` — add `un`, `horas`
+- `src/components/objectives/InlineKeyResultForm.tsx` — add `un`, `horas`, `pontos`
+- `src/components/strategic-map/AddResultadoChaveModal.tsx` — add `un`, `horas`, `pontos`
+- `src/components/indicators/StandaloneKeyResultForm.tsx` — add `un`, `horas`, `pontos`
 
