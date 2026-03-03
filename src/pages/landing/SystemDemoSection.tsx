@@ -47,8 +47,8 @@ export const SystemDemoSection: React.FC = () => {
   }, [paused, next]);
 
   return (
-    <section className="py-24 px-4 bg-cofound-blue-dark relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-cofound-blue-dark via-[#0F2A42] to-cofound-blue-dark pointer-events-none" />
+    <div className="py-24 px-4 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-transparent via-[#0F2A42]/30 to-transparent pointer-events-none" />
 
       <div className="container mx-auto relative z-10">
         <div className="grid lg:grid-cols-[1fr_1.4fr] gap-16 items-center">
@@ -135,6 +135,6 @@ export const SystemDemoSection: React.FC = () => {
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };

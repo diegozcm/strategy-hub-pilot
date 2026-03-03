@@ -1,0 +1,106 @@
+import React from 'react';
+import { motion } from 'motion/react';
+
+/* Reuse hero-style RetroGrid */
+const RetroGrid = ({
+  angle = 65,
+  cellSize = 60,
+  opacity = 0.35,
+  darkLineColor = 'rgba(56,182,255,0.15)',
+}) => {
+  const gridStyles = {
+    '--grid-angle': `${angle}deg`,
+    '--cell-size': `${cellSize}px`,
+    '--opacity': opacity,
+    '--dark-line': darkLineColor,
+  } as React.CSSProperties;
+
+  return (
+    <div
+      className="pointer-events-none absolute inset-0 overflow-hidden [perspective:200px]"
+      style={gridStyles}
+    >
+      <div className="absolute inset-0 [transform:rotateX(var(--grid-angle))]">
+        <div
+          style={{
+            backgroundRepeat: 'repeat',
+            backgroundSize: 'var(--cell-size) var(--cell-size)',
+            backgroundImage: `linear-gradient(to right, var(--dark-line) 1px, transparent 0), linear-gradient(to bottom, var(--dark-line) 1px, transparent 0)`,
+            height: '300vh',
+            inset: '-200% 0px',
+            marginLeft: '-200%',
+            opacity: 'var(--opacity)',
+            position: 'absolute',
+            width: '600vw',
+            animation: 'grid-scroll 20s linear infinite',
+          }}
+        />
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-cofound-blue-dark via-cofound-blue-dark/60 to-transparent to-90%" />
+    </div>
+  );
+};
+
+/* Floating decorative shapes */
+const floatingElements = [
+  { size: 70, top: '5%', left: '3%', delay: 0, duration: 7, shape: 'circle' as const },
+  { size: 50, top: '15%', right: '6%', delay: 1.5, duration: 8, shape: 'hexagon' as const },
+  { size: 35, top: '40%', left: '8%', delay: 2, duration: 6, shape: 'diamond' as const },
+  { size: 55, top: '60%', right: '4%', delay: 0.5, duration: 9, shape: 'circle' as const },
+  { size: 40, top: '80%', left: '5%', delay: 3, duration: 7, shape: 'square' as const },
+  { size: 30, top: '25%', right: '15%', delay: 1, duration: 6.5, shape: 'diamond' as const },
+  { size: 45, top: '70%', right: '10%', delay: 2.5, duration: 8, shape: 'hexagon' as const },
+  { size: 60, top: '90%', left: '12%', delay: 0.8, duration: 7.5, shape: 'circle' as const },
+];
+
+const FloatingShape: React.FC<{ el: typeof floatingElements[0] }> = ({ el }) => {
+  const style: React.CSSProperties = {
+    position: 'absolute',
+    width: el.size,
+    height: el.size,
+    top: el.top,
+    left: (el as any).left,
+    right: (el as any).right,
+  };
+
+  const borderRadius =
+    el.shape === 'circle' ? '50%' :
+    el.shape === 'diamond' ? '4px' :
+    el.shape === 'hexagon' ? '30%' : '8px';
+
+  const rotation = el.shape === 'diamond' ? 45 : 0;
+
+  return (
+    <motion.div
+      style={{ ...style, borderRadius, rotate: rotation }}
+      className="border border-cofound-green/10 bg-cofound-green/[0.03]"
+      animate={{
+        y: [0, -20, 0],
+        opacity: [0.3, 0.6, 0.3],
+        scale: [1, 1.08, 1],
+      }}
+      transition={{
+        duration: el.duration,
+        delay: el.delay,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      }}
+    />
+  );
+};
+
+interface Props {
+  children: React.ReactNode;
+}
+
+export const DarkSectionsBackground: React.FC<Props> = ({ children }) => (
+  <section className="relative overflow-hidden bg-cofound-blue-dark">
+    <RetroGrid />
+    {floatingElements.map((el, i) => (
+      <FloatingShape key={i} el={el} />
+    ))}
+    <div className="relative z-10">
+      {children}
+    </div>
+  </section>
+);
