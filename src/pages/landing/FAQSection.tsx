@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, ArrowRight, Sparkles } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   Accordion,
   AccordionContent,
@@ -19,9 +20,14 @@ const faqs = [
   { q: 'Como posso começar?', a: 'Entre em contato pelo WhatsApp ou agende uma demonstração. Nossa equipe vai entender seu cenário e recomendar a melhor solução entre plataforma, consultoria ou ambos.' },
 ];
 
-export const FAQSection: React.FC = () => (
+interface Props {
+  getContent: (s: string, k: string, f?: string) => string;
+}
+
+export const FAQSection: React.FC<Props> = ({ getContent }) => (
   <section className="pt-8 pb-24 px-4 bg-cofound-white" id="faq">
     <div className="container mx-auto max-w-6xl">
+      {/* FAQ Grid */}
       <div className="grid lg:grid-cols-[1fr_1.6fr] gap-16">
         {/* Left — title + CTA */}
         <div className="lg:sticky lg:top-32 lg:self-start">
@@ -60,6 +66,42 @@ export const FAQSection: React.FC = () => (
               </AccordionItem>
             ))}
           </Accordion>
+        </div>
+      </div>
+
+      {/* CTA Card */}
+      <div className="mt-20 relative overflow-hidden rounded-3xl bg-gradient-to-br from-cofound-blue-dark via-[#112B45] to-cofound-blue-dark p-10 md:p-14">
+        {/* Glow effects */}
+        <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[300px] bg-cofound-green/[0.06] rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-cofound-blue-light/[0.04] rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+          <div className="max-w-xl">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="h-4 w-4 text-cofound-green" />
+              <span className="text-sm font-sans font-semibold text-cofound-green tracking-widest uppercase">
+                Oferta exclusiva
+              </span>
+            </div>
+            <h3 className="text-2xl md:text-3xl font-display font-bold text-white mb-3 leading-tight">
+              {getContent('cta', 'title', 'Comece a transformar sua gestão estratégica hoje')}
+            </h3>
+            <p className="text-sm text-white/50 font-sans leading-relaxed">
+              {getContent('cta', 'subtitle', 'Teste o Strategy HUB gratuitamente e descubra como conectar estratégia à execução com inteligência artificial.')}
+            </p>
+          </div>
+
+          <div className="flex-shrink-0">
+            <Link to="/auth">
+              <Button
+                size="lg"
+                className="text-base px-8 py-6 bg-cofound-green text-cofound-blue-dark font-bold hover:bg-cofound-green/90 shadow-lg shadow-cofound-green/20 transition-all hover:scale-[1.03] rounded-full"
+              >
+                <ArrowRight className="mr-2 h-5 w-5" />
+                {getContent('cta', 'primary_button', 'Começar agora')}
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

@@ -8,11 +8,8 @@ import { DifferentialsSection } from './DifferentialsSection';
 import { HowItWorksSection } from './HowItWorksSection';
 import { PlatformFeaturesSection } from './PlatformFeaturesSection';
 import { AtlasHighlightSection } from './AtlasHighlightSection';
-import { ServicesSection } from './ServicesSection';
-import { UseCasesSection } from './UseCasesSection';
 import { AuthoritySection } from './AuthoritySection';
 import { FAQSection } from './FAQSection';
-import { CTASection } from './CTASection';
 import { FooterSection } from './FooterSection';
 
 interface LandingPageBaseProps {
@@ -36,8 +33,7 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({ getContent }) 
                       <AuthoritySection />
                     </div>
                   </section>
-      {/* 13 */ } <FAQSection />
-      {/* 14 */ } <CTASection getContent={getContent} />
+      {/* 13 */ } <FAQSection getContent={getContent} />
       {/* 15 */ } <FooterSection getContent={getContent} />
     </div>
   );
