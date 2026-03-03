@@ -16,7 +16,7 @@ interface Props {
 }
 
 export const HeroSection: React.FC<Props> = ({ getContent }) => (
-  <DarkBackground className="pt-16 pb-0 lg:pt-20">
+  <DarkBackground className="pt-24 pb-0 lg:pt-28">
     <div className="mx-auto max-w-6xl px-6">
       <AnimatedGroup
         variants={{
