@@ -196,7 +196,7 @@ export const HeroSection: React.FC<Props> = ({ getContent }) => (
             </Button>
           </Link>
           <a href={getContent('hero', 'secondary_button_link', WHATSAPP_URL)} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="lg" className="text-sm px-8 py-6 border-cofound-green/30 text-cofound-green hover:text-cofound-green hover:bg-cofound-green/10 font-semibold rounded-full">
+            <Button variant="outline" size="lg" className="text-sm px-8 py-6 bg-transparent border-white/30 text-white hover:text-white hover:bg-white/10 font-semibold rounded-full">
               <Phone className="mr-2 h-5 w-5" />
               {getContent('hero', 'secondary_button', 'Fale com um consultor')}
             </Button>
