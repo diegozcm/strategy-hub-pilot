@@ -42,7 +42,7 @@ export const CTASection: React.FC<Props> = ({ getContent }) => {
             </Button>
           </Link>
           <a href={getContent('cta', 'secondary_button_link', WHATSAPP_URL)} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" size="lg" className="text-base px-8 py-6 border-white/15 text-white hover:bg-white/[0.06] font-semibold rounded-full">
+            <Button variant="outline" size="lg" className="text-base px-8 py-6 bg-transparent border-white/30 text-white hover:text-white hover:bg-white/10 font-semibold rounded-full">
               <MessageSquare className="mr-2 h-5 w-5" />
               {getContent('cta', 'secondary_button', 'Agendar Demo')}
             </Button>
