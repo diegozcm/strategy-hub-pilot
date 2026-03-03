@@ -125,45 +125,19 @@ export const HeaderSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile menu overlay */}
+        {/* Mobile menu dropdown */}
         <AnimatePresence>
           {menuState && (
             <motion.div
-              initial={{ opacity: 0, y: -12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="lg:hidden absolute top-0 left-0 right-0 px-2 pt-2"
+              className="lg:hidden overflow-hidden px-2"
             >
-              <div className="bg-cofound-blue-dark/95 backdrop-blur-xl rounded-3xl border border-white/10 shadow-2xl shadow-black/40 overflow-hidden">
-                {/* Menu header with logo + close */}
-                <div className="flex items-center justify-between px-6 py-4">
-                  <Link
-                    to="/"
-                    onClick={() => setMenuState(false)}
-                    className="flex items-center space-x-2"
-                  >
-                    <Target className="h-7 w-7 text-cofound-blue-light" />
-                    <div className="flex flex-col leading-none">
-                      <span className="text-xl font-display font-bold text-white">
-                        Strategy HUB
-                      </span>
-                      <span className="text-[10px] text-white/50 font-sans tracking-wide">
-                        by COFOUND
-                      </span>
-                    </div>
-                  </Link>
-                  <button
-                    onClick={() => setMenuState(false)}
-                    className="p-2 -mr-2"
-                    aria-label="Close Menu"
-                  >
-                    <X className="h-6 w-6 text-white" />
-                  </button>
-                </div>
-
+              <div className="bg-cofound-blue-dark/95 backdrop-blur-xl rounded-b-3xl border border-t-0 border-white/10 shadow-2xl shadow-black/40">
                 {/* Links */}
-                <div className="px-6 pb-2">
+                <div className="px-6 pt-4 pb-2">
                   <ul className="space-y-1">
                     {menuItems.map((item, i) => (
                       <motion.li
