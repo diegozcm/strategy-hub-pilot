@@ -16,7 +16,7 @@ export const ScreenshotPlaceholder: React.FC<Props> = ({ name, description, clas
         <span className="w-3 h-3 rounded-full bg-yellow-500/60" />
         <span className="w-3 h-3 rounded-full bg-green-500/60" />
       </div>
-      <span className="text-xs text-white/30 font-sans ml-2">strategyhub.cofound.com.br</span>
+      <span className="text-xs text-white/30 font-sans ml-2">app.cofound.com.br</span>
     </div>
     {/* Content placeholder */}
     <div className="flex flex-col items-center justify-center p-12 min-h-[280px]">

@@ -135,7 +135,7 @@ export const FooterSection: React.FC<Props> = ({ getContent }) => (
       <AnimatedContainer delay={0.5}>
         <div className="border-t border-white/[0.06] pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-white/25 text-xs font-sans">
-            © {new Date().getFullYear()} COFOUND. Todos os direitos reservados.
+            © 2018 COFOUND. Todos os direitos reservados.
           </p>
           <a
             href="https://app.cofound.com.br"
