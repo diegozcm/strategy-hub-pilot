@@ -1,18 +1,13 @@
 import React from 'react';
 import { motion } from 'motion/react';
 
-/* Reuse hero-style RetroGrid */
-const RetroGrid = ({
-  angle = 65,
-  cellSize = 60,
-  opacity = 0.35,
-  darkLineColor = 'rgba(56,182,255,0.15)',
-}) => {
+/* Shared RetroGrid */
+const RetroGrid: React.FC = () => {
   const gridStyles = {
-    '--grid-angle': `${angle}deg`,
-    '--cell-size': `${cellSize}px`,
-    '--opacity': opacity,
-    '--dark-line': darkLineColor,
+    '--grid-angle': '65deg',
+    '--cell-size': '50px',
+    '--opacity': 0.5,
+    '--dark-line': 'rgba(56,182,255,0.2)',
   } as React.CSSProperties;
 
   return (
@@ -43,17 +38,19 @@ const RetroGrid = ({
 
 /* Floating decorative shapes */
 const floatingElements = [
-  { size: 70, top: '5%', left: '3%', delay: 0, duration: 7, shape: 'circle' as const },
-  { size: 50, top: '15%', right: '6%', delay: 1.5, duration: 8, shape: 'hexagon' as const },
-  { size: 35, top: '40%', left: '8%', delay: 2, duration: 6, shape: 'diamond' as const },
-  { size: 55, top: '60%', right: '4%', delay: 0.5, duration: 9, shape: 'circle' as const },
-  { size: 40, top: '80%', left: '5%', delay: 3, duration: 7, shape: 'square' as const },
-  { size: 30, top: '25%', right: '15%', delay: 1, duration: 6.5, shape: 'diamond' as const },
-  { size: 45, top: '70%', right: '10%', delay: 2.5, duration: 8, shape: 'hexagon' as const },
-  { size: 60, top: '90%', left: '12%', delay: 0.8, duration: 7.5, shape: 'circle' as const },
+  { size: 90, top: '8%', left: '6%', delay: 0, duration: 6, shape: 'circle' as const },
+  { size: 60, top: '18%', right: '8%', delay: 1, duration: 8, shape: 'hexagon' as const },
+  { size: 40, top: '55%', left: '4%', delay: 2, duration: 7, shape: 'square' as const },
+  { size: 70, top: '65%', right: '5%', delay: 0.5, duration: 9, shape: 'circle' as const },
+  { size: 30, top: '35%', left: '12%', delay: 3, duration: 5, shape: 'diamond' as const },
+  { size: 50, top: '10%', right: '16%', delay: 1.5, duration: 7, shape: 'square' as const },
+  { size: 45, top: '45%', right: '12%', delay: 2.5, duration: 6.5, shape: 'circle' as const },
+  { size: 55, top: '75%', left: '10%', delay: 0.8, duration: 8, shape: 'hexagon' as const },
+  { size: 35, top: '28%', left: '20%', delay: 1.2, duration: 5.5, shape: 'diamond' as const },
+  { size: 65, top: '80%', right: '15%', delay: 3.5, duration: 7, shape: 'square' as const },
 ];
 
-const FloatingShape: React.FC<{ el: typeof floatingElements[0] }> = ({ el }) => {
+const FloatingShape: React.FC<{ el: (typeof floatingElements)[0] }> = ({ el }) => {
   const style: React.CSSProperties = {
     position: 'absolute',
     width: el.size,
@@ -75,9 +72,9 @@ const FloatingShape: React.FC<{ el: typeof floatingElements[0] }> = ({ el }) => 
       style={{ ...style, borderRadius, rotate: rotation }}
       className="border border-cofound-green/20 bg-cofound-green/[0.08]"
       animate={{
-        y: [0, -20, 0],
-        opacity: [0.3, 0.6, 0.3],
-        scale: [1, 1.08, 1],
+        y: [0, -25, 0],
+        opacity: [0.4, 0.7, 0.4],
+        scale: [1, 1.1, 1],
       }}
       transition={{
         duration: el.duration,
@@ -89,12 +86,18 @@ const FloatingShape: React.FC<{ el: typeof floatingElements[0] }> = ({ el }) => 
   );
 };
 
-interface Props {
+interface DarkBackgroundProps {
   children: React.ReactNode;
+  as?: 'section' | 'footer' | 'div';
+  className?: string;
 }
 
-export const DarkSectionsBackground: React.FC<Props> = ({ children }) => (
-  <section className="relative overflow-hidden bg-cofound-blue-dark">
+export const DarkBackground: React.FC<DarkBackgroundProps> = ({
+  children,
+  as: Tag = 'section',
+  className = '',
+}) => (
+  <Tag className={`relative overflow-hidden bg-cofound-blue-dark ${className}`}>
     <RetroGrid />
     {floatingElements.map((el, i) => (
       <FloatingShape key={i} el={el} />
@@ -102,5 +105,5 @@ export const DarkSectionsBackground: React.FC<Props> = ({ children }) => (
     <div className="relative z-10">
       {children}
     </div>
-  </section>
+  </Tag>
 );

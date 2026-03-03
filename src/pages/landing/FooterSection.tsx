@@ -3,6 +3,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { Target, Linkedin, Instagram, Mail, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { DarkBackground } from './DarkBackground';
 
 interface Props {
   getContent: (s: string, k: string, f?: string) => string;
@@ -71,7 +72,7 @@ function AnimatedContainer({ className, delay = 0.1, children }: { delay?: numbe
 }
 
 export const FooterSection: React.FC<Props> = ({ getContent }) => (
-  <footer className="bg-[#071520] border-t border-white/[0.05]">
+  <DarkBackground as="footer" className="border-t border-white/[0.05]">
     <div className="max-w-6xl mx-auto px-6 py-16 lg:py-20">
       {/* Large brand heading */}
       <AnimatedContainer delay={0.05}>
@@ -147,5 +148,5 @@ export const FooterSection: React.FC<Props> = ({ getContent }) => (
         </div>
       </AnimatedContainer>
     </div>
-  </footer>
+  </DarkBackground>
 );
