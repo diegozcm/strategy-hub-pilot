@@ -18,18 +18,18 @@ export const PlatformFeaturesSection: React.FC = () => {
   const { ref, isVisible } = useScrollReveal();
 
   return (
-    <section className="py-20 px-4 bg-cofound-white" ref={ref}>
-      <div className="container mx-auto">
+    <section className="py-24 px-6 bg-cofound-white" ref={ref}>
+      <div className="max-w-6xl mx-auto">
         <div className="text-center mb-14">
           <h2 className="text-3xl md:text-4xl font-display font-bold text-cofound-blue-dark mb-4">
             Tudo que você precisa em uma plataforma
           </h2>
-          <p className="text-lg text-cofound-blue-dark/50 font-sans max-w-2xl mx-auto">
+          <p className="text-base text-cofound-blue-dark/50 font-sans max-w-xl mx-auto">
             Ferramentas integradas de gestão estratégica potencializadas por inteligência artificial.
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Features grid */}
           <div className="grid sm:grid-cols-2 gap-4">
             {features.map((f, i) => (

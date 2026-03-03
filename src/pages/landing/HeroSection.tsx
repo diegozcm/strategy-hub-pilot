@@ -88,7 +88,7 @@ const FloatingShape: React.FC<{ el: typeof floatingElements[0] }> = ({ el }) => 
   return (
     <motion.div
       style={{ ...style, borderRadius, rotate: rotation }}
-      className="border border-cofound-green/15 bg-cofound-green/[0.05]"
+      className="border border-cofound-green/20 bg-cofound-green/[0.08]"
       animate={{
         y: [0, -25, 0],
         opacity: [0.4, 0.7, 0.4],
@@ -122,7 +122,7 @@ export const HeroSection: React.FC<Props> = ({ getContent }) => (
       <FloatingShape key={i} el={el} />
     ))}
 
-    <div className="container relative z-10 mx-auto px-4">
+    <div className="relative z-10 mx-auto max-w-6xl px-6">
       <AnimatedGroup
         variants={{
           container: {

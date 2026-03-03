@@ -72,7 +72,7 @@ function AnimatedContainer({ className, delay = 0.1, children }: { delay?: numbe
 
 export const FooterSection: React.FC<Props> = ({ getContent }) => (
   <footer className="bg-[#071520] border-t border-white/[0.05]">
-    <div className="container mx-auto px-4 py-16 lg:py-20">
+    <div className="max-w-6xl mx-auto px-6 py-16 lg:py-20">
       {/* Large brand heading */}
       <AnimatedContainer delay={0.05}>
         <Link to="/" className="inline-flex items-center gap-3 mb-14">

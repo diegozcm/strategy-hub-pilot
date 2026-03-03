@@ -47,10 +47,10 @@ export const SystemDemoSection: React.FC = () => {
   }, [paused, next]);
 
   return (
-    <div className="py-24 px-4 relative overflow-hidden">
+    <div className="py-24 px-6 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-transparent via-[#0F2A42]/30 to-transparent pointer-events-none" />
 
-      <div className="container mx-auto relative z-10">
+      <div className="max-w-6xl mx-auto relative z-10">
         <div className="grid lg:grid-cols-[1fr_1.4fr] gap-16 items-center">
           {/* Left – copy */}
           <div>
@@ -59,7 +59,7 @@ export const SystemDemoSection: React.FC = () => {
               Tour pela plataforma
             </Badge>
 
-            <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-5 leading-tight">
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-5 leading-tight">
               Conheça a plataforma por dentro
             </h2>
             <p className="text-base text-white/45 font-sans mb-10 leading-relaxed max-w-md">

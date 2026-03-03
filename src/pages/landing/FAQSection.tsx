@@ -25,8 +25,8 @@ interface Props {
 }
 
 export const FAQSection: React.FC<Props> = ({ getContent }) => (
-  <section className="pt-8 pb-24 px-4 bg-cofound-white" id="faq">
-    <div className="container mx-auto max-w-6xl">
+  <section className="py-24 px-6 bg-cofound-white" id="faq">
+    <div className="max-w-6xl mx-auto">
       {/* FAQ Grid */}
       <div className="grid lg:grid-cols-[1fr_1.6fr] gap-16">
         {/* Left — title + CTA */}
@@ -34,7 +34,7 @@ export const FAQSection: React.FC<Props> = ({ getContent }) => (
           <p className="text-sm font-sans font-semibold text-cofound-green tracking-widest uppercase mb-3">
             Suporte
           </p>
-          <h2 className="text-3xl md:text-5xl font-display font-bold text-cofound-blue-dark mb-5">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-cofound-blue-dark mb-5">
             Perguntas frequentes
           </h2>
           <p className="text-base text-cofound-blue-dark/50 font-sans mb-8 leading-relaxed">

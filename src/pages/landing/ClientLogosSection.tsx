@@ -11,8 +11,8 @@ interface Props {
 const logoImages = [logosRow1, logosRow2, logosRow3, logosRow4];
 
 export const ClientLogosSection: React.FC<Props> = ({ getContent }) => (
-  <section className="py-14 px-4 bg-cofound-blue-dark overflow-hidden">
-    <div className="container mx-auto">
+  <section className="py-12 px-6 bg-cofound-blue-dark overflow-hidden">
+    <div className="max-w-6xl mx-auto">
       <h2 className="text-center text-sm font-display font-semibold text-white/30 mb-8 tracking-widest uppercase">
         {getContent('clients', 'title', 'Quem já viveu a experiência Cofound')}
       </h2>
