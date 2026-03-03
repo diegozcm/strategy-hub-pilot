@@ -108,18 +108,18 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
   const [errors, setErrors] = useState<Record<string, string>>({});
   
   // Form states
-  const [basicInfo, setBasicInfo] = useState({
-    title: '',
-    description: '',
-    unit: '',
-    objective_id: '',
-    target_direction: 'maximize' as TargetDirection,
-    start_month: '',
-    end_month: '',
-    assigned_owner_id: '',
-    weight: 1,
-    frequency: 'monthly' as KRFrequency
-  });
+  const [basicInfo, setBasicInfo] = useState(() => ({
+    title: keyResult?.title || '',
+    description: keyResult?.description || '',
+    unit: keyResult?.unit || '',
+    objective_id: keyResult?.objective_id || 'none',
+    target_direction: (keyResult?.target_direction as TargetDirection) || 'maximize',
+    start_month: keyResult?.start_month || '',
+    end_month: keyResult?.end_month || '',
+    assigned_owner_id: keyResult?.assigned_owner_id || '',
+    weight: keyResult?.weight || 1,
+    frequency: (keyResult?.frequency as KRFrequency) || 'monthly'
+  }));
   
   const [monthlyTargets, setMonthlyTargets] = useState<Record<string, number>>({});
   const [selectedYear, setSelectedYear] = useState<number>(initialYear || new Date().getFullYear());
@@ -539,6 +539,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
                       <SelectItem value="R$">R$ (Real)</SelectItem>
                       <SelectItem value="number">Número</SelectItem>
                       <SelectItem value="dias">Dias</SelectItem>
+                      <SelectItem value="h">Horas (h)</SelectItem>
                       <SelectItem value="score">Score</SelectItem>
                       <SelectItem value="pontos">Pontos</SelectItem>
                     </SelectContent>
