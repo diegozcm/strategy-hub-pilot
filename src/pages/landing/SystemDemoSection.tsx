@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { ChevronLeft, ChevronRight, ArrowRight, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,13 +29,7 @@ export const SystemDemoSection: React.FC = () => {
   const [current, setCurrent] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  // Preload all images on mount for instant switching
-  useEffect(() => {
-    screens.forEach(s => {
-      const img = new Image();
-      img.src = s.src;
-    });
-  }, []);
+  // Images are preloaded globally via usePreloadImages hook
 
   const next = useCallback(() => setCurrent(c => (c + 1) % screens.length), []);
   const prev = useCallback(() => setCurrent(c => (c - 1 + screens.length) % screens.length), []);
@@ -100,18 +94,13 @@ export const SystemDemoSection: React.FC = () => {
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
           >
-            <div className="overflow-hidden rounded-2xl">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={current}
-                  initial={{ opacity: 0, x: 60 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -60 }}
-                  transition={{ duration: 0.35 }}
-                >
-                  <ScreenshotImage src={screens[current].src} alt={screens[current].alt} eager />
-                </motion.div>
-              </AnimatePresence>
+            <div className="overflow-hidden rounded-2xl relative">
+              {/* Pre-render all images hidden for instant switch */}
+              {screens.map((s, i) => (
+                <div key={i} className={i === current ? 'block' : 'hidden'}>
+                  <ScreenshotImage src={s.src} alt={s.alt} eager />
+                </div>
+              ))}
             </div>
 
             {/* Nav arrows */}
