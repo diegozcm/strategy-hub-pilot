@@ -308,8 +308,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
 
   // Initialize form when modal opens
   useEffect(() => {
-    // Só reinicializar quando o modal for aberto E tiver keyResult
-    if (open && keyResult) {
+    // Só reinicializar quando o modal for aberto E tiver keyResult com dados completos
+    if (open && keyResult && keyResult.title) {
       console.log('[KREditModal] Inicializando formulário', {
         open,
         keyResultId: keyResult?.id,
@@ -345,7 +345,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
       
       setErrors({}); // Clear errors when opening modal
     }
-  }, [open, keyResult]);
+  }, [open, keyResult?.id, keyResult?.updated_at]);
 
   // Filtrar dados do ano selecionado quando o ano mudar
   useEffect(() => {
@@ -362,7 +362,7 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
       
       setMonthlyTargets(filteredTargets);
     }
-  }, [open, selectedYear, keyResult]);
+  }, [open, selectedYear, keyResult?.id, keyResult?.updated_at]);
 
   // Update period targets when frequency or year changes
   useEffect(() => {
