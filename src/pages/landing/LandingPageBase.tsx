@@ -31,8 +31,6 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({ getContent }) 
       {/* 7  */ } <HowItWorksSection />
       {/* 8  */ } <div id="plataforma"><PlatformFeaturesSection /></div>
       {/* 9  */ } <AtlasHighlightSection />
-      {/* 10 */ } <div id="servicos"><ServicesSection /></div>
-      {/* 11 */ } <UseCasesSection />
       {/* 12 */ } <AuthoritySection />
       {/* 13 */ } <div id="faq"><FAQSection /></div>
       {/* 14 */ } <CTASection getContent={getContent} />
