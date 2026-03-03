@@ -41,6 +41,8 @@ import { StartTogetherAdminLayout } from "./components/admin/StartTogetherAdminL
 import { CompanySelectionPage } from "@/pages/CompanySelectionPage";
 import LandingPage from "@/pages/LandingPage";
 import ReleasesPage from "@/pages/ReleasesPage";
+import TermsOfUsePage from "@/pages/TermsOfUsePage";
+import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import NotFound from "@/pages/NotFound";
 import { GoldenCirclePage } from "@/components/golden-circle/GoldenCirclePage";
 import { ToolsPage } from "@/components/tools/ToolsPage";
@@ -153,6 +155,8 @@ const App = () => (
                 <Routes>
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/releases" element={<ReleasesPage />} />
+                <Route path="/terms" element={<TermsOfUsePage />} />
+                <Route path="/privacy" element={<PrivacyPolicyPage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/company-selection" element={<CompanySelectionPage />} />
                 <Route path="/company-inactive" element={<CompanyInactivePage />} />
