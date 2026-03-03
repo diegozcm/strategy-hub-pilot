@@ -111,14 +111,14 @@ export const HeaderSection: React.FC = () => {
             >
               {/* Mobile links */}
               <div className="lg:hidden">
-                <ul className="space-y-6 text-base font-medium">
+                <ul className="space-y-5 text-base font-medium">
                   {menuItems.map((item) => (
                     <li key={item.name}>
                       {item.isRoute ? (
                         <Link
                           to={item.href}
                           onClick={() => setMenuState(false)}
-                          className="text-white/80 hover:text-white block transition-colors duration-200 font-sans"
+                          className="text-white/80 hover:text-white block transition-colors duration-200 font-sans text-left"
                         >
                           {item.name}
                         </Link>
@@ -126,7 +126,7 @@ export const HeaderSection: React.FC = () => {
                         <a
                           href={item.href}
                           onClick={() => setMenuState(false)}
-                          className="text-white/80 hover:text-white block transition-colors duration-200 font-sans"
+                          className="text-white/80 hover:text-white block transition-colors duration-200 font-sans text-left"
                         >
                           {item.name}
                         </a>
