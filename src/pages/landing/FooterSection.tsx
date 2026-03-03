@@ -26,7 +26,6 @@ const footerColumns: FooterColumn[] = [
     links: [
       { title: 'Funcionalidades', href: '#servicos' },
       { title: 'Plataforma', href: '#plataforma' },
-      { title: 'Integrações', href: '#como-funciona' },
       { title: 'Novidades', href: '/releases' },
     ],
   },
