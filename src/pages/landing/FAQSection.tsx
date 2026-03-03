@@ -20,7 +20,7 @@ const faqs = [
 ];
 
 export const FAQSection: React.FC = () => (
-  <section className="py-24 px-4 bg-cofound-white">
+  <section className="pt-8 pb-24 px-4 bg-cofound-white" id="faq">
     <div className="container mx-auto max-w-6xl">
       <div className="grid lg:grid-cols-[1fr_1.6fr] gap-16">
         {/* Left — title + CTA */}
