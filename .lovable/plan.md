@@ -1,42 +1,47 @@
 
 
-## Problem
+## Investigation Results
 
-The previous fix (`await refreshKeyResult()` then `setShowEditModal(true)`) doesn't actually work because of how React state updates work. Here's what happens:
+I compared the two KRs in the database:
 
-1. `refreshKeyResult()` fetches data from DB and calls `setCurrentKeyResult(data)` 
-2. The `await` resolves (the async function completed), but **React hasn't re-rendered yet** -- state updates are batched
-3. `setShowEditModal(true)` fires in the same render cycle
-4. The KREditModal receives the **old** `currentKeyResult` because the state hasn't committed yet
-5. The `useEffect` in KREditModal checks `keyResult.title` -- if the old data was partial (no title), it skips initialization entirely
+**Broken KR** ("Reduzir o tempo médio de onboarding..."):
+- `unit: "h"` / `title: "Reduzir o tempo médio..."` / `objective_id: "2f73edc5..."` / all data present
 
-This is a classic React state batching problem: `await` waits for the promise, not for the state to be reflected in the next render.
+**Working KR** ("Unificar 100% das jornadas..."):
+- `unit: "%"` / `title: "Unificar 100%..."` / `objective_id: "6caccbd1..."` / all data present
+
+Both KRs have complete data in the database. The problem is NOT missing data.
+
+## Root Causes Found
+
+### 1. Unit "h" (horas) is not a valid Select option
+The `KREditModal` unit dropdown only has: `%`, `R$`, `number`, `dias`, `score`, `pontos`. The KR has `unit: "h"`. Radix Select renders **empty** when the value doesn't match any option. This is why the unit appears empty.
+
+The working KR uses `unit: "%"` which IS in the options, so it displays correctly.
+
+### 2. Form initialization relies on useEffect timing (race condition)
+The `basicInfo` state starts empty (`title: ''`, `unit: ''`, etc.) and is only populated by a `useEffect` that runs AFTER the first render. Combined with the `pendingEditOpen` pattern (which involves multiple state updates and re-renders), there's a timing window where React renders the form with empty state and the `useEffect` closure may not fire correctly due to stale dependencies or batched updates.
 
 ## Solution
 
-### 1. Use a pending-open pattern in `KROverviewModal.tsx`
+### Fix 1: Add missing unit option (`KREditModal.tsx`)
+Add `"h"` (Horas) to the Select options for unit, matching what already exists in the database.
 
-Replace the direct `setShowEditModal(true)` with a two-phase approach:
+### Fix 2: Initialize form state directly from props (`KREditModal.tsx`)
+Replace the empty `useState` + `useEffect` pattern with a **lazy initializer** that reads from `keyResult` on mount:
 
-- Add a `pendingEditOpen` ref/state
-- On click: call `refreshKeyResult()` and set `pendingEditOpen = true`
-- Add a `useEffect` that watches `currentKeyResult` + `pendingEditOpen`: when both are ready (data is fresh), then call `setShowEditModal(true)` and reset the flag
+```tsx
+const [basicInfo, setBasicInfo] = useState(() => ({
+  title: keyResult?.title || '',
+  unit: keyResult?.unit || '',
+  objective_id: keyResult?.objective_id || 'none',
+  target_direction: (keyResult?.target_direction as TargetDirection) || 'maximize',
+  // ... etc
+}));
+```
 
-This guarantees the modal only opens **after** React has committed the updated `currentKeyResult` from the refresh.
-
-### 2. Make `refreshKeyResult` return the data in `KROverviewModal.tsx`
-
-Change `refreshKeyResult` to return the fetched data so it can optionally be used directly. This is a minor refactor for future-proofing.
-
-### 3. Remove the `keyResult.title` guard in `KREditModal.tsx`
-
-The title guard causes a deadlock: if data arrives without a title (edge case), the form never initializes. Instead, always initialize when `open` is true and `keyResult` exists, using fallback empty strings. The pending-open pattern in step 1 already guarantees complete data.
-
-### 4. Add a `key` prop to force remount in `KROverviewModal.tsx`
-
-On the `<KREditModal>` component, add `key={currentKeyResult.id + currentKeyResult.updated_at}` so React fully remounts the form when data changes. This is the nuclear option that bypasses all `useEffect` timing issues.
+Since the `KREditModal` already receives a `key` prop that forces a full remount when data changes, initializing from props directly is safe and eliminates all timing issues. The `useEffect` becomes a fallback that only runs if the prop updates after mount (which the `key` pattern prevents).
 
 ### Files to modify
-- `src/components/strategic-map/KROverviewModal.tsx` -- pending-open pattern + key prop on KREditModal
-- `src/components/strategic-map/KREditModal.tsx` -- remove title guard, always initialize
+- `src/components/strategic-map/KREditModal.tsx` -- add `"h"` option + initialize from props
 
