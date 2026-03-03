@@ -32,11 +32,12 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({ getContent }) 
                   </DarkBackground>
       {/* 8  */} <div id="plataforma"><PlatformFeaturesSection /></div>
       {/* 9  */} <AtlasHighlightSection />
-      {/* 12 */} <section className="py-24 px-6 bg-cofound-white">
+      {/* 12 - Depoimentos desativados temporariamente */}
+      {/* <section className="py-24 px-6 bg-cofound-white">
                    <div className="max-w-6xl mx-auto">
                      <AuthoritySection />
                    </div>
-                 </section>
+                 </section> */}
       {/* 13 */} <FAQSection getContent={getContent} />
       {/* 15 */} <FooterSection getContent={getContent} />
     </div>
