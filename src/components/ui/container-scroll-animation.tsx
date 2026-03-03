@@ -1,6 +1,8 @@
 "use client";
 import React, { useRef } from "react";
-import { useScroll, useTransform, motion, type MotionValue } from "motion/react";
+import { useScroll, useTransform, useSpring, motion, type MotionValue } from "motion/react";
+
+const springConfig = { stiffness: 80, damping: 30, mass: 0.5 };
 
 export const ContainerScroll = ({
   titleComponent,
@@ -12,6 +14,7 @@ export const ContainerScroll = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
+    offset: ["start end", "end start"],
   });
   const [isMobile, setIsMobile] = React.useState(false);
 
@@ -30,9 +33,13 @@ export const ContainerScroll = ({
     return isMobile ? [0.7, 0.9] : [1.05, 1];
   };
 
-  const rotate = useTransform(scrollYProgress, [0, 1], [20, 0]);
-  const scale = useTransform(scrollYProgress, [0, 1], scaleDimensions());
-  const translate = useTransform(scrollYProgress, [0, 1], [0, -100]);
+  const rawRotate = useTransform(scrollYProgress, [0, 1], [12, 0]);
+  const rawScale = useTransform(scrollYProgress, [0, 1], scaleDimensions());
+  const rawTranslate = useTransform(scrollYProgress, [0, 1], [0, -100]);
+
+  const rotate = useSpring(rawRotate, springConfig);
+  const scale = useSpring(rawScale, springConfig);
+  const translate = useSpring(rawTranslate, springConfig);
 
   return (
     <div
