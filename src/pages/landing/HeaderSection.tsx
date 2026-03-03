@@ -5,7 +5,6 @@ import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
-  { name: 'Proposta', href: '#proposta' },
   { name: 'Plataforma', href: '#plataforma' },
   { name: 'Serviços', href: '#servicos' },
   { name: 'FAQ', href: '#faq' },
