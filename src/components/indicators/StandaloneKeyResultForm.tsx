@@ -319,6 +319,7 @@ export const StandaloneKeyResultForm = ({
                 <SelectItem value="R$">R$ (Real)</SelectItem>
                 <SelectItem value="number">Número</SelectItem>
                 <SelectItem value="dias">Dias</SelectItem>
+                <SelectItem value="h">Horas (h)</SelectItem>
                 <SelectItem value="score">Score</SelectItem>
               </SelectContent>
             </Select>
