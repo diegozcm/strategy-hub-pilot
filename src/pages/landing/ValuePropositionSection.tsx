@@ -4,12 +4,12 @@ import { Zap, BarChart3, Brain, Target, Users, ShieldCheck, ArrowRight } from 'l
 import { useScrollReveal } from './useScrollReveal';
 
 const pillars = [
-  { icon: Zap, title: 'Estratégia conectada à execução', desc: 'Transforme planejamento em ação com ferramentas que integram objetivos, indicadores e projetos em um fluxo contínuo.', accent: 'from-cofound-green/20 to-cofound-green/5' },
-  { icon: BarChart3, title: 'Decisões baseadas em dados', desc: 'Dashboards executivos, OKRs e indicadores em tempo real para tomar decisões fundamentadas.', accent: 'from-blue-400/20 to-blue-400/5' },
-  { icon: Brain, title: 'IA como copiloto estratégico', desc: 'O Atlas IA analisa seus dados e sugere ações estratégicas personalizadas para seu negócio.', accent: 'from-purple-400/20 to-purple-400/5' },
-  { icon: Target, title: 'OKRs & Resultados-Chave', desc: 'Metodologia OKR integrada com acompanhamento mensal, metas e eficiência YTD automatizada.', accent: 'from-amber-400/20 to-amber-400/5' },
-  { icon: Users, title: 'Governança colaborativa', desc: 'Reuniões, atas, regimentos e calendário de governança centralizados para toda a equipe.', accent: 'from-rose-400/20 to-rose-400/5' },
-  { icon: ShieldCheck, title: 'Diagnóstico de maturidade', desc: 'Avalie o nível de maturidade estratégica da sua organização com o framework BEEP.', accent: 'from-teal-400/20 to-teal-400/5' },
+  { icon: Zap, title: 'Estratégia conectada à execução', desc: 'Transforme planejamento em ação com ferramentas que integram objetivos, indicadores e projetos em um fluxo contínuo.', bg: 'bg-cofound-green/[0.08]', borderColor: 'border-cofound-green/20' },
+  { icon: BarChart3, title: 'Decisões baseadas em dados', desc: 'Dashboards executivos, OKRs e indicadores em tempo real para tomar decisões fundamentadas.', bg: 'bg-blue-400/[0.08]', borderColor: 'border-blue-400/20' },
+  { icon: Brain, title: 'IA como copiloto estratégico', desc: 'O Atlas IA analisa seus dados e sugere ações estratégicas personalizadas para seu negócio.', bg: 'bg-purple-400/[0.08]', borderColor: 'border-purple-400/20' },
+  { icon: Target, title: 'OKRs & Resultados-Chave', desc: 'Metodologia OKR integrada com acompanhamento mensal, metas e eficiência YTD automatizada.', bg: 'bg-amber-400/[0.08]', borderColor: 'border-amber-400/20' },
+  { icon: Users, title: 'Governança colaborativa', desc: 'Reuniões, atas, regimentos e calendário de governança centralizados para toda a equipe.', bg: 'bg-rose-400/[0.08]', borderColor: 'border-rose-400/20' },
+  { icon: ShieldCheck, title: 'Diagnóstico de maturidade', desc: 'Avalie o nível de maturidade estratégica da sua organização com o framework BEEP.', bg: 'bg-teal-400/[0.08]', borderColor: 'border-teal-400/20' },
 ];
 
 const iconColors = [
@@ -78,20 +78,15 @@ export const ValuePropositionSection: React.FC = () => {
               initial={{ opacity: 0, y: 40 }}
               animate={isVisible ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: 0.1 + i * 0.07, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="group relative p-8 rounded-2xl bg-white border border-cofound-blue-dark/[0.06] hover:border-cofound-blue-dark/[0.12] transition-all duration-500 cursor-default overflow-hidden hover:-translate-y-1 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)]"
+              className={`group relative p-6 rounded-2xl border ${p.bg} ${p.borderColor} hover:bg-white hover:border-cofound-blue-dark/[0.12] transition-all duration-500 cursor-default overflow-hidden hover:-translate-y-1 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)]`}
             >
-              {/* Gradient glow on hover */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${p.accent} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-
-              <div className="relative z-10">
-                <div className={`w-12 h-12 rounded-xl ${bgIconColors[i]} flex items-center justify-center mb-6 transition-colors duration-300`}>
+              <div className="relative z-10 flex items-start gap-4">
+                <div className={`w-10 h-10 rounded-xl ${bgIconColors[i]} flex items-center justify-center flex-shrink-0 transition-colors duration-300`}>
                   <p.icon className={`h-5 w-5 ${iconColors[i]}`} />
                 </div>
-                <h3 className="text-lg font-display font-bold text-cofound-blue-dark mb-3 tracking-tight">{p.title}</h3>
-                <p className="text-sm text-cofound-blue-dark/50 font-sans leading-relaxed mb-4">{p.desc}</p>
-                <div className="flex items-center gap-1 text-xs font-sans font-medium text-cofound-blue-dark/30 group-hover:text-cofound-green transition-colors duration-300">
-                  <span>Saiba mais</span>
-                  <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform duration-300" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-base font-display font-bold text-cofound-blue-dark mb-1.5 tracking-tight">{p.title}</h3>
+                  <p className="text-sm text-cofound-blue-dark/50 font-sans leading-relaxed">{p.desc}</p>
                 </div>
               </div>
             </motion.div>
