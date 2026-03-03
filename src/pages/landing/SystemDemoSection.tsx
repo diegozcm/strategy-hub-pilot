@@ -74,7 +74,7 @@ export const SystemDemoSection: React.FC = () => {
                 </Button>
               </Link>
               <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="lg" className="border-white/15 text-white hover:bg-white/[0.06] font-semibold rounded-full px-7">
+                <Button variant="outline" size="lg" className="bg-transparent border-white/30 text-white hover:text-white hover:bg-white/10 font-semibold rounded-full px-7">
                   Agendar demo
                 </Button>
               </a>
