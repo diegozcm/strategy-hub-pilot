@@ -11,12 +11,15 @@ import { AuthoritySection } from './AuthoritySection';
 import { FAQSection } from './FAQSection';
 import { FooterSection } from './FooterSection';
 import { DarkBackground } from './DarkBackground';
+import { usePreloadImages } from '@/hooks/usePreloadImages';
 
 interface LandingPageBaseProps {
   getContent: (section: string, key: string, fallback?: string) => string;
 }
 
 export const LandingPageBase: React.FC<LandingPageBaseProps> = ({ getContent }) => {
+  usePreloadImages();
+
   return (
     <div className="min-h-screen">
       {/* 1  */} <HeaderSection />
