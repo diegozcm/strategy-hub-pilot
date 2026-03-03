@@ -1,30 +1,41 @@
 
 
-## Plan: Revamp Hero Section
+## Plan: Redesign Footer + Create Terms/Privacy Pages + Update Contact Info
 
-### Changes to `src/pages/landing/HeroSection.tsx`
+### 1. Redesign Footer (`src/pages/landing/FooterSection.tsx`)
 
-1. **Shorten the title** — Replace the long phrase with something concise like "Planejamento Estratégico Inteligente" (title) + "para o seu negócio" (green line).
+Adopt the reference model's structure with COFOUND identity, using `motion/react` animated containers for scroll-in effects. Layout:
 
-2. **Remove stats section** — Delete the `stats` array and the inline stats block entirely.
+- **Top**: Large "Strategy HUB" brand text spanning full width with animated entrance
+- **Bottom grid** (4 columns on desktop):
+  - **Produto**: Funcionalidades, Plataforma, Integrações, Novidades
+  - **Empresa**: FAQ, Sobre a COFOUND, Política de Privacidade, Termos de Uso
+  - **Contato**: Email (leonardo@cofound.com.br), WhatsApp (+55 47 9634-2353)
+  - **Redes Sociais**: LinkedIn, Instagram (with icons)
+- **Copyright bar**: `© 2026 COFOUND. Todos os direitos reservados.`
+- Dark navy background (`#071520`), Saira headings, Lexend body, staggered fade-in animations per column
 
-3. **Add floating elements** — Add animated floating decorative elements (geometric shapes like circles, squares, hexagons) using `motion.div` with infinite float/pulse animations positioned absolutely around the hero.
+### 2. Create Stub Pages
 
-4. **Add background grid** — The RetroGrid is already present but may not be visible (the `animate-grid` keyframe is missing from tailwind config). Will ensure the grid renders properly by using inline animation or adding the keyframe.
+- **`src/pages/TermsOfUsePage.tsx`** — Simple page with placeholder structure for terms of use content (header + empty sections ready for content)
+- **`src/pages/PrivacyPolicyPage.tsx`** — Same structure for privacy policy
 
-5. **Replace screenshot with ContainerScroll animation** — Wrap the `ScreenshotImage` in a new `ContainerScroll` component that applies a 3D perspective rotation that flattens as the user scrolls down.
+### 3. Register Routes (`src/App.tsx`)
 
-### New file: `src/components/ui/container-scroll-animation.tsx`
+Add two new public routes:
+- `/terms` → `TermsOfUsePage`
+- `/privacy` → `PrivacyPolicyPage`
 
-Create the `ContainerScroll` component adapted from the provided code:
-- Replace `framer-motion` imports with `motion/react` (already installed as `motion` package).
-- Remove Next.js-specific code.
-- Accepts `titleComponent` and `children`, applies scroll-driven rotate/scale transforms.
+### 4. Update Contact Info Across Landing Page
 
-### Summary of visual changes
-- Shorter, punchier hero title
-- No stats row below buttons
-- Floating geometric shapes with subtle animations
-- RetroGrid background with visible animation
-- Dashboard screenshot with scroll-driven 3D perspective animation
+Update all hardcoded fallback values:
+- **`HeroSection.tsx`**: WhatsApp URL already correct (`554796342353`)
+- **`FooterSection.tsx`**: Change email to `leonardo@cofound.com.br`, phone to `+55 47 9634-2353` with WhatsApp link (`https://wa.me/554796342353`), remove address/MapPin
+- **`HeaderSection.tsx`**: Check and update any contact references
+
+### Technical Notes
+- Footer links to `/terms` and `/privacy` use `react-router-dom` `Link`
+- External links (cofound.com.br, app.cofound.com.br) use regular `<a>` tags
+- Motion animations use `useReducedMotion` for accessibility
+- Pages are placeholder-ready for user to provide actual legal content later
 
