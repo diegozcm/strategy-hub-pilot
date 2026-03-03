@@ -2,40 +2,41 @@
 
 ## Problem
 
-When clicking "Propriedades" (Edit) on certain KRs, the edit form (`KREditModal`) opens with all fields empty. This is a data initialization bug with two root causes:
+The previous fix (`await refreshKeyResult()` then `setShowEditModal(true)`) doesn't actually work because of how React state updates work. Here's what happens:
 
-### Root Cause 1: Race condition between refresh and modal open
-In `KROverviewModal`, when the modal opens, `refreshKeyResult()` is called asynchronously (line 160-164). If the user clicks "Propriedades" before the refresh completes, `currentKeyResult` might still hold the old/incomplete data passed from the parent view.
+1. `refreshKeyResult()` fetches data from DB and calls `setCurrentKeyResult(data)` 
+2. The `await` resolves (the async function completed), but **React hasn't re-rendered yet** -- state updates are batched
+3. `setShowEditModal(true)` fires in the same render cycle
+4. The KREditModal receives the **old** `currentKeyResult` because the state hasn't committed yet
+5. The `useEffect` in KREditModal checks `keyResult.title` -- if the old data was partial (no title), it skips initialization entirely
 
-### Root Cause 2: React `useEffect` dependency on object reference
-The `KREditModal` initialization effect (line 310-348) depends on `[open, keyResult]`. When the user closes and reopens the edit modal:
-- `open` toggles `false → true` (triggers correctly)
-- But `keyResult` is the same `currentKeyResult` object reference
-
-This should work in theory, but the issue is that some parent views (Dashboard, Indicators) pass **partial KR objects** that only contain summary fields (id, title, progress) without the full data. The `refreshKeyResult` in KROverviewModal fetches the complete data, but if the edit modal is opened before that async fetch completes, it initializes with the partial/empty data.
+This is a classic React state batching problem: `await` waits for the promise, not for the state to be reflected in the next render.
 
 ## Solution
 
-### 1. Guard `KREditModal` against incomplete data (in `KREditModal.tsx`)
-- Add a loading/initialization check: if `keyResult` has no `title` (the most basic field), show a loading state instead of empty fields
-- Use `keyResult.id` as an additional trigger to force re-initialization when the KR data is refreshed
+### 1. Use a pending-open pattern in `KROverviewModal.tsx`
 
-### 2. Ensure fresh data before opening edit modal (in `KROverviewModal.tsx`)
-- When the user clicks "Propriedades", first await `refreshKeyResult()`, then set `showEditModal(true)` -- this guarantees the modal always gets complete data
-- Change the click handler from:
-  ```tsx
-  onClick={() => setShowEditModal(true)}
-  ```
-  to an async handler that refreshes first:
-  ```tsx
-  onClick={async () => {
-    await refreshKeyResult();
-    setShowEditModal(true);
-  }}
-  ```
+Replace the direct `setShowEditModal(true)` with a two-phase approach:
 
-### 3. Stabilize the useEffect dependency (in `KREditModal.tsx`)
-- Change the effect dependency from `[open, keyResult]` to `[open, keyResult?.id, keyResult?.updated_at]` so it re-triggers when the KR data is actually refreshed from the database, not just when the object reference changes
+- Add a `pendingEditOpen` ref/state
+- On click: call `refreshKeyResult()` and set `pendingEditOpen = true`
+- Add a `useEffect` that watches `currentKeyResult` + `pendingEditOpen`: when both are ready (data is fresh), then call `setShowEditModal(true)` and reset the flag
 
-These three changes combined ensure the edit form always opens with complete, up-to-date data regardless of which view the user came from.
+This guarantees the modal only opens **after** React has committed the updated `currentKeyResult` from the refresh.
+
+### 2. Make `refreshKeyResult` return the data in `KROverviewModal.tsx`
+
+Change `refreshKeyResult` to return the fetched data so it can optionally be used directly. This is a minor refactor for future-proofing.
+
+### 3. Remove the `keyResult.title` guard in `KREditModal.tsx`
+
+The title guard causes a deadlock: if data arrives without a title (edge case), the form never initializes. Instead, always initialize when `open` is true and `keyResult` exists, using fallback empty strings. The pending-open pattern in step 1 already guarantees complete data.
+
+### 4. Add a `key` prop to force remount in `KROverviewModal.tsx`
+
+On the `<KREditModal>` component, add `key={currentKeyResult.id + currentKeyResult.updated_at}` so React fully remounts the form when data changes. This is the nuclear option that bypasses all `useEffect` timing issues.
+
+### Files to modify
+- `src/components/strategic-map/KROverviewModal.tsx` -- pending-open pattern + key prop on KREditModal
+- `src/components/strategic-map/KREditModal.tsx` -- remove title guard, always initialize
 
