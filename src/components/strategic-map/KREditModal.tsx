@@ -308,8 +308,8 @@ export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [],
 
   // Initialize form when modal opens
   useEffect(() => {
-    // Só reinicializar quando o modal for aberto E tiver keyResult com dados completos
-    if (open && keyResult && keyResult.title) {
+    // Always initialize when modal opens and keyResult exists (pending-open pattern guarantees complete data)
+    if (open && keyResult) {
       console.log('[KREditModal] Inicializando formulário', {
         open,
         keyResultId: keyResult?.id,

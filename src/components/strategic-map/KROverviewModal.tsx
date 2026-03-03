@@ -185,9 +185,9 @@ export const KROverviewModal = ({
     }
   }, [krQuarterOptions, selectedQuarter, selectedQuarterYear, setSelectedQuarter, setSelectedQuarterYear]);
 
-  // Function to refresh key result data from database
-  const refreshKeyResult = async () => {
-    if (!keyResult?.id) return;
+  // Function to refresh key result data from database (returns data for direct use)
+  const refreshKeyResult = async (): Promise<KeyResult | null> => {
+    if (!keyResult?.id) return null;
     
     try {
       const { data, error } = await supabase
@@ -206,11 +206,24 @@ export const KROverviewModal = ({
           has_validity: !!(data.start_month && data.end_month)
         });
         setCurrentKeyResult(data as KeyResult);
+        return data as KeyResult;
       }
+      return null;
     } catch (error) {
       console.error('Erro ao recarregar resultado-chave:', error);
+      return null;
     }
   };
+
+  // Pending-open pattern: open edit modal only after state has committed
+  const pendingEditOpen = useRef(false);
+
+  useEffect(() => {
+    if (pendingEditOpen.current && currentKeyResult?.id && currentKeyResult?.title) {
+      pendingEditOpen.current = false;
+      setShowEditModal(true);
+    }
+  }, [currentKeyResult]);
   
   if (!currentKeyResult) return null;
 
@@ -400,9 +413,9 @@ export const KROverviewModal = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={async () => {
-                        await refreshKeyResult();
-                        setShowEditModal(true);
+                      onClick={() => {
+                        pendingEditOpen.current = true;
+                        refreshKeyResult();
                       }}
                       className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
                     >
@@ -736,6 +749,7 @@ export const KROverviewModal = ({
       {/* Modal Edit */}
       {currentKeyResult && (
         <KREditModal
+          key={`${currentKeyResult.id}-${currentKeyResult.updated_at}`}
           keyResult={currentKeyResult}
           open={showEditModal}
           onClose={() => setShowEditModal(false)}
