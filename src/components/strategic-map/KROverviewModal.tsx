@@ -400,7 +400,10 @@ export const KROverviewModal = ({
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => setShowEditModal(true)}
+                      onClick={async () => {
+                        await refreshKeyResult();
+                        setShowEditModal(true);
+                      }}
                       className="h-8 w-8 text-white hover:bg-white/20 hover:text-white"
                     >
                       <Edit className="h-4 w-4" />
