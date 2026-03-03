@@ -113,7 +113,7 @@ export const HowItWorksSection: React.FC = () => {
                   }`}
                 >
                   <step.icon className={`h-6 w-6 transition-colors duration-300 ${
-                    activeStep === i ? 'text-cofound-green' : i <= activeStep ? 'text-cofound-green/60' : 'text-white/30'
+                    activeStep === i ? 'text-cofound-green' : i <= activeStep ? 'text-cofound-green/60' : 'text-[#5c6c7b]'
                   }`} />
                 </motion.div>
 
