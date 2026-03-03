@@ -16,7 +16,7 @@ interface Props {
 }
 
 export const HeroSection: React.FC<Props> = ({ getContent }) => (
-  <DarkBackground className="pt-20 pb-0 lg:pt-24">
+  <DarkBackground className="pt-10 pb-0 lg:pt-14">
     <div className="mx-auto max-w-6xl px-6">
       <AnimatedGroup
         variants={{
@@ -79,7 +79,7 @@ export const HeroSection: React.FC<Props> = ({ getContent }) => (
           {getContent('hero', 'subtitle', 'Transforme sua visão em resultados concretos com uma plataforma que acelera o crescimento do seu negócio.')}
         </TextEffect>
 
-        <div className="mt-10 mb-20 flex flex-col sm:flex-row items-center gap-4">
+        <div className="mt-10 mb-28 flex flex-col sm:flex-row items-center gap-4">
           <Link to="/auth">
             <Button size="lg" className="text-sm px-8 py-6 bg-cofound-green text-cofound-blue-dark font-bold hover:bg-cofound-green/90 shadow-lg shadow-cofound-green/20 transition-all hover:scale-[1.03] rounded-full">
               <ArrowRight className="mr-2 h-5 w-5" />
