@@ -4,7 +4,6 @@ import { HeroSection } from './HeroSection';
 import { ClientLogosSection } from './ClientLogosSection';
 import { ValuePropositionSection } from './ValuePropositionSection';
 import { SystemDemoSection } from './SystemDemoSection';
-import { DifferentialsSection } from './DifferentialsSection';
 import { HowItWorksSection } from './HowItWorksSection';
 import { PlatformFeaturesSection } from './PlatformFeaturesSection';
 import { AtlasHighlightSection } from './AtlasHighlightSection';
@@ -24,7 +23,6 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({ getContent }) 
       {/* 3  */ } <ClientLogosSection getContent={getContent} />
       {/* 4  */ } <div id="proposta"><ValuePropositionSection /></div>
       {/* 5  */ } <SystemDemoSection />
-      {/* 6  */ } <DifferentialsSection />
       {/* 7  */ } <HowItWorksSection />
       {/* 8  */ } <div id="plataforma"><PlatformFeaturesSection /></div>
       {/* 9  */ } <AtlasHighlightSection />
