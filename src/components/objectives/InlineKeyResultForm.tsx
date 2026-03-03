@@ -316,7 +316,10 @@ export const InlineKeyResultForm = ({
                 <SelectItem value="number">Número</SelectItem>
                 <SelectItem value="dias">Dias</SelectItem>
                 <SelectItem value="h">Horas (h)</SelectItem>
+                <SelectItem value="horas">Horas (horas)</SelectItem>
+                <SelectItem value="un">Unidades (un)</SelectItem>
                 <SelectItem value="score">Score</SelectItem>
+                <SelectItem value="pontos">Pontos</SelectItem>
               </SelectContent>
             </Select>
           </div>
