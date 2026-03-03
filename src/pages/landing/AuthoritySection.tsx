@@ -95,7 +95,7 @@ export const AuthoritySection: React.FC = () => {
         </motion.p>
       </div>
 
-      <div className="flex justify-center gap-5 [mask-image:linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)] max-h-[600px] overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 [mask-image:linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)] max-h-[600px] overflow-hidden max-w-6xl mx-auto">
         <TestimonialsColumn testimonials={firstColumn} duration={15} />
         <TestimonialsColumn testimonials={secondColumn} duration={19} className="hidden md:block" />
         <TestimonialsColumn testimonials={thirdColumn} duration={17} className="hidden lg:block" />
