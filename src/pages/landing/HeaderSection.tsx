@@ -142,7 +142,7 @@ export const HeaderSection: React.FC = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-xl border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white px-5 w-full sm:w-auto"
+                    className="rounded-full border-white/20 bg-white/5 text-white hover:bg-white/10 hover:text-white px-5 w-full sm:w-auto"
                   >
                     Login
                   </Button>
@@ -150,7 +150,7 @@ export const HeaderSection: React.FC = () => {
                 <Link to="/auth">
                   <Button
                     size="sm"
-                    className="rounded-xl bg-cofound-green text-cofound-blue-dark font-semibold hover:bg-cofound-green/90 px-5 w-full sm:w-auto"
+                    className="rounded-full bg-cofound-green text-cofound-blue-dark font-semibold hover:bg-cofound-green/90 px-5 w-full sm:w-auto"
                   >
                     Começar Agora
                   </Button>

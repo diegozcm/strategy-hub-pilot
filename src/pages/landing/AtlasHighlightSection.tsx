@@ -15,11 +15,11 @@ export const AtlasHighlightSection: React.FC = () => {
   const { ref, isVisible } = useScrollReveal();
 
   return (
-    <section className="py-20 px-4 bg-gradient-to-br from-cofound-blue-dark via-[#112B45] to-cofound-blue-dark relative overflow-hidden" ref={ref}>
+    <section className="py-24 px-6 bg-gradient-to-br from-cofound-blue-dark via-[#112B45] to-cofound-blue-dark relative overflow-hidden" ref={ref}>
       <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-cofound-blue-light/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="container mx-auto relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto relative z-10">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Screenshot */}
           <motion.div
             initial={{ opacity: 0, x: -40 }}

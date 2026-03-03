@@ -29,8 +29,8 @@ export const LandingPageBase: React.FC<LandingPageBaseProps> = ({ getContent }) 
                   </DarkSectionsBackground>
       {/* 8  */} <div id="plataforma"><PlatformFeaturesSection /></div>
       {/* 9  */} <AtlasHighlightSection />
-      {/* 12 */} <section className="py-24 px-4 bg-cofound-white">
-                   <div className="container mx-auto max-w-6xl">
+      {/* 12 */} <section className="py-24 px-6 bg-cofound-white">
+                   <div className="max-w-6xl mx-auto">
                      <AuthoritySection />
                    </div>
                  </section>

@@ -81,7 +81,7 @@ export const AuthoritySection: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={isVisible ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.1 }}
-          className="text-3xl md:text-5xl font-display font-bold text-cofound-blue-dark mb-5"
+          className="text-3xl md:text-4xl font-display font-bold text-cofound-blue-dark mb-5"
         >
           O que nossos clientes dizem
         </motion.h2>

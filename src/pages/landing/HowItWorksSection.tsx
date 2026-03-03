@@ -39,8 +39,8 @@ export const HowItWorksSection: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
 
   return (
-    <div ref={ref} className="py-28">
-      <div className="container mx-auto px-4">
+    <div ref={ref} className="py-24">
+      <div className="max-w-6xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-20">
           <motion.p
@@ -54,7 +54,7 @@ export const HowItWorksSection: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={isVisible ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.1 }}
-            className="text-3xl md:text-5xl font-display font-bold text-white mb-5"
+            className="text-3xl md:text-4xl font-display font-bold text-white mb-5"
           >
             Como funciona
           </motion.h2>
@@ -62,7 +62,7 @@ export const HowItWorksSection: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={isVisible ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.15 }}
-            className="text-base text-white/40 font-sans max-w-2xl mx-auto"
+            className="text-base text-white/40 font-sans max-w-xl mx-auto"
           >
             Um processo estruturado em 4 etapas para transformar sua gestão estratégica.
           </motion.p>
@@ -71,7 +71,7 @@ export const HowItWorksSection: React.FC = () => {
         {/* Steps — interactive timeline */}
         <div className="max-w-5xl mx-auto">
           {/* Step indicators with animated progress line */}
-          <div className="relative flex items-center justify-between mb-16">
+          <div className="relative hidden sm:flex items-center justify-between mb-16">
             {/* Background line */}
             <div className="absolute top-7 left-[10%] right-[10%] h-px bg-white/10" />
             {/* Active progress line */}
@@ -131,6 +131,23 @@ export const HowItWorksSection: React.FC = () => {
                   </span>
                 </div>
               </motion.button>
+            ))}
+          </div>
+
+          {/* Mobile step selector */}
+          <div className="flex sm:hidden flex-wrap justify-center gap-2 mb-8">
+            {steps.map((step, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveStep(i)}
+                className={`text-xs font-sans px-3 py-1.5 rounded-full transition-all ${
+                  i === activeStep
+                    ? 'bg-cofound-green/15 text-cofound-green border border-cofound-green/30'
+                    : 'text-white/35 hover:text-white/60 border border-white/10'
+                }`}
+              >
+                {step.num} {step.title}
+              </button>
             ))}
           </div>
 

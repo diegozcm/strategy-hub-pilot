@@ -34,14 +34,14 @@ export const ValuePropositionSection: React.FC = () => {
   const { ref, isVisible } = useScrollReveal();
 
   return (
-    <section className="py-28 px-4 bg-cofound-white relative overflow-hidden" ref={ref}>
+    <section className="py-24 px-6 bg-cofound-white relative overflow-hidden" ref={ref}>
       {/* Subtle background decoration */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-cofound-green/[0.03] blur-3xl" />
         <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-blue-400/[0.03] blur-3xl" />
       </div>
 
-      <div className="container mx-auto relative z-10">
+      <div className="max-w-6xl mx-auto relative z-10">
         {/* Header */}
         <div className="text-center mb-20">
           <motion.div
@@ -56,7 +56,7 @@ export const ValuePropositionSection: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={isVisible ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.1 }}
-            className="text-3xl md:text-5xl lg:text-[3.25rem] font-display font-bold text-cofound-blue-dark mb-5 leading-tight"
+            className="text-3xl md:text-4xl font-display font-bold text-cofound-blue-dark mb-5 leading-tight"
           >
             Por que o Strategy HUB?
           </motion.h2>
@@ -64,7 +64,7 @@ export const ValuePropositionSection: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={isVisible ? { opacity: 1, y: 0 } : {}}
             transition={{ delay: 0.15 }}
-            className="text-base md:text-lg text-cofound-blue-dark/50 font-sans max-w-xl mx-auto leading-relaxed"
+            className="text-base text-cofound-blue-dark/50 font-sans max-w-xl mx-auto leading-relaxed"
           >
             Tudo que sua empresa precisa para estruturar, executar e mensurar a estratégia.
           </motion.p>

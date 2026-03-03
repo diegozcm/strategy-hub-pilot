@@ -73,7 +73,7 @@ const FloatingShape: React.FC<{ el: typeof floatingElements[0] }> = ({ el }) => 
   return (
     <motion.div
       style={{ ...style, borderRadius, rotate: rotation }}
-      className="border border-cofound-green/10 bg-cofound-green/[0.03]"
+      className="border border-cofound-green/20 bg-cofound-green/[0.08]"
       animate={{
         y: [0, -20, 0],
         opacity: [0.3, 0.6, 0.3],
