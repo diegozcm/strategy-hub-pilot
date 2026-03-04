@@ -100,7 +100,7 @@ interface KREditModalProps {
 export const KREditModal = ({ keyResult, open, onClose, onSave, objectives = [], initialYear }: KREditModalProps) => {
   const { toast } = useToast();
   const { company } = useAuth();
-  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
+  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id, 'member');
   const { quarterOptions, yearOptions, yearValidityOptions } = usePlanPeriodOptions();
   const { canSelectOwner } = useKRPermissions();
   const [savingAggregationType, setSavingAggregationType] = useState(false);
