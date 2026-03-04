@@ -6,6 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CompanyHeader } from "./shared/CompanyHeader";
 import { UserPlus, Search, UserMinus, Users, Check, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -195,10 +197,9 @@ export function ManageCompanyUsersModal({
     }
   };
 
-  const handleToggleRelationType = async (userId: string, currentType: string) => {
+  const handleChangeRelationType = async (userId: string, newType: string) => {
     if (!company) return;
     setTogglingType(userId);
-    const newType = currentType === 'member' ? 'consultant' : 'member';
 
     try {
       const { error } = await supabase
@@ -367,17 +368,34 @@ export function ManageCompanyUsersModal({
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <Badge 
-                          variant={user.relation_type === 'consultant' ? 'outline' : 'default'}
-                          className={`text-[10px] px-2 py-0.5 cursor-pointer transition-colors ${
-                            user.relation_type === 'consultant' 
-                              ? 'border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/20' 
-                              : ''
-                          }`}
-                          onClick={() => handleToggleRelationType(user.user_id, user.relation_type || 'member')}
-                        >
-                          {togglingType === user.user_id ? '...' : user.relation_type === 'consultant' ? 'Consultor' : 'Membro'}
-                        </Badge>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div>
+                                <Select
+                                  value={user.relation_type || 'member'}
+                                  onValueChange={(value) => handleChangeRelationType(user.user_id, value)}
+                                  disabled={togglingType === user.user_id}
+                                >
+                                  <SelectTrigger className={`h-7 w-[110px] text-[11px] font-medium border ${
+                                    user.relation_type === 'consultant'
+                                      ? 'border-amber-300 text-amber-700 bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:bg-amber-900/20'
+                                      : 'border-primary/30 text-primary bg-primary/5'
+                                  }`}>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="member">Membro</SelectItem>
+                                    <SelectItem value="consultant">Consultor</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[220px] text-xs">
+                              Membros aparecem nos filtros de responsável. Consultores apenas visualizam dados.
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                         <Badge 
                           variant={user.status === 'active' ? 'default' : 'secondary'}
                           className="text-[10px] px-2 py-0.5"

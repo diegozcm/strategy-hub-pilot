@@ -1,34 +1,22 @@
+## Consultant vs Member - Implementation Complete
 
+### What was done
 
-## Plano: "Vínculo de Empresa" — Membro vs Consultor no ManageCompanyUsersModal
+1. **Database migration**: Added `relation_type` column (`'member'` | `'consultant'`) to `user_company_relations` with validation trigger and index.
 
-### Conceito e Nomenclatura
+2. **Updated `get_company_users` RPC**: Now accepts optional `_relation_type` parameter. When `'member'` is passed, only native members are returned. Default (NULL) returns all users for admin views.
 
-O recurso se chamará **"Tipo de Vínculo"** (ou `relation_type` no código). Cada usuário vinculado a uma empresa tem um **Tipo de Vínculo**:
-- **Membro** — faz parte da empresa, aparece nos selects de responsável
-- **Consultor** — acessa dados mas não aparece como responsável em KRs, projetos, etc.
+3. **Frontend selects filter by `'member'`**: All responsible/owner dropdowns now pass `'member'` to `useCompanyUsers`:
+   - `InlineKeyResultForm` 
+   - `StandaloneKeyResultForm`
+   - `KREditModal`
+   - `AddResultadoChaveModal`
+   - `MeetingDetailModal` (governance)
 
-### O que mudar no layout
+4. **Admin UI**: `ManageCompanyUsersModal` shows clickable "Membro"/"Consultor" badge per user to toggle relation type.
 
-Atualmente o badge "Membro" já existe e é clicável para alternar, mas não é visualmente claro. O plano:
-
-1. **Substituir o badge clicável por um Select/Dropdown inline** ao lado de cada usuário na lista de membros (coluna direita). Opções: "Membro" / "Consultor". Isso torna a ação explícita e profissional.
-
-2. **Estilização visual distinta**: Consultores terão badge âmbar/dourado, Membros terão badge padrão (azul/primário). O dropdown mostra o estado atual e permite troca com um clique.
-
-3. **Tooltip explicativo**: Ao passar o mouse no dropdown, exibir: "Membros aparecem nos filtros e selects de responsável. Consultores apenas visualizam dados."
-
-### Mudanças técnicas
-
-**Arquivo**: `src/components/admin-v2/pages/companies/modals/ManageCompanyUsersModal.tsx`
-
-- Substituir o `<Badge onClick={...}>` atual (linhas ~355-365) por um `<Select>` do Radix com duas opções
-- Manter a função `handleToggleRelationType` existente, adaptando para receber o novo valor diretamente do select
-- Adicionar tooltip no select com a explicação
-
-Nenhuma mudança de banco de dados necessária — a coluna `relation_type` e a lógica já existem.
-
-### Nome para referência futura
-
-Use **"Tipo de Vínculo"** na interface e nas conversas. No código: `relation_type` (já existente).
-
+### How it works
+- All existing relations default to `'member'`
+- Admin can toggle users to `'consultant'` in the company users modal
+- Consultants can still access/view company data but don't appear in responsible selects
+- The `useCompanyUsers` hook accepts an optional `relationTypeFilter` parameter
