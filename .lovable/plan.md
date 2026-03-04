@@ -1,22 +1,23 @@
-## Consultant vs Member - Implementation Complete
 
-### What was done
 
-1. **Database migration**: Added `relation_type` column (`'member'` | `'consultant'`) to `user_company_relations` with validation trigger and index.
+## Fix: Select dropdown closing the Dialog
 
-2. **Updated `get_company_users` RPC**: Now accepts optional `_relation_type` parameter. When `'member'` is passed, only native members are returned. Default (NULL) returns all users for admin views.
+### Problem
+Radix `<Select>` renders its `<SelectContent>` in a **Portal** (separate DOM node at the body level). When you click "Membro" or "Consultor", the `<DialogContent>` sees that click as happening **outside** itself and closes the modal.
 
-3. **Frontend selects filter by `'member'`**: All responsible/owner dropdowns now pass `'member'` to `useCompanyUsers`:
-   - `InlineKeyResultForm` 
-   - `StandaloneKeyResultForm`
-   - `KREditModal`
-   - `AddResultadoChaveModal`
-   - `MeetingDetailModal` (governance)
+### Solution
+Add `onInteractOutside` to the `<DialogContent>` in `ManageCompanyUsersModal.tsx` to prevent closing when the interaction target is inside a Radix Select portal.
 
-4. **Admin UI**: `ManageCompanyUsersModal` shows clickable "Membro"/"Consultor" badge per user to toggle relation type.
+**File**: `src/components/admin-v2/pages/companies/modals/ManageCompanyUsersModal.tsx`
 
-### How it works
-- All existing relations default to `'member'`
-- Admin can toggle users to `'consultant'` in the company users modal
-- Consultants can still access/view company data but don't appear in responsible selects
-- The `useCompanyUsers` hook accepts an optional `relationTypeFilter` parameter
+Change the `<DialogContent>` (line 240) to:
+
+```tsx
+<DialogContent 
+  className="sm:max-w-4xl max-h-[85vh] flex flex-col overflow-hidden p-0"
+  onInteractOutside={(e) => e.preventDefault()}
+>
+```
+
+This prevents the Dialog from closing on any outside interaction (the Select portal click). The user can still close the modal via the X button or the "Fechar" button. This is a single-line change.
+
