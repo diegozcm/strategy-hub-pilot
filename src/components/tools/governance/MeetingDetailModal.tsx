@@ -250,7 +250,7 @@ const InfoField: React.FC<{ label: string; value: string; icon?: React.ReactNode
 const MeetingAgendaTab: React.FC<{ meetingId: string }> = ({ meetingId }) => {
   const { company } = useAuth();
   const { items, otherItems, isLoading, addItem, updateItem, deleteItem, importItems } = useGovernanceAgendaItems(meetingId);
-  const { users } = useCompanyUsers(company?.id);
+  const { users } = useCompanyUsers(company?.id, 'member');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedImportIds, setSelectedImportIds] = useState<Set<string>>(new Set());
@@ -445,7 +445,7 @@ const MeetingAgendaTab: React.FC<{ meetingId: string }> = ({ meetingId }) => {
 const MeetingAtaTab: React.FC<{ meetingId: string }> = ({ meetingId }) => {
   const { company } = useAuth();
   const { atas, isLoading, addAta, updateAta, approveAta, deleteAta } = useGovernanceAtas(meetingId);
-  const { users } = useCompanyUsers(company?.id);
+  const { users } = useCompanyUsers(company?.id, 'member');
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ content: '', decisions: '', participants: [] as string[] });
