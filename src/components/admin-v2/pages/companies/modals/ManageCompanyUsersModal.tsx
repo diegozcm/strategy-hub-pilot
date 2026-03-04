@@ -368,6 +368,17 @@ export function ManageCompanyUsersModal({
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <Badge 
+                          variant={user.relation_type === 'consultant' ? 'outline' : 'default'}
+                          className={`text-[10px] px-2 py-0.5 cursor-pointer transition-colors ${
+                            user.relation_type === 'consultant' 
+                              ? 'border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-900/20' 
+                              : ''
+                          }`}
+                          onClick={() => handleToggleRelationType(user.user_id, user.relation_type || 'member')}
+                        >
+                          {togglingType === user.user_id ? '...' : user.relation_type === 'consultant' ? 'Consultor' : 'Membro'}
+                        </Badge>
+                        <Badge 
                           variant={user.status === 'active' ? 'default' : 'secondary'}
                           className="text-[10px] px-2 py-0.5"
                         >
