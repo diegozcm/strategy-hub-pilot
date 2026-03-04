@@ -91,7 +91,7 @@ interface ProjectTask {
 export const ProjectsPage: React.FC = () => {
   const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
-  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(authCompany?.id);
+  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(authCompany?.id, 'member');
   
   const [projects, setProjects] = useState<StrategicProject[]>([]);
   const [plans, setPlans] = useState<StrategicPlan[]>([]);
