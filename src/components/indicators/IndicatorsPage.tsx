@@ -70,7 +70,7 @@ interface KeyResultValue {
 export const IndicatorsPage: React.FC = () => {
   const { user, company: authCompany } = useAuth();
   const { toast } = useToast();
-  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(authCompany?.id);
+  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(authCompany?.id, 'member');
   const { validityEnabled, membersCanViewAll, loading: settingsLoading } = useCompanyModuleSettings('strategic-planning');
   const [searchParams, setSearchParams] = useSearchParams();
   const { canCreateKR, canSelectOwner, canEditAnyKR, canDeleteKR, currentUserId, isMemberOnly, canViewAllKRs } = useKRPermissions();
