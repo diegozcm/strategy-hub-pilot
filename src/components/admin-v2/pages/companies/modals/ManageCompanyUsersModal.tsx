@@ -27,6 +27,7 @@ interface CompanyUser {
   email: string | null;
   avatar_url?: string | null;
   status?: string | null;
+  relation_type?: string | null;
 }
 
 interface AvailableUser {
@@ -59,6 +60,7 @@ export function ManageCompanyUsersModal({
   const [addSearchTerm, setAddSearchTerm] = useState("");
   const [adding, setAdding] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
+  const [togglingType, setTogglingType] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && company) {
