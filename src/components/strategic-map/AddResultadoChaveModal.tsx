@@ -66,7 +66,7 @@ interface AddResultadoChaveModalProps {
 
 export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: AddResultadoChaveModalProps) => {
   const { company } = useAuth();
-  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
+  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id, 'member');
   const { quarterOptions, yearOptions, yearValidityOptions } = usePlanPeriodOptions();
   const { canSelectOwner, isMemberOnly, currentUserId } = useKRPermissions();
   const [loading, setLoading] = useState(false);

@@ -3208,6 +3208,7 @@ export type Database = {
           company_id: string
           created_at: string
           id: string
+          relation_type: string
           updated_at: string
           user_id: string
         }
@@ -3215,6 +3216,7 @@ export type Database = {
           company_id: string
           created_at?: string
           id?: string
+          relation_type?: string
           updated_at?: string
           user_id: string
         }
@@ -3222,6 +3224,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           id?: string
+          relation_type?: string
           updated_at?: string
           user_id?: string
         }
@@ -3855,17 +3858,30 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_company_users: {
-        Args: { _company_id: string }
-        Returns: {
-          avatar_url: string
-          email: string
-          first_name: string
-          last_name: string
-          status: string
-          user_id: string
-        }[]
-      }
+      get_company_users:
+        | {
+            Args: { _company_id: string }
+            Returns: {
+              avatar_url: string
+              email: string
+              first_name: string
+              last_name: string
+              status: string
+              user_id: string
+            }[]
+          }
+        | {
+            Args: { _company_id: string; _relation_type?: string }
+            Returns: {
+              avatar_url: string
+              email: string
+              first_name: string
+              last_name: string
+              relation_type: string
+              status: string
+              user_id: string
+            }[]
+          }
       get_deduplicated_login_logs: {
         Args: { p_limit?: number; p_start_date?: string }
         Returns: {

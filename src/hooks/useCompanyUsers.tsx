@@ -8,9 +8,10 @@ interface CompanyUser {
   email: string;
   avatar_url?: string;
   role?: string;
+  relation_type?: string;
 }
 
-export const useCompanyUsers = (companyId?: string) => {
+export const useCompanyUsers = (companyId?: string, relationTypeFilter?: 'member' | 'consultant') => {
   const [users, setUsers] = useState<CompanyUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchAttempted, setFetchAttempted] = useState(false);
@@ -32,8 +33,12 @@ export const useCompanyUsers = (companyId?: string) => {
         setLoading(true);
         
         // Use RPC with SECURITY DEFINER to bypass RLS recursion issues
+        const rpcParams: any = { _company_id: companyId };
+        if (relationTypeFilter) {
+          rpcParams._relation_type = relationTypeFilter;
+        }
         const { data, error } = await supabase
-          .rpc('get_company_users', { _company_id: companyId });
+          .rpc('get_company_users', rpcParams);
         
         if (error) throw error;
         
@@ -45,7 +50,8 @@ export const useCompanyUsers = (companyId?: string) => {
           first_name: user.first_name || '',
           last_name: user.last_name || '',
           email: user.email || '',
-          avatar_url: user.avatar_url
+          avatar_url: user.avatar_url,
+          relation_type: user.relation_type || 'member'
         }));
         
         console.log('[useCompanyUsers] Company users:', companyUsers.map(u => `${u.first_name} ${u.last_name}`).join(', '));
@@ -61,7 +67,7 @@ export const useCompanyUsers = (companyId?: string) => {
     };
 
     loadUsers();
-  }, [companyId]);
+  }, [companyId, relationTypeFilter]);
 
   return { users, loading };
 };

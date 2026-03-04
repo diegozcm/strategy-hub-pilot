@@ -62,7 +62,7 @@ export const InlineKeyResultForm = ({
   onCancel 
 }: InlineKeyResultFormProps) => {
   const { company } = useAuth();
-  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id);
+  const { users: companyUsers, loading: loadingUsers } = useCompanyUsers(company?.id, 'member');
   const { quarterOptions, yearValidityOptions } = usePlanPeriodOptions();
   const { canSelectOwner, isMemberOnly, currentUserId } = useKRPermissions();
   const [loading, setLoading] = useState(false);
