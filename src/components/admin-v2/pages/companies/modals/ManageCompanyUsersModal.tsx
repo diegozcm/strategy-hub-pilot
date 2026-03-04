@@ -237,7 +237,7 @@ export function ManageCompanyUsersModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col overflow-hidden p-0" onInteractOutside={(e) => e.preventDefault()}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-3 border-b">
           <div>
