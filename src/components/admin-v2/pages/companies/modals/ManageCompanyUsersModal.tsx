@@ -371,7 +371,7 @@ export function ManageCompanyUsersModal({
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div>
+                              <div onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
                                 <Select
                                   value={user.relation_type || 'member'}
                                   onValueChange={(value) => handleChangeRelationType(user.user_id, value)}
@@ -384,7 +384,7 @@ export function ManageCompanyUsersModal({
                                   }`}>
                                     <SelectValue />
                                   </SelectTrigger>
-                                  <SelectContent>
+                                  <SelectContent onPointerDownOutside={(e) => e.stopPropagation()}>
                                     <SelectItem value="member">Membro</SelectItem>
                                     <SelectItem value="consultant">Consultor</SelectItem>
                                   </SelectContent>
