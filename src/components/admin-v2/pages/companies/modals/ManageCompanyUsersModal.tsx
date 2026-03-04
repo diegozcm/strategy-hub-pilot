@@ -195,6 +195,39 @@ export function ManageCompanyUsersModal({
     }
   };
 
+  const handleToggleRelationType = async (userId: string, currentType: string) => {
+    if (!company) return;
+    setTogglingType(userId);
+    const newType = currentType === 'member' ? 'consultant' : 'member';
+
+    try {
+      const { error } = await supabase
+        .from('user_company_relations')
+        .update({ relation_type: newType })
+        .eq('company_id', company.id)
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Tipo atualizado",
+        description: `Usuário alterado para ${newType === 'member' ? 'Membro' : 'Consultor'}.`,
+      });
+
+      loadUsers();
+      onSuccess();
+    } catch (error) {
+      console.error('Error toggling relation type:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar o tipo de relação.",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingType(null);
+    }
+  };
+
   const getInitials = (firstName: string | null, lastName: string | null) => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'U';
   };
