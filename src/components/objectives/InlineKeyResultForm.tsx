@@ -112,7 +112,7 @@ export const InlineKeyResultForm = ({
         target_direction: formData.target_direction,
         assigned_owner_id: isMemberOnly 
           ? currentUserId || null
-          : (formData.assigned_owner_id === 'none' ? null : formData.assigned_owner_id)
+          : (!formData.assigned_owner_id || formData.assigned_owner_id === 'none' ? null : formData.assigned_owner_id)
       };
 
       await onSave(resultadoChaveData as Omit<KeyResult, 'id' | 'owner_id' | 'created_at' | 'updated_at'>);
