@@ -191,7 +191,7 @@ export const AddResultadoChaveModal = ({ objectiveId, open, onClose, onSave }: A
         // Se for member, auto-atribuir ao próprio usuário; senão usar o valor do form
         assigned_owner_id: isMemberOnly 
           ? currentUserId || null
-          : (formData.assigned_owner_id === 'none' ? null : formData.assigned_owner_id)
+          : (!formData.assigned_owner_id || formData.assigned_owner_id === 'none' ? null : formData.assigned_owner_id)
       };
 
       await onSave({
